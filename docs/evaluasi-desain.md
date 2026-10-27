@@ -22,6 +22,16 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 
 | ID | Judul | Jenis | Milestone | Menghambat? | Status |
 |---|---|---|---|---|---|
+| E-01 | Daftar peran M1.2 berbeda dengan peta pengguna U3 | Kontradiksi | M1.2 | Ya, untuk M1.2 | Terbuka |
+| E-02 | Akun dan orang belum dibedakan di model data | Celah | M1.1, M1.2, M1.8 | Ya, untuk M1.1 | Terbuka |
+| E-03 | Apakah Tahap 1 menunggu U5 dan U6 | Ambigu | Tahap 1 | Ya, untuk mulai Tahap 1 | Terbuka |
+| E-04 | Cakupan Project Group dibutuhkan sebelum M8.1 | Kontradiksi | M1.2, M5.3, M8.1 | Tidak (perlu sebelum M5.3) | Terbuka |
+| E-05 | Dua sumber data untuk cakupan Project Group | Ambigu | M1.2, M1.4, M1.8 | Tidak (perlu sebelum M1.4) | Terbuka |
+| E-06 | Hash chain audit log pada penulisan paralel | Sulit dibangun | M1.3, M2.2 | Tidak (perlu sebelum M1.3) | Terbuka |
+| E-07 | Cara membuat akun admin pertama belum ada | Celah | M1.1, M1.2 | Tidak | Terbuka |
+| E-08 | Aturan login dan sesi belum ditetapkan | Celah | M1.1 | Tidak | Terbuka |
+| E-09 | Aturan kode customer belum lengkap | Celah | M0.5, M1.4 | Tidak | Terbuka |
+| E-10 | Siapa yang mengelola group model dan model | Kontradiksi | M1.2, M1.4 | Tidak | Terbuka |
 
 ## Rincian
 
@@ -42,3 +52,143 @@ Salin blok ini untuk setiap temuan baru.
 - **Status:** Terbuka
 - **Keputusan pemilik:**
 -->
+
+### E-01 · Daftar peran M1.2 berbeda dengan peta pengguna U3
+
+- **Tanggal dan milestone:** 27 Oktober 2026, evaluasi awal sesi 1 (sebelum kode). Berdampak ke M1.2.
+- **Jenis:** Kontradiksi
+- **Rujukan:** R-SEC-09, D-35, D-41, brief bagian 1 (System roles) dan bagian 9, M1.2, R-SEC-10, D-66, D-70, U3-peta-pengguna bagian 1 sampai 3, U1 bagian 7.
+- **Temuan:** R-SEC-09, brief bagian 1, dan M1.2 menyebut enam peran kasar yang ditegakkan sejak M1.2: author, verifier, approver, document control, admin, dan viewer. U3-peta-pengguna, yang sudah disetujui sebagai baseline (D-66), memakai delapan peran: Penyusun, Pengelola template, Pemeriksa PFMEA–CP, Verifikator, Dokumen kontrol, Petugas migrasi, Viewer, dan Admin. Peran approver tidak ada di U3 (approver memakai Viewer, D-70), sedangkan tiga peran U3 tidak ada di R-SEC-09. Selain itu brief bagian 9 masih menulis "every logged-in user can do everything until M8.1", yang bertentangan dengan D-35. Terakhir, tidak jelas apakah M1.2 sudah menyimpan peran sebagai data (peran berisi hak L-1 sampai A-4, sesuai D-66) atau memakai peran tetap di kode, karena layar admin untuk mengubah isi peran baru dijadwalkan di M8.1.
+- **Dampak bila dibiarkan:** test M1.2 ("setiap peran hanya bisa melakukan aksi yang diizinkan") tidak bisa ditulis tanpa daftar peran dan hak yang pasti. Bila M1.2 memakai enam peran tetap di kode, M8.1 harus membongkarnya.
+- **Opsi:** (a) M1.2 memakai delapan peran U3 dan katalog hak L-1 sampai A-4 sebagai data awal (seed). Isi peran belum bisa diedit lewat layar sampai M8.1. R-SEC-09 dan brief bagian 9 diperbarui. (b) M1.2 memakai enam peran R-SEC-09 sebagai konstanta di kode, lalu M8.1 menggantinya dengan model D-66. (c) Seperti (a), tetapi peran approver tetap dibuat di katalog dan belum diberikan ke siapa pun sampai approval di aplikasi (R-APR-04).
+- **Rekomendasi Claude Code (usulan):** (a). U3 adalah baseline yang disetujui, dan tabel peran–hak tidak jauh lebih sulit dibuat daripada konstanta, tapi menghindari bongkar ulang di M8.1. Peran approver tidak dibuat dulu karena approval di aplikasi ditunda.
+- **Asumsi sementara di kode:** belum ada; temuan ini tidak menyentuh Tahap 0.
+- **Menghambat milestone?** Ya, untuk M1.2. Tidak untuk Tahap 0.
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-02 · Akun dan orang belum dibedakan di model data
+
+- **Tanggal dan milestone:** 27 Oktober 2026, evaluasi awal sesi 1. Berdampak ke M1.1, M1.2, dan M1.8.
+- **Jenis:** Celah
+- **Rujukan:** D-58, D-72, D-74, R-SEC-11, R-SEC-13, R-APR-12, R-CHG-02, R-APR-02, brief bagian 4 (role, permission, user_role), brief bagian 8 (external identity field, employee number), M1.1, M1.2, M1.8.
+- **Temuan:** PPAP Staff punya dua akun, akun kerja dan akun admin (D-72). Akun admin ditautkan ke "pemegangnya" (D-74). Satu orang boleh memegang beberapa jabatan (D-58). Aturan pemisahan tugas membandingkan orang, bukan akun: "one person fills at most one slot" (R-APR-12) dan "a requester never verifies their own request" (R-CHG-02). Model domain di brief bagian 4 hanya punya user, role, dan user_role. Tidak ada entitas orang yang terpisah dari akun, dan tidak jelas "pemegang" itu apa: akun kerja, data orang (nama, nomor karyawan), atau teks nama.
+- **Dampak bila dibiarkan:** tabel pengguna yang dibuat di M1.1 harus diubah lagi di M1.2 atau M1.8. Pemeriksaan pemisahan tugas bisa terlewat bila yang dibandingkan akun, karena satu orang bisa memakai dua akun.
+- **Opsi:** (a) Dua entitas: Orang (nama, nomor karyawan opsional) dan Akun (jenis kerja atau admin, login, hash password, kolom identitas eksternal untuk LDAP nanti). Satu orang punya paling banyak satu akun kerja dan paling banyak satu akun admin. Jabatan dipegang Orang. Aturan pemisahan tugas membandingkan Orang. (b) Hanya Akun. Akun admin punya rujukan ke akun kerja pemegangnya, dan pemisahan tugas membandingkan akun kerja. (c) Hanya Akun, dengan nama pemegang sebagai teks.
+- **Rekomendasi Claude Code (usulan):** (a). Paling jelas untuk diagram kelas U5 dan untuk pemisahan tugas, dan cocok dengan hook "identity is bound to an employee number" di brief bagian 8.
+- **Asumsi sementara di kode:** belum ada; temuan ini tidak menyentuh Tahap 0.
+- **Menghambat milestone?** Ya, untuk M1.1 (skema pengguna). Tidak untuk Tahap 0.
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-03 · Apakah Tahap 1 menunggu U5 dan U6
+
+- **Tanggal dan milestone:** 27 Oktober 2026, evaluasi awal sesi 1. Berdampak ke awal Tahap 1.
+- **Jenis:** Ambigu
+- **Rujukan:** D-77, D-11, D-43, RK-64, R-UML-03, milestone "Cara memakai dokumen ini" (Tambah (usulan): Urutan UML), docs/uml/README.md (U5 dan U6 berstatus Belum).
+- **Temuan:** D-77 memulai kode sejajar dengan UML. Usulan di milestone dan mitigasi RK-64 meminta diagram kelas domain U5 dan state machine U6 selesai sebelum Tahap 1. Di paket UML draft 0.7, U5 dan U6 masih berstatus Belum. Karena usulan ini belum diputuskan, tidak jelas apakah M1.1 boleh dimulai setelah Gerbang 0 bila U5 dan U6 belum ada. Beberapa temuan di file ini (E-01, E-02, E-05) sebenarnya pertanyaan kelas domain yang akan dijawab U5.
+- **Dampak bila dibiarkan:** bila usulan diterima, Tahap 1 berhenti menunggu pekerjaan desain. Bila ditolak, kode Tahap 1 menentukan struktur entitas lebih dulu dan U5 mengikuti kode, dengan risiko yang disebut RK-64.
+- **Opsi:** (a) Terima usulan: U5 dan U6 selesai sebelum M1.1. (b) Tolak usulan: Tahap 1 jalan, temuan dicatat di sini, dan U5 disusun dari kode beserta keputusan pemilik. (c) Jalan tengah: sebelum M1.1, U5 dibuat hanya untuk entitas yang disentuh Tahap 1 (akun dan orang, peran dan hak, jabatan, Project Group, rute approval, audit log). U6 menyusul sebelum Tahap 2.
+- **Rekomendasi Claude Code (usulan):** (c). Tahap 0 tidak terhambat karena hanya butuh entitas customer.
+- **Asumsi sementara di kode:** tidak ada.
+- **Menghambat milestone?** Tidak untuk Tahap 0. Ya, untuk mulai Tahap 1.
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-04 · Cakupan Project Group dibutuhkan sebelum M8.1
+
+- **Tanggal dan milestone:** 27 Oktober 2026, evaluasi awal sesi 1. Berdampak ke M1.2, M5.3, dan M8.1.
+- **Jenis:** Kontradiksi
+- **Rujukan:** D-71, R-SEC-12, R-CHG-02, R-APR-07, D-51, D-54, R-SEC-02, D-35, D-19, R-API-06, M1.2, M5.3, M8.1.
+- **Temuan:** D-71 (DECIDED) membatasi Project Leader dan Project Engineer ke customer di Project Group sendiri. R-CHG-02 (DECIDED) mensyaratkan verifikator dari Project Group customer itu. Tetapi R-SEC-02, R-SEC-12, dan M8.1 menjadwalkan penegakan cakupan customer di M8.1, dan D-19 menyatakan cakupan customer belum ditegakkan sebelum M8.1. Jadi antara M1.2 dan M8.1, termasuk saat verifikasi di M5.3, dua aturan DECIDED itu tidak ditegakkan, kecuali cakupan ditegakkan lebih awal dari jadwal.
+- **Dampak bila dibiarkan:** test M5.3 tidak bisa membuktikan R-CHG-02 sepenuhnya, dan pada pilot di localhost seorang Project Leader bisa menyusun atau memverifikasi dokumen customer group lain.
+- **Opsi:** (a) Sejak M1.2 fungsi izin menerima resource beserta customer-nya, dan sudah mengecek cakupan Project Group untuk peran yang punya cakupan. M8.1 tinggal menambah row-level security dan matriks wewenang detail. (b) Cakupan baru ditegakkan di M8.1. Sampai itu, D-71 dan bagian Project Group dari R-CHG-02 dicatat sebagai pengecualian yang diketahui. (c) Cakupan ditegakkan mulai M5.3, khusus untuk verifikasi.
+- **Rekomendasi Claude Code (usulan):** (a). Pengecekan cakupan di lapisan layanan cukup murah (customer, lalu Project Group, lalu apakah orang itu Project Leader atau Project Engineer group itu). Row-level security di PostgreSQL tetap di M8.1.
+- **Asumsi sementara di kode:** bila belum diputuskan di M1.2, fungsi izin tetap menerima resource lengkap supaya opsi (a) bisa ditambah tanpa mengubah pemanggilnya.
+- **Menghambat milestone?** Tidak untuk Tahap 0 dan M1.2. Harus diputuskan sebelum M5.3.
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-05 · Dua sumber data untuk cakupan Project Group
+
+- **Tanggal dan milestone:** 27 Oktober 2026, evaluasi awal sesi 1. Berdampak ke M1.2, M1.4, dan M1.8.
+- **Jenis:** Ambigu
+- **Rujukan:** D-54, D-66, D-71, brief bagian 4 (user_role dengan cakupan; "Each project group names its Project Leader and Project Engineer"), U3-peta-pengguna bagian 2 (rangkap jabatan Project Leader GR3 dan APQP/PPAP Controller), M1.4, M1.8.
+- **Temuan:** Cakupan seorang Project Leader atau Project Engineer bisa diambil dari dua tempat: (1) cakupan pada peran pengguna (semua customer, atau satu atau lebih Project Group) yang diatur admin (D-66), dan (2) master Project Group yang menyebut siapa Project Leader dan Project Engineer-nya (D-54). Bila admin mengganti Project Leader di master Project Group tetapi tidak mengubah cakupan perannya, atau sebaliknya, keduanya tidak sejalan. Pada rangkap jabatan Project Leader GR3 dan APQP/PPAP Controller, cakupannya berbeda per peran (menyusun hanya GR3, memverifikasi semua customer).
+- **Dampak bila dibiarkan:** data yang sama tersimpan di dua tempat dan bisa tidak sinkron, sehingga hasil pemeriksaan izin bergantung pada tabel mana yang dibaca.
+- **Opsi:** (a) Master Project Group adalah sumber tunggal untuk cakupan Project Leader dan Project Engineer. Cakupan pada peran hanya dipakai untuk peran yang tidak terikat group, misalnya "semua customer". (b) Cakupan pada peran adalah sumber tunggal. Master Project Group hanya dipakai untuk nama yang dicetak di slot (R-APR-17), bukan untuk izin. (c) Keduanya disimpan, dan sistem memaksa keduanya sejalan saat salah satu diubah.
+- **Rekomendasi Claude Code (usulan):** (a). D-54 sudah menetapkan satu Project Leader dan satu Project Engineer per group, jadi jabatan itu sendiri sudah menyiratkan cakupannya.
+- **Asumsi sementara di kode:** belum ada; temuan ini tidak menyentuh Tahap 0.
+- **Menghambat milestone?** Tidak untuk Tahap 0. Perlu diputuskan sebelum M1.4.
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-06 · Hash chain audit log pada penulisan paralel
+
+- **Tanggal dan milestone:** 27 Oktober 2026, evaluasi awal sesi 1. Berdampak ke M1.3 dan M2.2.
+- **Jenis:** Sulit dibangun
+- **Rujukan:** R-SEC-03, R-SEC-11, R-API-01, R-API-03, R-API-18, R-NUM-03, D-75, M1.3, M2.2.
+- **Temuan:** R-SEC-03 meminta hash chain: setiap entri menyimpan hash entri sebelumnya. Dengan satu rantai untuk seluruh sistem, setiap transaksi yang menulis audit harus menunggu giliran, karena urutan entri harus pasti sebelum hash dihitung. Uji M2.2 (50 pendaftaran nomor paralel) juga menulis 50 entri audit, sehingga semuanya antre di ujung rantai. Brief juga belum menyebut: (1) apakah entri ditulis trigger database atau lapisan layanan Go (R-API-01), padahal jenis aktor dan request ID (R-API-03) hanya diketahui aplikasi; (2) isi apa yang di-hash dan dalam bentuk baku apa, karena JSONB yang dibaca ulang sebagai teks tidak menjamin bentuk yang sama dengan saat ditulis; (3) role database mana yang menjalankan migrasi dan memiliki tabel, dan role mana yang dipakai aplikasi tanpa UPDATE dan DELETE.
+- **Dampak bila dibiarkan:** M1.3 mudah menghasilkan rantai yang putus karena dua transaksi membaca ujung rantai yang sama (race condition), atau penulisan menjadi lambat tanpa disadari.
+- **Opsi:** (a) Satu rantai global. Entri ditulis di transaksi yang sama dengan perubahan datanya, dan ujung rantai dikunci (satu baris penanda dengan `SELECT ... FOR UPDATE`, atau advisory lock). Sederhana dan benar; penulisan audit menjadi berurutan. (b) Entri ditulis tanpa hash di transaksi, lalu job latar (River) menyegel entri secara berurutan berdasarkan ID. Rantai tertinggal beberapa detik. (c) Satu rantai per entitas atau per tabel.
+- **Rekomendasi Claude Code (usulan):** (a) untuk demo localhost dengan 10 sampai 50 pengguna. Entri ditulis lapisan layanan Go dengan aktor dan request ID dari aplikasi. Hash dihitung dari serialisasi baku yang ditetapkan di kode. Dua role database: pemilik untuk migrasi, dan role aplikasi tanpa UPDATE dan DELETE pada tabel audit. Uji paralel M2.2 sekaligus membuktikan rantai tetap utuh.
+- **Asumsi sementara di kode:** belum ada; temuan ini tidak menyentuh Tahap 0.
+- **Menghambat milestone?** Tidak untuk Tahap 0. Perlu diputuskan sebelum M1.3.
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-07 · Cara membuat akun admin pertama belum ada
+
+- **Tanggal dan milestone:** 27 Oktober 2026, evaluasi awal sesi 1. Berdampak ke M1.1 dan M1.2.
+- **Jenis:** Celah
+- **Rujukan:** D-72, D-73, D-74, R-SEC-13, UC-02 (hak A-1), M1.1, M1.2.
+- **Temuan:** Hanya admin yang membuat pengguna dan memberi peran (UC-02, A-1), dan akun admin harus ditautkan ke pemegangnya (D-74). Belum ada aturan bagaimana akun admin pertama dibuat di database kosong, dan bagaimana menautkannya ke pemegang yang belum punya data atau akun kerja.
+- **Dampak bila dibiarkan:** M1.1 tidak bisa diuji dari database kosong tanpa jalur awal. Jalur yang dibuat seadanya, misalnya password bawaan di kode, menjadi celah keamanan.
+- **Opsi:** (a) Perintah CLI satu kali di binary Go yang hanya bisa jalan bila belum ada akun admin. Perintah ini menanyakan nama pemegang dan password, lalu mencatatnya di audit log dengan aktor sistem. (b) Akun admin pertama dibuat dari variabel di `.env` saat aplikasi pertama kali jalan. (c) Halaman setup di web yang terbuka sampai admin pertama dibuat.
+- **Rekomendasi Claude Code (usulan):** (a). Tidak ada password di file dan tidak ada halaman yang terbuka tanpa login.
+- **Asumsi sementara di kode:** bila belum diputuskan saat M1.1, pakai (a) dan tandai `// ASUMSI E-07`.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-08 · Aturan login dan sesi belum ditetapkan
+
+- **Tanggal dan milestone:** 27 Oktober 2026, evaluasi awal sesi 1. Berdampak ke M1.1.
+- **Jenis:** Celah
+- **Rujukan:** R-SEC-01, UC-01, M1.1, brief bagian 16 (cookie session with Origin check), Q-02.
+- **Temuan:** M1.1 membangun login lokal dengan argon2id dan sesi. Brief belum menetapkan aturan password (panjang minimal, daftar password yang dilarang), lama sesi dan batas tidak aktif, penanganan gagal login berulang, siapa yang mereset password yang lupa, parameter argon2id, dan apa yang dipakai sebagai nama login (misalnya nomor karyawan).
+- **Dampak bila dibiarkan:** nilai-nilai ini akan ditentukan sendiri di kode, padahal CLAUDE.md melarang mengarang. Spesifikasi UC-01 untuk tim IT juga butuh aturan ini.
+- **Opsi:** (a) Pakai standar terbuka sebagai dasar (OWASP ASVS, OWASP Password Storage Cheat Sheet, NIST SP 800-63B). Nilai tepatnya dikutip dari dokumen standar saat M1.1, lalu dipilih pemilik. Reset password oleh admin, dengan wajib ganti password saat login berikutnya. (b) Tunggu kebijakan IT perusahaan (Q-02). Kurang cocok, karena versi ini demo pribadi (D-36).
+- **Rekomendasi Claude Code (usulan):** (a). Dicatat sebagai keputusan di catatan M1.1.
+- **Asumsi sementara di kode:** bila belum diputuskan saat M1.1, pakai nilai dari standar di opsi (a) dengan sumbernya, dan tandai `// ASUMSI E-08`.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-09 · Aturan kode customer belum lengkap
+
+- **Tanggal dan milestone:** 27 Oktober 2026, evaluasi awal sesi 1. Berdampak ke M0.5 dan M1.4.
+- **Jenis:** Celah
+- **Rujukan:** R-NUM-01, R-NUM-02, R-POR-01, D-54, UC-03, R-DOC-10, brief bagian 1 (contoh KT dan KO), M0.5, M1.4, M2.1.
+- **Temuan:** M0.5 membuat entitas customer pertama. Brief hanya memberi contoh kode (KT, KO) dan aturan bahwa kode di nomor harus sama dengan kode di master (R-POR-01, usulan). Belum ada aturan tentang: huruf dan angka yang boleh dipakai, panjang, apakah kode boleh diubah setelah ada nomor terdaftar, dan apakah customer boleh dihapus atau hanya dinonaktifkan. Nomor disimpan sebagai teks dan tidak dihitung ulang (R-NUM-02), jadi mengganti kode customer membuat nomor lama tidak cocok lagi menurut R-POR-01. Customer juga wajib masuk satu Project Group (D-54), padahal master Project Group baru dibuat di M1.4. Contoh SC-ESD-K001 (R-DOC-10) memakai ESD di posisi kode customer, padahal ESD bukan customer.
+- **Dampak bila dibiarkan:** validasi dan batasan unik di M0.5 harus ditebak. Migrasi M1.4 harus menambah kolom wajib ke tabel yang sudah berisi data.
+- **Opsi:** (a) Kode unik, tidak boleh kosong, pola dan panjangnya diambil dari register nomor yang ada, dan tidak bisa diubah setelah ada nomor terdaftar. Customer tidak pernah dihapus, hanya dinonaktifkan. Kolom Project Group ditambah di M1.4. (b) Kode boleh diubah. Nomor lama tetap memakai kode lama dan dilaporkan sebagai pengecualian R-POR-01.
+- **Rekomendasi Claude Code (usulan):** (a). Pola kode dicek pemilik dari register nyata, termasuk kasus seperti ESD.
+- **Asumsi sementara di kode:** bila belum diputuskan saat M0.5, kode hanya huruf besar dan angka, unik, tidak kosong, dan belum bisa diubah. Ditandai `// ASUMSI E-09`.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-10 · Siapa yang mengelola group model dan model
+
+- **Tanggal dan milestone:** 27 Oktober 2026, evaluasi awal sesi 1. Berdampak ke M1.2 (isi awal peran) dan M1.4.
+- **Jenis:** Kontradiksi
+- **Rujukan:** Q-46, UC-03, U3-peta-pengguna hak A-2 dan E-6, D-39, D-42, D-64, D-72, M1.4.
+- **Temuan:** UC-03 dan hak A-2 menempatkan pengelolaan customer, Project Group, group model, model, dan part number di akun Admin. Asumsi kerja Q-46 menyebut group model dikelola penyusun template ("Template authors maintain groups"), yaitu PPAP Engineer (D-64). Akun admin dipegang PPAP Staff (D-72), jadi keduanya orang yang berbeda. Selain itu, menambah model dan part number terjadi setiap ada model baru. Bila hanya akun admin yang boleh, PPAP Staff harus berpindah akun setiap kali, dan penyusun lain harus meminta kepadanya.
+- **Dampak bila dibiarkan:** isi awal peran di M1.2 dan hak di layar M1.4 berbeda tergantung dokumen mana yang diikuti.
+- **Opsi:** (a) Ikuti U3: semua master di M1.4 hanya untuk Admin, dan asumsi Q-46 disesuaikan. (b) Group model dikelola Pengelola template (hak E-6 diperluas), master lain tetap Admin. (c) Model dan part number dikelola Penyusun lewat hak baru, sedangkan customer dan Project Group tetap Admin.
+- **Rekomendasi Claude Code (usulan):** (a) untuk M1.4, karena U3 adalah baseline yang disetujui. Opsi (c) layak dipertimbangkan bila alur kerja nyata sering menambah model baru.
+- **Asumsi sementara di kode:** bila belum diputuskan saat M1.4, pakai (a) dan tandai `// ASUMSI E-10`.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
