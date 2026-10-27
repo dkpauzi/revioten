@@ -22,16 +22,20 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 
 | ID | Judul | Jenis | Milestone | Menghambat? | Status |
 |---|---|---|---|---|---|
-| E-01 | Daftar peran M1.2 berbeda dengan peta pengguna U3 | Kontradiksi | M1.2 | Ya, untuk M1.2 | Terbuka |
-| E-02 | Akun dan orang belum dibedakan di model data | Celah | M1.1, M1.2, M1.8 | Ya, untuk M1.1 | Terbuka |
-| E-03 | Apakah Tahap 1 menunggu U5 dan U6 | Ambigu | Tahap 1 | Ya, untuk mulai Tahap 1 | Terbuka |
-| E-04 | Cakupan Project Group dibutuhkan sebelum M8.1 | Kontradiksi | M1.2, M5.3, M8.1 | Tidak (perlu sebelum M5.3) | Terbuka |
-| E-05 | Dua sumber data untuk cakupan Project Group | Ambigu | M1.2, M1.4, M1.8 | Tidak (perlu sebelum M1.4) | Terbuka |
-| E-06 | Hash chain audit log pada penulisan paralel | Sulit dibangun | M1.3, M2.2 | Tidak (perlu sebelum M1.3) | Terbuka |
-| E-07 | Cara membuat akun admin pertama belum ada | Celah | M1.1, M1.2 | Tidak | Terbuka |
-| E-08 | Aturan login dan sesi belum ditetapkan | Celah | M1.1 | Tidak | Terbuka |
-| E-09 | Aturan kode customer belum lengkap | Celah | M0.5, M1.4 | Tidak | Terbuka |
-| E-10 | Siapa yang mengelola group model dan model | Kontradiksi | M1.2, M1.4 | Tidak | Terbuka |
+| E-01 | Daftar peran M1.2 berbeda dengan peta pengguna U3 | Kontradiksi | M1.2 | Ya, untuk M1.2 | Diputuskan, D menunggu brief |
+| E-02 | Akun dan orang belum dibedakan di model data | Celah | M1.1, M1.2, M1.8 | Ya, untuk M1.1 | Diputuskan, D menunggu brief |
+| E-03 | Apakah Tahap 1 menunggu U5 dan U6 | Ambigu | Tahap 1 | Ya, untuk mulai Tahap 1 | Diputuskan, D menunggu brief |
+| E-04 | Cakupan Project Group dibutuhkan sebelum M8.1 | Kontradiksi | M1.2, M5.3, M8.1 | Tidak (perlu sebelum M5.3) | Diputuskan, D menunggu brief |
+| E-05 | Dua sumber data untuk cakupan Project Group | Ambigu | M1.2, M1.4, M1.8 | Tidak (perlu sebelum M1.4) | Diputuskan, D menunggu brief |
+| E-06 | Hash chain audit log pada penulisan paralel | Sulit dibangun | M1.3, M2.2 | Tidak (perlu sebelum M1.3) | Diputuskan, D menunggu brief |
+| E-07 | Cara membuat akun admin pertama belum ada | Celah | M1.1, M1.2 | Tidak | Diputuskan, D menunggu brief |
+| E-08 | Aturan login dan sesi belum ditetapkan | Celah | M1.1 | Tidak | Diputuskan, D menunggu brief |
+| E-09 | Aturan kode customer belum lengkap | Celah | M0.5, M1.4 | Tidak | Diputuskan, D menunggu brief |
+| E-10 | Siapa yang mengelola group model dan model | Kontradiksi | M1.2, M1.4 | Tidak | Diputuskan, D menunggu brief |
+| E-11 | Kode customer pernah diganti (WI SW-ZZ-000) | Kontradiksi | M1.4, M2.1, M2.5 | Tidak (perlu sebelum M1.4) | Terbuka |
+| E-12 | Struktur nomor di WI SW-ZZ-000 lebih rinci daripada pola di brief | Celah | M2.1, M2.4, M2.5 | Tidak (perlu sebelum M2.1) | Terbuka |
+| E-13 | Versi terbaru berbeda dari brief bagian 7 | Kontradiksi | M0.1 | Tidak | Terbuka |
+| E-14 | R-VER-04 belum menjawab line tunggal dan versi 0.x | Ambigu | M0.1, M0.4 | Tidak untuk M0.1, ya untuk M0.4 | Terbuka |
 
 ## Rincian
 
@@ -64,8 +68,8 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (a). U3 adalah baseline yang disetujui, dan tabel peran–hak tidak jauh lebih sulit dibuat daripada konstanta, tapi menghindari bongkar ulang di M8.1. Peran approver tidak dibuat dulu karena approval di aplikasi ditunda.
 - **Asumsi sementara di kode:** belum ada; temuan ini tidak menyentuh Tahap 0.
 - **Menghambat milestone?** Ya, untuk M1.2. Tidak untuk Tahap 0.
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan pemilik 27 Oktober 2026 (nomor D menunggu brief)
+- **Keputusan pemilik:** Opsi (a) sesuai rekomendasi: delapan peran U3 dan katalog hak L-1 sampai A-4 sebagai data awal di M1.2, tanpa peran approver dulu ("saya setuju dengan semua saran anda", 27 Oktober 2026).
 
 ### E-02 · Akun dan orang belum dibedakan di model data
 
@@ -78,8 +82,8 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (a). Paling jelas untuk diagram kelas U5 dan untuk pemisahan tugas, dan cocok dengan hook "identity is bound to an employee number" di brief bagian 8.
 - **Asumsi sementara di kode:** belum ada; temuan ini tidak menyentuh Tahap 0.
 - **Menghambat milestone?** Ya, untuk M1.1 (skema pengguna). Tidak untuk Tahap 0.
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan pemilik 27 Oktober 2026 (nomor D menunggu brief)
+- **Keputusan pemilik:** Opsi (a) sesuai rekomendasi: entitas Orang dan Akun dipisah, pemisahan tugas membandingkan Orang ("saya setuju dengan semua saran anda", 27 Oktober 2026).
 
 ### E-03 · Apakah Tahap 1 menunggu U5 dan U6
 
@@ -92,8 +96,8 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (c). Tahap 0 tidak terhambat karena hanya butuh entitas customer.
 - **Asumsi sementara di kode:** tidak ada.
 - **Menghambat milestone?** Tidak untuk Tahap 0. Ya, untuk mulai Tahap 1.
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan pemilik 27 Oktober 2026 (nomor D menunggu brief)
+- **Keputusan pemilik:** Opsi (b): Tahap 1 tidak menunggu U5 dan U6, dan UML diperbarui mengikuti kode yang dikembangkan ("untuk UML akan kita update sesuai code dikembangkan", 27 Oktober 2026). Ini berbeda dari rekomendasi (c).
 
 ### E-04 · Cakupan Project Group dibutuhkan sebelum M8.1
 
@@ -106,8 +110,8 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (a). Pengecekan cakupan di lapisan layanan cukup murah (customer, lalu Project Group, lalu apakah orang itu Project Leader atau Project Engineer group itu). Row-level security di PostgreSQL tetap di M8.1.
 - **Asumsi sementara di kode:** bila belum diputuskan di M1.2, fungsi izin tetap menerima resource lengkap supaya opsi (a) bisa ditambah tanpa mengubah pemanggilnya.
 - **Menghambat milestone?** Tidak untuk Tahap 0 dan M1.2. Harus diputuskan sebelum M5.3.
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan pemilik 27 Oktober 2026 (nomor D menunggu brief)
+- **Keputusan pemilik:** Opsi (a) sesuai rekomendasi: cakupan Project Group dicek di fungsi izin sejak M1.2; row-level security tetap di M8.1 ("saya setuju dengan semua saran anda", 27 Oktober 2026).
 
 ### E-05 · Dua sumber data untuk cakupan Project Group
 
@@ -120,8 +124,8 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (a). D-54 sudah menetapkan satu Project Leader dan satu Project Engineer per group, jadi jabatan itu sendiri sudah menyiratkan cakupannya.
 - **Asumsi sementara di kode:** belum ada; temuan ini tidak menyentuh Tahap 0.
 - **Menghambat milestone?** Tidak untuk Tahap 0. Perlu diputuskan sebelum M1.4.
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan pemilik 27 Oktober 2026 (nomor D menunggu brief)
+- **Keputusan pemilik:** Opsi (a) sesuai rekomendasi: master Project Group adalah sumber tunggal cakupan Project Leader dan Project Engineer ("saya setuju dengan semua saran anda", 27 Oktober 2026).
 
 ### E-06 · Hash chain audit log pada penulisan paralel
 
@@ -134,8 +138,8 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (a) untuk demo localhost dengan 10 sampai 50 pengguna. Entri ditulis lapisan layanan Go dengan aktor dan request ID dari aplikasi. Hash dihitung dari serialisasi baku yang ditetapkan di kode. Dua role database: pemilik untuk migrasi, dan role aplikasi tanpa UPDATE dan DELETE pada tabel audit. Uji paralel M2.2 sekaligus membuktikan rantai tetap utuh.
 - **Asumsi sementara di kode:** belum ada; temuan ini tidak menyentuh Tahap 0.
 - **Menghambat milestone?** Tidak untuk Tahap 0. Perlu diputuskan sebelum M1.3.
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan pemilik 27 Oktober 2026 (nomor D menunggu brief)
+- **Keputusan pemilik:** Opsi (a) sesuai rekomendasi: satu rantai global dengan ujung rantai dikunci, entri ditulis lapisan layanan Go, dua role database ("saya setuju dengan semua saran anda", 27 Oktober 2026).
 
 ### E-07 · Cara membuat akun admin pertama belum ada
 
@@ -148,8 +152,8 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (a). Tidak ada password di file dan tidak ada halaman yang terbuka tanpa login.
 - **Asumsi sementara di kode:** bila belum diputuskan saat M1.1, pakai (a) dan tandai `// ASUMSI E-07`.
 - **Menghambat milestone?** Tidak
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan pemilik 27 Oktober 2026 (nomor D menunggu brief)
+- **Keputusan pemilik:** Opsi (a) sesuai rekomendasi: perintah CLI satu kali untuk akun admin pertama ("saya setuju dengan semua saran anda", 27 Oktober 2026).
 
 ### E-08 · Aturan login dan sesi belum ditetapkan
 
@@ -162,8 +166,8 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (a). Dicatat sebagai keputusan di catatan M1.1.
 - **Asumsi sementara di kode:** bila belum diputuskan saat M1.1, pakai nilai dari standar di opsi (a) dengan sumbernya, dan tandai `// ASUMSI E-08`.
 - **Menghambat milestone?** Tidak
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan pemilik 27 Oktober 2026 (nomor D menunggu brief)
+- **Keputusan pemilik:** Opsi (a) sesuai rekomendasi: aturan dari standar terbuka, nilai tepat dipilih saat M1.1 ("saya setuju dengan semua saran anda", 27 Oktober 2026).
 
 ### E-09 · Aturan kode customer belum lengkap
 
@@ -176,8 +180,8 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (a). Pola kode dicek pemilik dari register nyata, termasuk kasus seperti ESD.
 - **Asumsi sementara di kode:** bila belum diputuskan saat M0.5, kode hanya huruf besar dan angka, unik, tidak kosong, dan belum bisa diubah. Ditandai `// ASUMSI E-09`.
 - **Menghambat milestone?** Tidak
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan pemilik 27 Oktober 2026 (nomor D menunggu brief)
+- **Keputusan pemilik:** Opsi (a) sesuai rekomendasi ("saya setuju dengan semua saran anda", 27 Oktober 2026). Catatan: WI SW-ZZ-000 rev 09 menunjukkan kode customer pernah diganti, jadi bagian "kode tidak bisa diubah" ditinjau ulang di E-11.
 
 ### E-10 · Siapa yang mengelola group model dan model
 
@@ -190,5 +194,73 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (a) untuk M1.4, karena U3 adalah baseline yang disetujui. Opsi (c) layak dipertimbangkan bila alur kerja nyata sering menambah model baru.
 - **Asumsi sementara di kode:** bila belum diputuskan saat M1.4, pakai (a) dan tandai `// ASUMSI E-10`.
 - **Menghambat milestone?** Tidak
+- **Status:** Diputuskan pemilik 27 Oktober 2026 (nomor D menunggu brief)
+- **Keputusan pemilik:** Opsi (a) sesuai rekomendasi: semua master di M1.4 hanya untuk Admin ("saya setuju dengan semua saran anda", 27 Oktober 2026).
+
+### E-11 · Kode customer pernah diganti (WI SW-ZZ-000)
+
+- **Tanggal dan milestone:** 27 Oktober 2026, M0.1. Ditemukan saat membaca WI yang diberikan pemilik. Berdampak ke M1.4, M2.1, dan M2.5.
+- **Jenis:** Kontradiksi
+- **Rujukan:** E-09 (keputusan opsi a), R-NUM-02, R-NUM-03, R-NUM-06, R-POR-01, D-54, M1.4, M2.1, M2.5. Sumber: WI SW-ZZ-000 rev 09 "Sistem Penomoran & Penulisan Dokumen Level 3 & 4". Dokumen ini diberikan pemilik pada 27 Oktober 2026 dan tidak disimpan di repo.
+- **Temuan:** Riwayat revisi WI mencatat dua kali penggantian kode customer: rev 04 (HL menjadi MS) dan rev 09 (BA menjadi RB). Keputusan E-09 opsi (a) menyatakan kode customer tidak bisa diubah setelah ada nomor terdaftar, jadi aturan sistem lebih ketat daripada praktik perusahaan. WI tidak menyebut apa yang terjadi pada nomor dokumen yang sudah terbit dengan kode lama.
+- **Dampak bila dibiarkan:** bila kode dikunci, penggantian seperti rev 09 tidak bisa dicatat di sistem. Bila kode boleh diubah tanpa aturan, R-POR-01 (kode di nomor sama dengan kode master) gagal untuk semua nomor lama. Penghitung per customer dan jenis dokumen (R-NUM-03) juga butuh aturan: melanjutkan nomor terakhir kode lama, atau mulai dari awal.
+- **Opsi:** (a) Kode customer disimpan beserta riwayatnya (kode lama tetap tercatat dengan tanggal berlaku). Nomor lama tetap teks dengan kode lama (R-NUM-02) dan dianggap cocok bila kode itu pernah berlaku untuk customer tersebut. Nomor baru memakai kode yang sedang berlaku. (b) Admin bisa mengganti kode tanpa riwayat, dan nomor lama dilaporkan sebagai pengecualian R-POR-01. (c) Penggantian kode dianggap customer baru, dan customer lama dinonaktifkan.
+- **Rekomendasi Claude Code (usulan):** (a). Cocok dengan R-NUM-02 (nomor tidak pernah dihitung ulang) dan dengan praktik di WI. Pemilik perlu menjawab dua hal: setelah kode diganti, apakah nomor berjalan melanjutkan atau mulai dari awal, dan apakah dokumen lama mendapat nomor baru saat revisi berikutnya.
+- **Asumsi sementara di kode:** untuk M0.5, kode customer disimpan di tabel customer dan belum bisa diubah lewat API. Ditandai `// ASUMSI E-11`.
+- **Menghambat milestone?** Tidak untuk M0.1 dan M0.5. Perlu diputuskan sebelum M1.4.
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-12 · Struktur nomor di WI SW-ZZ-000 lebih rinci daripada pola di brief
+
+- **Tanggal dan milestone:** 27 Oktober 2026, M0.1. Ditemukan saat membaca WI yang diberikan pemilik. Berdampak ke M2.1, M2.4, dan M2.5.
+- **Jenis:** Celah
+- **Rujukan:** R-NUM-01, R-NUM-02, R-NUM-05, R-NUM-06, R-REV-01, R-DOC-10, R-DOC-11, Q-05, Q-19, brief bagian 1 (pola SH-KT-nnn), U1 (Awalan), M2.1, M2.4, M2.5. Sumber: WI SW-ZZ-000 rev 09, halaman 2 dan 3.
+- **Temuan:** WI menetapkan struktur nomor A-B-CC-DDD-EE untuk dokumen Level 3.
+  1. A adalah kode pabrik (1 huruf, S), dan B adalah jenis dokumen (1 huruf: C untuk Control Plan, F untuk FMEA, H untuk Process Flow Diagram, ditambah banyak jenis lain seperti W, I, dan R). Brief memperlakukan SH, SF, dan SC sebagai satu awalan per jenis dokumen.
+  2. CC adalah kode customer 2 huruf (sesuai kode raw material), ZZ untuk General/Common, dan HSE (3 huruf) untuk Health, Safety, and Environment. Jadi panjang kode tidak selalu 2.
+  3. DDD adalah nomor berjalan 000 sampai 999. Di atas 999 ada kode tambahan dua karakter (00 untuk ribuan, A1 dan seterusnya untuk puluhan ribu, B1 dan seterusnya untuk ratusan ribu), dan rev 07 menambah aturan nomor 1000 sampai 9999 menjadi 4 karakter. Cara penulisannya belum jelas: struktur menyebut DD-DDD (6 karakter), sedangkan tabel menulis 00-XXXX. Brief hanya menulis nnn.
+  4. EE adalah nomor revisi 2 digit (00 sampai 99), ditulis sebagai bagian nomor (misalnya SW-ZZ-001-00) dan di nama file softcopy. Ini cocok dengan R-REV-01 (revisi berupa angka dengan format tampilan -00), tapi batas 99 belum tercatat di brief.
+  5. Contoh SC-ESD-K001 di R-DOC-10 tidak cocok dengan struktur ini: ESD bukan kode customer, dan K001 bukan pola DDD. Pola K001 mirip penomoran dokumen Level 4 di WI (D = K untuk Karawang, lalu nomor berjalan).
+  6. Daftar jenis dokumen B (W untuk Work Instruction, I untuk Inspection Standard, dan lainnya) bisa menjadi isi awal master dokumen terkait (R-DOC-11).
+- **Dampak bila dibiarkan:** token pola nomor di M2.1 dan test "SC-KT-001" bisa terlalu sederhana. Nomor di atas 999 dan kode HSE tidak tertangani, dan impor nomor lama (R-NUM-06) bisa salah membaca nomor.
+- **Opsi:** (a) Pola nomor di M2.1 disusun dari token terpisah: kode pabrik, jenis dokumen, kode customer (panjang bervariasi), nomor berjalan dengan aturan di atas 999, dan revisi. Isi awalnya diambil dari WI SW-ZZ-000. (b) Tetap memakai pola sederhana {awalan}-{customer}-{nnn} sesuai brief. Aturan di atas 999 dan kode HSE ditunda, karena nomor PFD, PFMEA, dan CP per customer mungkin belum mendekati 999.
+- **Rekomendasi Claude Code (usulan):** (a) untuk struktur token. Aturan di atas 999 baru dibangun setelah pemilik memastikan cara penulisannya dan apakah ada customer yang mendekati 999. Pemilik juga perlu menjelaskan contoh SC-ESD-K001.
+- **Asumsi sementara di kode:** tidak ada; temuan ini menyentuh Tahap 2.
+- **Menghambat milestone?** Tidak untuk Tahap 0 dan 1. Perlu diputuskan sebelum M2.1.
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-13 · Versi terbaru berbeda dari brief bagian 7
+
+- **Tanggal dan milestone:** 27 Oktober 2026, M0.1.
+- **Jenis:** Kontradiksi
+- **Rujukan:** brief bagian 7, R-VER-01, R-VER-04, R-VER-05, Q-17, M0.1, `docs/versions.md`.
+- **Temuan:** Saat dicek 27 Oktober 2026, empat versi lebih baru daripada brief. Semuanya rilis stabil (R-VER-01):
+  - Svelte 5.57.3 (2026-10-26; brief 5.57.2);
+  - oapi-codegen v2.8.1 (2026-10-24; brief v2.8.0);
+  - River v0.50.0 (2026-10-27; brief v0.49.0);
+  - Gotenberg v8.39.0 (2026-10-26; brief v8.38.1).
+
+  Svelte dan oapi-codegen adalah patch di line yang sama, jadi R-VER-05 meminta versi terbaru. River dan Gotenberg adalah minor baru.
+- **Dampak bila dibiarkan:** kecil. Versi patch di brief cepat tertinggal karena ada rilis baru hampir setiap minggu, sehingga brief dan `docs/versions.md` mudah tidak sejalan.
+- **Opsi:** (a) Perbarui brief bagian 7 dengan versi terbaru sekarang. (b) Versi dikunci saat paketnya pertama kali dipasang dan dicek ulang di milestone itu (M0.2 untuk modul Go, M0.4 untuk paket frontend, M0.5 untuk generator OpenAPI, S5 untuk Gotenberg), lalu dicatat di `docs/versions.md`. Brief bagian 7 cukup menyebut line-nya (misalnya Go 1.27, PostgreSQL 18, SvelteKit 3), dan versi patch tepatnya hanya ada di `docs/versions.md`.
+- **Rekomendasi Claude Code (usulan):** (b). Lebih sedikit dokumen yang harus disinkronkan, dan `docs/versions.md` sudah mencatat tanggal dan sumbernya.
+- **Asumsi sementara di kode:** sampai diputuskan, kolom "Versi yang dipakai" di `docs/versions.md` mengikuti brief, dan versi terbaru ditulis di kolom Catatan.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-14 · R-VER-04 belum menjawab line tunggal dan versi 0.x
+
+- **Tanggal dan milestone:** 27 Oktober 2026, M0.1. Berdampak ke M0.4.
+- **Jenis:** Ambigu
+- **Rujukan:** R-VER-04, R-VER-03, R-VER-05, D-01, D-44, RK-59, brief bagian 7 (watch item adapter-static; River "still a 0.x project"), M0.4.
+- **Temuan:** (1) Saat dicek 27 Oktober 2026, `@sveltejs/adapter-static` 4.0.0 masih satu-satunya rilis di line 4. Line itu juga satu-satunya yang menerima SvelteKit 3 (peer `@sveltejs/kit ^3.0.0-next.0`). Bila R-VER-04 dibaca harfiah, adapter-static 4.0.0 tidak boleh dipakai, sehingga SPA statis SvelteKit 3 (D-01, brief bagian 7) tidak bisa dibangun di M0.4. R-VER-04 tidak menyebut tindakan bila tidak ada alternatif. (2) Pada paket 0.x (River, `@hey-api/openapi-ts`), setiap minor bisa membawa perubahan yang tidak kompatibel, dan tidak jelas apakah River 0.50 dihitung sebagai line baru menurut R-VER-04.
+- **Dampak bila dibiarkan:** M0.4 terhambat bila adapter-static belum mendapat patch dan aturannya dibaca harfiah.
+- **Opsi:** (a) Tambah pengecualian di R-VER-04: line dengan satu rilis boleh dipakai bila tidak ada line lain yang memenuhi R-VER-03. Pengecualian itu dicatat di `docs/versions.md` dan dicek ulang di setiap milestone yang memakainya. Untuk paket 0.x, minor dihitung sebagai line baru. (b) Tunda M0.4 sampai adapter-static 4.0.1 rilis. (c) Pakai SvelteKit 2 dengan adapter-static 3. Ini bertentangan dengan stack di brief bagian 7, dan line 2 sudah tidak mendapat rilis sejak 2.70.3.
+- **Rekomendasi Claude Code (usulan):** (a).
+- **Asumsi sementara di kode:** tidak ada untuk M0.1. Bila belum diputuskan saat M0.4 dan adapter-static masih 4.0.0, berhenti dan tanya pemilik.
+- **Menghambat milestone?** Tidak untuk M0.1. Ya untuk M0.4 bila adapter-static masih 4.0.0.
 - **Status:** Terbuka
 - **Keputusan pemilik:**

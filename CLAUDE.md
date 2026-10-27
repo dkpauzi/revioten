@@ -109,10 +109,29 @@ Kode sekarang punya dua tujuan: belajar, dan menguji apakah desain (brief, UML, 
 
 ## 8. Repo, perintah, dan git
 
-- **Struktur folder:** ditetapkan di M0.2 dan ditulis di sini setelah pemilik setuju.
-- **Perintah:** diisi di sini setelah M0.1, hanya perintah yang sudah terbukti jalan (menjalankan database, test, build).
-- **Commit:** kecil, dengan ID di pesannya, misalnya `M0.2: endpoint /health beserta test`.
-- **Branch (usulan):** satu branch per milestone, misalnya `m0.2-server-go`. Merge ke `main` setelah pemilik meninjau. Jangan force-push.
+- **Struktur folder:** ditetapkan di M0.2 dan ditulis di sini setelah pemilik setuju. Sejak M0.1 di root sudah ada `compose.yaml`, `.env.example`, dan `.gitignore`.
+- **Perintah:** hanya perintah yang sudah terbukti jalan (menjalankan database, test, build). Lihat bagian "Perintah yang sudah terbukti" di bawah.
+- **Commit:** kecil, jelas, dengan ID di pesannya, misalnya `M0.2: endpoint /health beserta test`.
+- **Branch:** commit langsung di `main` lalu push ke `main` (pernyataan pemilik, 27 Oktober 2026). Ini menggantikan usulan satu branch per milestone. Jangan force-push.
+
+### Perintah yang sudah terbukti
+
+Dijalankan dari root repo. Terbukti di container cloud Linux (bash) pada M0.1, 27 Oktober 2026. Docker Compose membaca `.env` sendiri, jadi perintah `docker compose` sama di PowerShell Windows.
+
+| Tujuan | Perintah |
+|---|---|
+| Cek versi alat | `go version`, `node -v`, `docker --version`, `docker compose version` |
+| Cek versi modul Go | `go list -m -versions <modul>`, lalu `go list -m -json <modul>@<versi>` (tanggal di field `Time`) |
+| Cek versi paket npm | `npm view <paket> dist-tags time --json`, lalu `npm view <paket>@<versi> peerDependencies engines` |
+| Siapkan rahasia lokal (sekali) | `cp .env.example .env` (bash), lalu ganti `POSTGRES_PASSWORD`. Di PowerShell: `Copy-Item .env.example .env` (belum dicoba di komputer pemilik) |
+| Periksa file Compose | `docker compose config --quiet` |
+| Nyalakan PostgreSQL | `docker compose up -d` |
+| Lihat status (harus `healthy`) | `docker compose ps` |
+| Buka psql di container | `docker compose exec db psql -U revioten -d revioten` |
+| Cek versi server | `docker compose exec db psql -U revioten -d revioten -c "select version();"` |
+| Matikan PostgreSQL, data tetap | `docker compose down` |
+
+Jangan menjalankan `docker compose down -v` kecuali memang ingin menghapus seluruh isi database, karena `-v` ikut menghapus volume `revioten_pgdata`.
 
 ## 9. Catatan per milestone
 

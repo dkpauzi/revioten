@@ -1,0 +1,30 @@
+# Dokumen asli perusahaan dan customer (D-29). Sampai R-SEC-08 diputuskan,
+# dokumen asli hanya disimpan di folder data/ dan tidak pernah di-commit.
+/data/
+
+# Rahasia lokal (password database dan sejenisnya). Contohnya ada di .env.example.
+.env
+.env.*
+!.env.example
+
+# Hasil build Go
+bin/
+dist/
+*.exe
+*.test
+*.out
+
+# Dependensi dan hasil build frontend (Node, SvelteKit, Vitest, Playwright)
+node_modules/
+build/
+.svelte-kit/
+coverage/
+test-results/
+playwright-report/
+
+# File sistem operasi dan pengaturan editor pribadi
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/

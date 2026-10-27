@@ -1,0 +1,28 @@
+# PostgreSQL untuk demo di localhost (D-36), dibuat di M0.1.
+# Versi dikunci di tag 18.6. Digest image dicatat di docs/versions.md.
+# Nilai rahasia dibaca dari file .env yang tidak di-commit (contoh: .env.example).
+name: revioten
+
+services:
+  db:
+    image: postgres:18.6
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?isi POSTGRES_USER di file .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?isi POSTGRES_PASSWORD di file .env}
+      POSTGRES_DB: ${POSTGRES_DB:?isi POSTGRES_DB di file .env}
+    ports:
+      # Hanya bisa dibuka dari komputer ini, tidak dari jaringan.
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      # Sejak image PostgreSQL 18, volume dipasang di /var/lib/postgresql
+      # (datanya di /var/lib/postgresql/18/docker), bukan di /var/lib/postgresql/data.
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      # $$ supaya variabel dibaca di dalam container, bukan oleh Compose.
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:
