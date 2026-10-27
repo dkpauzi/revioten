@@ -1,0 +1,309 @@
+' U3 · Diagram use case (draft 0.7, 27 Oktober 2026, sumber brief v1.15)
+' Satu file berisi delapan diagram. Rujukan ID brief untuk setiap use case ada di U3-daftar-use-case.md (R-UML-01).
+' Render dari folder docs/uml:
+'   java -jar plantuml-1.2026.9.jar -tsvg -o export U3-use-case.puml
+' Pengecek dan approver menandatangani cetakan di kertas; tanda tangan itu bukan use case sistem.
+' Aktor pendukung hanya digambar bila aktor itu tidak menjadi aktor utama di diagram yang sama; daftar lengkapnya ada di tabel U3.
+
+@startuml U3-0-aktor
+!include U3-gaya.iuml
+top to bottom direction
+title U3 · Aktor dan generalisasi\n(draft 0.7, sumber brief v1.15)
+
+actor "Pengguna internal" as user
+actor "Penyusun\n(PPAP Engineer, PPAP Staff,\nProject Leader, atau Project Engineer)" as pen
+actor "PPAP Engineer" as ppap
+actor "Verifikator\n(Project Engineer, Project Leader,\natau APQP/PPAP Controller)" as verif
+actor "Pengecek\n(Project Engineer atau Project Leader;\ntanda tangan di kertas)" as cek
+actor "Dokumen kontrol\n(PPAP Staff dan PPAP Engineer,\nnanti bisa DCC)" as dokkon
+actor "Admin\n(akun terpisah,\ndipegang PPAP Staff)" as admin
+actor "Viewer\n(QA, QC, internal audit, approver,\nDCC, tim WI)" as viewer
+actor "Petugas migrasi\n(PPAP Staff dan PPAP Engineer)" as mig
+
+actor "Penjadwal" as timer
+actor "Microsoft Excel" as excel
+actor "Aplikasi internal lain" as apps <<masa depan>>
+actor "Customer user" as cust <<masa depan>>
+
+user <|-- pen
+pen <|-- ppap
+user <|-- verif
+user <|-- cek
+user <|-- dokkon
+user <|-- admin
+user <|-- viewer
+user <|-- mig
+
+note bottom of verif
+  Satu orang bisa memegang beberapa jabatan
+  (D-58), misalnya Project Leader GR3
+  yang juga APQP/PPAP Controller.
+end note
+note right of ppap
+  Juga mengelola master proses dan
+  process template, serta memberi
+  tanda dicek PFMEA–CP (D-64, D-65).
+end note
+note right of timer
+  Aktor non-manusia: proses waktu di sistem,
+  sistem lain di komputer pengguna,
+  dan aktor masa depan (D-61, R-POR-04).
+end note
+@enduml
+
+@startuml U3-A-akses-pengaturan
+!include U3-gaya.iuml
+title U3-A · Akses dan pengaturan
+
+actor "Pengguna internal" as user
+actor "Admin" as admin
+actor "PPAP Engineer" as ppap
+
+rectangle "Sistem PFD, PFMEA, dan CP" {
+  usecase "UC-01\nMasuk dan keluar sistem" as UC01
+  usecase "UC-02\nKelola pengguna, peran,\ndan jabatan" as UC02
+  usecase "UC-03\nKelola customer, Project Group,\ngroup model, model, part number" as UC03
+  usecase "UC-04\nKelola master proses" as UC04
+  usecase "UC-05\nKelola jenis dokumen, jenis\ndan sumber perubahan" as UC05
+  usecase "UC-06\nKelola rute approval" as UC06
+  usecase "UC-07\nKelola pengaturan sistem" as UC07
+  usecase "UC-08\nLihat audit log" as UC08
+  usecase "UC-09\nKelola master dokumen terkait" as UC09 <<usulan>>
+}
+
+user --> UC01
+admin --> UC02
+admin --> UC03
+ppap --> UC04
+admin --> UC05
+admin --> UC06
+admin --> UC07
+admin --> UC08
+admin --> UC09
+
+note right of UC07
+  Saklar QR (D-62), tanggal tanda tangan
+  per slot (D-52), aturan tanggal berlaku
+  (D-59), mode migrasi (R-MIG-06)
+end note
+@enduml
+
+@startuml U3-B-penomoran-template
+!include U3-gaya.iuml
+title U3-B · Penomoran dan template
+
+actor "Penyusun" as pen
+actor "PPAP Engineer" as ppap
+actor "Pengguna internal" as user
+actor "Dokumen kontrol" as dokkon
+actor "Penjadwal" as timer
+actor "Admin" as admin
+
+rectangle "Sistem PFD, PFMEA, dan CP" {
+  usecase "UC-10\nDaftarkan nomor dokumen" as UC10
+  usecase "UC-11\nDaftarkan nomor sebagai set" as UC11 <<usulan>>
+  usecase "UC-12\nCari dan ekspor register nomor" as UC12 <<usulan>>
+  usecase "UC-13\nUbah status nomor" as UC13 <<usulan>>
+  usecase "UC-14\nImpor nomor lama" as UC14 <<usulan>>
+  usecase "UC-15\nIngatkan nomor Reserved\nyang terlalu lama" as UC15 <<usulan>>
+  usecase "UC-20\nKelola format template" as UC20
+  usecase "UC-21\nKelola process template\n(umum, customer, group model, model)" as UC21
+  usecase "UC-22\nTerbitkan versi template" as UC22 <<usulan>>
+  usecase "UC-23\nPropagasikan versi template" as UC23
+}
+
+pen --> UC10
+pen --> UC11
+ppap --> UC21
+ppap --> UC22
+ppap --> UC23
+user --> UC12
+dokkon --> UC13
+dokkon --> UC14
+timer --> UC15
+admin --> UC20
+
+note bottom of UC23
+  Hasilnya sebuah perubahan berisi draft revisi
+  (R-TPL-06), dilanjutkan di U3-D.
+end note
+@enduml
+
+@startuml U3-C-dokumen-perakitan
+!include U3-gaya.iuml
+title U3-C · Dokumen dan perakitan
+
+actor "Penyusun" as pen
+actor "PPAP Engineer" as ppap
+actor "Pengguna internal" as user
+actor "Microsoft Excel" as excel
+
+rectangle "Sistem PFD, PFMEA, dan CP" {
+  usecase "UC-30\nRakit dokumen baru dari template" as UC30
+  usecase "UC-31\nMulai dari komposisi model lain" as UC31 <<usulan>>
+  usecase "UC-32\nEdit baris di editor tabel" as UC32
+  usecase "UC-33\nTempel blok sel dari Excel" as UC33
+  usecase "UC-34\nAtur urutan proses\ndan nomor operasi" as UC34
+  usecase "UC-35\nTandai perbedaan lokal\natau putus tautan" as UC35 <<usulan>>
+  usecase "UC-36\nCek PFMEA dan CP berdampingan" as UC36
+  usecase "UC-37\nLihat diagram PFD" as UC37 <<opsional>>
+  usecase "UC-38\nTautkan dokumen yang\nsaling bergantung" as UC38 <<usulan>>
+}
+
+pen --> UC30
+pen --> UC32
+pen --> UC33
+pen --> UC34
+pen --> UC35
+pen --> UC38
+ppap --> UC36
+user --> UC37
+UC31 .> UC30 : <<extend>>
+UC33 --> excel
+
+note right of UC36
+  Tanda dicek diberikan PPAP Engineer
+  untuk saat ini (D-65).
+end note
+@enduml
+
+@startuml U3-D-perubahan-revisi
+!include U3-gaya.iuml
+title U3-D · Perubahan dan revisi
+
+actor "Penyusun" as pen
+actor "Verifikator" as verif
+actor "Pengguna internal" as user
+
+rectangle "Sistem PFD, PFMEA, dan CP" {
+  usecase "UC-40\nAjukan permintaan perubahan" as UC40
+  usecase "UC-42\nIsi daftar periksa dampak" as UC42 <<usulan>>
+  usecase "UC-41\nVerifikasi permintaan perubahan" as UC41
+  usecase "UC-44\nJalankan yokoten" as UC44
+  usecase "UC-43\nKerjakan draft revisi" as UC43
+  usecase "UC-46\nTerapkan perubahan surut SQAM" as UC46
+  usecase "UC-45\nPutuskan yokoten\nper dokumen target" as UC45
+  usecase "UC-47\nLihat riwayat dan diff revisi" as UC47
+}
+
+pen --> UC40
+pen --> UC44
+pen --> UC43
+pen --> UC46
+pen --> UC45
+verif --> UC41
+user --> UC47
+UC40 .> UC42 : <<include>>
+UC44 .> UC43 : <<include>>
+note bottom of UC43
+  Draft revisi juga dibuat oleh UC-46
+  dan oleh propagasi template UC-23 (R-CHG-03).
+end note
+
+note right of UC41
+  Verifikator: Project Engineer atau Project Leader
+  dari Project Group customer itu, atau
+  APQP/PPAP Controller. Bukan pemohon (D-51).
+end note
+@enduml
+
+@startuml U3-E-cetak-rilis
+!include U3-gaya.iuml
+title U3-E · Cetak, tanda tangan, dan rilis
+
+actor "Penyusun" as pen
+actor "Dokumen kontrol" as dokkon
+actor "Pengguna internal" as user
+actor "Viewer" as viewer
+actor "Microsoft Excel" as excel
+
+rectangle "Sistem PFD, PFMEA, dan CP" {
+  usecase "UC-50\nCetak untuk tanda tangan" as UC50
+  usecase "UC-51\nCatat dokumen dikembalikan" as UC51
+  usecase "UC-52\nCatat rilis" as UC52
+  usecase "UC-53\nCetak salinan terkendali" as UC53 <<usulan>>
+  usecase "UC-54\nEkspor Excel dan PDF" as UC54
+  usecase "UC-55\nLihat salinan yang harus ditarik" as UC55 <<usulan>>
+  usecase "UC-56\nBuka halaman verifikasi" as UC56 <<saklar>>
+  usecase "UC-57\nBaca dokumen rilis" as UC57
+}
+
+pen --> UC50
+pen --> UC51
+dokkon --> UC52
+dokkon --> UC53
+dokkon --> UC55
+user --> UC54
+viewer --> UC56
+viewer --> UC57
+UC54 --> excel
+
+note right of UC50
+  Tanggal rilis diisi otomatis saat cetak;
+  tanggal berlaku sama dengan tanggal rilis
+  untuk sekarang (D-59).
+  Tanda tangan basah terjadi di luar sistem,
+  berurutan sesuai rute (D-49).
+end note
+note right of UC56
+  QR opsional dan saat ini mati (D-62).
+end note
+@enduml
+
+@startuml U3-F-migrasi-ukuran
+!include U3-gaya.iuml
+title U3-F · Migrasi dan ukuran
+
+actor "Petugas migrasi" as mig
+actor "Pengguna internal" as user
+actor "Microsoft Excel" as excel
+
+rectangle "Sistem PFD, PFMEA, dan CP" {
+  usecase "UC-60\nMasukkan dokumen lama\nsebagai baseline" as UC60
+  usecase "UC-61\nBandingkan dengan Excel lama" as UC61 <<usulan>>
+  usecase "UC-62\nTautkan baris hasil tempel\nke template" as UC62
+  usecase "UC-63\nVerifikasi terhadap hardcopy\nbertanda tangan" as UC63 <<usulan>>
+  usecase "UC-64\nLihat dasbor ukuran" as UC64
+}
+
+mig --> UC60
+mig --> UC61
+mig --> UC62
+mig --> UC63
+user --> UC64
+UC61 --> excel
+@enduml
+
+@startuml U3-G-masa-depan
+!include U3-gaya.iuml
+title U3-G · Masa depan (latihan tahap 9 dan 10)
+
+actor "Admin" as admin
+actor "Aplikasi internal lain" as apps <<masa depan>>
+actor "Customer user" as cust <<masa depan>>
+actor "Penyusun" as pen
+actor "Verifikator" as verif
+actor "Pengecek" as cek
+actor "Dokumen kontrol" as dokkon
+
+rectangle "Sistem PFD, PFMEA, dan CP" {
+  usecase "UC-80\nKelola service account\ndan token" as UC80 <<masa depan>>
+  usecase "UC-81\nBaca data rilis lewat API" as UC81 <<masa depan>>
+  usecase "UC-82\nKirim usulan perubahan\nlewat API" as UC82 <<masa depan>>
+  usecase "UC-83\nEkspor data secara asinkron" as UC83 <<masa depan>>
+  usecase "UC-84\nLihat dan unduh dokumen\ndi portal" as UC84 <<masa depan>>
+  usecase "UC-85\nBeri izin tampil" as UC85 <<masa depan>>
+  usecase "UC-86\nKelola kebijakan publikasi\ncustomer" as UC86 <<masa depan>>
+}
+
+admin --> UC80
+admin --> UC86
+apps --> UC81
+apps --> UC82
+apps --> UC83
+cust --> UC84
+pen --> UC85
+UC85 --> cek
+UC82 --> verif
+UC86 --> dokkon
+@enduml

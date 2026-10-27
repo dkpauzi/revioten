@@ -1,0 +1,65 @@
+@startuml U2-c4-konteks
+' U2 · Diagram konteks C4 (level 1)
+' Paket UML draft 0.7, 27 Oktober 2026. Sumber: brief desain v1.15.
+' Nama jabatan mengikuti bagan organisasi NPI (D-54). Nama orang tidak dicantumkan.
+' Rujukan ID brief ditulis di setiap elemen (R-UML-01).
+' Render dari folder docs/uml:
+'   java -jar plantuml-1.2026.9.jar -tsvg -o export U2-c4-konteks.puml
+' C4-PlantUML v2.14.0 dipakai dari folder lib supaya bisa dirender offline (R-UML-04).
+
+' Teks legenda dalam bahasa Indonesia (R-UML-05). Harus diset sebelum include.
+!$LEGEND_TITLE_TEXT = "Legenda"
+!$PERSON_LEGEND_TEXT = "pengguna internal"
+!$EXTERNAL_PERSON_LEGEND_TEXT = "pengguna luar"
+!$SYSTEM_LEGEND_TEXT = "sistem yang dirancang"
+!$EXTERNAL_SYSTEM_LEGEND_TEXT = "sistem lain"
+
+!RELATIVE_INCLUDE = "relative"
+!include lib/C4-PlantUML-2.14.0/C4_Context.puml
+
+AddElementTag("masa_depan", $bgColor="#8C8C8C", $borderColor="#5E5E5E", $borderStyle=DashedLine(), $legendText="masa depan, latihan tahap 9 dan 10 (R-UML-06)")
+AddRelTag("kertas", $lineStyle=DashedLine(), $legendText="di atas kertas, di luar sistem")
+AddRelTag("masa_depan", $lineStyle=DottedLine(), $textColor="#5E5E5E", $lineColor="#8C8C8C", $legendText="hubungan masa depan")
+
+title U2 · Diagram konteks C4: Sistem PFD, PFMEA, dan CP\n(draft 0.7, 27 Oktober 2026, sumber brief v1.15)
+
+Person(ppap, "Penyusun", "PPAP Engineer, PPAP Staff, Project Leader, atau Project Engineer. Membuat dan memperbarui PFD, PFMEA, dan CP, mengajukan perubahan, mencetak untuk tanda tangan, dan mencatat dokumen yang dikembalikan. (D-63, D-67, D-30)")
+Person(verifikator, "Verifikator perubahan", "Project Engineer atau Project Leader dari Project Group customer itu, atau APQP/PPAP Controller. Siapa yang memverifikasi tercatat. (D-51, D-54)")
+Person(dokkon, "Dokumen kontrol", "Saat ini PPAP Staff dan PPAP Engineer, nanti bisa ditambah DCC. Mencatat rilis setelah scan bertanda tangan diunggah. Mengelola register nomor dan salinan. (R-APR-02, D-60, D-68)")
+Person(admin, "Admin", "Akun admin terpisah, saat ini dipegang PPAP Staff dan ditautkan ke pemegangnya. Mengelola pengguna, hak akses, master data, Project Group, rute approval, dan pengaturan, serta melihat audit log. (R-SEC-10, R-SEC-13, D-72, D-74)")
+
+Person(pengecek, "Pengecek", "Satu orang mengisi slot Checked: Project Engineer atau Project Leader dari Project Group customer itu, bukan penyusunnya. (D-48, D-54, R-APR-12)")
+Person(approver, "Approver", "Berurutan: NPI Manager, QA QC Manager, lalu slot GM bila rute sampai GM. Slot GM saat ini diisi Advisor. Tanda tangan basah. (D-45, D-46, D-49, D-56)")
+Person(viewer, "Viewer", "Hanya baca: QA, QC, internal audit, approver, DCC, dan tim WI, sampai level GM. (D-41, D-70)")
+Person_Ext(customer, "Customer user", "Akun customer, terpisah dari akun internal. (D-18, R-POR-04)", $tags="masa_depan")
+
+System(sistem, "Sistem PFD, PFMEA, dan CP", "Aplikasi web untuk menyusun, merevisi, menomori, mencetak, dan mencatat rilis PFD, PFMEA, dan CP. Saat ini berjalan di localhost untuk demo. (D-36)")
+
+System_Ext(excel, "Microsoft Excel", "Di komputer pengguna. Sumber data yang ditempel, Excel lama untuk dibandingkan, dan tempat membuka hasil ekspor. (R-MIG-02, R-MIG-04, R-PRT-01)")
+System_Ext(apps, "Aplikasi internal lain", "Aplikasi perusahaan yang digabung lewat API, misalnya untuk dokumen PPAP lain seperti PSW. (brief bagian 16, D-61)", $tags="masa_depan")
+
+Rel(ppap, sistem, "Menyusun dan merevisi dokumen, mendaftarkan nomor, mengajukan perubahan, mencetak untuk tanda tangan")
+Rel(verifikator, sistem, "Menerima atau menolak permintaan perubahan dengan catatan wajib (R-CHG-02)")
+Rel(dokkon, sistem, "Mengunggah scan bertanda tangan, mencatat rilis, mengelola register nomor dan salinan")
+Rel(admin, sistem, "Mengatur master data, jabatan, Project Group, rute approval, dan layout")
+
+Rel_U(pengecek, sistem, "Menandatangani slot Checked di cetakan", $tags="kertas")
+Rel_U(approver, sistem, "Menandatangani slot Approved di cetakan secara berurutan; di sistem memakai akun Viewer (R-APR-13, D-70)", $tags="kertas")
+Rel_U(viewer, sistem, "Membuka halaman verifikasi dan dokumen rilis. QR opsional, saat ini mati (R-APR-03, D-62)")
+Rel_U(customer, sistem, "Melihat dan mengunduh dokumen rilis miliknya lewat portal (tahap 10)", $tags="masa_depan")
+
+Rel_R(excel, sistem, "Data ditempel, Excel lama diunggah untuk dibandingkan", "clipboard, file .xlsx")
+Rel_L(sistem, excel, "Hasil ekspor A3 dan A4", "file .xlsx")
+Rel_L(apps, sistem, "Membaca data rilis, mengirim usulan perubahan (tahap 9)", "HTTPS, JSON", $tags="masa_depan")
+
+Lay_R(ppap, verifikator)
+Lay_R(verifikator, dokkon)
+Lay_R(dokkon, admin)
+Lay_R(pengecek, approver)
+Lay_R(approver, viewer)
+Lay_R(viewer, customer)
+Lay_L(sistem, excel)
+Lay_R(sistem, apps)
+
+SHOW_LEGEND()
+@enduml

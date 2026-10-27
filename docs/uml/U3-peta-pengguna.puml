@@ -1,0 +1,91 @@
+' U3 · Peta pengguna dan hak akses (draft 0.7, 27 Oktober 2026, sumber brief v1.15)
+' Rincian dan matriks hak ada di U3-peta-pengguna.md (R-SEC-10, D-66). Nama orang tidak dicantumkan.
+' Render dari folder docs/uml:
+'   java -jar plantuml-1.2026.9.jar -tsvg -o export U3-peta-pengguna.puml
+
+@startuml U3-H-peta-pengguna
+left to right direction
+skinparam shadowing false
+skinparam defaultTextAlignment center
+skinparam ArrowColor #444444
+skinparam PackageBorderColor #1F4E79
+skinparam PackageFontStyle bold
+skinparam RectangleBorderColor #1F4E79
+skinparam RectangleBackgroundColor #FFFFFF
+
+title U3-H · Peta pengguna dan hak akses (baseline, disetujui pemilik 27 Oktober 2026)\n(draft 0.7, sumber brief v1.15)
+
+package "Jabatan" {
+  package "Departemen NPI" {
+    rectangle "PPAP Engineer" as jPPE
+    rectangle "PPAP Staff" as jPPS
+    rectangle "Project Leader\n(level Supervisor,\nper Project Group)" as jPL
+    rectangle "APQP/PPAP Controller\n(PPAP Supervisor)" as jAPC
+    rectangle "Project Engineer\n(level Leader,\nper Project Group)" as jPEng
+  }
+  package "Approver (tetap tanda tangan di kertas)" {
+    rectangle "NPI Manager, QA QC Manager,\nAdvisor (slot GM), Factory Manager" as jApp
+  }
+  package "Departemen lain dan tim WI" {
+    rectangle "QA, QC,\ninternal audit" as jQA
+    rectangle "DCC" as jDCC
+    rectangle "Tim WI dan\nECN & SAP Coordinator" as jWI
+  }
+  rectangle "Akun admin terpisah\n(akun kedua milik PPAP Staff)" as jAdmAcc
+}
+
+package "Peran di sistem" {
+  package "Buat / Edit" #FFF1D6 {
+    rectangle "Penyusun\nE-1 sampai E-5" as rPen
+    rectangle "Pengelola template\nE-6" as rTpl
+    rectangle "Dokumen kontrol\nE-7 sampai E-9" as rDok
+    rectangle "Petugas migrasi\nE-10" as rMig
+  }
+  package "Verifikasi" #DCEAF7 {
+    rectangle "Verifikator\nV-1" as rVer
+    rectangle "Pemeriksa PFMEA–CP\nV-2" as rCek
+  }
+  package "Lihat" #E3F1E3 {
+    rectangle "Viewer\nL-1 sampai L-3" as rView
+  }
+  package "Admin" #EEE3F5 {
+    rectangle "Admin\nA-1 sampai A-4" as rAdm
+  }
+}
+
+jPPE -[#C0392B,thickness=2]-> rPen
+jPPE -[#C0392B,thickness=2]-> rTpl
+jPPE -[#C0392B,thickness=2]-> rCek
+jPPE -[#C0392B,thickness=2]-> rDok
+jPPE -[#C0392B,thickness=2]-> rMig
+jPPS -[#D68910,thickness=2]-> rPen
+jPPS -[#D68910,thickness=2]-> rDok
+jPPS -[#D68910,thickness=2]-> rMig
+jAdmAcc -[#D68910,thickness=2]-> rAdm
+jPL -[#1F618D,thickness=2]-> rPen
+jPL -[#1F618D,thickness=2]-> rVer
+jAPC -[#117A65,thickness=2]-> rVer
+jPEng -[#7D3C98,thickness=2]-> rPen
+jPEng -[#7D3C98,thickness=2]-> rVer
+jApp -[#555555,thickness=2]-> rView
+jWI -[#555555,thickness=2]-> rView
+jQA -[#555555,thickness=2]-> rView
+jDCC -[#555555,thickness=2]-> rView
+jDCC .[#555555,thickness=2].> rDok
+
+legend right
+  Garis penuh: peran awal saat ini. Warna garis mengikuti jabatan asalnya.
+  Garis putus-putus DCC ke Dokumen kontrol: nanti, bila admin
+  memberi peran itu (D-60, D-66).
+  Akun admin terpisah dari akun kerja PPAP Staff dan ditautkan
+  ke pemegangnya (D-72, D-74, R-SEC-13).
+  Project Leader dan Project Engineer: hanya customer di
+  Project Group sendiri (D-71). Project Leader GR3 merangkap
+  APQP/PPAP Controller.
+  Pencatat rilis selalu berbeda dari penyusun: PPAP Staff
+  dan PPAP Engineer saling mencatat (D-68).
+  Semua pengguna yang login punya hak dasar Lihat.
+  Admin bisa menambah peran atau mengubah isi peran;
+  aturan R-SEC-11 tidak bisa diubah.
+endlegend
+@enduml

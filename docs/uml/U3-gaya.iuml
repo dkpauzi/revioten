@@ -1,0 +1,24 @@
+' Gaya bersama untuk diagram use case U3 (paket UML draft 0.3).
+' Status use case mengikuti U3-daftar-use-case.md:
+'   tanpa stereotype = MVP, <<usulan>> = dari aturan [PROPOSED], <<opsional>>, <<saklar>> = dibangun tetapi dimatikan,
+'   <<masa depan>> = latihan tahap 9 dan 10 (R-UML-06).
+skinparam shadowing false
+skinparam ArrowColor #444444
+skinparam ActorBorderColor #1F4E79
+skinparam ActorBackgroundColor #DCE8F5
+skinparam RectangleBorderColor #1F4E79
+skinparam RectangleFontStyle bold
+skinparam UsecaseBorderColor #1F4E79
+skinparam UsecaseBackgroundColor #FFFFFF
+skinparam UsecaseBackgroundColor<<usulan>> #FFF6BF
+skinparam UsecaseBorderColor<<usulan>> #B08900
+skinparam UsecaseBackgroundColor<<opsional>> #E8F4E8
+skinparam UsecaseBorderColor<<opsional>> #3C763D
+skinparam UsecaseBackgroundColor<<saklar>> #F2E6F7
+skinparam UsecaseBorderColor<<saklar>> #6F42C1
+skinparam UsecaseBackgroundColor<<masa depan>> #EEEEEE
+skinparam UsecaseBorderColor<<masa depan>> #8C8C8C
+skinparam UsecaseFontColor<<masa depan>> #555555
+skinparam ActorBackgroundColor<<masa depan>> #EEEEEE
+skinparam ActorBorderColor<<masa depan>> #8C8C8C
+left to right direction
