@@ -6,6 +6,7 @@ Hasil cek ulang M0.1 terhadap R-VER-01 sampai R-VER-05 (D-44), untuk semua item 
 - **Versi yang dipakai** adalah versi stabil atau LTS terbaru (keputusan pemilik E-13, 28 Oktober 2026), dengan masa tunggu untuk dua kasus khusus (E-14, lihat bagian "Aturan yang berlaku"). Brief bagian 7 diperbarui lewat sesi desain.
 - **Tanggal rilis** memakai UTC dari sumber yang disebut. Tanggal di brief bisa berbeda satu hari karena zona waktu (WIB = UTC+7).
 - Versi dikunci saat paketnya pertama kali dipasang: modul Go di `go.mod` dan `go.sum` (mulai M0.2), paket npm di `package.json` dan `package-lock.json` (mulai M0.4), dan image Docker di `compose.yaml` (M0.1).
+- Alat generate Go (oapi-codegen dan sqlc, mulai M0.5) tidak masuk `go.mod`. Versinya dikunci di baris `//go:generate go run <modul>@<versi>` (`internal/server/generate.go` dan `internal/db/generate.go`), dan isi unduhannya diperiksa lewat checksum database Go (sum.golang.org).
 
 ## Aturan yang berlaku
 
@@ -17,7 +18,7 @@ Hasil cek ulang M0.1 terhadap R-VER-01 sampai R-VER-05 (D-44), untuk semua item 
 | Terbaru | Pakai versi stabil atau LTS terbaru, termasuk patch terbaru. | R-VER-05, E-13 |
 | Masa tunggu 14 hari | Major baru biasanya dipakai setelah ada patch. Dua kasus khusus mendapat masa tunggu: (1) line yang baru punya satu rilis boleh dipakai bila tidak ada line lain yang memenuhi peer dependency, dan rilisnya sudah berumur minimal 14 hari; pengecualiannya dicatat di tabel ini, dan begitu patch keluar, pindah ke patch terbaru. (2) Paket 0.x memakai versi terbaru yang sudah berumur minimal 14 hari saat pertama kali dipasang. | R-VER-04, E-14 |
 | Kapan dikunci | Versi dikunci saat paketnya pertama kali dipasang, dan dicek ulang di milestone itu. | E-13 |
-| Dependensi tidak langsung | Modul yang ditarik oleh paket lain (tanda `// indirect` di `go.mod`) mengikuti pilihan Go (minimal version selection) dan tidak dikunci satu per satu. Contoh: testcontainers-go menarik golang.org/x/crypto v0.54.0. Saat x/crypto dipakai langsung di M1.1, versinya naik ke versi yang dipilih (v0.58.0 atau lebih baru). | Catatan M0.3 |
+| Dependensi tidak langsung | Modul yang ditarik oleh paket lain (tanda `// indirect` di `go.mod`) mengikuti pilihan Go (minimal version selection) dan tidak dikunci satu per satu. Contoh: testcontainers-go menarik golang.org/x/crypto v0.54.0. Di M0.5, goose v3.29.0 menaikkannya ke v0.58.0, versi yang memang dipilih untuk argon2id di M1.1. | Catatan M0.3, M0.5 |
 
 ## Sumber dan cara mengecek
 
@@ -49,13 +50,14 @@ Halaman rilis resmi go.dev dan postgresql.org belum dicek. Silakan buka dari kom
 | Komponen | Versi yang dipakai | Tanggal rilis | Dicek | Sumber | Catatan |
 |---|---|---|---|---|---|
 | pgx | v5.11.0 | 2026-09-07 | 2026-10-28 | proxy.golang.org | Terbaru. Dikunci di `go.mod` sejak M0.3. |
-| sqlc | v1.31.1 | 2026-04-22 | 2026-10-27 | proxy.golang.org | Terbaru. |
-| goose | v3.29.0 | 2026-10-11 | 2026-10-27 | proxy.golang.org | Terbaru. |
+| sqlc | v1.31.1 | 2026-04-22 | 2026-10-28 | proxy.golang.org | Terbaru. Dipakai sejak M0.5 lewat `go run github.com/sqlc-dev/sqlc/cmd/sqlc@v1.31.1` (tidak masuk `go.mod`). Di Linux dengan cgo, parser SQL memakai pg_query_go (C). Di Windows, atau bila cgo mati, sqlc memakai parser WebAssembly (wasilibs/go-pgquery), jadi tidak butuh compiler C. Pertama kali dijalankan butuh waktu kompilasi (sekitar 30 detik sampai 1 menit), lalu tersimpan di cache. |
+| goose | v3.29.0 | 2026-10-11 | 2026-10-28 | proxy.golang.org | Terbaru. Dipakai sebagai library sejak M0.5 (Provider API, migrasi di-embed). Dikunci di `go.mod`. Menaikkan beberapa modul tidak langsung lewat MVS, antara lain golang.org/x/crypto ke v0.58.0 dan go.opentelemetry.io/otel ke v1.47.0. |
 | River | v0.49.0 | 2026-10-05 | 2026-10-28 | proxy.golang.org | Paket 0.x, ikut masa tunggu 14 hari (E-14). v0.50.0 (rilis 2026-10-27) baru memenuhi syarat mulai 2026-11-10. River merilis minor tanpa patch (v0.45.0 sampai v0.50.0 semuanya .0). Versinya dikunci saat pertama kali dipakai. |
 | excelize | v2.11.0 | 2026-07-06 | 2026-10-27 | proxy.golang.org | Terbaru. Brief menulis 2026-07-07, selisih zona waktu. |
 | testcontainers-go | v0.44.0 | 2026-08-07 | 2026-10-28 | proxy.golang.org | Terbaru. Paket 0.x, lolos masa tunggu 14 hari (E-14). Dikunci di `go.mod` sejak M0.3, bersama modul `modules/postgres` v0.44.0 (rilis yang sama). Saat test berjalan, ia memakai image `testcontainers/ryuk:0.14.0` (bawaan v0.44.0) untuk membuang container test, dan image `postgres:18.6` yang sama dengan `compose.yaml`. |
 | golang.org/x/crypto (argon2id) | v0.58.0 | 2026-10-09 | 2026-10-27 | proxy.golang.org | Terbaru. |
-| oapi-codegen (bila dipilih) | v2.8.1 | 2026-10-24 | 2026-10-28 | proxy.golang.org | Diperbarui dari v2.8.0 (E-13). README v2.8.1 masih menyebut dukungan OpenAPI 3.1 sebagai "initial", jadi kontrak tetap 3.0.4 (D-38). |
+| oapi-codegen | v2.8.1 | 2026-10-24 | 2026-10-28 | proxy.golang.org | Dipakai sejak M0.5 lewat `go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.8.1` (tidak masuk `go.mod`), dengan `std-http-server` dan `strict-server`. Line v2.8 punya dua rilis (v2.8.0 dan v2.8.1), jadi tidak termasuk kasus E-14. README v2.8.1 masih menyebut dukungan OpenAPI 3.1 sebagai "initial", jadi kontrak tetap 3.0.4 (D-38). |
+| oapi-codegen runtime (`github.com/oapi-codegen/runtime`) | v1.8.0 | 2026-10-23 | 2026-10-28 | proxy.golang.org | Terbaru di line v1 (R-VER-04 menghitung line per major). Dipakai kode hasil generate untuk membaca body JSON. Dikunci di `go.mod` sejak M0.5. |
 
 ## Frontend (dipakai mulai M0.4)
 
@@ -63,7 +65,9 @@ Semua versi di bawah adalah dist-tag `latest`, kecuali TypeScript (lihat catatan
 
 Sejak M0.4, paket yang dipakai ditulis dengan versi tepat di `web/package.json` (tanpa `^`) dan dikunci di `web/package-lock.json`. `web/.npmrc` berisi `engine-strict=true`, dan `engines` di `web/package.json` meminta Node 24 (>=24.22.1 <25). Dicek ulang 28 Oktober 2026 tanpa perubahan.
 
-Hasil `npm audit` (28 Oktober 2026): 4 temuan tingkat rendah, semuanya berasal dari satu paket tidak langsung, `deepmerge` (GHSA-gcqx-w48m-w2h4, prototype poisoning di `mergeObject`). Paket ini ditarik `@sveltejs/vite-plugin-svelte` dan hanya dipakai saat build, tidak ikut ke browser. Saran `npm audit fix --force` (menurunkan SvelteKit ke 0.0.30) tidak diikuti. Dicek ulang setiap kali paket frontend diperbarui.
+Hasil `npm audit` (28 Oktober 2026, M0.4): 4 temuan tingkat rendah, semuanya berasal dari satu paket tidak langsung, `deepmerge` (GHSA-gcqx-w48m-w2h4, prototype poisoning di `mergeObject`). Paket ini ditarik `@sveltejs/vite-plugin-svelte` dan hanya dipakai saat build, tidak ikut ke browser. Saran `npm audit fix --force` (menurunkan SvelteKit ke 0.0.30) tidak diikuti. Dicek ulang setiap kali paket frontend diperbarui.
+
+Hasil `npm audit` setelah M0.5: 8 temuan (4 rendah, 4 tinggi). Yang rendah masih `deepmerge` di atas. Yang tinggi berasal dari `js-yaml` 4.2.0 (GHSA-52cp-r559-cp3m, GHSA-5p4m-2wfm-xmqj, GHSA-2883-xcg3-v3hh: YAML jahat bisa membuat CPU bekerja kuadratik). Versi itu dikunci tepat oleh `@hey-api/json-schema-ref-parser` 1.4.4, bagian dari `@hey-api/openapi-ts` 0.99.0. Paket ini hanya dipakai saat generate, untuk membaca kontrak kita sendiri (`api/openapi.yaml`), dan tidak ikut ke browser, jadi risikonya rendah. Saran `npm audit fix --force` (menurunkan ke 0.97.0) tidak diikuti.
 
 | Komponen | Versi yang dipakai | Tanggal rilis | Dicek | Sumber | Catatan |
 |---|---|---|---|---|---|
@@ -75,14 +79,15 @@ Hasil `npm audit` (28 Oktober 2026): 4 temuan tingkat rendah, semuanya berasal d
 | TypeScript | 6.0.3 | 2026-04-16 | 2026-10-27 | npm | Versi terbaru di line 6. dist-tag `latest` sudah 7.0.2, tapi SvelteKit 3.1.0 (^6.0.0) dan svelte-check 4.7.7 (^5 atau ^6) belum menerima 7 (R-VER-03). |
 | svelte-check | 4.7.7 | 2026-10-16 | 2026-10-27 | npm | Terbaru. Peer typescript ^5.0.0 atau ^6.0.0. |
 | Vitest | 5.0.5 | 2026-10-15 | 2026-10-27 | npm | Terbaru. Peer vite ^8 cocok. Engines: Node ^22.12, ^24, atau >=26. |
-| Playwright (`@playwright/test`) | 1.64.1 | 2026-10-14 | 2026-10-27 | npm | Terbaru. |
+| Playwright (`@playwright/test`) | 1.64.1 | 2026-10-14 | 2026-10-28 | npm | Terbaru. Dipasang sejak M0.5 untuk test E2E. Butuh Chromium revisi 1248 (Chrome for Testing 156.0.8078.4): di komputer pemilik pasang sekali dengan `npx --prefix web playwright install chromium`. Container cloud hanya punya Chromium revisi 1243 di `/opt/pw-browsers`, jadi di cloud test memakai variabel `PLAYWRIGHT_CHROMIUM_EXECUTABLE=/opt/pw-browsers/chromium`. |
+| `@types/node` | 24.19.2 | 2026-10-09 | 2026-10-28 | npm | Dipasang sejak M0.5 supaya file Node (konfigurasi Playwright, `web/e2e/server.mjs`) lolos svelte-check. Mengikuti line Node yang dipakai (24), bukan dist-tag `latest` (26.6.5, untuk Node 26). Tidak punya peer dependency. |
 | tabulator-tables | 6.7.1 | 2026-10-22 | 2026-10-27 | npm | Terbaru. Dipakai mulai M4.2. |
 | `@xyflow/svelte` (Svelte Flow) | 1.7.0 | 2026-09-24 | 2026-10-27 | npm | Terbaru. Peer svelte ^5.25.0. Dipakai di M4.10 (opsional). |
 | elkjs | 0.12.0 | 2026-07-17 | 2026-10-27 | npm | Terbaru. |
-| openapi-typescript | 7.13.0 | 2026-02-11 | 2026-10-27 | npm | Terbaru, tapi peer `typescript ^5.x` masih bentrok dengan TypeScript 6 (R-VER-03). Q-47 tetap terbuka sampai M0.5. |
-| openapi-fetch | 0.17.0 | 2026-02-11 | 2026-10-27 | npm | Terbaru. |
+| openapi-typescript | 7.13.0 | 2026-02-11 | 2026-10-28 | npm | Tidak dipakai. Uji M0.5: `npm install` gagal dengan ERESOLVE karena peer `typescript ^5.x` bentrok dengan TypeScript 6.0.3 (R-VER-03). Lihat Q-47 di `docs/evaluasi-desain.md`. |
+| openapi-fetch | 0.17.0 | 2026-02-11 | 2026-10-27 | npm | Tidak dipakai (pasangan openapi-typescript). |
 | `sv` (Svelte CLI) | 1.1.1 (alat bantu) | 2026-10-06 | 2026-10-28 | npm, tag GitHub sveltejs/cli | Tidak dipasang di proyek. Dipakai sekali di luar repo (`npx sv@1.1.1 create --template minimal --types ts`) sebagai acuan struktur proyek SvelteKit 3 di M0.4. Add-on Vitest dari `sv` 1.1.1 masih memasang Vitest 4, jadi proyek ini memasang Vitest 5.0.5 sendiri. |
-| `@hey-api/openapi-ts` (calon Q-47) | belum dipilih | 2026-06-22 (0.99.0) | 2026-10-27 | npm | Terbaru 0.99.0. Peer typescript >=5.5.3 atau >=6.0.0, engines Node >=22.18. Paket 0.x, ikut masa tunggu 14 hari (E-14); 0.99.0 sudah memenuhi. |
+| `@hey-api/openapi-ts` | 0.99.0 | 2026-06-22 | 2026-10-28 | npm | Dipakai sejak M0.5 untuk tipe TypeScript dari kontrak (Q-47, dipakai sementara sampai pemilik memutuskan). Hanya plugin `@hey-api/typescript`. Peer typescript >=5.5.3 atau >=6.0.0, cocok dengan 6.0.3. Engines Node >=22.18. Paket 0.x, lolos masa tunggu 14 hari (E-14). README-nya meminta versi dikunci tepat, karena setiap minor 0.x bisa membawa perubahan yang tidak kompatibel. Membaca `tsconfig.json`, jadi `svelte-kit sync` harus jalan lebih dulu (sudah ada di skrip `gen:api`). |
 
 ## Alat desain dan pendukung
 

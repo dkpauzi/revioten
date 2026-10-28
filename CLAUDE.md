@@ -121,18 +121,20 @@ Kode sekarang punya dua tujuan: belajar, dan menguji apakah desain (brief, UML, 
 | `internal/db/` | Koneksi pgx, lalu kode hasil sqlc (tidak diedit tangan) | M0.3 |
 | `sql/migrations/` | Migrasi goose | M0.5 |
 | `sql/queries/` | Query SQL untuk sqlc | M0.5 |
+| `internal/db/dbtest/` | **(usulan M0.5)** Bantuan test: PostgreSQL di container dan satu database baru per test. Hanya dipakai file `_test.go` | M0.5 |
 | `api/openapi.yaml` | Kontrak OpenAPI 3.0.4 (D-38) | M0.5 |
 | `web/` | SvelteKit. Hasil build (`web/build/app`) di-embed ke binary Go lewat `web/web.go`; `web/build/.gitkeep` di-commit supaya `go build` tetap jalan sebelum frontend di-build | M0.4 |
+| `web/e2e/` | **(usulan M0.5)** Test E2E Playwright dan skrip server E2E | M0.5 |
 | `bin/` | Hasil `go build`, tidak di-commit | M0.2 |
 | `docs/` | Brief, milestone, UML, catatan milestone, evaluasi desain, versi | Sesi 1 |
-| Root | `go.mod`, `compose.yaml`, `.env.example`, `.gitignore`, `.gitattributes` | M0.1, M0.2 |
+| Root | `go.mod`, `compose.yaml`, `.env.example`, `.gitignore`, `.gitattributes`, `sqlc.yaml` (M0.5) | M0.1, M0.2 |
 - **Perintah:** hanya perintah yang sudah terbukti jalan (menjalankan database, test, build). Lihat bagian "Perintah yang sudah terbukti" di bawah.
 - **Commit:** kecil, jelas, dengan ID di pesannya, misalnya `M0.2: endpoint /health beserta test`.
 - **Branch:** commit langsung di `main` lalu push ke `main` (pernyataan pemilik, 27 Oktober 2026). Ini menggantikan usulan satu branch per milestone. Jangan force-push.
 
 ### Perintah yang sudah terbukti
 
-Dijalankan dari root repo. Terbukti di container cloud Linux (bash) pada M0.1 (27 Oktober 2026), M0.2, M0.3, dan M0.4 (28 Oktober 2026). Docker Compose membaca `.env` sendiri, dan perintah `go` sama di PowerShell Windows. Catatan dalam kurung untuk Windows belum dicoba di komputer pemilik.
+Dijalankan dari root repo. Terbukti di container cloud Linux (bash) pada M0.1 (27 Oktober 2026), M0.2, M0.3, M0.4, dan M0.5 (28 Oktober 2026). Docker Compose membaca `.env` sendiri, dan perintah `go` sama di PowerShell Windows. Catatan dalam kurung untuk Windows belum dicoba di komputer pemilik.
 
 | Tujuan | Perintah |
 |---|---|
@@ -149,14 +151,19 @@ Dijalankan dari root repo. Terbukti di container cloud Linux (bash) pada M0.1 (2
 | Jalankan semua test Go | `go test ./...` (rinci per kasus: `go test -v ./...`). Sejak M0.3 butuh Docker yang sedang berjalan, karena test database menyalakan container PostgreSQL 18.6 sendiri lewat testcontainers-go |
 | Test tanpa Docker | `go test -short ./...` (test database dilewati, test lain tetap berjalan) |
 | Periksa kode Go | `go vet ./...`, lalu `gofmt -l .` (tanpa keluaran berarti sudah rapi) |
-| Jalankan server | `go run ./cmd/revioten`, atau di port lain: `go run ./cmd/revioten -addr 127.0.0.1:8081`. Hentikan dengan Ctrl+C |
+| Jalankan server | Sejak M0.5 butuh PostgreSQL yang menyala (`docker compose up -d`) dan file `.env` yang terisi. Lalu `go run ./cmd/revioten`, atau di port lain: `go run ./cmd/revioten -addr 127.0.0.1:8081`. Migrasi database berjalan otomatis saat server mulai. Hentikan dengan Ctrl+C |
 | Coba endpoint /health | `curl -i http://127.0.0.1:8080/health` (Windows: `curl.exe -i ...` atau `Invoke-RestMethod http://127.0.0.1:8080/health`) |
+| Coba API customer | `curl -i http://127.0.0.1:8080/api/v1/customers`, lalu `curl -i -X POST -H 'Content-Type: application/json' -d '{"code":"ab","name":"Example Customer"}' http://127.0.0.1:8080/api/v1/customers` (Windows: `Invoke-RestMethod -Method Post -ContentType 'application/json' -Body '{"code":"ab","name":"Example Customer"}' http://127.0.0.1:8080/api/v1/customers`) |
+| Buat ulang kode Go dari kontrak dan SQL | `go generate ./...` (oapi-codegen dan sqlc dijalankan lewat `go run` dengan versi terkunci; pertama kali butuh internet dan waktu kompilasi). Lalu `go build ./...` dan `go test ./...` |
+| Buat ulang tipe TypeScript dari kontrak | `npm --prefix web run gen:api` |
 | Build binary | `go build -o bin/revioten ./cmd/revioten` (Windows: `-o bin/revioten.exe`) |
 | Pasang paket frontend (sekali, dan setiap `web/package-lock.json` berubah) | `npm --prefix web ci` (butuh Node 24.22.1) |
 | Periksa tipe frontend | `npm --prefix web run check` |
 | Test frontend (Vitest) | `npm --prefix web test` |
 | Binary lengkap dengan tampilan web | `npm --prefix web run build`, lalu `go build -o bin/revioten ./cmd/revioten` |
 | Development tampilan web | Jalankan server Go (`go run ./cmd/revioten`), lalu di jendela lain `npm --prefix web run dev` dan buka http://localhost:5173. Vite meneruskan `/health` dan `/api` ke server Go |
+| Pasang browser untuk test E2E (sekali) | `npm --prefix web exec -- playwright install chromium` (belum dicoba di komputer pemilik; di container cloud tidak dipakai, lihat baris berikut) |
+| Test E2E (Playwright) | `docker compose up -d` dulu, lalu `npm --prefix web run test:e2e`. Skrip ini membangun tampilan web, membuat ulang database `revioten_e2e` di container, menjalankan server di port 8090, lalu membuka browser. Di container cloud: `PLAYWRIGHT_CHROMIUM_EXECUTABLE=/opt/pw-browsers/chromium npm --prefix web run test:e2e` |
 
 Jangan menjalankan `docker compose down -v` kecuali memang ingin menghapus seluruh isi database, karena `-v` ikut menghapus volume `revioten_pgdata`.
 

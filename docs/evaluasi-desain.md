@@ -41,6 +41,8 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-17 | Kedudukan /health terhadap /api/v1 dan kontrak OpenAPI | Ambigu | M0.2, M0.4, M0.5 | Tidak (perlu sebelum M0.5) | Diputuskan, D menunggu brief |
 | E-18 | Belum ada aturan tentang rahasia di log dan pesan error | Celah | M0.3, M0.5, M1.1, M1.3 | Tidak | Diputuskan, D menunggu brief |
 | E-19 | Glosarium U1 belum punya istilah bahasa Inggris untuk layar | Celah | M0.4, M0.5, Tahap 1 | Tidak | Terbuka |
+| E-20 | Konvensi API R-API-13 merujuk tabel kode error yang tidak ada di repo | Celah | M0.5, M9.3 | Tidak | Terbuka |
+| E-21 | Field dan batas master customer belum ditentukan | Celah | M0.5, M1.4 | Tidak (perlu sebelum M1.4) | Terbuka |
 
 ## Rincian
 
@@ -348,6 +350,40 @@ Salin blok ini untuk setiap temuan baru.
 - **Status:** Terbuka
 - **Keputusan pemilik:**
 
+### E-20 · Konvensi API R-API-13 merujuk tabel kode error yang tidak ada di repo
+
+- **Tanggal dan milestone:** 28 Oktober 2026, M0.5. Berdampak ke semua endpoint berikutnya, dan ke API integrasi (M9.3).
+- **Jenis:** Celah
+- **Rujukan:** R-API-13 ([PROPOSED]), R-API-18, R-API-02, brief bagian 13 (spec lama `pfmea-system-phase1-spec-v2`), E-17, E-18.
+- **Temuan:** R-API-13 meminta satu format error berisi code, message, details, dan request ID, dan meminta tabel kode error dari spec lama dipakai ulang. Spec lama tidak ada di repo ini, jadi tabelnya tidak bisa dipakai. R-API-13 juga belum menyebut: status HTTP untuk input yang salah (400 atau 422), bentuk `details`, bentuk `X-Request-Id` yang diterima dari klien, gaya nama field JSON, dan ukuran body permintaan paling besar.
+- **Dampak bila dibiarkan:** kode error dan bentuknya ditetapkan oleh kode, bukan oleh desain. Bila tabel spec lama ternyata berbeda, klien (layar web dan nanti aplikasi lain) harus diubah.
+- **Opsi:** (a) Pemilik menyalin tabel kode error spec lama ke brief, lalu kontrak disesuaikan. (b) Tabel yang dibuat di M0.5 dijadikan baseline dan dicatat di brief. (c) Pakai standar RFC 9457 (Problem Details, `application/problem+json`). Bentuknya berbeda dari yang diminta R-API-13 (code, message, details, request ID), jadi R-API-13 harus diubah.
+- **Rekomendasi Claude Code (usulan):** (a) bila tabel spec lama masih ada dan masih sesuai. Bila tidak ada, pakai (b).
+- **Asumsi sementara di kode (ASUMSI E-20):** dipakai di `api/openapi.yaml` dan `internal/server`:
+  - Kode error dan statusnya: `invalid_request` 400 (body bukan JSON) atau 413 (body lebih dari 1 MiB); `validation_failed` 422; `conflict` 409; `not_found` 404; `method_not_allowed` 405 dengan header Allow; `internal_error` 500.
+  - `details` berisi daftar `{field, code, message}`. Kode detail saat ini: `required`, `invalid_format`, `too_long`, `reserved`, `taken`. Layar menerjemahkan dari `field` dan `code`, bukan dari `message`.
+  - `X-Request-Id` dari klien diterima bila panjangnya 1 sampai 64 karakter dan hanya berisi huruf, angka, titik, garis bawah, dan tanda hubung. Selain itu server membuat ID sendiri (26 karakter acak).
+  - Nama field JSON memakai snake_case, mengikuti contoh di brief (`updated_since`, `on_behalf_of`).
+  - Teks `message` dan `description` di kontrak berbahasa Inggris, sama dengan layar (Q-14).
+  - Body permintaan paling besar 1 MiB. Unggahan file nanti punya batas sendiri.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-21 · Field dan batas master customer belum ditentukan
+
+- **Tanggal dan milestone:** 28 Oktober 2026, M0.5. Berdampak ke M1.4.
+- **Jenis:** Celah
+- **Rujukan:** brief bagian 4 (model data: customer punya kode dan satu Project Group), D-54, E-09, E-11, E-12, U1 (Kode customer).
+- **Temuan:** Brief hanya menyebut bahwa customer punya kode (misalnya KT) dan masuk satu Project Group. Belum ada aturan untuk nama customer: wajib atau tidak, panjang paling banyak, boleh ganda atau tidak, dan apakah ada nama pendek di samping nama resmi. Field lain juga belum disebut, misalnya status aktif (E-09: customer tidak dihapus, hanya dinonaktifkan).
+- **Dampak bila dibiarkan:** batas yang dipilih kode bisa terlalu sempit untuk nama resmi customer, atau ada field yang dibutuhkan cetakan dan baru ketahuan di Tahap 6.
+- **Opsi:** (a) Pakai asumsi M0.5 di bawah, lalu tetapkan daftar field lengkap sebelum M1.4. (b) Pemilik menetapkan daftar field dan batasnya sekarang, dari data customer yang ada (misalnya daftar kode customer di WI SW-ZZ-000).
+- **Rekomendasi Claude Code (usulan):** (a). Field lain ditambah lewat migrasi baru di M1.4 tanpa mengubah API yang sudah ada (R-API-15).
+- **Asumsi sementara di kode (ASUMSI E-21):** nama wajib diisi, spasi di tepi dibuang, paling banyak 200 karakter, satu baris tanpa karakter kontrol, dan boleh sama dengan nama customer lain. Kode unik, tepat dua huruf A sampai Z, dan ZZ ditolak (ASUMSI E-12: ZZ untuk dokumen General/Common). Aturan ini dijaga di `internal/customer` dan oleh batasan tabel `customers`.
+- **Menghambat milestone?** Tidak (perlu sebelum M1.4)
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
 ## Keputusan pemilik atas pertanyaan terbuka brief (bagian 12)
 
 Bagian ini bukan temuan E. Isinya jawaban pemilik atas item Q di brief bagian 12, untuk dibawa ke sesi desain.
@@ -355,6 +391,12 @@ Bagian ini bukan temuan E. Isinya jawaban pemilik atas item Q di brief bagian 12
 | Q | Keputusan | Tanggal | Catatan |
 |---|---|---|---|
 | Q-14 | Bahasa layar: Inggris untuk saat ini. | 28 Oktober 2026 | Disiapkan untuk pindah ke bahasa Indonesia: semua teks layar ada di katalog `web/src/lib/i18n/en.ts` dan dipanggil lewat `t(kunci)`. Bahasa Indonesia cukup ditambah sebagai `id.ts` dengan kunci yang sama (lihat catatan M0.4). Istilah Inggrisnya: E-19. |
+
+### Hasil uji yang menunggu keputusan pemilik
+
+| Q | Hasil uji | Tanggal | Dipakai sementara |
+|---|---|---|---|
+| Q-47 | openapi-typescript 7.13.0 (rilis 11 Februari 2026) gagal dipasang: `npm install` berhenti dengan ERESOLVE karena peer `typescript ^5.x` tidak cocok dengan TypeScript 6.0.3, jadi melanggar R-VER-03. @hey-api/openapi-ts 0.99.0 (rilis 22 Juni 2026, 0.x tapi sudah lebih dari 14 hari, E-14) terpasang tanpa konflik, karena peer-nya `typescript >=5.5.3 \|\| >=6.0.0`. Dengan plugin `@hey-api/typescript` saja, hasilnya hanya dua file tipe (`web/src/lib/api/gen/`). Pemanggilan fetch ditulis tangan di `web/src/lib/api/client.ts`. Catatan npm audit: js-yaml 4.2.0 (tingkat high, CPU kuadratik untuk YAML jahat) terbawa @hey-api/json-schema-ref-parser 1.4.4 yang mengunci versi itu. Hanya dipakai saat generate untuk membaca kontrak kita sendiri, jadi risikonya rendah. `npm audit fix --force` akan menurunkan ke 0.97.0, jadi tidak dipakai. | 28 Oktober 2026 | @hey-api/openapi-ts 0.99.0, plugin tipe saja |
 
 ## Bahan dari dokumen referensi (untuk brief bagian 21)
 
