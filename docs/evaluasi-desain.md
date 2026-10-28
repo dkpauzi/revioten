@@ -33,10 +33,11 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-09 | Aturan kode customer belum lengkap | Celah | M0.5, M1.4 | Tidak | Diputuskan, D menunggu brief |
 | E-10 | Siapa yang mengelola group model dan model | Kontradiksi | M1.2, M1.4 | Tidak | Diputuskan, D menunggu brief |
 | E-11 | Kode customer pernah diganti (WI SW-ZZ-000) | Kontradiksi | M1.4, M2.1, M2.5 | Tidak (perlu sebelum M1.4) | Diputuskan, D menunggu brief |
-| E-12 | Struktur nomor di WI SW-ZZ-000 lebih rinci daripada pola di brief | Celah | M2.1, M2.4, M2.5 | Tidak (perlu sebelum M2.1) | Diputuskan, 2 rincian terbuka |
+| E-12 | Struktur nomor di WI SW-ZZ-000 lebih rinci daripada pola di brief | Celah | M2.1, M2.4, M2.5 | Tidak (perlu sebelum M2.1) | Diputuskan, D menunggu brief |
 | E-13 | Versi terbaru berbeda dari brief bagian 7 | Kontradiksi | M0.1 | Tidak | Diputuskan, D menunggu brief |
 | E-14 | R-VER-04 belum menjawab line tunggal dan versi 0.x | Ambigu | M0.1, M0.4 | Tidak untuk M0.1, ya untuk M0.4 | Diputuskan, D menunggu brief |
 | E-15 | Belum ada langkah desain layar (wireframe) di milestone dan paket UML | Celah | Tahap 4, paket UML | Tidak (perlu sebelum Tahap 4) | Diputuskan, D menunggu brief |
+| E-16 | Memindah dokumen aktif ke nomor baru setelah kode customer berganti | Celah | M2.1, M2.3, M2.5 | Tidak (perlu sebelum M2.1) | Terbuka |
 
 ## Rincian
 
@@ -210,7 +211,7 @@ Salin blok ini untuk setiap temuan baru.
 - **Asumsi sementara di kode:** untuk M0.5, kode customer disimpan di tabel customer dan belum bisa diubah lewat API. Ditandai `// ASUMSI E-11`.
 - **Menghambat milestone?** Tidak untuk M0.1 dan M0.5. Perlu diputuskan sebelum M1.4.
 - **Status:** Diputuskan pemilik 28 Oktober 2026 (nomor D menunggu brief)
-- **Keputusan pemilik:** Kode customer dibuat sebagai master data yang bisa diubah nanti ("E-11 buatkan master data nya, sehingga kode customer bisa diubah nantinya", 28 Oktober 2026). Ini mengikuti opsi (a): kode lama disimpan sebagai riwayat dengan tanggal berlaku, nomor lama tetap teks dengan kode lama (R-NUM-02), dan nomor baru memakai kode yang berlaku. Urutan pembangunan: M0.5 menyimpan kode customer, lalu mengubah kode beserta riwayatnya dibangun di M1.4. Masih terbuka dan ditanyakan di M2.1: setelah kode diganti, apakah nomor berjalan melanjutkan atau mulai dari awal.
+- **Keputusan pemilik:** Kode customer dibuat sebagai master data yang bisa diubah nanti ("E-11 buatkan master data nya, sehingga kode customer bisa diubah nantinya", 28 Oktober 2026). Ini mengikuti opsi (a): kode lama disimpan sebagai riwayat dengan tanggal berlaku, nomor lama tetap teks dengan kode lama (R-NUM-02), dan nomor baru memakai kode yang berlaku. Urutan pembangunan: M0.5 menyimpan kode customer, lalu mengubah kode beserta riwayatnya dibangun di M1.4. Tambahan 28 Oktober 2026: setelah kode diganti, nomor berjalan untuk kode baru mulai lagi dari awal, dan dokumen model yang masih aktif dipindah secara manual ke nomor baru. Ini mengikuti pengalaman perusahaan saat struktur penomoran pernah berubah (pernyataan pemilik). Rincian pemindahan ke nomor baru dicatat di E-16.
 
 ### E-12 · Struktur nomor di WI SW-ZZ-000 lebih rinci daripada pola di brief
 
@@ -227,10 +228,10 @@ Salin blok ini untuk setiap temuan baru.
 - **Dampak bila dibiarkan:** token pola nomor di M2.1 dan test "SC-KT-001" bisa terlalu sederhana. Nomor di atas 999 dan kode HSE tidak tertangani, dan impor nomor lama (R-NUM-06) bisa salah membaca nomor.
 - **Opsi:** (a) Pola nomor di M2.1 disusun dari token terpisah: kode pabrik, jenis dokumen, kode customer (panjang bervariasi), nomor berjalan dengan aturan di atas 999, dan revisi. Isi awalnya diambil dari WI SW-ZZ-000. (b) Tetap memakai pola sederhana {awalan}-{customer}-{nnn} sesuai brief. Aturan di atas 999 dan kode HSE ditunda, karena nomor PFD, PFMEA, dan CP per customer mungkin belum mendekati 999.
 - **Rekomendasi Claude Code (usulan):** (a) untuk struktur token. Aturan di atas 999 baru dibangun setelah pemilik memastikan cara penulisannya dan apakah ada customer yang mendekati 999. Pemilik juga perlu menjelaskan contoh SC-ESD-K001.
-- **Asumsi sementara di kode:** tidak ada; temuan ini menyentuh Tahap 2.
+- **Asumsi sementara di kode:** untuk M2.1, nomor berjalan mulai dari 001, huruf A sampai Z dipakai berurutan, dan setelah Z999 sistem menolak dengan pesan yang jelas. Dikonfirmasi di rencana M2.1. Bila belum dikonfirmasi, ditandai `// ASUMSI E-12`.
 - **Menghambat milestone?** Tidak untuk Tahap 0 dan 1. Perlu diputuskan sebelum M2.1.
-- **Status:** Diputuskan pemilik 28 Oktober 2026 (nomor D menunggu brief). Dua rincian masih terbuka.
-- **Keputusan pemilik:** Pakai aturan WI SW-ZZ-000, dan aturannya disimpan sebagai master data ("E-12 gunakan aturan sesuai dengan yang ada di WI, dan cantumkan juga aturannya di master data", 28 Oktober 2026). Ini opsi (a). Isi master data: kode pabrik (S); jenis dokumen (C, F, H, dan jenis lain di WI); kode customer 2 huruf beserta kode khusus ZZ dan HSE; format nomor berjalan; dan jumlah digit revisi (2). Dibangun di M1.4 (kode customer), M1.6 (kode pabrik dan jenis dokumen), dan M2.1 (struktur nomor). Dokumen referensi set TR-021 (SH, SF, SC) sesuai dengan struktur ini: nomor di cover ditulis tanpa revisi, revisi ada di tabel riwayat, dan nama file menyertakan revisi. Masih terbuka dan ditanyakan di M2.1: (1) cara menulis nomor di atas 999, karena WI menyebut DD-DDD (6 karakter) tetapi tabelnya menulis 00-XXXX; (2) aturan untuk nomor seperti SC-ESD-K001, yaitu control plan ESD yang dirujuk di kolom Relevant Document CP (brief F-12). Nomor ini memakai kode 3 huruf ESD dan nomor berjalan berawalan K, dan pola itu belum diatur di WI SW-ZZ-000.
+- **Status:** Diputuskan pemilik 28 Oktober 2026 (nomor D menunggu brief)
+- **Keputusan pemilik:** Pakai aturan WI SW-ZZ-000, dan aturannya disimpan sebagai master data ("E-12 gunakan aturan sesuai dengan yang ada di WI, dan cantumkan juga aturannya di master data", 28 Oktober 2026). Ini opsi (a). Isi master data: kode pabrik (S); jenis dokumen (C, F, H, dan jenis lain di WI); kode customer 2 huruf beserta kode khusus ZZ dan HSE; format nomor berjalan; dan jumlah digit revisi (2). Dibangun di M1.4 (kode customer), M1.6 (kode pabrik dan jenis dokumen), dan M2.1 (struktur nomor). Dokumen referensi set TR-021 (SH, SF, SC) sesuai dengan struktur ini: nomor di cover ditulis tanpa revisi, revisi ada di tabel riwayat, dan nama file menyertakan revisi. Dua rincian dijawab pemilik pada 28 Oktober 2026: (1) Nomor di atas 999 memakai huruf dan 3 digit: A001 sampai A999, lalu B001, dan seterusnya. Aturan ini berlaku "untuk saat ini" dan berbeda dari tabel WI SW-ZZ-000 rev 09 (00-XXXX, A1-XXXX); pernyataan pemilik yang dipakai. Karena bisa berubah, format nomor berjalan disimpan sebagai master data. (2) SC-ESD-K001 diabaikan karena bukan control plan proses. Sistem tidak menomori dokumen seperti itu. Bila dirujuk dari CP, dokumen itu dicatat apa adanya sebagai dokumen terkait (R-DOC-10, R-DOC-11).
 
 ### E-13 · Versi terbaru berbeda dari brief bagian 7
 
@@ -283,6 +284,25 @@ Salin blok ini untuk setiap temuan baru.
 - **Status:** Diputuskan pemilik 28 Oktober 2026 (nomor D menunggu brief). Posisi di milestone dan nomor artefak UML-nya ditentukan di sesi desain.
 - **Keputusan pemilik:** Opsi (a): wireframe dibuat sebelum Tahap 4 ("saya setuju dengan usulan anda", 28 Oktober 2026). Bahasa UI (Q-14) perlu diputuskan sebelum wireframe dibuat.
 
+### E-16 · Memindah dokumen aktif ke nomor baru setelah kode customer berganti
+
+- **Tanggal dan milestone:** 28 Oktober 2026, setelah M0.1. Muncul dari keputusan pemilik di E-11. Berdampak ke M2.1, M2.3, dan M2.5.
+- **Jenis:** Celah
+- **Rujukan:** E-11, R-NUM-02, R-NUM-03, R-NUM-04, R-NUM-05, R-NUM-06, R-POR-01, R-REV-01, R-TPL-10, R-CHG-01, R-PRT-07, brief bagian 4 (document_number terhubung ke satu dokumen; diagram status nomor dokumen), M2.1, M2.3, M2.5.
+- **Temuan:** Pemilik menetapkan (28 Oktober 2026) bahwa setelah kode customer diganti, nomor berjalan untuk kode baru mulai lagi dari awal, dan dokumen model yang masih aktif dipindah secara manual ke nomor baru. Desain saat ini belum punya aksi untuk itu. Model domain menghubungkan satu nomor ke paling banyak satu dokumen, dokumen menunjuk satu nomor, dan diagram status nomor tidak punya status untuk nomor yang digantikan nomor lain. Belum jelas juga:
+  1. Apakah revisi berlanjut di nomor baru (misalnya -06 menjadi -07), atau mulai lagi dari -00.
+  2. Apa status nomor lama: Obsolete, atau status baru seperti "Diganti".
+  3. Apakah pemindahan butuh revisi baru dan tanda tangan, karena cover harus dicetak ulang dengan nomor baru (perubahan administratif, R-TPL-10).
+  4. Apakah pemindahan dilakukan per dokumen atau per set, supaya nomor PFD, PFMEA, dan CP satu model tetap sejajar (R-NUM-05).
+  5. Bagaimana penghitung kode baru menghindari nomor ganda bila kode itu pernah dipakai sebelumnya.
+- **Dampak bila dibiarkan:** M2.1 sampai M2.3 bisa membangun hubungan nomor dan dokumen yang tidak bisa menampung pindah nomor, dan riwayat dokumen putus karena nomor lama tidak bisa dicari dari dokumen yang sama.
+- **Opsi:** (a) Aksi "pindah ke nomor baru" oleh dokumen kontrol, per set atau per dokumen: sistem mendaftarkan nomor baru dengan kode yang berlaku dan menautkannya ke dokumen yang sama. Nomor lama mendapat status "Diganti" beserta tautan ke nomor barunya, tetap tersimpan sebagai teks (R-NUM-02), dan tetap bisa dicari. Pemindahan dicatat sebagai perubahan administratif (R-CHG-01, R-TPL-10) yang menghasilkan revisi baru, karena cover dicetak ulang. (b) Dokumen di nomor baru dianggap dokumen baru yang mulai dari -00, dengan tautan "berasal dari" ke dokumen lama, dan dokumen lama menjadi Obsolete. (c) Pemindahan dilakukan di luar sistem, lalu nomor dan dokumen diimpor ulang (R-NUM-06, M7.1).
+- **Rekomendasi Claude Code (usulan):** (a). Dokumen tetap satu entitas dengan riwayat utuh; yang berganti hanya nomornya, dan jejaknya tercatat. Ini tidak bertentangan dengan R-NUM-02 dan R-NUM-06, karena nomor lama tidak diubah atau dihapus dan pemindahannya manual. Revisi berlanjut, bukan mulai dari -00, karena isinya sama. Pemilik perlu mengonfirmasi butir 1 sampai 4.
+- **Asumsi sementara di kode:** untuk M2.1, penghitung dikunci per teks kode customer dan jenis dokumen. Dengan begitu kode baru mulai dari 001 secara alami, dan kode yang pernah dipakai tidak menghasilkan nomor ganda. Bila belum diputuskan, ditandai `// ASUMSI E-16`.
+- **Menghambat milestone?** Tidak untuk Tahap 0 dan 1. Perlu diputuskan sebelum M2.1.
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
 ## Bahan dari dokumen referensi (untuk brief bagian 21)
 
 Bagian ini bukan temuan E. Isinya pengamatan dari dokumen referensi yang diberikan pemilik, untuk dibawa ke sesi desain dan dicatat sebagai item F di brief bagian 21 (usulan Claude Code, disetujui pemilik 28 Oktober 2026). Dokumennya tidak disimpan di repo, dan nama orang tidak ditulis.
@@ -295,4 +315,4 @@ Bagian ini bukan temuan E. Isinya pengamatan dari dokumen referensi yang diberik
 | 2 | Nama file PFMEA tertinggal satu revisi dari isinya: file bernama SF-TR-021-02 berisi revisi 03. | Varian baru dari F-04. Usulan: nama file cetak dibuat sistem dari nomor dan revisi (R-PRT-01, E-12). |
 | 3 | Isian header "Process or Line" berbeda di dalam satu set: isian di PFD berbeda dengan isian di PFMEA dan CP. | Varian baru dari F-05. Usulan: field header satu set diambil dari master data, bukan diketik per dokumen (R-DOC-08). |
 | 4 | Nomor di cover ditulis tanpa revisi (contoh: "PFD No : SH-TR-021"), revisi ada di tabel riwayat, dan nama file menyertakan revisi. | Sesuai WI SW-ZZ-000 dan R-REV-01. Dipakai di E-12. |
-| 5 | Riwayat revisi CP merujuk nomor WI (SW-ZZ-006, SW-ZZ-023, SW-ZZ-053, SW-ZZ-116, dan lainnya) dan dokumen QES-SSC-K049, yang polanya (K dan 3 digit) mirip SC-ESD-K001. | R-DOC-11 (master dokumen terkait), dan bahan pertanyaan E-12 rincian (2). |
+| 5 | Riwayat revisi CP merujuk nomor WI (SW-ZZ-006, SW-ZZ-023, SW-ZZ-053, SW-ZZ-116, dan lainnya) dan dokumen QES-SSC-K049, yang polanya (K dan 3 digit) mirip SC-ESD-K001. | R-DOC-11 (master dokumen terkait). Dokumen seperti ini dicatat apa adanya dan tidak dinomori sistem (E-12). |
