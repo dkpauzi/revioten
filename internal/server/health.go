@@ -13,7 +13,8 @@ type healthResponse struct {
 }
 
 // handleHealth menjawab bahwa server hidup.
-// Pemeriksaan database belum ada; itu menyusul di M0.3.
+// Pemeriksaan database belum ada; itu menyusul di M0.5, saat server mulai
+// tersambung ke database (dipindah dari M0.3 atas persetujuan pemilik).
 func handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
