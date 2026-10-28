@@ -43,6 +43,8 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-19 | Glosarium U1 belum punya istilah bahasa Inggris untuk layar | Celah | M0.4, M0.5, Tahap 1 | Tidak | Terbuka |
 | E-20 | Konvensi API R-API-13 merujuk tabel kode error yang tidak ada di repo | Celah | M0.5, M9.3 | Tidak | Terbuka |
 | E-21 | Field dan batas master customer belum ditentukan | Celah | M0.5, M1.4 | Tidak (perlu sebelum M1.4) | Terbuka |
+| E-22 | Tidak ada jalan keluar bila akun admin terakhir lupa password atau terkunci | Celah | M1.1, M1.2 | Tidak | Terbuka |
+| E-23 | Daftar password yang dilarang belum memenuhi ASVS 6.2.4 tanpa layanan luar | Sulit dibangun | M1.1 | Tidak | Terbuka |
 
 ## Rincian
 
@@ -175,6 +177,25 @@ Salin blok ini untuk setiap temuan baru.
 - **Menghambat milestone?** Tidak
 - **Status:** Diputuskan pemilik 27 Oktober 2026 (nomor D menunggu brief)
 - **Keputusan pemilik:** Opsi (a) sesuai rekomendasi: aturan dari standar terbuka, nilai tepat dipilih saat M1.1 ("saya setuju dengan semua saran anda", 27 Oktober 2026).
+- **Pelaksanaan M1.1 (28 Oktober 2026, menunggu konfirmasi pemilik, ditandai `ASUMSI E-08` di kode):** sumber dibaca dari repo resminya di GitHub: OWASP Cheat Sheet Series (commit 9d41c05, 26 Oktober 2026), OWASP ASVS 5.0 (folder `5.0/en`, commit 9ccce0e), dan NIST SP 800-63B-4 (repo usnistgov/800-63-4, commit 4f2487b, 26 Agustus 2025).
+
+  | Aturan | Nilai | Dasar |
+  |---|---|---|
+  | Hash password | argon2id m=19456 KiB, t=2, p=1, salt 16 byte, hash 32 byte | OWASP Password Storage Cheat Sheet (konfigurasi minimum) |
+  | Panjang password | 15 sampai 128 karakter Unicode | NIST: minimal 15 untuk password tanpa faktor kedua; ASVS 6.2.1 dan 6.2.9 |
+  | Komposisi dan ganti berkala | Tidak ada aturan komposisi, tidak ada kewajiban ganti berkala | NIST; ASVS 6.2.5 dan 6.2.10 |
+  | Password yang dilarang | 329 password umum (15 karakter atau lebih) dari daftar NCSC top 100.000, ditambah nama login, nama orang, dan nama sistem | ASVS 6.2.4, 6.2.11, 6.2.12; kekurangannya di E-23 |
+  | Normalisasi Unicode | Tidak dilakukan; password dibandingkan apa adanya | ASVS 6.2.8. NIST menyarankan NFC (SHOULD); tidak diikuti supaya sederhana |
+  | Token sesi | 256 bit acak, disimpan sebagai SHA-256 | ASVS 7.2.3 (minimal 128 bit) |
+  | Batas tidak aktif | 30 menit | OWASP Session Management: 15 sampai 30 menit untuk aplikasi berisiko rendah; NIST AAL2: paling lama 1 jam |
+  | Batas mutlak sesi | 8 jam | OWASP: 4 sampai 8 jam untuk pekerja kantor; NIST AAL1: paling lama 30 hari |
+  | Sesi bersamaan | Tidak dibatasi; ganti password mengakhiri semua sesi akun | ASVS 7.1.2 (harus didokumentasikan), 7.4.3 |
+  | Gagal login | Setiap 10 kali gagal berturut-turut, akun dikunci 15 menit; kegagalan ke-100 menonaktifkan akun | OWASP Authentication Cheat Sheet (ambang, lama kunci); NIST: paling banyak 100 |
+  | Pesan login gagal | Selalu sama, tanpa menyebut penyebabnya | OWASP Authentication Cheat Sheet |
+  | Nama login | 3 sampai 64 karakter a-z, 0-9, titik, garis bawah, tanda hubung; tidak membedakan huruf besar dan kecil | Belum ada sumber; dipilih supaya mudah diketik |
+  | Cookie sesi | `__Host-revioten_session`, HttpOnly, Secure, SameSite=Lax, tanpa Max-Age | ASVS 3.3.1 sampai 3.3.4 |
+  | CSRF | `http.CrossOriginProtection` (Sec-Fetch-Site dan Origin) untuk POST, PUT, PATCH, DELETE | Brief bagian 16 ("cookie session with Origin check"), ASVS 3.5 |
+  | `/health` | Terbuka tanpa login, karena tidak berisi data | Belum ada sumber |
 
 ### E-09 · Aturan kode customer belum lengkap
 
@@ -381,6 +402,34 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (a). Field lain ditambah lewat migrasi baru di M1.4 tanpa mengubah API yang sudah ada (R-API-15).
 - **Asumsi sementara di kode (ASUMSI E-21):** nama wajib diisi, spasi di tepi dibuang, paling banyak 200 karakter, satu baris tanpa karakter kontrol, dan boleh sama dengan nama customer lain. Kode unik, tepat dua huruf A sampai Z, dan ZZ ditolak (ASUMSI E-12: ZZ untuk dokumen General/Common). Aturan ini dijaga di `internal/customer` dan oleh batasan tabel `customers`.
 - **Menghambat milestone?** Tidak (perlu sebelum M1.4)
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-22 · Tidak ada jalan keluar bila akun admin terakhir lupa password atau terkunci
+
+- **Tanggal dan milestone:** 28 Oktober 2026, M1.1. Berdampak ke M1.2.
+- **Jenis:** Celah
+- **Rujukan:** E-07, E-08, D-72, D-73, R-SEC-13, UC-02.
+- **Temuan:** Perintah `create-admin` hanya jalan bila belum ada akun admin sama sekali (E-07), dan akun admin terakhir tidak bisa dihapus (D-73). Reset password dilakukan admin (E-08). Bila hanya ada satu akun admin dan pemegangnya lupa password, tidak ada yang bisa mereset password itu. Hal yang sama terjadi bila akun admin dinonaktifkan setelah 100 kali gagal login (ASUMSI E-08). Siapa pun yang tahu nama login admin bisa memicunya dengan sengaja, karena OWASP sendiri memperingatkan bahwa kunci akun bisa dipakai untuk mengunci pengguna lain (denial of service).
+- **Dampak bila dibiarkan:** sistem tidak bisa dikelola lagi tanpa mengubah database langsung, dan mengubah database langsung melewati audit log (M1.3).
+- **Opsi:** (a) Perintah CLI kedua, misalnya `revioten reset-admin-password -login ...`. Perintah ini hanya bisa dijalankan di komputer server, membuka akun, menghapus kunci, memasang password sementara dengan wajib ganti, dan mencatat peristiwanya di audit log dengan aktor sistem. (b) Wajib ada dua akun admin yang dipegang dua orang berbeda, sehingga satu admin bisa mereset yang lain. (c) Akun admin dikecualikan dari penonaktifan setelah 100 kali gagal (tetap kena kunci 15 menit). Bisa digabung dengan (a) atau (b).
+- **Rekomendasi Claude Code (usulan):** (a) dan (c). Akses ke komputer server sudah setara dengan akses admin, jadi (a) tidak membuka jalan baru. (c) menutup cara mudah untuk mengunci admin dari luar.
+- **Asumsi sementara di kode:** belum ada perintah reset. Akun admin diperlakukan sama dengan akun lain (dikunci 15 menit tiap 10 gagal, dinonaktifkan pada kegagalan ke-100).
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-23 · Daftar password yang dilarang belum memenuhi ASVS 6.2.4 tanpa layanan luar
+
+- **Tanggal dan milestone:** 28 Oktober 2026, M1.1.
+- **Jenis:** Sulit dibangun
+- **Rujukan:** E-08, ASVS 5.0 6.2.4 dan 6.2.12, NIST SP 800-63B-4 (blocklist), Q-02 (kebijakan IT).
+- **Temuan:** ASVS 6.2.4 meminta password baru dicek terhadap minimal 3000 password teratas yang memenuhi aturan password (di sini: panjang minimal 15). ASVS 6.2.12 meminta cek terhadap kumpulan password yang pernah bocor. Daftar terbuka yang dipakai (NCSC top 100.000, dari Pwned Passwords) hanya berisi 329 password yang panjangnya 15 karakter atau lebih. Kumpulan yang lengkap ada di layanan Pwned Passwords (API k-anonymity, server mengirim 5 karakter awal hash SHA-1 ke internet) atau unduhan datanya (puluhan GB).
+- **Dampak bila dibiarkan:** cek password umum lebih lemah dari ASVS 6.2.4. Panjang minimal 15 sudah menutup sebagian besar password umum, jadi risikonya rendah.
+- **Opsi:** (a) Tetap memakai daftar offline yang ada (329 entri) dan mencatat kekurangannya. (b) Memakai API Pwned Passwords bila jaringan perusahaan mengizinkan server menghubungi internet (perlu jawaban Q-02). (c) Mengunduh dataset Pwned Passwords dan memasang filter lokal (berat untuk demo localhost).
+- **Rekomendasi Claude Code (usulan):** (a) untuk demo localhost, dan (b) dibahas dengan IT untuk versi perusahaan.
+- **Asumsi sementara di kode:** (a). File `internal/auth/common_passwords.txt` mencatat sumber dan cara penyaringannya.
+- **Menghambat milestone?** Tidak
 - **Status:** Terbuka
 - **Keputusan pemilik:**
 

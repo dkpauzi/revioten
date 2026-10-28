@@ -134,7 +134,7 @@ Kode sekarang punya dua tujuan: belajar, dan menguji apakah desain (brief, UML, 
 
 ### Perintah yang sudah terbukti
 
-Dijalankan dari root repo. Terbukti di container cloud Linux (bash) pada M0.1 (27 Oktober 2026), M0.2, M0.3, M0.4, dan M0.5 (28 Oktober 2026). Docker Compose membaca `.env` sendiri, dan perintah `go` sama di PowerShell Windows. Catatan dalam kurung untuk Windows belum dicoba di komputer pemilik.
+Dijalankan dari root repo. Terbukti di container cloud Linux (bash) pada M0.1 (27 Oktober 2026), M0.2, M0.3, M0.4, M0.5, dan M1.1 (28 Oktober 2026). Docker Compose membaca `.env` sendiri, dan perintah `go` sama di PowerShell Windows. Catatan dalam kurung untuk Windows belum dicoba di komputer pemilik.
 
 | Tujuan | Perintah |
 |---|---|
@@ -153,7 +153,9 @@ Dijalankan dari root repo. Terbukti di container cloud Linux (bash) pada M0.1 (2
 | Periksa kode Go | `go vet ./...`, lalu `gofmt -l .` (tanpa keluaran berarti sudah rapi) |
 | Jalankan server | Sejak M0.5 butuh PostgreSQL yang menyala (`docker compose up -d`) dan file `.env` yang terisi. Lalu `go run ./cmd/revioten`, atau di port lain: `go run ./cmd/revioten -addr 127.0.0.1:8081`. Migrasi database berjalan otomatis saat server mulai. Hentikan dengan Ctrl+C |
 | Coba endpoint /health | `curl -i http://127.0.0.1:8080/health` (Windows: `curl.exe -i ...` atau `Invoke-RestMethod http://127.0.0.1:8080/health`) |
-| Coba API customer | `curl -i http://127.0.0.1:8080/api/v1/customers`, lalu `curl -i -X POST -H 'Content-Type: application/json' -d '{"code":"ab","name":"Example Customer"}' http://127.0.0.1:8080/api/v1/customers` (Windows: `Invoke-RestMethod -Method Post -ContentType 'application/json' -Body '{"code":"ab","name":"Example Customer"}' http://127.0.0.1:8080/api/v1/customers`) |
+| Buat akun admin pertama (sekali, E-07) | `go run ./cmd/revioten create-admin -name "Nama Pemegang" -login admin.nama`, lalu ketik password dua kali (tidak tampil di layar, minimal 15 karakter). Hanya jalan bila belum ada akun admin. Password tidak pernah ditulis sebagai argumen perintah. Di cloud terbukti lewat pipa (password dikirim ke stdin, seperti di `web/e2e/server.mjs`); mode ketik di terminal belum dicoba |
+| Login | Buka http://127.0.0.1:8080, yang mengarahkan ke halaman login. Semua halaman dan API (kecuali `/health` dan login) butuh login sejak M1.1 |
+| Coba API dengan login (bash) | Tulis `{"login":"admin.nama","password":"..."}` ke `bin/login.json` (folder `bin/` tidak di-commit), lalu `curl -i -c bin/cookies.txt -H 'Content-Type: application/json' -d @bin/login.json http://127.0.0.1:8080/api/v1/session`. Setelah itu `curl -b bin/cookies.txt http://127.0.0.1:8080/api/v1/customers` dan `curl -b bin/cookies.txt -X POST -H 'Content-Type: application/json' -d '{"code":"ab","name":"Example Customer"}' http://127.0.0.1:8080/api/v1/customers`. Hapus `bin/login.json` setelah dipakai. Di Windows, `curl.exe` dengan argumen yang sama (belum dicoba di komputer pemilik) |
 | Buat ulang kode Go dari kontrak dan SQL | `go generate ./...` (oapi-codegen dan sqlc dijalankan lewat `go run` dengan versi terkunci; pertama kali butuh internet dan waktu kompilasi). Lalu `go build ./...` dan `go test ./...` |
 | Buat ulang tipe TypeScript dari kontrak | `npm --prefix web run gen:api` |
 | Build binary | `go build -o bin/revioten ./cmd/revioten` (Windows: `-o bin/revioten.exe`) |

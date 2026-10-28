@@ -55,7 +55,9 @@ Halaman rilis resmi go.dev dan postgresql.org belum dicek. Silakan buka dari kom
 | River | v0.49.0 | 2026-10-05 | 2026-10-28 | proxy.golang.org | Paket 0.x, ikut masa tunggu 14 hari (E-14). v0.50.0 (rilis 2026-10-27) baru memenuhi syarat mulai 2026-11-10. River merilis minor tanpa patch (v0.45.0 sampai v0.50.0 semuanya .0). Versinya dikunci saat pertama kali dipakai. |
 | excelize | v2.11.0 | 2026-07-06 | 2026-10-27 | proxy.golang.org | Terbaru. Brief menulis 2026-07-07, selisih zona waktu. |
 | testcontainers-go | v0.44.0 | 2026-08-07 | 2026-10-28 | proxy.golang.org | Terbaru. Paket 0.x, lolos masa tunggu 14 hari (E-14). Dikunci di `go.mod` sejak M0.3, bersama modul `modules/postgres` v0.44.0 (rilis yang sama). Saat test berjalan, ia memakai image `testcontainers/ryuk:0.14.0` (bawaan v0.44.0) untuk membuang container test, dan image `postgres:18.6` yang sama dengan `compose.yaml`. |
-| golang.org/x/crypto (argon2id) | v0.58.0 | 2026-10-09 | 2026-10-27 | proxy.golang.org | Terbaru. |
+| golang.org/x/crypto (argon2id) | v0.58.0 | 2026-10-09 | 2026-10-28 | proxy.golang.org | Terbaru. Dipakai langsung sejak M1.1 (paket `argon2`). Modul golang.org/x memakai nomor 0.x; v0.58.0 sudah berumur 19 hari, jadi lolos masa tunggu E-14. |
+| golang.org/x/term | v0.47.0 | 2026-10-09 | 2026-10-28 | proxy.golang.org | Terbaru. Dipakai sejak M1.1 untuk membaca password admin dari terminal tanpa menampilkannya (`revioten create-admin`). Paket 0.x, berumur 19 hari, lolos E-14. |
+| go.yaml.in/yaml/v3 | v3.0.5 | 2026-07-26 | 2026-10-28 | proxy.golang.org | Terbaru. Hanya dipakai test (`TestPublicRoutesMatchContract` membaca `api/openapi.yaml`). Sebelumnya sudah ada di `go.mod` sebagai dependensi tidak langsung. |
 | oapi-codegen | v2.8.1 | 2026-10-24 | 2026-10-28 | proxy.golang.org | Dipakai sejak M0.5 lewat `go run github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.8.1` (tidak masuk `go.mod`), dengan `std-http-server` dan `strict-server`. Line v2.8 punya dua rilis (v2.8.0 dan v2.8.1), jadi tidak termasuk kasus E-14. README v2.8.1 masih menyebut dukungan OpenAPI 3.1 sebagai "initial", jadi kontrak tetap 3.0.4 (D-38). |
 | oapi-codegen runtime (`github.com/oapi-codegen/runtime`) | v1.8.0 | 2026-10-23 | 2026-10-28 | proxy.golang.org | Terbaru di line v1 (R-VER-04 menghitung line per major). Dipakai kode hasil generate untuk membaca body JSON. Dikunci di `go.mod` sejak M0.5. |
 
@@ -88,6 +90,13 @@ Hasil `npm audit` setelah M0.5: 8 temuan (4 rendah, 4 tinggi). Yang rendah masih
 | openapi-fetch | 0.17.0 | 2026-02-11 | 2026-10-27 | npm | Tidak dipakai (pasangan openapi-typescript). |
 | `sv` (Svelte CLI) | 1.1.1 (alat bantu) | 2026-10-06 | 2026-10-28 | npm, tag GitHub sveltejs/cli | Tidak dipasang di proyek. Dipakai sekali di luar repo (`npx sv@1.1.1 create --template minimal --types ts`) sebagai acuan struktur proyek SvelteKit 3 di M0.4. Add-on Vitest dari `sv` 1.1.1 masih memasang Vitest 4, jadi proyek ini memasang Vitest 5.0.5 sendiri. |
 | `@hey-api/openapi-ts` | 0.99.0 | 2026-06-22 | 2026-10-28 | npm | Dipakai sejak M0.5 untuk tipe TypeScript dari kontrak (Q-47, dipakai sementara sampai pemilik memutuskan). Hanya plugin `@hey-api/typescript`. Peer typescript >=5.5.3 atau >=6.0.0, cocok dengan 6.0.3. Engines Node >=22.18. Paket 0.x, lolos masa tunggu 14 hari (E-14). README-nya meminta versi dikunci tepat, karena setiap minor 0.x bisa membawa perubahan yang tidak kompatibel. Membaca `tsconfig.json`, jadi `svelte-kit sync` harus jalan lebih dulu (sudah ada di skrip `gen:api`). |
+
+## Data pendukung
+
+| Data | Versi | Dicek | Sumber | Catatan |
+|---|---|---|---|---|
+| Daftar password umum (`internal/auth/common_passwords.txt`) | SecLists commit 758fecf (2026-10-27), file `Passwords/Common-Credentials/100k-most-used-passwords-NCSC.txt` | 2026-10-28 | github.com/danielmiessler/SecLists (lisensi MIT) | Disaring ke panjang 15 sampai 128 karakter, huruf kecil, tanpa duplikat: 329 entri. Lihat E-23. |
+| Standar keamanan untuk E-08 | OWASP Cheat Sheet Series commit 9d41c05 (2026-10-26); OWASP ASVS 5.0 commit 9ccce0e (folder `5.0/en`); NIST SP 800-63B-4 commit 4f2487b (2025-08-26) | 2026-10-28 | Repo GitHub OWASP/CheatSheetSeries, OWASP/ASVS, usnistgov/800-63-4 | Situs owasp.org dan pages.nist.gov tidak dibuka; teks dibaca dari sumber resmi di GitHub. |
 
 ## Alat desain dan pendukung
 
