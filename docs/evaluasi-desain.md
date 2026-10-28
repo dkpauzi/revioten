@@ -59,6 +59,10 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-35 | Bentuk kebijakan approval per jenis perubahan belum ditentukan (Q-15) | Celah | M1.6, M1.8, Tahap 5 dan 6 | Tidak (perlu sebelum Tahap 5) | Terbuka |
 | E-36 | Sumber perubahan mencampur mekanisme sistem (R-CHG-01) dan pemicu (R-CHG-06) | Ambigu | M1.6, Tahap 5 | Tidak (perlu sebelum Tahap 5) | Terbuka |
 | E-37 | Kode khusus: bentuk, penambahan, dan tumpang tindih dengan kode customer | Celah | M1.6, M2.1 | Tidak (perlu sebelum M2.1) | Terbuka |
+| E-38 | Jumlah pemegang setiap jabatan dan riwayatnya | Celah | M1.8, Tahap 6 | Tidak (perlu sebelum Tahap 6) | Terbuka |
+| E-39 | Customer tanpa rute default | Celah | M1.8, Tahap 6 | Tidak (perlu sebelum Tahap 6) | Terbuka |
+| E-40 | Batas bentuk rute dan isian slot | Celah | M1.8, Tahap 6 | Tidak | Terbuka |
+| E-41 | Hak bercakupan Project Group untuk operasi tanpa customer | Celah | M1.8, Tahap 2 sampai 5, M8.1 | Tidak | Terbuka |
 
 ## Rincian
 
@@ -137,6 +141,7 @@ Salin blok ini untuk setiap temuan baru.
 - **Status:** Diputuskan pemilik 27 Oktober 2026 (nomor D menunggu brief)
 - **Keputusan pemilik:** Opsi (a) sesuai rekomendasi: cakupan Project Group dicek di fungsi izin sejak M1.2; row-level security tetap di M8.1 ("saya setuju dengan semua saran anda", 27 Oktober 2026).
 - **Pelaksanaan (M1.2, 28 Oktober 2026):** `access.Authorize` menerima `Resource{CustomerID}` dan memeriksa cakupan `own_project_group` untuk Penyusun dan Verifikator. Sumber datanya (master Project Group dan pemegang jabatan) baru ada di M1.4 dan M1.8, jadi sampai itu `inOwnProjectGroup` selalu menjawab tidak (ASUMSI E-04, pilihan paling aman). Saat ini belum ada operasi yang menyentuh satu customer, jadi aturan ini belum berpengaruh ke layar.
+- **Pelaksanaan (M1.8, 28 Oktober 2026):** `inOwnProjectGroup` kini membaca pemegang jabatan: hak bercakupan Project Group berlaku untuk customer di Project Group tempat orang itu menjadi Project Leader atau Project Engineer. ASUMSI E-04 sudah dihapus dari kode. Operasi tanpa customer tidak lagi diloloskan untuk hak bercakupan (ASUMSI E-41). Dibuktikan `TestAuthorizeScope`, termasuk hak yang langsung hilang saat jabatan dilepas.
 
 ### E-05 · Dua sumber data untuk cakupan Project Group
 
@@ -151,6 +156,7 @@ Salin blok ini untuk setiap temuan baru.
 - **Menghambat milestone?** Tidak untuk Tahap 0. Perlu diputuskan sebelum M1.4.
 - **Status:** Diputuskan pemilik 27 Oktober 2026 (nomor D menunggu brief)
 - **Keputusan pemilik:** Opsi (a) sesuai rekomendasi: master Project Group adalah sumber tunggal cakupan Project Leader dan Project Engineer ("saya setuju dengan semua saran anda", 27 Oktober 2026).
+- **Pelaksanaan (M1.8, 28 Oktober 2026):** pemegang jabatan disimpan di tabel `position_holders`. Project Leader dan Project Engineer dicatat per Project Group, satu orang per group (D-54), dan menjadi satu-satunya sumber cakupan. Kolom cakupan di peran hanya menyatakan "semua customer" atau "Project Group sendiri", tanpa menyebut group-nya.
 
 ### E-06 · Hash chain audit log pada penulisan paralel
 
@@ -679,6 +685,65 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (a) untuk sekarang. (c) lebih kuat karena dijaga database, tapi mengubah tabel riwayat kode M1.4, jadi layak dipertimbangkan di M2.1 saat struktur nomor dibangun. Butir 4 diputuskan di M2.1.
 - **Asumsi sementara di kode (ASUMSI E-37):** (a). Kunci advisory 11003 diambil saat customer dibuat, saat kode customer diganti, dan saat kode khusus ditambah, lalu pemeriksaan dilakukan di dalam kunci itu. Ditandai di `sql/migrations/00007_create_document_and_change_types.sql`, `sql/queries/numbering.sql`, `internal/numbering/`, dan `internal/customer/service.go`.
 - **Menghambat milestone?** Tidak (perlu sebelum M2.1)
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-38 · Jumlah pemegang setiap jabatan dan riwayatnya
+
+- **Tanggal dan milestone:** 28 Oktober 2026, M1.8. Berdampak ke Tahap 6 (cetak untuk tanda tangan).
+- **Jenis:** Celah
+- **Rujukan:** D-54, D-56, D-58, D-70, D-76, R-APR-07, R-APR-11, R-APR-15, UC-02.
+- **Temuan:** D-54 menetapkan satu Project Leader dan satu Project Engineer per Project Group, dan menyebut APQP/PPAP Controller "satu orang" untuk keadaan sekarang. Untuk jabatan lain belum ada aturan:
+  1. Apakah NPI Manager, QA QC Manager, Advisor, dan Factory Manager hanya boleh satu orang. Cover mencetak nama pemegang di setiap slot (D-76), jadi bila pemegangnya lebih dari satu, nama yang dicetak harus dipilih.
+  2. Apakah PPAP Engineer dan PPAP Staff boleh beberapa orang.
+  3. Apakah riwayat pemegang (siapa memegang jabatan apa, sejak kapan, sampai kapan) perlu disimpan, atau cukup audit log dan salinan rute di revisi yang dicetak (R-APR-11).
+- **Dampak bila dibiarkan:** cetak untuk tanda tangan di Tahap 6 tidak tahu nama siapa yang dicetak di slot Approved bila pemegangnya lebih dari satu.
+- **Opsi:** (a) Hanya Project Leader dan Project Engineer yang dibatasi satu orang per group; jabatan lain boleh beberapa pemegang, dan nama yang dicetak dipilih saat cetak. Riwayat cukup di audit log. (b) Jabatan approver (NPI Manager, QA QC Manager, Advisor, Factory Manager) dan APQP/PPAP Controller dibatasi satu orang. (c) Pemegang jabatan punya tanggal mulai dan selesai, supaya riwayatnya bisa dibaca langsung.
+- **Rekomendasi Claude Code (usulan):** (b) untuk jabatan approver, karena satu slot mencetak satu nama, dan (a) untuk jabatan lain. Riwayat cukup di audit log, karena revisi yang dicetak menyimpan salinan rutenya sendiri.
+- **Asumsi sementara di kode (ASUMSI E-38):** (a). Ditandai di `sql/migrations/00008_create_positions_and_routes.sql`.
+- **Menghambat milestone?** Tidak (perlu sebelum Tahap 6)
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-39 · Customer tanpa rute default
+
+- **Tanggal dan milestone:** 28 Oktober 2026, M1.8. Berdampak ke Tahap 6.
+- **Jenis:** Celah
+- **Rujukan:** D-47, R-APR-09, E-09.
+- **Temuan:** D-47 berbunyi: setiap customer punya rute default. Customer yang dibuat sebelum M1.8 belum punya rute, dan formulir customer (M1.4) tidak meminta rute. Belum jelas apa yang terjadi bila dokumen customer tanpa rute default dicetak untuk tanda tangan.
+- **Dampak bila dibiarkan:** cetak untuk tanda tangan di Tahap 6 tidak punya rute untuk dokumen customer itu.
+- **Opsi:** (a) Rute default boleh kosong; Admin mengaturnya di layar Approval routes, dan cetak ditolak dengan pesan yang jelas sampai rute diatur, kecuali penyusun memilih rute lain dengan alasan (R-APR-09). (b) Rute default wajib dipilih saat customer dibuat, dan customer lama diisi lewat migrasi dengan satu rute yang dipilih pemilik. (c) Satu rute default untuk seluruh sistem, dipakai bila customer belum diatur.
+- **Rekomendasi Claude Code (usulan):** (a), ditambah tanda "Not set" di daftar customer. Tidak ada rute yang dikarang untuk customer lama.
+- **Asumsi sementara di kode (ASUMSI E-39):** (a). Kolom `customers.default_route_id` boleh kosong. Ditandai di `sql/migrations/00008_create_positions_and_routes.sql` dan `internal/customer/customer.go`.
+- **Menghambat milestone?** Tidak (perlu sebelum Tahap 6)
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-40 · Batas bentuk rute dan isian slot
+
+- **Tanggal dan milestone:** 28 Oktober 2026, M1.8.
+- **Jenis:** Celah
+- **Rujukan:** D-45, D-46, D-48, D-49, R-APR-07, R-APR-08, R-APR-17, F-01, E-35.
+- **Temuan:** Rute adalah data yang bisa diubah Admin (R-APR-08), jadi sistem perlu tahu bentuk rute yang sah. Keputusan yang ada memberi: tahap Prepared, Checked, dan Approved (D-45), Checked satu tanda tangan (D-48), urutan berurutan (D-49), dan rute berakhir di QA QC Manager atau GM (D-46). Belum ada batas jumlah slot dan panjang judul cetak. Bentuk ini juga bertentangan dengan opsi (a) E-35 bila nanti dibutuhkan rute tanpa slot Approved.
+- **Dampak bila dibiarkan:** tanpa pemeriksaan, Admin bisa menyimpan rute yang tidak bisa dicetak (misalnya Checked sebelum Prepared).
+- **Opsi:** (a) Tepat satu Prepared di depan, tepat satu Checked sesudahnya, lalu satu atau lebih Approved; paling banyak 10 slot dan judul cetak paling banyak 100 karakter. (b) Seperti (a), tapi Approved boleh tidak ada, untuk rute pendek E-35. (c) Bebas, dan pemeriksaan bentuk baru dilakukan saat cetak.
+- **Rekomendasi Claude Code (usulan):** (a) sampai Q-15 dan E-35 dijawab. Bila pemilik memilih alur tanpa Approved untuk perubahan tertentu, aturan ini diubah menjadi (b).
+- **Asumsi sementara di kode (ASUMSI E-40):** (a). Ditandai di `internal/approval/approval.go`.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-41 · Hak bercakupan Project Group untuk operasi tanpa customer
+
+- **Tanggal dan milestone:** 28 Oktober 2026, M1.8. Berdampak ke operasi daftar di Tahap 2 sampai 5 dan ke M8.1.
+- **Jenis:** Celah
+- **Rujukan:** D-71, R-API-03, R-SEC-09, E-04, E-05.
+- **Temuan:** D-71 membatasi Project Leader dan Project Engineer ke customer di Project Group sendiri. Belum ada aturan untuk operasi yang tidak menyangkut satu customer, misalnya daftar draft dari semua customer. Sampai M1.7, fungsi izin meloloskan hak bercakupan untuk operasi seperti itu.
+- **Dampak bila dibiarkan:** daftar lintas customer bisa memperlihatkan data customer di luar Project Group, bila operasinya lupa menyaring.
+- **Opsi:** (a) Hak bercakupan tidak berlaku untuk operasi tanpa customer (ditolak). Operasi daftar lintas customer harus menyaring sendiri per customer, atau meminta customer di alamatnya. (b) Hak bercakupan berlaku, dan setiap operasi daftar wajib menyaring hasilnya. (c) Fungsi izin mengembalikan daftar customer yang boleh, dan operasi daftar memakainya untuk menyaring.
+- **Rekomendasi Claude Code (usulan):** (a) sekarang, karena tolak bila ragu lebih aman. (c) dipertimbangkan saat daftar lintas customer pertama dibangun (Tahap 2).
+- **Asumsi sementara di kode (ASUMSI E-41):** (a). Ditandai di `internal/access/checker.go`. Belum ada operasi yang terdampak: semua hak yang bisa bercakupan Project Group (Penyusun dan Verifikator) belum dipakai operasi mana pun.
+- **Menghambat milestone?** Tidak
 - **Status:** Terbuka
 - **Keputusan pemilik:**
 
