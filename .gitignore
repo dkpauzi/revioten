@@ -17,7 +17,13 @@ dist/
 # Dependensi dan hasil build frontend (Node, SvelteKit, Vitest, Playwright)
 node_modules/
 build/
+# Folder web/build/ di-commit hanya berisi .gitkeep, supaya go:embed di web/web.go
+# selalu menemukan folder ini walaupun frontend belum di-build (M0.4).
+!web/build/
+web/build/*
+!web/build/.gitkeep
 .svelte-kit/
+vite.config.ts.timestamp-*
 coverage/
 test-results/
 playwright-report/

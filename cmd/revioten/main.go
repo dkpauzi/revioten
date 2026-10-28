@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/dkpauzi/revioten/internal/server"
+	"github.com/dkpauzi/revioten/web"
 )
 
 func main() {
@@ -22,8 +23,9 @@ func main() {
 	flag.Parse()
 
 	srv := &http.Server{
-		Addr:    *addr,
-		Handler: server.NewHandler(),
+		Addr: *addr,
+		// web.Files berisi hasil build SvelteKit yang di-embed ke binary ini.
+		Handler: server.NewHandler(web.Files()),
 		// Batas waktu membaca header permintaan. Tanpa batas ini, klien yang
 		// sangat lambat bisa menahan koneksi selamanya (pengaman dasar, G9).
 		ReadHeaderTimeout: 5 * time.Second,

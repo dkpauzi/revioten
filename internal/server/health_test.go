@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"testing/fstest"
 )
 
 // TestHealthStatus memeriksa kode status untuk beberapa permintaan sekaligus.
@@ -18,10 +19,11 @@ func TestHealthStatus(t *testing.T) {
 	}{
 		{name: "GET /health berhasil", method: http.MethodGet, path: "/health", wantStatus: http.StatusOK},
 		{name: "POST /health ditolak", method: http.MethodPost, path: "/health", wantStatus: http.StatusMethodNotAllowed},
-		{name: "path yang tidak ada", method: http.MethodGet, path: "/tidak-ada", wantStatus: http.StatusNotFound},
+		{name: "API yang tidak ada", method: http.MethodGet, path: "/api/v1/tidak-ada", wantStatus: http.StatusNotFound},
 	}
 
-	handler := NewHandler()
+	// Tampilan web tidak dipakai di test ini, jadi cukup sistem file kosong.
+	handler := NewHandler(fstest.MapFS{})
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -44,7 +46,7 @@ func TestHealthBody(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/health", nil)
 	rec := httptest.NewRecorder()
 
-	NewHandler().ServeHTTP(rec, req)
+	NewHandler(fstest.MapFS{}).ServeHTTP(rec, req)
 
 	if got := rec.Header().Get("Content-Type"); got != "application/json" {
 		t.Errorf("Content-Type %q, seharusnya %q", got, "application/json")
