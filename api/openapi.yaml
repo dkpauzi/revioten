@@ -1,0 +1,180 @@
+# Kontrak API untuk layar web (R-API-02, D-38). Ditulis lebih dulu, lalu kode
+# server Go (oapi-codegen) dan tipe TypeScript (@hey-api/openapi-ts) dibuat
+# dari file ini. Jangan mengubah kode hasil generate; ubah file ini lalu jalankan
+# ulang generator (lihat CLAUDE.md, bagian perintah).
+#
+# Teks description berbahasa Inggris karena dibaca pemakai API, sama seperti
+# teks layar (Q-14). Komentar dengan tanda # tetap berbahasa Indonesia.
+openapi: 3.0.4
+info:
+  title: Revioten web API
+  version: 0.1.0
+  description: |
+    API used by the web screens of the PFD, PFMEA, and CP system.
+
+    Conventions (R-API-13):
+    - JSON over HTTP. Times are UTC in ISO 8601.
+    - IDs are opaque and stable. Clients must not parse them.
+    - Every response carries an `X-Request-Id` header. A client may send its
+      own `X-Request-Id` (1 to 64 characters: letters, digits, `.`, `_`, `-`);
+      otherwise the server creates one.
+    - Every error uses the `Error` schema, with the same request ID as the
+      header. Technical details are written only to the server log.
+paths:
+  # E-17 (diputuskan): /health ada di root, di luar /api/v1.
+  /health:
+    get:
+      operationId: getHealth
+      summary: Server and database status
+      responses:
+        '200':
+          description: The server and the database are reachable.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+        '503':
+          description: The server runs, but the database is not reachable.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+  /api/v1/customers:
+    get:
+      operationId: listCustomers
+      summary: List all customers, ordered by code
+      responses:
+        '200':
+          description: All customers.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerList'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: createCustomer
+      summary: Add a customer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewCustomer'
+      responses:
+        '201':
+          description: The customer was added.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+        '400':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+components:
+  responses:
+    Error:
+      description: |
+        The request failed. `code` says why: `invalid_request` (400, the body
+        cannot be read as JSON), `validation_failed` (422, see `details`),
+        `conflict` (409, for example the code is already used), `not_found`
+        (404), `method_not_allowed` (405), or `internal_error` (500).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  schemas:
+    Health:
+      type: object
+      required: [status, database]
+      properties:
+        status:
+          type: string
+          enum: [ok, unavailable]
+        database:
+          type: string
+          enum: [ok, unreachable]
+    Customer:
+      type: object
+      required: [id, code, name, created_at]
+      properties:
+        id:
+          type: string
+          description: Opaque stable ID.
+        code:
+          type: string
+          description: Customer code used in document numbers, for example SC-AB-001.
+          pattern: '^[A-Z]{2}$'
+          example: AB
+        name:
+          type: string
+          example: Example Customer
+        created_at:
+          type: string
+          format: date-time
+    NewCustomer:
+      type: object
+      required: [code, name]
+      properties:
+        code:
+          type: string
+          description: |
+            Two letters A to Z. Spaces around the code are removed and letters
+            are made uppercase. ZZ is reserved for general documents.
+          example: ab
+        name:
+          type: string
+          description: 1 to 200 characters after spaces around it are removed.
+          example: Example Customer
+    CustomerList:
+      type: object
+      required: [items]
+      # Daftar dibungkus objek supaya paginasi cursor (M9.3) nanti bisa
+      # ditambahkan tanpa memutus klien (R-API-15).
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Customer'
+    Error:
+      type: object
+      required: [code, message, request_id]
+      properties:
+        code:
+          type: string
+          # ASUMSI E-20: tabel kode error spec lama tidak ada di repo, jadi
+          # daftar ini disusun sendiri dan dicatat sebagai temuan.
+          enum:
+            - invalid_request
+            - validation_failed
+            - conflict
+            - not_found
+            - method_not_allowed
+            - internal_error
+        message:
+          type: string
+          description: Short explanation for people. Never contains technical details.
+        details:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorDetail'
+        request_id:
+          type: string
+          description: Same value as the X-Request-Id header.
+    ErrorDetail:
+      type: object
+      required: [field, code, message]
+      properties:
+        field:
+          type: string
+          description: Name of the field in the request body, for example code.
+        code:
+          type: string
+          enum: [required, invalid_format, too_long, reserved, taken]
+        message:
+          type: string

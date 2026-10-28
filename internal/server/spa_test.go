@@ -2,7 +2,6 @@ package server
 
 import (
 	"net/http"
-	"net/http/httptest"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -37,14 +36,11 @@ func TestSPA(t *testing.T) {
 		{name: "POST ke halaman ditolak", method: http.MethodPost, path: "/about", wantStatus: http.StatusMethodNotAllowed},
 	}
 
-	handler := NewHandler(testUI())
+	srv := newTestServer(t, testUI(), Deps{})
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequest(tt.method, tt.path, nil)
-			rec := httptest.NewRecorder()
-
-			handler.ServeHTTP(rec, req)
+			rec := srv.do(tt.method, tt.path, "")
 
 			if rec.Code != tt.wantStatus {
 				t.Fatalf("status %d, seharusnya %d", rec.Code, tt.wantStatus)
@@ -59,10 +55,7 @@ func TestSPA(t *testing.T) {
 // TestSPANotBuilt: bila frontend belum di-build, halaman menjawab 503
 // dengan petunjuk cara membangunnya.
 func TestSPANotBuilt(t *testing.T) {
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	rec := httptest.NewRecorder()
-
-	NewHandler(fstest.MapFS{}).ServeHTTP(rec, req)
+	rec := newTestServer(t, fstest.MapFS{}, Deps{}).do(http.MethodGet, "/", "")
 
 	if rec.Code != http.StatusServiceUnavailable {
 		t.Fatalf("status %d, seharusnya %d", rec.Code, http.StatusServiceUnavailable)

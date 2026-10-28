@@ -2,10 +2,10 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
-	"net/http/httptest"
+	"strings"
 	"testing"
-	"testing/fstest"
 )
 
 // TestHealthStatus memeriksa kode status untuk beberapa permintaan sekaligus.
@@ -22,17 +22,13 @@ func TestHealthStatus(t *testing.T) {
 		{name: "API yang tidak ada", method: http.MethodGet, path: "/api/v1/tidak-ada", wantStatus: http.StatusNotFound},
 	}
 
-	// Tampilan web tidak dipakai di test ini, jadi cukup sistem file kosong.
-	handler := NewHandler(fstest.MapFS{})
+	// Tampilan web tidak dipakai di test ini, jadi newTestServer memakai
+	// sistem file kosong dan database palsu yang sehat.
+	srv := newTestServer(t, nil, Deps{})
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// httptest membuat permintaan palsu dan merekam jawabannya,
-			// tanpa membuka port jaringan.
-			req := httptest.NewRequest(tt.method, tt.path, nil)
-			rec := httptest.NewRecorder()
-
-			handler.ServeHTTP(rec, req)
+			rec := srv.do(tt.method, tt.path, "")
 
 			if rec.Code != tt.wantStatus {
 				t.Errorf("status %d, seharusnya %d", rec.Code, tt.wantStatus)
@@ -43,20 +39,42 @@ func TestHealthStatus(t *testing.T) {
 
 // TestHealthBody memeriksa header dan isi JSON dari GET /health.
 func TestHealthBody(t *testing.T) {
-	req := httptest.NewRequest(http.MethodGet, "/health", nil)
-	rec := httptest.NewRecorder()
-
-	NewHandler(fstest.MapFS{}).ServeHTTP(rec, req)
+	rec := newTestServer(t, nil, Deps{}).do(http.MethodGet, "/health", "")
 
 	if got := rec.Header().Get("Content-Type"); got != "application/json" {
 		t.Errorf("Content-Type %q, seharusnya %q", got, "application/json")
 	}
-
-	var body healthResponse
+	var body Health
 	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
 		t.Fatalf("isi respons bukan JSON yang valid: %v", err)
 	}
-	if body.Status != "ok" {
-		t.Errorf("status di JSON %q, seharusnya %q", body.Status, "ok")
+	if body.Status != HealthStatusOk || body.Database != HealthDatabaseOk {
+		t.Errorf("isi %+v, seharusnya status ok dan database ok", body)
+	}
+}
+
+// TestHealthDatabaseDown: server tetap menjawab, tapi melaporkan database
+// tidak bisa dihubungi. Detail error hanya masuk log server (R-API-13).
+func TestHealthDatabaseDown(t *testing.T) {
+	srv := newTestServer(t, nil, Deps{DB: fakePinger{err: errors.New("dial tcp 127.0.0.1:5432: connection refused")}})
+
+	rec := srv.do(http.MethodGet, "/health", "")
+
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Errorf("status %d, seharusnya 503", rec.Code)
+	}
+	var body Health
+	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+		t.Fatalf("isi respons bukan JSON yang valid: %v", err)
+	}
+	if body.Status != HealthStatusUnavailable || body.Database != HealthDatabaseUnreachable {
+		t.Errorf("isi %+v, seharusnya status unavailable dan database unreachable", body)
+	}
+	if strings.Contains(rec.Body.String(), "dial tcp") {
+		t.Errorf("detail teknis bocor ke jawaban: %s", rec.Body.String())
+	}
+	log := srv.log.String()
+	if !strings.Contains(log, "dial tcp") || !strings.Contains(log, rec.Header().Get("X-Request-Id")) {
+		t.Errorf("log server harus memuat detail error dan request ID, dapat:\n%s", log)
 	}
 }

@@ -23,6 +23,8 @@
 		{t('healthChecking')}
 	{:else if status === 'ok'}
 		{t('healthOk')}
+	{:else if status === 'database_unreachable'}
+		{t('healthDatabaseDown')}
 	{:else}
 		{t('healthError')}
 	{/if}

@@ -12,13 +12,20 @@ import (
 const spaFallback = "200.html"
 
 // handleSPA melayani tampilan web dari hasil build SvelteKit di ui:
+//   - hanya GET dan HEAD; method lain dijawab 405;
 //   - file yang ada (misalnya /_app/immutable/....js) dikirim apa adanya;
-//   - aset atau alamat API yang tidak ada dijawab 404;
+//   - aset yang tidak ada dijawab 404;
 //   - alamat halaman lain dijawab dengan 200.html.
 func handleSPA(ui fs.FS) http.Handler {
 	files := http.FileServerFS(ui)
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet && r.Method != http.MethodHead {
+			w.Header().Set("Allow", "GET, HEAD")
+			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
 		name := strings.TrimPrefix(r.URL.Path, "/")
 
 		if name != "" && isFile(ui, name) {
@@ -26,7 +33,7 @@ func handleSPA(ui fs.FS) http.Handler {
 			return
 		}
 
-		if isAssetOrAPI(name) {
+		if isAsset(name) {
 			http.NotFound(w, r)
 			return
 		}
@@ -46,15 +53,14 @@ func isFile(ui fs.FS, name string) bool {
 	return err == nil && !info.IsDir()
 }
 
-// isAssetOrAPI menandai alamat yang tidak boleh diganti halaman fallback:
-// aset SvelteKit (_app/), API (api/), dan nama file yang berekstensi.
+// isAsset menandai alamat yang tidak boleh diganti halaman fallback: aset
+// SvelteKit (_app/) dan nama file yang berekstensi. Alamat API tidak sampai
+// ke sini, karena /api/ sudah ditangani routeAPI (server.go).
 // Nama kosong (alamat "/") bukan file: path.Base("") menghasilkan ".",
 // jadi nama kosong harus diperiksa lebih dulu.
-func isAssetOrAPI(name string) bool {
+func isAsset(name string) bool {
 	if name == "" {
 		return false
 	}
-	return strings.HasPrefix(name, "_app/") ||
-		name == "api" || strings.HasPrefix(name, "api/") ||
-		strings.Contains(path.Base(name), ".")
+	return strings.HasPrefix(name, "_app/") || strings.Contains(path.Base(name), ".")
 }

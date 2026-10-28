@@ -1,0 +1,15 @@
+# Konfigurasi oapi-codegen v2.8.1 untuk membuat api.gen.go dari api/openapi.yaml.
+# yaml-language-server: $schema=https://raw.githubusercontent.com/oapi-codegen/oapi-codegen/v2.8.1/configuration-schema.json
+package: server
+generate:
+  # Server net/http standar (Go 1.22+ ServeMux) ditambah strict server:
+  # handler menerima objek request bertipe dan mengembalikan objek response
+  # bertipe, sehingga bentuk JSON selalu sesuai kontrak.
+  std-http-server: true
+  strict-server: true
+  models: true
+output: api.gen.go
+compatibility:
+  # Nama konstanta enum selalu diawali nama tipenya, misalnya
+  # ErrorCodeConflict, supaya tidak tertukar dengan nama lain di paket server.
+  always-prefix-enum-values: true

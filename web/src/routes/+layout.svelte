@@ -14,6 +14,7 @@
 	<strong>{t('appTitle')}</strong>
 	<nav>
 		<a href="/">{t('navHome')}</a>
+		<a href="/customers">{t('navCustomers')}</a>
 		<a href="/about">{t('navAbout')}</a>
 	</nav>
 </header>

@@ -1,0 +1,25 @@
+# Konfigurasi sqlc v1.31.1. sqlc membaca skema dari file migrasi goose dan
+# query dari sql/queries, lalu membuat kode Go di internal/db.
+# Jalankan lewat: go generate ./...
+version: "2"
+sql:
+  - engine: postgresql
+    schema: sql/migrations
+    queries: sql/queries
+    gen:
+      go:
+        package: db
+        out: internal/db
+        sql_package: pgx/v5
+        # Daftar kosong dikembalikan sebagai [] (bukan nil), supaya JSON-nya [] bukan null.
+        emit_empty_slices: true
+        # Nama file berakhiran .gen.go supaya jelas tidak diedit tangan,
+        # dan tidak bentrok dengan db.go yang ditulis tangan.
+        output_db_file_name: queries.gen.go
+        output_models_file_name: models.gen.go
+        overrides:
+          # ID dipakai sebagai teks di luar database (R-API-13: ID tidak dibaca isinya).
+          - db_type: uuid
+            go_type: string
+          - db_type: timestamptz
+            go_type: time.Time

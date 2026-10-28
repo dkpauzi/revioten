@@ -1,27 +1,22 @@
 package server
 
 import (
-	"encoding/json"
-	"log/slog"
-	"net/http"
+	"context"
+	"time"
 )
 
-// healthResponse adalah isi JSON dari endpoint /health.
-// Tag `json:"status"` menentukan nama field di JSON.
-type healthResponse struct {
-	Status string `json:"status"`
-}
+// healthTimeout adalah batas waktu menunggu jawaban database di /health.
+const healthTimeout = 2 * time.Second
 
-// handleHealth menjawab bahwa server hidup.
-// Pemeriksaan database belum ada; itu menyusul di M0.5, saat server mulai
-// tersambung ke database (dipindah dari M0.3 atas persetujuan pemilik).
-func handleHealth(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
+// GetHealth menjawab apakah server dan database bisa dipakai. Bila database
+// tidak bisa dihubungi, jawabannya 503 dan detailnya hanya dicatat di log.
+func (a *apiServer) GetHealth(ctx context.Context, _ GetHealthRequestObject) (GetHealthResponseObject, error) {
+	pingCtx, cancel := context.WithTimeout(ctx, healthTimeout)
+	defer cancel()
 
-	err := json.NewEncoder(w).Encode(healthResponse{Status: "ok"})
-	if err != nil {
-		// Status 200 sudah terkirim, jadi error ini hanya bisa dicatat.
-		slog.Error("gagal menulis respons /health", "error", err)
+	if err := a.db.Ping(pingCtx); err != nil {
+		a.log.Warn("database tidak bisa dihubungi", "request_id", requestIDFrom(ctx), "error", err)
+		return GetHealth503JSONResponse{Status: HealthStatusUnavailable, Database: HealthDatabaseUnreachable}, nil
 	}
+	return GetHealth200JSONResponse{Status: HealthStatusOk, Database: HealthDatabaseOk}, nil
 }
