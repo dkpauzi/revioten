@@ -610,6 +610,261 @@ paths:
                 $ref: '#/components/schemas/Process'
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/number-settings:
+    get:
+      operationId: getNumberSettings
+      summary: Number settings, today the factory code (E-12)
+      responses:
+        '200':
+          description: The number settings.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NumberSettings'
+        default:
+          $ref: '#/components/responses/Error'
+    put:
+      operationId: updateNumberSettings
+      summary: Change the factory code. Issued numbers keep their text (A-2, R-NUM-02)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NumberSettingsUpdate'
+      responses:
+        '200':
+          description: The number settings were changed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NumberSettings'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/document-types:
+    get:
+      operationId: listDocumentTypes
+      summary: Document types with their number prefix (R-NUM-01, E-12)
+      responses:
+        '200':
+          description: The document types.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentTypeList'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: createDocumentType
+      summary: Add another document type from the WI, for example Work Instruction (A-2)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentTypeInput'
+      responses:
+        '201':
+          description: The document type was added.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentType'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/document-types/{documentTypeId}:
+    put:
+      operationId: updateDocumentType
+      summary: Change the name and letter of a document type (A-2)
+      parameters:
+        - $ref: '#/components/parameters/DocumentTypeId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentTypeInput'
+      responses:
+        '200':
+          description: The document type was changed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentType'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/special-codes:
+    get:
+      operationId: listSpecialCodes
+      summary: Special codes used in place of a customer code, ordered by code (E-12)
+      responses:
+        '200':
+          description: The special codes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpecialCodeList'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: createSpecialCode
+      summary: Add a special code. It cannot equal any customer code, now or before (A-2)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewSpecialCode'
+      responses:
+        '201':
+          description: The special code was added.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpecialCode'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/special-codes/{specialCodeId}:
+    put:
+      operationId: updateSpecialCode
+      summary: Rename a special code. The code itself never changes (A-2)
+      parameters:
+        - $ref: '#/components/parameters/SpecialCodeId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NameUpdate'
+      responses:
+        '200':
+          description: The special code was renamed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpecialCode'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/change-types:
+    get:
+      operationId: listChangeTypes
+      summary: The change types content, layout only, and administrative (R-TPL-10)
+      responses:
+        '200':
+          description: The change types.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChangeTypeList'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/change-types/{changeTypeId}:
+    put:
+      operationId: updateChangeType
+      summary: Rename a change type (A-2)
+      parameters:
+        - $ref: '#/components/parameters/ChangeTypeId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NameUpdate'
+      responses:
+        '200':
+          description: The change type was renamed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChangeType'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/change-sources:
+    get:
+      operationId: listChangeSources
+      summary: Change sources, active and inactive, ordered by name (R-CHG-06)
+      responses:
+        '200':
+          description: The change sources.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChangeSourceList'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: createChangeSource
+      summary: Add a change source (A-2)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NameUpdate'
+      responses:
+        '201':
+          description: The change source was added.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChangeSource'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/change-sources/{changeSourceId}:
+    put:
+      operationId: updateChangeSource
+      summary: Rename a change source, or switch it off or on (A-2)
+      parameters:
+        - $ref: '#/components/parameters/ChangeSourceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeSourceUpdate'
+      responses:
+        '200':
+          description: The change source was changed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChangeSource'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/four-m-categories:
+    get:
+      operationId: listFourMCategories
+      summary: The 4M categories Man, Machine, Material, and Method
+      responses:
+        '200':
+          description: The 4M categories.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FourMCategoryList'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/four-m-categories/{fourMCategoryId}:
+    put:
+      operationId: updateFourMCategory
+      summary: Rename a 4M category (A-2)
+      parameters:
+        - $ref: '#/components/parameters/FourMCategoryId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NameUpdate'
+      responses:
+        '200':
+          description: The 4M category was renamed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FourMCategory'
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/audit-log:
     get:
       operationId: listAuditLog
@@ -704,6 +959,36 @@ components:
         type: string
     ProcessId:
       name: processId
+      in: path
+      required: true
+      schema:
+        type: string
+    DocumentTypeId:
+      name: documentTypeId
+      in: path
+      required: true
+      schema:
+        type: string
+    SpecialCodeId:
+      name: specialCodeId
+      in: path
+      required: true
+      schema:
+        type: string
+    ChangeTypeId:
+      name: changeTypeId
+      in: path
+      required: true
+      schema:
+        type: string
+    ChangeSourceId:
+      name: changeSourceId
+      in: path
+      required: true
+      schema:
+        type: string
+    FourMCategoryId:
+      name: fourMCategoryId
       in: path
       required: true
       schema:
@@ -1362,6 +1647,164 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Process'
+    NumberSettings:
+      type: object
+      required: [factory_code]
+      properties:
+        factory_code:
+          type: string
+          description: One letter A to Z, the first letter of every number prefix (E-12).
+          example: S
+    NumberSettingsUpdate:
+      type: object
+      required: [factory_code]
+      properties:
+        factory_code:
+          type: string
+    DocumentType:
+      type: object
+      required: [id, name, letter, prefix]
+      properties:
+        id:
+          type: string
+        key:
+          type: string
+          enum: [pfd, pfmea, cp]
+          description: Set for the documents this system builds. Missing for other document types from the WI.
+        name:
+          type: string
+        letter:
+          type: string
+          description: One letter A to Z, unique among document types.
+        prefix:
+          type: string
+          description: The factory code followed by the letter, for example SH.
+    DocumentTypeInput:
+      type: object
+      required: [name, letter]
+      properties:
+        name:
+          type: string
+          description: 1 to 200 characters, unique among document types, ignoring case.
+        letter:
+          type: string
+    DocumentTypeList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentType'
+    SpecialCode:
+      type: object
+      required: [id, code, name, created_at]
+      properties:
+        id:
+          type: string
+        code:
+          type: string
+          description: Two or three letters A to Z, used in place of a customer code, for example ZZ.
+        name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    NewSpecialCode:
+      type: object
+      required: [code, name]
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+    SpecialCodeList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpecialCode'
+    NameUpdate:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          description: 1 to 200 characters, unique within its list, ignoring case.
+    ChangeType:
+      type: object
+      required: [id, key, name]
+      properties:
+        id:
+          type: string
+        key:
+          type: string
+          enum: [content, layout, administrative]
+        name:
+          type: string
+    ChangeTypeList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChangeType'
+    ChangeSource:
+      type: object
+      required: [id, name, active, created_at]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        mechanism:
+          type: string
+          enum: [yokoten, template, sqam]
+          description: Set when the system itself creates changes with this source. Such a source stays active.
+        active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+    ChangeSourceUpdate:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        active:
+          type: boolean
+          description: Leave it out to keep the current status.
+    ChangeSourceList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChangeSource'
+    FourMCategory:
+      type: object
+      required: [id, key, name]
+      properties:
+        id:
+          type: string
+        key:
+          type: string
+          enum: [man, machine, material, method]
+        name:
+          type: string
+    FourMCategoryList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/FourMCategory'
     CustomerList:
       type: object
       required: [items]

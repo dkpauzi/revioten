@@ -13,10 +13,6 @@ import (
 // ASUMSI E-21: brief belum menyebut batas ini.
 const maxNameLength = 200
 
-// reservedCode dipakai untuk dokumen General/Common, bukan untuk customer.
-// ASUMSI E-12: kode ZZ di WI SW-ZZ-000 berarti dokumen umum.
-const reservedCode = "ZZ"
-
 // validate merapikan input lalu memeriksa aturannya. Semua masalah dikumpulkan
 // sekaligus supaya layar bisa menandai setiap field. Aturan yang sama juga
 // dijaga batasan tabel customers sebagai pengaman terakhir. Keberadaan Project
@@ -68,15 +64,15 @@ func normalizeCode(code string) string {
 	return strings.ToUpper(strings.TrimSpace(code))
 }
 
-// checkCode memeriksa kode yang sudah dirapikan: tepat dua huruf A sampai Z (E-12).
+// checkCode memeriksa kode yang sudah dirapikan: tepat dua huruf A sampai Z
+// (E-12). Kode khusus seperti ZZ diperiksa Service, karena daftarnya master
+// data di database (M1.6).
 func checkCode(code string) (problem.Problem, bool) {
 	switch {
 	case code == "":
 		return problem.Problem{Field: "code", Code: problem.Required, Message: "Enter the customer code."}, false
 	case !isTwoLetters(code):
 		return problem.Problem{Field: "code", Code: problem.InvalidFormat, Message: "Use two letters A to Z."}, false
-	case code == reservedCode:
-		return problem.Problem{Field: "code", Code: problem.Reserved, Message: "ZZ is reserved for general documents."}, false
 	}
 	return problem.Problem{}, true
 }

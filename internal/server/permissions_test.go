@@ -13,8 +13,10 @@ import (
 	"github.com/dkpauzi/revioten/internal/access"
 	"github.com/dkpauzi/revioten/internal/audit"
 	"github.com/dkpauzi/revioten/internal/auth"
+	"github.com/dkpauzi/revioten/internal/change"
 	"github.com/dkpauzi/revioten/internal/customer"
 	"github.com/dkpauzi/revioten/internal/db/dbtest"
+	"github.com/dkpauzi/revioten/internal/numbering"
 	"github.com/dkpauzi/revioten/internal/process"
 	"github.com/dkpauzi/revioten/internal/product"
 )
@@ -45,9 +47,12 @@ func TestPermissionsPerOperation(t *testing.T) {
 	customers := customer.NewService(pool, checker)
 	products := product.NewService(pool, checker)
 	processes := process.NewService(pool, checker)
+	numbers := numbering.NewService(pool, checker)
+	changes := change.NewService(pool, checker)
 	handler := NewHandler(fstest.MapFS{}, Deps{
 		DB: pool, Customers: customers, Auth: authSvc, Access: checker,
 		Audit: audit.NewService(pool, checker), Products: products, Processes: processes,
+		Numbering: numbers, Changes: changes,
 	})
 
 	// Admin pertama, satu akun kerja tanpa peran (hanya hak dasar Viewer), dan
@@ -113,11 +118,33 @@ func TestPermissionsPerOperation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// Isi awal master M1.6.
+	docTypes, err := numbers.ListDocumentTypes(ctx, admin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	specialCodes, err := numbers.ListSpecialCodes(ctx, admin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	changeTypes, err := changes.ListChangeTypes(ctx, admin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sources, err := changes.ListChangeSources(ctx, admin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	categories, err := changes.ListFourMCategories(ctx, admin)
+	if err != nil {
+		t.Fatal(err)
+	}
 	// params mengisi {nama} di alamat dan isi permintaan dengan ID sungguhan.
 	params := map[string]string{
 		"accountId": viewerInfo.ID, "projectGroupId": group.ID, "customerId": cust.ID,
 		"modelGroupId": modelGroup.ID, "modelId": model.ID, "partNumberId": part.ID,
-		"processId": proc.ID,
+		"processId": proc.ID, "documentTypeId": docTypes[0].ID, "specialCodeId": specialCodes[0].ID,
+		"changeTypeId": changeTypes[0].ID, "changeSourceId": sources[0].ID, "fourMCategoryId": categories[0].ID,
 	}
 
 	// Alamat ditulis seperti di kontrak. Urutan penting: operasi yang
@@ -146,6 +173,22 @@ func TestPermissionsPerOperation(t *testing.T) {
 		{http.MethodPost, "/api/v1/processes", `{"name":"SMT","aliases":["Surface Mount"]}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/processes/{processId}", "", http.StatusOK, http.StatusOK, http.StatusOK},
 		{http.MethodPut, "/api/v1/processes/{processId}", `{"name":"Incoming QC","aliases":["IQC"]}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		// Jenis dokumen dan perubahan diubah Admin (A-2, UC-05).
+		{http.MethodGet, "/api/v1/number-settings", "", http.StatusOK, http.StatusOK, http.StatusOK},
+		{http.MethodPut, "/api/v1/number-settings", `{"factory_code":"T"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodGet, "/api/v1/document-types", "", http.StatusOK, http.StatusOK, http.StatusOK},
+		{http.MethodPost, "/api/v1/document-types", `{"name":"Work Instruction","letter":"W"}`, http.StatusForbidden, http.StatusForbidden, http.StatusCreated},
+		{http.MethodPut, "/api/v1/document-types/{documentTypeId}", `{"name":"Process Flow Diagram","letter":"H"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodGet, "/api/v1/special-codes", "", http.StatusOK, http.StatusOK, http.StatusOK},
+		{http.MethodPost, "/api/v1/special-codes", `{"code":"QA","name":"Quality"}`, http.StatusForbidden, http.StatusForbidden, http.StatusCreated},
+		{http.MethodPut, "/api/v1/special-codes/{specialCodeId}", `{"name":"Health and Safety"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodGet, "/api/v1/change-types", "", http.StatusOK, http.StatusOK, http.StatusOK},
+		{http.MethodPut, "/api/v1/change-types/{changeTypeId}", `{"name":"Content change"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodGet, "/api/v1/change-sources", "", http.StatusOK, http.StatusOK, http.StatusOK},
+		{http.MethodPost, "/api/v1/change-sources", `{"name":"Kaizen"}`, http.StatusForbidden, http.StatusForbidden, http.StatusCreated},
+		{http.MethodPut, "/api/v1/change-sources/{changeSourceId}", `{"name":"Internal audit finding"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodGet, "/api/v1/four-m-categories", "", http.StatusOK, http.StatusOK, http.StatusOK},
+		{http.MethodPut, "/api/v1/four-m-categories/{fourMCategoryId}", `{"name":"Manpower"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
 		{http.MethodGet, "/api/v1/roles", "", http.StatusForbidden, http.StatusForbidden, http.StatusOK},
 		{http.MethodGet, "/api/v1/accounts", "", http.StatusForbidden, http.StatusForbidden, http.StatusOK},
 		{http.MethodPost, "/api/v1/accounts", `{"person_name":"Orang Baru","kind":"work","login":"orang.baru"}`, http.StatusForbidden, http.StatusForbidden, http.StatusCreated},

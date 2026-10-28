@@ -484,6 +484,115 @@ export type ProcessList = {
     items: Array<Process>;
 };
 
+export type NumberSettings = {
+    /**
+     * One letter A to Z, the first letter of every number prefix (E-12).
+     */
+    factory_code: string;
+};
+
+export type NumberSettingsUpdate = {
+    factory_code: string;
+};
+
+export type DocumentType = {
+    id: string;
+    /**
+     * Set for the documents this system builds. Missing for other document types from the WI.
+     */
+    key?: 'pfd' | 'pfmea' | 'cp';
+    name: string;
+    /**
+     * One letter A to Z, unique among document types.
+     */
+    letter: string;
+    /**
+     * The factory code followed by the letter, for example SH.
+     */
+    prefix: string;
+};
+
+export type DocumentTypeInput = {
+    /**
+     * 1 to 200 characters, unique among document types, ignoring case.
+     */
+    name: string;
+    letter: string;
+};
+
+export type DocumentTypeList = {
+    items: Array<DocumentType>;
+};
+
+export type SpecialCode = {
+    id: string;
+    /**
+     * Two or three letters A to Z, used in place of a customer code, for example ZZ.
+     */
+    code: string;
+    name: string;
+    created_at: string;
+};
+
+export type NewSpecialCode = {
+    code: string;
+    name: string;
+};
+
+export type SpecialCodeList = {
+    items: Array<SpecialCode>;
+};
+
+export type NameUpdate = {
+    /**
+     * 1 to 200 characters, unique within its list, ignoring case.
+     */
+    name: string;
+};
+
+export type ChangeType = {
+    id: string;
+    key: 'content' | 'layout' | 'administrative';
+    name: string;
+};
+
+export type ChangeTypeList = {
+    items: Array<ChangeType>;
+};
+
+export type ChangeSource = {
+    id: string;
+    name: string;
+    /**
+     * Set when the system itself creates changes with this source. Such a source stays active.
+     */
+    mechanism?: 'yokoten' | 'template' | 'sqam';
+    active: boolean;
+    created_at: string;
+};
+
+export type ChangeSourceUpdate = {
+    name: string;
+    /**
+     * Leave it out to keep the current status.
+     */
+    active?: boolean;
+};
+
+export type ChangeSourceList = {
+    items: Array<ChangeSource>;
+};
+
+export type FourMCategory = {
+    id: string;
+    key: 'man' | 'machine' | 'material' | 'method';
+    name: string;
+};
+
+export type FourMCategoryList = {
+    items: Array<FourMCategory>;
+};
+
 export type CustomerList = {
     items: Array<Customer>;
 };
@@ -528,6 +637,16 @@ export type ModelId = string;
 export type PartNumberId = string;
 
 export type ProcessId = string;
+
+export type DocumentTypeId = string;
+
+export type SpecialCodeId = string;
+
+export type ChangeTypeId = string;
+
+export type ChangeSourceId = string;
+
+export type FourMCategoryId = string;
 
 export type GetHealthData = {
     body?: never;
@@ -1699,6 +1818,511 @@ export type UpdateProcessResponses = {
 };
 
 export type UpdateProcessResponse = UpdateProcessResponses[keyof UpdateProcessResponses];
+
+export type GetNumberSettingsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/number-settings';
+};
+
+export type GetNumberSettingsErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type GetNumberSettingsError = GetNumberSettingsErrors[keyof GetNumberSettingsErrors];
+
+export type GetNumberSettingsResponses = {
+    /**
+     * The number settings.
+     */
+    200: NumberSettings;
+};
+
+export type GetNumberSettingsResponse = GetNumberSettingsResponses[keyof GetNumberSettingsResponses];
+
+export type UpdateNumberSettingsData = {
+    body: NumberSettingsUpdate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/number-settings';
+};
+
+export type UpdateNumberSettingsErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type UpdateNumberSettingsError = UpdateNumberSettingsErrors[keyof UpdateNumberSettingsErrors];
+
+export type UpdateNumberSettingsResponses = {
+    /**
+     * The number settings were changed.
+     */
+    200: NumberSettings;
+};
+
+export type UpdateNumberSettingsResponse = UpdateNumberSettingsResponses[keyof UpdateNumberSettingsResponses];
+
+export type ListDocumentTypesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/document-types';
+};
+
+export type ListDocumentTypesErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ListDocumentTypesError = ListDocumentTypesErrors[keyof ListDocumentTypesErrors];
+
+export type ListDocumentTypesResponses = {
+    /**
+     * The document types.
+     */
+    200: DocumentTypeList;
+};
+
+export type ListDocumentTypesResponse = ListDocumentTypesResponses[keyof ListDocumentTypesResponses];
+
+export type CreateDocumentTypeData = {
+    body: DocumentTypeInput;
+    path?: never;
+    query?: never;
+    url: '/api/v1/document-types';
+};
+
+export type CreateDocumentTypeErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type CreateDocumentTypeError = CreateDocumentTypeErrors[keyof CreateDocumentTypeErrors];
+
+export type CreateDocumentTypeResponses = {
+    /**
+     * The document type was added.
+     */
+    201: DocumentType;
+};
+
+export type CreateDocumentTypeResponse = CreateDocumentTypeResponses[keyof CreateDocumentTypeResponses];
+
+export type UpdateDocumentTypeData = {
+    body: DocumentTypeInput;
+    path: {
+        documentTypeId: string;
+    };
+    query?: never;
+    url: '/api/v1/document-types/{documentTypeId}';
+};
+
+export type UpdateDocumentTypeErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type UpdateDocumentTypeError = UpdateDocumentTypeErrors[keyof UpdateDocumentTypeErrors];
+
+export type UpdateDocumentTypeResponses = {
+    /**
+     * The document type was changed.
+     */
+    200: DocumentType;
+};
+
+export type UpdateDocumentTypeResponse = UpdateDocumentTypeResponses[keyof UpdateDocumentTypeResponses];
+
+export type ListSpecialCodesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/special-codes';
+};
+
+export type ListSpecialCodesErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ListSpecialCodesError = ListSpecialCodesErrors[keyof ListSpecialCodesErrors];
+
+export type ListSpecialCodesResponses = {
+    /**
+     * The special codes.
+     */
+    200: SpecialCodeList;
+};
+
+export type ListSpecialCodesResponse = ListSpecialCodesResponses[keyof ListSpecialCodesResponses];
+
+export type CreateSpecialCodeData = {
+    body: NewSpecialCode;
+    path?: never;
+    query?: never;
+    url: '/api/v1/special-codes';
+};
+
+export type CreateSpecialCodeErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type CreateSpecialCodeError = CreateSpecialCodeErrors[keyof CreateSpecialCodeErrors];
+
+export type CreateSpecialCodeResponses = {
+    /**
+     * The special code was added.
+     */
+    201: SpecialCode;
+};
+
+export type CreateSpecialCodeResponse = CreateSpecialCodeResponses[keyof CreateSpecialCodeResponses];
+
+export type UpdateSpecialCodeData = {
+    body: NameUpdate;
+    path: {
+        specialCodeId: string;
+    };
+    query?: never;
+    url: '/api/v1/special-codes/{specialCodeId}';
+};
+
+export type UpdateSpecialCodeErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type UpdateSpecialCodeError = UpdateSpecialCodeErrors[keyof UpdateSpecialCodeErrors];
+
+export type UpdateSpecialCodeResponses = {
+    /**
+     * The special code was renamed.
+     */
+    200: SpecialCode;
+};
+
+export type UpdateSpecialCodeResponse = UpdateSpecialCodeResponses[keyof UpdateSpecialCodeResponses];
+
+export type ListChangeTypesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/change-types';
+};
+
+export type ListChangeTypesErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ListChangeTypesError = ListChangeTypesErrors[keyof ListChangeTypesErrors];
+
+export type ListChangeTypesResponses = {
+    /**
+     * The change types.
+     */
+    200: ChangeTypeList;
+};
+
+export type ListChangeTypesResponse = ListChangeTypesResponses[keyof ListChangeTypesResponses];
+
+export type UpdateChangeTypeData = {
+    body: NameUpdate;
+    path: {
+        changeTypeId: string;
+    };
+    query?: never;
+    url: '/api/v1/change-types/{changeTypeId}';
+};
+
+export type UpdateChangeTypeErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type UpdateChangeTypeError = UpdateChangeTypeErrors[keyof UpdateChangeTypeErrors];
+
+export type UpdateChangeTypeResponses = {
+    /**
+     * The change type was renamed.
+     */
+    200: ChangeType;
+};
+
+export type UpdateChangeTypeResponse = UpdateChangeTypeResponses[keyof UpdateChangeTypeResponses];
+
+export type ListChangeSourcesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/change-sources';
+};
+
+export type ListChangeSourcesErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ListChangeSourcesError = ListChangeSourcesErrors[keyof ListChangeSourcesErrors];
+
+export type ListChangeSourcesResponses = {
+    /**
+     * The change sources.
+     */
+    200: ChangeSourceList;
+};
+
+export type ListChangeSourcesResponse = ListChangeSourcesResponses[keyof ListChangeSourcesResponses];
+
+export type CreateChangeSourceData = {
+    body: NameUpdate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/change-sources';
+};
+
+export type CreateChangeSourceErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type CreateChangeSourceError = CreateChangeSourceErrors[keyof CreateChangeSourceErrors];
+
+export type CreateChangeSourceResponses = {
+    /**
+     * The change source was added.
+     */
+    201: ChangeSource;
+};
+
+export type CreateChangeSourceResponse = CreateChangeSourceResponses[keyof CreateChangeSourceResponses];
+
+export type UpdateChangeSourceData = {
+    body: ChangeSourceUpdate;
+    path: {
+        changeSourceId: string;
+    };
+    query?: never;
+    url: '/api/v1/change-sources/{changeSourceId}';
+};
+
+export type UpdateChangeSourceErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type UpdateChangeSourceError = UpdateChangeSourceErrors[keyof UpdateChangeSourceErrors];
+
+export type UpdateChangeSourceResponses = {
+    /**
+     * The change source was changed.
+     */
+    200: ChangeSource;
+};
+
+export type UpdateChangeSourceResponse = UpdateChangeSourceResponses[keyof UpdateChangeSourceResponses];
+
+export type ListFourMCategoriesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/four-m-categories';
+};
+
+export type ListFourMCategoriesErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ListFourMCategoriesError = ListFourMCategoriesErrors[keyof ListFourMCategoriesErrors];
+
+export type ListFourMCategoriesResponses = {
+    /**
+     * The 4M categories.
+     */
+    200: FourMCategoryList;
+};
+
+export type ListFourMCategoriesResponse = ListFourMCategoriesResponses[keyof ListFourMCategoriesResponses];
+
+export type UpdateFourMCategoryData = {
+    body: NameUpdate;
+    path: {
+        fourMCategoryId: string;
+    };
+    query?: never;
+    url: '/api/v1/four-m-categories/{fourMCategoryId}';
+};
+
+export type UpdateFourMCategoryErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type UpdateFourMCategoryError = UpdateFourMCategoryErrors[keyof UpdateFourMCategoryErrors];
+
+export type UpdateFourMCategoryResponses = {
+    /**
+     * The 4M category was renamed.
+     */
+    200: FourMCategory;
+};
+
+export type UpdateFourMCategoryResponse = UpdateFourMCategoryResponses[keyof UpdateFourMCategoryResponses];
 
 export type ListAuditLogData = {
     body?: never;

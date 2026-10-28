@@ -32,7 +32,22 @@ import {
 	resetAccountPassword,
 	setAccountRoles,
 	setUnauthenticatedHandler,
-	verifyAuditLog
+	verifyAuditLog,
+	getNumberSettings,
+	updateNumberSettings,
+	listDocumentTypes,
+	createDocumentType,
+	updateDocumentType,
+	listSpecialCodes,
+	createSpecialCode,
+	updateSpecialCode,
+	listChangeTypes,
+	updateChangeType,
+	listChangeSources,
+	createChangeSource,
+	updateChangeSource,
+	listFourMCategories,
+	updateFourMCategory
 } from './client.ts';
 
 // Satu panggilan yang dicatat fakeFetch.
@@ -318,5 +333,48 @@ describe('master proses (M1.5)', () => {
 		]);
 		// [] berarti semua alias dilepas, jadi harus ikut terkirim.
 		expect(JSON.parse(String(calls[2].init?.body))).toEqual({ name: 'IQC', aliases: [] });
+	});
+});
+
+describe('jenis dokumen dan perubahan (M1.6)', () => {
+	it('memanggil alamat dan method yang benar, dengan ID yang dikodekan', async () => {
+		const calls: Call[] = [];
+		const ok = () => fakeFetch(Response.json({ items: [] }), calls);
+		await getNumberSettings(ok());
+		await updateNumberSettings({ factory_code: 's' }, ok());
+		await listDocumentTypes(ok());
+		await createDocumentType({ name: 'Work Instruction', letter: 'W' }, ok());
+		await updateDocumentType('dt/1', { name: 'PFD', letter: 'H' }, ok());
+		await listSpecialCodes(ok());
+		await createSpecialCode({ code: 'QA', name: 'Quality' }, ok());
+		await updateSpecialCode('sc-1', 'General', ok());
+		await listChangeTypes(ok());
+		await updateChangeType('ct-1', 'Content change', ok());
+		await listChangeSources(ok());
+		await createChangeSource('Kaizen', ok());
+		await updateChangeSource('cs-1', { name: 'Kaizen', active: false }, ok());
+		await listFourMCategories(ok());
+		await updateFourMCategory('fm-1', 'Manpower', ok());
+
+		expect(calls.map((c) => `${c.init?.method} ${c.url}`)).toEqual([
+			'GET /api/v1/number-settings',
+			'PUT /api/v1/number-settings',
+			'GET /api/v1/document-types',
+			'POST /api/v1/document-types',
+			'PUT /api/v1/document-types/dt%2F1',
+			'GET /api/v1/special-codes',
+			'POST /api/v1/special-codes',
+			'PUT /api/v1/special-codes/sc-1',
+			'GET /api/v1/change-types',
+			'PUT /api/v1/change-types/ct-1',
+			'GET /api/v1/change-sources',
+			'POST /api/v1/change-sources',
+			'PUT /api/v1/change-sources/cs-1',
+			'GET /api/v1/four-m-categories',
+			'PUT /api/v1/four-m-categories/fm-1'
+		]);
+		expect(JSON.parse(String(calls[7].init?.body))).toEqual({ name: 'General' });
+		expect(JSON.parse(String(calls[11].init?.body))).toEqual({ name: 'Kaizen' });
+		expect(JSON.parse(String(calls[12].init?.body))).toEqual({ name: 'Kaizen', active: false });
 	});
 });

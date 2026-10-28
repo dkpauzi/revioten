@@ -26,6 +26,11 @@ describe('teks audit log', () => {
 		expect(actionLabel('part_number.updated')).toBe(en.auditActionPartNumberUpdated);
 		expect(actionLabel('process.created')).toBe(en.auditActionProcessCreated);
 		expect(actionLabel('process.updated')).toBe(en.auditActionProcessUpdated);
+		expect(actionLabel('number_settings.updated')).toBe(en.auditActionNumberSettingsUpdated);
+		expect(actionLabel('document_type.created')).toBe(en.auditActionDocumentTypeCreated);
+		expect(actionLabel('special_code.updated')).toBe(en.auditActionSpecialCodeUpdated);
+		expect(actionLabel('change_source.created')).toBe(en.auditActionChangeSourceCreated);
+		expect(actionLabel('four_m_category.updated')).toBe(en.auditActionFourMCategoryUpdated);
 	});
 
 	// Aktor manusia ditampilkan bersama orang pemegang akunnya (D-74).
@@ -58,6 +63,9 @@ describe('teks audit log', () => {
 		);
 		expect(detailsText({ name: 'IQC', aliases: 'Incoming QC' })).toBe(
 			`${en.auditDetailAliases}: Incoming QC; ${en.auditDetailName}: IQC`
+		);
+		expect(detailsText({ factory_code: 'S → T', letter: 'H → P' })).toBe(
+			`${en.auditDetailFactoryCode}: S → T; ${en.auditDetailLetter}: H → P`
 		);
 	});
 

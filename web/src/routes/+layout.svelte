@@ -66,6 +66,8 @@
 				<a href="/customers">{t('navCustomers')}</a>
 				<a href="/models">{t('navModels')}</a>
 				<a href="/processes">{t('navProcesses')}</a>
+				<a href="/document-types">{t('navDocumentTypes')}</a>
+				<a href="/change-types">{t('navChangeTypes')}</a>
 				<!-- Menu hanya untuk pemegang hak A-1; server tetap memeriksa setiap operasi. -->
 				{#if can('A-1')}
 					<a href="/admin/accounts">{t('navAccounts')}</a>

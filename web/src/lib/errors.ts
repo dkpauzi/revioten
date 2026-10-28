@@ -32,7 +32,11 @@ const problemKeys: Record<string, MessageKey> = {
 	'model_id:not_allowed': 'modelCustomerInactive',
 	'aliases:taken': 'processAliasTaken',
 	'aliases:too_long': 'processAliasTooLong',
-	'aliases:invalid_format': 'processAliasInvalid'
+	'aliases:invalid_format': 'processAliasInvalid',
+	'factory_code:invalid_format': 'factoryCodeInvalid',
+	'letter:taken': 'documentTypeLetterTaken',
+	'letter:invalid_format': 'documentTypeLetterInvalid',
+	'active:not_allowed': 'changeSourceSystemActive'
 };
 
 // ProblemScope adalah formulir tempat masalah ditampilkan. Field yang sama bisa
@@ -43,7 +47,10 @@ export type ProblemScope =
 	| 'modelGroup'
 	| 'model'
 	| 'partNumber'
-	| 'process';
+	| 'process'
+	| 'documentType'
+	| 'specialCode'
+	| 'changeList';
 
 // scopedKeys memetakan "formulir.field:kode masalah" ke kunci teks layar.
 const scopedKeys: Record<string, MessageKey> = {
@@ -59,7 +66,11 @@ const scopedKeys: Record<string, MessageKey> = {
 	'partNumber.number:required': 'partNumberRequired',
 	'partNumber.number:taken': 'partNumberTaken',
 	'process.name:required': 'processNameRequired',
-	'process.name:taken': 'processNameTaken'
+	'process.name:taken': 'processNameTaken',
+	'documentType.name:taken': 'documentTypeNameTaken',
+	'specialCode.code:taken': 'specialCodeTaken',
+	'specialCode.code:invalid_format': 'specialCodeInvalid',
+	'changeList.name:taken': 'changeListNameTaken'
 };
 
 // problemText memberi teks layar untuk satu masalah input: teks khusus

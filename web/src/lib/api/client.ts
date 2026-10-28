@@ -9,6 +9,20 @@ import type {
 	AccountList,
 	AuditEntryList,
 	AuditVerification,
+	ChangeSource,
+	ChangeSourceList,
+	ChangeSourceUpdate,
+	ChangeType,
+	ChangeTypeList,
+	DocumentType,
+	DocumentTypeInput,
+	DocumentTypeList,
+	FourMCategory,
+	FourMCategoryList,
+	NewSpecialCode,
+	NumberSettings,
+	SpecialCode,
+	SpecialCodeList,
 	Error as ApiError,
 	CreatedAccount,
 	Credentials,
@@ -203,6 +217,114 @@ export function updateProcess(
 	fetchFn: typeof fetch = fetch
 ): Promise<ApiResult<Process>> {
 	return call<Process>(fetchFn, itemPath('processes', id), jsonRequest('PUT', input));
+}
+
+// getNumberSettings memanggil GET /api/v1/number-settings (M1.6).
+export function getNumberSettings(fetchFn: typeof fetch = fetch): Promise<ApiResult<NumberSettings>> {
+	return call<NumberSettings>(fetchFn, '/api/v1/number-settings', { method: 'GET' });
+}
+
+// updateNumberSettings memanggil PUT /api/v1/number-settings (A-2).
+export function updateNumberSettings(
+	input: NumberSettings,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<NumberSettings>> {
+	return call<NumberSettings>(fetchFn, '/api/v1/number-settings', jsonRequest('PUT', input));
+}
+
+// listDocumentTypes memanggil GET /api/v1/document-types.
+export function listDocumentTypes(fetchFn: typeof fetch = fetch): Promise<ApiResult<DocumentTypeList>> {
+	return call<DocumentTypeList>(fetchFn, '/api/v1/document-types', { method: 'GET' });
+}
+
+// createDocumentType memanggil POST /api/v1/document-types (A-2).
+export function createDocumentType(
+	input: DocumentTypeInput,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<DocumentType>> {
+	return call<DocumentType>(fetchFn, '/api/v1/document-types', jsonRequest('POST', input));
+}
+
+// updateDocumentType memanggil PUT /api/v1/document-types/{id} (A-2).
+export function updateDocumentType(
+	id: string,
+	input: DocumentTypeInput,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<DocumentType>> {
+	return call<DocumentType>(fetchFn, itemPath('document-types', id), jsonRequest('PUT', input));
+}
+
+// listSpecialCodes memanggil GET /api/v1/special-codes.
+export function listSpecialCodes(fetchFn: typeof fetch = fetch): Promise<ApiResult<SpecialCodeList>> {
+	return call<SpecialCodeList>(fetchFn, '/api/v1/special-codes', { method: 'GET' });
+}
+
+// createSpecialCode memanggil POST /api/v1/special-codes (A-2).
+export function createSpecialCode(
+	input: NewSpecialCode,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<SpecialCode>> {
+	return call<SpecialCode>(fetchFn, '/api/v1/special-codes', jsonRequest('POST', input));
+}
+
+// updateSpecialCode memanggil PUT /api/v1/special-codes/{id} (A-2). Kodenya
+// tidak bisa diubah, hanya namanya.
+export function updateSpecialCode(
+	id: string,
+	name: string,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<SpecialCode>> {
+	return call<SpecialCode>(fetchFn, itemPath('special-codes', id), jsonRequest('PUT', { name }));
+}
+
+// listChangeTypes memanggil GET /api/v1/change-types.
+export function listChangeTypes(fetchFn: typeof fetch = fetch): Promise<ApiResult<ChangeTypeList>> {
+	return call<ChangeTypeList>(fetchFn, '/api/v1/change-types', { method: 'GET' });
+}
+
+// updateChangeType memanggil PUT /api/v1/change-types/{id} (A-2).
+export function updateChangeType(
+	id: string,
+	name: string,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<ChangeType>> {
+	return call<ChangeType>(fetchFn, itemPath('change-types', id), jsonRequest('PUT', { name }));
+}
+
+// listChangeSources memanggil GET /api/v1/change-sources.
+export function listChangeSources(fetchFn: typeof fetch = fetch): Promise<ApiResult<ChangeSourceList>> {
+	return call<ChangeSourceList>(fetchFn, '/api/v1/change-sources', { method: 'GET' });
+}
+
+// createChangeSource memanggil POST /api/v1/change-sources (A-2).
+export function createChangeSource(
+	name: string,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<ChangeSource>> {
+	return call<ChangeSource>(fetchFn, '/api/v1/change-sources', jsonRequest('POST', { name }));
+}
+
+// updateChangeSource memanggil PUT /api/v1/change-sources/{id} (A-2).
+export function updateChangeSource(
+	id: string,
+	input: ChangeSourceUpdate,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<ChangeSource>> {
+	return call<ChangeSource>(fetchFn, itemPath('change-sources', id), jsonRequest('PUT', input));
+}
+
+// listFourMCategories memanggil GET /api/v1/four-m-categories.
+export function listFourMCategories(fetchFn: typeof fetch = fetch): Promise<ApiResult<FourMCategoryList>> {
+	return call<FourMCategoryList>(fetchFn, '/api/v1/four-m-categories', { method: 'GET' });
+}
+
+// updateFourMCategory memanggil PUT /api/v1/four-m-categories/{id} (A-2).
+export function updateFourMCategory(
+	id: string,
+	name: string,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<FourMCategory>> {
+	return call<FourMCategory>(fetchFn, itemPath('four-m-categories', id), jsonRequest('PUT', { name }));
 }
 
 // getSession memanggil GET /api/v1/session: siapa yang sedang login.

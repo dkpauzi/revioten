@@ -26,7 +26,16 @@ const actionKeys: Record<string, MessageKey> = {
 	'part_number.created': 'auditActionPartNumberCreated',
 	'part_number.updated': 'auditActionPartNumberUpdated',
 	'process.created': 'auditActionProcessCreated',
-	'process.updated': 'auditActionProcessUpdated'
+	'process.updated': 'auditActionProcessUpdated',
+	'number_settings.updated': 'auditActionNumberSettingsUpdated',
+	'document_type.created': 'auditActionDocumentTypeCreated',
+	'document_type.updated': 'auditActionDocumentTypeUpdated',
+	'special_code.created': 'auditActionSpecialCodeCreated',
+	'special_code.updated': 'auditActionSpecialCodeUpdated',
+	'change_type.updated': 'auditActionChangeTypeUpdated',
+	'change_source.created': 'auditActionChangeSourceCreated',
+	'change_source.updated': 'auditActionChangeSourceUpdated',
+	'four_m_category.updated': 'auditActionFourMCategoryUpdated'
 };
 
 const detailKeys: Record<string, MessageKey> = {
@@ -47,7 +56,9 @@ const detailKeys: Record<string, MessageKey> = {
 	model_group: 'auditDetailModelGroup',
 	model: 'auditDetailModel',
 	number: 'auditDetailNumber',
-	aliases: 'auditDetailAliases'
+	aliases: 'auditDetailAliases',
+	factory_code: 'auditDetailFactoryCode',
+	letter: 'auditDetailLetter'
 };
 
 const reasonKeys: Record<string, MessageKey> = {

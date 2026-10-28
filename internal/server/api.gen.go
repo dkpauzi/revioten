@@ -95,6 +95,69 @@ func (e AuditVerificationReason) Valid() bool {
 	}
 }
 
+// Defines values for ChangeSourceMechanism.
+const (
+	ChangeSourceMechanismSqam     ChangeSourceMechanism = "sqam"
+	ChangeSourceMechanismTemplate ChangeSourceMechanism = "template"
+	ChangeSourceMechanismYokoten  ChangeSourceMechanism = "yokoten"
+)
+
+// Valid indicates whether the value is a known member of the ChangeSourceMechanism enum.
+func (e ChangeSourceMechanism) Valid() bool {
+	switch e {
+	case ChangeSourceMechanismSqam:
+		return true
+	case ChangeSourceMechanismTemplate:
+		return true
+	case ChangeSourceMechanismYokoten:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ChangeTypeKey.
+const (
+	ChangeTypeKeyAdministrative ChangeTypeKey = "administrative"
+	ChangeTypeKeyContent        ChangeTypeKey = "content"
+	ChangeTypeKeyLayout         ChangeTypeKey = "layout"
+)
+
+// Valid indicates whether the value is a known member of the ChangeTypeKey enum.
+func (e ChangeTypeKey) Valid() bool {
+	switch e {
+	case ChangeTypeKeyAdministrative:
+		return true
+	case ChangeTypeKeyContent:
+		return true
+	case ChangeTypeKeyLayout:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DocumentTypeKey.
+const (
+	DocumentTypeKeyCp    DocumentTypeKey = "cp"
+	DocumentTypeKeyPfd   DocumentTypeKey = "pfd"
+	DocumentTypeKeyPfmea DocumentTypeKey = "pfmea"
+)
+
+// Valid indicates whether the value is a known member of the DocumentTypeKey enum.
+func (e DocumentTypeKey) Valid() bool {
+	switch e {
+	case DocumentTypeKeyCp:
+		return true
+	case DocumentTypeKeyPfd:
+		return true
+	case DocumentTypeKeyPfmea:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ErrorCode.
 const (
 	ErrorCodeConflict               ErrorCode = "conflict"
@@ -170,6 +233,30 @@ func (e ErrorDetailCode) Valid() bool {
 	case ErrorDetailCodeTooLong:
 		return true
 	case ErrorDetailCodeTooShort:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for FourMCategoryKey.
+const (
+	FourMCategoryKeyMachine  FourMCategoryKey = "machine"
+	FourMCategoryKeyMan      FourMCategoryKey = "man"
+	FourMCategoryKeyMaterial FourMCategoryKey = "material"
+	FourMCategoryKeyMethod   FourMCategoryKey = "method"
+)
+
+// Valid indicates whether the value is a known member of the FourMCategoryKey enum.
+func (e FourMCategoryKey) Valid() bool {
+	switch e {
+	case FourMCategoryKeyMachine:
+		return true
+	case FourMCategoryKeyMan:
+		return true
+	case FourMCategoryKeyMaterial:
+		return true
+	case FourMCategoryKeyMethod:
 		return true
 	default:
 		return false
@@ -397,6 +484,47 @@ type AuditVerification struct {
 // `hash_mismatch`: the content no longer matches the hash, so it was changed.
 type AuditVerificationReason string
 
+// ChangeSource defines model for ChangeSource.
+type ChangeSource struct {
+	Active    bool      `json:"active"`
+	CreatedAt time.Time `json:"created_at"`
+	Id        string    `json:"id"`
+
+	// Mechanism Set when the system itself creates changes with this source. Such a source stays active.
+	Mechanism *ChangeSourceMechanism `json:"mechanism,omitempty"`
+	Name      string                 `json:"name"`
+}
+
+// ChangeSourceMechanism Set when the system itself creates changes with this source. Such a source stays active.
+type ChangeSourceMechanism string
+
+// ChangeSourceList defines model for ChangeSourceList.
+type ChangeSourceList struct {
+	Items []ChangeSource `json:"items"`
+}
+
+// ChangeSourceUpdate defines model for ChangeSourceUpdate.
+type ChangeSourceUpdate struct {
+	// Active Leave it out to keep the current status.
+	Active *bool  `json:"active,omitempty"`
+	Name   string `json:"name"`
+}
+
+// ChangeType defines model for ChangeType.
+type ChangeType struct {
+	Id   string        `json:"id"`
+	Key  ChangeTypeKey `json:"key"`
+	Name string        `json:"name"`
+}
+
+// ChangeTypeKey defines model for ChangeType.Key.
+type ChangeTypeKey string
+
+// ChangeTypeList defines model for ChangeTypeList.
+type ChangeTypeList struct {
+	Items []ChangeType `json:"items"`
+}
+
 // CreatedAccount defines model for CreatedAccount.
 type CreatedAccount struct {
 	Account AccountInfo `json:"account"`
@@ -465,6 +593,37 @@ type CustomerUpdate struct {
 	ProjectGroupId string `json:"project_group_id"`
 }
 
+// DocumentType defines model for DocumentType.
+type DocumentType struct {
+	Id string `json:"id"`
+
+	// Key Set for the documents this system builds. Missing for other document types from the WI.
+	Key *DocumentTypeKey `json:"key,omitempty"`
+
+	// Letter One letter A to Z, unique among document types.
+	Letter string `json:"letter"`
+	Name   string `json:"name"`
+
+	// Prefix The factory code followed by the letter, for example SH.
+	Prefix string `json:"prefix"`
+}
+
+// DocumentTypeKey Set for the documents this system builds. Missing for other document types from the WI.
+type DocumentTypeKey string
+
+// DocumentTypeInput defines model for DocumentTypeInput.
+type DocumentTypeInput struct {
+	Letter string `json:"letter"`
+
+	// Name 1 to 200 characters, unique among document types, ignoring case.
+	Name string `json:"name"`
+}
+
+// DocumentTypeList defines model for DocumentTypeList.
+type DocumentTypeList struct {
+	Items []DocumentType `json:"items"`
+}
+
 // Error defines model for Error.
 type Error struct {
 	Code    ErrorCode      `json:"code"`
@@ -491,6 +650,21 @@ type ErrorDetail struct {
 
 // ErrorDetailCode defines model for ErrorDetail.Code.
 type ErrorDetailCode string
+
+// FourMCategory defines model for FourMCategory.
+type FourMCategory struct {
+	Id   string           `json:"id"`
+	Key  FourMCategoryKey `json:"key"`
+	Name string           `json:"name"`
+}
+
+// FourMCategoryKey defines model for FourMCategory.Key.
+type FourMCategoryKey string
+
+// FourMCategoryList defines model for FourMCategoryList.
+type FourMCategoryList struct {
+	Items []FourMCategory `json:"items"`
+}
 
 // Health defines model for Health.
 type Health struct {
@@ -555,6 +729,12 @@ type ModelUpdate struct {
 	// ModelGroupId Leave it out to take the model out of its group.
 	ModelGroupId *string `json:"model_group_id,omitempty"`
 	Name         string  `json:"name"`
+}
+
+// NameUpdate defines model for NameUpdate.
+type NameUpdate struct {
+	// Name 1 to 200 characters, unique within its list, ignoring case.
+	Name string `json:"name"`
 }
 
 // NewAccount Give `person_id` for a person who already has an account (for example
@@ -629,6 +809,25 @@ type NewProcess struct {
 	// of all processes share one namespace, ignoring case: a name used
 	// by any process, as a name or an alias, is taken.
 	Name string `json:"name"`
+}
+
+// NewSpecialCode defines model for NewSpecialCode.
+type NewSpecialCode struct {
+	Code string `json:"code"`
+	Name string `json:"name"`
+}
+
+// NumberSettings defines model for NumberSettings.
+type NumberSettings struct {
+	// FactoryCode One letter A to Z, the first letter of every number prefix (E-12).
+	//
+	// Example: S
+	FactoryCode string `json:"factory_code"`
+}
+
+// NumberSettingsUpdate defines model for NumberSettingsUpdate.
+type NumberSettingsUpdate struct {
+	FactoryCode string `json:"factory_code"`
 }
 
 // PartNumber defines model for PartNumber.
@@ -784,6 +983,20 @@ type Session struct {
 	Person      Person   `json:"person"`
 }
 
+// SpecialCode defines model for SpecialCode.
+type SpecialCode struct {
+	// Code Two or three letters A to Z, used in place of a customer code, for example ZZ.
+	Code      string    `json:"code"`
+	CreatedAt time.Time `json:"created_at"`
+	Id        string    `json:"id"`
+	Name      string    `json:"name"`
+}
+
+// SpecialCodeList defines model for SpecialCodeList.
+type SpecialCodeList struct {
+	Items []SpecialCode `json:"items"`
+}
+
 // TemporaryPassword defines model for TemporaryPassword.
 type TemporaryPassword struct {
 	// TemporaryPassword Shown only once. Give it to the owner of the account.
@@ -793,11 +1006,23 @@ type TemporaryPassword struct {
 // AccountId defines model for AccountId.
 type AccountId = string
 
+// ChangeSourceId defines model for ChangeSourceId.
+type ChangeSourceId = string
+
+// ChangeTypeId defines model for ChangeTypeId.
+type ChangeTypeId = string
+
 // CustomerId defines model for CustomerId.
 type CustomerId = string
 
 // CustomerIdQuery defines model for CustomerIdQuery.
 type CustomerIdQuery = string
+
+// DocumentTypeId defines model for DocumentTypeId.
+type DocumentTypeId = string
+
+// FourMCategoryId defines model for FourMCategoryId.
+type FourMCategoryId = string
 
 // ModelGroupId defines model for ModelGroupId.
 type ModelGroupId = string
@@ -813,6 +1038,9 @@ type ProcessId = string
 
 // ProjectGroupId defines model for ProjectGroupId.
 type ProjectGroupId = string
+
+// SpecialCodeId defines model for SpecialCodeId.
+type SpecialCodeId = string
 
 // ListAuditLogParams defines parameters for ListAuditLog.
 type ListAuditLogParams struct {
@@ -850,6 +1078,15 @@ type CreateAccountJSONRequestBody = NewAccount
 // SetAccountRolesJSONRequestBody defines body for SetAccountRoles for application/json ContentType.
 type SetAccountRolesJSONRequestBody = RolesUpdate
 
+// CreateChangeSourceJSONRequestBody defines body for CreateChangeSource for application/json ContentType.
+type CreateChangeSourceJSONRequestBody = NameUpdate
+
+// UpdateChangeSourceJSONRequestBody defines body for UpdateChangeSource for application/json ContentType.
+type UpdateChangeSourceJSONRequestBody = ChangeSourceUpdate
+
+// UpdateChangeTypeJSONRequestBody defines body for UpdateChangeType for application/json ContentType.
+type UpdateChangeTypeJSONRequestBody = NameUpdate
+
 // CreateCustomerJSONRequestBody defines body for CreateCustomer for application/json ContentType.
 type CreateCustomerJSONRequestBody = NewCustomer
 
@@ -858,6 +1095,15 @@ type UpdateCustomerJSONRequestBody = CustomerUpdate
 
 // ChangeCustomerCodeJSONRequestBody defines body for ChangeCustomerCode for application/json ContentType.
 type ChangeCustomerCodeJSONRequestBody = CustomerCodeChange
+
+// CreateDocumentTypeJSONRequestBody defines body for CreateDocumentType for application/json ContentType.
+type CreateDocumentTypeJSONRequestBody = DocumentTypeInput
+
+// UpdateDocumentTypeJSONRequestBody defines body for UpdateDocumentType for application/json ContentType.
+type UpdateDocumentTypeJSONRequestBody = DocumentTypeInput
+
+// UpdateFourMCategoryJSONRequestBody defines body for UpdateFourMCategory for application/json ContentType.
+type UpdateFourMCategoryJSONRequestBody = NameUpdate
 
 // CreateModelGroupJSONRequestBody defines body for CreateModelGroup for application/json ContentType.
 type CreateModelGroupJSONRequestBody = NewModelGroup
@@ -870,6 +1116,9 @@ type CreateModelJSONRequestBody = NewModel
 
 // UpdateModelJSONRequestBody defines body for UpdateModel for application/json ContentType.
 type UpdateModelJSONRequestBody = ModelUpdate
+
+// UpdateNumberSettingsJSONRequestBody defines body for UpdateNumberSettings for application/json ContentType.
+type UpdateNumberSettingsJSONRequestBody = NumberSettingsUpdate
 
 // CreatePartNumberJSONRequestBody defines body for CreatePartNumber for application/json ContentType.
 type CreatePartNumberJSONRequestBody = NewPartNumber
@@ -891,6 +1140,12 @@ type UpdateProjectGroupJSONRequestBody = ProjectGroupInput
 
 // LoginJSONRequestBody defines body for Login for application/json ContentType.
 type LoginJSONRequestBody = Credentials
+
+// CreateSpecialCodeJSONRequestBody defines body for CreateSpecialCode for application/json ContentType.
+type CreateSpecialCodeJSONRequestBody = NewSpecialCode
+
+// UpdateSpecialCodeJSONRequestBody defines body for UpdateSpecialCode for application/json ContentType.
+type UpdateSpecialCodeJSONRequestBody = NameUpdate
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
@@ -921,6 +1176,21 @@ type ServerInterface interface {
 	// VerifyAuditLog Check the whole hash chain of the audit log (A-4, admin account only)
 	// (GET /api/v1/audit-log/verification)
 	VerifyAuditLog(w http.ResponseWriter, r *http.Request)
+	// ListChangeSources Change sources, active and inactive, ordered by name (R-CHG-06)
+	// (GET /api/v1/change-sources)
+	ListChangeSources(w http.ResponseWriter, r *http.Request)
+	// CreateChangeSource Add a change source (A-2)
+	// (POST /api/v1/change-sources)
+	CreateChangeSource(w http.ResponseWriter, r *http.Request)
+	// UpdateChangeSource Rename a change source, or switch it off or on (A-2)
+	// (PUT /api/v1/change-sources/{changeSourceId})
+	UpdateChangeSource(w http.ResponseWriter, r *http.Request, changeSourceId ChangeSourceId)
+	// ListChangeTypes The change types content, layout only, and administrative (R-TPL-10)
+	// (GET /api/v1/change-types)
+	ListChangeTypes(w http.ResponseWriter, r *http.Request)
+	// UpdateChangeType Rename a change type (A-2)
+	// (PUT /api/v1/change-types/{changeTypeId})
+	UpdateChangeType(w http.ResponseWriter, r *http.Request, changeTypeId ChangeTypeId)
 	// ListCustomers List all customers, ordered by code
 	// (GET /api/v1/customers)
 	ListCustomers(w http.ResponseWriter, r *http.Request)
@@ -933,6 +1203,21 @@ type ServerInterface interface {
 	// ChangeCustomerCode Give a customer a new code; the old code stays in its history (A-2, E-11)
 	// (POST /api/v1/customers/{customerId}/code)
 	ChangeCustomerCode(w http.ResponseWriter, r *http.Request, customerId CustomerId)
+	// ListDocumentTypes Document types with their number prefix (R-NUM-01, E-12)
+	// (GET /api/v1/document-types)
+	ListDocumentTypes(w http.ResponseWriter, r *http.Request)
+	// CreateDocumentType Add another document type from the WI, for example Work Instruction (A-2)
+	// (POST /api/v1/document-types)
+	CreateDocumentType(w http.ResponseWriter, r *http.Request)
+	// UpdateDocumentType Change the name and letter of a document type (A-2)
+	// (PUT /api/v1/document-types/{documentTypeId})
+	UpdateDocumentType(w http.ResponseWriter, r *http.Request, documentTypeId DocumentTypeId)
+	// ListFourMCategories The 4M categories Man, Machine, Material, and Method
+	// (GET /api/v1/four-m-categories)
+	ListFourMCategories(w http.ResponseWriter, r *http.Request)
+	// UpdateFourMCategory Rename a 4M category (A-2)
+	// (PUT /api/v1/four-m-categories/{fourMCategoryId})
+	UpdateFourMCategory(w http.ResponseWriter, r *http.Request, fourMCategoryId FourMCategoryId)
 	// ListModelGroups The model groups of one customer, ordered by name
 	// (GET /api/v1/model-groups)
 	ListModelGroups(w http.ResponseWriter, r *http.Request, params ListModelGroupsParams)
@@ -951,6 +1236,12 @@ type ServerInterface interface {
 	// UpdateModel Rename a model or move it to another model group of the same customer (A-2)
 	// (PUT /api/v1/models/{modelId})
 	UpdateModel(w http.ResponseWriter, r *http.Request, modelId ModelId)
+	// GetNumberSettings Number settings, today the factory code (E-12)
+	// (GET /api/v1/number-settings)
+	GetNumberSettings(w http.ResponseWriter, r *http.Request)
+	// UpdateNumberSettings Change the factory code. Issued numbers keep their text (A-2, R-NUM-02)
+	// (PUT /api/v1/number-settings)
+	UpdateNumberSettings(w http.ResponseWriter, r *http.Request)
 	// ListPartNumbers The part numbers of one customer, ordered by model and number
 	// (GET /api/v1/part-numbers)
 	ListPartNumbers(w http.ResponseWriter, r *http.Request, params ListPartNumbersParams)
@@ -993,6 +1284,15 @@ type ServerInterface interface {
 	// Login Log in with a login name and password
 	// (POST /api/v1/session)
 	Login(w http.ResponseWriter, r *http.Request)
+	// ListSpecialCodes Special codes used in place of a customer code, ordered by code (E-12)
+	// (GET /api/v1/special-codes)
+	ListSpecialCodes(w http.ResponseWriter, r *http.Request)
+	// CreateSpecialCode Add a special code. It cannot equal any customer code, now or before (A-2)
+	// (POST /api/v1/special-codes)
+	CreateSpecialCode(w http.ResponseWriter, r *http.Request)
+	// UpdateSpecialCode Rename a special code. The code itself never changes (A-2)
+	// (PUT /api/v1/special-codes/{specialCodeId})
+	UpdateSpecialCode(w http.ResponseWriter, r *http.Request, specialCodeId SpecialCodeId)
 	// GetHealth Server and database status
 	// (GET /health)
 	GetHealth(w http.ResponseWriter, r *http.Request)
@@ -1213,6 +1513,100 @@ func (siw *ServerInterfaceWrapper) VerifyAuditLog(w http.ResponseWriter, r *http
 	handler.ServeHTTP(w, r)
 }
 
+// ListChangeSources operation middleware
+func (siw *ServerInterfaceWrapper) ListChangeSources(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListChangeSources(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateChangeSource operation middleware
+func (siw *ServerInterfaceWrapper) CreateChangeSource(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateChangeSource(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateChangeSource operation middleware
+func (siw *ServerInterfaceWrapper) UpdateChangeSource(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "changeSourceId" -------------
+	var changeSourceId ChangeSourceId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "changeSourceId", r.PathValue("changeSourceId"), &changeSourceId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "changeSourceId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateChangeSource(w, r, changeSourceId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListChangeTypes operation middleware
+func (siw *ServerInterfaceWrapper) ListChangeTypes(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListChangeTypes(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateChangeType operation middleware
+func (siw *ServerInterfaceWrapper) UpdateChangeType(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "changeTypeId" -------------
+	var changeTypeId ChangeTypeId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "changeTypeId", r.PathValue("changeTypeId"), &changeTypeId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "changeTypeId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateChangeType(w, r, changeTypeId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListCustomers operation middleware
 func (siw *ServerInterfaceWrapper) ListCustomers(w http.ResponseWriter, r *http.Request) {
 
@@ -1284,6 +1678,100 @@ func (siw *ServerInterfaceWrapper) ChangeCustomerCode(w http.ResponseWriter, r *
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ChangeCustomerCode(w, r, customerId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListDocumentTypes operation middleware
+func (siw *ServerInterfaceWrapper) ListDocumentTypes(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListDocumentTypes(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateDocumentType operation middleware
+func (siw *ServerInterfaceWrapper) CreateDocumentType(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateDocumentType(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateDocumentType operation middleware
+func (siw *ServerInterfaceWrapper) UpdateDocumentType(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentTypeId" -------------
+	var documentTypeId DocumentTypeId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentTypeId", r.PathValue("documentTypeId"), &documentTypeId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentTypeId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateDocumentType(w, r, documentTypeId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListFourMCategories operation middleware
+func (siw *ServerInterfaceWrapper) ListFourMCategories(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListFourMCategories(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateFourMCategory operation middleware
+func (siw *ServerInterfaceWrapper) UpdateFourMCategory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "fourMCategoryId" -------------
+	var fourMCategoryId FourMCategoryId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "fourMCategoryId", r.PathValue("fourMCategoryId"), &fourMCategoryId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "fourMCategoryId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateFourMCategory(w, r, fourMCategoryId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1430,6 +1918,34 @@ func (siw *ServerInterfaceWrapper) UpdateModel(w http.ResponseWriter, r *http.Re
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UpdateModel(w, r, modelId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetNumberSettings operation middleware
+func (siw *ServerInterfaceWrapper) GetNumberSettings(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetNumberSettings(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateNumberSettings operation middleware
+func (siw *ServerInterfaceWrapper) UpdateNumberSettings(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateNumberSettings(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1702,6 +2218,60 @@ func (siw *ServerInterfaceWrapper) Login(w http.ResponseWriter, r *http.Request)
 	handler.ServeHTTP(w, r)
 }
 
+// ListSpecialCodes operation middleware
+func (siw *ServerInterfaceWrapper) ListSpecialCodes(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListSpecialCodes(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateSpecialCode operation middleware
+func (siw *ServerInterfaceWrapper) CreateSpecialCode(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateSpecialCode(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateSpecialCode operation middleware
+func (siw *ServerInterfaceWrapper) UpdateSpecialCode(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "specialCodeId" -------------
+	var specialCodeId SpecialCodeId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "specialCodeId", r.PathValue("specialCodeId"), &specialCodeId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "specialCodeId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateSpecialCode(w, r, specialCodeId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetHealth operation middleware
 func (siw *ServerInterfaceWrapper) GetHealth(w http.ResponseWriter, r *http.Request) {
 
@@ -1868,6 +2438,21 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/processes", wrapper.CreateProcess)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/processes/{processId}", wrapper.GetProcess)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/processes/{processId}", wrapper.UpdateProcess)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/number-settings", wrapper.GetNumberSettings)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/number-settings", wrapper.UpdateNumberSettings)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/document-types", wrapper.ListDocumentTypes)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/document-types", wrapper.CreateDocumentType)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/document-types/{documentTypeId}", wrapper.UpdateDocumentType)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/special-codes", wrapper.ListSpecialCodes)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/special-codes", wrapper.CreateSpecialCode)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/special-codes/{specialCodeId}", wrapper.UpdateSpecialCode)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/change-types", wrapper.ListChangeTypes)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/change-types/{changeTypeId}", wrapper.UpdateChangeType)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/change-sources", wrapper.ListChangeSources)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/change-sources", wrapper.CreateChangeSource)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/change-sources/{changeSourceId}", wrapper.UpdateChangeSource)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/four-m-categories", wrapper.ListFourMCategories)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/four-m-categories/{fourMCategoryId}", wrapper.UpdateFourMCategory)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/audit-log", wrapper.ListAuditLog)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/audit-log/verification", wrapper.VerifyAuditLog)
 
@@ -2256,6 +2841,201 @@ func (response VerifyAuditLogdefaultJSONResponse) VisitVerifyAuditLogResponse(w 
 	return err
 }
 
+type ListChangeSourcesRequestObject struct {
+}
+
+type ListChangeSourcesResponseObject interface {
+	VisitListChangeSourcesResponse(w http.ResponseWriter) error
+}
+
+type ListChangeSources200JSONResponse ChangeSourceList
+
+func (response ListChangeSources200JSONResponse) VisitListChangeSourcesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListChangeSourcesdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ListChangeSourcesdefaultJSONResponse) VisitListChangeSourcesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateChangeSourceRequestObject struct {
+	Body *CreateChangeSourceJSONRequestBody
+}
+
+type CreateChangeSourceResponseObject interface {
+	VisitCreateChangeSourceResponse(w http.ResponseWriter) error
+}
+
+type CreateChangeSource201JSONResponse ChangeSource
+
+func (response CreateChangeSource201JSONResponse) VisitCreateChangeSourceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateChangeSourcedefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response CreateChangeSourcedefaultJSONResponse) VisitCreateChangeSourceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateChangeSourceRequestObject struct {
+	ChangeSourceId ChangeSourceId `json:"changeSourceId"`
+	Body           *UpdateChangeSourceJSONRequestBody
+}
+
+type UpdateChangeSourceResponseObject interface {
+	VisitUpdateChangeSourceResponse(w http.ResponseWriter) error
+}
+
+type UpdateChangeSource200JSONResponse ChangeSource
+
+func (response UpdateChangeSource200JSONResponse) VisitUpdateChangeSourceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateChangeSourcedefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response UpdateChangeSourcedefaultJSONResponse) VisitUpdateChangeSourceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListChangeTypesRequestObject struct {
+}
+
+type ListChangeTypesResponseObject interface {
+	VisitListChangeTypesResponse(w http.ResponseWriter) error
+}
+
+type ListChangeTypes200JSONResponse ChangeTypeList
+
+func (response ListChangeTypes200JSONResponse) VisitListChangeTypesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListChangeTypesdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ListChangeTypesdefaultJSONResponse) VisitListChangeTypesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateChangeTypeRequestObject struct {
+	ChangeTypeId ChangeTypeId `json:"changeTypeId"`
+	Body         *UpdateChangeTypeJSONRequestBody
+}
+
+type UpdateChangeTypeResponseObject interface {
+	VisitUpdateChangeTypeResponse(w http.ResponseWriter) error
+}
+
+type UpdateChangeType200JSONResponse ChangeType
+
+func (response UpdateChangeType200JSONResponse) VisitUpdateChangeTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateChangeTypedefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response UpdateChangeTypedefaultJSONResponse) VisitUpdateChangeTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListCustomersRequestObject struct {
 }
 
@@ -2444,6 +3224,201 @@ type ChangeCustomerCodedefaultJSONResponse struct {
 }
 
 func (response ChangeCustomerCodedefaultJSONResponse) VisitChangeCustomerCodeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDocumentTypesRequestObject struct {
+}
+
+type ListDocumentTypesResponseObject interface {
+	VisitListDocumentTypesResponse(w http.ResponseWriter) error
+}
+
+type ListDocumentTypes200JSONResponse DocumentTypeList
+
+func (response ListDocumentTypes200JSONResponse) VisitListDocumentTypesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDocumentTypesdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ListDocumentTypesdefaultJSONResponse) VisitListDocumentTypesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDocumentTypeRequestObject struct {
+	Body *CreateDocumentTypeJSONRequestBody
+}
+
+type CreateDocumentTypeResponseObject interface {
+	VisitCreateDocumentTypeResponse(w http.ResponseWriter) error
+}
+
+type CreateDocumentType201JSONResponse DocumentType
+
+func (response CreateDocumentType201JSONResponse) VisitCreateDocumentTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDocumentTypedefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response CreateDocumentTypedefaultJSONResponse) VisitCreateDocumentTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDocumentTypeRequestObject struct {
+	DocumentTypeId DocumentTypeId `json:"documentTypeId"`
+	Body           *UpdateDocumentTypeJSONRequestBody
+}
+
+type UpdateDocumentTypeResponseObject interface {
+	VisitUpdateDocumentTypeResponse(w http.ResponseWriter) error
+}
+
+type UpdateDocumentType200JSONResponse DocumentType
+
+func (response UpdateDocumentType200JSONResponse) VisitUpdateDocumentTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDocumentTypedefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response UpdateDocumentTypedefaultJSONResponse) VisitUpdateDocumentTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListFourMCategoriesRequestObject struct {
+}
+
+type ListFourMCategoriesResponseObject interface {
+	VisitListFourMCategoriesResponse(w http.ResponseWriter) error
+}
+
+type ListFourMCategories200JSONResponse FourMCategoryList
+
+func (response ListFourMCategories200JSONResponse) VisitListFourMCategoriesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListFourMCategoriesdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ListFourMCategoriesdefaultJSONResponse) VisitListFourMCategoriesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateFourMCategoryRequestObject struct {
+	FourMCategoryId FourMCategoryId `json:"fourMCategoryId"`
+	Body            *UpdateFourMCategoryJSONRequestBody
+}
+
+type UpdateFourMCategoryResponseObject interface {
+	VisitUpdateFourMCategoryResponse(w http.ResponseWriter) error
+}
+
+type UpdateFourMCategory200JSONResponse FourMCategory
+
+func (response UpdateFourMCategory200JSONResponse) VisitUpdateFourMCategoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateFourMCategorydefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response UpdateFourMCategorydefaultJSONResponse) VisitUpdateFourMCategoryResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -2680,6 +3655,83 @@ type UpdateModeldefaultJSONResponse struct {
 }
 
 func (response UpdateModeldefaultJSONResponse) VisitUpdateModelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetNumberSettingsRequestObject struct {
+}
+
+type GetNumberSettingsResponseObject interface {
+	VisitGetNumberSettingsResponse(w http.ResponseWriter) error
+}
+
+type GetNumberSettings200JSONResponse NumberSettings
+
+func (response GetNumberSettings200JSONResponse) VisitGetNumberSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetNumberSettingsdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response GetNumberSettingsdefaultJSONResponse) VisitGetNumberSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateNumberSettingsRequestObject struct {
+	Body *UpdateNumberSettingsJSONRequestBody
+}
+
+type UpdateNumberSettingsResponseObject interface {
+	VisitUpdateNumberSettingsResponse(w http.ResponseWriter) error
+}
+
+type UpdateNumberSettings200JSONResponse NumberSettings
+
+func (response UpdateNumberSettings200JSONResponse) VisitUpdateNumberSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateNumberSettingsdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response UpdateNumberSettingsdefaultJSONResponse) VisitUpdateNumberSettingsResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -3275,6 +4327,123 @@ func (response LogindefaultJSONResponse) VisitLoginResponse(w http.ResponseWrite
 	return err
 }
 
+type ListSpecialCodesRequestObject struct {
+}
+
+type ListSpecialCodesResponseObject interface {
+	VisitListSpecialCodesResponse(w http.ResponseWriter) error
+}
+
+type ListSpecialCodes200JSONResponse SpecialCodeList
+
+func (response ListSpecialCodes200JSONResponse) VisitListSpecialCodesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListSpecialCodesdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ListSpecialCodesdefaultJSONResponse) VisitListSpecialCodesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateSpecialCodeRequestObject struct {
+	Body *CreateSpecialCodeJSONRequestBody
+}
+
+type CreateSpecialCodeResponseObject interface {
+	VisitCreateSpecialCodeResponse(w http.ResponseWriter) error
+}
+
+type CreateSpecialCode201JSONResponse SpecialCode
+
+func (response CreateSpecialCode201JSONResponse) VisitCreateSpecialCodeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateSpecialCodedefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response CreateSpecialCodedefaultJSONResponse) VisitCreateSpecialCodeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateSpecialCodeRequestObject struct {
+	SpecialCodeId SpecialCodeId `json:"specialCodeId"`
+	Body          *UpdateSpecialCodeJSONRequestBody
+}
+
+type UpdateSpecialCodeResponseObject interface {
+	VisitUpdateSpecialCodeResponse(w http.ResponseWriter) error
+}
+
+type UpdateSpecialCode200JSONResponse SpecialCode
+
+func (response UpdateSpecialCode200JSONResponse) VisitUpdateSpecialCodeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateSpecialCodedefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response UpdateSpecialCodedefaultJSONResponse) VisitUpdateSpecialCodeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetHealthRequestObject struct {
 }
 
@@ -3339,6 +4508,21 @@ type StrictServerInterface interface {
 	// VerifyAuditLog Check the whole hash chain of the audit log (A-4, admin account only)
 	// (GET /api/v1/audit-log/verification)
 	VerifyAuditLog(ctx context.Context, request VerifyAuditLogRequestObject) (VerifyAuditLogResponseObject, error)
+	// ListChangeSources Change sources, active and inactive, ordered by name (R-CHG-06)
+	// (GET /api/v1/change-sources)
+	ListChangeSources(ctx context.Context, request ListChangeSourcesRequestObject) (ListChangeSourcesResponseObject, error)
+	// CreateChangeSource Add a change source (A-2)
+	// (POST /api/v1/change-sources)
+	CreateChangeSource(ctx context.Context, request CreateChangeSourceRequestObject) (CreateChangeSourceResponseObject, error)
+	// UpdateChangeSource Rename a change source, or switch it off or on (A-2)
+	// (PUT /api/v1/change-sources/{changeSourceId})
+	UpdateChangeSource(ctx context.Context, request UpdateChangeSourceRequestObject) (UpdateChangeSourceResponseObject, error)
+	// ListChangeTypes The change types content, layout only, and administrative (R-TPL-10)
+	// (GET /api/v1/change-types)
+	ListChangeTypes(ctx context.Context, request ListChangeTypesRequestObject) (ListChangeTypesResponseObject, error)
+	// UpdateChangeType Rename a change type (A-2)
+	// (PUT /api/v1/change-types/{changeTypeId})
+	UpdateChangeType(ctx context.Context, request UpdateChangeTypeRequestObject) (UpdateChangeTypeResponseObject, error)
 	// ListCustomers List all customers, ordered by code
 	// (GET /api/v1/customers)
 	ListCustomers(ctx context.Context, request ListCustomersRequestObject) (ListCustomersResponseObject, error)
@@ -3351,6 +4535,21 @@ type StrictServerInterface interface {
 	// ChangeCustomerCode Give a customer a new code; the old code stays in its history (A-2, E-11)
 	// (POST /api/v1/customers/{customerId}/code)
 	ChangeCustomerCode(ctx context.Context, request ChangeCustomerCodeRequestObject) (ChangeCustomerCodeResponseObject, error)
+	// ListDocumentTypes Document types with their number prefix (R-NUM-01, E-12)
+	// (GET /api/v1/document-types)
+	ListDocumentTypes(ctx context.Context, request ListDocumentTypesRequestObject) (ListDocumentTypesResponseObject, error)
+	// CreateDocumentType Add another document type from the WI, for example Work Instruction (A-2)
+	// (POST /api/v1/document-types)
+	CreateDocumentType(ctx context.Context, request CreateDocumentTypeRequestObject) (CreateDocumentTypeResponseObject, error)
+	// UpdateDocumentType Change the name and letter of a document type (A-2)
+	// (PUT /api/v1/document-types/{documentTypeId})
+	UpdateDocumentType(ctx context.Context, request UpdateDocumentTypeRequestObject) (UpdateDocumentTypeResponseObject, error)
+	// ListFourMCategories The 4M categories Man, Machine, Material, and Method
+	// (GET /api/v1/four-m-categories)
+	ListFourMCategories(ctx context.Context, request ListFourMCategoriesRequestObject) (ListFourMCategoriesResponseObject, error)
+	// UpdateFourMCategory Rename a 4M category (A-2)
+	// (PUT /api/v1/four-m-categories/{fourMCategoryId})
+	UpdateFourMCategory(ctx context.Context, request UpdateFourMCategoryRequestObject) (UpdateFourMCategoryResponseObject, error)
 	// ListModelGroups The model groups of one customer, ordered by name
 	// (GET /api/v1/model-groups)
 	ListModelGroups(ctx context.Context, request ListModelGroupsRequestObject) (ListModelGroupsResponseObject, error)
@@ -3369,6 +4568,12 @@ type StrictServerInterface interface {
 	// UpdateModel Rename a model or move it to another model group of the same customer (A-2)
 	// (PUT /api/v1/models/{modelId})
 	UpdateModel(ctx context.Context, request UpdateModelRequestObject) (UpdateModelResponseObject, error)
+	// GetNumberSettings Number settings, today the factory code (E-12)
+	// (GET /api/v1/number-settings)
+	GetNumberSettings(ctx context.Context, request GetNumberSettingsRequestObject) (GetNumberSettingsResponseObject, error)
+	// UpdateNumberSettings Change the factory code. Issued numbers keep their text (A-2, R-NUM-02)
+	// (PUT /api/v1/number-settings)
+	UpdateNumberSettings(ctx context.Context, request UpdateNumberSettingsRequestObject) (UpdateNumberSettingsResponseObject, error)
 	// ListPartNumbers The part numbers of one customer, ordered by model and number
 	// (GET /api/v1/part-numbers)
 	ListPartNumbers(ctx context.Context, request ListPartNumbersRequestObject) (ListPartNumbersResponseObject, error)
@@ -3411,6 +4616,15 @@ type StrictServerInterface interface {
 	// Login Log in with a login name and password
 	// (POST /api/v1/session)
 	Login(ctx context.Context, request LoginRequestObject) (LoginResponseObject, error)
+	// ListSpecialCodes Special codes used in place of a customer code, ordered by code (E-12)
+	// (GET /api/v1/special-codes)
+	ListSpecialCodes(ctx context.Context, request ListSpecialCodesRequestObject) (ListSpecialCodesResponseObject, error)
+	// CreateSpecialCode Add a special code. It cannot equal any customer code, now or before (A-2)
+	// (POST /api/v1/special-codes)
+	CreateSpecialCode(ctx context.Context, request CreateSpecialCodeRequestObject) (CreateSpecialCodeResponseObject, error)
+	// UpdateSpecialCode Rename a special code. The code itself never changes (A-2)
+	// (PUT /api/v1/special-codes/{specialCodeId})
+	UpdateSpecialCode(ctx context.Context, request UpdateSpecialCodeRequestObject) (UpdateSpecialCodeResponseObject, error)
 	// GetHealth Server and database status
 	// (GET /health)
 	GetHealth(ctx context.Context, request GetHealthRequestObject) (GetHealthResponseObject, error)
@@ -3702,6 +4916,151 @@ func (sh *strictHandler) VerifyAuditLog(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
+// ListChangeSources operation middleware
+func (sh *strictHandler) ListChangeSources(w http.ResponseWriter, r *http.Request) {
+	var request ListChangeSourcesRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListChangeSources(ctx, request.(ListChangeSourcesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListChangeSources")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListChangeSourcesResponseObject); ok {
+		if err := validResponse.VisitListChangeSourcesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateChangeSource operation middleware
+func (sh *strictHandler) CreateChangeSource(w http.ResponseWriter, r *http.Request) {
+	var request CreateChangeSourceRequestObject
+
+	var body CreateChangeSourceJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateChangeSource(ctx, request.(CreateChangeSourceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateChangeSource")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateChangeSourceResponseObject); ok {
+		if err := validResponse.VisitCreateChangeSourceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateChangeSource operation middleware
+func (sh *strictHandler) UpdateChangeSource(w http.ResponseWriter, r *http.Request, changeSourceId ChangeSourceId) {
+	var request UpdateChangeSourceRequestObject
+
+	request.ChangeSourceId = changeSourceId
+
+	var body UpdateChangeSourceJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateChangeSource(ctx, request.(UpdateChangeSourceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateChangeSource")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateChangeSourceResponseObject); ok {
+		if err := validResponse.VisitUpdateChangeSourceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListChangeTypes operation middleware
+func (sh *strictHandler) ListChangeTypes(w http.ResponseWriter, r *http.Request) {
+	var request ListChangeTypesRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListChangeTypes(ctx, request.(ListChangeTypesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListChangeTypes")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListChangeTypesResponseObject); ok {
+		if err := validResponse.VisitListChangeTypesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateChangeType operation middleware
+func (sh *strictHandler) UpdateChangeType(w http.ResponseWriter, r *http.Request, changeTypeId ChangeTypeId) {
+	var request UpdateChangeTypeRequestObject
+
+	request.ChangeTypeId = changeTypeId
+
+	var body UpdateChangeTypeJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateChangeType(ctx, request.(UpdateChangeTypeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateChangeType")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateChangeTypeResponseObject); ok {
+		if err := validResponse.VisitUpdateChangeTypeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListCustomers operation middleware
 func (sh *strictHandler) ListCustomers(w http.ResponseWriter, r *http.Request) {
 	var request ListCustomersRequestObject
@@ -3816,6 +5175,151 @@ func (sh *strictHandler) ChangeCustomerCode(w http.ResponseWriter, r *http.Reque
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ChangeCustomerCodeResponseObject); ok {
 		if err := validResponse.VisitChangeCustomerCodeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListDocumentTypes operation middleware
+func (sh *strictHandler) ListDocumentTypes(w http.ResponseWriter, r *http.Request) {
+	var request ListDocumentTypesRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListDocumentTypes(ctx, request.(ListDocumentTypesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListDocumentTypes")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListDocumentTypesResponseObject); ok {
+		if err := validResponse.VisitListDocumentTypesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateDocumentType operation middleware
+func (sh *strictHandler) CreateDocumentType(w http.ResponseWriter, r *http.Request) {
+	var request CreateDocumentTypeRequestObject
+
+	var body CreateDocumentTypeJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateDocumentType(ctx, request.(CreateDocumentTypeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateDocumentType")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateDocumentTypeResponseObject); ok {
+		if err := validResponse.VisitCreateDocumentTypeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateDocumentType operation middleware
+func (sh *strictHandler) UpdateDocumentType(w http.ResponseWriter, r *http.Request, documentTypeId DocumentTypeId) {
+	var request UpdateDocumentTypeRequestObject
+
+	request.DocumentTypeId = documentTypeId
+
+	var body UpdateDocumentTypeJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateDocumentType(ctx, request.(UpdateDocumentTypeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateDocumentType")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateDocumentTypeResponseObject); ok {
+		if err := validResponse.VisitUpdateDocumentTypeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListFourMCategories operation middleware
+func (sh *strictHandler) ListFourMCategories(w http.ResponseWriter, r *http.Request) {
+	var request ListFourMCategoriesRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListFourMCategories(ctx, request.(ListFourMCategoriesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListFourMCategories")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListFourMCategoriesResponseObject); ok {
+		if err := validResponse.VisitListFourMCategoriesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateFourMCategory operation middleware
+func (sh *strictHandler) UpdateFourMCategory(w http.ResponseWriter, r *http.Request, fourMCategoryId FourMCategoryId) {
+	var request UpdateFourMCategoryRequestObject
+
+	request.FourMCategoryId = fourMCategoryId
+
+	var body UpdateFourMCategoryJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateFourMCategory(ctx, request.(UpdateFourMCategoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateFourMCategory")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateFourMCategoryResponseObject); ok {
+		if err := validResponse.VisitUpdateFourMCategoryResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -3996,6 +5500,61 @@ func (sh *strictHandler) UpdateModel(w http.ResponseWriter, r *http.Request, mod
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UpdateModelResponseObject); ok {
 		if err := validResponse.VisitUpdateModelResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetNumberSettings operation middleware
+func (sh *strictHandler) GetNumberSettings(w http.ResponseWriter, r *http.Request) {
+	var request GetNumberSettingsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetNumberSettings(ctx, request.(GetNumberSettingsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetNumberSettings")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetNumberSettingsResponseObject); ok {
+		if err := validResponse.VisitGetNumberSettingsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateNumberSettings operation middleware
+func (sh *strictHandler) UpdateNumberSettings(w http.ResponseWriter, r *http.Request) {
+	var request UpdateNumberSettingsRequestObject
+
+	var body UpdateNumberSettingsJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateNumberSettings(ctx, request.(UpdateNumberSettingsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateNumberSettings")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateNumberSettingsResponseObject); ok {
+		if err := validResponse.VisitUpdateNumberSettingsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -4391,6 +5950,94 @@ func (sh *strictHandler) Login(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(LoginResponseObject); ok {
 		if err := validResponse.VisitLoginResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListSpecialCodes operation middleware
+func (sh *strictHandler) ListSpecialCodes(w http.ResponseWriter, r *http.Request) {
+	var request ListSpecialCodesRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListSpecialCodes(ctx, request.(ListSpecialCodesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListSpecialCodes")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListSpecialCodesResponseObject); ok {
+		if err := validResponse.VisitListSpecialCodesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateSpecialCode operation middleware
+func (sh *strictHandler) CreateSpecialCode(w http.ResponseWriter, r *http.Request) {
+	var request CreateSpecialCodeRequestObject
+
+	var body CreateSpecialCodeJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateSpecialCode(ctx, request.(CreateSpecialCodeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateSpecialCode")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateSpecialCodeResponseObject); ok {
+		if err := validResponse.VisitCreateSpecialCodeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateSpecialCode operation middleware
+func (sh *strictHandler) UpdateSpecialCode(w http.ResponseWriter, r *http.Request, specialCodeId SpecialCodeId) {
+	var request UpdateSpecialCodeRequestObject
+
+	request.SpecialCodeId = specialCodeId
+
+	var body UpdateSpecialCodeJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateSpecialCode(ctx, request.(UpdateSpecialCodeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateSpecialCode")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateSpecialCodeResponseObject); ok {
+		if err := validResponse.VisitUpdateSpecialCodeResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

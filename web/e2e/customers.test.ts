@@ -36,7 +36,7 @@ test('kode yang salah atau sudah dipakai ditolak dengan pesan per field', async 
 	const save = page.getByRole('button', { name: en.customerSave });
 	await page.getByLabel(en.customerProjectGroup, { exact: true }).selectOption(groupOption);
 
-	// ZZ dicadangkan untuk dokumen umum, dan nama kosong ditolak.
+	// ZZ adalah kode khusus untuk dokumen umum (M1.6), dan nama kosong ditolak.
 	await code.fill('zz');
 	await save.click();
 	await expect(page.getByText(en.customerCodeReserved)).toBeVisible();

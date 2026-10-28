@@ -44,6 +44,21 @@ type AuditLog struct {
 	Hash           string
 }
 
+type ChangeSource struct {
+	ID        string
+	Name      string
+	Mechanism *string
+	Active    bool
+	CreatedAt time.Time
+}
+
+type ChangeType struct {
+	ID       string
+	Key      string
+	Name     string
+	Position int16
+}
+
 type Customer struct {
 	ID             string
 	Code           string
@@ -60,6 +75,21 @@ type CustomerCode struct {
 	ValidUntil *time.Time
 }
 
+type DocumentType struct {
+	ID       string
+	Key      *string
+	Name     string
+	Letter   string
+	Position int16
+}
+
+type FourMCategory struct {
+	ID       string
+	Key      string
+	Name     string
+	Position int16
+}
+
 type Model struct {
 	ID           string
 	CustomerID   string
@@ -73,6 +103,11 @@ type ModelGroup struct {
 	CustomerID string
 	Name       string
 	CreatedAt  time.Time
+}
+
+type NumberSetting struct {
+	ID          string
+	FactoryCode string
 }
 
 type PartNumber struct {
@@ -133,4 +168,11 @@ type Session struct {
 	CreatedAt  time.Time
 	LastSeenAt time.Time
 	ExpiresAt  time.Time
+}
+
+type SpecialCode struct {
+	ID        string
+	Code      string
+	Name      string
+	CreatedAt time.Time
 }

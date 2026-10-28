@@ -15,7 +15,9 @@ import (
 	"github.com/dkpauzi/revioten/internal/access"
 	"github.com/dkpauzi/revioten/internal/audit"
 	"github.com/dkpauzi/revioten/internal/auth"
+	"github.com/dkpauzi/revioten/internal/change"
 	"github.com/dkpauzi/revioten/internal/customer"
+	"github.com/dkpauzi/revioten/internal/numbering"
 	"github.com/dkpauzi/revioten/internal/process"
 	"github.com/dkpauzi/revioten/internal/product"
 )
@@ -182,6 +184,112 @@ func (f *fakeProcesses) Update(_ context.Context, _ access.Actor, id string, in 
 	return f.one, f.err
 }
 
+// called adalah catatan panggilan terakhir ke service palsu: nama method, ID,
+// dan input.
+type called struct {
+	method string
+	id     string
+	input  any
+}
+
+// fakeNumbering meniru numbering.Service.
+type fakeNumbering struct {
+	settings numbering.Settings
+	types    []numbering.DocumentType
+	docType  numbering.DocumentType
+	codes    []numbering.SpecialCode
+	code     numbering.SpecialCode
+	err      error
+	got      called
+}
+
+func (f *fakeNumbering) GetSettings(context.Context, access.Actor) (numbering.Settings, error) {
+	f.got = called{method: "GetSettings"}
+	return f.settings, f.err
+}
+
+func (f *fakeNumbering) SetFactoryCode(_ context.Context, _ access.Actor, code string) (numbering.Settings, error) {
+	f.got = called{method: "SetFactoryCode", input: code}
+	return f.settings, f.err
+}
+
+func (f *fakeNumbering) ListDocumentTypes(context.Context, access.Actor) ([]numbering.DocumentType, error) {
+	f.got = called{method: "ListDocumentTypes"}
+	return f.types, f.err
+}
+
+func (f *fakeNumbering) CreateDocumentType(_ context.Context, _ access.Actor, in numbering.DocumentTypeInput) (numbering.DocumentType, error) {
+	f.got = called{method: "CreateDocumentType", input: in}
+	return f.docType, f.err
+}
+
+func (f *fakeNumbering) UpdateDocumentType(_ context.Context, _ access.Actor, id string, in numbering.DocumentTypeInput) (numbering.DocumentType, error) {
+	f.got = called{method: "UpdateDocumentType", id: id, input: in}
+	return f.docType, f.err
+}
+
+func (f *fakeNumbering) ListSpecialCodes(context.Context, access.Actor) ([]numbering.SpecialCode, error) {
+	f.got = called{method: "ListSpecialCodes"}
+	return f.codes, f.err
+}
+
+func (f *fakeNumbering) CreateSpecialCode(_ context.Context, _ access.Actor, in numbering.NewSpecialCode) (numbering.SpecialCode, error) {
+	f.got = called{method: "CreateSpecialCode", input: in}
+	return f.code, f.err
+}
+
+func (f *fakeNumbering) RenameSpecialCode(_ context.Context, _ access.Actor, id, name string) (numbering.SpecialCode, error) {
+	f.got = called{method: "RenameSpecialCode", id: id, input: name}
+	return f.code, f.err
+}
+
+// fakeChanges meniru change.Service.
+type fakeChanges struct {
+	types      []change.ChangeType
+	changeType change.ChangeType
+	sources    []change.ChangeSource
+	source     change.ChangeSource
+	categories []change.FourMCategory
+	category   change.FourMCategory
+	err        error
+	got        called
+}
+
+func (f *fakeChanges) ListChangeTypes(context.Context, access.Actor) ([]change.ChangeType, error) {
+	f.got = called{method: "ListChangeTypes"}
+	return f.types, f.err
+}
+
+func (f *fakeChanges) RenameChangeType(_ context.Context, _ access.Actor, id, name string) (change.ChangeType, error) {
+	f.got = called{method: "RenameChangeType", id: id, input: name}
+	return f.changeType, f.err
+}
+
+func (f *fakeChanges) ListChangeSources(context.Context, access.Actor) ([]change.ChangeSource, error) {
+	f.got = called{method: "ListChangeSources"}
+	return f.sources, f.err
+}
+
+func (f *fakeChanges) CreateChangeSource(_ context.Context, _ access.Actor, name string) (change.ChangeSource, error) {
+	f.got = called{method: "CreateChangeSource", input: name}
+	return f.source, f.err
+}
+
+func (f *fakeChanges) UpdateChangeSource(_ context.Context, _ access.Actor, id string, in change.ChangeSourceUpdate) (change.ChangeSource, error) {
+	f.got = called{method: "UpdateChangeSource", id: id, input: in}
+	return f.source, f.err
+}
+
+func (f *fakeChanges) ListFourMCategories(context.Context, access.Actor) ([]change.FourMCategory, error) {
+	f.got = called{method: "ListFourMCategories"}
+	return f.categories, f.err
+}
+
+func (f *fakeChanges) RenameFourMCategory(_ context.Context, _ access.Actor, id, name string) (change.FourMCategory, error) {
+	f.got = called{method: "RenameFourMCategory", id: id, input: name}
+	return f.category, f.err
+}
+
 // testToken adalah token sesi yang diterima fakeAuth secara bawaan.
 const testToken = "token-uji"
 
@@ -346,6 +454,12 @@ func newTestServer(t *testing.T, ui fs.FS, deps Deps) testServer {
 	}
 	if deps.Processes == nil {
 		deps.Processes = &fakeProcesses{}
+	}
+	if deps.Numbering == nil {
+		deps.Numbering = &fakeNumbering{}
+	}
+	if deps.Changes == nil {
+		deps.Changes = &fakeChanges{}
 	}
 	var log bytes.Buffer
 	deps.Logger = slog.New(slog.NewTextHandler(&log, nil))

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 	"time"
 
@@ -79,6 +80,18 @@ func (s *Service) Create(ctx context.Context, actor access.Actor, in NewCustomer
 		return Customer{}, err
 	}
 	in, problems := validate(in)
+	codeOK := !slices.ContainsFunc(problems, func(p problem.Problem) bool { return p.Field == "code" })
+	if codeOK {
+		// Kode khusus diperiksa di sini juga, supaya semua masalah tampil
+		// sekaligus. Pemeriksaan yang menentukan ada di dalam transaksi.
+		reserved, err := specialCode(ctx, s.queries, in.Code)
+		if err != nil {
+			return Customer{}, err
+		}
+		if reserved != nil {
+			problems = append([]problem.Problem{*reserved}, problems...)
+		}
+	}
 	group, groupProblem, err := s.findProjectGroup(ctx, in.ProjectGroupID)
 	if err != nil {
 		return Customer{}, err
@@ -94,6 +107,9 @@ func (s *Service) Create(ctx context.Context, actor access.Actor, in NewCustomer
 	var id string
 	err = db.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
 		q := s.queries.WithTx(tx)
+		if err := lockCodeAndCheck(ctx, q, in.Code); err != nil {
+			return err
+		}
 		row, err := q.CreateCustomer(ctx, db.CreateCustomerParams{Code: in.Code, Name: in.Name, ProjectGroupID: &group.ID})
 		if err != nil {
 			return err
@@ -107,10 +123,13 @@ func (s *Service) Create(ctx context.Context, actor access.Actor, in NewCustomer
 			Details: map[string]string{"code": row.Code, "name": row.Name, "project_group": group.Code},
 		})
 	})
-	if conflict := codeConflict(err); conflict != nil {
+	var invalid *problem.ValidationError
+	switch conflict := codeConflict(err); {
+	case conflict != nil:
 		return Customer{}, conflict
-	}
-	if err != nil {
+	case errors.As(err, &invalid):
+		return Customer{}, err
+	case err != nil:
 		return Customer{}, fmt.Errorf("menyimpan customer: %w", err)
 	}
 	return get(ctx, s.queries, id)
@@ -198,6 +217,9 @@ func (s *Service) ChangeCode(ctx context.Context, actor access.Actor, id, code s
 				Field: "code", Code: problem.NotAllowed, Message: "This is already the current code.",
 			}}}
 		}
+		if err := lockCodeAndCheck(ctx, q, code); err != nil {
+			return err
+		}
 		// Kode lama berakhir tepat saat kode baru mulai berlaku.
 		now := time.Now().UTC()
 		if err := q.CloseCustomerCode(ctx, db.CloseCustomerCodeParams{CustomerID: id, ValidUntil: &now}); err != nil {
@@ -224,6 +246,39 @@ func (s *Service) ChangeCode(ctx context.Context, actor access.Actor, id, code s
 		return Customer{}, fmt.Errorf("mengganti kode customer: %w", err)
 	}
 	return get(ctx, s.queries, id)
+}
+
+// specialCode memberi masalah code:reserved bila kode itu kode khusus, misalnya
+// ZZ untuk dokumen umum (E-12, M1.6). Daftar kode khusus adalah master data.
+func specialCode(ctx context.Context, q *db.Queries, code string) (*problem.Problem, error) {
+	reserved, err := q.SpecialCodeExists(ctx, code)
+	if err != nil {
+		return nil, fmt.Errorf("memeriksa kode khusus: %w", err)
+	}
+	if !reserved {
+		return nil, nil
+	}
+	return &problem.Problem{
+		Field: "code", Code: problem.Reserved, Message: "This is a special code for documents without a customer, such as ZZ.",
+	}, nil
+}
+
+// lockCodeAndCheck mengambil kunci kode di posisi customer (kunci advisory
+// 11003, dipakai juga saat kode khusus ditambah), lalu memeriksa kode khusus
+// sekali lagi. Dengan kunci itu, kode khusus baru tidak bisa terdaftar di
+// antara pemeriksaan dan penyimpanan kode customer (ASUMSI E-37).
+func lockCodeAndCheck(ctx context.Context, q *db.Queries, code string) error {
+	if err := q.LockNumberCodes(ctx); err != nil {
+		return err
+	}
+	reserved, err := specialCode(ctx, q, code)
+	if err != nil {
+		return err
+	}
+	if reserved != nil {
+		return &problem.ValidationError{Problems: []problem.Problem{*reserved}}
+	}
+	return nil
 }
 
 // codeConflict menerjemahkan pelanggaran batasan UNIQUE pada kode customer.

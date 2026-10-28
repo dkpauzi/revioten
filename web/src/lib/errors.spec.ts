@@ -47,6 +47,29 @@ describe('problemText', () => {
 		);
 	});
 
+	// Jenis dokumen, kode khusus, dan daftar perubahan (M1.6).
+	it('memberi teks jenis dokumen dan perubahan', () => {
+		expect(problemText({ field: 'factory_code', code: 'invalid_format', message: 'x' })).toBe(
+			en.factoryCodeInvalid
+		);
+		expect(problemText({ field: 'letter', code: 'taken', message: 'x' })).toBe(en.documentTypeLetterTaken);
+		expect(problemText({ field: 'name', code: 'taken', message: 'x' }, 'documentType')).toBe(
+			en.documentTypeNameTaken
+		);
+		expect(problemText({ field: 'code', code: 'taken', message: 'x' }, 'specialCode')).toBe(
+			en.specialCodeTaken
+		);
+		expect(problemText({ field: 'code', code: 'invalid_format', message: 'x' }, 'specialCode')).toBe(
+			en.specialCodeInvalid
+		);
+		expect(problemText({ field: 'name', code: 'taken', message: 'x' }, 'changeList')).toBe(
+			en.changeListNameTaken
+		);
+		expect(problemText({ field: 'active', code: 'not_allowed', message: 'x' })).toBe(
+			en.changeSourceSystemActive
+		);
+	});
+
 	it('memakai pesan dari server untuk masalah yang belum dikenal', () => {
 		expect(problemText({ field: 'lain', code: 'required', message: 'pesan server' })).toBe(
 			'pesan server'

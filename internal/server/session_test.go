@@ -49,6 +49,21 @@ func TestAPIRequiresSession(t *testing.T) {
 		{http.MethodPost, "/api/v1/processes", `{"name":"X"}`},
 		{http.MethodGet, "/api/v1/processes/pr-1", ""},
 		{http.MethodPut, "/api/v1/processes/pr-1", `{"name":"X","aliases":[]}`},
+		{http.MethodGet, "/api/v1/number-settings", ""},
+		{http.MethodPut, "/api/v1/number-settings", `{"factory_code":"S"}`},
+		{http.MethodGet, "/api/v1/document-types", ""},
+		{http.MethodPost, "/api/v1/document-types", `{"name":"X","letter":"X"}`},
+		{http.MethodPut, "/api/v1/document-types/dt-1", `{"name":"X","letter":"X"}`},
+		{http.MethodGet, "/api/v1/special-codes", ""},
+		{http.MethodPost, "/api/v1/special-codes", `{"code":"XX","name":"X"}`},
+		{http.MethodPut, "/api/v1/special-codes/sc-1", `{"name":"X"}`},
+		{http.MethodGet, "/api/v1/change-types", ""},
+		{http.MethodPut, "/api/v1/change-types/ct-1", `{"name":"X"}`},
+		{http.MethodGet, "/api/v1/change-sources", ""},
+		{http.MethodPost, "/api/v1/change-sources", `{"name":"X"}`},
+		{http.MethodPut, "/api/v1/change-sources/cs-1", `{"name":"X"}`},
+		{http.MethodGet, "/api/v1/four-m-categories", ""},
+		{http.MethodPut, "/api/v1/four-m-categories/fm-1", `{"name":"X"}`},
 	}
 	srv := newTestServer(t, nil, Deps{})
 	for _, tt := range protected {

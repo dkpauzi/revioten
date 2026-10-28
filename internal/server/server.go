@@ -12,7 +12,9 @@ import (
 	"github.com/dkpauzi/revioten/internal/access"
 	"github.com/dkpauzi/revioten/internal/audit"
 	"github.com/dkpauzi/revioten/internal/auth"
+	"github.com/dkpauzi/revioten/internal/change"
 	"github.com/dkpauzi/revioten/internal/customer"
+	"github.com/dkpauzi/revioten/internal/numbering"
 	"github.com/dkpauzi/revioten/internal/process"
 	"github.com/dkpauzi/revioten/internal/product"
 )
@@ -61,6 +63,33 @@ type ProcessService interface {
 	Update(ctx context.Context, actor access.Actor, id string, in process.Input) (process.Process, error)
 }
 
+// NumberingService adalah operasi bagian nomor dokumen yang dipakai API
+// (M1.6): kode pabrik, jenis dokumen, dan kode khusus. *numbering.Service
+// memenuhinya; test memakai versi palsu.
+type NumberingService interface {
+	GetSettings(ctx context.Context, actor access.Actor) (numbering.Settings, error)
+	SetFactoryCode(ctx context.Context, actor access.Actor, code string) (numbering.Settings, error)
+	ListDocumentTypes(ctx context.Context, actor access.Actor) ([]numbering.DocumentType, error)
+	CreateDocumentType(ctx context.Context, actor access.Actor, in numbering.DocumentTypeInput) (numbering.DocumentType, error)
+	UpdateDocumentType(ctx context.Context, actor access.Actor, id string, in numbering.DocumentTypeInput) (numbering.DocumentType, error)
+	ListSpecialCodes(ctx context.Context, actor access.Actor) ([]numbering.SpecialCode, error)
+	CreateSpecialCode(ctx context.Context, actor access.Actor, in numbering.NewSpecialCode) (numbering.SpecialCode, error)
+	RenameSpecialCode(ctx context.Context, actor access.Actor, id, name string) (numbering.SpecialCode, error)
+}
+
+// ChangeMasterService adalah operasi daftar untuk perubahan yang dipakai API
+// (M1.6): jenis perubahan, sumber perubahan, dan kategori 4M.
+// *change.Service memenuhinya; test memakai versi palsu.
+type ChangeMasterService interface {
+	ListChangeTypes(ctx context.Context, actor access.Actor) ([]change.ChangeType, error)
+	RenameChangeType(ctx context.Context, actor access.Actor, id, name string) (change.ChangeType, error)
+	ListChangeSources(ctx context.Context, actor access.Actor) ([]change.ChangeSource, error)
+	CreateChangeSource(ctx context.Context, actor access.Actor, name string) (change.ChangeSource, error)
+	UpdateChangeSource(ctx context.Context, actor access.Actor, id string, in change.ChangeSourceUpdate) (change.ChangeSource, error)
+	ListFourMCategories(ctx context.Context, actor access.Actor) ([]change.FourMCategory, error)
+	RenameFourMCategory(ctx context.Context, actor access.Actor, id, name string) (change.FourMCategory, error)
+}
+
 // AuthService adalah operasi login, sesi, dan pengelolaan akun yang dipakai API.
 // *auth.Service memenuhinya; test memakai versi palsu.
 type AuthService interface {
@@ -100,6 +129,8 @@ type Deps struct {
 	Audit     AuditService
 	Products  ProductService
 	Processes ProcessService
+	Numbering NumberingService
+	Changes   ChangeMasterService
 	// Logger untuk log server. Bila nil, dipakai slog.Default().
 	Logger *slog.Logger
 }
@@ -117,7 +148,8 @@ func NewHandler(ui fs.FS, deps Deps) http.Handler {
 	}
 	a := &apiServer{
 		db: deps.DB, customers: deps.Customers, auth: deps.Auth, access: deps.Access,
-		audit: deps.Audit, products: deps.Products, processes: deps.Processes, log: log,
+		audit: deps.Audit, products: deps.Products, processes: deps.Processes,
+		numbering: deps.Numbering, changes: deps.Changes, log: log,
 	}
 
 	// Route dari kontrak didaftarkan oleh kode hasil generate ke mux khusus API.
@@ -166,5 +198,7 @@ type apiServer struct {
 	audit     AuditService
 	products  ProductService
 	processes ProcessService
+	numbering NumberingService
+	changes   ChangeMasterService
 	log       *slog.Logger
 }

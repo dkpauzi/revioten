@@ -19,7 +19,8 @@ INSERT INTO audit_log (
 SELECT l.seq, l.occurred_at, l.actor_type, l.actor_account_id, a.login AS actor_login,
        l.actor_person_id, p.name AS actor_person_name, l.request_id, l.source_ip,
        l.action, l.target_type, l.target_id,
-       coalesce(ta.login, tc.code, tp.code, tg.name, tm.name, tn.number, tpr.name, '') AS target_label,
+       coalesce(ta.login, tc.code, tp.code, tg.name, tm.name, tn.number, tpr.name,
+                tns.factory_code, tdt.name, tsc.code, tct.name, tcs.name, tfm.name, '') AS target_label,
        l.details, l.prev_hash, l.hash
 FROM audit_log l
 LEFT JOIN accounts a ON a.id = l.actor_account_id
@@ -32,6 +33,12 @@ LEFT JOIN models tm ON l.target_type = 'model' AND tm.id = l.target_id
 LEFT JOIN part_numbers tn ON l.target_type = 'part_number' AND tn.id = l.target_id
 -- Proses ditampilkan dengan nama tampilan yang berlaku sekarang (D-06).
 LEFT JOIN process_names tpr ON l.target_type = 'process' AND tpr.process_id = l.target_id AND tpr.kind = 'display'
+LEFT JOIN number_settings tns ON l.target_type = 'number_settings' AND tns.id = l.target_id
+LEFT JOIN document_types tdt ON l.target_type = 'document_type' AND tdt.id = l.target_id
+LEFT JOIN special_codes tsc ON l.target_type = 'special_code' AND tsc.id = l.target_id
+LEFT JOIN change_types tct ON l.target_type = 'change_type' AND tct.id = l.target_id
+LEFT JOIN change_sources tcs ON l.target_type = 'change_source' AND tcs.id = l.target_id
+LEFT JOIN four_m_categories tfm ON l.target_type = 'four_m_category' AND tfm.id = l.target_id
 WHERE l.seq < sqlc.arg(before)
 ORDER BY l.seq DESC
 LIMIT sqlc.arg(max_entries);

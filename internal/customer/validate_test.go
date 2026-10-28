@@ -35,7 +35,6 @@ func TestValidate(t *testing.T) {
 		{name: "kode tiga huruf", in: NewCustomer{Code: "ABC", Name: "X", ProjectGroupID: "grup-1"}, problems: []string{"code:invalid_format"}},
 		{name: "kode berisi angka", in: NewCustomer{Code: "A1", Name: "X", ProjectGroupID: "grup-1"}, problems: []string{"code:invalid_format"}},
 		{name: "kode huruf di luar A sampai Z", in: NewCustomer{Code: "äb", Name: "X", ProjectGroupID: "grup-1"}, problems: []string{"code:invalid_format"}},
-		{name: "kode ZZ dicadangkan", in: NewCustomer{Code: "zz", Name: "X", ProjectGroupID: "grup-1"}, problems: []string{"code:reserved"}},
 		{name: "nama kosong", in: NewCustomer{Code: "AB", Name: " \t ", ProjectGroupID: "grup-1"}, problems: []string{"name:required"}},
 		{name: "nama 201 karakter", in: NewCustomer{Code: "AB", Name: strings.Repeat("a", 201), ProjectGroupID: "grup-1"}, problems: []string{"name:too_long"}},
 		{name: "nama berisi baris baru", in: NewCustomer{Code: "AB", Name: "Example\nCustomer", ProjectGroupID: "grup-1"}, problems: []string{"name:invalid_format"}},

@@ -24,6 +24,8 @@ web/build/*
 !web/build/.gitkeep
 .svelte-kit/
 vite.config.ts.timestamp-*
+# Log yang ditulis @hey-api/openapi-ts bila kontrak gagal dibaca saat gen:api.
+openapi-ts-error-*.log
 coverage/
 test-results/
 playwright-report/
