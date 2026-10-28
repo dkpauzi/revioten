@@ -40,6 +40,7 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-16 | Memindah dokumen aktif ke nomor baru setelah kode customer berganti | Celah | M2.1, M2.3, M2.5 | Tidak (perlu sebelum M2.1) | Diputuskan, D menunggu brief |
 | E-17 | Kedudukan /health terhadap /api/v1 dan kontrak OpenAPI | Ambigu | M0.2, M0.4, M0.5 | Tidak (perlu sebelum M0.5) | Diputuskan, D menunggu brief |
 | E-18 | Belum ada aturan tentang rahasia di log dan pesan error | Celah | M0.3, M0.5, M1.1, M1.3 | Tidak | Diputuskan, D menunggu brief |
+| E-19 | Glosarium U1 belum punya istilah bahasa Inggris untuk layar | Celah | M0.4, M0.5, Tahap 1 | Tidak | Terbuka |
 
 ## Rincian
 
@@ -332,6 +333,28 @@ Salin blok ini untuk setiap temuan baru.
 - **Menghambat milestone?** Tidak
 - **Status:** Diputuskan pemilik 28 Oktober 2026 (nomor D menunggu brief)
 - **Keputusan pemilik:** Opsi (a), sesuai rekomendasi ("E-18 setuju", 28 Oktober 2026). Aturan keamanan baru: password, token, kunci, dan alamat koneksi yang memuat password tidak pernah ditulis ke log, pesan error, atau audit log. Pesan error ke pengguna tidak memuat detail teknis internal; detailnya dicatat di log server bersama request ID (R-API-13). Aturan ini dibuktikan dengan test. Komentar `// ASUMSI E-18` di `internal/db/db.go` diganti dengan keterangan keputusan, dan aturannya ditambahkan ke CLAUDE.md bagian 7.
+
+### E-19 · Glosarium U1 belum punya istilah bahasa Inggris untuk layar
+
+- **Tanggal dan milestone:** 28 Oktober 2026, M0.4. Berdampak ke semua layar mulai M0.5.
+- **Jenis:** Celah
+- **Rujukan:** Q-14 (diputuskan: layar berbahasa Inggris untuk saat ini), CLAUDE.md bagian 3 butir 12, U1 (kolom "Sebutan lain"), brief bagian 3 (glosarium berbahasa Inggris), R-UML-05.
+- **Temuan:** Pemilik memutuskan layar memakai bahasa Inggris untuk saat ini (Q-14). Aturan kerja meminta istilah di layar mengikuti glosarium U1 dan istilah di WI, tanpa membuat istilah baru. U1 ditulis dalam bahasa Indonesia, dan kolom "Sebutan lain" hanya memuat padanan Inggris untuk sebagian istilah (misalnya Change, Revision request, Impact checklist). Istilah lain yang segera muncul di layar, seperti Project Group, group model, kode customer, atau penyusun, belum punya padanan Inggris yang ditetapkan.
+- **Dampak bila dibiarkan:** setiap layar memilih kata Inggris sendiri, sehingga istilah bisa tidak konsisten antarlayar dan berbeda dari brief serta form.
+- **Opsi:** (a) Tambah kolom "Istilah layar (Inggris)" di U1, diisi dari brief bagian 3 dan 4 (yang berbahasa Inggris) serta form dan WI. Katalog teks di `web/src/lib/i18n/en.ts` mengikuti kolom itu. (b) Tanpa kolom baru; istilah Inggris diambil langsung dari brief bagian 3 dan 4 saat layarnya dibuat.
+- **Rekomendasi Claude Code (usulan):** (a). Satu sumber istilah untuk layar, cetakan, dan UML, dan memudahkan peralihan ke bahasa Indonesia nanti, karena setiap kunci teks punya pasangan istilah yang jelas.
+- **Asumsi sementara di kode:** sampai diputuskan, teks layar memakai istilah Inggris dari brief bagian 3 dan 4 (misalnya customer, model group, part number, project group, approval route), dan tidak membuat istilah baru. Ditandai di `web/src/lib/i18n/en.ts`.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+## Keputusan pemilik atas pertanyaan terbuka brief (bagian 12)
+
+Bagian ini bukan temuan E. Isinya jawaban pemilik atas item Q di brief bagian 12, untuk dibawa ke sesi desain.
+
+| Q | Keputusan | Tanggal | Catatan |
+|---|---|---|---|
+| Q-14 | Bahasa layar: Inggris untuk saat ini. | 28 Oktober 2026 | Disiapkan untuk pindah ke bahasa Indonesia: semua teks layar ada di katalog `web/src/lib/i18n/en.ts` dan dipanggil lewat `t(kunci)`. Bahasa Indonesia cukup ditambah sebagai `id.ts` dengan kunci yang sama (lihat catatan M0.4). Istilah Inggrisnya: E-19. |
 
 ## Bahan dari dokumen referensi (untuk brief bagian 21)
 

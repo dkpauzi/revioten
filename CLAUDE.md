@@ -122,7 +122,7 @@ Kode sekarang punya dua tujuan: belajar, dan menguji apakah desain (brief, UML, 
 | `sql/migrations/` | Migrasi goose | M0.5 |
 | `sql/queries/` | Query SQL untuk sqlc | M0.5 |
 | `api/openapi.yaml` | Kontrak OpenAPI 3.0.4 (D-38) | M0.5 |
-| `web/` | SvelteKit; hasil build di-embed ke binary Go | M0.4 |
+| `web/` | SvelteKit. Hasil build (`web/build/app`) di-embed ke binary Go lewat `web/web.go`; `web/build/.gitkeep` di-commit supaya `go build` tetap jalan sebelum frontend di-build | M0.4 |
 | `bin/` | Hasil `go build`, tidak di-commit | M0.2 |
 | `docs/` | Brief, milestone, UML, catatan milestone, evaluasi desain, versi | Sesi 1 |
 | Root | `go.mod`, `compose.yaml`, `.env.example`, `.gitignore`, `.gitattributes` | M0.1, M0.2 |
@@ -132,7 +132,7 @@ Kode sekarang punya dua tujuan: belajar, dan menguji apakah desain (brief, UML, 
 
 ### Perintah yang sudah terbukti
 
-Dijalankan dari root repo. Terbukti di container cloud Linux (bash) pada M0.1 (27 Oktober 2026), M0.2, dan M0.3 (28 Oktober 2026). Docker Compose membaca `.env` sendiri, dan perintah `go` sama di PowerShell Windows. Catatan dalam kurung untuk Windows belum dicoba di komputer pemilik.
+Dijalankan dari root repo. Terbukti di container cloud Linux (bash) pada M0.1 (27 Oktober 2026), M0.2, M0.3, dan M0.4 (28 Oktober 2026). Docker Compose membaca `.env` sendiri, dan perintah `go` sama di PowerShell Windows. Catatan dalam kurung untuk Windows belum dicoba di komputer pemilik.
 
 | Tujuan | Perintah |
 |---|---|
@@ -152,6 +152,11 @@ Dijalankan dari root repo. Terbukti di container cloud Linux (bash) pada M0.1 (2
 | Jalankan server | `go run ./cmd/revioten`, atau di port lain: `go run ./cmd/revioten -addr 127.0.0.1:8081`. Hentikan dengan Ctrl+C |
 | Coba endpoint /health | `curl -i http://127.0.0.1:8080/health` (Windows: `curl.exe -i ...` atau `Invoke-RestMethod http://127.0.0.1:8080/health`) |
 | Build binary | `go build -o bin/revioten ./cmd/revioten` (Windows: `-o bin/revioten.exe`) |
+| Pasang paket frontend (sekali, dan setiap `web/package-lock.json` berubah) | `npm --prefix web ci` (butuh Node 24.22.1) |
+| Periksa tipe frontend | `npm --prefix web run check` |
+| Test frontend (Vitest) | `npm --prefix web test` |
+| Binary lengkap dengan tampilan web | `npm --prefix web run build`, lalu `go build -o bin/revioten ./cmd/revioten` |
+| Development tampilan web | Jalankan server Go (`go run ./cmd/revioten`), lalu di jendela lain `npm --prefix web run dev` dan buka http://localhost:5173. Vite meneruskan `/health` dan `/api` ke server Go |
 
 Jangan menjalankan `docker compose down -v` kecuali memang ingin menghapus seluruh isi database, karena `-v` ikut menghapus volume `revioten_pgdata`.
 

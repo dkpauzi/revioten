@@ -61,6 +61,10 @@ Halaman rilis resmi go.dev dan postgresql.org belum dicek. Silakan buka dari kom
 
 Semua versi di bawah adalah dist-tag `latest`, kecuali TypeScript (lihat catatannya).
 
+Sejak M0.4, paket yang dipakai ditulis dengan versi tepat di `web/package.json` (tanpa `^`) dan dikunci di `web/package-lock.json`. `web/.npmrc` berisi `engine-strict=true`, dan `engines` di `web/package.json` meminta Node 24 (>=24.22.1 <25). Dicek ulang 28 Oktober 2026 tanpa perubahan.
+
+Hasil `npm audit` (28 Oktober 2026): 4 temuan tingkat rendah, semuanya berasal dari satu paket tidak langsung, `deepmerge` (GHSA-gcqx-w48m-w2h4, prototype poisoning di `mergeObject`). Paket ini ditarik `@sveltejs/vite-plugin-svelte` dan hanya dipakai saat build, tidak ikut ke browser. Saran `npm audit fix --force` (menurunkan SvelteKit ke 0.0.30) tidak diikuti. Dicek ulang setiap kali paket frontend diperbarui.
+
 | Komponen | Versi yang dipakai | Tanggal rilis | Dicek | Sumber | Catatan |
 |---|---|---|---|---|---|
 | Svelte | 5.57.3 | 2026-10-26 | 2026-10-28 | npm | Diperbarui dari 5.57.2 (E-13). Memenuhi peer SvelteKit 3.1.0 (^5.57.1). |
@@ -77,6 +81,7 @@ Semua versi di bawah adalah dist-tag `latest`, kecuali TypeScript (lihat catatan
 | elkjs | 0.12.0 | 2026-07-17 | 2026-10-27 | npm | Terbaru. |
 | openapi-typescript | 7.13.0 | 2026-02-11 | 2026-10-27 | npm | Terbaru, tapi peer `typescript ^5.x` masih bentrok dengan TypeScript 6 (R-VER-03). Q-47 tetap terbuka sampai M0.5. |
 | openapi-fetch | 0.17.0 | 2026-02-11 | 2026-10-27 | npm | Terbaru. |
+| `sv` (Svelte CLI) | 1.1.1 (alat bantu) | 2026-10-06 | 2026-10-28 | npm, tag GitHub sveltejs/cli | Tidak dipasang di proyek. Dipakai sekali di luar repo (`npx sv@1.1.1 create --template minimal --types ts`) sebagai acuan struktur proyek SvelteKit 3 di M0.4. Add-on Vitest dari `sv` 1.1.1 masih memasang Vitest 4, jadi proyek ini memasang Vitest 5.0.5 sendiri. |
 | `@hey-api/openapi-ts` (calon Q-47) | belum dipilih | 2026-06-22 (0.99.0) | 2026-10-27 | npm | Terbaru 0.99.0. Peer typescript >=5.5.3 atau >=6.0.0, engines Node >=22.18. Paket 0.x, ikut masa tunggu 14 hari (E-14); 0.99.0 sudah memenuhi. |
 
 ## Alat desain dan pendukung
