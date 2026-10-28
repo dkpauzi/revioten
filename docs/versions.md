@@ -2,8 +2,8 @@
 
 Hasil cek ulang M0.1 terhadap R-VER-01 sampai R-VER-05 (D-44), untuk semua item di brief bagian 7.
 
-- **Tanggal dicek:** 27 Oktober 2026, dari container cloud Claude Code.
-- **Versi yang dipakai** tetap mengikuti brief bagian 7. Bila versi terbaru berbeda, perbedaannya dicatat di kolom Catatan dan di `docs/evaluasi-desain.md` (E-13, E-14), lalu diputuskan pemilik.
+- **Tanggal dicek:** 27 Oktober 2026, dari container cloud Claude Code. Dicek ulang 28 Oktober 2026 tanpa perubahan.
+- **Versi yang dipakai** adalah versi stabil atau LTS terbaru (keputusan pemilik E-13, 28 Oktober 2026). Pengecualian: River tetap v0.49.0 sampai E-14 diputuskan. Brief bagian 7 diperbarui lewat sesi desain.
 - **Tanggal rilis** memakai UTC dari sumber yang disebut. Tanggal di brief bisa berbeda satu hari karena zona waktu (WIB = UTC+7).
 - Versi dikunci saat paketnya pertama kali dipasang: modul Go di `go.mod` dan `go.sum` (mulai M0.2), paket npm di `package.json` dan `package-lock.json` (mulai M0.4), dan image Docker di `compose.yaml` (M0.1).
 
@@ -39,11 +39,11 @@ Halaman rilis resmi go.dev dan postgresql.org belum dicek. Silakan buka dari kom
 | pgx | v5.11.0 | 2026-09-07 | 2026-10-27 | proxy.golang.org | Terbaru. |
 | sqlc | v1.31.1 | 2026-04-22 | 2026-10-27 | proxy.golang.org | Terbaru. |
 | goose | v3.29.0 | 2026-10-11 | 2026-10-27 | proxy.golang.org | Terbaru. |
-| River | v0.49.0 | 2026-10-05 | 2026-10-27 | proxy.golang.org | **Berbeda:** v0.50.0 rilis 2026-10-27 dan baru satu rilis di line 0.50. Lihat E-13 dan E-14. |
+| River | v0.49.0 | 2026-10-05 | 2026-10-28 | proxy.golang.org | **Menunggu E-14:** v0.50.0 rilis 2026-10-27 dan baru satu rilis di line 0.50. River merilis minor tanpa patch (v0.45.0 sampai v0.50.0 semuanya .0). Versinya dikunci saat pertama kali dipakai. |
 | excelize | v2.11.0 | 2026-07-06 | 2026-10-27 | proxy.golang.org | Terbaru. Brief menulis 2026-07-07, selisih zona waktu. |
 | testcontainers-go | v0.44.0 | 2026-08-07 | 2026-10-27 | proxy.golang.org | Terbaru. |
 | golang.org/x/crypto (argon2id) | v0.58.0 | 2026-10-09 | 2026-10-27 | proxy.golang.org | Terbaru. |
-| oapi-codegen (bila dipilih) | v2.8.0 | 2026-07-17 | 2026-10-27 | proxy.golang.org | **Berbeda:** patch v2.8.1 rilis 2026-10-24. Lihat E-13. README v2.8.1 masih menyebut dukungan OpenAPI 3.1 sebagai "initial", jadi kontrak tetap 3.0.4 (D-38). |
+| oapi-codegen (bila dipilih) | v2.8.1 | 2026-10-24 | 2026-10-28 | proxy.golang.org | Diperbarui dari v2.8.0 (E-13). README v2.8.1 masih menyebut dukungan OpenAPI 3.1 sebagai "initial", jadi kontrak tetap 3.0.4 (D-38). |
 
 ## Frontend (dipakai mulai M0.4)
 
@@ -51,9 +51,9 @@ Semua versi di bawah adalah dist-tag `latest`, kecuali TypeScript (lihat catatan
 
 | Komponen | Versi yang dipakai | Tanggal rilis | Dicek | Sumber | Catatan |
 |---|---|---|---|---|---|
-| Svelte | 5.57.2 | 2026-10-06 | 2026-10-27 | npm | **Berbeda:** patch 5.57.3 rilis 2026-10-26. Lihat E-13. |
+| Svelte | 5.57.3 | 2026-10-26 | 2026-10-28 | npm | Diperbarui dari 5.57.2 (E-13). Memenuhi peer SvelteKit 3.1.0 (^5.57.1). |
 | SvelteKit (`@sveltejs/kit`) | 3.1.0 | 2026-10-14 | 2026-10-27 | npm | Terbaru. Peer: vite ^8.0.12, svelte ^5.57.1, typescript ^6.0.0, vite-plugin-svelte ^7.0.0. Engines: Node >=22.17. Semua cocok (R-VER-03). |
-| `@sveltejs/adapter-static` | 4.0.0 | 2026-10-01 | 2026-10-27 | npm | **Masih satu-satunya rilis di line 4** (watch item R-VER-04). Peer `@sveltejs/kit ^3.0.0-next.0` cocok dengan 3.1.0. Lihat E-14. |
+| `@sveltejs/adapter-static` | 4.0.0 | 2026-10-01 | 2026-10-28 | npm | **Masih satu-satunya rilis di line 4** (watch item R-VER-04). Peer `@sveltejs/kit ^3.0.0-next.0` cocok dengan 3.1.0. Perlu keputusan E-14 sebelum M0.4. |
 | Vite | 8.3.5 | 2026-10-21 | 2026-10-27 | npm | Terbaru. Engines: Node ^20.19 atau >=22.12. |
 | `@sveltejs/vite-plugin-svelte` | 7.3.1 | 2026-09-23 | 2026-10-27 | npm | Terbaru. Peer: vite ^8, svelte ^5.46.4. Cocok. |
 | TypeScript | 6.0.3 | 2026-04-16 | 2026-10-27 | npm | Versi terbaru di line 6. dist-tag `latest` sudah 7.0.2, tapi SvelteKit 3.1.0 (^6.0.0) dan svelte-check 4.7.7 (^5 atau ^6) belum menerima 7 (R-VER-03). |
@@ -74,7 +74,7 @@ Semua versi di bawah adalah dist-tag `latest`, kecuali TypeScript (lihat catatan
 | PlantUML | v1.2026.9 | 2026-10-17 | 2026-10-27 | Tag GitHub plantuml/plantuml | Terbaru. |
 | C4-PlantUML | v2.14.0 | 2026-08-26 | 2026-10-27 | Tag GitHub plantuml-stdlib/C4-PlantUML | Terbaru. Sudah disalin ke `docs/uml/lib/`. |
 | Caddy | v2.11.7 | 2026-10-03 | 2026-10-27 | proxy.golang.org | Terbaru. Dipakai di M8.3. |
-| Gotenberg (PDF opsi A) | v8.38.1 | 2026-10-15 | 2026-10-27 | proxy.golang.org | **Berbeda:** v8.39.0 rilis 2026-10-26. Hanya dipakai bila uji S5 memilihnya. Lihat E-13. |
+| Gotenberg (PDF opsi A) | v8.39.0 | 2026-10-26 | 2026-10-28 | proxy.golang.org | Diperbarui dari v8.38.1 (E-13). Hanya dipakai bila uji S5 memilihnya. Dicek ulang saat S5. |
 | ClamAV | 1.5.4 | 2026-08-06 | 2026-10-27 | Tag GitHub Cisco-Talos/clamav (`clamav-1.5.4`) | Terbaru. Dipakai di M8.2. |
 | Spesifikasi OpenAPI | 3.0.4 | 2024-10-24 | 2026-10-27 | Tag GitHub OAI/OpenAPI-Specification | Versi spesifikasi terbaru 3.2.1 (2026-09-10). Tetap 3.0.4 (D-38). |
 

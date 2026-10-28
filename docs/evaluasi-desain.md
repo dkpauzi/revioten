@@ -32,9 +32,9 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-08 | Aturan login dan sesi belum ditetapkan | Celah | M1.1 | Tidak | Diputuskan, D menunggu brief |
 | E-09 | Aturan kode customer belum lengkap | Celah | M0.5, M1.4 | Tidak | Diputuskan, D menunggu brief |
 | E-10 | Siapa yang mengelola group model dan model | Kontradiksi | M1.2, M1.4 | Tidak | Diputuskan, D menunggu brief |
-| E-11 | Kode customer pernah diganti (WI SW-ZZ-000) | Kontradiksi | M1.4, M2.1, M2.5 | Tidak (perlu sebelum M1.4) | Terbuka |
-| E-12 | Struktur nomor di WI SW-ZZ-000 lebih rinci daripada pola di brief | Celah | M2.1, M2.4, M2.5 | Tidak (perlu sebelum M2.1) | Terbuka |
-| E-13 | Versi terbaru berbeda dari brief bagian 7 | Kontradiksi | M0.1 | Tidak | Terbuka |
+| E-11 | Kode customer pernah diganti (WI SW-ZZ-000) | Kontradiksi | M1.4, M2.1, M2.5 | Tidak (perlu sebelum M1.4) | Diputuskan, D menunggu brief |
+| E-12 | Struktur nomor di WI SW-ZZ-000 lebih rinci daripada pola di brief | Celah | M2.1, M2.4, M2.5 | Tidak (perlu sebelum M2.1) | Diputuskan, 2 rincian terbuka |
+| E-13 | Versi terbaru berbeda dari brief bagian 7 | Kontradiksi | M0.1 | Tidak | Diputuskan, D menunggu brief |
 | E-14 | R-VER-04 belum menjawab line tunggal dan versi 0.x | Ambigu | M0.1, M0.4 | Tidak untuk M0.1, ya untuk M0.4 | Terbuka |
 
 ## Rincian
@@ -181,7 +181,7 @@ Salin blok ini untuk setiap temuan baru.
 - **Asumsi sementara di kode:** bila belum diputuskan saat M0.5, kode hanya huruf besar dan angka, unik, tidak kosong, dan belum bisa diubah. Ditandai `// ASUMSI E-09`.
 - **Menghambat milestone?** Tidak
 - **Status:** Diputuskan pemilik 27 Oktober 2026 (nomor D menunggu brief)
-- **Keputusan pemilik:** Opsi (a) sesuai rekomendasi ("saya setuju dengan semua saran anda", 27 Oktober 2026). Catatan: WI SW-ZZ-000 rev 09 menunjukkan kode customer pernah diganti, jadi bagian "kode tidak bisa diubah" ditinjau ulang di E-11.
+- **Keputusan pemilik:** Opsi (a) sesuai rekomendasi ("saya setuju dengan semua saran anda", 27 Oktober 2026). Catatan: WI SW-ZZ-000 rev 09 menunjukkan kode customer pernah diganti, jadi bagian "kode tidak bisa diubah" ditinjau ulang di E-11. Bagian itu digantikan keputusan E-11 (28 Oktober 2026): kode customer bisa diubah lewat master data, dengan riwayat kode.
 
 ### E-10 · Siapa yang mengelola group model dan model
 
@@ -208,8 +208,8 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (a). Cocok dengan R-NUM-02 (nomor tidak pernah dihitung ulang) dan dengan praktik di WI. Pemilik perlu menjawab dua hal: setelah kode diganti, apakah nomor berjalan melanjutkan atau mulai dari awal, dan apakah dokumen lama mendapat nomor baru saat revisi berikutnya.
 - **Asumsi sementara di kode:** untuk M0.5, kode customer disimpan di tabel customer dan belum bisa diubah lewat API. Ditandai `// ASUMSI E-11`.
 - **Menghambat milestone?** Tidak untuk M0.1 dan M0.5. Perlu diputuskan sebelum M1.4.
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan pemilik 28 Oktober 2026 (nomor D menunggu brief)
+- **Keputusan pemilik:** Kode customer dibuat sebagai master data yang bisa diubah nanti ("E-11 buatkan master data nya, sehingga kode customer bisa diubah nantinya", 28 Oktober 2026). Ini mengikuti opsi (a): kode lama disimpan sebagai riwayat dengan tanggal berlaku, nomor lama tetap teks dengan kode lama (R-NUM-02), dan nomor baru memakai kode yang berlaku. Urutan pembangunan: M0.5 menyimpan kode customer, lalu mengubah kode beserta riwayatnya dibangun di M1.4. Masih terbuka dan ditanyakan di M2.1: setelah kode diganti, apakah nomor berjalan melanjutkan atau mulai dari awal.
 
 ### E-12 · Struktur nomor di WI SW-ZZ-000 lebih rinci daripada pola di brief
 
@@ -228,8 +228,8 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (a) untuk struktur token. Aturan di atas 999 baru dibangun setelah pemilik memastikan cara penulisannya dan apakah ada customer yang mendekati 999. Pemilik juga perlu menjelaskan contoh SC-ESD-K001.
 - **Asumsi sementara di kode:** tidak ada; temuan ini menyentuh Tahap 2.
 - **Menghambat milestone?** Tidak untuk Tahap 0 dan 1. Perlu diputuskan sebelum M2.1.
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan pemilik 28 Oktober 2026 (nomor D menunggu brief). Dua rincian masih terbuka.
+- **Keputusan pemilik:** Pakai aturan WI SW-ZZ-000, dan aturannya disimpan sebagai master data ("E-12 gunakan aturan sesuai dengan yang ada di WI, dan cantumkan juga aturannya di master data", 28 Oktober 2026). Ini opsi (a). Isi master data: kode pabrik (S); jenis dokumen (C, F, H, dan jenis lain di WI); kode customer 2 huruf beserta kode khusus ZZ dan HSE; format nomor berjalan; dan jumlah digit revisi (2). Dibangun di M1.4 (kode customer), M1.6 (kode pabrik dan jenis dokumen), dan M2.1 (struktur nomor). Dokumen referensi set TR-021 (SH, SF, SC) sesuai dengan struktur ini: nomor di cover ditulis tanpa revisi, revisi ada di tabel riwayat, dan nama file menyertakan revisi. Masih terbuka dan ditanyakan di M2.1: (1) cara menulis nomor di atas 999, karena WI menyebut DD-DDD (6 karakter) tetapi tabelnya menulis 00-XXXX; (2) asal contoh SC-ESD-K001 di R-DOC-10.
 
 ### E-13 · Versi terbaru berbeda dari brief bagian 7
 
@@ -248,8 +248,8 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (b). Lebih sedikit dokumen yang harus disinkronkan, dan `docs/versions.md` sudah mencatat tanggal dan sumbernya.
 - **Asumsi sementara di kode:** sampai diputuskan, kolom "Versi yang dipakai" di `docs/versions.md` mengikuti brief, dan versi terbaru ditulis di kolom Catatan.
 - **Menghambat milestone?** Tidak
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan pemilik 28 Oktober 2026 (nomor D menunggu brief)
+- **Keputusan pemilik:** Pakai versi stabil atau LTS terbaru ("E-13 gunakan versi yang sudah stabil atau LTS", 28 Oktober 2026). Versi dicek ulang 28 Oktober 2026 dan tidak berubah sejak 27 Oktober. `docs/versions.md` dan CLAUDE.md bagian 4 diperbarui ke Svelte 5.57.3, oapi-codegen v2.8.1, dan Gotenberg v8.39.0. River tetap v0.49.0 sampai E-14 diputuskan, karena v0.50.0 baru berumur satu hari dan termasuk kasus 0.x di E-14.
 
 ### E-14 · R-VER-04 belum menjawab line tunggal dan versi 0.x
 
@@ -259,7 +259,10 @@ Salin blok ini untuk setiap temuan baru.
 - **Temuan:** (1) Saat dicek 27 Oktober 2026, `@sveltejs/adapter-static` 4.0.0 masih satu-satunya rilis di line 4. Line itu juga satu-satunya yang menerima SvelteKit 3 (peer `@sveltejs/kit ^3.0.0-next.0`). Bila R-VER-04 dibaca harfiah, adapter-static 4.0.0 tidak boleh dipakai, sehingga SPA statis SvelteKit 3 (D-01, brief bagian 7) tidak bisa dibangun di M0.4. R-VER-04 tidak menyebut tindakan bila tidak ada alternatif. (2) Pada paket 0.x (River, `@hey-api/openapi-ts`), setiap minor bisa membawa perubahan yang tidak kompatibel, dan tidak jelas apakah River 0.50 dihitung sebagai line baru menurut R-VER-04.
 - **Dampak bila dibiarkan:** M0.4 terhambat bila adapter-static belum mendapat patch dan aturannya dibaca harfiah.
 - **Opsi:** (a) Tambah pengecualian di R-VER-04: line dengan satu rilis boleh dipakai bila tidak ada line lain yang memenuhi R-VER-03. Pengecualian itu dicatat di `docs/versions.md` dan dicek ulang di setiap milestone yang memakainya. Untuk paket 0.x, minor dihitung sebagai line baru. (b) Tunda M0.4 sampai adapter-static 4.0.1 rilis. (c) Pakai SvelteKit 2 dengan adapter-static 3. Ini bertentangan dengan stack di brief bagian 7, dan line 2 sudah tidak mendapat rilis sejak 2.70.3.
-- **Rekomendasi Claude Code (usulan):** (a).
+- **Rekomendasi Claude Code (usulan):** (a), dengan rincian berikut (diperjelas 28 Oktober 2026 atas pertanyaan pemilik):
+  1. Line dengan satu rilis boleh dipakai bila tidak ada line lain yang memenuhi R-VER-03, dan rilisnya sudah berumur minimal 14 hari. adapter-static 4.0.0 (rilis 1 Oktober 2026) memenuhi syarat ini. Pengecualian dicatat di `docs/versions.md`, dan begitu patch 4.0.x keluar, pindah ke patch terbaru (R-VER-05).
+  2. Untuk paket 0.x, syarat "tunggu patch" diganti dengan masa tunggu yang sama (14 hari). Alasannya, proyek seperti River merilis minor tanpa patch (v0.45.0 sampai v0.50.0 semuanya .0), sehingga syarat patch tidak pernah terpenuhi. Per 28 Oktober 2026, River v0.49.0 (23 hari) memenuhi syarat, sedangkan v0.50.0 (1 hari) belum. Versi River dikunci saat pertama kali dipakai dan dicek ulang saat itu.
+  3. Angka 14 hari adalah usulan dan bisa diganti pemilik.
 - **Asumsi sementara di kode:** tidak ada untuk M0.1. Bila belum diputuskan saat M0.4 dan adapter-static masih 4.0.0, berhenti dan tanya pemilik.
 - **Menghambat milestone?** Tidak untuk M0.1. Ya untuk M0.4 bila adapter-static masih 4.0.0.
 - **Status:** Terbuka

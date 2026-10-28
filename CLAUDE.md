@@ -51,11 +51,11 @@ Baca bagian yang disentuh milestone yang sedang dikerjakan. Tidak perlu membaca 
 
 ## 4. Stack dan versi (brief bagian 7)
 
-Versi di bawah sudah dicek pada 24 Oktober 2026. Di M0.1 semuanya dicek ulang dan dicatat di `docs/versions.md` beserta tanggal.
+Versi di bawah dicek ulang di M0.1 (27 dan 28 Oktober 2026). Daftar lengkap beserta tanggal rilis dan sumbernya ada di `docs/versions.md`, dan file itu yang dipakai bila berbeda dengan daftar ini. Aturannya: pakai versi stabil atau LTS terbaru (keputusan pemilik E-13).
 
-- **Backend:** Go 1.27.3 dengan `net/http`, pgx v5.11.0, sqlc v1.31.1, goose v3.29.0, River v0.49.0 (job queue di PostgreSQL), excelize v2.11.0, testcontainers-go v0.44.0, golang.org/x/crypto v0.58.0 (argon2id). Tanpa ORM dan tanpa Redis. Kode hasil generate tidak diedit dengan tangan.
+- **Backend:** Go 1.27.3 dengan `net/http`, pgx v5.11.0, sqlc v1.31.1, goose v3.29.0, River v0.49.0 (job queue di PostgreSQL; versinya menunggu E-14), excelize v2.11.0, testcontainers-go v0.44.0, golang.org/x/crypto v0.58.0 (argon2id). Tanpa ORM dan tanpa Redis. Kode hasil generate tidak diedit dengan tangan.
 - **Database:** PostgreSQL 18.6 di Docker. PostgreSQL 19 masih RC, jadi tidak dipakai.
-- **Frontend:** Svelte 5.57.2 dan SvelteKit 3.1.0 sebagai SPA statis (`@sveltejs/adapter-static` 4.0.0) yang di-embed ke binary Go. Juga Vite 8.3.5, `@sveltejs/vite-plugin-svelte` 7.3.1, TypeScript 6.0.3 (bukan 7), svelte-check 4.7.7, Vitest 5.0.5, dan Playwright 1.64.1. Node 24.22.1 LTS dipakai hanya untuk build.
+- **Frontend:** Svelte 5.57.3 dan SvelteKit 3.1.0 sebagai SPA statis (`@sveltejs/adapter-static` 4.0.0) yang di-embed ke binary Go. Juga Vite 8.3.5, `@sveltejs/vite-plugin-svelte` 7.3.1, TypeScript 6.0.3 (bukan 7), svelte-check 4.7.7, Vitest 5.0.5, dan Playwright 1.64.1. Node 24.22.1 LTS dipakai hanya untuk build.
 - **Nanti:** tabulator-tables (grid), @xyflow/svelte dengan elkjs (diagram PFD), ClamAV, Caddy, Docker Compose untuk deployment. Mesin PDF diputuskan lewat uji S5 (R-PRT-03), sebelum Tahap 6 **(usulan)**.
 - **Generator TypeScript untuk OpenAPI:** masih terbuka (Q-47) dan diputuskan di M0.5 lewat uji kecil.
 
