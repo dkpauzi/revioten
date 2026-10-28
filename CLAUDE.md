@@ -134,7 +134,7 @@ Kode sekarang punya dua tujuan: belajar, dan menguji apakah desain (brief, UML, 
 
 ### Perintah yang sudah terbukti
 
-Dijalankan dari root repo. Terbukti di container cloud Linux (bash) pada M0.1 (27 Oktober 2026), M0.2, M0.3, M0.4, M0.5, M1.1, M1.2, M1.3, M1.4, dan M1.5 (28 Oktober 2026). Docker Compose membaca `.env` sendiri, dan perintah `go` sama di PowerShell Windows. Catatan dalam kurung untuk Windows belum dicoba di komputer pemilik.
+Dijalankan dari root repo. Terbukti di container cloud Linux (bash) pada M0.1 (27 Oktober 2026), M0.2, M0.3, M0.4, M0.5, M1.1, M1.2, M1.3, M1.4, M1.5, dan M1.6 (28 Oktober 2026). Docker Compose membaca `.env` sendiri, dan perintah `go` sama di PowerShell Windows. Catatan dalam kurung untuk Windows belum dicoba di komputer pemilik.
 
 | Tujuan | Perintah |
 |---|---|
@@ -159,6 +159,7 @@ Dijalankan dari root repo. Terbukti di container cloud Linux (bash) pada M0.1 (2
 | Kelola akun dan peran (sejak M1.2) | Login dengan akun admin, lalu buka menu Accounts (http://127.0.0.1:8080/admin/accounts). Password sementara akun baru tampil satu kali dan wajib diganti pemiliknya saat login pertama. Menu dan tombol mengikuti hak akun yang login; server tetap memeriksa setiap operasi (akun tanpa A-2 mendapat 403 saat menambah customer lewat curl) |
 | Kelola master data (sejak M1.4) | Login dengan akun admin. Customers (http://127.0.0.1:8080/customers): Project Group, customer beserta Project Group-nya, ubah, nonaktifkan, dan ganti kode. Models (http://127.0.0.1:8080/models): pilih customer, lalu group model, model, dan part number. Akun kerja hanya melihat |
 | Kelola master proses (sejak M1.5) | Dengan akun admin, buat akun kerja PPAP Engineer berperan "Template maintainer" (menu Accounts). Login dengan akun itu, lalu buka Processes (http://127.0.0.1:8080/processes): tambah proses dengan alias satu per baris, atau ganti namanya. Akun admin dan akun lain hanya melihat (D-64) |
+| Kelola jenis dokumen dan perubahan (sejak M1.6) | Login dengan akun admin. Document types (http://127.0.0.1:8080/document-types): kode pabrik, jenis dokumen dengan awalannya, dan kode khusus. Change types (http://127.0.0.1:8080/change-types): jenis perubahan, sumber perubahan, dan kategori 4M. Akun kerja hanya melihat |
 | Lihat dan periksa audit log (sejak M1.3) | Login dengan akun admin, buka menu Audit log (http://127.0.0.1:8080/admin/audit), lalu tekan "Check the chain" |
 | Coba ubah audit log (harus gagal) | Sebagai pemilik: `docker compose exec db psql -U revioten -d revioten -c "UPDATE audit_log SET action = action WHERE false"` (ditolak trigger). Sebagai role aplikasi: perintah yang sama dengan `-U revioten_app` (`permission denied`). `WHERE false` membuat perintah ini tidak mengubah apa pun, juga bila trigger sedang mati |
 | Buat ulang kode Go dari kontrak dan SQL | `go generate ./...` (oapi-codegen dan sqlc dijalankan lewat `go run` dengan versi terkunci; pertama kali butuh internet dan waktu kompilasi). Lalu `go build ./...` dan `go test ./...` |

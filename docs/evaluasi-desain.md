@@ -56,6 +56,9 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-32 | Aturan nama dan alias master proses belum ditetapkan | Celah | M1.5, M3.2, Tahap 7 | Tidak | Terbuka |
 | E-33 | Pencocokan PFD, PFMEA, dan CP: di tingkat proses atau sub-proses | Ambigu | M1.5, M3.2, Tahap 3 | Tidak (perlu sebelum M3.2) | Terbuka |
 | E-34 | Field wajib di kontrak tidak diperiksa oleh server hasil generate | Celah | M1.5, M8.1, M9.3 | Tidak | Terbuka |
+| E-35 | Bentuk kebijakan approval per jenis perubahan belum ditentukan (Q-15) | Celah | M1.6, M1.8, Tahap 5 dan 6 | Tidak (perlu sebelum Tahap 5) | Terbuka |
+| E-36 | Sumber perubahan mencampur mekanisme sistem (R-CHG-01) dan pemicu (R-CHG-06) | Ambigu | M1.6, Tahap 5 | Tidak (perlu sebelum Tahap 5) | Terbuka |
+| E-37 | Kode khusus: bentuk, penambahan, dan tumpang tindih dengan kode customer | Celah | M1.6, M2.1 | Tidak (perlu sebelum M2.1) | Terbuka |
 
 ## Rincian
 
@@ -279,6 +282,7 @@ Salin blok ini untuk setiap temuan baru.
 - **Status:** Diputuskan pemilik 28 Oktober 2026 (nomor D menunggu brief)
 - **Keputusan pemilik:** Pakai aturan WI SW-ZZ-000, dan aturannya disimpan sebagai master data ("E-12 gunakan aturan sesuai dengan yang ada di WI, dan cantumkan juga aturannya di master data", 28 Oktober 2026). Ini opsi (a). Isi master data: kode pabrik (S); jenis dokumen (C, F, H, dan jenis lain di WI); kode customer 2 huruf beserta kode khusus ZZ dan HSE; format nomor berjalan; dan jumlah digit revisi (2). Dibangun di M1.4 (kode customer), M1.6 (kode pabrik dan jenis dokumen), dan M2.1 (struktur nomor). Dokumen referensi set TR-021 (SH, SF, SC) sesuai dengan struktur ini: nomor di cover ditulis tanpa revisi, revisi ada di tabel riwayat, dan nama file menyertakan revisi. Dua rincian dijawab pemilik pada 28 Oktober 2026: (1) Nomor di atas 999 memakai huruf dan 3 digit: A001 sampai A999, lalu B001, dan seterusnya. Aturan ini berlaku "untuk saat ini" dan berbeda dari tabel WI SW-ZZ-000 rev 09 (00-XXXX, A1-XXXX); pernyataan pemilik yang dipakai. Karena bisa berubah, format nomor berjalan disimpan sebagai master data. (2) SC-ESD-K001 diabaikan karena bukan control plan proses. Sistem tidak menomori dokumen seperti itu. Bila dirujuk dari CP, dokumen itu dicatat apa adanya sebagai dokumen terkait (R-DOC-10, R-DOC-11).
 - **Pelaksanaan (M1.4, 28 Oktober 2026):** kode customer dua huruf dengan riwayat sudah menjadi master data (E-11). Kode khusus ZZ dan HSE belum menjadi tabel master: ZZ tetap ditolak sebagai kode customer, dan HSE tidak bisa bentrok karena tiga huruf. Kode khusus disimpan sebagai master data di M1.6, bersama kode pabrik dan jenis dokumen, karena ketiganya bagian struktur nomor.
+- **Pelaksanaan (M1.6, 28 Oktober 2026):** kode pabrik (S), jenis dokumen dengan hurufnya (H untuk PFD, F untuk PFMEA, C untuk CP), dan kode khusus (ZZ dan HSE) sekarang master data yang diubah Admin. Awalan nomor dihitung dari kode pabrik dan huruf, jadi tidak disimpan. Jenis dokumen lain dari WI (misalnya W dan I) bisa ditambah Admin; isinya tidak disalin dari WI, karena WI tidak disimpan di repo. Kode customer kini diperiksa terhadap daftar kode khusus di database, bukan "ZZ" yang ditulis tetap di kode (E-37). Format nomor berjalan dan jumlah digit revisi tetap dibangun di M2.1.
 
 ### E-13 · Versi terbaru berbeda dari brief bagian 7
 
@@ -627,6 +631,54 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (b) sekarang, termasuk `active` di customer, lalu (a) diputuskan sebelum M8.1, karena klien integrasi tidak bisa diandalkan selalu mengirim semua field.
 - **Asumsi sementara di kode (ASUMSI E-34):** (b) untuk `aliases` di `internal/server/processes.go`. `active` di customer belum diubah, supaya M1.5 tidak melebar ke M1.4.
 - **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-35 · Bentuk kebijakan approval per jenis perubahan belum ditentukan (Q-15)
+
+- **Tanggal dan milestone:** 28 Oktober 2026, M1.6. Berdampak ke M1.8 (rute approval), Tahap 5 (alur perubahan), dan Tahap 6 (cetak untuk tanda tangan).
+- **Jenis:** Celah
+- **Rujukan:** R-TPL-10, Q-15, D-46, D-47, R-APR-07, R-APR-08, R-APR-09, RK-05, UC-05.
+- **Temuan:** R-TPL-10 (diputuskan) berbunyi: jenis perubahan (isi, tata letak saja, administratif) menentukan jalur approval, dan kebijakan per jenis adalah master data. Q-15 (terbuka) menanyakan langkah approval mana yang berlaku untuk setiap jenis, dengan asumsi kerja "alur yang sama untuk semua". Bentuk datanya belum ada, dan bisa dibaca dua cara:
+  1. Kebijakan memilih rute approval (D-46 punya dua rute: sampai QA QC Manager, dan sampai GM).
+  2. Kebijakan mematikan tahap tertentu (Checked atau Approved). Ini bertentangan dengan R-APR-07 (diputuskan), yang menetapkan tahap Prepared, Checked, dan Approved.
+- **Dampak bila dibiarkan:** M1.6 tidak bisa menyimpan kebijakan yang berarti sebelum rute ada (M1.8), dan alur perubahan serta pencetakan butuh jawabannya.
+- **Opsi:** (a) Kebijakan adalah rute per jenis perubahan: kosong berarti rute default customer (D-47), atau satu rute tertentu. Bila Q-15 meminta alur yang lebih pendek (misalnya hanya Prepared dan Checked), Admin membuatnya sebagai rute baru. (b) Kebijakan adalah saklar per tahap (Checked, Approved) untuk setiap jenis. (c) Satu alur untuk semua jenis sampai Q-15 dijawab, tanpa data kebijakan.
+- **Rekomendasi Claude Code (usulan):** (a), karena hanya memakai konsep yang sudah diputuskan (rute D-46 dan rute default D-47), dan alur pendek tetap bisa dibuat sebagai data. Yang masih perlu ditetapkan pemilik: mana yang menang bila rute dari jenis perubahan berbeda dengan rute yang dipilih penyusun untuk satu dokumen (R-APR-09).
+- **Asumsi sementara di kode (ASUMSI E-35):** (a), dibangun di M1.8 bersama rute approval. Sampai itu semua jenis perubahan memakai rute default customer (asumsi kerja Q-15). Ditandai di `sql/migrations/00007_create_document_and_change_types.sql` dan `internal/change/change.go`.
+- **Menghambat milestone?** Tidak (perlu sebelum Tahap 5)
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-36 · Sumber perubahan mencampur mekanisme sistem (R-CHG-01) dan pemicu (R-CHG-06)
+
+- **Tanggal dan milestone:** 28 Oktober 2026, M1.6. Berdampak ke Tahap 5 (alur perubahan, yokoten, propagasi template).
+- **Jenis:** Ambigu
+- **Rujukan:** R-CHG-01, R-CHG-04, R-CHG-06, R-TPL-06, R-TPL-07, UC-05.
+- **Temuan:** R-CHG-01 (diputuskan) menyebut empat sumber: permintaan revisi manual, yokoten, propagasi template, dan perubahan SQAM surut. Masing-masing punya perilaku sistem sendiri, misalnya yokoten memilih target, dan propagasi template dibuat sistem. R-CHG-06 (usulan) menyebut master data sumber berisi PP, customer claim, ECR, yokoten, propagasi template, SQAM, dan temuan audit. Jadi satu daftar berisi dua hal: mekanisme yang dikenali kode program, dan pemicu untuk permintaan manual. Bila Admin menonaktifkan "Yokoten", alur yokoten di Tahap 5 kehilangan sumbernya.
+- **Dampak bila dibiarkan:** perubahan yokoten yang dipicu customer claim (klaim di satu model, lalu diterapkan ke model lain) tidak bisa mencatat keduanya bila sumber hanya satu field.
+- **Opsi:** (a) Satu daftar. Entri milik mekanisme sistem ditandai, selalu aktif, dan namanya boleh diganti. Pemicu lain bebas ditambah dan dinonaktifkan. (b) Dua field di perubahan: mekanisme (tetap, dikenali kode: manual, yokoten, template, SQAM) dan pemicu (master data: PP, customer claim, ECR, temuan audit, dan lainnya). (c) Daftar seperti R-CHG-06 apa adanya, tanpa penanda.
+- **Rekomendasi Claude Code (usulan):** (b) untuk Tahap 5. Untuk M1.6 cukup (a), yang bisa dipindah ke (b) tanpa kehilangan data.
+- **Asumsi sementara di kode (ASUMSI E-36):** (a). Kolom `mechanism` menandai yokoten, propagasi template, dan SQAM, dan batasan `change_sources_system_active` membuat database menolak menonaktifkannya. Ditandai di `sql/migrations/00007_create_document_and_change_types.sql` dan `internal/change/`.
+- **Menghambat milestone?** Tidak (perlu sebelum Tahap 5)
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-37 · Kode khusus: bentuk, penambahan, dan tumpang tindih dengan kode customer
+
+- **Tanggal dan milestone:** 28 Oktober 2026, M1.6. Berdampak ke M2.1 (struktur nomor) dan R-POR-01.
+- **Jenis:** Celah
+- **Rujukan:** E-11, E-12, R-NUM-01, R-POR-01, WI SW-ZZ-000.
+- **Temuan:** E-12 menetapkan kode khusus ZZ dan HSE sebagai master data. Belum ada aturan:
+  1. Bentuk kode baru: ZZ dua huruf, HSE tiga huruf.
+  2. Apakah Admin boleh menambah kode khusus.
+  3. Apakah kode khusus boleh sama dengan kode customer, sekarang atau dulu.
+  4. Apakah PFD, PFMEA, dan CP bisa dinomori dengan kode khusus, misalnya PFD umum dengan ZZ. R-NUM-01 hanya menyebut nomor per customer.
+- **Dampak bila dibiarkan:** tanpa aturan butir 3, satu kode di posisi customer bisa punya dua arti, dan pencocokan nomor lama (R-POR-01) bisa salah.
+- **Opsi:** (a) Dua atau tiga huruf, bisa ditambah Admin, kodenya tidak bisa diubah, dan tidak boleh sama dengan kode customer mana pun (sekarang atau dulu), begitu pula sebaliknya. Dijaga kunci bersama di aplikasi. (b) Seperti (a), tapi daftarnya tetap (hanya ZZ dan HSE). (c) Satu tabel untuk semua kode di posisi customer (kode customer dan kode khusus), sehingga database menjaga keunikan dengan satu UNIQUE.
+- **Rekomendasi Claude Code (usulan):** (a) untuk sekarang. (c) lebih kuat karena dijaga database, tapi mengubah tabel riwayat kode M1.4, jadi layak dipertimbangkan di M2.1 saat struktur nomor dibangun. Butir 4 diputuskan di M2.1.
+- **Asumsi sementara di kode (ASUMSI E-37):** (a). Kunci advisory 11003 diambil saat customer dibuat, saat kode customer diganti, dan saat kode khusus ditambah, lalu pemeriksaan dilakukan di dalam kunci itu. Ditandai di `sql/migrations/00007_create_document_and_change_types.sql`, `sql/queries/numbering.sql`, `internal/numbering/`, dan `internal/customer/service.go`.
+- **Menghambat milestone?** Tidak (perlu sebelum M2.1)
 - **Status:** Terbuka
 - **Keputusan pemilik:**
 
