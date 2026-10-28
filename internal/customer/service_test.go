@@ -432,3 +432,82 @@ func TestProjectGroups(t *testing.T) {
 		t.Errorf("ListProjectGroups: %+v, %v", groups, err)
 	}
 }
+
+// routeIDs mengambil ID rute approval isi awal menurut namanya (M1.8).
+func routeIDs(t *testing.T, pool *pgxpool.Pool) map[string]string {
+	t.Helper()
+	rows, err := db.New(pool).ListApprovalRoutes(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+	ids := make(map[string]string, len(rows))
+	for _, r := range rows {
+		ids[r.Name] = r.ID
+	}
+	return ids
+}
+
+// TestSetDefaultRoute: kriteria selesai M1.8. Admin mengatur rute default
+// customer (D-47) lewat data, dan rute itu ikut menampilkan nama barunya bila
+// rute diganti nama, karena customer menunjuk ID rute.
+func TestSetDefaultRoute(t *testing.T) {
+	f := newFixture(t)
+	ctx := t.Context()
+	routes := routeIDs(t, f.pool)
+	ab, err := f.s.Create(ctx, f.admin, NewCustomer{Code: "AB", Name: "Customer A", ProjectGroupID: f.group.ID})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ab.DefaultRouteID != "" {
+		t.Errorf("customer baru sudah punya rute default: %+v (ASUMSI E-39: belum diatur)", ab)
+	}
+
+	set, err := f.s.SetDefaultRoute(ctx, f.admin, ab.ID, routes["Up to GM"])
+	if err != nil || set.DefaultRouteID != routes["Up to GM"] || set.DefaultRouteName != "Up to GM" {
+		t.Fatalf("SetDefaultRoute: %+v, %v", set, err)
+	}
+	if r := lastAudit(t, f.pool); r.Action != audit.ActionCustomerRouteChanged || r.Details != `{"default_route":"- → Up to GM"}` {
+		t.Errorf("entri audit: %s %s", r.Action, r.Details)
+	}
+	if _, err := f.s.SetDefaultRoute(ctx, f.admin, ab.ID, routes["Up to QA QC Manager"]); err != nil {
+		t.Fatal(err)
+	}
+	if r := lastAudit(t, f.pool); r.Details != `{"default_route":"Up to GM → Up to QA QC Manager"}` {
+		t.Errorf("entri audit ganti rute: %s", r.Details)
+	}
+
+	// Rute diganti nama langsung lewat query: customer menunjuk ID, jadi ikut.
+	if err := db.New(f.pool).RenameApprovalRoute(ctx, db.RenameApprovalRouteParams{ID: routes["Up to QA QC Manager"], Name: "Short"}); err != nil {
+		t.Fatal(err)
+	}
+	list, err := f.s.List(ctx, f.admin)
+	if err != nil || len(list) != 1 || list[0].DefaultRouteName != "Short" {
+		t.Errorf("daftar customer setelah rute diganti nama: %+v, %v", list, err)
+	}
+
+	tests := []struct {
+		name string
+		err  error
+		want []string
+	}{
+		{"rute kosong", second(f.s.SetDefaultRoute(ctx, f.admin, ab.ID, "")), []string{"route_id:required"}},
+		{"rute tidak ada", second(f.s.SetDefaultRoute(ctx, f.admin, ab.ID, "01a180aa-a98b-7bf2-8e0d-b97a25ecc489")), []string{"route_id:invalid_format"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := problemCodes(t, tt.err); !slices.Equal(got, tt.want) {
+				t.Errorf("masalah %v, ingin %v", got, tt.want)
+			}
+		})
+	}
+	if _, err := f.s.SetDefaultRoute(ctx, f.admin, "bukan-uuid", routes["Up to GM"]); !errors.Is(err, problem.ErrNotFound) {
+		t.Errorf("customer yang tidak ada: %v, ingin problem.ErrNotFound", err)
+	}
+	worker := newActor(t, f.pool, "penyusun.uji", access.AccountWork, access.RoleAuthor)
+	if _, err := f.s.SetDefaultRoute(ctx, worker, ab.ID, routes["Up to GM"]); !errors.Is(err, access.ErrForbidden) {
+		t.Errorf("akun kerja: %v, ingin ErrForbidden", err)
+	}
+}
+
+// second mengambil error dari hasil dua nilai, supaya tabel test tetap ringkas.
+func second[T any](_ T, err error) error { return err }

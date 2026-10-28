@@ -19,6 +19,7 @@ export type Customer = {
      */
     code: string;
     name: string;
+    default_route?: ApprovalRouteRef;
     project_group?: ProjectGroupRef;
     /**
      * Customers are never deleted; inactive customers get no new models (E-09).
@@ -554,6 +555,7 @@ export type ChangeType = {
     id: string;
     key: 'content' | 'layout' | 'administrative';
     name: string;
+    approval_route?: ApprovalRouteRef;
 };
 
 export type ChangeTypeList = {
@@ -591,6 +593,120 @@ export type FourMCategory = {
 
 export type FourMCategoryList = {
     items: Array<FourMCategory>;
+};
+
+/**
+ * A job title in the approval workflow (D-54). The key never changes; the name may (D-58).
+ */
+export type Position = {
+    id: string;
+    key: 'ppap_engineer' | 'ppap_staff' | 'project_engineer' | 'project_leader' | 'apqp_ppap_controller' | 'npi_manager' | 'qa_qc_manager' | 'advisor' | 'factory_manager';
+    name: string;
+    /**
+     * True for the Project Leader and the Project Engineer, who are held once per project group.
+     */
+    per_project_group: boolean;
+    holders: Array<PositionHolder>;
+};
+
+export type PositionHolder = {
+    id: string;
+    person: Person;
+    project_group?: ProjectGroupRef;
+    created_at: string;
+};
+
+export type NewPositionHolder = {
+    person_id: string;
+    /**
+     * Required for positions held per project group, and not allowed for other positions.
+     */
+    project_group_id?: string;
+};
+
+export type PositionList = {
+    items: Array<Position>;
+};
+
+/**
+ * An ordered list of signature slots (R-APR-08). One Prepared slot, one Checked slot, then one or more Approved slots (D-45, D-48, D-49).
+ */
+export type ApprovalRoute = {
+    id: string;
+    name: string;
+    slots: Array<RouteSlot>;
+    created_at: string;
+};
+
+export type RouteSlot = {
+    stage: 'prepared' | 'checked' | 'approved';
+    /**
+     * Printed under the holder's name, separate from the position name (R-APR-17, D-76).
+     */
+    print_title: string;
+    /**
+     * The positions allowed to sign this slot.
+     */
+    positions: Array<PositionRef>;
+};
+
+export type PositionRef = {
+    id: string;
+    name: string;
+};
+
+export type ApprovalRouteInput = {
+    /**
+     * 1 to 200 characters, unique among approval routes, ignoring case.
+     */
+    name: string;
+    /**
+     * The slots in signing order. On update the list replaces all slots.
+     */
+    slots: Array<RouteSlotInput>;
+};
+
+export type RouteSlotInput = {
+    stage: 'prepared' | 'checked' | 'approved';
+    /**
+     * 1 to 100 characters.
+     */
+    print_title: string;
+    position_ids: Array<string>;
+};
+
+export type ApprovalRouteList = {
+    items: Array<ApprovalRoute>;
+};
+
+export type ApprovalRouteRef = {
+    id: string;
+    name: string;
+};
+
+export type RouteChoice = {
+    route_id: string;
+};
+
+export type ChangeTypeRouteChoice = {
+    /**
+     * Leave it out to use the default route of each customer.
+     */
+    route_id?: string;
+};
+
+export type SystemSettings = {
+    /**
+     * When false, signature slots have no sign date and the field is hidden (D-52).
+     */
+    sign_dates_enabled: boolean;
+};
+
+export type SystemSettingsUpdate = {
+    /**
+     * Leave it out to keep the current value.
+     */
+    sign_dates_enabled?: boolean;
 };
 
 export type CustomerList = {
@@ -647,6 +763,12 @@ export type ChangeTypeId = string;
 export type ChangeSourceId = string;
 
 export type FourMCategoryId = string;
+
+export type PositionId = string;
+
+export type HolderId = string;
+
+export type ApprovalRouteId = string;
 
 export type GetHealthData = {
     body?: never;
@@ -2323,6 +2445,382 @@ export type UpdateFourMCategoryResponses = {
 };
 
 export type UpdateFourMCategoryResponse = UpdateFourMCategoryResponses[keyof UpdateFourMCategoryResponses];
+
+export type ListPositionsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/positions';
+};
+
+export type ListPositionsErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ListPositionsError = ListPositionsErrors[keyof ListPositionsErrors];
+
+export type ListPositionsResponses = {
+    /**
+     * The positions.
+     */
+    200: PositionList;
+};
+
+export type ListPositionsResponse = ListPositionsResponses[keyof ListPositionsResponses];
+
+export type UpdatePositionData = {
+    body: NameUpdate;
+    path: {
+        positionId: string;
+    };
+    query?: never;
+    url: '/api/v1/positions/{positionId}';
+};
+
+export type UpdatePositionErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type UpdatePositionError = UpdatePositionErrors[keyof UpdatePositionErrors];
+
+export type UpdatePositionResponses = {
+    /**
+     * The position was renamed.
+     */
+    200: Position;
+};
+
+export type UpdatePositionResponse = UpdatePositionResponses[keyof UpdatePositionResponses];
+
+export type AddPositionHolderData = {
+    body: NewPositionHolder;
+    path: {
+        positionId: string;
+    };
+    query?: never;
+    url: '/api/v1/positions/{positionId}/holders';
+};
+
+export type AddPositionHolderErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type AddPositionHolderError = AddPositionHolderErrors[keyof AddPositionHolderErrors];
+
+export type AddPositionHolderResponses = {
+    /**
+     * The holder was recorded.
+     */
+    201: PositionHolder;
+};
+
+export type AddPositionHolderResponse = AddPositionHolderResponses[keyof AddPositionHolderResponses];
+
+export type RemovePositionHolderData = {
+    body?: never;
+    path: {
+        positionId: string;
+        holderId: string;
+    };
+    query?: never;
+    url: '/api/v1/positions/{positionId}/holders/{holderId}';
+};
+
+export type RemovePositionHolderErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type RemovePositionHolderError = RemovePositionHolderErrors[keyof RemovePositionHolderErrors];
+
+export type RemovePositionHolderResponses = {
+    /**
+     * The holder was removed.
+     */
+    204: void;
+};
+
+export type RemovePositionHolderResponse = RemovePositionHolderResponses[keyof RemovePositionHolderResponses];
+
+export type ListApprovalRoutesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/approval-routes';
+};
+
+export type ListApprovalRoutesErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ListApprovalRoutesError = ListApprovalRoutesErrors[keyof ListApprovalRoutesErrors];
+
+export type ListApprovalRoutesResponses = {
+    /**
+     * The approval routes.
+     */
+    200: ApprovalRouteList;
+};
+
+export type ListApprovalRoutesResponse = ListApprovalRoutesResponses[keyof ListApprovalRoutesResponses];
+
+export type CreateApprovalRouteData = {
+    body: ApprovalRouteInput;
+    path?: never;
+    query?: never;
+    url: '/api/v1/approval-routes';
+};
+
+export type CreateApprovalRouteErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type CreateApprovalRouteError = CreateApprovalRouteErrors[keyof CreateApprovalRouteErrors];
+
+export type CreateApprovalRouteResponses = {
+    /**
+     * The approval route was added.
+     */
+    201: ApprovalRoute;
+};
+
+export type CreateApprovalRouteResponse = CreateApprovalRouteResponses[keyof CreateApprovalRouteResponses];
+
+export type UpdateApprovalRouteData = {
+    body: ApprovalRouteInput;
+    path: {
+        approvalRouteId: string;
+    };
+    query?: never;
+    url: '/api/v1/approval-routes/{approvalRouteId}';
+};
+
+export type UpdateApprovalRouteErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type UpdateApprovalRouteError = UpdateApprovalRouteErrors[keyof UpdateApprovalRouteErrors];
+
+export type UpdateApprovalRouteResponses = {
+    /**
+     * The approval route was changed.
+     */
+    200: ApprovalRoute;
+};
+
+export type UpdateApprovalRouteResponse = UpdateApprovalRouteResponses[keyof UpdateApprovalRouteResponses];
+
+export type SetCustomerDefaultRouteData = {
+    body: RouteChoice;
+    path: {
+        customerId: string;
+    };
+    query?: never;
+    url: '/api/v1/customers/{customerId}/default-route';
+};
+
+export type SetCustomerDefaultRouteErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type SetCustomerDefaultRouteError = SetCustomerDefaultRouteErrors[keyof SetCustomerDefaultRouteErrors];
+
+export type SetCustomerDefaultRouteResponses = {
+    /**
+     * The default route was set.
+     */
+    200: Customer;
+};
+
+export type SetCustomerDefaultRouteResponse = SetCustomerDefaultRouteResponses[keyof SetCustomerDefaultRouteResponses];
+
+export type SetChangeTypeRouteData = {
+    body: ChangeTypeRouteChoice;
+    path: {
+        changeTypeId: string;
+    };
+    query?: never;
+    url: '/api/v1/change-types/{changeTypeId}/approval-route';
+};
+
+export type SetChangeTypeRouteErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type SetChangeTypeRouteError = SetChangeTypeRouteErrors[keyof SetChangeTypeRouteErrors];
+
+export type SetChangeTypeRouteResponses = {
+    /**
+     * The route of the change type was set.
+     */
+    200: ChangeType;
+};
+
+export type SetChangeTypeRouteResponse = SetChangeTypeRouteResponses[keyof SetChangeTypeRouteResponses];
+
+export type GetSystemSettingsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/system-settings';
+};
+
+export type GetSystemSettingsErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type GetSystemSettingsError = GetSystemSettingsErrors[keyof GetSystemSettingsErrors];
+
+export type GetSystemSettingsResponses = {
+    /**
+     * The system settings.
+     */
+    200: SystemSettings;
+};
+
+export type GetSystemSettingsResponse = GetSystemSettingsResponses[keyof GetSystemSettingsResponses];
+
+export type UpdateSystemSettingsData = {
+    body: SystemSettingsUpdate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/system-settings';
+};
+
+export type UpdateSystemSettingsErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type UpdateSystemSettingsError = UpdateSystemSettingsErrors[keyof UpdateSystemSettingsErrors];
+
+export type UpdateSystemSettingsResponses = {
+    /**
+     * The system settings were changed.
+     */
+    200: SystemSettings;
+};
+
+export type UpdateSystemSettingsResponse = UpdateSystemSettingsResponses[keyof UpdateSystemSettingsResponses];
 
 export type ListAuditLogData = {
     body?: never;

@@ -115,30 +115,91 @@ func TestAuthorizeCombinedRoles(t *testing.T) {
 }
 
 // TestAuthorizeScope: peran bercakupan Project Group sendiri hanya berlaku
-// untuk customer di group itu (D-71). Master Project Group dan pemegang
-// jabatannya baru ada di M1.4 dan M1.8, jadi untuk sekarang customer mana pun
-// ditolak (ASUMSI E-04).
+// untuk customer di group tempat orangnya menjadi Project Leader atau Project
+// Engineer (D-71). Sumbernya master Project Group dan pemegang jabatan (E-05,
+// M1.8), jadi hak ikut berubah begitu pemegang jabatan berubah.
 func TestAuthorizeScope(t *testing.T) {
 	pool := dbtest.NewPool(t)
 	c := NewChecker(pool)
 	ctx := t.Context()
+	q := db.New(pool)
 	grouped := newAccount(t, pool, "uji.pl", AccountWork, RoleGrant{Role: RoleAuthor, Scope: ScopeOwnProjectGroup})
 	everyone := newAccount(t, pool, "uji.ppap", AccountWork, RoleGrant{Role: RoleAuthor, Scope: ScopeAll})
-	customer := Resource{CustomerID: "01a180aa-a98b-7bf2-8e0d-b97a25ecc489"}
 
-	if err := c.Authorize(ctx, grouped, EditDrafts, Resource{}); err != nil {
-		t.Errorf("tanpa customer: %v", err)
+	// GR1 dengan customer AB, dan GR2 dengan customer CD.
+	newCustomer := func(group, code string) Resource {
+		t.Helper()
+		g, err := q.CreateProjectGroup(ctx, db.CreateProjectGroupParams{Code: group, Name: "Group " + group})
+		if err != nil {
+			t.Fatal(err)
+		}
+		cust, err := q.CreateCustomer(ctx, db.CreateCustomerParams{Code: code, Name: "Customer " + code, ProjectGroupID: &g.ID})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return Resource{CustomerID: cust.ID}
 	}
-	if err := c.Authorize(ctx, grouped, EditDrafts, customer); !errors.Is(err, ErrForbidden) {
-		t.Errorf("customer di luar group: %v, ingin ErrForbidden", err)
+	ab, cd := newCustomer("GR1", "AB"), newCustomer("GR2", "CD")
+	abGroup, err := q.GetCustomer(ctx, ab.CustomerID)
+	if err != nil {
+		t.Fatal(err)
 	}
-	if err := c.Authorize(ctx, everyone, EditDrafts, customer); err != nil {
-		t.Errorf("cakupan semua customer: %v", err)
+	positions, err := q.ListPositions(ctx)
+	if err != nil {
+		t.Fatal(err)
 	}
+	positionID := func(key string) string {
+		for _, p := range positions {
+			if p.Key == key {
+				return p.ID
+			}
+		}
+		t.Fatalf("jabatan %s tidak ada", key)
+		return ""
+	}
+	hold := func(key string) string {
+		t.Helper()
+		id, err := q.AddPositionHolder(ctx, db.AddPositionHolderParams{
+			PositionID: positionID(key), PerProjectGroup: true, PersonID: grouped.PersonID, ProjectGroupID: abGroup.ProjectGroupID,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return id
+	}
+	check := func(what string, actor Actor, res Resource, allowed bool) {
+		t.Helper()
+		err := c.Authorize(ctx, actor, EditDrafts, res)
+		if allowed && err != nil {
+			t.Errorf("%s: %v, ingin boleh", what, err)
+		}
+		if !allowed && !errors.Is(err, ErrForbidden) {
+			t.Errorf("%s: %v, ingin ErrForbidden", what, err)
+		}
+	}
+
+	// Belum memegang jabatan: tidak ada customer yang termasuk group-nya.
+	check("sebelum jadi Project Leader", grouped, ab, false)
+
+	leader := hold("project_leader")
+	check("customer di group sendiri", grouped, ab, true)
+	check("customer di group lain", grouped, cd, false)
+	// ASUMSI E-41: hak bercakupan tidak berlaku untuk operasi tanpa customer.
+	check("tanpa customer", grouped, Resource{}, false)
+	check("cakupan semua customer", everyone, cd, true)
+	check("cakupan semua customer, tanpa customer", everyone, Resource{}, true)
 	// Hak dasar Viewer berlaku untuk semua customer.
-	if err := c.Authorize(ctx, grouped, ViewReleased, customer); err != nil {
-		t.Errorf("L-1 untuk customer: %v", err)
+	if err := c.Authorize(ctx, grouped, ViewReleased, cd); err != nil {
+		t.Errorf("L-1 untuk customer lain: %v", err)
 	}
+
+	// Jabatan dilepas: hak untuk AB langsung hilang. Project Engineer juga berlaku.
+	if err := q.DeletePositionHolder(ctx, leader); err != nil {
+		t.Fatal(err)
+	}
+	check("setelah jabatan dilepas", grouped, ab, false)
+	hold("project_engineer")
+	check("sebagai Project Engineer", grouped, ab, true)
 }
 
 func TestAuthorizeOwnAccount(t *testing.T) {

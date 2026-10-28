@@ -64,6 +64,17 @@ func TestAPIRequiresSession(t *testing.T) {
 		{http.MethodPut, "/api/v1/change-sources/cs-1", `{"name":"X"}`},
 		{http.MethodGet, "/api/v1/four-m-categories", ""},
 		{http.MethodPut, "/api/v1/four-m-categories/fm-1", `{"name":"X"}`},
+		{http.MethodGet, "/api/v1/positions", ""},
+		{http.MethodPut, "/api/v1/positions/pos-1", `{"name":"X"}`},
+		{http.MethodPost, "/api/v1/positions/pos-1/holders", `{"person_id":"p-1"}`},
+		{http.MethodDelete, "/api/v1/positions/pos-1/holders/h-1", ""},
+		{http.MethodGet, "/api/v1/approval-routes", ""},
+		{http.MethodPost, "/api/v1/approval-routes", `{"name":"X","slots":[]}`},
+		{http.MethodPut, "/api/v1/approval-routes/r-1", `{"name":"X","slots":[]}`},
+		{http.MethodPut, "/api/v1/customers/c-1/default-route", `{"route_id":"r-1"}`},
+		{http.MethodPut, "/api/v1/change-types/ct-1/approval-route", `{}`},
+		{http.MethodGet, "/api/v1/system-settings", ""},
+		{http.MethodPut, "/api/v1/system-settings", `{"sign_dates_enabled":true}`},
 	}
 	srv := newTestServer(t, nil, Deps{})
 	for _, tt := range protected {

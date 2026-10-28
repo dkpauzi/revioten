@@ -7,6 +7,15 @@
 import type {
 	AccountInfo,
 	AccountList,
+	ApprovalRoute,
+	ApprovalRouteInput,
+	ApprovalRouteList,
+	NewPositionHolder,
+	Position,
+	PositionHolder,
+	PositionList,
+	SystemSettings,
+	SystemSettingsUpdate,
 	AuditEntryList,
 	AuditVerification,
 	ChangeSource,
@@ -325,6 +334,96 @@ export function updateFourMCategory(
 	fetchFn: typeof fetch = fetch
 ): Promise<ApiResult<FourMCategory>> {
 	return call<FourMCategory>(fetchFn, itemPath('four-m-categories', id), jsonRequest('PUT', { name }));
+}
+
+// listPositions memanggil GET /api/v1/positions (M1.8).
+export function listPositions(fetchFn: typeof fetch = fetch): Promise<ApiResult<PositionList>> {
+	return call<PositionList>(fetchFn, '/api/v1/positions', { method: 'GET' });
+}
+
+// updatePosition memanggil PUT /api/v1/positions/{id} (A-1).
+export function updatePosition(
+	id: string,
+	name: string,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<Position>> {
+	return call<Position>(fetchFn, itemPath('positions', id), jsonRequest('PUT', { name }));
+}
+
+// addPositionHolder memanggil POST /api/v1/positions/{id}/holders (A-1).
+export function addPositionHolder(
+	positionId: string,
+	input: NewPositionHolder,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<PositionHolder>> {
+	return call<PositionHolder>(fetchFn, `${itemPath('positions', positionId)}/holders`, jsonRequest('POST', input));
+}
+
+// removePositionHolder memanggil DELETE /api/v1/positions/{id}/holders/{holderId} (A-1).
+export function removePositionHolder(
+	positionId: string,
+	holderId: string,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<undefined>> {
+	const url = `${itemPath('positions', positionId)}/holders/${encodeURIComponent(holderId)}`;
+	return call<undefined>(fetchFn, url, { method: 'DELETE' });
+}
+
+// listApprovalRoutes memanggil GET /api/v1/approval-routes.
+export function listApprovalRoutes(fetchFn: typeof fetch = fetch): Promise<ApiResult<ApprovalRouteList>> {
+	return call<ApprovalRouteList>(fetchFn, '/api/v1/approval-routes', { method: 'GET' });
+}
+
+// createApprovalRoute memanggil POST /api/v1/approval-routes (A-2).
+export function createApprovalRoute(
+	input: ApprovalRouteInput,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<ApprovalRoute>> {
+	return call<ApprovalRoute>(fetchFn, '/api/v1/approval-routes', jsonRequest('POST', input));
+}
+
+// updateApprovalRoute memanggil PUT /api/v1/approval-routes/{id} (A-2).
+// Daftar slot menggantikan semua slot lama.
+export function updateApprovalRoute(
+	id: string,
+	input: ApprovalRouteInput,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<ApprovalRoute>> {
+	return call<ApprovalRoute>(fetchFn, itemPath('approval-routes', id), jsonRequest('PUT', input));
+}
+
+// setCustomerDefaultRoute memanggil PUT /api/v1/customers/{id}/default-route (A-2).
+export function setCustomerDefaultRoute(
+	customerId: string,
+	routeId: string,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<Customer>> {
+	const url = `${itemPath('customers', customerId)}/default-route`;
+	return call<Customer>(fetchFn, url, jsonRequest('PUT', { route_id: routeId }));
+}
+
+// setChangeTypeRoute memanggil PUT /api/v1/change-types/{id}/approval-route
+// (A-2). null berarti rute default setiap customer.
+export function setChangeTypeRoute(
+	changeTypeId: string,
+	routeId: string | null,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<ChangeType>> {
+	const url = `${itemPath('change-types', changeTypeId)}/approval-route`;
+	return call<ChangeType>(fetchFn, url, jsonRequest('PUT', routeId === null ? {} : { route_id: routeId }));
+}
+
+// getSystemSettings memanggil GET /api/v1/system-settings.
+export function getSystemSettings(fetchFn: typeof fetch = fetch): Promise<ApiResult<SystemSettings>> {
+	return call<SystemSettings>(fetchFn, '/api/v1/system-settings', { method: 'GET' });
+}
+
+// updateSystemSettings memanggil PUT /api/v1/system-settings (A-3).
+export function updateSystemSettings(
+	input: SystemSettingsUpdate,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<SystemSettings>> {
+	return call<SystemSettings>(fetchFn, '/api/v1/system-settings', jsonRequest('PUT', input));
 }
 
 // getSession memanggil GET /api/v1/session: siapa yang sedang login.

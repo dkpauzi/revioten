@@ -1,8 +1,16 @@
 -- name: ListChangeTypes :many
-SELECT id, key, name FROM change_types ORDER BY position;
+-- ListChangeTypes mengambil jenis perubahan beserta rute approval-nya (M1.8).
+-- Rute kosong berarti rute default customer (ASUMSI E-35).
+SELECT t.id, t.key, t.name, t.approval_route_id, r.name AS approval_route_name
+FROM change_types t
+LEFT JOIN approval_routes r ON r.id = t.approval_route_id
+ORDER BY t.position;
 
 -- name: GetChangeType :one
-SELECT id, key, name FROM change_types WHERE id = $1;
+SELECT t.id, t.key, t.name, t.approval_route_id, r.name AS approval_route_name
+FROM change_types t
+LEFT JOIN approval_routes r ON r.id = t.approval_route_id
+WHERE t.id = $1;
 
 -- name: LockChangeType :exec
 SELECT id FROM change_types WHERE id = $1 FOR NO KEY UPDATE;

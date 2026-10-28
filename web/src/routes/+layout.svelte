@@ -68,6 +68,8 @@
 				<a href="/processes">{t('navProcesses')}</a>
 				<a href="/document-types">{t('navDocumentTypes')}</a>
 				<a href="/change-types">{t('navChangeTypes')}</a>
+				<a href="/positions">{t('navPositions')}</a>
+				<a href="/approval-routes">{t('navApprovalRoutes')}</a>
 				<!-- Menu hanya untuk pemegang hak A-1; server tetap memeriksa setiap operasi. -->
 				{#if can('A-1')}
 					<a href="/admin/accounts">{t('navAccounts')}</a>
@@ -75,6 +77,10 @@
 				<!-- Audit log hanya lewat akun admin (A-4, D-75). -->
 				{#if can('A-4')}
 					<a href="/admin/audit">{t('navAuditLog')}</a>
+				{/if}
+				<!-- Pengaturan sistem untuk pemegang A-3 (UC-07). -->
+				{#if can('A-3')}
+					<a href="/admin/settings">{t('navSettings')}</a>
 				{/if}
 				<a href="/about">{t('navAbout')}</a>
 			</nav>

@@ -317,6 +317,45 @@ func (e NewAccountKind) Valid() bool {
 	}
 }
 
+// Defines values for PositionKey.
+const (
+	PositionKeyAdvisor            PositionKey = "advisor"
+	PositionKeyApqpPpapController PositionKey = "apqp_ppap_controller"
+	PositionKeyFactoryManager     PositionKey = "factory_manager"
+	PositionKeyNpiManager         PositionKey = "npi_manager"
+	PositionKeyPpapEngineer       PositionKey = "ppap_engineer"
+	PositionKeyPpapStaff          PositionKey = "ppap_staff"
+	PositionKeyProjectEngineer    PositionKey = "project_engineer"
+	PositionKeyProjectLeader      PositionKey = "project_leader"
+	PositionKeyQaQcManager        PositionKey = "qa_qc_manager"
+)
+
+// Valid indicates whether the value is a known member of the PositionKey enum.
+func (e PositionKey) Valid() bool {
+	switch e {
+	case PositionKeyAdvisor:
+		return true
+	case PositionKeyApqpPpapController:
+		return true
+	case PositionKeyFactoryManager:
+		return true
+	case PositionKeyNpiManager:
+		return true
+	case PositionKeyPpapEngineer:
+		return true
+	case PositionKeyPpapStaff:
+		return true
+	case PositionKeyProjectEngineer:
+		return true
+	case PositionKeyProjectLeader:
+		return true
+	case PositionKeyQaQcManager:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for RoleLevel.
 const (
 	RoleLevelAdmin  RoleLevel = "admin"
@@ -359,6 +398,48 @@ func (e RoleGrantScope) Valid() bool {
 	}
 }
 
+// Defines values for RouteSlotStage.
+const (
+	RouteSlotStageApproved RouteSlotStage = "approved"
+	RouteSlotStageChecked  RouteSlotStage = "checked"
+	RouteSlotStagePrepared RouteSlotStage = "prepared"
+)
+
+// Valid indicates whether the value is a known member of the RouteSlotStage enum.
+func (e RouteSlotStage) Valid() bool {
+	switch e {
+	case RouteSlotStageApproved:
+		return true
+	case RouteSlotStageChecked:
+		return true
+	case RouteSlotStagePrepared:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RouteSlotInputStage.
+const (
+	RouteSlotInputStageApproved RouteSlotInputStage = "approved"
+	RouteSlotInputStageChecked  RouteSlotInputStage = "checked"
+	RouteSlotInputStagePrepared RouteSlotInputStage = "prepared"
+)
+
+// Valid indicates whether the value is a known member of the RouteSlotInputStage enum.
+func (e RouteSlotInputStage) Valid() bool {
+	switch e {
+	case RouteSlotInputStageApproved:
+		return true
+	case RouteSlotInputStageChecked:
+		return true
+	case RouteSlotInputStagePrepared:
+		return true
+	default:
+		return false
+	}
+}
+
 // Account defines model for Account.
 type Account struct {
 	// Id Opaque stable ID.
@@ -395,6 +476,34 @@ type AccountInfoKind string
 // AccountList defines model for AccountList.
 type AccountList struct {
 	Items []AccountInfo `json:"items"`
+}
+
+// ApprovalRoute An ordered list of signature slots (R-APR-08). One Prepared slot, one Checked slot, then one or more Approved slots (D-45, D-48, D-49).
+type ApprovalRoute struct {
+	CreatedAt time.Time   `json:"created_at"`
+	Id        string      `json:"id"`
+	Name      string      `json:"name"`
+	Slots     []RouteSlot `json:"slots"`
+}
+
+// ApprovalRouteInput defines model for ApprovalRouteInput.
+type ApprovalRouteInput struct {
+	// Name 1 to 200 characters, unique among approval routes, ignoring case.
+	Name string `json:"name"`
+
+	// Slots The slots in signing order. On update the list replaces all slots.
+	Slots []RouteSlotInput `json:"slots"`
+}
+
+// ApprovalRouteList defines model for ApprovalRouteList.
+type ApprovalRouteList struct {
+	Items []ApprovalRoute `json:"items"`
+}
+
+// ApprovalRouteRef defines model for ApprovalRouteRef.
+type ApprovalRouteRef struct {
+	Id   string `json:"id"`
+	Name string `json:"name"`
 }
 
 // AuditActor `human` is a logged-in account, shown with the person who holds it
@@ -512,9 +621,10 @@ type ChangeSourceUpdate struct {
 
 // ChangeType defines model for ChangeType.
 type ChangeType struct {
-	Id   string        `json:"id"`
-	Key  ChangeTypeKey `json:"key"`
-	Name string        `json:"name"`
+	ApprovalRoute *ApprovalRouteRef `json:"approval_route,omitempty"`
+	Id            string            `json:"id"`
+	Key           ChangeTypeKey     `json:"key"`
+	Name          string            `json:"name"`
 }
 
 // ChangeTypeKey defines model for ChangeType.Key.
@@ -523,6 +633,12 @@ type ChangeTypeKey string
 // ChangeTypeList defines model for ChangeTypeList.
 type ChangeTypeList struct {
 	Items []ChangeType `json:"items"`
+}
+
+// ChangeTypeRouteChoice defines model for ChangeTypeRouteChoice.
+type ChangeTypeRouteChoice struct {
+	// RouteId Leave it out to use the default route of each customer.
+	RouteId *string `json:"route_id,omitempty"`
 }
 
 // CreatedAccount defines model for CreatedAccount.
@@ -551,8 +667,9 @@ type Customer struct {
 	Code string `json:"code"`
 
 	// Codes All codes of the customer, oldest first. The last one is the current code (E-11).
-	Codes     []CustomerCode `json:"codes"`
-	CreatedAt time.Time      `json:"created_at"`
+	Codes        []CustomerCode    `json:"codes"`
+	CreatedAt    time.Time         `json:"created_at"`
+	DefaultRoute *ApprovalRouteRef `json:"default_route,omitempty"`
 
 	// Id Opaque stable ID.
 	Id string `json:"id"`
@@ -800,6 +917,14 @@ type NewPartNumber struct {
 	Number string `json:"number"`
 }
 
+// NewPositionHolder defines model for NewPositionHolder.
+type NewPositionHolder struct {
+	PersonId string `json:"person_id"`
+
+	// ProjectGroupId Required for positions held per project group, and not allowed for other positions.
+	ProjectGroupId *string `json:"project_group_id,omitempty"`
+}
+
 // NewProcess defines model for NewProcess.
 type NewProcess struct {
 	// Aliases Leave it out for no aliases. Each alias follows the rules of the name.
@@ -875,6 +1000,42 @@ type PersonInfo struct {
 	EmployeeNumber *string `json:"employee_number,omitempty"`
 
 	// Id Opaque stable ID.
+	Id   string `json:"id"`
+	Name string `json:"name"`
+}
+
+// Position A job title in the approval workflow (D-54). The key never changes; the name may (D-58).
+type Position struct {
+	Holders []PositionHolder `json:"holders"`
+	Id      string           `json:"id"`
+	Key     PositionKey      `json:"key"`
+	Name    string           `json:"name"`
+
+	// PerProjectGroup True for the Project Leader and the Project Engineer, who are held once per project group.
+	PerProjectGroup bool `json:"per_project_group"`
+}
+
+// PositionKey defines model for Position.Key.
+type PositionKey string
+
+// PositionHolder defines model for PositionHolder.
+type PositionHolder struct {
+	CreatedAt time.Time `json:"created_at"`
+	Id        string    `json:"id"`
+	Person    Person    `json:"person"`
+
+	// ProjectGroup The project group of the customer (D-54). Missing only for customers
+	// added before project groups existed.
+	ProjectGroup *ProjectGroupRef `json:"project_group,omitempty"`
+}
+
+// PositionList defines model for PositionList.
+type PositionList struct {
+	Items []Position `json:"items"`
+}
+
+// PositionRef defines model for PositionRef.
+type PositionRef struct {
 	Id   string `json:"id"`
 	Name string `json:"name"`
 }
@@ -968,6 +1129,36 @@ type RolesUpdate struct {
 	Roles []RoleGrant `json:"roles"`
 }
 
+// RouteChoice defines model for RouteChoice.
+type RouteChoice struct {
+	RouteId string `json:"route_id"`
+}
+
+// RouteSlot defines model for RouteSlot.
+type RouteSlot struct {
+	// Positions The positions allowed to sign this slot.
+	Positions []PositionRef `json:"positions"`
+
+	// PrintTitle Printed under the holder's name, separate from the position name (R-APR-17, D-76).
+	PrintTitle string         `json:"print_title"`
+	Stage      RouteSlotStage `json:"stage"`
+}
+
+// RouteSlotStage defines model for RouteSlot.Stage.
+type RouteSlotStage string
+
+// RouteSlotInput defines model for RouteSlotInput.
+type RouteSlotInput struct {
+	PositionIds []string `json:"position_ids"`
+
+	// PrintTitle 1 to 100 characters.
+	PrintTitle string              `json:"print_title"`
+	Stage      RouteSlotInputStage `json:"stage"`
+}
+
+// RouteSlotInputStage defines model for RouteSlotInput.Stage.
+type RouteSlotInputStage string
+
 // Session defines model for Session.
 type Session struct {
 	Account Account `json:"account"`
@@ -997,6 +1188,18 @@ type SpecialCodeList struct {
 	Items []SpecialCode `json:"items"`
 }
 
+// SystemSettings defines model for SystemSettings.
+type SystemSettings struct {
+	// SignDatesEnabled When false, signature slots have no sign date and the field is hidden (D-52).
+	SignDatesEnabled bool `json:"sign_dates_enabled"`
+}
+
+// SystemSettingsUpdate defines model for SystemSettingsUpdate.
+type SystemSettingsUpdate struct {
+	// SignDatesEnabled Leave it out to keep the current value.
+	SignDatesEnabled *bool `json:"sign_dates_enabled,omitempty"`
+}
+
 // TemporaryPassword defines model for TemporaryPassword.
 type TemporaryPassword struct {
 	// TemporaryPassword Shown only once. Give it to the owner of the account.
@@ -1005,6 +1208,9 @@ type TemporaryPassword struct {
 
 // AccountId defines model for AccountId.
 type AccountId = string
+
+// ApprovalRouteId defines model for ApprovalRouteId.
+type ApprovalRouteId = string
 
 // ChangeSourceId defines model for ChangeSourceId.
 type ChangeSourceId = string
@@ -1024,6 +1230,9 @@ type DocumentTypeId = string
 // FourMCategoryId defines model for FourMCategoryId.
 type FourMCategoryId = string
 
+// HolderId defines model for HolderId.
+type HolderId = string
+
 // ModelGroupId defines model for ModelGroupId.
 type ModelGroupId = string
 
@@ -1032,6 +1241,9 @@ type ModelId = string
 
 // PartNumberId defines model for PartNumberId.
 type PartNumberId = string
+
+// PositionId defines model for PositionId.
+type PositionId = string
 
 // ProcessId defines model for ProcessId.
 type ProcessId = string
@@ -1078,6 +1290,12 @@ type CreateAccountJSONRequestBody = NewAccount
 // SetAccountRolesJSONRequestBody defines body for SetAccountRoles for application/json ContentType.
 type SetAccountRolesJSONRequestBody = RolesUpdate
 
+// CreateApprovalRouteJSONRequestBody defines body for CreateApprovalRoute for application/json ContentType.
+type CreateApprovalRouteJSONRequestBody = ApprovalRouteInput
+
+// UpdateApprovalRouteJSONRequestBody defines body for UpdateApprovalRoute for application/json ContentType.
+type UpdateApprovalRouteJSONRequestBody = ApprovalRouteInput
+
 // CreateChangeSourceJSONRequestBody defines body for CreateChangeSource for application/json ContentType.
 type CreateChangeSourceJSONRequestBody = NameUpdate
 
@@ -1087,6 +1305,9 @@ type UpdateChangeSourceJSONRequestBody = ChangeSourceUpdate
 // UpdateChangeTypeJSONRequestBody defines body for UpdateChangeType for application/json ContentType.
 type UpdateChangeTypeJSONRequestBody = NameUpdate
 
+// SetChangeTypeRouteJSONRequestBody defines body for SetChangeTypeRoute for application/json ContentType.
+type SetChangeTypeRouteJSONRequestBody = ChangeTypeRouteChoice
+
 // CreateCustomerJSONRequestBody defines body for CreateCustomer for application/json ContentType.
 type CreateCustomerJSONRequestBody = NewCustomer
 
@@ -1095,6 +1316,9 @@ type UpdateCustomerJSONRequestBody = CustomerUpdate
 
 // ChangeCustomerCodeJSONRequestBody defines body for ChangeCustomerCode for application/json ContentType.
 type ChangeCustomerCodeJSONRequestBody = CustomerCodeChange
+
+// SetCustomerDefaultRouteJSONRequestBody defines body for SetCustomerDefaultRoute for application/json ContentType.
+type SetCustomerDefaultRouteJSONRequestBody = RouteChoice
 
 // CreateDocumentTypeJSONRequestBody defines body for CreateDocumentType for application/json ContentType.
 type CreateDocumentTypeJSONRequestBody = DocumentTypeInput
@@ -1126,6 +1350,12 @@ type CreatePartNumberJSONRequestBody = NewPartNumber
 // UpdatePartNumberJSONRequestBody defines body for UpdatePartNumber for application/json ContentType.
 type UpdatePartNumberJSONRequestBody = PartNumberUpdate
 
+// UpdatePositionJSONRequestBody defines body for UpdatePosition for application/json ContentType.
+type UpdatePositionJSONRequestBody = NameUpdate
+
+// AddPositionHolderJSONRequestBody defines body for AddPositionHolder for application/json ContentType.
+type AddPositionHolderJSONRequestBody = NewPositionHolder
+
 // CreateProcessJSONRequestBody defines body for CreateProcess for application/json ContentType.
 type CreateProcessJSONRequestBody = NewProcess
 
@@ -1146,6 +1376,9 @@ type CreateSpecialCodeJSONRequestBody = NewSpecialCode
 
 // UpdateSpecialCodeJSONRequestBody defines body for UpdateSpecialCode for application/json ContentType.
 type UpdateSpecialCodeJSONRequestBody = NameUpdate
+
+// UpdateSystemSettingsJSONRequestBody defines body for UpdateSystemSettings for application/json ContentType.
+type UpdateSystemSettingsJSONRequestBody = SystemSettingsUpdate
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
@@ -1170,6 +1403,15 @@ type ServerInterface interface {
 	// SetAccountRoles Replace the roles of a work account (A-1)
 	// (PUT /api/v1/accounts/{accountId}/roles)
 	SetAccountRoles(w http.ResponseWriter, r *http.Request, accountId AccountId)
+	// ListApprovalRoutes Approval routes with their slots in signing order, ordered by name (R-APR-08)
+	// (GET /api/v1/approval-routes)
+	ListApprovalRoutes(w http.ResponseWriter, r *http.Request)
+	// CreateApprovalRoute Add an approval route (A-2, UC-06)
+	// (POST /api/v1/approval-routes)
+	CreateApprovalRoute(w http.ResponseWriter, r *http.Request)
+	// UpdateApprovalRoute Rename an approval route and replace its slots (A-2, R-APR-15)
+	// (PUT /api/v1/approval-routes/{approvalRouteId})
+	UpdateApprovalRoute(w http.ResponseWriter, r *http.Request, approvalRouteId ApprovalRouteId)
 	// ListAuditLog Audit log entries, newest first (A-4, admin account only)
 	// (GET /api/v1/audit-log)
 	ListAuditLog(w http.ResponseWriter, r *http.Request, params ListAuditLogParams)
@@ -1191,6 +1433,9 @@ type ServerInterface interface {
 	// UpdateChangeType Rename a change type (A-2)
 	// (PUT /api/v1/change-types/{changeTypeId})
 	UpdateChangeType(w http.ResponseWriter, r *http.Request, changeTypeId ChangeTypeId)
+	// SetChangeTypeRoute Set the approval route of a change type, or use the customer default (A-2, R-TPL-10)
+	// (PUT /api/v1/change-types/{changeTypeId}/approval-route)
+	SetChangeTypeRoute(w http.ResponseWriter, r *http.Request, changeTypeId ChangeTypeId)
 	// ListCustomers List all customers, ordered by code
 	// (GET /api/v1/customers)
 	ListCustomers(w http.ResponseWriter, r *http.Request)
@@ -1203,6 +1448,9 @@ type ServerInterface interface {
 	// ChangeCustomerCode Give a customer a new code; the old code stays in its history (A-2, E-11)
 	// (POST /api/v1/customers/{customerId}/code)
 	ChangeCustomerCode(w http.ResponseWriter, r *http.Request, customerId CustomerId)
+	// SetCustomerDefaultRoute Set the default approval route of a customer (A-2, D-47)
+	// (PUT /api/v1/customers/{customerId}/default-route)
+	SetCustomerDefaultRoute(w http.ResponseWriter, r *http.Request, customerId CustomerId)
 	// ListDocumentTypes Document types with their number prefix (R-NUM-01, E-12)
 	// (GET /api/v1/document-types)
 	ListDocumentTypes(w http.ResponseWriter, r *http.Request)
@@ -1251,6 +1499,18 @@ type ServerInterface interface {
 	// UpdatePartNumber Change the number and name of a part number (A-2)
 	// (PUT /api/v1/part-numbers/{partNumberId})
 	UpdatePartNumber(w http.ResponseWriter, r *http.Request, partNumberId PartNumberId)
+	// ListPositions Positions of the NPI organization chart with their holders (D-54, D-58)
+	// (GET /api/v1/positions)
+	ListPositions(w http.ResponseWriter, r *http.Request)
+	// UpdatePosition Rename a position. Its key and holders stay (A-1, D-58)
+	// (PUT /api/v1/positions/{positionId})
+	UpdatePosition(w http.ResponseWriter, r *http.Request, positionId PositionId)
+	// AddPositionHolder Record a person as holder of a position (A-1). One Project Leader and one Project Engineer per project group (D-54)
+	// (POST /api/v1/positions/{positionId}/holders)
+	AddPositionHolder(w http.ResponseWriter, r *http.Request, positionId PositionId)
+	// RemovePositionHolder Remove a holder from a position (A-1)
+	// (DELETE /api/v1/positions/{positionId}/holders/{holderId})
+	RemovePositionHolder(w http.ResponseWriter, r *http.Request, positionId PositionId, holderId HolderId)
 	// ListProcesses All processes with their aliases, ordered by name (UC-04)
 	// (GET /api/v1/processes)
 	ListProcesses(w http.ResponseWriter, r *http.Request)
@@ -1293,6 +1553,12 @@ type ServerInterface interface {
 	// UpdateSpecialCode Rename a special code. The code itself never changes (A-2)
 	// (PUT /api/v1/special-codes/{specialCodeId})
 	UpdateSpecialCode(w http.ResponseWriter, r *http.Request, specialCodeId SpecialCodeId)
+	// GetSystemSettings System settings, today the sign date switch (D-52)
+	// (GET /api/v1/system-settings)
+	GetSystemSettings(w http.ResponseWriter, r *http.Request)
+	// UpdateSystemSettings Change the system settings (A-3, UC-07)
+	// (PUT /api/v1/system-settings)
+	UpdateSystemSettings(w http.ResponseWriter, r *http.Request)
 	// GetHealth Server and database status
 	// (GET /health)
 	GetHealth(w http.ResponseWriter, r *http.Request)
@@ -1444,6 +1710,60 @@ func (siw *ServerInterfaceWrapper) SetAccountRoles(w http.ResponseWriter, r *htt
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.SetAccountRoles(w, r, accountId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListApprovalRoutes operation middleware
+func (siw *ServerInterfaceWrapper) ListApprovalRoutes(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListApprovalRoutes(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateApprovalRoute operation middleware
+func (siw *ServerInterfaceWrapper) CreateApprovalRoute(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateApprovalRoute(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateApprovalRoute operation middleware
+func (siw *ServerInterfaceWrapper) UpdateApprovalRoute(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "approvalRouteId" -------------
+	var approvalRouteId ApprovalRouteId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "approvalRouteId", r.PathValue("approvalRouteId"), &approvalRouteId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "approvalRouteId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateApprovalRoute(w, r, approvalRouteId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1607,6 +1927,32 @@ func (siw *ServerInterfaceWrapper) UpdateChangeType(w http.ResponseWriter, r *ht
 	handler.ServeHTTP(w, r)
 }
 
+// SetChangeTypeRoute operation middleware
+func (siw *ServerInterfaceWrapper) SetChangeTypeRoute(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "changeTypeId" -------------
+	var changeTypeId ChangeTypeId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "changeTypeId", r.PathValue("changeTypeId"), &changeTypeId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "changeTypeId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetChangeTypeRoute(w, r, changeTypeId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListCustomers operation middleware
 func (siw *ServerInterfaceWrapper) ListCustomers(w http.ResponseWriter, r *http.Request) {
 
@@ -1678,6 +2024,32 @@ func (siw *ServerInterfaceWrapper) ChangeCustomerCode(w http.ResponseWriter, r *
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ChangeCustomerCode(w, r, customerId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetCustomerDefaultRoute operation middleware
+func (siw *ServerInterfaceWrapper) SetCustomerDefaultRoute(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "customerId" -------------
+	var customerId CustomerId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "customerId", r.PathValue("customerId"), &customerId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customerId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetCustomerDefaultRoute(w, r, customerId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2028,6 +2400,107 @@ func (siw *ServerInterfaceWrapper) UpdatePartNumber(w http.ResponseWriter, r *ht
 	handler.ServeHTTP(w, r)
 }
 
+// ListPositions operation middleware
+func (siw *ServerInterfaceWrapper) ListPositions(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListPositions(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdatePosition operation middleware
+func (siw *ServerInterfaceWrapper) UpdatePosition(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "positionId" -------------
+	var positionId PositionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "positionId", r.PathValue("positionId"), &positionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "positionId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdatePosition(w, r, positionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AddPositionHolder operation middleware
+func (siw *ServerInterfaceWrapper) AddPositionHolder(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "positionId" -------------
+	var positionId PositionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "positionId", r.PathValue("positionId"), &positionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "positionId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AddPositionHolder(w, r, positionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RemovePositionHolder operation middleware
+func (siw *ServerInterfaceWrapper) RemovePositionHolder(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "positionId" -------------
+	var positionId PositionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "positionId", r.PathValue("positionId"), &positionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "positionId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "holderId" -------------
+	var holderId HolderId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "holderId", r.PathValue("holderId"), &holderId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "holderId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RemovePositionHolder(w, r, positionId, holderId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListProcesses operation middleware
 func (siw *ServerInterfaceWrapper) ListProcesses(w http.ResponseWriter, r *http.Request) {
 
@@ -2272,6 +2745,34 @@ func (siw *ServerInterfaceWrapper) UpdateSpecialCode(w http.ResponseWriter, r *h
 	handler.ServeHTTP(w, r)
 }
 
+// GetSystemSettings operation middleware
+func (siw *ServerInterfaceWrapper) GetSystemSettings(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetSystemSettings(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateSystemSettings operation middleware
+func (siw *ServerInterfaceWrapper) UpdateSystemSettings(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateSystemSettings(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetHealth operation middleware
 func (siw *ServerInterfaceWrapper) GetHealth(w http.ResponseWriter, r *http.Request) {
 
@@ -2453,6 +2954,17 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/change-sources/{changeSourceId}", wrapper.UpdateChangeSource)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/four-m-categories", wrapper.ListFourMCategories)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/four-m-categories/{fourMCategoryId}", wrapper.UpdateFourMCategory)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/positions", wrapper.ListPositions)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/positions/{positionId}", wrapper.UpdatePosition)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/positions/{positionId}/holders", wrapper.AddPositionHolder)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/positions/{positionId}/holders/{holderId}", wrapper.RemovePositionHolder)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/approval-routes", wrapper.ListApprovalRoutes)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/approval-routes", wrapper.CreateApprovalRoute)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/approval-routes/{approvalRouteId}", wrapper.UpdateApprovalRoute)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/customers/{customerId}/default-route", wrapper.SetCustomerDefaultRoute)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/change-types/{changeTypeId}/approval-route", wrapper.SetChangeTypeRoute)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/system-settings", wrapper.GetSystemSettings)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/system-settings", wrapper.UpdateSystemSettings)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/audit-log", wrapper.ListAuditLog)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/audit-log/verification", wrapper.VerifyAuditLog)
 
@@ -2764,6 +3276,123 @@ func (response SetAccountRolesdefaultJSONResponse) VisitSetAccountRolesResponse(
 	return err
 }
 
+type ListApprovalRoutesRequestObject struct {
+}
+
+type ListApprovalRoutesResponseObject interface {
+	VisitListApprovalRoutesResponse(w http.ResponseWriter) error
+}
+
+type ListApprovalRoutes200JSONResponse ApprovalRouteList
+
+func (response ListApprovalRoutes200JSONResponse) VisitListApprovalRoutesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListApprovalRoutesdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ListApprovalRoutesdefaultJSONResponse) VisitListApprovalRoutesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateApprovalRouteRequestObject struct {
+	Body *CreateApprovalRouteJSONRequestBody
+}
+
+type CreateApprovalRouteResponseObject interface {
+	VisitCreateApprovalRouteResponse(w http.ResponseWriter) error
+}
+
+type CreateApprovalRoute201JSONResponse ApprovalRoute
+
+func (response CreateApprovalRoute201JSONResponse) VisitCreateApprovalRouteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateApprovalRoutedefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response CreateApprovalRoutedefaultJSONResponse) VisitCreateApprovalRouteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateApprovalRouteRequestObject struct {
+	ApprovalRouteId ApprovalRouteId `json:"approvalRouteId"`
+	Body            *UpdateApprovalRouteJSONRequestBody
+}
+
+type UpdateApprovalRouteResponseObject interface {
+	VisitUpdateApprovalRouteResponse(w http.ResponseWriter) error
+}
+
+type UpdateApprovalRoute200JSONResponse ApprovalRoute
+
+func (response UpdateApprovalRoute200JSONResponse) VisitUpdateApprovalRouteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateApprovalRoutedefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response UpdateApprovalRoutedefaultJSONResponse) VisitUpdateApprovalRouteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListAuditLogRequestObject struct {
 	Params ListAuditLogParams
 }
@@ -3036,6 +3665,46 @@ func (response UpdateChangeTypedefaultJSONResponse) VisitUpdateChangeTypeRespons
 	return err
 }
 
+type SetChangeTypeRouteRequestObject struct {
+	ChangeTypeId ChangeTypeId `json:"changeTypeId"`
+	Body         *SetChangeTypeRouteJSONRequestBody
+}
+
+type SetChangeTypeRouteResponseObject interface {
+	VisitSetChangeTypeRouteResponse(w http.ResponseWriter) error
+}
+
+type SetChangeTypeRoute200JSONResponse ChangeType
+
+func (response SetChangeTypeRoute200JSONResponse) VisitSetChangeTypeRouteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetChangeTypeRoutedefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response SetChangeTypeRoutedefaultJSONResponse) VisitSetChangeTypeRouteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListCustomersRequestObject struct {
 }
 
@@ -3224,6 +3893,46 @@ type ChangeCustomerCodedefaultJSONResponse struct {
 }
 
 func (response ChangeCustomerCodedefaultJSONResponse) VisitChangeCustomerCodeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetCustomerDefaultRouteRequestObject struct {
+	CustomerId CustomerId `json:"customerId"`
+	Body       *SetCustomerDefaultRouteJSONRequestBody
+}
+
+type SetCustomerDefaultRouteResponseObject interface {
+	VisitSetCustomerDefaultRouteResponse(w http.ResponseWriter) error
+}
+
+type SetCustomerDefaultRoute200JSONResponse Customer
+
+func (response SetCustomerDefaultRoute200JSONResponse) VisitSetCustomerDefaultRouteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetCustomerDefaultRoutedefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response SetCustomerDefaultRoutedefaultJSONResponse) VisitSetCustomerDefaultRouteResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -3861,6 +4570,158 @@ func (response UpdatePartNumberdefaultJSONResponse) VisitUpdatePartNumberRespons
 	return err
 }
 
+type ListPositionsRequestObject struct {
+}
+
+type ListPositionsResponseObject interface {
+	VisitListPositionsResponse(w http.ResponseWriter) error
+}
+
+type ListPositions200JSONResponse PositionList
+
+func (response ListPositions200JSONResponse) VisitListPositionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPositionsdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ListPositionsdefaultJSONResponse) VisitListPositionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdatePositionRequestObject struct {
+	PositionId PositionId `json:"positionId"`
+	Body       *UpdatePositionJSONRequestBody
+}
+
+type UpdatePositionResponseObject interface {
+	VisitUpdatePositionResponse(w http.ResponseWriter) error
+}
+
+type UpdatePosition200JSONResponse Position
+
+func (response UpdatePosition200JSONResponse) VisitUpdatePositionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdatePositiondefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response UpdatePositiondefaultJSONResponse) VisitUpdatePositionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddPositionHolderRequestObject struct {
+	PositionId PositionId `json:"positionId"`
+	Body       *AddPositionHolderJSONRequestBody
+}
+
+type AddPositionHolderResponseObject interface {
+	VisitAddPositionHolderResponse(w http.ResponseWriter) error
+}
+
+type AddPositionHolder201JSONResponse PositionHolder
+
+func (response AddPositionHolder201JSONResponse) VisitAddPositionHolderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddPositionHolderdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response AddPositionHolderdefaultJSONResponse) VisitAddPositionHolderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RemovePositionHolderRequestObject struct {
+	PositionId PositionId `json:"positionId"`
+	HolderId   HolderId   `json:"holderId"`
+}
+
+type RemovePositionHolderResponseObject interface {
+	VisitRemovePositionHolderResponse(w http.ResponseWriter) error
+}
+
+type RemovePositionHolder204Response struct {
+}
+
+func (response RemovePositionHolder204Response) VisitRemovePositionHolderResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type RemovePositionHolderdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response RemovePositionHolderdefaultJSONResponse) VisitRemovePositionHolderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListProcessesRequestObject struct {
 }
 
@@ -4444,6 +5305,83 @@ func (response UpdateSpecialCodedefaultJSONResponse) VisitUpdateSpecialCodeRespo
 	return err
 }
 
+type GetSystemSettingsRequestObject struct {
+}
+
+type GetSystemSettingsResponseObject interface {
+	VisitGetSystemSettingsResponse(w http.ResponseWriter) error
+}
+
+type GetSystemSettings200JSONResponse SystemSettings
+
+func (response GetSystemSettings200JSONResponse) VisitGetSystemSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetSystemSettingsdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response GetSystemSettingsdefaultJSONResponse) VisitGetSystemSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateSystemSettingsRequestObject struct {
+	Body *UpdateSystemSettingsJSONRequestBody
+}
+
+type UpdateSystemSettingsResponseObject interface {
+	VisitUpdateSystemSettingsResponse(w http.ResponseWriter) error
+}
+
+type UpdateSystemSettings200JSONResponse SystemSettings
+
+func (response UpdateSystemSettings200JSONResponse) VisitUpdateSystemSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateSystemSettingsdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response UpdateSystemSettingsdefaultJSONResponse) VisitUpdateSystemSettingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetHealthRequestObject struct {
 }
 
@@ -4502,6 +5440,15 @@ type StrictServerInterface interface {
 	// SetAccountRoles Replace the roles of a work account (A-1)
 	// (PUT /api/v1/accounts/{accountId}/roles)
 	SetAccountRoles(ctx context.Context, request SetAccountRolesRequestObject) (SetAccountRolesResponseObject, error)
+	// ListApprovalRoutes Approval routes with their slots in signing order, ordered by name (R-APR-08)
+	// (GET /api/v1/approval-routes)
+	ListApprovalRoutes(ctx context.Context, request ListApprovalRoutesRequestObject) (ListApprovalRoutesResponseObject, error)
+	// CreateApprovalRoute Add an approval route (A-2, UC-06)
+	// (POST /api/v1/approval-routes)
+	CreateApprovalRoute(ctx context.Context, request CreateApprovalRouteRequestObject) (CreateApprovalRouteResponseObject, error)
+	// UpdateApprovalRoute Rename an approval route and replace its slots (A-2, R-APR-15)
+	// (PUT /api/v1/approval-routes/{approvalRouteId})
+	UpdateApprovalRoute(ctx context.Context, request UpdateApprovalRouteRequestObject) (UpdateApprovalRouteResponseObject, error)
 	// ListAuditLog Audit log entries, newest first (A-4, admin account only)
 	// (GET /api/v1/audit-log)
 	ListAuditLog(ctx context.Context, request ListAuditLogRequestObject) (ListAuditLogResponseObject, error)
@@ -4523,6 +5470,9 @@ type StrictServerInterface interface {
 	// UpdateChangeType Rename a change type (A-2)
 	// (PUT /api/v1/change-types/{changeTypeId})
 	UpdateChangeType(ctx context.Context, request UpdateChangeTypeRequestObject) (UpdateChangeTypeResponseObject, error)
+	// SetChangeTypeRoute Set the approval route of a change type, or use the customer default (A-2, R-TPL-10)
+	// (PUT /api/v1/change-types/{changeTypeId}/approval-route)
+	SetChangeTypeRoute(ctx context.Context, request SetChangeTypeRouteRequestObject) (SetChangeTypeRouteResponseObject, error)
 	// ListCustomers List all customers, ordered by code
 	// (GET /api/v1/customers)
 	ListCustomers(ctx context.Context, request ListCustomersRequestObject) (ListCustomersResponseObject, error)
@@ -4535,6 +5485,9 @@ type StrictServerInterface interface {
 	// ChangeCustomerCode Give a customer a new code; the old code stays in its history (A-2, E-11)
 	// (POST /api/v1/customers/{customerId}/code)
 	ChangeCustomerCode(ctx context.Context, request ChangeCustomerCodeRequestObject) (ChangeCustomerCodeResponseObject, error)
+	// SetCustomerDefaultRoute Set the default approval route of a customer (A-2, D-47)
+	// (PUT /api/v1/customers/{customerId}/default-route)
+	SetCustomerDefaultRoute(ctx context.Context, request SetCustomerDefaultRouteRequestObject) (SetCustomerDefaultRouteResponseObject, error)
 	// ListDocumentTypes Document types with their number prefix (R-NUM-01, E-12)
 	// (GET /api/v1/document-types)
 	ListDocumentTypes(ctx context.Context, request ListDocumentTypesRequestObject) (ListDocumentTypesResponseObject, error)
@@ -4583,6 +5536,18 @@ type StrictServerInterface interface {
 	// UpdatePartNumber Change the number and name of a part number (A-2)
 	// (PUT /api/v1/part-numbers/{partNumberId})
 	UpdatePartNumber(ctx context.Context, request UpdatePartNumberRequestObject) (UpdatePartNumberResponseObject, error)
+	// ListPositions Positions of the NPI organization chart with their holders (D-54, D-58)
+	// (GET /api/v1/positions)
+	ListPositions(ctx context.Context, request ListPositionsRequestObject) (ListPositionsResponseObject, error)
+	// UpdatePosition Rename a position. Its key and holders stay (A-1, D-58)
+	// (PUT /api/v1/positions/{positionId})
+	UpdatePosition(ctx context.Context, request UpdatePositionRequestObject) (UpdatePositionResponseObject, error)
+	// AddPositionHolder Record a person as holder of a position (A-1). One Project Leader and one Project Engineer per project group (D-54)
+	// (POST /api/v1/positions/{positionId}/holders)
+	AddPositionHolder(ctx context.Context, request AddPositionHolderRequestObject) (AddPositionHolderResponseObject, error)
+	// RemovePositionHolder Remove a holder from a position (A-1)
+	// (DELETE /api/v1/positions/{positionId}/holders/{holderId})
+	RemovePositionHolder(ctx context.Context, request RemovePositionHolderRequestObject) (RemovePositionHolderResponseObject, error)
 	// ListProcesses All processes with their aliases, ordered by name (UC-04)
 	// (GET /api/v1/processes)
 	ListProcesses(ctx context.Context, request ListProcessesRequestObject) (ListProcessesResponseObject, error)
@@ -4625,6 +5590,12 @@ type StrictServerInterface interface {
 	// UpdateSpecialCode Rename a special code. The code itself never changes (A-2)
 	// (PUT /api/v1/special-codes/{specialCodeId})
 	UpdateSpecialCode(ctx context.Context, request UpdateSpecialCodeRequestObject) (UpdateSpecialCodeResponseObject, error)
+	// GetSystemSettings System settings, today the sign date switch (D-52)
+	// (GET /api/v1/system-settings)
+	GetSystemSettings(ctx context.Context, request GetSystemSettingsRequestObject) (GetSystemSettingsResponseObject, error)
+	// UpdateSystemSettings Change the system settings (A-3, UC-07)
+	// (PUT /api/v1/system-settings)
+	UpdateSystemSettings(ctx context.Context, request UpdateSystemSettingsRequestObject) (UpdateSystemSettingsResponseObject, error)
 	// GetHealth Server and database status
 	// (GET /health)
 	GetHealth(ctx context.Context, request GetHealthRequestObject) (GetHealthResponseObject, error)
@@ -4866,6 +5837,94 @@ func (sh *strictHandler) SetAccountRoles(w http.ResponseWriter, r *http.Request,
 	}
 }
 
+// ListApprovalRoutes operation middleware
+func (sh *strictHandler) ListApprovalRoutes(w http.ResponseWriter, r *http.Request) {
+	var request ListApprovalRoutesRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListApprovalRoutes(ctx, request.(ListApprovalRoutesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListApprovalRoutes")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListApprovalRoutesResponseObject); ok {
+		if err := validResponse.VisitListApprovalRoutesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateApprovalRoute operation middleware
+func (sh *strictHandler) CreateApprovalRoute(w http.ResponseWriter, r *http.Request) {
+	var request CreateApprovalRouteRequestObject
+
+	var body CreateApprovalRouteJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateApprovalRoute(ctx, request.(CreateApprovalRouteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateApprovalRoute")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateApprovalRouteResponseObject); ok {
+		if err := validResponse.VisitCreateApprovalRouteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateApprovalRoute operation middleware
+func (sh *strictHandler) UpdateApprovalRoute(w http.ResponseWriter, r *http.Request, approvalRouteId ApprovalRouteId) {
+	var request UpdateApprovalRouteRequestObject
+
+	request.ApprovalRouteId = approvalRouteId
+
+	var body UpdateApprovalRouteJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateApprovalRoute(ctx, request.(UpdateApprovalRouteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateApprovalRoute")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateApprovalRouteResponseObject); ok {
+		if err := validResponse.VisitUpdateApprovalRouteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListAuditLog operation middleware
 func (sh *strictHandler) ListAuditLog(w http.ResponseWriter, r *http.Request, params ListAuditLogParams) {
 	var request ListAuditLogRequestObject
@@ -5061,6 +6120,39 @@ func (sh *strictHandler) UpdateChangeType(w http.ResponseWriter, r *http.Request
 	}
 }
 
+// SetChangeTypeRoute operation middleware
+func (sh *strictHandler) SetChangeTypeRoute(w http.ResponseWriter, r *http.Request, changeTypeId ChangeTypeId) {
+	var request SetChangeTypeRouteRequestObject
+
+	request.ChangeTypeId = changeTypeId
+
+	var body SetChangeTypeRouteJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetChangeTypeRoute(ctx, request.(SetChangeTypeRouteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetChangeTypeRoute")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetChangeTypeRouteResponseObject); ok {
+		if err := validResponse.VisitSetChangeTypeRouteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListCustomers operation middleware
 func (sh *strictHandler) ListCustomers(w http.ResponseWriter, r *http.Request) {
 	var request ListCustomersRequestObject
@@ -5175,6 +6267,39 @@ func (sh *strictHandler) ChangeCustomerCode(w http.ResponseWriter, r *http.Reque
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ChangeCustomerCodeResponseObject); ok {
 		if err := validResponse.VisitChangeCustomerCodeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SetCustomerDefaultRoute operation middleware
+func (sh *strictHandler) SetCustomerDefaultRoute(w http.ResponseWriter, r *http.Request, customerId CustomerId) {
+	var request SetCustomerDefaultRouteRequestObject
+
+	request.CustomerId = customerId
+
+	var body SetCustomerDefaultRouteJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetCustomerDefaultRoute(ctx, request.(SetCustomerDefaultRouteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetCustomerDefaultRoute")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetCustomerDefaultRouteResponseObject); ok {
+		if err := validResponse.VisitSetCustomerDefaultRouteResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -5652,6 +6777,123 @@ func (sh *strictHandler) UpdatePartNumber(w http.ResponseWriter, r *http.Request
 	}
 }
 
+// ListPositions operation middleware
+func (sh *strictHandler) ListPositions(w http.ResponseWriter, r *http.Request) {
+	var request ListPositionsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListPositions(ctx, request.(ListPositionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListPositions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListPositionsResponseObject); ok {
+		if err := validResponse.VisitListPositionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdatePosition operation middleware
+func (sh *strictHandler) UpdatePosition(w http.ResponseWriter, r *http.Request, positionId PositionId) {
+	var request UpdatePositionRequestObject
+
+	request.PositionId = positionId
+
+	var body UpdatePositionJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdatePosition(ctx, request.(UpdatePositionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdatePosition")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdatePositionResponseObject); ok {
+		if err := validResponse.VisitUpdatePositionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AddPositionHolder operation middleware
+func (sh *strictHandler) AddPositionHolder(w http.ResponseWriter, r *http.Request, positionId PositionId) {
+	var request AddPositionHolderRequestObject
+
+	request.PositionId = positionId
+
+	var body AddPositionHolderJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.AddPositionHolder(ctx, request.(AddPositionHolderRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AddPositionHolder")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AddPositionHolderResponseObject); ok {
+		if err := validResponse.VisitAddPositionHolderResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RemovePositionHolder operation middleware
+func (sh *strictHandler) RemovePositionHolder(w http.ResponseWriter, r *http.Request, positionId PositionId, holderId HolderId) {
+	var request RemovePositionHolderRequestObject
+
+	request.PositionId = positionId
+	request.HolderId = holderId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RemovePositionHolder(ctx, request.(RemovePositionHolderRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RemovePositionHolder")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RemovePositionHolderResponseObject); ok {
+		if err := validResponse.VisitRemovePositionHolderResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListProcesses operation middleware
 func (sh *strictHandler) ListProcesses(w http.ResponseWriter, r *http.Request) {
 	var request ListProcessesRequestObject
@@ -6038,6 +7280,61 @@ func (sh *strictHandler) UpdateSpecialCode(w http.ResponseWriter, r *http.Reques
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UpdateSpecialCodeResponseObject); ok {
 		if err := validResponse.VisitUpdateSpecialCodeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetSystemSettings operation middleware
+func (sh *strictHandler) GetSystemSettings(w http.ResponseWriter, r *http.Request) {
+	var request GetSystemSettingsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetSystemSettings(ctx, request.(GetSystemSettingsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetSystemSettings")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetSystemSettingsResponseObject); ok {
+		if err := validResponse.VisitGetSystemSettingsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateSystemSettings operation middleware
+func (sh *strictHandler) UpdateSystemSettings(w http.ResponseWriter, r *http.Request) {
+	var request UpdateSystemSettingsRequestObject
+
+	var body UpdateSystemSettingsJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateSystemSettings(ctx, request.(UpdateSystemSettingsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateSystemSettings")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateSystemSettingsResponseObject); ok {
+		if err := validResponse.VisitUpdateSystemSettingsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

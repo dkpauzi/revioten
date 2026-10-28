@@ -52,6 +52,15 @@ func (a *apiServer) ChangeCustomerCode(ctx context.Context, req ChangeCustomerCo
 	return ChangeCustomerCode200JSONResponse(toAPICustomer(updated)), nil
 }
 
+// SetCustomerDefaultRoute menjawab PUT /api/v1/customers/{customerId}/default-route.
+func (a *apiServer) SetCustomerDefaultRoute(ctx context.Context, req SetCustomerDefaultRouteRequestObject) (SetCustomerDefaultRouteResponseObject, error) {
+	updated, err := a.customers.SetDefaultRoute(ctx, actorFrom(ctx), req.CustomerId, req.Body.RouteId)
+	if err != nil {
+		return nil, err
+	}
+	return SetCustomerDefaultRoute200JSONResponse(toAPICustomer(updated)), nil
+}
+
 // ListProjectGroups menjawab GET /api/v1/project-groups.
 func (a *apiServer) ListProjectGroups(ctx context.Context, _ ListProjectGroupsRequestObject) (ListProjectGroupsResponseObject, error) {
 	groups, err := a.customers.ListProjectGroups(ctx, actorFrom(ctx))
@@ -93,6 +102,9 @@ func toAPICustomer(c customer.Customer) Customer {
 	}
 	if c.ProjectGroupID != "" {
 		out.ProjectGroup = &ProjectGroupRef{Id: c.ProjectGroupID, Code: c.ProjectGroupCode}
+	}
+	if c.DefaultRouteID != "" {
+		out.DefaultRoute = &ApprovalRouteRef{Id: c.DefaultRouteID, Name: c.DefaultRouteName}
 	}
 	for _, p := range c.Codes {
 		out.Codes = append(out.Codes, CustomerCode{Code: p.Code, ValidFrom: p.ValidFrom, ValidUntil: p.ValidUntil})

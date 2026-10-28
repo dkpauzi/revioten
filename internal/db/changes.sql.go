@@ -38,19 +38,30 @@ func (q *Queries) GetChangeSource(ctx context.Context, id string) (ChangeSource,
 }
 
 const getChangeType = `-- name: GetChangeType :one
-SELECT id, key, name FROM change_types WHERE id = $1
+SELECT t.id, t.key, t.name, t.approval_route_id, r.name AS approval_route_name
+FROM change_types t
+LEFT JOIN approval_routes r ON r.id = t.approval_route_id
+WHERE t.id = $1
 `
 
 type GetChangeTypeRow struct {
-	ID   string
-	Key  string
-	Name string
+	ID                string
+	Key               string
+	Name              string
+	ApprovalRouteID   *string
+	ApprovalRouteName *string
 }
 
 func (q *Queries) GetChangeType(ctx context.Context, id string) (GetChangeTypeRow, error) {
 	row := q.db.QueryRow(ctx, getChangeType, id)
 	var i GetChangeTypeRow
-	err := row.Scan(&i.ID, &i.Key, &i.Name)
+	err := row.Scan(
+		&i.ID,
+		&i.Key,
+		&i.Name,
+		&i.ApprovalRouteID,
+		&i.ApprovalRouteName,
+	)
 	return i, err
 }
 
@@ -103,15 +114,22 @@ func (q *Queries) ListChangeSources(ctx context.Context) ([]ChangeSource, error)
 }
 
 const listChangeTypes = `-- name: ListChangeTypes :many
-SELECT id, key, name FROM change_types ORDER BY position
+SELECT t.id, t.key, t.name, t.approval_route_id, r.name AS approval_route_name
+FROM change_types t
+LEFT JOIN approval_routes r ON r.id = t.approval_route_id
+ORDER BY t.position
 `
 
 type ListChangeTypesRow struct {
-	ID   string
-	Key  string
-	Name string
+	ID                string
+	Key               string
+	Name              string
+	ApprovalRouteID   *string
+	ApprovalRouteName *string
 }
 
+// ListChangeTypes mengambil jenis perubahan beserta rute approval-nya (M1.8).
+// Rute kosong berarti rute default customer (ASUMSI E-35).
 func (q *Queries) ListChangeTypes(ctx context.Context) ([]ListChangeTypesRow, error) {
 	rows, err := q.db.Query(ctx, listChangeTypes)
 	if err != nil {
@@ -121,7 +139,13 @@ func (q *Queries) ListChangeTypes(ctx context.Context) ([]ListChangeTypesRow, er
 	items := []ListChangeTypesRow{}
 	for rows.Next() {
 		var i ListChangeTypesRow
-		if err := rows.Scan(&i.ID, &i.Key, &i.Name); err != nil {
+		if err := rows.Scan(
+			&i.ID,
+			&i.Key,
+			&i.Name,
+			&i.ApprovalRouteID,
+			&i.ApprovalRouteName,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

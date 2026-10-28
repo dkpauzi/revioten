@@ -33,6 +33,31 @@ func (q *Queries) DeleteAccountRoles(ctx context.Context, accountID string) erro
 	return err
 }
 
+const inOwnProjectGroup = `-- name: InOwnProjectGroup :one
+SELECT EXISTS (
+    SELECT 1
+    FROM position_holders h
+    JOIN positions p ON p.id = h.position_id
+    JOIN customers c ON c.project_group_id = h.project_group_id
+    WHERE h.person_id = $1 AND c.id = $2
+      AND p.key IN ('project_leader', 'project_engineer')
+)
+`
+
+type InOwnProjectGroupParams struct {
+	PersonID   string
+	CustomerID string
+}
+
+// InOwnProjectGroup melaporkan apakah orang itu Project Leader atau Project
+// Engineer di Project Group tempat customer dialokasikan (D-71, E-05).
+func (q *Queries) InOwnProjectGroup(ctx context.Context, arg InOwnProjectGroupParams) (bool, error) {
+	row := q.db.QueryRow(ctx, inOwnProjectGroup, arg.PersonID, arg.CustomerID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const listAccountRoles = `-- name: ListAccountRoles :many
 SELECT ar.account_id, ar.role_id, ar.scope
 FROM account_roles ar

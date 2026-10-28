@@ -15,6 +15,10 @@ type Customer struct {
 	// customer yang dibuat sebelum M1.4 dan belum dialokasikan.
 	ProjectGroupID   string
 	ProjectGroupCode string
+	// Rute approval default customer (D-47, M1.8). Kosong bila belum diatur
+	// Admin (ASUMSI E-39).
+	DefaultRouteID   string
+	DefaultRouteName string
 	// Active false berarti customer dinonaktifkan. Customer tidak pernah dihapus (E-09).
 	Active    bool
 	CreatedAt time.Time // selalu UTC

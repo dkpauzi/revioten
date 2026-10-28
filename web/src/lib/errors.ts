@@ -36,7 +36,18 @@ const problemKeys: Record<string, MessageKey> = {
 	'factory_code:invalid_format': 'factoryCodeInvalid',
 	'letter:taken': 'documentTypeLetterTaken',
 	'letter:invalid_format': 'documentTypeLetterInvalid',
-	'active:not_allowed': 'changeSourceSystemActive'
+	'active:not_allowed': 'changeSourceSystemActive',
+	'person_id:required': 'holderPersonRequired',
+	'person_id:taken': 'holderPersonTaken',
+	'slots:required': 'routeSlotsRequired',
+	'slots:too_long': 'routeSlotsTooMany',
+	'slots:invalid_format': 'routeSlotsOrder',
+	'print_title:required': 'routePrintTitleRequired',
+	'print_title:too_long': 'routePrintTitleTooLong',
+	'position_ids:required': 'routeSlotPositionsRequired',
+	'position_ids:invalid_format': 'routeSlotPositionsInvalid',
+	'route_id:required': 'routeIdRequired',
+	'route_id:invalid_format': 'routeIdInvalid'
 };
 
 // ProblemScope adalah formulir tempat masalah ditampilkan. Field yang sama bisa
@@ -50,7 +61,10 @@ export type ProblemScope =
 	| 'process'
 	| 'documentType'
 	| 'specialCode'
-	| 'changeList';
+	| 'changeList'
+	| 'position'
+	| 'holder'
+	| 'route';
 
 // scopedKeys memetakan "formulir.field:kode masalah" ke kunci teks layar.
 const scopedKeys: Record<string, MessageKey> = {
@@ -70,7 +84,12 @@ const scopedKeys: Record<string, MessageKey> = {
 	'documentType.name:taken': 'documentTypeNameTaken',
 	'specialCode.code:taken': 'specialCodeTaken',
 	'specialCode.code:invalid_format': 'specialCodeInvalid',
-	'changeList.name:taken': 'changeListNameTaken'
+	'changeList.name:taken': 'changeListNameTaken',
+	'position.name:taken': 'positionNameTaken',
+	'holder.project_group_id:required': 'holderGroupRequired',
+	'holder.project_group_id:taken': 'holderGroupTaken',
+	'holder.project_group_id:not_allowed': 'holderGroupNotAllowed',
+	'route.name:taken': 'routeNameTaken'
 };
 
 // problemText memberi teks layar untuk satu masalah input: teks khusus

@@ -55,6 +55,7 @@ func (s *Service) List(ctx context.Context, actor access.Actor) ([]Customer, err
 		c := Customer{
 			ID: r.ID, Code: r.Code, Name: r.Name, ProjectGroupID: deref(r.ProjectGroupID),
 			ProjectGroupCode: deref(r.ProjectGroupCode), Active: r.Active, CreatedAt: r.CreatedAt.UTC(),
+			DefaultRouteID: deref(r.DefaultRouteID), DefaultRouteName: deref(r.DefaultRouteName),
 			Codes: codes[r.ID],
 		}
 		list = append(list, c)
@@ -248,6 +249,60 @@ func (s *Service) ChangeCode(ctx context.Context, actor access.Actor, id, code s
 	return get(ctx, s.queries, id)
 }
 
+// SetDefaultRoute mengatur rute approval default customer (D-47, M1.8). Rute
+// ini dipakai dokumen customer itu kecuali penyusun memilih rute lain dengan
+// alasan (R-APR-09). Customer menunjuk ID rute, jadi nama rute boleh diganti.
+func (s *Service) SetDefaultRoute(ctx context.Context, actor access.Actor, id, routeID string) (Customer, error) {
+	if err := s.authz.Authorize(ctx, actor, access.ManageMasterData, access.Resource{CustomerID: id}); err != nil {
+		return Customer{}, err
+	}
+	if routeID == "" {
+		return Customer{}, &problem.ValidationError{Problems: []problem.Problem{{
+			Field: "route_id", Code: problem.Required, Message: "Choose the approval route.",
+		}}}
+	}
+
+	err := db.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
+		q := s.queries.WithTx(tx)
+		before, err := lockAndGet(ctx, q, id)
+		if err != nil {
+			return err
+		}
+		id = before.ID
+		noRoute := &problem.ValidationError{Problems: []problem.Problem{{
+			Field: "route_id", Code: problem.InvalidFormat, Message: "This approval route does not exist.",
+		}}}
+		if !db.IsUUID(routeID) {
+			return noRoute
+		}
+		route, err := q.GetApprovalRoute(ctx, routeID)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return noRoute
+		}
+		if err != nil {
+			return err
+		}
+		if before.DefaultRouteID == route.ID {
+			return nil // tidak ada yang berubah, jadi tidak dicatat
+		}
+		if err := q.SetCustomerDefaultRoute(ctx, db.SetCustomerDefaultRouteParams{ID: id, DefaultRouteID: &route.ID}); err != nil {
+			return err
+		}
+		return audit.Record(ctx, q, actor, audit.Event{
+			Action: audit.ActionCustomerRouteChanged, TargetType: audit.TargetCustomer, TargetID: id,
+			Details: map[string]string{"default_route": audit.Change(before.DefaultRouteName, route.Name)},
+		})
+	})
+	var invalid *problem.ValidationError
+	switch {
+	case errors.As(err, &invalid), errors.Is(err, problem.ErrNotFound):
+		return Customer{}, err
+	case err != nil:
+		return Customer{}, fmt.Errorf("mengatur rute default customer: %w", err)
+	}
+	return get(ctx, s.queries, id)
+}
+
 // specialCode memberi masalah code:reserved bila kode itu kode khusus, misalnya
 // ZZ untuk dokumen umum (E-12, M1.6). Daftar kode khusus adalah master data.
 func specialCode(ctx context.Context, q *db.Queries, code string) (*problem.Problem, error) {
@@ -343,6 +398,7 @@ func get(ctx context.Context, q *db.Queries, id string) (Customer, error) {
 	return Customer{
 		ID: r.ID, Code: r.Code, Name: r.Name, ProjectGroupID: deref(r.ProjectGroupID),
 		ProjectGroupCode: deref(r.ProjectGroupCode), Active: r.Active, CreatedAt: r.CreatedAt.UTC(),
+		DefaultRouteID: deref(r.DefaultRouteID), DefaultRouteName: deref(r.DefaultRouteName),
 		Codes: codes,
 	}, nil
 }

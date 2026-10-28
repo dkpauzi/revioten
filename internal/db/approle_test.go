@@ -131,6 +131,13 @@ func TestAppRolePrivileges(t *testing.T) {
 		{"tambah kategori 4M", "INSERT INTO four_m_categories (key, name, position) SELECT key, name, 9 FROM four_m_categories WHERE false", false},
 		{"tambah pengaturan nomor", "INSERT INTO number_settings (factory_code) SELECT factory_code FROM number_settings WHERE false", false},
 		{"tambah sumber perubahan", "INSERT INTO change_sources (name) SELECT name FROM change_sources WHERE false", true},
+		// Jabatan dan rute tidak dihapus; pemegang jabatan dan slot rute boleh (M1.8).
+		{"hapus jabatan", "DELETE FROM positions WHERE false", false},
+		{"tambah jabatan", "INSERT INTO positions (key, name, per_project_group, sort_order) SELECT key, name, per_project_group, 9 FROM positions WHERE false", false},
+		{"hapus rute", "DELETE FROM approval_routes WHERE false", false},
+		{"lepas pemegang jabatan", "DELETE FROM position_holders WHERE false", true},
+		{"ganti slot rute", "DELETE FROM route_slots WHERE false", true},
+		{"hapus pengaturan sistem", "DELETE FROM system_settings WHERE false", false},
 		{"ubah audit_log", "UPDATE audit_log SET action = action WHERE false", false},
 		{"hapus audit_log", "DELETE FROM audit_log WHERE false", false},
 		{"kosongkan audit_log", "TRUNCATE audit_log", false},

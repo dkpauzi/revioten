@@ -42,7 +42,10 @@ func (s *Service) ListChangeTypes(ctx context.Context, actor access.Actor) ([]Ch
 	}
 	list := make([]ChangeType, 0, len(rows))
 	for _, r := range rows {
-		list = append(list, ChangeType(r))
+		list = append(list, ChangeType{
+			ID: r.ID, Key: r.Key, Name: r.Name,
+			ApprovalRouteID: deref(r.ApprovalRouteID), ApprovalRouteName: deref(r.ApprovalRouteName),
+		})
 	}
 	return list, nil
 }
@@ -70,7 +73,10 @@ func (s *Service) RenameChangeType(ctx context.Context, actor access.Actor, id, 
 		if err != nil {
 			return notFound(err)
 		}
-		renamed = ChangeType{ID: row.ID, Key: row.Key, Name: name}
+		renamed = ChangeType{
+			ID: row.ID, Key: row.Key, Name: name,
+			ApprovalRouteID: deref(row.ApprovalRouteID), ApprovalRouteName: deref(row.ApprovalRouteName),
+		}
 		if row.Name == name {
 			return nil // tidak ada yang berubah, jadi tidak dicatat
 		}
@@ -83,6 +89,71 @@ func (s *Service) RenameChangeType(ctx context.Context, actor access.Actor, id, 
 		})
 	})
 	return renamed, result(err, "mengganti nama jenis perubahan")
+}
+
+// SetApprovalRoute mengatur rute approval untuk satu jenis perubahan
+// (R-TPL-10, M1.8). routeID kosong berarti rute default customer, sehingga
+// semua jenis memakai alur yang sama sampai diatur lain (Q-15, ASUMSI E-35).
+func (s *Service) SetApprovalRoute(ctx context.Context, actor access.Actor, id, routeID string) (ChangeType, error) {
+	if err := s.authz.Authorize(ctx, actor, access.ManageMasterData, access.Resource{}); err != nil {
+		return ChangeType{}, err
+	}
+	if !db.IsUUID(id) {
+		return ChangeType{}, problem.ErrNotFound
+	}
+
+	err := db.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
+		q := s.q.WithTx(tx)
+		if err := q.LockChangeType(ctx, id); err != nil {
+			return err
+		}
+		before, err := q.GetChangeType(ctx, id)
+		if err != nil {
+			return notFound(err)
+		}
+		var routeName string
+		if routeID != "" {
+			noRoute := &problem.ValidationError{Problems: []problem.Problem{{
+				Field: "route_id", Code: problem.InvalidFormat, Message: "This approval route does not exist.",
+			}}}
+			if !db.IsUUID(routeID) {
+				return noRoute
+			}
+			route, err := q.GetApprovalRoute(ctx, routeID)
+			if errors.Is(err, pgx.ErrNoRows) {
+				return noRoute
+			}
+			if err != nil {
+				return err
+			}
+			routeName = route.Name
+		}
+		if deref(before.ApprovalRouteID) == routeID {
+			return nil // tidak ada yang berubah, jadi tidak dicatat
+		}
+		var route *string
+		if routeID != "" {
+			route = &routeID
+		}
+		if err := q.SetChangeTypeRoute(ctx, db.SetChangeTypeRouteParams{ID: id, ApprovalRouteID: route}); err != nil {
+			return err
+		}
+		return audit.Record(ctx, q, actor, audit.Event{
+			Action: audit.ActionChangeTypeRouteChanged, TargetType: audit.TargetChangeType, TargetID: id,
+			Details: map[string]string{"approval_route": audit.Change(deref(before.ApprovalRouteName), routeName)},
+		})
+	})
+	if err := result(err, "mengatur rute jenis perubahan"); err != nil {
+		return ChangeType{}, err
+	}
+	row, err := s.q.GetChangeType(ctx, id)
+	if err != nil {
+		return ChangeType{}, fmt.Errorf("membaca jenis perubahan: %w", err)
+	}
+	return ChangeType{
+		ID: row.ID, Key: row.Key, Name: row.Name,
+		ApprovalRouteID: deref(row.ApprovalRouteID), ApprovalRouteName: deref(row.ApprovalRouteName),
+	}, nil
 }
 
 // ListChangeSources mengembalikan semua sumber perubahan, urut menurut nama.
@@ -297,4 +368,12 @@ func result(err error, doing string) error {
 		return err
 	}
 	return fmt.Errorf("%s: %w", doing, err)
+}
+
+// deref mengembalikan isi pointer teks, atau "" bila nil.
+func deref(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
 }

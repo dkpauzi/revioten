@@ -78,9 +78,11 @@ func (q *Queries) CreateCustomer(ctx context.Context, arg CreateCustomerParams) 
 }
 
 const getCustomer = `-- name: GetCustomer :one
-SELECT c.id, c.code, c.name, c.active, c.created_at, c.project_group_id, g.code AS project_group_code
+SELECT c.id, c.code, c.name, c.active, c.created_at, c.project_group_id, g.code AS project_group_code,
+       c.default_route_id, r.name AS default_route_name
 FROM customers c
 LEFT JOIN project_groups g ON g.id = c.project_group_id
+LEFT JOIN approval_routes r ON r.id = c.default_route_id
 WHERE c.id = $1
 `
 
@@ -92,6 +94,8 @@ type GetCustomerRow struct {
 	CreatedAt        time.Time
 	ProjectGroupID   *string
 	ProjectGroupCode *string
+	DefaultRouteID   *string
+	DefaultRouteName *string
 }
 
 func (q *Queries) GetCustomer(ctx context.Context, id string) (GetCustomerRow, error) {
@@ -105,6 +109,8 @@ func (q *Queries) GetCustomer(ctx context.Context, id string) (GetCustomerRow, e
 		&i.CreatedAt,
 		&i.ProjectGroupID,
 		&i.ProjectGroupCode,
+		&i.DefaultRouteID,
+		&i.DefaultRouteName,
 	)
 	return i, err
 }
@@ -183,9 +189,11 @@ func (q *Queries) ListCustomerCodes(ctx context.Context) ([]ListCustomerCodesRow
 }
 
 const listCustomers = `-- name: ListCustomers :many
-SELECT c.id, c.code, c.name, c.active, c.created_at, c.project_group_id, g.code AS project_group_code
+SELECT c.id, c.code, c.name, c.active, c.created_at, c.project_group_id, g.code AS project_group_code,
+       c.default_route_id, r.name AS default_route_name
 FROM customers c
 LEFT JOIN project_groups g ON g.id = c.project_group_id
+LEFT JOIN approval_routes r ON r.id = c.default_route_id
 ORDER BY c.code
 `
 
@@ -197,9 +205,12 @@ type ListCustomersRow struct {
 	CreatedAt        time.Time
 	ProjectGroupID   *string
 	ProjectGroupCode *string
+	DefaultRouteID   *string
+	DefaultRouteName *string
 }
 
-// ListCustomers mengambil semua customer beserta Project Group-nya, urut menurut kode.
+// ListCustomers mengambil semua customer beserta Project Group dan rute
+// default-nya (M1.8), urut menurut kode.
 func (q *Queries) ListCustomers(ctx context.Context) ([]ListCustomersRow, error) {
 	rows, err := q.db.Query(ctx, listCustomers)
 	if err != nil {
@@ -217,6 +228,8 @@ func (q *Queries) ListCustomers(ctx context.Context) ([]ListCustomersRow, error)
 			&i.CreatedAt,
 			&i.ProjectGroupID,
 			&i.ProjectGroupCode,
+			&i.DefaultRouteID,
+			&i.DefaultRouteName,
 		); err != nil {
 			return nil, err
 		}

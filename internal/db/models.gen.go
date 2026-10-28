@@ -28,6 +28,12 @@ type AccountRole struct {
 	Scope     string
 }
 
+type ApprovalRoute struct {
+	ID        string
+	Name      string
+	CreatedAt time.Time
+}
+
 type AuditLog struct {
 	Seq            int64
 	OccurredAt     time.Time
@@ -53,10 +59,11 @@ type ChangeSource struct {
 }
 
 type ChangeType struct {
-	ID       string
-	Key      string
-	Name     string
-	Position int16
+	ID              string
+	Key             string
+	Name            string
+	Position        int16
+	ApprovalRouteID *string
 }
 
 type Customer struct {
@@ -66,6 +73,7 @@ type Customer struct {
 	CreatedAt      time.Time
 	ProjectGroupID *string
 	Active         bool
+	DefaultRouteID *string
 }
 
 type CustomerCode struct {
@@ -132,6 +140,23 @@ type Person struct {
 	CreatedAt      time.Time
 }
 
+type Position struct {
+	ID              string
+	Key             string
+	Name            string
+	PerProjectGroup bool
+	SortOrder       int16
+}
+
+type PositionHolder struct {
+	ID              string
+	PositionID      string
+	PerProjectGroup bool
+	PersonID        string
+	ProjectGroupID  *string
+	CreatedAt       time.Time
+}
+
 type Process struct {
 	ID        string
 	CreatedAt time.Time
@@ -162,6 +187,19 @@ type RolePermission struct {
 	PermissionCode string
 }
 
+type RouteSlot struct {
+	ID         string
+	RouteID    string
+	SlotOrder  int16
+	Stage      string
+	PrintTitle string
+}
+
+type RouteSlotPosition struct {
+	SlotID     string
+	PositionID string
+}
+
 type Session struct {
 	TokenHash  []byte
 	AccountID  string
@@ -175,4 +213,9 @@ type SpecialCode struct {
 	Code      string
 	Name      string
 	CreatedAt time.Time
+}
+
+type SystemSetting struct {
+	ID               string
+	SignDatesEnabled bool
 }

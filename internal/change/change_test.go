@@ -306,3 +306,64 @@ func TestAudit(t *testing.T) {
 		t.Errorf("simpan tanpa perubahan menambah entri: %d → %d", before, after)
 	}
 }
+
+// TestSetApprovalRoute: kebijakan approval per jenis perubahan adalah rute
+// yang dipakai (R-TPL-10, ASUMSI E-35). Kosong berarti rute default customer,
+// sehingga semua jenis memakai alur yang sama sampai diatur lain (Q-15).
+func TestSetApprovalRoute(t *testing.T) {
+	f := newFixture(t)
+	ctx := t.Context()
+	routes, err := db.New(f.pool).ListApprovalRoutes(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	short := ""
+	for _, r := range routes {
+		if r.Name == "Up to QA QC Manager" {
+			short = r.ID
+		}
+	}
+	types, err := f.s.ListChangeTypes(ctx, f.admin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, ct := range types {
+		if ct.ApprovalRouteID != "" {
+			t.Errorf("jenis %s sudah punya rute: %+v", ct.Key, ct)
+		}
+	}
+
+	layout, err := f.s.SetApprovalRoute(ctx, f.admin, types[1].ID, short)
+	if err != nil || layout.ApprovalRouteID != short || layout.ApprovalRouteName != "Up to QA QC Manager" || layout.Key != KeyLayout {
+		t.Fatalf("SetApprovalRoute: %+v, %v", layout, err)
+	}
+	r := lastAudit(t, f.pool)
+	if r.Action != audit.ActionChangeTypeRouteChanged || r.Details != `{"approval_route":"- → Up to QA QC Manager"}` {
+		t.Errorf("entri audit: %s %s", r.Action, r.Details)
+	}
+	back, err := f.s.SetApprovalRoute(ctx, f.admin, types[1].ID, "")
+	if err != nil || back.ApprovalRouteID != "" {
+		t.Errorf("kembali ke rute default customer: %+v, %v", back, err)
+	}
+	if r := lastAudit(t, f.pool); r.Details != `{"approval_route":"Up to QA QC Manager → -"}` {
+		t.Errorf("entri audit kembali ke default: %s", r.Details)
+	}
+
+	if got := problemCodes(t, second(f.s.SetApprovalRoute(ctx, f.admin, types[1].ID, "bukan-uuid"))); !slices.Equal(got, []string{"route_id:invalid_format"}) {
+		t.Errorf("rute tidak ada: %v", got)
+	}
+	author := newActor(t, f.pool, "penyusun.uji", access.AccountWork, access.RoleAuthor)
+	if _, err := f.s.SetApprovalRoute(ctx, author, types[1].ID, short); !errors.Is(err, access.ErrForbidden) {
+		t.Errorf("akun kerja: %v, ingin ErrForbidden", err)
+	}
+}
+
+// lastAudit mengambil entri audit terakhir.
+func lastAudit(t *testing.T, pool *pgxpool.Pool) db.AuditLog {
+	t.Helper()
+	rows, err := db.New(pool).ListAuditChain(t.Context())
+	if err != nil || len(rows) == 0 {
+		t.Fatalf("audit log: %d entri, %v", len(rows), err)
+	}
+	return rows[len(rows)-1]
+}

@@ -10,6 +10,7 @@ import (
 	"net/http"
 
 	"github.com/dkpauzi/revioten/internal/access"
+	"github.com/dkpauzi/revioten/internal/approval"
 	"github.com/dkpauzi/revioten/internal/audit"
 	"github.com/dkpauzi/revioten/internal/auth"
 	"github.com/dkpauzi/revioten/internal/change"
@@ -17,6 +18,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/numbering"
 	"github.com/dkpauzi/revioten/internal/process"
 	"github.com/dkpauzi/revioten/internal/product"
+	"github.com/dkpauzi/revioten/internal/settings"
 )
 
 // Pinger adalah bagian database yang dipakai /health. *pgxpool.Pool memenuhinya.
@@ -38,6 +40,7 @@ type CustomerService interface {
 	ListProjectGroups(ctx context.Context, actor access.Actor) ([]customer.ProjectGroup, error)
 	CreateProjectGroup(ctx context.Context, actor access.Actor, in customer.ProjectGroupInput) (customer.ProjectGroup, error)
 	UpdateProjectGroup(ctx context.Context, actor access.Actor, id string, in customer.ProjectGroupInput) (customer.ProjectGroup, error)
+	SetDefaultRoute(ctx context.Context, actor access.Actor, id, routeID string) (customer.Customer, error)
 }
 
 // ProductService adalah operasi group model, model, dan part number yang
@@ -88,6 +91,26 @@ type ChangeMasterService interface {
 	UpdateChangeSource(ctx context.Context, actor access.Actor, id string, in change.ChangeSourceUpdate) (change.ChangeSource, error)
 	ListFourMCategories(ctx context.Context, actor access.Actor) ([]change.FourMCategory, error)
 	RenameFourMCategory(ctx context.Context, actor access.Actor, id, name string) (change.FourMCategory, error)
+	SetApprovalRoute(ctx context.Context, actor access.Actor, id, routeID string) (change.ChangeType, error)
+}
+
+// ApprovalService adalah operasi jabatan dan rute approval yang dipakai API
+// (M1.8). *approval.Service memenuhinya; test memakai versi palsu.
+type ApprovalService interface {
+	ListPositions(ctx context.Context, actor access.Actor) ([]approval.Position, error)
+	RenamePosition(ctx context.Context, actor access.Actor, id, name string) (approval.Position, error)
+	AddHolder(ctx context.Context, actor access.Actor, positionID string, in approval.NewHolder) (approval.Holder, error)
+	RemoveHolder(ctx context.Context, actor access.Actor, positionID, holderID string) error
+	ListRoutes(ctx context.Context, actor access.Actor) ([]approval.Route, error)
+	CreateRoute(ctx context.Context, actor access.Actor, in approval.RouteInput) (approval.Route, error)
+	UpdateRoute(ctx context.Context, actor access.Actor, id string, in approval.RouteInput) (approval.Route, error)
+}
+
+// SettingsService adalah operasi pengaturan sistem yang dipakai API (M1.8).
+// *settings.Service memenuhinya; test memakai versi palsu.
+type SettingsService interface {
+	Get(ctx context.Context, actor access.Actor) (settings.Settings, error)
+	Apply(ctx context.Context, actor access.Actor, in settings.Update) (settings.Settings, error)
 }
 
 // AuthService adalah operasi login, sesi, dan pengelolaan akun yang dipakai API.
@@ -131,6 +154,8 @@ type Deps struct {
 	Processes ProcessService
 	Numbering NumberingService
 	Changes   ChangeMasterService
+	Approval  ApprovalService
+	Settings  SettingsService
 	// Logger untuk log server. Bila nil, dipakai slog.Default().
 	Logger *slog.Logger
 }
@@ -149,7 +174,7 @@ func NewHandler(ui fs.FS, deps Deps) http.Handler {
 	a := &apiServer{
 		db: deps.DB, customers: deps.Customers, auth: deps.Auth, access: deps.Access,
 		audit: deps.Audit, products: deps.Products, processes: deps.Processes,
-		numbering: deps.Numbering, changes: deps.Changes, log: log,
+		numbering: deps.Numbering, changes: deps.Changes, approval: deps.Approval, settings: deps.Settings, log: log,
 	}
 
 	// Route dari kontrak didaftarkan oleh kode hasil generate ke mux khusus API.
@@ -200,5 +225,7 @@ type apiServer struct {
 	processes ProcessService
 	numbering NumberingService
 	changes   ChangeMasterService
+	approval  ApprovalService
+	settings  SettingsService
 	log       *slog.Logger
 }

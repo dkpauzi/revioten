@@ -11,6 +11,7 @@ import (
 	"go.yaml.in/yaml/v3"
 
 	"github.com/dkpauzi/revioten/internal/access"
+	"github.com/dkpauzi/revioten/internal/approval"
 	"github.com/dkpauzi/revioten/internal/audit"
 	"github.com/dkpauzi/revioten/internal/auth"
 	"github.com/dkpauzi/revioten/internal/change"
@@ -19,6 +20,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/numbering"
 	"github.com/dkpauzi/revioten/internal/process"
 	"github.com/dkpauzi/revioten/internal/product"
+	"github.com/dkpauzi/revioten/internal/settings"
 )
 
 // TestMain menyalakan PostgreSQL untuk test integrasi di file ini. Test lain
@@ -49,10 +51,11 @@ func TestPermissionsPerOperation(t *testing.T) {
 	processes := process.NewService(pool, checker)
 	numbers := numbering.NewService(pool, checker)
 	changes := change.NewService(pool, checker)
+	approvals := approval.NewService(pool, checker)
 	handler := NewHandler(fstest.MapFS{}, Deps{
 		DB: pool, Customers: customers, Auth: authSvc, Access: checker,
 		Audit: audit.NewService(pool, checker), Products: products, Processes: processes,
-		Numbering: numbers, Changes: changes,
+		Numbering: numbers, Changes: changes, Approval: approvals, Settings: settings.NewService(pool, checker),
 	})
 
 	// Admin pertama, satu akun kerja tanpa peran (hanya hak dasar Viewer), dan
@@ -139,9 +142,34 @@ func TestPermissionsPerOperation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// Isi awal M1.8, dan satu pemegang jabatan untuk operasi lepas pemegang.
+	positions, err := approvals.ListPositions(ctx, admin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	routes, err := approvals.ListRoutes(ctx, admin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var npi approval.Position
+	for _, p := range positions {
+		if p.Key == approval.KeyNPIManager {
+			npi = p
+		}
+	}
+	holder, err := approvals.AddHolder(ctx, admin, npi.ID, approval.NewHolder{PersonID: admin.PersonID})
+	if err != nil {
+		t.Fatal(err)
+	}
+	routeBody := `{"name":"Route X","slots":[` +
+		`{"stage":"prepared","print_title":"Process. Eng","position_ids":["` + positions[0].ID + `"]},` +
+		`{"stage":"checked","print_title":"Engineer","position_ids":["` + positions[2].ID + `"]},` +
+		`{"stage":"approved","print_title":"NPI Manager","position_ids":["` + npi.ID + `"]}]}`
 	// params mengisi {nama} di alamat dan isi permintaan dengan ID sungguhan.
 	params := map[string]string{
-		"accountId": viewerInfo.ID, "projectGroupId": group.ID, "customerId": cust.ID,
+		"positionId": npi.ID, "holderId": holder.ID, "approvalRouteId": routes[0].ID, "routeId": routes[1].ID,
+		"viewerPersonId": viewerInfo.PersonID,
+		"accountId":      viewerInfo.ID, "projectGroupId": group.ID, "customerId": cust.ID,
 		"modelGroupId": modelGroup.ID, "modelId": model.ID, "partNumberId": part.ID,
 		"processId": proc.ID, "documentTypeId": docTypes[0].ID, "specialCodeId": specialCodes[0].ID,
 		"changeTypeId": changeTypes[0].ID, "changeSourceId": sources[0].ID, "fourMCategoryId": categories[0].ID,
@@ -189,6 +217,18 @@ func TestPermissionsPerOperation(t *testing.T) {
 		{http.MethodPut, "/api/v1/change-sources/{changeSourceId}", `{"name":"Internal audit finding"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
 		{http.MethodGet, "/api/v1/four-m-categories", "", http.StatusOK, http.StatusOK, http.StatusOK},
 		{http.MethodPut, "/api/v1/four-m-categories/{fourMCategoryId}", `{"name":"Manpower"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		// Jabatan lewat A-1 (UC-02), rute lewat A-2 (UC-06), pengaturan lewat A-3 (UC-07).
+		{http.MethodGet, "/api/v1/positions", "", http.StatusOK, http.StatusOK, http.StatusOK},
+		{http.MethodPut, "/api/v1/positions/{positionId}", `{"name":"PE Manager"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodPost, "/api/v1/positions/{positionId}/holders", `{"person_id":"{viewerPersonId}"}`, http.StatusForbidden, http.StatusForbidden, http.StatusCreated},
+		{http.MethodDelete, "/api/v1/positions/{positionId}/holders/{holderId}", "", http.StatusForbidden, http.StatusForbidden, http.StatusNoContent},
+		{http.MethodGet, "/api/v1/approval-routes", "", http.StatusOK, http.StatusOK, http.StatusOK},
+		{http.MethodPost, "/api/v1/approval-routes", routeBody, http.StatusForbidden, http.StatusForbidden, http.StatusCreated},
+		{http.MethodPut, "/api/v1/approval-routes/{approvalRouteId}", strings.Replace(routeBody, "Route X", "Route Y", 1), http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodPut, "/api/v1/customers/{customerId}/default-route", `{"route_id":"{routeId}"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodPut, "/api/v1/change-types/{changeTypeId}/approval-route", `{"route_id":"{routeId}"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodGet, "/api/v1/system-settings", "", http.StatusOK, http.StatusOK, http.StatusOK},
+		{http.MethodPut, "/api/v1/system-settings", `{"sign_dates_enabled":true}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
 		{http.MethodGet, "/api/v1/roles", "", http.StatusForbidden, http.StatusForbidden, http.StatusOK},
 		{http.MethodGet, "/api/v1/accounts", "", http.StatusForbidden, http.StatusForbidden, http.StatusOK},
 		{http.MethodPost, "/api/v1/accounts", `{"person_name":"Orang Baru","kind":"work","login":"orang.baru"}`, http.StatusForbidden, http.StatusForbidden, http.StatusCreated},

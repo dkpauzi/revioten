@@ -70,6 +70,22 @@ describe('problemText', () => {
 		);
 	});
 
+	// Jabatan dan rute approval (M1.8).
+	it('memberi teks jabatan dan rute approval', () => {
+		expect(problemText({ field: 'project_group_id', code: 'taken', message: 'x' }, 'holder')).toBe(
+			en.holderGroupTaken
+		);
+		expect(problemText({ field: 'project_group_id', code: 'required', message: 'x' }, 'holder')).toBe(
+			en.holderGroupRequired
+		);
+		expect(problemText({ field: 'person_id', code: 'taken', message: 'x' })).toBe(en.holderPersonTaken);
+		expect(problemText({ field: 'slots', code: 'invalid_format', message: 'x' })).toBe(en.routeSlotsOrder);
+		expect(problemText({ field: 'position_ids', code: 'required', message: 'x' })).toBe(
+			en.routeSlotPositionsRequired
+		);
+		expect(problemText({ field: 'name', code: 'taken', message: 'x' }, 'route')).toBe(en.routeNameTaken);
+	});
+
 	it('memakai pesan dari server untuk masalah yang belum dikenal', () => {
 		expect(problemText({ field: 'lain', code: 'required', message: 'pesan server' })).toBe(
 			'pesan server'

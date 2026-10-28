@@ -35,7 +35,15 @@ const actionKeys: Record<string, MessageKey> = {
 	'change_type.updated': 'auditActionChangeTypeUpdated',
 	'change_source.created': 'auditActionChangeSourceCreated',
 	'change_source.updated': 'auditActionChangeSourceUpdated',
-	'four_m_category.updated': 'auditActionFourMCategoryUpdated'
+	'four_m_category.updated': 'auditActionFourMCategoryUpdated',
+	'position.updated': 'auditActionPositionUpdated',
+	'position.holder_added': 'auditActionPositionHolderAdded',
+	'position.holder_removed': 'auditActionPositionHolderRemoved',
+	'approval_route.created': 'auditActionApprovalRouteCreated',
+	'approval_route.updated': 'auditActionApprovalRouteUpdated',
+	'customer.default_route_changed': 'auditActionCustomerRouteChanged',
+	'change_type.route_changed': 'auditActionChangeTypeRouteChanged',
+	'system_settings.updated': 'auditActionSystemSettingsUpdated'
 };
 
 const detailKeys: Record<string, MessageKey> = {
@@ -58,7 +66,12 @@ const detailKeys: Record<string, MessageKey> = {
 	number: 'auditDetailNumber',
 	aliases: 'auditDetailAliases',
 	factory_code: 'auditDetailFactoryCode',
-	letter: 'auditDetailLetter'
+	letter: 'auditDetailLetter',
+	person: 'auditDetailPerson',
+	slots: 'auditDetailSlots',
+	default_route: 'auditDetailDefaultRoute',
+	approval_route: 'auditDetailApprovalRoute',
+	sign_dates_enabled: 'auditDetailSignDates'
 };
 
 const reasonKeys: Record<string, MessageKey> = {

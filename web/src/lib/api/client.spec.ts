@@ -47,7 +47,18 @@ import {
 	createChangeSource,
 	updateChangeSource,
 	listFourMCategories,
-	updateFourMCategory
+	updateFourMCategory,
+	listPositions,
+	updatePosition,
+	addPositionHolder,
+	removePositionHolder,
+	listApprovalRoutes,
+	createApprovalRoute,
+	updateApprovalRoute,
+	setCustomerDefaultRoute,
+	setChangeTypeRoute,
+	getSystemSettings,
+	updateSystemSettings
 } from './client.ts';
 
 // Satu panggilan yang dicatat fakeFetch.
@@ -376,5 +387,43 @@ describe('jenis dokumen dan perubahan (M1.6)', () => {
 		expect(JSON.parse(String(calls[7].init?.body))).toEqual({ name: 'General' });
 		expect(JSON.parse(String(calls[11].init?.body))).toEqual({ name: 'Kaizen' });
 		expect(JSON.parse(String(calls[12].init?.body))).toEqual({ name: 'Kaizen', active: false });
+	});
+});
+
+describe('jabatan dan rute approval (M1.8)', () => {
+	it('memanggil alamat dan method yang benar, dengan ID yang dikodekan', async () => {
+		const calls: Call[] = [];
+		const ok = () => fakeFetch(Response.json({ items: [] }), calls);
+		const route = { name: 'Up to GM', slots: [] };
+		await listPositions(ok());
+		await updatePosition('pos/1', 'PE Manager', ok());
+		await addPositionHolder('pos-1', { person_id: 'p-1', project_group_id: 'g-1' }, ok());
+		await removePositionHolder('pos-1', 'h/1', fakeFetch(new Response(null, { status: 204 }), calls));
+		await listApprovalRoutes(ok());
+		await createApprovalRoute(route, ok());
+		await updateApprovalRoute('r-1', route, ok());
+		await setCustomerDefaultRoute('c/1', 'r-1', ok());
+		await setChangeTypeRoute('ct-1', 'r-1', ok());
+		await setChangeTypeRoute('ct-1', null, ok());
+		await getSystemSettings(ok());
+		await updateSystemSettings({ sign_dates_enabled: true }, ok());
+
+		expect(calls.map((c) => `${c.init?.method} ${c.url}`)).toEqual([
+			'GET /api/v1/positions',
+			'PUT /api/v1/positions/pos%2F1',
+			'POST /api/v1/positions/pos-1/holders',
+			'DELETE /api/v1/positions/pos-1/holders/h%2F1',
+			'GET /api/v1/approval-routes',
+			'POST /api/v1/approval-routes',
+			'PUT /api/v1/approval-routes/r-1',
+			'PUT /api/v1/customers/c%2F1/default-route',
+			'PUT /api/v1/change-types/ct-1/approval-route',
+			'PUT /api/v1/change-types/ct-1/approval-route',
+			'GET /api/v1/system-settings',
+			'PUT /api/v1/system-settings'
+		]);
+		expect(JSON.parse(String(calls[7].init?.body))).toEqual({ route_id: 'r-1' });
+		// null berarti rute default customer: route_id tidak dikirim.
+		expect(JSON.parse(String(calls[9].init?.body))).toEqual({});
 	});
 });

@@ -20,6 +20,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/dkpauzi/revioten/internal/access"
+	"github.com/dkpauzi/revioten/internal/approval"
 	"github.com/dkpauzi/revioten/internal/audit"
 	"github.com/dkpauzi/revioten/internal/auth"
 	"github.com/dkpauzi/revioten/internal/change"
@@ -29,6 +30,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/process"
 	"github.com/dkpauzi/revioten/internal/product"
 	"github.com/dkpauzi/revioten/internal/server"
+	"github.com/dkpauzi/revioten/internal/settings"
 	"github.com/dkpauzi/revioten/web"
 )
 
@@ -83,6 +85,8 @@ func runServer(args []string) error {
 			Processes: process.NewService(pool, checker),
 			Numbering: numbering.NewService(pool, checker),
 			Changes:   change.NewService(pool, checker),
+			Approval:  approval.NewService(pool, checker),
+			Settings:  settings.NewService(pool, checker),
 		}),
 		// Batas waktu membaca header permintaan. Tanpa batas ini, klien yang
 		// sangat lambat bisa menahan koneksi selamanya (pengaman dasar, G9).

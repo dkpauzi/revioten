@@ -44,8 +44,14 @@ func (c *Checker) Authorize(ctx context.Context, actor Actor, perm Permission, r
 		if g.PermissionCode != string(perm) {
 			continue
 		}
-		if res.CustomerID == "" || g.Scope == ScopeAll {
+		if g.Scope == ScopeAll {
 			return nil
+		}
+		// Hak bercakupan Project Group hanya berlaku untuk operasi pada satu
+		// customer. Operasi tanpa customer ditolak, bukan dianggap boleh
+		// (ASUMSI E-41: tolak bila ragu).
+		if res.CustomerID == "" {
+			continue
 		}
 		inGroup, err := c.inOwnProjectGroup(ctx, actor.PersonID, res.CustomerID)
 		if err != nil {
@@ -60,11 +66,17 @@ func (c *Checker) Authorize(ctx context.Context, actor Actor, perm Permission, r
 
 // inOwnProjectGroup melaporkan apakah customer termasuk Project Group tempat
 // orang itu menjadi Project Leader atau Project Engineer. Sumbernya master
-// Project Group (E-05), yang baru dibuat di M1.4, dengan pemegang jabatan di M1.8.
-// ASUMSI E-04: sampai data itu ada, jawabannya selalu tidak, jadi peran
-// bercakupan Project Group belum berlaku untuk customer mana pun (paling aman).
-func (c *Checker) inOwnProjectGroup(_ context.Context, _, _ string) (bool, error) {
-	return false, nil
+// Project Group dan pemegang jabatan (E-05, M1.8), bukan isian di peran, jadi
+// hak langsung ikut berubah saat pemegang jabatan diganti.
+func (c *Checker) inOwnProjectGroup(ctx context.Context, personID, customerID string) (bool, error) {
+	if personID == "" || !db.IsUUID(customerID) {
+		return false, nil
+	}
+	in, err := c.q.InOwnProjectGroup(ctx, db.InOwnProjectGroupParams{PersonID: personID, CustomerID: customerID})
+	if err != nil {
+		return false, fmt.Errorf("memeriksa Project Group: %w", err)
+	}
+	return in, nil
 }
 
 // Permissions mengembalikan semua hak actor, urut seperti katalog U3. Dipakai

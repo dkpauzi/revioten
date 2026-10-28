@@ -28,6 +28,20 @@ func (a *apiServer) UpdateChangeType(ctx context.Context, req UpdateChangeTypeRe
 	return UpdateChangeType200JSONResponse(toAPIChangeType(renamed)), nil
 }
 
+// SetChangeTypeRoute menjawab PUT /api/v1/change-types/{changeTypeId}/approval-route.
+// route_id yang tidak dikirim berarti rute default setiap customer (ASUMSI E-35).
+func (a *apiServer) SetChangeTypeRoute(ctx context.Context, req SetChangeTypeRouteRequestObject) (SetChangeTypeRouteResponseObject, error) {
+	routeID := ""
+	if req.Body.RouteId != nil {
+		routeID = *req.Body.RouteId
+	}
+	updated, err := a.changes.SetApprovalRoute(ctx, actorFrom(ctx), req.ChangeTypeId, routeID)
+	if err != nil {
+		return nil, err
+	}
+	return SetChangeTypeRoute200JSONResponse(toAPIChangeType(updated)), nil
+}
+
 // ListChangeSources menjawab GET /api/v1/change-sources.
 func (a *apiServer) ListChangeSources(ctx context.Context, _ ListChangeSourcesRequestObject) (ListChangeSourcesResponseObject, error) {
 	list, err := a.changes.ListChangeSources(ctx, actorFrom(ctx))
@@ -85,7 +99,11 @@ func (a *apiServer) UpdateFourMCategory(ctx context.Context, req UpdateFourMCate
 
 // toAPIChangeType mengubah ChangeType domain menjadi ChangeType kontrak API.
 func toAPIChangeType(ct change.ChangeType) ChangeType {
-	return ChangeType{Id: ct.ID, Key: ChangeTypeKey(ct.Key), Name: ct.Name}
+	out := ChangeType{Id: ct.ID, Key: ChangeTypeKey(ct.Key), Name: ct.Name}
+	if ct.ApprovalRouteID != "" {
+		out.ApprovalRoute = &ApprovalRouteRef{Id: ct.ApprovalRouteID, Name: ct.ApprovalRouteName}
+	}
+	return out
 }
 
 // toAPIChangeSource mengubah ChangeSource domain menjadi ChangeSource kontrak

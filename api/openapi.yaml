@@ -865,6 +865,198 @@ paths:
                 $ref: '#/components/schemas/FourMCategory'
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/positions:
+    get:
+      operationId: listPositions
+      summary: Positions of the NPI organization chart with their holders (D-54, D-58)
+      responses:
+        '200':
+          description: The positions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PositionList'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/positions/{positionId}:
+    put:
+      operationId: updatePosition
+      summary: Rename a position. Its key and holders stay (A-1, D-58)
+      parameters:
+        - $ref: '#/components/parameters/PositionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NameUpdate'
+      responses:
+        '200':
+          description: The position was renamed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Position'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/positions/{positionId}/holders:
+    post:
+      operationId: addPositionHolder
+      summary: Record a person as holder of a position (A-1). One Project Leader and one Project Engineer per project group (D-54)
+      parameters:
+        - $ref: '#/components/parameters/PositionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewPositionHolder'
+      responses:
+        '201':
+          description: The holder was recorded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PositionHolder'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/positions/{positionId}/holders/{holderId}:
+    delete:
+      operationId: removePositionHolder
+      summary: Remove a holder from a position (A-1)
+      parameters:
+        - $ref: '#/components/parameters/PositionId'
+        - $ref: '#/components/parameters/HolderId'
+      responses:
+        '204':
+          description: The holder was removed.
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/approval-routes:
+    get:
+      operationId: listApprovalRoutes
+      summary: Approval routes with their slots in signing order, ordered by name (R-APR-08)
+      responses:
+        '200':
+          description: The approval routes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApprovalRouteList'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: createApprovalRoute
+      summary: Add an approval route (A-2, UC-06)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApprovalRouteInput'
+      responses:
+        '201':
+          description: The approval route was added.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApprovalRoute'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/approval-routes/{approvalRouteId}:
+    put:
+      operationId: updateApprovalRoute
+      summary: Rename an approval route and replace its slots (A-2, R-APR-15)
+      parameters:
+        - $ref: '#/components/parameters/ApprovalRouteId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApprovalRouteInput'
+      responses:
+        '200':
+          description: The approval route was changed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApprovalRoute'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/customers/{customerId}/default-route:
+    put:
+      operationId: setCustomerDefaultRoute
+      summary: Set the default approval route of a customer (A-2, D-47)
+      parameters:
+        - $ref: '#/components/parameters/CustomerId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RouteChoice'
+      responses:
+        '200':
+          description: The default route was set.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/change-types/{changeTypeId}/approval-route:
+    put:
+      operationId: setChangeTypeRoute
+      summary: Set the approval route of a change type, or use the customer default (A-2, R-TPL-10)
+      parameters:
+        - $ref: '#/components/parameters/ChangeTypeId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeTypeRouteChoice'
+      responses:
+        '200':
+          description: The route of the change type was set.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChangeType'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/system-settings:
+    get:
+      operationId: getSystemSettings
+      summary: System settings, today the sign date switch (D-52)
+      responses:
+        '200':
+          description: The system settings.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemSettings'
+        default:
+          $ref: '#/components/responses/Error'
+    put:
+      operationId: updateSystemSettings
+      summary: Change the system settings (A-3, UC-07)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SystemSettingsUpdate'
+      responses:
+        '200':
+          description: The system settings were changed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemSettings'
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/audit-log:
     get:
       operationId: listAuditLog
@@ -993,6 +1185,24 @@ components:
       required: true
       schema:
         type: string
+    PositionId:
+      name: positionId
+      in: path
+      required: true
+      schema:
+        type: string
+    HolderId:
+      name: holderId
+      in: path
+      required: true
+      schema:
+        type: string
+    ApprovalRouteId:
+      name: approvalRouteId
+      in: path
+      required: true
+      schema:
+        type: string
   securitySchemes:
     sessionCookie:
       type: apiKey
@@ -1039,6 +1249,8 @@ components:
         name:
           type: string
           example: Example Customer
+        default_route:
+          $ref: '#/components/schemas/ApprovalRouteRef'
         project_group:
           $ref: '#/components/schemas/ProjectGroupRef'
         active:
@@ -1744,6 +1956,8 @@ components:
           enum: [content, layout, administrative]
         name:
           type: string
+        approval_route:
+          $ref: '#/components/schemas/ApprovalRouteRef'
     ChangeTypeList:
       type: object
       required: [items]
@@ -1805,6 +2019,162 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/FourMCategory'
+    Position:
+      type: object
+      required: [id, key, name, per_project_group, holders]
+      description: A job title in the approval workflow (D-54). The key never changes; the name may (D-58).
+      properties:
+        id:
+          type: string
+        key:
+          type: string
+          enum: [ppap_engineer, ppap_staff, project_engineer, project_leader, apqp_ppap_controller, npi_manager, qa_qc_manager, advisor, factory_manager]
+        name:
+          type: string
+        per_project_group:
+          type: boolean
+          description: True for the Project Leader and the Project Engineer, who are held once per project group.
+        holders:
+          type: array
+          items:
+            $ref: '#/components/schemas/PositionHolder'
+    PositionHolder:
+      type: object
+      required: [id, person, created_at]
+      properties:
+        id:
+          type: string
+        person:
+          $ref: '#/components/schemas/Person'
+        project_group:
+          $ref: '#/components/schemas/ProjectGroupRef'
+        created_at:
+          type: string
+          format: date-time
+    NewPositionHolder:
+      type: object
+      required: [person_id]
+      properties:
+        person_id:
+          type: string
+        project_group_id:
+          type: string
+          description: Required for positions held per project group, and not allowed for other positions.
+    PositionList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Position'
+    ApprovalRoute:
+      type: object
+      required: [id, name, slots, created_at]
+      description: An ordered list of signature slots (R-APR-08). One Prepared slot, one Checked slot, then one or more Approved slots (D-45, D-48, D-49).
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        slots:
+          type: array
+          items:
+            $ref: '#/components/schemas/RouteSlot'
+        created_at:
+          type: string
+          format: date-time
+    RouteSlot:
+      type: object
+      required: [stage, print_title, positions]
+      properties:
+        stage:
+          type: string
+          enum: [prepared, checked, approved]
+        print_title:
+          type: string
+          description: Printed under the holder's name, separate from the position name (R-APR-17, D-76).
+        positions:
+          type: array
+          description: The positions allowed to sign this slot.
+          items:
+            $ref: '#/components/schemas/PositionRef'
+    PositionRef:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+    ApprovalRouteInput:
+      type: object
+      required: [name, slots]
+      properties:
+        name:
+          type: string
+          description: 1 to 200 characters, unique among approval routes, ignoring case.
+        slots:
+          type: array
+          maxItems: 10
+          description: The slots in signing order. On update the list replaces all slots.
+          items:
+            $ref: '#/components/schemas/RouteSlotInput'
+    RouteSlotInput:
+      type: object
+      required: [stage, print_title, position_ids]
+      properties:
+        stage:
+          type: string
+          enum: [prepared, checked, approved]
+        print_title:
+          type: string
+          description: 1 to 100 characters.
+        position_ids:
+          type: array
+          items:
+            type: string
+    ApprovalRouteList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ApprovalRoute'
+    ApprovalRouteRef:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+    RouteChoice:
+      type: object
+      required: [route_id]
+      properties:
+        route_id:
+          type: string
+    ChangeTypeRouteChoice:
+      type: object
+      properties:
+        route_id:
+          type: string
+          description: Leave it out to use the default route of each customer.
+    SystemSettings:
+      type: object
+      required: [sign_dates_enabled]
+      properties:
+        sign_dates_enabled:
+          type: boolean
+          description: When false, signature slots have no sign date and the field is hidden (D-52).
+    SystemSettingsUpdate:
+      type: object
+      properties:
+        sign_dates_enabled:
+          type: boolean
+          description: Leave it out to keep the current value.
     CustomerList:
       type: object
       required: [items]

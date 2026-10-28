@@ -13,6 +13,7 @@ import (
 	"testing/fstest"
 
 	"github.com/dkpauzi/revioten/internal/access"
+	"github.com/dkpauzi/revioten/internal/approval"
 	"github.com/dkpauzi/revioten/internal/audit"
 	"github.com/dkpauzi/revioten/internal/auth"
 	"github.com/dkpauzi/revioten/internal/change"
@@ -20,6 +21,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/numbering"
 	"github.com/dkpauzi/revioten/internal/process"
 	"github.com/dkpauzi/revioten/internal/product"
+	"github.com/dkpauzi/revioten/internal/settings"
 )
 
 // fakePinger meniru database untuk /health. err nil berarti database hidup.
@@ -45,6 +47,7 @@ type fakeCustomers struct {
 	gotUpdate *customer.CustomerUpdate
 	gotCode   string
 	gotGroup  *customer.ProjectGroupInput
+	gotRoute  string
 }
 
 func (f *fakeCustomers) List(ctx context.Context, actor access.Actor) ([]customer.Customer, error) {
@@ -66,6 +69,11 @@ func (f *fakeCustomers) Update(_ context.Context, actor access.Actor, id string,
 
 func (f *fakeCustomers) ChangeCode(_ context.Context, actor access.Actor, id, code string) (customer.Customer, error) {
 	f.gotActor, f.gotID, f.gotCode = actor, id, code
+	return f.created, f.createErr
+}
+
+func (f *fakeCustomers) SetDefaultRoute(_ context.Context, actor access.Actor, id, routeID string) (customer.Customer, error) {
+	f.gotActor, f.gotID, f.gotRoute = actor, id, routeID
 	return f.created, f.createErr
 }
 
@@ -280,6 +288,11 @@ func (f *fakeChanges) UpdateChangeSource(_ context.Context, _ access.Actor, id s
 	return f.source, f.err
 }
 
+func (f *fakeChanges) SetApprovalRoute(_ context.Context, _ access.Actor, id, routeID string) (change.ChangeType, error) {
+	f.got = called{method: "SetApprovalRoute", id: id, input: routeID}
+	return f.changeType, f.err
+}
+
 func (f *fakeChanges) ListFourMCategories(context.Context, access.Actor) ([]change.FourMCategory, error) {
 	f.got = called{method: "ListFourMCategories"}
 	return f.categories, f.err
@@ -288,6 +301,77 @@ func (f *fakeChanges) ListFourMCategories(context.Context, access.Actor) ([]chan
 func (f *fakeChanges) RenameFourMCategory(_ context.Context, _ access.Actor, id, name string) (change.FourMCategory, error) {
 	f.got = called{method: "RenameFourMCategory", id: id, input: name}
 	return f.category, f.err
+}
+
+// fakeApproval meniru approval.Service.
+type fakeApproval struct {
+	positions []approval.Position
+	position  approval.Position
+	holder    approval.Holder
+	routes    []approval.Route
+	route     approval.Route
+	err       error
+	got       called
+	// gotHolderID adalah ID pemegang pada RemoveHolder, dan gotRoute isian rute terakhir.
+	gotHolderID string
+	gotRoute    approval.RouteInput
+}
+
+func (f *fakeApproval) ListPositions(context.Context, access.Actor) ([]approval.Position, error) {
+	f.got = called{method: "ListPositions"}
+	return f.positions, f.err
+}
+
+func (f *fakeApproval) RenamePosition(_ context.Context, _ access.Actor, id, name string) (approval.Position, error) {
+	f.got = called{method: "RenamePosition", id: id, input: name}
+	return f.position, f.err
+}
+
+func (f *fakeApproval) AddHolder(_ context.Context, _ access.Actor, positionID string, in approval.NewHolder) (approval.Holder, error) {
+	f.got = called{method: "AddHolder", id: positionID, input: in}
+	return f.holder, f.err
+}
+
+func (f *fakeApproval) RemoveHolder(_ context.Context, _ access.Actor, positionID, holderID string) error {
+	f.got = called{method: "RemoveHolder", id: positionID}
+	f.gotHolderID = holderID
+	return f.err
+}
+
+func (f *fakeApproval) ListRoutes(context.Context, access.Actor) ([]approval.Route, error) {
+	f.got = called{method: "ListRoutes"}
+	return f.routes, f.err
+}
+
+func (f *fakeApproval) CreateRoute(_ context.Context, _ access.Actor, in approval.RouteInput) (approval.Route, error) {
+	f.got = called{method: "CreateRoute"}
+	f.gotRoute = in
+	return f.route, f.err
+}
+
+func (f *fakeApproval) UpdateRoute(_ context.Context, _ access.Actor, id string, in approval.RouteInput) (approval.Route, error) {
+	f.got = called{method: "UpdateRoute", id: id}
+	f.gotRoute = in
+	return f.route, f.err
+}
+
+// fakeSettings meniru settings.Service.
+type fakeSettings struct {
+	current settings.Settings
+	err     error
+	got     *bool // saklar terakhir yang dikirim ke Apply
+}
+
+func (f *fakeSettings) Get(context.Context, access.Actor) (settings.Settings, error) {
+	return f.current, f.err
+}
+
+func (f *fakeSettings) Apply(_ context.Context, _ access.Actor, in settings.Update) (settings.Settings, error) {
+	f.got = in.SignDatesEnabled
+	if in.SignDatesEnabled != nil {
+		f.current.SignDatesEnabled = *in.SignDatesEnabled
+	}
+	return f.current, f.err
 }
 
 // testToken adalah token sesi yang diterima fakeAuth secara bawaan.
@@ -460,6 +544,12 @@ func newTestServer(t *testing.T, ui fs.FS, deps Deps) testServer {
 	}
 	if deps.Changes == nil {
 		deps.Changes = &fakeChanges{}
+	}
+	if deps.Approval == nil {
+		deps.Approval = &fakeApproval{}
+	}
+	if deps.Settings == nil {
+		deps.Settings = &fakeSettings{}
 	}
 	var log bytes.Buffer
 	deps.Logger = slog.New(slog.NewTextHandler(&log, nil))
