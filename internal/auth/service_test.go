@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dkpauzi/revioten/internal/access"
 	"github.com/dkpauzi/revioten/internal/db"
 	"github.com/dkpauzi/revioten/internal/db/dbtest"
 	"github.com/dkpauzi/revioten/internal/problem"
@@ -37,7 +38,8 @@ const (
 func newTestService(t *testing.T) (*Service, *testClock) {
 	t.Helper()
 	clock := &testClock{now: time.Date(2026, 10, 28, 8, 0, 0, 0, time.UTC)}
-	s := NewService(dbtest.NewPool(t))
+	pool := dbtest.NewPool(t)
+	s := NewService(pool, access.NewChecker(pool))
 	s.now = clock.Now
 	return s, clock
 }
@@ -81,8 +83,12 @@ func TestCreateFirstAdmin(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CreateFirstAdmin: %v", err)
 	}
-	if actor.AccountKind != KindAdmin || actor.Login != adminLogin || actor.PersonName != adminName {
+	if actor.AccountKind != KindAdmin || actor.Login != adminLogin || actor.PersonName != adminName || actor.Type != access.ActorHuman {
 		t.Errorf("actor %+v, ingin akun admin %s milik %s", actor, adminLogin, adminName)
+	}
+	// Akun admin langsung memegang peran Admin (D-72, M1.2).
+	if err := access.NewChecker(s.pool).Authorize(ctx, actor, access.ManageUsers, access.Resource{}); err != nil {
+		t.Errorf("admin pertama tidak punya hak A-1: %v", err)
 	}
 
 	// Perintah ini hanya bisa dipakai sekali (E-07).
@@ -285,14 +291,18 @@ func TestLogout(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := s.Logout(ctx, token); err != nil {
+	actor, err := s.Authenticate(ctx, token)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Logout(ctx, actor, token); err != nil {
 		t.Fatalf("Logout: %v", err)
 	}
 	if _, err := s.Authenticate(ctx, token); !errors.Is(err, ErrUnauthenticated) {
 		t.Errorf("Authenticate setelah logout: %v, ingin ErrUnauthenticated", err)
 	}
 	// Logout dengan token yang tidak dikenal tidak dianggap error.
-	if err := s.Logout(ctx, "token-tidak-dikenal"); err != nil {
+	if err := s.Logout(ctx, actor, "token-tidak-dikenal"); err != nil {
 		t.Errorf("Logout token tak dikenal: %v", err)
 	}
 }

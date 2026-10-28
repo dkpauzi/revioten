@@ -6,7 +6,7 @@
 	import { getSession, logout, setUnauthenticatedHandler } from '#lib/api/client.ts';
 	import { failureText } from '#lib/errors.ts';
 	import { t } from '#lib/i18n/index.ts';
-	import { session } from '#lib/session.svelte.ts';
+	import { can, session } from '#lib/session.svelte.ts';
 
 	// children adalah isi halaman aktif (+page.svelte) yang ditaruh di dalam layout ini.
 	let { children }: LayoutProps = $props();
@@ -64,6 +64,10 @@
 			<nav>
 				<a href="/">{t('navHome')}</a>
 				<a href="/customers">{t('navCustomers')}</a>
+				<!-- Menu hanya untuk pemegang hak A-1; server tetap memeriksa setiap operasi. -->
+				{#if can('A-1')}
+					<a href="/admin/accounts">{t('navAccounts')}</a>
+				{/if}
 				<a href="/about">{t('navAbout')}</a>
 			</nav>
 		{/if}

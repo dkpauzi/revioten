@@ -12,6 +12,7 @@ import (
 	"testing"
 	"testing/fstest"
 
+	"github.com/dkpauzi/revioten/internal/access"
 	"github.com/dkpauzi/revioten/internal/auth"
 	"github.com/dkpauzi/revioten/internal/customer"
 )
@@ -27,15 +28,18 @@ type fakeCustomers struct {
 	listErr   error
 	created   customer.Customer
 	createErr error
-	// gotInput adalah input terakhir yang diterima Create.
+	// gotInput dan gotActor adalah input dan aktor terakhir yang diterima.
 	gotInput *customer.NewCustomer
+	gotActor access.Actor
 }
 
-func (f *fakeCustomers) List(context.Context) ([]customer.Customer, error) {
+func (f *fakeCustomers) List(_ context.Context, actor access.Actor) ([]customer.Customer, error) {
+	f.gotActor = actor
 	return f.list, f.listErr
 }
 
-func (f *fakeCustomers) Create(_ context.Context, in customer.NewCustomer) (customer.Customer, error) {
+func (f *fakeCustomers) Create(_ context.Context, actor access.Actor, in customer.NewCustomer) (customer.Customer, error) {
+	f.gotActor = actor
 	f.gotInput = &in
 	return f.created, f.createErr
 }
@@ -44,55 +48,114 @@ func (f *fakeCustomers) Create(_ context.Context, in customer.NewCustomer) (cust
 const testToken = "token-uji"
 
 // testActor adalah pemilik sesi testToken.
-var testActor = auth.Actor{
-	AccountID: "akun-uji", AccountKind: auth.KindAdmin, Login: "admin.uji",
+var testActor = access.Actor{
+	Type: access.ActorHuman, AccountID: "akun-uji", AccountKind: access.AccountAdmin, Login: "admin.uji",
 	PersonID: "orang-uji", PersonName: "Admin Uji",
 }
 
 // fakeAuth meniru auth.Service tanpa database. sessions memetakan token ke actor.
 type fakeAuth struct {
-	sessions map[string]auth.Actor
+	sessions map[string]access.Actor
 	// loginToken dan loginActor dikembalikan Login bila password-nya "password-benar".
 	loginToken string
-	loginActor auth.Actor
+	loginActor access.Actor
 	// changeErr dikembalikan ChangePassword bila diisi.
 	changeErr error
+	// Hasil dan error untuk operasi akun (A-1).
+	accounts  []auth.AccountInfo
+	account   auth.AccountInfo
+	temporary string
+	adminErr  error
 	// Catatan panggilan, untuk diperiksa test.
 	loggedOut     []string
 	changeCurrent string
 	changeNew     string
+	newAccount    *auth.NewAccount
+	targetAccount string
 }
 
 func newFakeAuth() *fakeAuth {
-	return &fakeAuth{sessions: map[string]auth.Actor{testToken: testActor}}
+	return &fakeAuth{sessions: map[string]access.Actor{testToken: testActor}}
 }
 
-func (f *fakeAuth) Login(_ context.Context, login, password string) (auth.Actor, string, error) {
+func (f *fakeAuth) Login(_ context.Context, login, password string) (access.Actor, string, error) {
 	if login == f.loginActor.Login && password == "password-benar" {
 		return f.loginActor, f.loginToken, nil
 	}
-	return auth.Actor{}, "", auth.ErrInvalidCredentials
+	return access.Actor{}, "", auth.ErrInvalidCredentials
 }
 
-func (f *fakeAuth) Authenticate(_ context.Context, token string) (auth.Actor, error) {
+func (f *fakeAuth) Authenticate(_ context.Context, token string) (access.Actor, error) {
 	actor, ok := f.sessions[token]
 	if !ok {
-		return auth.Actor{}, auth.ErrUnauthenticated
+		return access.Actor{}, auth.ErrUnauthenticated
 	}
 	return actor, nil
 }
 
-func (f *fakeAuth) Logout(_ context.Context, token string) error {
+func (f *fakeAuth) Logout(_ context.Context, _ access.Actor, token string) error {
 	f.loggedOut = append(f.loggedOut, token)
 	return nil
 }
 
-func (f *fakeAuth) ChangePassword(_ context.Context, _ auth.Actor, current, newPassword string) (string, error) {
+func (f *fakeAuth) ChangePassword(_ context.Context, _ access.Actor, current, newPassword string) (string, error) {
 	f.changeCurrent, f.changeNew = current, newPassword
 	if f.changeErr != nil {
 		return "", f.changeErr
 	}
 	return "token-baru", nil
+}
+
+func (f *fakeAuth) ListAccounts(context.Context, access.Actor) ([]auth.AccountInfo, error) {
+	return f.accounts, f.adminErr
+}
+
+func (f *fakeAuth) GetAccount(_ context.Context, _ access.Actor, accountID string) (auth.AccountInfo, error) {
+	f.targetAccount = accountID
+	return f.account, f.adminErr
+}
+
+func (f *fakeAuth) CreateAccount(_ context.Context, _ access.Actor, in auth.NewAccount) (auth.AccountInfo, string, error) {
+	f.newAccount = &in
+	return f.account, f.temporary, f.adminErr
+}
+
+func (f *fakeAuth) ResetPassword(_ context.Context, _ access.Actor, accountID string) (string, error) {
+	f.targetAccount = accountID
+	return f.temporary, f.adminErr
+}
+
+func (f *fakeAuth) DisableAccount(_ context.Context, _ access.Actor, accountID string) (auth.AccountInfo, error) {
+	f.targetAccount = accountID
+	return f.account, f.adminErr
+}
+
+func (f *fakeAuth) EnableAccount(_ context.Context, _ access.Actor, accountID string) (auth.AccountInfo, error) {
+	f.targetAccount = accountID
+	return f.account, f.adminErr
+}
+
+// fakeAccess meniru access.Checker untuk operasi peran.
+type fakeAccess struct {
+	permissions []access.Permission
+	roles       []access.Role
+	err         error
+	// Catatan panggilan SetRoles.
+	setAccount string
+	setGrants  []access.RoleGrant
+}
+
+func (f *fakeAccess) Permissions(context.Context, access.Actor) ([]access.Permission, error) {
+	return f.permissions, f.err
+}
+
+func (f *fakeAccess) ListRoles(context.Context, access.Actor) ([]access.Role, error) {
+	return f.roles, f.err
+}
+
+func (f *fakeAccess) SetRoles(_ context.Context, _ access.Actor, accountID string, grants []access.RoleGrant) error {
+	f.setAccount, f.setGrants = accountID, grants
+	return f.err
 }
 
 // testServer adalah handler lengkap dengan dependensi palsu. Log server
@@ -116,6 +179,9 @@ func newTestServer(t *testing.T, ui fs.FS, deps Deps) testServer {
 	}
 	if deps.Auth == nil {
 		deps.Auth = newFakeAuth()
+	}
+	if deps.Access == nil {
+		deps.Access = &fakeAccess{permissions: []access.Permission{access.ViewReleased, access.ManageUsers}}
 	}
 	var log bytes.Buffer
 	deps.Logger = slog.New(slog.NewTextHandler(&log, nil))

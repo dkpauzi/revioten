@@ -1,11 +1,18 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import {
 	changePassword,
+	createAccount,
 	createCustomer,
+	disableAccount,
+	enableAccount,
 	getSession,
+	listAccounts,
 	listCustomers,
+	listRoles,
 	login,
 	logout,
+	resetAccountPassword,
+	setAccountRoles,
 	setUnauthenticatedHandler
 } from './client.ts';
 
@@ -96,7 +103,8 @@ describe('createCustomer', () => {
 const session = {
 	account: { id: 'akun-1', login: 'admin.uji', kind: 'admin' },
 	person: { id: 'orang-1', name: 'Admin Uji' },
-	must_change_password: false
+	must_change_password: false,
+	permissions: ['L-1', 'A-1']
 };
 
 const unauthenticated = {
@@ -165,5 +173,51 @@ describe('sesi', () => {
 		);
 		expect(result).toEqual({ ok: false, error: { status: 401, body: failed } });
 		expect(called).toBe(0);
+	});
+});
+
+const account = {
+	id: 'akun-2',
+	kind: 'work',
+	login: 'penyusun.uji',
+	person: { id: 'orang-2', name: 'Penyusun Uji' },
+	roles: [{ role: 'author', scope: 'all' }],
+	must_change_password: true,
+	disabled: false,
+	created_at: '2026-10-28T03:00:00Z'
+};
+
+describe('akun dan peran (A-1)', () => {
+	it('memanggil alamat dan method yang benar', async () => {
+		const calls: Call[] = [];
+		await listRoles(fakeFetch(Response.json({ items: [] }), calls));
+		await listAccounts(fakeFetch(Response.json({ items: [account] }), calls));
+		await createAccount(
+			{ person_name: 'Penyusun Uji', kind: 'work', login: 'penyusun.uji', roles: [] },
+			fakeFetch(Response.json({ account, temporary_password: 'SEMENTARA' }, { status: 201 }), calls)
+		);
+		await setAccountRoles('akun-2', [{ role: 'verifier', scope: 'all' }], fakeFetch(Response.json(account), calls));
+		await resetAccountPassword('akun-2', fakeFetch(Response.json({ temporary_password: 'X' }), calls));
+		await disableAccount('akun-2', fakeFetch(Response.json(account), calls));
+		await enableAccount('akun-2', fakeFetch(Response.json(account), calls));
+
+		expect(calls.map((c) => `${c.init?.method} ${c.url}`)).toEqual([
+			'GET /api/v1/roles',
+			'GET /api/v1/accounts',
+			'POST /api/v1/accounts',
+			'PUT /api/v1/accounts/akun-2/roles',
+			'POST /api/v1/accounts/akun-2/password-reset',
+			'POST /api/v1/accounts/akun-2/disable',
+			'POST /api/v1/accounts/akun-2/enable'
+		]);
+		expect(JSON.parse(String(calls[3].init?.body))).toEqual({
+			roles: [{ role: 'verifier', scope: 'all' }]
+		});
+	});
+
+	it('mengodekan ID akun di alamat', async () => {
+		const calls: Call[] = [];
+		await disableAccount('a/b?c', fakeFetch(Response.json(account), calls));
+		expect(calls[0].url).toBe('/api/v1/accounts/a%2Fb%3Fc/disable');
 	});
 });

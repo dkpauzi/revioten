@@ -34,6 +34,24 @@ func (e AccountKind) Valid() bool {
 	}
 }
 
+// Defines values for AccountInfoKind.
+const (
+	AccountInfoKindAdmin AccountInfoKind = "admin"
+	AccountInfoKindWork  AccountInfoKind = "work"
+)
+
+// Valid indicates whether the value is a known member of the AccountInfoKind enum.
+func (e AccountInfoKind) Valid() bool {
+	switch e {
+	case AccountInfoKindAdmin:
+		return true
+	case AccountInfoKindWork:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ErrorCode.
 const (
 	ErrorCodeConflict               ErrorCode = "conflict"
@@ -80,6 +98,7 @@ func (e ErrorCode) Valid() bool {
 const (
 	ErrorDetailCodeIncorrect     ErrorDetailCode = "incorrect"
 	ErrorDetailCodeInvalidFormat ErrorDetailCode = "invalid_format"
+	ErrorDetailCodeNotAllowed    ErrorDetailCode = "not_allowed"
 	ErrorDetailCodeRequired      ErrorDetailCode = "required"
 	ErrorDetailCodeReserved      ErrorDetailCode = "reserved"
 	ErrorDetailCodeTaken         ErrorDetailCode = "taken"
@@ -94,6 +113,8 @@ func (e ErrorDetailCode) Valid() bool {
 	case ErrorDetailCodeIncorrect:
 		return true
 	case ErrorDetailCodeInvalidFormat:
+		return true
+	case ErrorDetailCodeNotAllowed:
 		return true
 	case ErrorDetailCodeRequired:
 		return true
@@ -148,6 +169,66 @@ func (e HealthStatus) Valid() bool {
 	}
 }
 
+// Defines values for NewAccountKind.
+const (
+	NewAccountKindAdmin NewAccountKind = "admin"
+	NewAccountKindWork  NewAccountKind = "work"
+)
+
+// Valid indicates whether the value is a known member of the NewAccountKind enum.
+func (e NewAccountKind) Valid() bool {
+	switch e {
+	case NewAccountKindAdmin:
+		return true
+	case NewAccountKindWork:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RoleLevel.
+const (
+	RoleLevelAdmin  RoleLevel = "admin"
+	RoleLevelEdit   RoleLevel = "edit"
+	RoleLevelVerify RoleLevel = "verify"
+	RoleLevelView   RoleLevel = "view"
+)
+
+// Valid indicates whether the value is a known member of the RoleLevel enum.
+func (e RoleLevel) Valid() bool {
+	switch e {
+	case RoleLevelAdmin:
+		return true
+	case RoleLevelEdit:
+		return true
+	case RoleLevelVerify:
+		return true
+	case RoleLevelView:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RoleGrantScope.
+const (
+	RoleGrantScopeAll             RoleGrantScope = "all"
+	RoleGrantScopeOwnProjectGroup RoleGrantScope = "own_project_group"
+)
+
+// Valid indicates whether the value is a known member of the RoleGrantScope enum.
+func (e RoleGrantScope) Valid() bool {
+	switch e {
+	case RoleGrantScopeAll:
+		return true
+	case RoleGrantScopeOwnProjectGroup:
+		return true
+	default:
+		return false
+	}
+}
+
 // Account defines model for Account.
 type Account struct {
 	// Id Opaque stable ID.
@@ -160,6 +241,39 @@ type Account struct {
 
 // AccountKind A work account, or the separate admin account (D-72).
 type AccountKind string
+
+// AccountInfo defines model for AccountInfo.
+type AccountInfo struct {
+	CreatedAt time.Time `json:"created_at"`
+	Disabled  bool      `json:"disabled"`
+
+	// Id Opaque stable ID.
+	Id   string          `json:"id"`
+	Kind AccountInfoKind `json:"kind"`
+
+	// LockedUntil Set while the account is locked after failed logins.
+	LockedUntil        *time.Time  `json:"locked_until,omitempty"`
+	Login              string      `json:"login"`
+	MustChangePassword bool        `json:"must_change_password"`
+	Person             PersonInfo  `json:"person"`
+	Roles              []RoleGrant `json:"roles"`
+}
+
+// AccountInfoKind defines model for AccountInfo.Kind.
+type AccountInfoKind string
+
+// AccountList defines model for AccountList.
+type AccountList struct {
+	Items []AccountInfo `json:"items"`
+}
+
+// CreatedAccount defines model for CreatedAccount.
+type CreatedAccount struct {
+	Account AccountInfo `json:"account"`
+
+	// TemporaryPassword Shown only once. Give it to the owner of the account.
+	TemporaryPassword string `json:"temporary_password"`
+}
 
 // Credentials defines model for Credentials.
 type Credentials struct {
@@ -227,6 +341,23 @@ type HealthDatabase string
 // HealthStatus defines model for Health.Status.
 type HealthStatus string
 
+// NewAccount Give `person_id` for a person who already has an account (for example
+// an admin account for the PPAP Staff, D-72), or `person_name` for a
+// new person, not both.
+type NewAccount struct {
+	EmployeeNumber *string        `json:"employee_number,omitempty"`
+	Kind           NewAccountKind `json:"kind"`
+	Login          string         `json:"login"`
+	PersonId       *string        `json:"person_id,omitempty"`
+	PersonName     *string        `json:"person_name,omitempty"`
+
+	// Roles Roles of a work account. An admin account always holds only the admin role.
+	Roles *[]RoleGrant `json:"roles,omitempty"`
+}
+
+// NewAccountKind defines model for NewAccount.Kind.
+type NewAccountKind string
+
 // NewCustomer defines model for NewCustomer.
 type NewCustomer struct {
 	// Code Two letters A to Z. Spaces around the code are removed and letters
@@ -258,18 +389,85 @@ type Person struct {
 	Name string `json:"name"`
 }
 
+// PersonInfo defines model for PersonInfo.
+type PersonInfo struct {
+	EmployeeNumber *string `json:"employee_number,omitempty"`
+
+	// Id Opaque stable ID.
+	Id   string `json:"id"`
+	Name string `json:"name"`
+}
+
+// Role defines model for Role.
+type Role struct {
+	Id          string    `json:"id"`
+	Level       RoleLevel `json:"level"`
+	Permissions []string  `json:"permissions"`
+}
+
+// RoleLevel defines model for Role.Level.
+type RoleLevel string
+
+// RoleGrant defines model for RoleGrant.
+type RoleGrant struct {
+	// Role Role ID, for example author or verifier.
+	Role string `json:"role"`
+
+	// Scope `all` for all customers, or `own_project_group` for the customers
+	// of the project group where the person is Project Leader or
+	// Project Engineer (D-71). Only author and verifier can use
+	// `own_project_group`.
+	Scope RoleGrantScope `json:"scope"`
+}
+
+// RoleGrantScope `all` for all customers, or `own_project_group` for the customers
+// of the project group where the person is Project Leader or
+// Project Engineer (D-71). Only author and verifier can use
+// `own_project_group`.
+type RoleGrantScope string
+
+// RoleList defines model for RoleList.
+type RoleList struct {
+	Items []Role `json:"items"`
+}
+
+// RolesUpdate defines model for RolesUpdate.
+type RolesUpdate struct {
+	Roles []RoleGrant `json:"roles"`
+}
+
 // Session defines model for Session.
 type Session struct {
 	Account Account `json:"account"`
 
 	// MustChangePassword True after an admin reset the password. Until the password is
 	// changed, other operations answer 403 `password_change_required`.
-	MustChangePassword bool   `json:"must_change_password"`
-	Person             Person `json:"person"`
+	MustChangePassword bool `json:"must_change_password"`
+
+	// Permissions The rights of the caller, as codes from the user map (U3), for
+	// example L-1 or A-2. Screens use them to show or hide actions; the
+	// server still checks every operation.
+	Permissions []string `json:"permissions"`
+	Person      Person   `json:"person"`
 }
+
+// TemporaryPassword defines model for TemporaryPassword.
+type TemporaryPassword struct {
+	// TemporaryPassword Shown only once. Give it to the owner of the account.
+	TemporaryPassword string `json:"temporary_password"`
+}
+
+// AccountId defines model for AccountId.
+type AccountId = string
 
 // ChangePasswordJSONRequestBody defines body for ChangePassword for application/json ContentType.
 type ChangePasswordJSONRequestBody = PasswordChange
+
+// CreateAccountJSONRequestBody defines body for CreateAccount for application/json ContentType.
+type CreateAccountJSONRequestBody = NewAccount
+
+// SetAccountRolesJSONRequestBody defines body for SetAccountRoles for application/json ContentType.
+type SetAccountRolesJSONRequestBody = RolesUpdate
 
 // CreateCustomerJSONRequestBody defines body for CreateCustomer for application/json ContentType.
 type CreateCustomerJSONRequestBody = NewCustomer
@@ -282,12 +480,33 @@ type ServerInterface interface {
 	// ChangePassword Change the password of the caller
 	// (PUT /api/v1/account/password)
 	ChangePassword(w http.ResponseWriter, r *http.Request)
+	// ListAccounts All accounts with their person and roles (A-1)
+	// (GET /api/v1/accounts)
+	ListAccounts(w http.ResponseWriter, r *http.Request)
+	// CreateAccount Create an account with a temporary password (A-1)
+	// (POST /api/v1/accounts)
+	CreateAccount(w http.ResponseWriter, r *http.Request)
+	// DisableAccount Disable another account and end its sessions (A-1)
+	// (POST /api/v1/accounts/{accountId}/disable)
+	DisableAccount(w http.ResponseWriter, r *http.Request, accountId AccountId)
+	// EnableAccount Enable an account again and unlock it (A-1)
+	// (POST /api/v1/accounts/{accountId}/enable)
+	EnableAccount(w http.ResponseWriter, r *http.Request, accountId AccountId)
+	// ResetAccountPassword Set a new temporary password for another account (A-1)
+	// (POST /api/v1/accounts/{accountId}/password-reset)
+	ResetAccountPassword(w http.ResponseWriter, r *http.Request, accountId AccountId)
+	// SetAccountRoles Replace the roles of a work account (A-1)
+	// (PUT /api/v1/accounts/{accountId}/roles)
+	SetAccountRoles(w http.ResponseWriter, r *http.Request, accountId AccountId)
 	// ListCustomers List all customers, ordered by code
 	// (GET /api/v1/customers)
 	ListCustomers(w http.ResponseWriter, r *http.Request)
 	// CreateCustomer Add a customer
 	// (POST /api/v1/customers)
 	CreateCustomer(w http.ResponseWriter, r *http.Request)
+	// ListRoles The role catalog with the rights of each role (A-1)
+	// (GET /api/v1/roles)
+	ListRoles(w http.ResponseWriter, r *http.Request)
 	// Logout Log out and end the session
 	// (DELETE /api/v1/session)
 	Logout(w http.ResponseWriter, r *http.Request)
@@ -325,6 +544,138 @@ func (siw *ServerInterfaceWrapper) ChangePassword(w http.ResponseWriter, r *http
 	handler.ServeHTTP(w, r)
 }
 
+// ListAccounts operation middleware
+func (siw *ServerInterfaceWrapper) ListAccounts(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAccounts(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateAccount operation middleware
+func (siw *ServerInterfaceWrapper) CreateAccount(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateAccount(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DisableAccount operation middleware
+func (siw *ServerInterfaceWrapper) DisableAccount(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "accountId" -------------
+	var accountId AccountId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "accountId", r.PathValue("accountId"), &accountId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "accountId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DisableAccount(w, r, accountId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// EnableAccount operation middleware
+func (siw *ServerInterfaceWrapper) EnableAccount(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "accountId" -------------
+	var accountId AccountId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "accountId", r.PathValue("accountId"), &accountId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "accountId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.EnableAccount(w, r, accountId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ResetAccountPassword operation middleware
+func (siw *ServerInterfaceWrapper) ResetAccountPassword(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "accountId" -------------
+	var accountId AccountId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "accountId", r.PathValue("accountId"), &accountId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "accountId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ResetAccountPassword(w, r, accountId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetAccountRoles operation middleware
+func (siw *ServerInterfaceWrapper) SetAccountRoles(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "accountId" -------------
+	var accountId AccountId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "accountId", r.PathValue("accountId"), &accountId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "accountId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetAccountRoles(w, r, accountId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListCustomers operation middleware
 func (siw *ServerInterfaceWrapper) ListCustomers(w http.ResponseWriter, r *http.Request) {
 
@@ -344,6 +695,20 @@ func (siw *ServerInterfaceWrapper) CreateCustomer(w http.ResponseWriter, r *http
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreateCustomer(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListRoles operation middleware
+func (siw *ServerInterfaceWrapper) ListRoles(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListRoles(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -534,6 +899,13 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/session", wrapper.GetSession)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/session", wrapper.Login)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/account/password", wrapper.ChangePassword)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/roles", wrapper.ListRoles)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/accounts", wrapper.ListAccounts)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/accounts", wrapper.CreateAccount)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/accounts/{accountId}/roles", wrapper.SetAccountRoles)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/accounts/{accountId}/password-reset", wrapper.ResetAccountPassword)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/accounts/{accountId}/disable", wrapper.DisableAccount)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/accounts/{accountId}/enable", wrapper.EnableAccount)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/customers", wrapper.ListCustomers)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/customers", wrapper.CreateCustomer)
 
@@ -600,6 +972,240 @@ type ChangePassworddefaultJSONResponse struct {
 }
 
 func (response ChangePassworddefaultJSONResponse) VisitChangePasswordResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAccountsRequestObject struct {
+}
+
+type ListAccountsResponseObject interface {
+	VisitListAccountsResponse(w http.ResponseWriter) error
+}
+
+type ListAccounts200JSONResponse AccountList
+
+func (response ListAccounts200JSONResponse) VisitListAccountsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAccountsdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ListAccountsdefaultJSONResponse) VisitListAccountsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateAccountRequestObject struct {
+	Body *CreateAccountJSONRequestBody
+}
+
+type CreateAccountResponseObject interface {
+	VisitCreateAccountResponse(w http.ResponseWriter) error
+}
+
+type CreateAccount201JSONResponse CreatedAccount
+
+func (response CreateAccount201JSONResponse) VisitCreateAccountResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateAccountdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response CreateAccountdefaultJSONResponse) VisitCreateAccountResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DisableAccountRequestObject struct {
+	AccountId AccountId `json:"accountId"`
+}
+
+type DisableAccountResponseObject interface {
+	VisitDisableAccountResponse(w http.ResponseWriter) error
+}
+
+type DisableAccount200JSONResponse AccountInfo
+
+func (response DisableAccount200JSONResponse) VisitDisableAccountResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DisableAccountdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response DisableAccountdefaultJSONResponse) VisitDisableAccountResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EnableAccountRequestObject struct {
+	AccountId AccountId `json:"accountId"`
+}
+
+type EnableAccountResponseObject interface {
+	VisitEnableAccountResponse(w http.ResponseWriter) error
+}
+
+type EnableAccount200JSONResponse AccountInfo
+
+func (response EnableAccount200JSONResponse) VisitEnableAccountResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type EnableAccountdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response EnableAccountdefaultJSONResponse) VisitEnableAccountResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResetAccountPasswordRequestObject struct {
+	AccountId AccountId `json:"accountId"`
+}
+
+type ResetAccountPasswordResponseObject interface {
+	VisitResetAccountPasswordResponse(w http.ResponseWriter) error
+}
+
+type ResetAccountPassword200JSONResponse TemporaryPassword
+
+func (response ResetAccountPassword200JSONResponse) VisitResetAccountPasswordResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResetAccountPassworddefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ResetAccountPassworddefaultJSONResponse) VisitResetAccountPasswordResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetAccountRolesRequestObject struct {
+	AccountId AccountId `json:"accountId"`
+	Body      *SetAccountRolesJSONRequestBody
+}
+
+type SetAccountRolesResponseObject interface {
+	VisitSetAccountRolesResponse(w http.ResponseWriter) error
+}
+
+type SetAccountRoles200JSONResponse AccountInfo
+
+func (response SetAccountRoles200JSONResponse) VisitSetAccountRolesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetAccountRolesdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response SetAccountRolesdefaultJSONResponse) VisitSetAccountRolesResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -719,6 +1325,44 @@ type CreateCustomerdefaultJSONResponse struct {
 }
 
 func (response CreateCustomerdefaultJSONResponse) VisitCreateCustomerResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListRolesRequestObject struct {
+}
+
+type ListRolesResponseObject interface {
+	VisitListRolesResponse(w http.ResponseWriter) error
+}
+
+type ListRoles200JSONResponse RoleList
+
+func (response ListRoles200JSONResponse) VisitListRolesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListRolesdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ListRolesdefaultJSONResponse) VisitListRolesResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -925,12 +1569,33 @@ type StrictServerInterface interface {
 	// ChangePassword Change the password of the caller
 	// (PUT /api/v1/account/password)
 	ChangePassword(ctx context.Context, request ChangePasswordRequestObject) (ChangePasswordResponseObject, error)
+	// ListAccounts All accounts with their person and roles (A-1)
+	// (GET /api/v1/accounts)
+	ListAccounts(ctx context.Context, request ListAccountsRequestObject) (ListAccountsResponseObject, error)
+	// CreateAccount Create an account with a temporary password (A-1)
+	// (POST /api/v1/accounts)
+	CreateAccount(ctx context.Context, request CreateAccountRequestObject) (CreateAccountResponseObject, error)
+	// DisableAccount Disable another account and end its sessions (A-1)
+	// (POST /api/v1/accounts/{accountId}/disable)
+	DisableAccount(ctx context.Context, request DisableAccountRequestObject) (DisableAccountResponseObject, error)
+	// EnableAccount Enable an account again and unlock it (A-1)
+	// (POST /api/v1/accounts/{accountId}/enable)
+	EnableAccount(ctx context.Context, request EnableAccountRequestObject) (EnableAccountResponseObject, error)
+	// ResetAccountPassword Set a new temporary password for another account (A-1)
+	// (POST /api/v1/accounts/{accountId}/password-reset)
+	ResetAccountPassword(ctx context.Context, request ResetAccountPasswordRequestObject) (ResetAccountPasswordResponseObject, error)
+	// SetAccountRoles Replace the roles of a work account (A-1)
+	// (PUT /api/v1/accounts/{accountId}/roles)
+	SetAccountRoles(ctx context.Context, request SetAccountRolesRequestObject) (SetAccountRolesResponseObject, error)
 	// ListCustomers List all customers, ordered by code
 	// (GET /api/v1/customers)
 	ListCustomers(ctx context.Context, request ListCustomersRequestObject) (ListCustomersResponseObject, error)
 	// CreateCustomer Add a customer
 	// (POST /api/v1/customers)
 	CreateCustomer(ctx context.Context, request CreateCustomerRequestObject) (CreateCustomerResponseObject, error)
+	// ListRoles The role catalog with the rights of each role (A-1)
+	// (GET /api/v1/roles)
+	ListRoles(ctx context.Context, request ListRolesRequestObject) (ListRolesResponseObject, error)
 	// Logout Log out and end the session
 	// (DELETE /api/v1/session)
 	Logout(ctx context.Context, request LogoutRequestObject) (LogoutResponseObject, error)
@@ -1015,6 +1680,172 @@ func (sh *strictHandler) ChangePassword(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
+// ListAccounts operation middleware
+func (sh *strictHandler) ListAccounts(w http.ResponseWriter, r *http.Request) {
+	var request ListAccountsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAccounts(ctx, request.(ListAccountsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAccounts")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAccountsResponseObject); ok {
+		if err := validResponse.VisitListAccountsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateAccount operation middleware
+func (sh *strictHandler) CreateAccount(w http.ResponseWriter, r *http.Request) {
+	var request CreateAccountRequestObject
+
+	var body CreateAccountJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateAccount(ctx, request.(CreateAccountRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateAccount")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateAccountResponseObject); ok {
+		if err := validResponse.VisitCreateAccountResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DisableAccount operation middleware
+func (sh *strictHandler) DisableAccount(w http.ResponseWriter, r *http.Request, accountId AccountId) {
+	var request DisableAccountRequestObject
+
+	request.AccountId = accountId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DisableAccount(ctx, request.(DisableAccountRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DisableAccount")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DisableAccountResponseObject); ok {
+		if err := validResponse.VisitDisableAccountResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// EnableAccount operation middleware
+func (sh *strictHandler) EnableAccount(w http.ResponseWriter, r *http.Request, accountId AccountId) {
+	var request EnableAccountRequestObject
+
+	request.AccountId = accountId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.EnableAccount(ctx, request.(EnableAccountRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "EnableAccount")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(EnableAccountResponseObject); ok {
+		if err := validResponse.VisitEnableAccountResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ResetAccountPassword operation middleware
+func (sh *strictHandler) ResetAccountPassword(w http.ResponseWriter, r *http.Request, accountId AccountId) {
+	var request ResetAccountPasswordRequestObject
+
+	request.AccountId = accountId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ResetAccountPassword(ctx, request.(ResetAccountPasswordRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ResetAccountPassword")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ResetAccountPasswordResponseObject); ok {
+		if err := validResponse.VisitResetAccountPasswordResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SetAccountRoles operation middleware
+func (sh *strictHandler) SetAccountRoles(w http.ResponseWriter, r *http.Request, accountId AccountId) {
+	var request SetAccountRolesRequestObject
+
+	request.AccountId = accountId
+
+	var body SetAccountRolesJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetAccountRoles(ctx, request.(SetAccountRolesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetAccountRoles")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetAccountRolesResponseObject); ok {
+		if err := validResponse.VisitSetAccountRolesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListCustomers operation middleware
 func (sh *strictHandler) ListCustomers(w http.ResponseWriter, r *http.Request) {
 	var request ListCustomersRequestObject
@@ -1063,6 +1894,30 @@ func (sh *strictHandler) CreateCustomer(w http.ResponseWriter, r *http.Request) 
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(CreateCustomerResponseObject); ok {
 		if err := validResponse.VisitCreateCustomerResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListRoles operation middleware
+func (sh *strictHandler) ListRoles(w http.ResponseWriter, r *http.Request) {
+	var request ListRolesRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListRoles(ctx, request.(ListRolesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListRoles")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListRolesResponseObject); ok {
+		if err := validResponse.VisitListRolesResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

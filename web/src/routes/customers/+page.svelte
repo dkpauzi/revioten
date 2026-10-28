@@ -5,6 +5,7 @@
 	import { failureText, problemText } from '#lib/errors.ts';
 	import { formatDateTime } from '#lib/format.ts';
 	import { t } from '#lib/i18n/index.ts';
+	import { can } from '#lib/session.svelte.ts';
 
 	// Daftar customer dari server. null berarti belum selesai dimuat.
 	let customers = $state<Customer[] | null>(null);
@@ -63,52 +64,55 @@
 
 <h1>{t('customersTitle')}</h1>
 
-<section>
-	<h2>{t('customerAddTitle')}</h2>
-	<!-- novalidate: pemeriksaan input dilakukan server, supaya aturannya hanya satu. -->
-	<form onsubmit={save} novalidate>
-		<div class="field">
-			<label for="customer-code">{t('customerCode')}</label>
-			<input
-				id="customer-code"
-				name="code"
-				bind:value={code}
-				autocomplete="off"
-				aria-describedby="customer-code-hint"
-				aria-invalid={fieldErrors.code ? 'true' : undefined}
-			/>
-			<small id="customer-code-hint">{t('customerCodeHint')}</small>
-			{#if fieldErrors.code}
-				<p class="error">{fieldErrors.code}</p>
+<!-- Formulir hanya untuk pemegang hak A-2 (E-10); server tetap memeriksa setiap operasi. -->
+{#if can('A-2')}
+	<section>
+		<h2>{t('customerAddTitle')}</h2>
+		<!-- novalidate: pemeriksaan input dilakukan server, supaya aturannya hanya satu. -->
+		<form onsubmit={save} novalidate>
+			<div class="field">
+				<label for="customer-code">{t('customerCode')}</label>
+				<input
+					id="customer-code"
+					name="code"
+					bind:value={code}
+					autocomplete="off"
+					aria-describedby="customer-code-hint"
+					aria-invalid={fieldErrors.code ? 'true' : undefined}
+				/>
+				<small id="customer-code-hint">{t('customerCodeHint')}</small>
+				{#if fieldErrors.code}
+					<p class="error">{fieldErrors.code}</p>
+				{/if}
+			</div>
+
+			<div class="field">
+				<label for="customer-name">{t('customerName')}</label>
+				<input
+					id="customer-name"
+					name="name"
+					bind:value={name}
+					autocomplete="off"
+					aria-invalid={fieldErrors.name ? 'true' : undefined}
+				/>
+				{#if fieldErrors.name}
+					<p class="error">{fieldErrors.name}</p>
+				{/if}
+			</div>
+
+			<button type="submit" disabled={saving}>
+				{saving ? t('customerSaving') : t('customerSave')}
+			</button>
+
+			{#if formError}
+				<p class="error" role="alert">{formError}</p>
 			{/if}
-		</div>
-
-		<div class="field">
-			<label for="customer-name">{t('customerName')}</label>
-			<input
-				id="customer-name"
-				name="name"
-				bind:value={name}
-				autocomplete="off"
-				aria-invalid={fieldErrors.name ? 'true' : undefined}
-			/>
-			{#if fieldErrors.name}
-				<p class="error">{fieldErrors.name}</p>
+			{#if savedMessage}
+				<p role="status">{savedMessage}</p>
 			{/if}
-		</div>
-
-		<button type="submit" disabled={saving}>
-			{saving ? t('customerSaving') : t('customerSave')}
-		</button>
-
-		{#if formError}
-			<p class="error" role="alert">{formError}</p>
-		{/if}
-		{#if savedMessage}
-			<p role="status">{savedMessage}</p>
-		{/if}
-	</form>
-</section>
+		</form>
+	</section>
+{/if}
 
 <section>
 	<h2>{t('customersListTitle')}</h2>

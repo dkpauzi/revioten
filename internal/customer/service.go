@@ -6,6 +6,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/dkpauzi/revioten/internal/access"
 	"github.com/dkpauzi/revioten/internal/db"
 	"github.com/dkpauzi/revioten/internal/problem"
 )
@@ -13,15 +14,23 @@ import (
 // Service menjalankan operasi customer terhadap database.
 type Service struct {
 	queries *db.Queries
+	authz   access.Authorizer
 }
 
-// NewService membuat Service yang memakai pool database.
-func NewService(pool *pgxpool.Pool) *Service {
-	return &Service{queries: db.New(pool)}
+// NewService membuat Service yang memakai pool database. authz memeriksa izin
+// setiap operasi (M1.2).
+func NewService(pool *pgxpool.Pool, authz access.Authorizer) *Service {
+	return &Service{queries: db.New(pool), authz: authz}
 }
 
 // List mengembalikan semua customer, urut menurut kode.
-func (s *Service) List(ctx context.Context) ([]Customer, error) {
+// ASUMSI E-24: matriks U3 belum punya hak "lihat master data". Semua akun
+// butuh daftar customer (misalnya untuk menyaring dokumen), jadi cukup hak
+// dasar L-2 yang dimiliki semua akun.
+func (s *Service) List(ctx context.Context, actor access.Actor) ([]Customer, error) {
+	if err := s.authz.Authorize(ctx, actor, access.ViewRegister, access.Resource{}); err != nil {
+		return nil, err
+	}
 	rows, err := s.queries.ListCustomers(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("mengambil daftar customer: %w", err)
@@ -36,7 +45,12 @@ func (s *Service) List(ctx context.Context) ([]Customer, error) {
 // Create memeriksa input lalu menyimpan customer baru. Hasilnya
 // *problem.ValidationError bila input salah, atau *problem.ConflictError bila
 // kodenya sudah dipakai.
-func (s *Service) Create(ctx context.Context, in NewCustomer) (Customer, error) {
+//
+// Mengelola master data adalah hak A-2, yang hanya dimiliki akun admin (E-10).
+func (s *Service) Create(ctx context.Context, actor access.Actor, in NewCustomer) (Customer, error) {
+	if err := s.authz.Authorize(ctx, actor, access.ManageMasterData, access.Resource{}); err != nil {
+		return Customer{}, err
+	}
 	in, err := validate(in)
 	if err != nil {
 		return Customer{}, err

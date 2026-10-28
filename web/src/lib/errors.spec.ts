@@ -38,6 +38,12 @@ describe('failureText', () => {
 		expect(text).toContain('UJI500');
 	});
 
+	it('memberi tahu bila tidak punya hak', () => {
+		expect(
+			failureText({ status: 403, body: { code: 'forbidden', message: 'x', request_id: 'uji' } })
+		).toBe(en.errorForbidden);
+	});
+
 	it('memakai pesan umum bila isi error tidak ada', () => {
 		expect(failureText({ status: 502, body: null })).toBe(en.errorUnknown);
 	});

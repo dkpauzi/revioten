@@ -6,6 +6,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/dkpauzi/revioten/internal/access"
+	"github.com/dkpauzi/revioten/internal/db"
 	"github.com/dkpauzi/revioten/internal/db/dbtest"
 	"github.com/dkpauzi/revioten/internal/problem"
 )
@@ -15,10 +19,62 @@ func TestMain(m *testing.M) {
 	os.Exit(dbtest.Main(m))
 }
 
-func TestListEmpty(t *testing.T) {
-	s := NewService(dbtest.NewPool(t))
+// newActor membuat orang dan akun langsung lewat query, dengan peran tertentu.
+func newActor(t *testing.T, pool *pgxpool.Pool, login, kind string, roles ...string) access.Actor {
+	t.Helper()
+	ctx := t.Context()
+	q := db.New(pool)
+	person, err := q.CreatePerson(ctx, db.CreatePersonParams{Name: "Orang " + login})
+	if err != nil {
+		t.Fatal(err)
+	}
+	acc, err := q.CreateAccount(ctx, db.CreateAccountParams{PersonID: person.ID, Kind: kind, Login: login, PasswordHash: "x"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, role := range roles {
+		if err := q.AddAccountRole(ctx, db.AddAccountRoleParams{AccountID: acc.ID, RoleID: role, Scope: access.ScopeAll}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return access.Actor{Type: access.ActorHuman, AccountID: acc.ID, AccountKind: kind, Login: login, PersonID: person.ID}
+}
 
-	list, err := s.List(t.Context())
+// newTestService membuat Service dengan database baru dan satu akun admin.
+func newTestService(t *testing.T) (*Service, access.Actor) {
+	t.Helper()
+	pool := dbtest.NewPool(t)
+	admin := newActor(t, pool, "admin.uji", access.AccountAdmin, access.RoleAdmin)
+	return NewService(pool, access.NewChecker(pool)), admin
+}
+
+// TestPermissions: menambah customer butuh hak A-2 (hanya akun admin, E-10),
+// sedangkan melihat daftar cukup hak dasar semua akun (ASUMSI E-24).
+func TestPermissions(t *testing.T) {
+	pool := dbtest.NewPool(t)
+	s := NewService(pool, access.NewChecker(pool))
+	ctx := t.Context()
+	admin := newActor(t, pool, "admin.uji", access.AccountAdmin, access.RoleAdmin)
+	author := newActor(t, pool, "penyusun.uji", access.AccountWork, access.RoleAuthor, access.RoleDocumentControl)
+	viewer := newActor(t, pool, "viewer.uji", access.AccountWork)
+
+	for _, actor := range []access.Actor{author, viewer} {
+		if _, err := s.Create(ctx, actor, NewCustomer{Code: "AB", Name: "Customer"}); !errors.Is(err, access.ErrForbidden) {
+			t.Errorf("Create oleh %s: %v, ingin ErrForbidden", actor.Login, err)
+		}
+		if _, err := s.List(ctx, actor); err != nil {
+			t.Errorf("List oleh %s: %v", actor.Login, err)
+		}
+	}
+	if _, err := s.Create(ctx, admin, NewCustomer{Code: "AB", Name: "Customer"}); err != nil {
+		t.Errorf("Create oleh admin: %v", err)
+	}
+}
+
+func TestListEmpty(t *testing.T) {
+	s, admin := newTestService(t)
+
+	list, err := s.List(t.Context(), admin)
 	if err != nil {
 		t.Fatalf("List: %v", err)
 	}
@@ -29,15 +85,15 @@ func TestListEmpty(t *testing.T) {
 }
 
 func TestCreateAndList(t *testing.T) {
-	s := NewService(dbtest.NewPool(t))
+	s, admin := newTestService(t)
 	ctx := t.Context()
 	before := time.Now()
 
-	created, err := s.Create(ctx, NewCustomer{Code: " bb ", Name: " Customer B "})
+	created, err := s.Create(ctx, admin, NewCustomer{Code: " bb ", Name: " Customer B "})
 	if err != nil {
 		t.Fatalf("Create BB: %v", err)
 	}
-	if _, err := s.Create(ctx, NewCustomer{Code: "AA", Name: "Customer A"}); err != nil {
+	if _, err := s.Create(ctx, admin, NewCustomer{Code: "AA", Name: "Customer A"}); err != nil {
 		t.Fatalf("Create AA: %v", err)
 	}
 
@@ -55,7 +111,7 @@ func TestCreateAndList(t *testing.T) {
 		t.Errorf("CreatedAt = %v, tidak dekat dengan waktu test", created.CreatedAt)
 	}
 
-	list, err := s.List(ctx)
+	list, err := s.List(ctx, admin)
 	if err != nil {
 		t.Fatalf("List: %v", err)
 	}
@@ -72,14 +128,14 @@ func TestCreateAndList(t *testing.T) {
 }
 
 func TestCreateDuplicateCode(t *testing.T) {
-	s := NewService(dbtest.NewPool(t))
+	s, admin := newTestService(t)
 	ctx := t.Context()
-	if _, err := s.Create(ctx, NewCustomer{Code: "AB", Name: "Customer Pertama"}); err != nil {
+	if _, err := s.Create(ctx, admin, NewCustomer{Code: "AB", Name: "Customer Pertama"}); err != nil {
 		t.Fatalf("Create pertama: %v", err)
 	}
 
 	// Kode yang sama setelah dirapikan (" ab " menjadi AB) harus ditolak.
-	_, err := s.Create(ctx, NewCustomer{Code: " ab ", Name: "Customer Kedua"})
+	_, err := s.Create(ctx, admin, NewCustomer{Code: " ab ", Name: "Customer Kedua"})
 
 	var conflict *problem.ConflictError
 	if !errors.As(err, &conflict) {
@@ -91,16 +147,16 @@ func TestCreateDuplicateCode(t *testing.T) {
 }
 
 func TestCreateInvalidIsNotStored(t *testing.T) {
-	s := NewService(dbtest.NewPool(t))
+	s, admin := newTestService(t)
 	ctx := t.Context()
 
-	_, err := s.Create(ctx, NewCustomer{Code: "ZZ", Name: "General"})
+	_, err := s.Create(ctx, admin, NewCustomer{Code: "ZZ", Name: "General"})
 	var invalid *problem.ValidationError
 	if !errors.As(err, &invalid) {
 		t.Fatalf("ingin *problem.ValidationError, dapat %v", err)
 	}
 
-	list, err := s.List(ctx)
+	list, err := s.List(ctx, admin)
 	if err != nil {
 		t.Fatalf("List: %v", err)
 	}

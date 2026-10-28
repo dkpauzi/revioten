@@ -2,14 +2,13 @@ package server
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/dkpauzi/revioten/internal/customer"
 )
 
 // ListCustomers menjawab GET /api/v1/customers.
 func (a *apiServer) ListCustomers(ctx context.Context, _ ListCustomersRequestObject) (ListCustomersResponseObject, error) {
-	list, err := a.customers.List(ctx)
+	list, err := a.customers.List(ctx, actorFrom(ctx))
 	if err != nil {
 		// Error dikembalikan ke strict handler, yang meneruskannya ke responseError (500).
 		return nil, err
@@ -24,14 +23,10 @@ func (a *apiServer) ListCustomers(ctx context.Context, _ ListCustomersRequestObj
 // CreateCustomer menjawab POST /api/v1/customers. Input diteruskan apa adanya;
 // merapikan dan memeriksa input adalah tugas paket customer.
 func (a *apiServer) CreateCustomer(ctx context.Context, req CreateCustomerRequestObject) (CreateCustomerResponseObject, error) {
-	created, err := a.customers.Create(ctx, customer.NewCustomer{Code: req.Body.Code, Name: req.Body.Name})
-	if status, body, ok := problemResponse(ctx, err); ok {
-		if status == http.StatusConflict {
-			return CreateCustomer409JSONResponse(body), nil
-		}
-		return CreateCustomer422JSONResponse(body), nil
-	}
+	created, err := a.customers.Create(ctx, actorFrom(ctx), customer.NewCustomer{Code: req.Body.Code, Name: req.Body.Name})
 	if err != nil {
+		// Tanpa hak (403), input salah (422), atau kode ganda (409):
+		// semuanya diterjemahkan responseError.
 		return nil, err
 	}
 	return CreateCustomer201JSONResponse(toAPICustomer(created)), nil

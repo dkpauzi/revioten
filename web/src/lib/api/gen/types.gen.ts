@@ -36,6 +36,13 @@ export type Session = {
      *
      */
     must_change_password: boolean;
+    /**
+     * The rights of the caller, as codes from the user map (U3), for
+     * example L-1 or A-2. Screens use them to show or hide actions; the
+     * server still checks every operation.
+     *
+     */
+    permissions: Array<string>;
 };
 
 export type Account = {
@@ -66,6 +73,99 @@ export type PasswordChange = {
      *
      */
     new_password: string;
+};
+
+export type RoleGrant = {
+    /**
+     * Role ID, for example author or verifier.
+     */
+    role: string;
+    /**
+     * `all` for all customers, or `own_project_group` for the customers
+     * of the project group where the person is Project Leader or
+     * Project Engineer (D-71). Only author and verifier can use
+     * `own_project_group`.
+     *
+     */
+    scope: 'all' | 'own_project_group';
+};
+
+export type Role = {
+    id: string;
+    level: 'view' | 'edit' | 'verify' | 'admin';
+    permissions: Array<string>;
+};
+
+export type RoleList = {
+    items: Array<Role>;
+};
+
+export type AccountInfo = {
+    /**
+     * Opaque stable ID.
+     */
+    id: string;
+    kind: 'work' | 'admin';
+    login: string;
+    person: PersonInfo;
+    roles: Array<RoleGrant>;
+    must_change_password: boolean;
+    /**
+     * Set while the account is locked after failed logins.
+     */
+    locked_until?: string;
+    disabled: boolean;
+    created_at: string;
+};
+
+export type PersonInfo = {
+    /**
+     * Opaque stable ID.
+     */
+    id: string;
+    name: string;
+    employee_number?: string;
+};
+
+export type AccountList = {
+    items: Array<AccountInfo>;
+};
+
+/**
+ * Give `person_id` for a person who already has an account (for example
+ * an admin account for the PPAP Staff, D-72), or `person_name` for a
+ * new person, not both.
+ *
+ */
+export type NewAccount = {
+    person_id?: string;
+    person_name?: string;
+    employee_number?: string;
+    kind: 'work' | 'admin';
+    login: string;
+    /**
+     * Roles of a work account. An admin account always holds only the admin role.
+     */
+    roles?: Array<RoleGrant>;
+};
+
+export type CreatedAccount = {
+    account: AccountInfo;
+    /**
+     * Shown only once. Give it to the owner of the account.
+     */
+    temporary_password: string;
+};
+
+export type TemporaryPassword = {
+    /**
+     * Shown only once. Give it to the owner of the account.
+     */
+    temporary_password: string;
+};
+
+export type RolesUpdate = {
+    roles: Array<RoleGrant>;
 };
 
 export type NewCustomer = {
@@ -103,9 +203,11 @@ export type ErrorDetail = {
      * Name of the field in the request body, for example code.
      */
     field: string;
-    code: 'required' | 'invalid_format' | 'too_short' | 'too_long' | 'too_common' | 'reserved' | 'taken' | 'incorrect';
+    code: 'required' | 'invalid_format' | 'too_short' | 'too_long' | 'too_common' | 'reserved' | 'taken' | 'incorrect' | 'not_allowed';
     message: string;
 };
+
+export type AccountId = string;
 
 export type GetHealthData = {
     body?: never;
@@ -147,7 +249,8 @@ export type LogoutErrors = {
      * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
      * session), `invalid_credentials` (401, login failed),
      * `password_change_required` (403, change the password first),
-     * `forbidden` (403), or `internal_error` (500).
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
      *
      */
     default: Error;
@@ -179,7 +282,8 @@ export type GetSessionErrors = {
      * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
      * session), `invalid_credentials` (401, login failed),
      * `password_change_required` (403, change the password first),
-     * `forbidden` (403), or `internal_error` (500).
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
      *
      */
     default: Error;
@@ -211,7 +315,8 @@ export type LoginErrors = {
      * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
      * session), `invalid_credentials` (401, login failed),
      * `password_change_required` (403, change the password first),
-     * `forbidden` (403), or `internal_error` (500).
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
      *
      */
     400: Error;
@@ -222,7 +327,8 @@ export type LoginErrors = {
      * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
      * session), `invalid_credentials` (401, login failed),
      * `password_change_required` (403, change the password first),
-     * `forbidden` (403), or `internal_error` (500).
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
      *
      */
     401: Error;
@@ -233,7 +339,8 @@ export type LoginErrors = {
      * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
      * session), `invalid_credentials` (401, login failed),
      * `password_change_required` (403, change the password first),
-     * `forbidden` (403), or `internal_error` (500).
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
      *
      */
     default: Error;
@@ -265,7 +372,8 @@ export type ChangePasswordErrors = {
      * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
      * session), `invalid_credentials` (401, login failed),
      * `password_change_required` (403, change the password first),
-     * `forbidden` (403), or `internal_error` (500).
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
      *
      */
     400: Error;
@@ -276,7 +384,8 @@ export type ChangePasswordErrors = {
      * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
      * session), `invalid_credentials` (401, login failed),
      * `password_change_required` (403, change the password first),
-     * `forbidden` (403), or `internal_error` (500).
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
      *
      */
     422: Error;
@@ -287,7 +396,8 @@ export type ChangePasswordErrors = {
      * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
      * session), `invalid_credentials` (401, login failed),
      * `password_change_required` (403, change the password first),
-     * `forbidden` (403), or `internal_error` (500).
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
      *
      */
     default: Error;
@@ -304,6 +414,245 @@ export type ChangePasswordResponses = {
 
 export type ChangePasswordResponse = ChangePasswordResponses[keyof ChangePasswordResponses];
 
+export type ListRolesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/roles';
+};
+
+export type ListRolesErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ListRolesError = ListRolesErrors[keyof ListRolesErrors];
+
+export type ListRolesResponses = {
+    /**
+     * All roles.
+     */
+    200: RoleList;
+};
+
+export type ListRolesResponse = ListRolesResponses[keyof ListRolesResponses];
+
+export type ListAccountsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/accounts';
+};
+
+export type ListAccountsErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ListAccountsError = ListAccountsErrors[keyof ListAccountsErrors];
+
+export type ListAccountsResponses = {
+    /**
+     * All accounts.
+     */
+    200: AccountList;
+};
+
+export type ListAccountsResponse = ListAccountsResponses[keyof ListAccountsResponses];
+
+export type CreateAccountData = {
+    body: NewAccount;
+    path?: never;
+    query?: never;
+    url: '/api/v1/accounts';
+};
+
+export type CreateAccountErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type CreateAccountError = CreateAccountErrors[keyof CreateAccountErrors];
+
+export type CreateAccountResponses = {
+    /**
+     * The account was created.
+     */
+    201: CreatedAccount;
+};
+
+export type CreateAccountResponse = CreateAccountResponses[keyof CreateAccountResponses];
+
+export type SetAccountRolesData = {
+    body: RolesUpdate;
+    path: {
+        accountId: string;
+    };
+    query?: never;
+    url: '/api/v1/accounts/{accountId}/roles';
+};
+
+export type SetAccountRolesErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type SetAccountRolesError = SetAccountRolesErrors[keyof SetAccountRolesErrors];
+
+export type SetAccountRolesResponses = {
+    /**
+     * The roles were replaced.
+     */
+    200: AccountInfo;
+};
+
+export type SetAccountRolesResponse = SetAccountRolesResponses[keyof SetAccountRolesResponses];
+
+export type ResetAccountPasswordData = {
+    body?: never;
+    path: {
+        accountId: string;
+    };
+    query?: never;
+    url: '/api/v1/accounts/{accountId}/password-reset';
+};
+
+export type ResetAccountPasswordErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ResetAccountPasswordError = ResetAccountPasswordErrors[keyof ResetAccountPasswordErrors];
+
+export type ResetAccountPasswordResponses = {
+    /**
+     * The new temporary password, shown only once.
+     */
+    200: TemporaryPassword;
+};
+
+export type ResetAccountPasswordResponse = ResetAccountPasswordResponses[keyof ResetAccountPasswordResponses];
+
+export type DisableAccountData = {
+    body?: never;
+    path: {
+        accountId: string;
+    };
+    query?: never;
+    url: '/api/v1/accounts/{accountId}/disable';
+};
+
+export type DisableAccountErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type DisableAccountError = DisableAccountErrors[keyof DisableAccountErrors];
+
+export type DisableAccountResponses = {
+    /**
+     * The account is disabled.
+     */
+    200: AccountInfo;
+};
+
+export type DisableAccountResponse = DisableAccountResponses[keyof DisableAccountResponses];
+
+export type EnableAccountData = {
+    body?: never;
+    path: {
+        accountId: string;
+    };
+    query?: never;
+    url: '/api/v1/accounts/{accountId}/enable';
+};
+
+export type EnableAccountErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type EnableAccountError = EnableAccountErrors[keyof EnableAccountErrors];
+
+export type EnableAccountResponses = {
+    /**
+     * The account is enabled.
+     */
+    200: AccountInfo;
+};
+
+export type EnableAccountResponse = EnableAccountResponses[keyof EnableAccountResponses];
+
 export type ListCustomersData = {
     body?: never;
     path?: never;
@@ -319,7 +668,8 @@ export type ListCustomersErrors = {
      * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
      * session), `invalid_credentials` (401, login failed),
      * `password_change_required` (403, change the password first),
-     * `forbidden` (403), or `internal_error` (500).
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
      *
      */
     default: Error;
@@ -351,7 +701,8 @@ export type CreateCustomerErrors = {
      * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
      * session), `invalid_credentials` (401, login failed),
      * `password_change_required` (403, change the password first),
-     * `forbidden` (403), or `internal_error` (500).
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
      *
      */
     400: Error;
@@ -362,7 +713,8 @@ export type CreateCustomerErrors = {
      * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
      * session), `invalid_credentials` (401, login failed),
      * `password_change_required` (403, change the password first),
-     * `forbidden` (403), or `internal_error` (500).
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
      *
      */
     409: Error;
@@ -373,7 +725,8 @@ export type CreateCustomerErrors = {
      * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
      * session), `invalid_credentials` (401, login failed),
      * `password_change_required` (403, change the password first),
-     * `forbidden` (403), or `internal_error` (500).
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
      *
      */
     422: Error;
@@ -384,7 +737,8 @@ export type CreateCustomerErrors = {
      * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
      * session), `invalid_credentials` (401, login failed),
      * `password_change_required` (403, change the password first),
-     * `forbidden` (403), or `internal_error` (500).
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
      *
      */
     default: Error;

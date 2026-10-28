@@ -12,6 +12,7 @@ import (
 
 	"golang.org/x/term"
 
+	"github.com/dkpauzi/revioten/internal/access"
 	"github.com/dkpauzi/revioten/internal/auth"
 	"github.com/dkpauzi/revioten/internal/db"
 	"github.com/dkpauzi/revioten/internal/problem"
@@ -68,7 +69,7 @@ func runCreateAdmin(args []string, in io.Reader, out io.Writer) error {
 		return err
 	}
 
-	actor, err := auth.NewService(pool).CreateFirstAdmin(ctx, opts.name, opts.login, password)
+	actor, err := auth.NewService(pool, access.NewChecker(pool)).CreateFirstAdmin(ctx, opts.name, opts.login, password)
 	var invalid *problem.ValidationError
 	var conflict *problem.ConflictError
 	switch {

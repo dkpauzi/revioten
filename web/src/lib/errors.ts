@@ -17,7 +17,13 @@ const problemKeys: Record<string, MessageKey> = {
 	'current_password:incorrect': 'passwordCurrentIncorrect',
 	'new_password:too_short': 'passwordTooShort',
 	'new_password:too_long': 'passwordTooLong',
-	'new_password:too_common': 'passwordTooCommon'
+	'new_password:too_common': 'passwordTooCommon',
+	'person_name:required': 'accountPersonRequired',
+	'login:required': 'accountLoginRequired',
+	'login:invalid_format': 'accountLoginInvalid',
+	'login:taken': 'accountLoginTaken',
+	'kind:taken': 'accountKindTaken',
+	'employee_number:taken': 'accountEmployeeNumberTaken'
 };
 
 // problemText memberi teks layar untuk satu masalah input. Masalah yang belum
@@ -31,6 +37,9 @@ export function problemText(detail: ErrorDetail): string {
 export function failureText(failure: ApiFailure): string {
 	if (failure.status === 0) {
 		return t('errorNetwork');
+	}
+	if (failure.body?.code === 'forbidden') {
+		return t('errorForbidden');
 	}
 	if (failure.body) {
 		// Request ID membantu admin menemukan detail error di log server.

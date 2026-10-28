@@ -10,7 +10,7 @@ import (
 
 	"go.yaml.in/yaml/v3"
 
-	"github.com/dkpauzi/revioten/internal/auth"
+	"github.com/dkpauzi/revioten/internal/access"
 	"github.com/dkpauzi/revioten/internal/problem"
 )
 
@@ -22,6 +22,13 @@ func TestAPIRequiresSession(t *testing.T) {
 		{http.MethodGet, "/api/v1/session", ""},
 		{http.MethodDelete, "/api/v1/session", ""},
 		{http.MethodPut, "/api/v1/account/password", `{"current_password":"a","new_password":"b"}`},
+		{http.MethodGet, "/api/v1/roles", ""},
+		{http.MethodGet, "/api/v1/accounts", ""},
+		{http.MethodPost, "/api/v1/accounts", `{"kind":"work","login":"x.uji"}`},
+		{http.MethodPut, "/api/v1/accounts/akun-1/roles", `{"roles":[]}`},
+		{http.MethodPost, "/api/v1/accounts/akun-1/password-reset", ""},
+		{http.MethodPost, "/api/v1/accounts/akun-1/disable", ""},
+		{http.MethodPost, "/api/v1/accounts/akun-1/enable", ""},
 	}
 	srv := newTestServer(t, nil, Deps{})
 	for _, tt := range protected {
@@ -144,12 +151,13 @@ func TestGetSession(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
 		t.Fatalf("isi bukan JSON yang valid: %v", err)
 	}
-	want := Session{
-		Account: Account{Id: "akun-uji", Login: "admin.uji", Kind: AccountKindAdmin},
-		Person:  Person{Id: "orang-uji", Name: "Admin Uji"},
+	if body.Account != (Account{Id: "akun-uji", Login: "admin.uji", Kind: AccountKindAdmin}) ||
+		body.Person != (Person{Id: "orang-uji", Name: "Admin Uji"}) || body.MustChangePassword {
+		t.Errorf("isi %+v", body)
 	}
-	if body != want {
-		t.Errorf("isi %+v, ingin %+v", body, want)
+	// Daftar hak dari Permissions, untuk menampilkan atau menyembunyikan menu.
+	if !slices.Equal(body.Permissions, []string{"L-1", "A-1"}) {
+		t.Errorf("permissions %v, ingin [L-1 A-1]", body.Permissions)
 	}
 }
 
@@ -297,7 +305,7 @@ func TestPageGate(t *testing.T) {
 // TestSessionActorInContext: handler API menerima actor dari sesi.
 func TestSessionActorInContext(t *testing.T) {
 	fake := newFakeAuth()
-	other := auth.Actor{AccountID: "akun-lain", AccountKind: auth.KindWork, Login: "penyusun.uji", PersonID: "orang-lain", PersonName: "Penyusun Uji"}
+	other := access.Actor{Type: access.ActorHuman, AccountID: "akun-lain", AccountKind: access.AccountWork, Login: "penyusun.uji", PersonID: "orang-lain", PersonName: "Penyusun Uji"}
 	fake.sessions["token-lain"] = other
 	rec := newTestServer(t, nil, Deps{Auth: fake}).doWithCookie("token-lain", http.MethodGet, "/api/v1/session", "")
 

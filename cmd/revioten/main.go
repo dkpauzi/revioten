@@ -17,6 +17,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/dkpauzi/revioten/internal/access"
 	"github.com/dkpauzi/revioten/internal/auth"
 	"github.com/dkpauzi/revioten/internal/customer"
 	"github.com/dkpauzi/revioten/internal/db"
@@ -65,13 +66,16 @@ func runServer(args []string) error {
 		return err
 	}
 
+	// Satu titik pemeriksaan izin dipakai semua service (M1.2).
+	checker := access.NewChecker(pool)
 	srv := &http.Server{
 		Addr: *addr,
 		// web.Files berisi hasil build SvelteKit yang di-embed ke binary ini.
 		Handler: server.NewHandler(web.Files(), server.Deps{
 			DB:        pool,
-			Customers: customer.NewService(pool),
-			Auth:      auth.NewService(pool),
+			Customers: customer.NewService(pool, checker),
+			Auth:      auth.NewService(pool, checker),
+			Access:    checker,
 		}),
 		// Batas waktu membaca header permintaan. Tanpa batas ini, klien yang
 		// sangat lambat bisa menahan koneksi selamanya (pengaman dasar, G9).

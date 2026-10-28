@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/dkpauzi/revioten/internal/access"
 	"github.com/dkpauzi/revioten/internal/problem"
 )
 
@@ -75,14 +76,38 @@ func (a *apiServer) requestError(w http.ResponseWriter, r *http.Request, err err
 		"The request body is not valid JSON for this address.", nil)
 }
 
-// responseError menangani error tak terduga dari handler, misalnya database
-// putus. Pengguna hanya menerima pesan umum dan request ID; detailnya dicatat
-// di log server (R-API-13, E-18).
+// responseError menerjemahkan error dari handler ke format error API. Semua
+// handler cukup mengembalikan error dari paket domain; status dan kodenya
+// ditentukan di satu tempat ini:
+//   - access.ErrForbidden: 403 forbidden (M1.2);
+//   - problem.ErrNotFound: 404 not_found;
+//   - *problem.ValidationError: 422 validation_failed, dengan rincian per field;
+//   - *problem.ConflictError: 409 conflict, dengan rincian per field;
+//   - error lain, misalnya database putus: 500 internal_error. Pengguna hanya
+//     menerima pesan umum dan request ID; detailnya dicatat di log server
+//     (R-API-13, E-18).
 func (a *apiServer) responseError(w http.ResponseWriter, r *http.Request, err error) {
-	a.log.Error("permintaan API gagal",
-		"request_id", requestIDFrom(r.Context()), "method", r.Method, "path", r.URL.Path, "error", err)
-	a.writeError(w, r, http.StatusInternalServerError, ErrorCodeInternalError,
-		"Something went wrong on the server. Give the request ID to the administrator.", nil)
+	var invalid *problem.ValidationError
+	var conflict *problem.ConflictError
+	switch {
+	case errors.Is(err, access.ErrForbidden):
+		a.log.Info("akses ditolak", "request_id", requestIDFrom(r.Context()), "login", actorFrom(r.Context()).Login,
+			"method", r.Method, "path", r.URL.Path)
+		a.writeError(w, r, http.StatusForbidden, ErrorCodeForbidden, "You do not have the right to do this.", nil)
+	case errors.Is(err, problem.ErrNotFound):
+		a.writeError(w, r, http.StatusNotFound, ErrorCodeNotFound, "The requested data does not exist.", nil)
+	case errors.As(err, &invalid):
+		a.writeError(w, r, http.StatusUnprocessableEntity, ErrorCodeValidationFailed,
+			"Some fields are not valid.", toDetails(invalid.Problems))
+	case errors.As(err, &conflict):
+		a.writeError(w, r, http.StatusConflict, ErrorCodeConflict,
+			"The data conflicts with data that already exists.", toDetails(conflict.Problems))
+	default:
+		a.log.Error("permintaan API gagal",
+			"request_id", requestIDFrom(r.Context()), "method", r.Method, "path", r.URL.Path, "error", err)
+		a.writeError(w, r, http.StatusInternalServerError, ErrorCodeInternalError,
+			"Something went wrong on the server. Give the request ID to the administrator.", nil)
+	}
 }
 
 // writeError menulis satu error dalam format kontrak (skema Error).
@@ -104,24 +129,6 @@ func (a *apiServer) crossOriginDenied(w http.ResponseWriter, r *http.Request) {
 		"origin", r.Header.Get("Origin"), "sec_fetch_site", r.Header.Get("Sec-Fetch-Site"))
 	a.writeError(w, r, http.StatusForbidden, ErrorCodeForbidden,
 		"Requests that change data must come from this application.", nil)
-}
-
-// problemResponse menerjemahkan penolakan input dari paket domain
-// (internal/problem) menjadi status dan isi error API: ValidationError
-// menjadi 422 validation_failed, ConflictError menjadi 409 conflict.
-// ok bernilai false bila err bukan penolakan input.
-func problemResponse(ctx context.Context, err error) (status int, body Error, ok bool) {
-	var invalid *problem.ValidationError
-	var conflict *problem.ConflictError
-	switch {
-	case errors.As(err, &invalid):
-		return http.StatusUnprocessableEntity,
-			errorBody(ctx, ErrorCodeValidationFailed, "Some fields are not valid.", toDetails(invalid.Problems)), true
-	case errors.As(err, &conflict):
-		return http.StatusConflict,
-			errorBody(ctx, ErrorCodeConflict, "The data conflicts with data that already exists.", toDetails(conflict.Problems)), true
-	}
-	return 0, Error{}, false
 }
 
 // toDetails mengubah masalah input dari domain menjadi ErrorDetail kontrak.

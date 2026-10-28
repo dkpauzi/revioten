@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/dkpauzi/revioten/internal/access"
 	"github.com/dkpauzi/revioten/internal/auth"
 	"github.com/dkpauzi/revioten/internal/customer"
 )
@@ -18,20 +19,38 @@ type Pinger interface {
 	Ping(ctx context.Context) error
 }
 
+// Setiap operasi domain di bawah menerima aktor dan memeriksa izinnya sendiri
+// lewat access.Authorize (R-API-01, M1.2). Adapter HTTP ini hanya meneruskan
+// aktor dari sesi.
+
 // CustomerService adalah operasi customer yang dipakai API.
 // *customer.Service memenuhinya; test memakai versi palsu.
 type CustomerService interface {
-	List(ctx context.Context) ([]customer.Customer, error)
-	Create(ctx context.Context, in customer.NewCustomer) (customer.Customer, error)
+	List(ctx context.Context, actor access.Actor) ([]customer.Customer, error)
+	Create(ctx context.Context, actor access.Actor, in customer.NewCustomer) (customer.Customer, error)
 }
 
-// AuthService adalah operasi login dan sesi yang dipakai API.
+// AuthService adalah operasi login, sesi, dan pengelolaan akun yang dipakai API.
 // *auth.Service memenuhinya; test memakai versi palsu.
 type AuthService interface {
-	Login(ctx context.Context, login, password string) (auth.Actor, string, error)
-	Authenticate(ctx context.Context, token string) (auth.Actor, error)
-	Logout(ctx context.Context, token string) error
-	ChangePassword(ctx context.Context, actor auth.Actor, current, newPassword string) (string, error)
+	Login(ctx context.Context, login, password string) (access.Actor, string, error)
+	Authenticate(ctx context.Context, token string) (access.Actor, error)
+	Logout(ctx context.Context, actor access.Actor, token string) error
+	ChangePassword(ctx context.Context, actor access.Actor, current, newPassword string) (string, error)
+	ListAccounts(ctx context.Context, actor access.Actor) ([]auth.AccountInfo, error)
+	GetAccount(ctx context.Context, actor access.Actor, accountID string) (auth.AccountInfo, error)
+	CreateAccount(ctx context.Context, actor access.Actor, in auth.NewAccount) (auth.AccountInfo, string, error)
+	ResetPassword(ctx context.Context, actor access.Actor, accountID string) (string, error)
+	DisableAccount(ctx context.Context, actor access.Actor, accountID string) (auth.AccountInfo, error)
+	EnableAccount(ctx context.Context, actor access.Actor, accountID string) (auth.AccountInfo, error)
+}
+
+// AccessService adalah operasi hak akses yang dipakai API.
+// *access.Checker memenuhinya; test memakai versi palsu.
+type AccessService interface {
+	Permissions(ctx context.Context, actor access.Actor) ([]access.Permission, error)
+	ListRoles(ctx context.Context, actor access.Actor) ([]access.Role, error)
+	SetRoles(ctx context.Context, actor access.Actor, accountID string, grants []access.RoleGrant) error
 }
 
 // Deps berisi semua yang dibutuhkan handler.
@@ -39,6 +58,7 @@ type Deps struct {
 	DB        Pinger
 	Customers CustomerService
 	Auth      AuthService
+	Access    AccessService
 	// Logger untuk log server. Bila nil, dipakai slog.Default().
 	Logger *slog.Logger
 }
@@ -54,7 +74,7 @@ func NewHandler(ui fs.FS, deps Deps) http.Handler {
 	if log == nil {
 		log = slog.Default()
 	}
-	a := &apiServer{db: deps.DB, customers: deps.Customers, auth: deps.Auth, log: log}
+	a := &apiServer{db: deps.DB, customers: deps.Customers, auth: deps.Auth, access: deps.Access, log: log}
 
 	// Route dari kontrak didaftarkan oleh kode hasil generate ke mux khusus API.
 	// Strict handler membaca body JSON dan menulis jawaban bertipe; error-nya
@@ -92,10 +112,12 @@ func NewHandler(ui fs.FS, deps Deps) http.Handler {
 }
 
 // apiServer menjalankan operasi di kontrak (StrictServerInterface di api.gen.go).
-// Isinya dibagi per file: health.go, session.go, customers.go, dan apierror.go.
+// Isinya dibagi per file: health.go, session.go, accounts.go, customers.go,
+// dan apierror.go.
 type apiServer struct {
 	db        Pinger
 	customers CustomerService
 	auth      AuthService
+	access    AccessService
 	log       *slog.Logger
 }

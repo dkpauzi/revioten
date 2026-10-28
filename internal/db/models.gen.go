@@ -22,6 +22,12 @@ type Account struct {
 	CreatedAt          time.Time
 }
 
+type AccountRole struct {
+	AccountID string
+	RoleID    string
+	Scope     string
+}
+
 type Customer struct {
 	ID        string
 	Code      string
@@ -29,11 +35,28 @@ type Customer struct {
 	CreatedAt time.Time
 }
 
+type Permission struct {
+	Code      string
+	Level     string
+	SortOrder int32
+}
+
 type Person struct {
 	ID             string
 	Name           string
 	EmployeeNumber *string
 	CreatedAt      time.Time
+}
+
+type Role struct {
+	ID        string
+	Level     string
+	SortOrder int32
+}
+
+type RolePermission struct {
+	RoleID         string
+	PermissionCode string
 }
 
 type Session struct {

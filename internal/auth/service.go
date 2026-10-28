@@ -11,21 +11,28 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/dkpauzi/revioten/internal/access"
 	"github.com/dkpauzi/revioten/internal/db"
 	"github.com/dkpauzi/revioten/internal/problem"
 )
 
 // Service menjalankan login, sesi, dan ganti password terhadap database.
 type Service struct {
-	pool *pgxpool.Pool
-	q    *db.Queries
+	pool  *pgxpool.Pool
+	q     *db.Queries
+	authz access.Authorizer
 	// now bisa diganti di test supaya batas waktu bisa dites tanpa menunggu.
 	now func() time.Time
+	// afterAdminCount hanya diisi test: dipanggil di dalam transaksi
+	// DisableAccount setelah jumlah admin aktif dihitung, untuk memaksa dua
+	// transaksi berjalan bersamaan (lihat TestDisableLastAdminConcurrent).
+	afterAdminCount func()
 }
 
-// NewService membuat Service yang memakai pool database.
-func NewService(pool *pgxpool.Pool) *Service {
-	return &Service{pool: pool, q: db.New(pool), now: time.Now}
+// NewService membuat Service yang memakai pool database. authz memeriksa izin
+// setiap operasi yang punya aktor (M1.2).
+func NewService(pool *pgxpool.Pool, authz access.Authorizer) *Service {
+	return &Service{pool: pool, q: db.New(pool), authz: authz, now: time.Now}
 }
 
 // dummyHash dipakai saat nama login tidak ada: hash tetap dihitung, supaya
@@ -41,33 +48,33 @@ var dummyHash = sync.OnceValue(func() string {
 
 // Login memeriksa nama login dan password, lalu membuat sesi baru. Hasilnya
 // actor dan token sesi untuk cookie. Semua kegagalan memberi ErrInvalidCredentials.
-func (s *Service) Login(ctx context.Context, login, password string) (Actor, string, error) {
+func (s *Service) Login(ctx context.Context, login, password string) (access.Actor, string, error) {
 	acc, err := s.q.GetAccountByLogin(ctx, normalizeLogin(login))
 	if errors.Is(err, pgx.ErrNoRows) {
 		_, _, _ = verifyPassword(password, dummyHash())
-		return Actor{}, "", ErrInvalidCredentials
+		return access.Actor{}, "", ErrInvalidCredentials
 	}
 	if err != nil {
-		return Actor{}, "", fmt.Errorf("mengambil akun: %w", err)
+		return access.Actor{}, "", fmt.Errorf("mengambil akun: %w", err)
 	}
 
 	now := s.now()
 	match, needsRehash, err := verifyPassword(password, acc.PasswordHash)
 	if err != nil {
-		return Actor{}, "", fmt.Errorf("memeriksa password akun %s: %w", acc.Login, err)
+		return access.Actor{}, "", fmt.Errorf("memeriksa password akun %s: %w", acc.Login, err)
 	}
 	switch {
 	case acc.DisabledAt != nil:
-		return Actor{}, "", ErrInvalidCredentials
+		return access.Actor{}, "", ErrInvalidCredentials
 	case acc.LockedUntil != nil && now.Before(*acc.LockedUntil):
 		// Selama terkunci, percobaan selalu ditolak dan tidak dihitung, jadi
 		// penyerang paling banyak mendapat 10 tebakan per 15 menit.
-		return Actor{}, "", ErrInvalidCredentials
+		return access.Actor{}, "", ErrInvalidCredentials
 	case !match:
 		if err := s.recordFailure(ctx, acc.ID, acc.Login, now); err != nil {
-			return Actor{}, "", err
+			return access.Actor{}, "", err
 		}
-		return Actor{}, "", ErrInvalidCredentials
+		return access.Actor{}, "", ErrInvalidCredentials
 	}
 
 	var token string
@@ -100,9 +107,10 @@ func (s *Service) Login(ctx context.Context, login, password string) (Actor, str
 		return err
 	})
 	if err != nil {
-		return Actor{}, "", fmt.Errorf("membuat sesi: %w", err)
+		return access.Actor{}, "", fmt.Errorf("membuat sesi: %w", err)
 	}
-	return Actor{
+	return access.Actor{
+		Type:               access.ActorHuman,
 		AccountID:          acc.ID,
 		AccountKind:        acc.Kind,
 		Login:              acc.Login,
@@ -152,31 +160,32 @@ func startSession(ctx context.Context, q *db.Queries, accountID string, now time
 // Authenticate mencari sesi dari token cookie. Sesi yang melewati batas tidak
 // aktif atau batas mutlak, atau milik akun yang dinonaktifkan, dihapus dan
 // dijawab ErrUnauthenticated. Sesi yang berlaku diperpanjang batas tidak aktifnya.
-func (s *Service) Authenticate(ctx context.Context, token string) (Actor, error) {
+func (s *Service) Authenticate(ctx context.Context, token string) (access.Actor, error) {
 	if token == "" {
-		return Actor{}, ErrUnauthenticated
+		return access.Actor{}, ErrUnauthenticated
 	}
 	hash := hashToken(token)
 	row, err := s.q.GetSession(ctx, hash)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return Actor{}, ErrUnauthenticated
+		return access.Actor{}, ErrUnauthenticated
 	}
 	if err != nil {
-		return Actor{}, fmt.Errorf("mengambil sesi: %w", err)
+		return access.Actor{}, fmt.Errorf("mengambil sesi: %w", err)
 	}
 
 	now := s.now()
 	expired := !now.Before(row.ExpiresAt) || !now.Before(row.LastSeenAt.Add(idleTimeout))
 	if expired || row.DisabledAt != nil {
 		if err := s.q.DeleteSession(ctx, hash); err != nil {
-			return Actor{}, fmt.Errorf("menghapus sesi: %w", err)
+			return access.Actor{}, fmt.Errorf("menghapus sesi: %w", err)
 		}
-		return Actor{}, ErrUnauthenticated
+		return access.Actor{}, ErrUnauthenticated
 	}
 	if err := s.q.TouchSession(ctx, db.TouchSessionParams{TokenHash: hash, LastSeenAt: now}); err != nil {
-		return Actor{}, fmt.Errorf("memperbarui sesi: %w", err)
+		return access.Actor{}, fmt.Errorf("memperbarui sesi: %w", err)
 	}
-	return Actor{
+	return access.Actor{
+		Type:               access.ActorHuman,
 		AccountID:          row.AccountID,
 		AccountKind:        row.Kind,
 		Login:              row.Login,
@@ -186,9 +195,12 @@ func (s *Service) Authenticate(ctx context.Context, token string) (Actor, error)
 	}, nil
 }
 
-// Logout mengakhiri sesi di server (ASVS 7.4.1). Token yang tidak dikenal
-// tidak dianggap error.
-func (s *Service) Logout(ctx context.Context, token string) error {
+// Logout mengakhiri sesi actor di server (ASVS 7.4.1). Token yang tidak
+// dikenal tidak dianggap error.
+func (s *Service) Logout(ctx context.Context, actor access.Actor, token string) error {
+	if err := s.authz.Authorize(ctx, actor, access.ManageOwnAccount, access.Resource{AccountID: actor.AccountID}); err != nil {
+		return err
+	}
 	if err := s.q.DeleteSession(ctx, hashToken(token)); err != nil {
 		return fmt.Errorf("menghapus sesi: %w", err)
 	}
@@ -198,7 +210,10 @@ func (s *Service) Logout(ctx context.Context, token string) error {
 // ChangePassword mengganti password akun actor. Password lama wajib benar
 // (ASVS 6.2.3). Setelah berhasil, semua sesi akun itu berakhir dan sesi baru
 // dibuat untuk pemanggil (ASVS 7.4.3 dan 7.2.4); token barunya dikembalikan.
-func (s *Service) ChangePassword(ctx context.Context, actor Actor, current, newPassword string) (string, error) {
+func (s *Service) ChangePassword(ctx context.Context, actor access.Actor, current, newPassword string) (string, error) {
+	if err := s.authz.Authorize(ctx, actor, access.ManageOwnAccount, access.Resource{AccountID: actor.AccountID}); err != nil {
+		return "", err
+	}
 	acc, err := s.q.GetAccountByID(ctx, actor.AccountID)
 	if err != nil {
 		return "", fmt.Errorf("mengambil akun: %w", err)

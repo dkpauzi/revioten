@@ -25,6 +25,9 @@ info:
       Without a valid session the answer is 401 `unauthenticated`.
     - Requests that change data from another site are refused with 403
       `forbidden` (checked with the Sec-Fetch-Site and Origin headers).
+    - Every operation checks the rights of the caller (M1.2). Without the
+      right, the answer is 403 `forbidden`. The rights of the caller are
+      listed in `Session.permissions`, with codes from the user map (U3).
 # Semua operasi butuh sesi login (M1.1, UC-01), kecuali yang menulis security: [].
 security:
   - sessionCookie: []
@@ -128,6 +131,123 @@ paths:
           $ref: '#/components/responses/Error'
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/roles:
+    get:
+      operationId: listRoles
+      summary: The role catalog with the rights of each role (A-1)
+      responses:
+        '200':
+          description: All roles.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleList'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/accounts:
+    get:
+      operationId: listAccounts
+      summary: All accounts with their person and roles (A-1)
+      responses:
+        '200':
+          description: All accounts.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountList'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: createAccount
+      summary: Create an account with a temporary password (A-1)
+      description: |
+        The temporary password is returned only in this response. The owner
+        must change it at the first login.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewAccount'
+      responses:
+        '201':
+          description: The account was created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreatedAccount'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/accounts/{accountId}/roles:
+    put:
+      operationId: setAccountRoles
+      summary: Replace the roles of a work account (A-1)
+      parameters:
+        - $ref: '#/components/parameters/AccountId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RolesUpdate'
+      responses:
+        '200':
+          description: The roles were replaced.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountInfo'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/accounts/{accountId}/password-reset:
+    post:
+      operationId: resetAccountPassword
+      summary: Set a new temporary password for another account (A-1)
+      description: |
+        All sessions of the account end, the account is unlocked, and the
+        owner must change the password at the next login.
+      parameters:
+        - $ref: '#/components/parameters/AccountId'
+      responses:
+        '200':
+          description: The new temporary password, shown only once.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemporaryPassword'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/accounts/{accountId}/disable:
+    post:
+      operationId: disableAccount
+      summary: Disable another account and end its sessions (A-1)
+      description: The last active admin account cannot be disabled (D-73).
+      parameters:
+        - $ref: '#/components/parameters/AccountId'
+      responses:
+        '200':
+          description: The account is disabled.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountInfo'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/accounts/{accountId}/enable:
+    post:
+      operationId: enableAccount
+      summary: Enable an account again and unlock it (A-1)
+      parameters:
+        - $ref: '#/components/parameters/AccountId'
+      responses:
+        '200':
+          description: The account is enabled.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountInfo'
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/customers:
     get:
       operationId: listCustomers
@@ -166,6 +286,13 @@ paths:
         default:
           $ref: '#/components/responses/Error'
 components:
+  parameters:
+    AccountId:
+      name: accountId
+      in: path
+      required: true
+      schema:
+        type: string
   securitySchemes:
     sessionCookie:
       type: apiKey
@@ -180,7 +307,8 @@ components:
         (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
         session), `invalid_credentials` (401, login failed),
         `password_change_required` (403, change the password first),
-        `forbidden` (403), or `internal_error` (500).
+        `forbidden` (403, the caller lacks the right or the request came
+        from another site), or `internal_error` (500).
       content:
         application/json:
           schema:
@@ -226,7 +354,7 @@ components:
           format: password
     Session:
       type: object
-      required: [account, person, must_change_password]
+      required: [account, person, must_change_password, permissions]
       properties:
         account:
           $ref: '#/components/schemas/Account'
@@ -237,6 +365,14 @@ components:
           description: |
             True after an admin reset the password. Until the password is
             changed, other operations answer 403 `password_change_required`.
+        permissions:
+          type: array
+          description: |
+            The rights of the caller, as codes from the user map (U3), for
+            example L-1 or A-2. Screens use them to show or hide actions; the
+            server still checks every operation.
+          items:
+            type: string
     Account:
       type: object
       required: [id, login, kind]
@@ -272,6 +408,138 @@ components:
           description: |
             15 to 128 characters. Common passwords and passwords that contain
             the login name, the person name, or the system name are refused.
+    RoleGrant:
+      type: object
+      required: [role, scope]
+      properties:
+        role:
+          type: string
+          description: Role ID, for example author or verifier.
+        scope:
+          type: string
+          description: |
+            `all` for all customers, or `own_project_group` for the customers
+            of the project group where the person is Project Leader or
+            Project Engineer (D-71). Only author and verifier can use
+            `own_project_group`.
+          enum: [all, own_project_group]
+    Role:
+      type: object
+      required: [id, level, permissions]
+      properties:
+        id:
+          type: string
+        level:
+          type: string
+          enum: [view, edit, verify, admin]
+        permissions:
+          type: array
+          items:
+            type: string
+    RoleList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Role'
+    AccountInfo:
+      type: object
+      required: [id, kind, login, person, roles, must_change_password, disabled, created_at]
+      properties:
+        id:
+          type: string
+          description: Opaque stable ID.
+        kind:
+          type: string
+          enum: [work, admin]
+        login:
+          type: string
+        person:
+          $ref: '#/components/schemas/PersonInfo'
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleGrant'
+        must_change_password:
+          type: boolean
+        locked_until:
+          type: string
+          format: date-time
+          description: Set while the account is locked after failed logins.
+        disabled:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+    PersonInfo:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+          description: Opaque stable ID.
+        name:
+          type: string
+        employee_number:
+          type: string
+    AccountList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccountInfo'
+    NewAccount:
+      type: object
+      required: [kind, login]
+      description: |
+        Give `person_id` for a person who already has an account (for example
+        an admin account for the PPAP Staff, D-72), or `person_name` for a
+        new person, not both.
+      properties:
+        person_id:
+          type: string
+        person_name:
+          type: string
+        employee_number:
+          type: string
+        kind:
+          type: string
+          enum: [work, admin]
+        login:
+          type: string
+        roles:
+          type: array
+          description: Roles of a work account. An admin account always holds only the admin role.
+          items:
+            $ref: '#/components/schemas/RoleGrant'
+    CreatedAccount:
+      type: object
+      required: [account, temporary_password]
+      properties:
+        account:
+          $ref: '#/components/schemas/AccountInfo'
+        temporary_password:
+          type: string
+          description: Shown only once. Give it to the owner of the account.
+    TemporaryPassword:
+      type: object
+      required: [temporary_password]
+      properties:
+        temporary_password:
+          type: string
+          description: Shown only once. Give it to the owner of the account.
+    RolesUpdate:
+      type: object
+      required: [roles]
+      properties:
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleGrant'
     NewCustomer:
       type: object
       required: [code, name]
@@ -334,6 +602,6 @@ components:
           description: Name of the field in the request body, for example code.
         code:
           type: string
-          enum: [required, invalid_format, too_short, too_long, too_common, reserved, taken, incorrect]
+          enum: [required, invalid_format, too_short, too_long, too_common, reserved, taken, incorrect, not_allowed]
         message:
           type: string

@@ -11,14 +11,15 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/dkpauzi/revioten/internal/access"
 	"github.com/dkpauzi/revioten/internal/problem"
 )
 
-// Jenis akun (E-02, D-72). Akun admin hanya untuk tugas admin dan tidak pernah
-// memegang peran kerja (R-SEC-13).
+// Jenis akun memakai konstanta paket access (E-02, D-72): KindWork dan
+// KindAdmin adalah nama pendek untuk dipakai di paket ini.
 const (
-	KindWork  = "work"
-	KindAdmin = "admin"
+	KindWork  = access.AccountWork
+	KindAdmin = access.AccountAdmin
 )
 
 // Aturan sesi dan gagal login (ASUMSI E-08, dicek 28 Oktober 2026):
@@ -51,19 +52,6 @@ var (
 	ErrAdminExists = errors.New("akun admin sudah ada")
 )
 
-// Actor adalah siapa yang memanggil sebuah operasi (R-API-03). Saat ini
-// hanya manusia lewat sesi login; service account dan customer user menyusul.
-type Actor struct {
-	AccountID   string
-	AccountKind string // KindWork atau KindAdmin
-	Login       string
-	PersonID    string
-	PersonName  string
-	// MustChangePassword true bila password direset admin. Selama itu, akun
-	// hanya boleh mengganti password, melihat sesinya, dan logout (E-08).
-	MustChangePassword bool
-}
-
 // normalizeLogin merapikan nama login: spasi di tepi dibuang dan huruf dibuat kecil.
 func normalizeLogin(login string) string {
 	return strings.ToLower(strings.TrimSpace(login))
@@ -87,14 +75,15 @@ func checkLogin(login string) (problem.Problem, bool) {
 
 // checkPersonName memeriksa nama orang yang sudah dirapikan: wajib, paling
 // banyak 200 karakter, dan satu baris (sama dengan nama customer, ASUMSI E-21).
-func checkPersonName(name string) (problem.Problem, bool) {
+// field adalah nama field di kontrak API.
+func checkPersonName(field, name string) (problem.Problem, bool) {
 	switch {
 	case name == "":
-		return problem.Problem{Field: "name", Code: problem.Required, Message: "Enter the name of the person."}, false
+		return problem.Problem{Field: field, Code: problem.Required, Message: "Enter the name of the person."}, false
 	case utf8.RuneCountInString(name) > 200:
-		return problem.Problem{Field: "name", Code: problem.TooLong, Message: "Use at most 200 characters."}, false
+		return problem.Problem{Field: field, Code: problem.TooLong, Message: "Use at most 200 characters."}, false
 	case strings.ContainsFunc(name, unicode.IsControl):
-		return problem.Problem{Field: "name", Code: problem.InvalidFormat, Message: "Use one line without control characters."}, false
+		return problem.Problem{Field: field, Code: problem.InvalidFormat, Message: "Use one line without control characters."}, false
 	}
 	return problem.Problem{}, true
 }

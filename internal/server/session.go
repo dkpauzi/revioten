@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/dkpauzi/revioten/internal/access"
 	"github.com/dkpauzi/revioten/internal/auth"
 )
 
@@ -35,7 +36,7 @@ type sessionKey struct{}
 
 // session adalah sesi yang sudah diperiksa requireSession.
 type session struct {
-	actor auth.Actor
+	actor access.Actor
 	token string
 }
 
@@ -44,6 +45,12 @@ type session struct {
 func sessionFrom(ctx context.Context) session {
 	s, _ := ctx.Value(sessionKey{}).(session)
 	return s
+}
+
+// actorFrom mengambil aktor dari sesi. Pada route tanpa sesi hasilnya aktor
+// kosong, yang selalu ditolak access.Authorize.
+func actorFrom(ctx context.Context) access.Actor {
+	return sessionFrom(ctx).actor
 }
 
 // sessionToken membaca token dari cookie sesi, atau "" bila tidak ada.
@@ -123,9 +130,15 @@ func expiredSessionCookie() string {
 	return c.String()
 }
 
-// GetSession menjawab GET /api/v1/session: siapa yang sedang login.
+// GetSession menjawab GET /api/v1/session: siapa yang sedang login, beserta
+// hak-haknya.
 func (a *apiServer) GetSession(ctx context.Context, _ GetSessionRequestObject) (GetSessionResponseObject, error) {
-	return GetSession200JSONResponse(toAPISession(sessionFrom(ctx).actor)), nil
+	actor := actorFrom(ctx)
+	perms, err := a.access.Permissions(ctx, actor)
+	if err != nil {
+		return nil, err
+	}
+	return GetSession200JSONResponse(toAPISession(actor, perms)), nil
 }
 
 // Login menjawab POST /api/v1/session.
@@ -141,13 +154,17 @@ func (a *apiServer) Login(ctx context.Context, req LoginRequestObject) (LoginRes
 		return nil, err
 	}
 	a.log.Info("login berhasil", "request_id", requestIDFrom(ctx), "login", actor.Login)
+	perms, err := a.access.Permissions(ctx, actor)
+	if err != nil {
+		return nil, err
+	}
 	cookie := sessionCookie(token)
-	return Login200JSONResponse{Body: toAPISession(actor), Headers: Login200ResponseHeaders{SetCookie: &cookie}}, nil
+	return Login200JSONResponse{Body: toAPISession(actor, perms), Headers: Login200ResponseHeaders{SetCookie: &cookie}}, nil
 }
 
 // Logout menjawab DELETE /api/v1/session.
 func (a *apiServer) Logout(ctx context.Context, _ LogoutRequestObject) (LogoutResponseObject, error) {
-	if err := a.auth.Logout(ctx, sessionFrom(ctx).token); err != nil {
+	if err := a.auth.Logout(ctx, actorFrom(ctx), sessionFrom(ctx).token); err != nil {
 		return nil, err
 	}
 	cookie := expiredSessionCookie()
@@ -156,22 +173,31 @@ func (a *apiServer) Logout(ctx context.Context, _ LogoutRequestObject) (LogoutRe
 
 // ChangePassword menjawab PUT /api/v1/account/password.
 func (a *apiServer) ChangePassword(ctx context.Context, req ChangePasswordRequestObject) (ChangePasswordResponseObject, error) {
-	token, err := a.auth.ChangePassword(ctx, sessionFrom(ctx).actor, req.Body.CurrentPassword, req.Body.NewPassword)
-	if status, body, ok := problemResponse(ctx, err); ok && status == http.StatusUnprocessableEntity {
-		return ChangePassword422JSONResponse(body), nil
-	}
+	token, err := a.auth.ChangePassword(ctx, actorFrom(ctx), req.Body.CurrentPassword, req.Body.NewPassword)
 	if err != nil {
+		// Penolakan input (422) dan error lain diterjemahkan responseError.
 		return nil, err
 	}
 	cookie := sessionCookie(token)
 	return ChangePassword204Response{Headers: ChangePassword204ResponseHeaders{SetCookie: &cookie}}, nil
 }
 
-// toAPISession mengubah actor menjadi Session kontrak API.
-func toAPISession(actor auth.Actor) Session {
+// toAPISession mengubah actor dan hak-haknya menjadi Session kontrak API.
+func toAPISession(actor access.Actor, perms []access.Permission) Session {
 	return Session{
 		Account:            Account{Id: actor.AccountID, Login: actor.Login, Kind: AccountKind(actor.AccountKind)},
 		Person:             Person{Id: actor.PersonID, Name: actor.PersonName},
 		MustChangePassword: actor.MustChangePassword,
+		Permissions:        permissionCodes(perms),
 	}
+}
+
+// permissionCodes mengubah daftar hak menjadi teks kode, misalnya "L-1".
+// Daftar kosong ditulis [] di JSON, bukan null.
+func permissionCodes(perms []access.Permission) []string {
+	codes := make([]string, 0, len(perms))
+	for _, p := range perms {
+		codes = append(codes, string(p))
+	}
+	return codes
 }

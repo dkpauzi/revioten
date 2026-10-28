@@ -64,6 +64,10 @@ func TestCreateCustomer(t *testing.T) {
 	if fake.gotInput == nil || *fake.gotInput != (customer.NewCustomer{Code: " ab ", Name: "Example Customer"}) {
 		t.Errorf("input ke service %+v, ingin kode \" ab \" dan nama Example Customer", fake.gotInput)
 	}
+	// Aktor dari sesi diteruskan ke service, yang memeriksa izinnya (M1.2).
+	if fake.gotActor != testActor {
+		t.Errorf("aktor ke service %+v, ingin %+v", fake.gotActor, testActor)
+	}
 	var body Customer
 	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
 		t.Fatalf("isi bukan JSON yang valid: %v", err)

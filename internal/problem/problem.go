@@ -4,7 +4,10 @@
 // internal/server menerjemahkannya ke format error API (R-API-13).
 package problem
 
-import "strings"
+import (
+	"errors"
+	"strings"
+)
 
 // Kode masalah. Nilainya sama dengan ErrorDetail.code di kontrak API, supaya
 // layar bisa menerjemahkannya ke teks sendiri.
@@ -17,11 +20,15 @@ const (
 	Reserved      = "reserved"
 	Taken         = "taken"
 	Incorrect     = "incorrect"
+	NotAllowed    = "not_allowed"
 )
 
 // Codes berisi semua kode masalah. Dipakai test untuk memastikan setiap kode
 // ada di kontrak API.
-var Codes = []string{Required, InvalidFormat, TooShort, TooLong, TooCommon, Reserved, Taken, Incorrect}
+var Codes = []string{Required, InvalidFormat, TooShort, TooLong, TooCommon, Reserved, Taken, Incorrect, NotAllowed}
+
+// ErrNotFound berarti data yang diminta tidak ada. API menjawabnya 404.
+var ErrNotFound = errors.New("data tidak ditemukan")
 
 // Problem adalah satu masalah pada satu field input.
 type Problem struct {

@@ -5,13 +5,20 @@
 // Cookie sesi dikirim browser secara otomatis, karena alamat API sama dengan
 // alamat halaman. Kode ini tidak pernah membaca cookie itu (HttpOnly).
 import type {
+	AccountInfo,
+	AccountList,
 	Error as ApiError,
+	CreatedAccount,
 	Credentials,
 	Customer,
 	CustomerList,
+	NewAccount,
 	NewCustomer,
 	PasswordChange,
-	Session
+	RoleGrant,
+	RoleList,
+	Session,
+	TemporaryPassword
 } from './gen/index.ts';
 
 // ApiFailure menjelaskan panggilan yang gagal: status HTTP (0 bila server
@@ -71,6 +78,64 @@ export function changePassword(
 	fetchFn: typeof fetch = fetch
 ): Promise<ApiResult<undefined>> {
 	return call<undefined>(fetchFn, '/api/v1/account/password', jsonRequest('PUT', input));
+}
+
+// listRoles memanggil GET /api/v1/roles: katalog peran (A-1).
+export function listRoles(fetchFn: typeof fetch = fetch): Promise<ApiResult<RoleList>> {
+	return call<RoleList>(fetchFn, '/api/v1/roles', { method: 'GET' });
+}
+
+// listAccounts memanggil GET /api/v1/accounts (A-1).
+export function listAccounts(fetchFn: typeof fetch = fetch): Promise<ApiResult<AccountList>> {
+	return call<AccountList>(fetchFn, '/api/v1/accounts', { method: 'GET' });
+}
+
+// createAccount memanggil POST /api/v1/accounts. Jawabannya memuat password
+// sementara, yang hanya dikirim sekali.
+export function createAccount(
+	input: NewAccount,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<CreatedAccount>> {
+	return call<CreatedAccount>(fetchFn, '/api/v1/accounts', jsonRequest('POST', input));
+}
+
+// setAccountRoles memanggil PUT /api/v1/accounts/{id}/roles.
+export function setAccountRoles(
+	accountId: string,
+	roles: RoleGrant[],
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<AccountInfo>> {
+	return call<AccountInfo>(fetchFn, accountPath(accountId, 'roles'), jsonRequest('PUT', { roles }));
+}
+
+// resetAccountPassword memanggil POST /api/v1/accounts/{id}/password-reset.
+export function resetAccountPassword(
+	accountId: string,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<TemporaryPassword>> {
+	return call<TemporaryPassword>(fetchFn, accountPath(accountId, 'password-reset'), { method: 'POST' });
+}
+
+// disableAccount memanggil POST /api/v1/accounts/{id}/disable.
+export function disableAccount(
+	accountId: string,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<AccountInfo>> {
+	return call<AccountInfo>(fetchFn, accountPath(accountId, 'disable'), { method: 'POST' });
+}
+
+// enableAccount memanggil POST /api/v1/accounts/{id}/enable.
+export function enableAccount(
+	accountId: string,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<AccountInfo>> {
+	return call<AccountInfo>(fetchFn, accountPath(accountId, 'enable'), { method: 'POST' });
+}
+
+// accountPath menyusun alamat operasi satu akun. ID dikodekan, supaya karakter
+// seperti / atau ? tidak mengubah alamat.
+function accountPath(accountId: string, action: string): string {
+	return `/api/v1/accounts/${encodeURIComponent(accountId)}/${action}`;
 }
 
 // jsonRequest menyusun permintaan dengan isi JSON.
