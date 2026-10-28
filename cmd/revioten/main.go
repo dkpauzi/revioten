@@ -95,6 +95,10 @@ func runServer(args []string) error {
 //  2. koneksi pemilik ditutup. Semua operasi berikutnya memakai role aplikasi,
 //     yang hanya punya hak yang dibutuhkan, dan tidak bisa mengubah atau
 //     menghapus audit log (R-SEC-03).
+//
+// ASUMSI E-29: untuk demo di localhost, program yang sama memegang kredensial
+// pemilik saat mulai. Versi IT sebaiknya menjalankan migrasi sebagai langkah
+// terpisah, supaya server yang berjalan tidak pernah memegangnya.
 func openDatabase(ctx context.Context, cfg config) (*pgxpool.Pool, error) {
 	owner, err := db.Connect(ctx, cfg.OwnerURL)
 	if err != nil {

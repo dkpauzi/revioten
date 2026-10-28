@@ -48,6 +48,9 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-24 | U3 belum punya hak untuk melihat master data | Celah | M1.2, M1.4 sampai M1.8 | Tidak (perlu sebelum M1.4) | Terbuka |
 | E-25 | Hak mengurus akun sendiri tidak ada di katalog U3 | Celah | M1.1, M1.2 | Tidak | Terbuka |
 | E-26 | Akun admin terakhir "tidak bisa dihapus", padahal hapus akun belum diatur | Ambigu | M1.2, M1.3 | Tidak | Terbuka |
+| E-27 | Jenis aktor untuk perintah server dan orang yang belum login | Celah | M1.3, M8.1 | Tidak | Terbuka |
+| E-28 | Peristiwa apa saja yang masuk audit log | Ambigu | M1.3, Tahap 2 sampai 7 | Tidak | Terbuka |
+| E-29 | Kredensial pemilik database dan siapa yang menjalankan migrasi | Celah | M1.3, M8.3, M8.4 | Tidak | Terbuka |
 
 ## Rincian
 
@@ -154,6 +157,12 @@ Salin blok ini untuk setiap temuan baru.
 - **Menghambat milestone?** Tidak untuk Tahap 0. Perlu diputuskan sebelum M1.3.
 - **Status:** Diputuskan pemilik 27 Oktober 2026 (nomor D menunggu brief)
 - **Keputusan pemilik:** Opsi (a) sesuai rekomendasi: satu rantai global dengan ujung rantai dikunci, entri ditulis lapisan layanan Go, dua role database ("saya setuju dengan semua saran anda", 27 Oktober 2026).
+- **Pelaksanaan (M1.3, 28 Oktober 2026):**
+  - Kunci rantai: advisory lock 11002 dipegang sampai transaksi selesai. Nomor urut dibagikan aplikasi di dalam kunci itu, bukan dari sequence, jadi lubang nomor berarti ada entri yang hilang.
+  - Entri ditulis `audit.Record` sebagai langkah terakhir transaksi yang mengubah datanya.
+  - Bentuk baku yang di-hash: setiap field ditulis `<panjang>:<isi>,` dengan urutan tetap, diawali `prev_hash`. Waktu dalam UTC dengan 6 angka pecahan detik. Rincian disimpan sebagai teks JSON buatan Go, bukan `jsonb`. Contoh lengkapnya di `TestCanonicalForm` (`internal/audit/hash_test.go`).
+  - Dua role: pemilik (`POSTGRES_USER`) hanya untuk migrasi saat program mulai; `revioten_app` untuk semua operasi, dengan hak minimum per tabel (`audit_log` hanya `SELECT` dan `INSERT`). Ditambah trigger `audit_log_append_only` yang menolak `UPDATE`, `DELETE`, dan `TRUNCATE` dari siapa pun yang tidak mematikan trigger.
+  - Uji paralel: 20 penulisan bersamaan memberi nomor 1 sampai 20 tanpa lubang (`TestRecordConcurrent`). Uji paralel penomoran M2.2 nanti ikut membuktikannya.
 
 ### E-07 · Cara membuat akun admin pertama belum ada
 
@@ -476,6 +485,48 @@ Salin blok ini untuk setiap temuan baru.
 - **Opsi:** (a) Akun tidak pernah dihapus, hanya dinonaktifkan (semua sesi berakhir, tidak bisa login). "Dihapus" di D-73 dibaca sebagai "dinonaktifkan". (b) Hapus diizinkan hanya untuk akun yang belum pernah dipakai. (c) Hapus dengan anonimisasi data orang.
 - **Rekomendasi Claude Code (usulan):** (a). (b) atau (c) baru perlu bila ada kewajiban menghapus data pribadi, dan itu pertanyaan untuk perusahaan.
 - **Asumsi sementara di kode (ASUMSI E-26):** tidak ada operasi hapus akun. Akun admin aktif terakhir tidak bisa dinonaktifkan, dan peran akun admin tidak bisa diubah sama sekali (`internal/auth/accounts.go`, `internal/access/roles.go`).
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-27 · Jenis aktor untuk perintah server dan orang yang belum login
+
+- **Tanggal dan milestone:** 28 Oktober 2026, M1.3. Berdampak ke M8.1 (service account).
+- **Jenis:** Celah
+- **Rujukan:** R-API-03, R-API-18, R-SEC-03, E-07, D-74.
+- **Temuan:** R-API-03 menyebut tiga jenis aktor: human, service, dan customer user. Audit log butuh pelaku untuk dua peristiwa yang tidak punya akun: admin pertama yang dibuat perintah `create-admin` di komputer server (E-07), dan login gagal oleh orang yang belum login. Login gagal mengubah data (hitungan gagal, kunci akun), jadi harus tercatat.
+- **Dampak bila dibiarkan:** peristiwa itu dicatat seolah-olah dilakukan akun yang menjadi sasarannya, sehingga audit log menuduh orang yang salah.
+- **Opsi:** (a) Dua jenis aktor tambahan: `system` (perintah di komputer server) dan `anonymous` (belum login). Keduanya tidak punya akun, dan selalu ditolak fungsi izin. (b) Satu jenis tambahan `system` untuk keduanya. (c) Akun sistem khusus di tabel akun.
+- **Rekomendasi Claude Code (usulan):** (a). Perbedaannya penting saat membaca log: perintah server dijalankan orang yang punya akses ke komputer server, sedangkan login gagal bisa datang dari siapa saja. Akun sistem (c) bisa disalahgunakan untuk login.
+- **Asumsi sementara di kode (ASUMSI E-27):** `access.ActorSystem` dan `access.ActorAnonymous` di `internal/access/access.go`, serta batasan `actor_type` di `sql/migrations/00004_create_audit_log.sql`.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-28 · Peristiwa apa saja yang masuk audit log
+
+- **Tanggal dan milestone:** 28 Oktober 2026, M1.3. Berdampak ke semua milestone yang menambah operasi (Tahap 2 sampai 7).
+- **Jenis:** Ambigu
+- **Rujukan:** brief bagian 4 (`audit_log: Append-only record of every change to data`), R-SEC-03, R-SEC-10, R-APR-09, R-PUB-12, D-75.
+- **Temuan:** Brief menyebut audit log sebagai catatan setiap perubahan data. Belum jelas apakah login, logout, dan login gagal termasuk, karena peristiwa itu mengubah data sesi dan hitungan gagal, tapi bukan data dokumen. Belum jelas juga apakah membaca atau mengekspor dokumen dicatat. R-PUB-12 hanya menyebut log akses untuk customer di portal.
+- **Dampak bila dibiarkan:** setiap milestone memutuskan sendiri apa yang dicatat. Bila auditor nanti menanyakan siapa yang mengekspor dokumen rilis, jawabannya tidak ada.
+- **Opsi:** (a) Setiap perubahan data yang disimpan, termasuk sesi dan hitungan gagal login; membaca tidak dicatat. (b) Seperti (a), ditambah ekspor dan cetak dokumen (L-3, E-5, E-9), karena salinan dokumen yang keluar sistem penting untuk pengendalian dokumen. (c) Semua akses, termasuk membaca.
+- **Rekomendasi Claude Code (usulan):** (a) sekarang, dan (b) saat ekspor dan cetak dibangun (Tahap 6), karena salinan terkendali memang perlu dilacak. (c) membuat log sangat besar tanpa banyak manfaat untuk demo.
+- **Asumsi sementara di kode (ASUMSI E-28):** (a). Login dengan nama yang tidak ada tidak mengubah data, jadi tidak dicatat. Pembersihan sesi yang habis waktunya juga tidak. Ditandai di `internal/audit/audit.go`.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-29 · Kredensial pemilik database dan siapa yang menjalankan migrasi
+
+- **Tanggal dan milestone:** 28 Oktober 2026, M1.3. Berdampak ke M8.3 (deploy) dan M8.4 (dokumen untuk IT).
+- **Jenis:** Celah
+- **Rujukan:** E-06, R-SEC-03, R-SEC-11 butir 5, D-33, D-36, M8.3, M8.4.
+- **Temuan:** E-06 memisahkan role pemilik (untuk migrasi) dan role aplikasi (tanpa `UPDATE` dan `DELETE` di audit log). Belum diatur di mana kredensial pemilik disimpan, dan siapa yang menjalankan migrasi. Di demo, program yang sama menjalankan migrasi saat mulai, jadi proses server sempat memegang password pemilik, dan keduanya ada di file `.env` yang sama.
+- **Dampak bila dibiarkan:** penyerang yang menguasai proses server, atau yang bisa membaca `.env`, mendapat password pemilik. Dengan password itu ia bisa mematikan trigger, dan hanya hash chain yang tersisa sebagai pengaman.
+- **Opsi:** (a) Seperti sekarang: migrasi saat program mulai, satu file `.env`. Sederhana untuk demo. (b) Migrasi sebagai langkah deploy terpisah (misalnya `revioten migrate`) dengan kredensial pemilik yang hanya ada saat deploy. Server hanya memegang password role aplikasi. (c) Seperti (b), ditambah pemeriksaan rantai harian dan hash terakhir yang dicatat di luar database (usulan R-SEC-03).
+- **Rekomendasi Claude Code (usulan):** (a) untuk demo localhost (D-36), dan (c) dicatat di dokumen untuk IT (M8.4).
+- **Asumsi sementara di kode (ASUMSI E-29):** (a). Ditandai di `cmd/revioten/main.go` (`openDatabase`).
 - **Menghambat milestone?** Tidak
 - **Status:** Terbuka
 - **Keputusan pemilik:**

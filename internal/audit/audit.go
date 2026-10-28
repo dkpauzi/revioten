@@ -3,7 +3,11 @@
 //
 // Setiap perubahan data menulis satu entri lewat Record, di transaksi yang sama
 // dengan perubahannya. Data dan catatannya selalu tersimpan bersama atau batal
-// bersama. Entri membentuk satu rantai hash untuk seluruh sistem: hash setiap
+// bersama.
+//
+// ASUMSI E-28: yang dicatat adalah perubahan data, termasuk sesi (login dan
+// logout) dan hitungan gagal login. Membaca data tidak dicatat, dan
+// pembersihan sesi yang sudah habis waktunya juga tidak. Entri membentuk satu rantai hash untuk seluruh sistem: hash setiap
 // entri dihitung dari isinya dan hash entri sebelumnya (hash.go).
 //
 // Database menolak UPDATE, DELETE, dan TRUNCATE di tabel audit_log (role

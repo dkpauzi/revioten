@@ -119,7 +119,7 @@ Kode sekarang punya dua tujuan: belajar, dan menguji apakah desain (brief, UML, 
 | `internal/server/` | Adapter HTTP: daftar route dan handler. Tipis, tanpa aturan bisnis (R-API-01) | M0.2 |
 | `internal/<domain>/` | Aturan bisnis per area, misalnya `internal/customer` | M0.5 |
 | `internal/db/` | Koneksi pgx, lalu kode hasil sqlc (tidak diedit tangan) | M0.3 |
-| `sql/migrations/` | Migrasi goose | M0.5 |
+| `sql/migrations/` | Migrasi goose. Sejak M1.3 setiap migrasi yang membuat tabel juga menulis `GRANT` untuk role aplikasi `revioten_app`, dengan hak sekecil mungkin (E-06) | M0.5 |
 | `sql/queries/` | Query SQL untuk sqlc | M0.5 |
 | `internal/db/dbtest/` | **(usulan M0.5)** Bantuan test: PostgreSQL di container dan satu database baru per test. Hanya dipakai file `_test.go` | M0.5 |
 | `api/openapi.yaml` | Kontrak OpenAPI 3.0.4 (D-38) | M0.5 |
@@ -134,14 +134,14 @@ Kode sekarang punya dua tujuan: belajar, dan menguji apakah desain (brief, UML, 
 
 ### Perintah yang sudah terbukti
 
-Dijalankan dari root repo. Terbukti di container cloud Linux (bash) pada M0.1 (27 Oktober 2026), M0.2, M0.3, M0.4, M0.5, M1.1, dan M1.2 (28 Oktober 2026). Docker Compose membaca `.env` sendiri, dan perintah `go` sama di PowerShell Windows. Catatan dalam kurung untuk Windows belum dicoba di komputer pemilik.
+Dijalankan dari root repo. Terbukti di container cloud Linux (bash) pada M0.1 (27 Oktober 2026), M0.2, M0.3, M0.4, M0.5, M1.1, M1.2, dan M1.3 (28 Oktober 2026). Docker Compose membaca `.env` sendiri, dan perintah `go` sama di PowerShell Windows. Catatan dalam kurung untuk Windows belum dicoba di komputer pemilik.
 
 | Tujuan | Perintah |
 |---|---|
 | Cek versi alat | `go version`, `node -v`, `docker --version`, `docker compose version` |
 | Cek versi modul Go | `go list -m -versions <modul>`, lalu `go list -m -json <modul>@<versi>` (tanggal di field `Time`) |
 | Cek versi paket npm | `npm view <paket> dist-tags time --json`, lalu `npm view <paket>@<versi> peerDependencies engines` |
-| Siapkan rahasia lokal (sekali) | `cp .env.example .env` (bash), lalu ganti `POSTGRES_PASSWORD`. Di PowerShell: `Copy-Item .env.example .env` (belum dicoba di komputer pemilik) |
+| Siapkan rahasia lokal (sekali) | `cp .env.example .env` (bash), lalu ganti `POSTGRES_PASSWORD` dan `APP_DB_PASSWORD` (huruf dan angka saja, minimal 16 karakter, sejak M1.3). Di PowerShell: `Copy-Item .env.example .env` (belum dicoba di komputer pemilik). File `.env` lama cukup ditambah baris `APP_DB_PASSWORD=...` |
 | Periksa file Compose | `docker compose config --quiet` |
 | Nyalakan PostgreSQL | `docker compose up -d` |
 | Lihat status (harus `healthy`) | `docker compose ps` |
@@ -151,12 +151,14 @@ Dijalankan dari root repo. Terbukti di container cloud Linux (bash) pada M0.1 (2
 | Jalankan semua test Go | `go test ./...` (rinci per kasus: `go test -v ./...`). Sejak M0.3 butuh Docker yang sedang berjalan, karena test database menyalakan container PostgreSQL 18.6 sendiri lewat testcontainers-go |
 | Test tanpa Docker | `go test -short ./...` (test database dilewati, test lain tetap berjalan) |
 | Periksa kode Go | `go vet ./...`, lalu `gofmt -l .` (tanpa keluaran berarti sudah rapi) |
-| Jalankan server | Sejak M0.5 butuh PostgreSQL yang menyala (`docker compose up -d`) dan file `.env` yang terisi. Lalu `go run ./cmd/revioten`, atau di port lain: `go run ./cmd/revioten -addr 127.0.0.1:8081`. Migrasi database berjalan otomatis saat server mulai. Hentikan dengan Ctrl+C |
+| Jalankan server | Sejak M0.5 butuh PostgreSQL yang menyala (`docker compose up -d`) dan file `.env` yang terisi. Lalu `go run ./cmd/revioten`, atau di port lain: `go run ./cmd/revioten -addr 127.0.0.1:8081`. Migrasi database berjalan otomatis saat server mulai, sebagai pemilik database; sesudah itu server memakai role `revioten_app` (M1.3). Hentikan dengan Ctrl+C |
 | Coba endpoint /health | `curl -i http://127.0.0.1:8080/health` (Windows: `curl.exe -i ...` atau `Invoke-RestMethod http://127.0.0.1:8080/health`) |
 | Buat akun admin pertama (sekali, E-07) | `go run ./cmd/revioten create-admin -name "Nama Pemegang" -login admin.nama`, lalu ketik password dua kali (tidak tampil di layar, minimal 15 karakter). Hanya jalan bila belum ada akun admin. Password tidak pernah ditulis sebagai argumen perintah. Di cloud terbukti lewat pipa (password dikirim ke stdin, seperti di `web/e2e/server.mjs`); mode ketik di terminal belum dicoba |
 | Login | Buka http://127.0.0.1:8080, yang mengarahkan ke halaman login. Semua halaman dan API (kecuali `/health` dan login) butuh login sejak M1.1 |
 | Coba API dengan login (bash) | Tulis `{"login":"admin.nama","password":"..."}` ke `bin/login.json` (folder `bin/` tidak di-commit), lalu `curl -i -c bin/cookies.txt -H 'Content-Type: application/json' -d @bin/login.json http://127.0.0.1:8080/api/v1/session`. Setelah itu `curl -b bin/cookies.txt http://127.0.0.1:8080/api/v1/customers` dan `curl -b bin/cookies.txt -X POST -H 'Content-Type: application/json' -d '{"code":"ab","name":"Example Customer"}' http://127.0.0.1:8080/api/v1/customers`. Hapus `bin/login.json` setelah dipakai. Di Windows, `curl.exe` dengan argumen yang sama (belum dicoba di komputer pemilik) |
 | Kelola akun dan peran (sejak M1.2) | Login dengan akun admin, lalu buka menu Accounts (http://127.0.0.1:8080/admin/accounts). Password sementara akun baru tampil satu kali dan wajib diganti pemiliknya saat login pertama. Menu dan tombol mengikuti hak akun yang login; server tetap memeriksa setiap operasi (akun tanpa A-2 mendapat 403 saat menambah customer lewat curl) |
+| Lihat dan periksa audit log (sejak M1.3) | Login dengan akun admin, buka menu Audit log (http://127.0.0.1:8080/admin/audit), lalu tekan "Check the chain" |
+| Coba ubah audit log (harus gagal) | Sebagai pemilik: `docker compose exec db psql -U revioten -d revioten -c "UPDATE audit_log SET action = action WHERE false"` (ditolak trigger). Sebagai role aplikasi: perintah yang sama dengan `-U revioten_app` (`permission denied`). `WHERE false` membuat perintah ini tidak mengubah apa pun, juga bila trigger sedang mati |
 | Buat ulang kode Go dari kontrak dan SQL | `go generate ./...` (oapi-codegen dan sqlc dijalankan lewat `go run` dengan versi terkunci; pertama kali butuh internet dan waktu kompilasi). Lalu `go build ./...` dan `go test ./...` |
 | Buat ulang tipe TypeScript dari kontrak | `npm --prefix web run gen:api` |
 | Build binary | `go build -o bin/revioten ./cmd/revioten` (Windows: `-o bin/revioten.exe`) |
