@@ -544,6 +544,72 @@ paths:
                 $ref: '#/components/schemas/PartNumber'
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/processes:
+    get:
+      operationId: listProcesses
+      summary: All processes with their aliases, ordered by name (UC-04)
+      responses:
+        '200':
+          description: The process master.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessList'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: createProcess
+      summary: Add a process with a fixed ID, a display name, and aliases (E-6, D-06, D-64)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewProcess'
+      responses:
+        '201':
+          description: The process was added.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Process'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/processes/{processId}:
+    get:
+      operationId: getProcess
+      summary: One process by its fixed ID, with the name in use today (D-06)
+      parameters:
+        - $ref: '#/components/parameters/ProcessId'
+      responses:
+        '200':
+          description: The process.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Process'
+        default:
+          $ref: '#/components/responses/Error'
+    put:
+      operationId: updateProcess
+      summary: Rename a process or replace its aliases. The ID stays, so references keep working (E-6, D-06)
+      parameters:
+        - $ref: '#/components/parameters/ProcessId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProcessUpdate'
+      responses:
+        '200':
+          description: The process was changed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Process'
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/audit-log:
     get:
       operationId: listAuditLog
@@ -632,6 +698,12 @@ components:
         type: string
     PartNumberId:
       name: partNumberId
+      in: path
+      required: true
+      schema:
+        type: string
+    ProcessId:
+      name: processId
       in: path
       required: true
       schema:
@@ -1234,6 +1306,62 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PartNumber'
+    Process:
+      type: object
+      required: [id, name, aliases, created_at]
+      description: |
+        A manufacturing step, for example IQC (D-06, R-DOC-04). The ID never
+        changes; the name is only a display value. Other data refers to the
+        process by its ID.
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        aliases:
+          type: array
+          description: Other names of the same process, for example the name used in an older document, ordered alphabetically.
+          items:
+            type: string
+        created_at:
+          type: string
+          format: date-time
+    NewProcess:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          description: |
+            1 to 200 characters. Repeated spaces become one. Names and aliases
+            of all processes share one namespace, ignoring case: a name used
+            by any process, as a name or an alias, is taken.
+        aliases:
+          type: array
+          maxItems: 20
+          description: Leave it out for no aliases. Each alias follows the rules of the name.
+          items:
+            type: string
+    ProcessUpdate:
+      type: object
+      required: [name, aliases]
+      properties:
+        name:
+          type: string
+        aliases:
+          type: array
+          maxItems: 20
+          description: Replaces all aliases of the process. Send an empty list to remove them.
+          items:
+            type: string
+    ProcessList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Process'
     CustomerList:
       type: object
       required: [items]

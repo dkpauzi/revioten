@@ -11,17 +11,20 @@ import {
 	createModel,
 	createModelGroup,
 	createPartNumber,
+	createProcess,
 	createProjectGroup,
 	listAuditLog,
 	listCustomers,
 	listModelGroups,
 	listModels,
 	listPartNumbers,
+	listProcesses,
 	listProjectGroups,
 	renameModelGroup,
 	updateCustomer,
 	updateModel,
 	updatePartNumber,
+	updateProcess,
 	updateProjectGroup,
 	listRoles,
 	login,
@@ -297,5 +300,23 @@ describe('master data (M1.4)', () => {
 		]);
 		expect(JSON.parse(String(calls[4].init?.body))).toEqual({ code: 'cd' });
 		expect(JSON.parse(String(calls[7].init?.body))).toEqual({ name: 'Family B' });
+	});
+});
+
+describe('master proses (M1.5)', () => {
+	it('memanggil alamat dan method yang benar, dan mengirim daftar alias apa adanya', async () => {
+		const calls: Call[] = [];
+		const ok = () => fakeFetch(Response.json({ items: [] }), calls);
+		await listProcesses(ok());
+		await createProcess({ name: 'IQC', aliases: ['Incoming QC'] }, ok());
+		await updateProcess('pr/1', { name: 'IQC', aliases: [] }, ok());
+
+		expect(calls.map((c) => `${c.init?.method} ${c.url}`)).toEqual([
+			'GET /api/v1/processes',
+			'POST /api/v1/processes',
+			'PUT /api/v1/processes/pr%2F1'
+		]);
+		// [] berarti semua alias dilepas, jadi harus ikut terkirim.
+		expect(JSON.parse(String(calls[2].init?.body))).toEqual({ name: 'IQC', aliases: [] });
 	});
 });

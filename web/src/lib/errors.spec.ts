@@ -30,6 +30,23 @@ describe('problemText', () => {
 		);
 	});
 
+	// Nama proses dan alias berbagi satu ruang nama (M1.5, ASUMSI E-32).
+	it('memberi teks master proses', () => {
+		expect(problemText({ field: 'name', code: 'taken', message: 'x' }, 'process')).toBe(
+			en.processNameTaken
+		);
+		expect(problemText({ field: 'name', code: 'required', message: 'x' }, 'process')).toBe(
+			en.processNameRequired
+		);
+		expect(problemText({ field: 'aliases', code: 'taken', message: 'x' })).toBe(en.processAliasTaken);
+		expect(problemText({ field: 'aliases', code: 'too_long', message: 'x' })).toBe(
+			en.processAliasTooLong
+		);
+		expect(problemText({ field: 'aliases', code: 'invalid_format', message: 'x' })).toBe(
+			en.processAliasInvalid
+		);
+	});
+
 	it('memakai pesan dari server untuk masalah yang belum dikenal', () => {
 		expect(problemText({ field: 'lain', code: 'required', message: 'pesan server' })).toBe(
 			'pesan server'

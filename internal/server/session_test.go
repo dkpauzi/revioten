@@ -45,6 +45,10 @@ func TestAPIRequiresSession(t *testing.T) {
 		{http.MethodGet, "/api/v1/part-numbers?customer_id=c-1", ""},
 		{http.MethodPost, "/api/v1/part-numbers", `{"model_id":"m-1","number":"X"}`},
 		{http.MethodPut, "/api/v1/part-numbers/p-1", `{"number":"X"}`},
+		{http.MethodGet, "/api/v1/processes", ""},
+		{http.MethodPost, "/api/v1/processes", `{"name":"X"}`},
+		{http.MethodGet, "/api/v1/processes/pr-1", ""},
+		{http.MethodPut, "/api/v1/processes/pr-1", `{"name":"X","aliases":[]}`},
 	}
 	srv := newTestServer(t, nil, Deps{})
 	for _, tt := range protected {

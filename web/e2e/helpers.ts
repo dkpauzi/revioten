@@ -28,3 +28,50 @@ export async function ensureProjectGroup(page: Page, code: string): Promise<void
 		}
 	}, code);
 }
+
+// createWorkAccount membuat akun kerja untuk orang baru lewat API, dari
+// browser yang sudah login sebagai admin, lalu mengembalikan password
+// sementaranya (M1.2). roles berisi ID peran, misalnya 'template_maintainer'.
+export async function createWorkAccount(
+	page: Page,
+	personName: string,
+	login: string,
+	roles: string[]
+): Promise<string> {
+	return page.evaluate(
+		async ({ personName, login, roles }) => {
+			const response = await fetch('/api/v1/accounts', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					person_name: personName,
+					kind: 'work',
+					login,
+					roles: roles.map((role) => ({ role, scope: 'all' }))
+				})
+			});
+			return (await response.json()).temporary_password as string;
+		},
+		{ personName, login, roles }
+	);
+}
+
+// logInFirstTime masuk dengan password sementara akun baru dan langsung
+// menggantinya, karena akun baru wajib ganti password dulu (E-08).
+export async function logInFirstTime(
+	page: Page,
+	login: string,
+	temporary: string,
+	newPassword: string
+): Promise<void> {
+	await page.goto('/login');
+	await page.getByLabel(en.loginName).fill(login);
+	await page.getByLabel(en.loginPassword).fill(temporary);
+	await page.getByRole('button', { name: en.loginSubmit }).click();
+	await expect(page).toHaveURL('/account/password');
+	await page.getByLabel(en.passwordCurrent, { exact: true }).fill(temporary);
+	await page.getByLabel(en.passwordNew, { exact: true }).fill(newPassword);
+	await page.getByLabel(en.passwordConfirm, { exact: true }).fill(newPassword);
+	await page.getByRole('button', { name: en.passwordSave }).click();
+	await expect(page.getByRole('status')).toHaveText(en.passwordChanged);
+}

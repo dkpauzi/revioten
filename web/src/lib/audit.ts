@@ -24,7 +24,9 @@ const actionKeys: Record<string, MessageKey> = {
 	'model.created': 'auditActionModelCreated',
 	'model.updated': 'auditActionModelUpdated',
 	'part_number.created': 'auditActionPartNumberCreated',
-	'part_number.updated': 'auditActionPartNumberUpdated'
+	'part_number.updated': 'auditActionPartNumberUpdated',
+	'process.created': 'auditActionProcessCreated',
+	'process.updated': 'auditActionProcessUpdated'
 };
 
 const detailKeys: Record<string, MessageKey> = {
@@ -44,7 +46,8 @@ const detailKeys: Record<string, MessageKey> = {
 	project_group: 'auditDetailProjectGroup',
 	model_group: 'auditDetailModelGroup',
 	model: 'auditDetailModel',
-	number: 'auditDetailNumber'
+	number: 'auditDetailNumber',
+	aliases: 'auditDetailAliases'
 };
 
 const reasonKeys: Record<string, MessageKey> = {

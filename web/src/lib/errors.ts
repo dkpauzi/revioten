@@ -29,12 +29,21 @@ const problemKeys: Record<string, MessageKey> = {
 	'customer_id:not_allowed': 'customerInactive',
 	'model_group_id:not_allowed': 'modelGroupOtherCustomer',
 	'model_id:required': 'partNumberModelRequired',
-	'model_id:not_allowed': 'modelCustomerInactive'
+	'model_id:not_allowed': 'modelCustomerInactive',
+	'aliases:taken': 'processAliasTaken',
+	'aliases:too_long': 'processAliasTooLong',
+	'aliases:invalid_format': 'processAliasInvalid'
 };
 
 // ProblemScope adalah formulir tempat masalah ditampilkan. Field yang sama bisa
 // butuh teks berbeda, misalnya code:taken di formulir Project Group.
-export type ProblemScope = 'projectGroup' | 'customerCode' | 'modelGroup' | 'model' | 'partNumber';
+export type ProblemScope =
+	| 'projectGroup'
+	| 'customerCode'
+	| 'modelGroup'
+	| 'model'
+	| 'partNumber'
+	| 'process';
 
 // scopedKeys memetakan "formulir.field:kode masalah" ke kunci teks layar.
 const scopedKeys: Record<string, MessageKey> = {
@@ -48,7 +57,9 @@ const scopedKeys: Record<string, MessageKey> = {
 	'model.name:required': 'modelNameRequired',
 	'model.name:taken': 'modelNameTaken',
 	'partNumber.number:required': 'partNumberRequired',
-	'partNumber.number:taken': 'partNumberTaken'
+	'partNumber.number:taken': 'partNumberTaken',
+	'process.name:required': 'processNameRequired',
+	'process.name:taken': 'processNameTaken'
 };
 
 // problemText memberi teks layar untuk satu masalah input: teks khusus

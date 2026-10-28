@@ -115,7 +115,7 @@ const listAuditEntries = `-- name: ListAuditEntries :many
 SELECT l.seq, l.occurred_at, l.actor_type, l.actor_account_id, a.login AS actor_login,
        l.actor_person_id, p.name AS actor_person_name, l.request_id, l.source_ip,
        l.action, l.target_type, l.target_id,
-       coalesce(ta.login, tc.code, tp.code, tg.name, tm.name, tn.number, '') AS target_label,
+       coalesce(ta.login, tc.code, tp.code, tg.name, tm.name, tn.number, tpr.name, '') AS target_label,
        l.details, l.prev_hash, l.hash
 FROM audit_log l
 LEFT JOIN accounts a ON a.id = l.actor_account_id
@@ -126,6 +126,7 @@ LEFT JOIN project_groups tp ON l.target_type = 'project_group' AND tp.id = l.tar
 LEFT JOIN model_groups tg ON l.target_type = 'model_group' AND tg.id = l.target_id
 LEFT JOIN models tm ON l.target_type = 'model' AND tm.id = l.target_id
 LEFT JOIN part_numbers tn ON l.target_type = 'part_number' AND tn.id = l.target_id
+LEFT JOIN process_names tpr ON l.target_type = 'process' AND tpr.process_id = l.target_id AND tpr.kind = 'display'
 WHERE l.seq < $1
 ORDER BY l.seq DESC
 LIMIT $2
@@ -157,6 +158,7 @@ type ListAuditEntriesRow struct {
 
 // ListAuditEntries mengambil entri yang lebih lama dari before, terbaru dulu,
 // beserta login dan nama orang aktor (D-74) dan nama tampilan sasarannya.
+// Proses ditampilkan dengan nama tampilan yang berlaku sekarang (D-06).
 func (q *Queries) ListAuditEntries(ctx context.Context, arg ListAuditEntriesParams) ([]ListAuditEntriesRow, error) {
 	rows, err := q.db.Query(ctx, listAuditEntries, arg.Before, arg.MaxEntries)
 	if err != nil {

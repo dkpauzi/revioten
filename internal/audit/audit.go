@@ -52,6 +52,8 @@ const (
 	ActionModelUpdated         = "model.updated"
 	ActionPartNumberCreated    = "part_number.created"
 	ActionPartNumberUpdated    = "part_number.updated"
+	ActionProcessCreated       = "process.created"
+	ActionProcessUpdated       = "process.updated"
 )
 
 // Jenis sasaran entri.
@@ -62,6 +64,7 @@ const (
 	TargetModelGroup   = "model_group"
 	TargetModel        = "model"
 	TargetPartNumber   = "part_number"
+	TargetProcess      = "process"
 )
 
 // Change menulis perubahan satu field untuk rincian entri: "lama → baru".

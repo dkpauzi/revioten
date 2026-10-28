@@ -16,6 +16,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/audit"
 	"github.com/dkpauzi/revioten/internal/auth"
 	"github.com/dkpauzi/revioten/internal/customer"
+	"github.com/dkpauzi/revioten/internal/process"
 	"github.com/dkpauzi/revioten/internal/product"
 )
 
@@ -146,6 +147,39 @@ func (f *fakeProducts) CreatePartNumber(_ context.Context, _ access.Actor, in pr
 func (f *fakeProducts) UpdatePartNumber(_ context.Context, _ access.Actor, id string, in product.PartNumberUpdate) (product.PartNumber, error) {
 	f.record("UpdatePartNumber", id, in)
 	return f.part, f.err
+}
+
+// fakeProcesses meniru process.Service. Setiap method mencatat argumennya di
+// got, lalu mengembalikan nilai yang sudah diisi test.
+type fakeProcesses struct {
+	list []process.Process
+	one  process.Process
+	err  error
+	got  struct {
+		method string
+		id     string
+		input  process.Input
+	}
+}
+
+func (f *fakeProcesses) List(context.Context, access.Actor) ([]process.Process, error) {
+	f.got.method = "List"
+	return f.list, f.err
+}
+
+func (f *fakeProcesses) Get(_ context.Context, _ access.Actor, id string) (process.Process, error) {
+	f.got.method, f.got.id = "Get", id
+	return f.one, f.err
+}
+
+func (f *fakeProcesses) Create(_ context.Context, _ access.Actor, in process.Input) (process.Process, error) {
+	f.got.method, f.got.input = "Create", in
+	return f.one, f.err
+}
+
+func (f *fakeProcesses) Update(_ context.Context, _ access.Actor, id string, in process.Input) (process.Process, error) {
+	f.got.method, f.got.id, f.got.input = "Update", id, in
+	return f.one, f.err
 }
 
 // testToken adalah token sesi yang diterima fakeAuth secara bawaan.
@@ -309,6 +343,9 @@ func newTestServer(t *testing.T, ui fs.FS, deps Deps) testServer {
 	}
 	if deps.Products == nil {
 		deps.Products = &fakeProducts{}
+	}
+	if deps.Processes == nil {
+		deps.Processes = &fakeProcesses{}
 	}
 	var log bytes.Buffer
 	deps.Logger = slog.New(slog.NewTextHandler(&log, nil))

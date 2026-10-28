@@ -116,6 +116,13 @@ func TestAppRolePrivileges(t *testing.T) {
 		{"hapus akun", "DELETE FROM accounts WHERE false", false},
 		// Katalog peran hanya dibaca sampai layar pengelolaannya ada (M8.1).
 		{"ubah katalog peran", "UPDATE role_permissions SET role_id = role_id WHERE false", false},
+		// Master tidak pernah dihapus, karena data lain menunjuk ID-nya (E-09, D-06).
+		{"hapus customer", "DELETE FROM customers WHERE false", false},
+		{"hapus proses", "DELETE FROM processes WHERE false", false},
+		// Baris processes hanya berisi identitas; nama ada di process_names (M1.5).
+		{"ubah proses", "UPDATE processes SET created_at = created_at WHERE false", false},
+		{"ganti nama proses", "UPDATE process_names SET name = name WHERE false", true},
+		{"lepas alias proses", "DELETE FROM process_names WHERE false", true},
 		{"ubah audit_log", "UPDATE audit_log SET action = action WHERE false", false},
 		{"hapus audit_log", "DELETE FROM audit_log WHERE false", false},
 		{"kosongkan audit_log", "TRUNCATE audit_log", false},

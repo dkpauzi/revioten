@@ -23,9 +23,13 @@ import type {
 	NewModel,
 	NewModelGroup,
 	NewPartNumber,
+	NewProcess,
 	PartNumber,
 	PartNumberList,
 	PartNumberUpdate,
+	Process,
+	ProcessList,
+	ProcessUpdate,
 	ProjectGroup,
 	ProjectGroupInput,
 	ProjectGroupList,
@@ -179,6 +183,26 @@ export function updatePartNumber(
 	fetchFn: typeof fetch = fetch
 ): Promise<ApiResult<PartNumber>> {
 	return call<PartNumber>(fetchFn, itemPath('part-numbers', id), jsonRequest('PUT', input));
+}
+
+// listProcesses memanggil GET /api/v1/processes (M1.5).
+export function listProcesses(fetchFn: typeof fetch = fetch): Promise<ApiResult<ProcessList>> {
+	return call<ProcessList>(fetchFn, '/api/v1/processes', { method: 'GET' });
+}
+
+// createProcess memanggil POST /api/v1/processes (E-6).
+export function createProcess(input: NewProcess, fetchFn: typeof fetch = fetch): Promise<ApiResult<Process>> {
+	return call<Process>(fetchFn, '/api/v1/processes', jsonRequest('POST', input));
+}
+
+// updateProcess memanggil PUT /api/v1/processes/{id} (E-6). Daftar alias
+// menggantikan semua alias lama, jadi selalu dikirim lengkap.
+export function updateProcess(
+	id: string,
+	input: ProcessUpdate,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<Process>> {
+	return call<Process>(fetchFn, itemPath('processes', id), jsonRequest('PUT', input));
 }
 
 // getSession memanggil GET /api/v1/session: siapa yang sedang login.

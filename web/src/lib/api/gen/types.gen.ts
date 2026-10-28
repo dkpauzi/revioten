@@ -442,6 +442,48 @@ export type PartNumberList = {
     items: Array<PartNumber>;
 };
 
+/**
+ * A manufacturing step, for example IQC (D-06, R-DOC-04). The ID never
+ * changes; the name is only a display value. Other data refers to the
+ * process by its ID.
+ *
+ */
+export type Process = {
+    id: string;
+    name: string;
+    /**
+     * Other names of the same process, for example the name used in an older document, ordered alphabetically.
+     */
+    aliases: Array<string>;
+    created_at: string;
+};
+
+export type NewProcess = {
+    /**
+     * 1 to 200 characters. Repeated spaces become one. Names and aliases
+     * of all processes share one namespace, ignoring case: a name used
+     * by any process, as a name or an alias, is taken.
+     *
+     */
+    name: string;
+    /**
+     * Leave it out for no aliases. Each alias follows the rules of the name.
+     */
+    aliases?: Array<string>;
+};
+
+export type ProcessUpdate = {
+    name: string;
+    /**
+     * Replaces all aliases of the process. Send an empty list to remove them.
+     */
+    aliases: Array<string>;
+};
+
+export type ProcessList = {
+    items: Array<Process>;
+};
+
 export type CustomerList = {
     items: Array<Customer>;
 };
@@ -484,6 +526,8 @@ export type ModelGroupId = string;
 export type ModelId = string;
 
 export type PartNumberId = string;
+
+export type ProcessId = string;
 
 export type GetHealthData = {
     body?: never;
@@ -1519,6 +1563,142 @@ export type UpdatePartNumberResponses = {
 };
 
 export type UpdatePartNumberResponse = UpdatePartNumberResponses[keyof UpdatePartNumberResponses];
+
+export type ListProcessesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/processes';
+};
+
+export type ListProcessesErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ListProcessesError = ListProcessesErrors[keyof ListProcessesErrors];
+
+export type ListProcessesResponses = {
+    /**
+     * The process master.
+     */
+    200: ProcessList;
+};
+
+export type ListProcessesResponse = ListProcessesResponses[keyof ListProcessesResponses];
+
+export type CreateProcessData = {
+    body: NewProcess;
+    path?: never;
+    query?: never;
+    url: '/api/v1/processes';
+};
+
+export type CreateProcessErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type CreateProcessError = CreateProcessErrors[keyof CreateProcessErrors];
+
+export type CreateProcessResponses = {
+    /**
+     * The process was added.
+     */
+    201: Process;
+};
+
+export type CreateProcessResponse = CreateProcessResponses[keyof CreateProcessResponses];
+
+export type GetProcessData = {
+    body?: never;
+    path: {
+        processId: string;
+    };
+    query?: never;
+    url: '/api/v1/processes/{processId}';
+};
+
+export type GetProcessErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type GetProcessError = GetProcessErrors[keyof GetProcessErrors];
+
+export type GetProcessResponses = {
+    /**
+     * The process.
+     */
+    200: Process;
+};
+
+export type GetProcessResponse = GetProcessResponses[keyof GetProcessResponses];
+
+export type UpdateProcessData = {
+    body: ProcessUpdate;
+    path: {
+        processId: string;
+    };
+    query?: never;
+    url: '/api/v1/processes/{processId}';
+};
+
+export type UpdateProcessErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type UpdateProcessError = UpdateProcessErrors[keyof UpdateProcessErrors];
+
+export type UpdateProcessResponses = {
+    /**
+     * The process was changed.
+     */
+    200: Process;
+};
+
+export type UpdateProcessResponse = UpdateProcessResponses[keyof UpdateProcessResponses];
 
 export type ListAuditLogData = {
     body?: never;

@@ -97,6 +97,18 @@ type Person struct {
 	CreatedAt      time.Time
 }
 
+type Process struct {
+	ID        string
+	CreatedAt time.Time
+}
+
+type ProcessName struct {
+	ProcessID string
+	Kind      string
+	Name      string
+	NameKey   string
+}
+
 type ProjectGroup struct {
 	ID        string
 	Code      string

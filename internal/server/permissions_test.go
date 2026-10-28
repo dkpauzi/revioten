@@ -15,6 +15,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/auth"
 	"github.com/dkpauzi/revioten/internal/customer"
 	"github.com/dkpauzi/revioten/internal/db/dbtest"
+	"github.com/dkpauzi/revioten/internal/process"
 	"github.com/dkpauzi/revioten/internal/product"
 )
 
@@ -25,10 +26,11 @@ func TestMain(m *testing.M) {
 }
 
 // operationCase adalah satu operasi kontrak beserta status yang diharapkan
-// untuk akun Viewer (tanpa peran) dan untuk akun admin.
+// untuk akun Viewer (tanpa peran), akun PPAP Engineer (Pengelola template,
+// E-6), dan akun admin.
 type operationCase struct {
-	method, path, body string
-	viewer, admin      int
+	method, path, body      string
+	viewer, engineer, admin int
 }
 
 // TestPermissionsPerOperation membuktikan kriteria selesai M1.2 dengan service
@@ -42,12 +44,14 @@ func TestPermissionsPerOperation(t *testing.T) {
 	authSvc := auth.NewService(pool, checker)
 	customers := customer.NewService(pool, checker)
 	products := product.NewService(pool, checker)
+	processes := process.NewService(pool, checker)
 	handler := NewHandler(fstest.MapFS{}, Deps{
 		DB: pool, Customers: customers, Auth: authSvc, Access: checker,
-		Audit: audit.NewService(pool, checker), Products: products,
+		Audit: audit.NewService(pool, checker), Products: products, Processes: processes,
 	})
 
-	// Admin pertama, dan satu akun kerja tanpa peran (hanya hak dasar Viewer).
+	// Admin pertama, satu akun kerja tanpa peran (hanya hak dasar Viewer), dan
+	// satu akun kerja PPAP Engineer dengan peran Pengelola template (D-64).
 	if _, err := authSvc.CreateFirstAdmin(ctx, "Admin Uji", "admin.uji", "kuda terbang di atas sawah"); err != nil {
 		t.Fatal(err)
 	}
@@ -64,6 +68,21 @@ func TestPermissionsPerOperation(t *testing.T) {
 		t.Fatal(err)
 	}
 	viewerToken, err := authSvc.ChangePassword(ctx, viewer, temporary, "burung hantu di pohon mangga")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, temporary, err = authSvc.CreateAccount(ctx, admin, auth.NewAccount{
+		PersonName: "PPAP Engineer Uji", Kind: auth.KindWork, Login: "ppap.engineer.uji",
+		Roles: []access.RoleGrant{{Role: access.RoleTemplateMaintainer, Scope: access.ScopeAll}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	engineer, _, err := authSvc.Login(ctx, "ppap.engineer.uji", temporary)
+	if err != nil {
+		t.Fatal(err)
+	}
+	engineerToken, err := authSvc.ChangePassword(ctx, engineer, temporary, "perahu kertas di sungai jernih")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -89,44 +108,55 @@ func TestPermissionsPerOperation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// Master proses (M1.5).
+	proc, err := processes.Create(ctx, engineer, process.Input{Name: "IQC"})
+	if err != nil {
+		t.Fatal(err)
+	}
 	// params mengisi {nama} di alamat dan isi permintaan dengan ID sungguhan.
 	params := map[string]string{
 		"accountId": viewerInfo.ID, "projectGroupId": group.ID, "customerId": cust.ID,
 		"modelGroupId": modelGroup.ID, "modelId": model.ID, "partNumberId": part.ID,
+		"processId": proc.ID,
 	}
 
 	// Alamat ditulis seperti di kontrak. Urutan penting: operasi yang
 	// mengakhiri sesi atau menonaktifkan akun ada di akhir.
 	cases := []operationCase{
-		{http.MethodGet, "/api/v1/session", "", http.StatusOK, http.StatusOK},
-		{http.MethodPut, "/api/v1/account/password", `{"current_password":"salah","new_password":"x"}`, http.StatusUnprocessableEntity, http.StatusUnprocessableEntity},
-		{http.MethodGet, "/api/v1/customers", "", http.StatusOK, http.StatusOK},
-		{http.MethodPost, "/api/v1/customers", `{"code":"AB","name":"Customer Baru","project_group_id":"{projectGroupId}"}`, http.StatusForbidden, http.StatusCreated},
-		{http.MethodPut, "/api/v1/customers/{customerId}", `{"name":"Customer Ubah","project_group_id":"{projectGroupId}","active":true}`, http.StatusForbidden, http.StatusOK},
-		{http.MethodPost, "/api/v1/customers/{customerId}/code", `{"code":"XZ"}`, http.StatusForbidden, http.StatusOK},
-		{http.MethodGet, "/api/v1/project-groups", "", http.StatusOK, http.StatusOK},
-		{http.MethodPost, "/api/v1/project-groups", `{"code":"GR2","name":"Project Group 2"}`, http.StatusForbidden, http.StatusCreated},
-		{http.MethodPut, "/api/v1/project-groups/{projectGroupId}", `{"code":"GR1","name":"Satu"}`, http.StatusForbidden, http.StatusOK},
-		{http.MethodGet, "/api/v1/model-groups?customer_id={customerId}", "", http.StatusOK, http.StatusOK},
-		{http.MethodPost, "/api/v1/model-groups", `{"customer_id":"{customerId}","name":"Family 2"}`, http.StatusForbidden, http.StatusCreated},
-		{http.MethodPut, "/api/v1/model-groups/{modelGroupId}", `{"name":"Family B"}`, http.StatusForbidden, http.StatusOK},
-		{http.MethodGet, "/api/v1/models?customer_id={customerId}", "", http.StatusOK, http.StatusOK},
-		{http.MethodPost, "/api/v1/models", `{"customer_id":"{customerId}","name":"X200"}`, http.StatusForbidden, http.StatusCreated},
-		{http.MethodPut, "/api/v1/models/{modelId}", `{"name":"X100A","model_group_id":"{modelGroupId}"}`, http.StatusForbidden, http.StatusOK},
-		{http.MethodGet, "/api/v1/part-numbers?customer_id={customerId}", "", http.StatusOK, http.StatusOK},
-		{http.MethodPost, "/api/v1/part-numbers", `{"model_id":"{modelId}","number":"PN-2"}`, http.StatusForbidden, http.StatusCreated},
-		{http.MethodPut, "/api/v1/part-numbers/{partNumberId}", `{"number":"PN-1A"}`, http.StatusForbidden, http.StatusOK},
-		{http.MethodGet, "/api/v1/roles", "", http.StatusForbidden, http.StatusOK},
-		{http.MethodGet, "/api/v1/accounts", "", http.StatusForbidden, http.StatusOK},
-		{http.MethodPost, "/api/v1/accounts", `{"person_name":"Orang Baru","kind":"work","login":"orang.baru"}`, http.StatusForbidden, http.StatusCreated},
-		{http.MethodPut, "/api/v1/accounts/{accountId}/roles", `{"roles":[{"role":"author","scope":"all"}]}`, http.StatusForbidden, http.StatusOK},
-		{http.MethodPost, "/api/v1/accounts/{accountId}/password-reset", "", http.StatusForbidden, http.StatusOK},
-		{http.MethodPost, "/api/v1/accounts/{accountId}/disable", "", http.StatusForbidden, http.StatusOK},
-		{http.MethodPost, "/api/v1/accounts/{accountId}/enable", "", http.StatusForbidden, http.StatusOK},
+		{http.MethodGet, "/api/v1/session", "", http.StatusOK, http.StatusOK, http.StatusOK},
+		{http.MethodPut, "/api/v1/account/password", `{"current_password":"salah","new_password":"x"}`, http.StatusUnprocessableEntity, http.StatusUnprocessableEntity, http.StatusUnprocessableEntity},
+		{http.MethodGet, "/api/v1/customers", "", http.StatusOK, http.StatusOK, http.StatusOK},
+		{http.MethodPost, "/api/v1/customers", `{"code":"AB","name":"Customer Baru","project_group_id":"{projectGroupId}"}`, http.StatusForbidden, http.StatusForbidden, http.StatusCreated},
+		{http.MethodPut, "/api/v1/customers/{customerId}", `{"name":"Customer Ubah","project_group_id":"{projectGroupId}","active":true}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodPost, "/api/v1/customers/{customerId}/code", `{"code":"XZ"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodGet, "/api/v1/project-groups", "", http.StatusOK, http.StatusOK, http.StatusOK},
+		{http.MethodPost, "/api/v1/project-groups", `{"code":"GR2","name":"Project Group 2"}`, http.StatusForbidden, http.StatusForbidden, http.StatusCreated},
+		{http.MethodPut, "/api/v1/project-groups/{projectGroupId}", `{"code":"GR1","name":"Satu"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodGet, "/api/v1/model-groups?customer_id={customerId}", "", http.StatusOK, http.StatusOK, http.StatusOK},
+		{http.MethodPost, "/api/v1/model-groups", `{"customer_id":"{customerId}","name":"Family 2"}`, http.StatusForbidden, http.StatusForbidden, http.StatusCreated},
+		{http.MethodPut, "/api/v1/model-groups/{modelGroupId}", `{"name":"Family B"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodGet, "/api/v1/models?customer_id={customerId}", "", http.StatusOK, http.StatusOK, http.StatusOK},
+		{http.MethodPost, "/api/v1/models", `{"customer_id":"{customerId}","name":"X200"}`, http.StatusForbidden, http.StatusForbidden, http.StatusCreated},
+		{http.MethodPut, "/api/v1/models/{modelId}", `{"name":"X100A","model_group_id":"{modelGroupId}"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodGet, "/api/v1/part-numbers?customer_id={customerId}", "", http.StatusOK, http.StatusOK, http.StatusOK},
+		{http.MethodPost, "/api/v1/part-numbers", `{"model_id":"{modelId}","number":"PN-2"}`, http.StatusForbidden, http.StatusForbidden, http.StatusCreated},
+		{http.MethodPut, "/api/v1/part-numbers/{partNumberId}", `{"number":"PN-1A"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		// Master proses dikelola Pengelola template (E-6, D-64), bukan admin.
+		{http.MethodGet, "/api/v1/processes", "", http.StatusOK, http.StatusOK, http.StatusOK},
+		{http.MethodPost, "/api/v1/processes", `{"name":"SMT","aliases":["Surface Mount"]}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
+		{http.MethodGet, "/api/v1/processes/{processId}", "", http.StatusOK, http.StatusOK, http.StatusOK},
+		{http.MethodPut, "/api/v1/processes/{processId}", `{"name":"Incoming QC","aliases":["IQC"]}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		{http.MethodGet, "/api/v1/roles", "", http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodGet, "/api/v1/accounts", "", http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodPost, "/api/v1/accounts", `{"person_name":"Orang Baru","kind":"work","login":"orang.baru"}`, http.StatusForbidden, http.StatusForbidden, http.StatusCreated},
+		{http.MethodPut, "/api/v1/accounts/{accountId}/roles", `{"roles":[{"role":"author","scope":"all"}]}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodPost, "/api/v1/accounts/{accountId}/password-reset", "", http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodPost, "/api/v1/accounts/{accountId}/disable", "", http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodPost, "/api/v1/accounts/{accountId}/enable", "", http.StatusForbidden, http.StatusForbidden, http.StatusOK},
 		// Audit log hanya lewat akun admin (D-72, D-75).
-		{http.MethodGet, "/api/v1/audit-log", "", http.StatusForbidden, http.StatusOK},
-		{http.MethodGet, "/api/v1/audit-log/verification", "", http.StatusForbidden, http.StatusOK},
-		{http.MethodDelete, "/api/v1/session", "", http.StatusNoContent, http.StatusNoContent},
+		{http.MethodGet, "/api/v1/audit-log", "", http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodGet, "/api/v1/audit-log/verification", "", http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodDelete, "/api/v1/session", "", http.StatusNoContent, http.StatusNoContent, http.StatusNoContent},
 	}
 	checkCoversContract(t, cases)
 
@@ -148,8 +178,9 @@ func TestPermissionsPerOperation(t *testing.T) {
 			}
 		}
 	}
-	// Viewer dulu: operasi admin di bawah ikut mereset dan menonaktifkan akun viewer.
+	// Admin terakhir: operasinya ikut mereset dan menonaktifkan akun viewer.
 	run("viewer", viewerToken, func(c operationCase) int { return c.viewer })
+	run("engineer", engineerToken, func(c operationCase) int { return c.engineer })
 	run("admin", adminToken, func(c operationCase) int { return c.admin })
 }
 

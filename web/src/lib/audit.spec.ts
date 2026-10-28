@@ -24,6 +24,8 @@ describe('teks audit log', () => {
 		expect(actionLabel('document.released')).toBe('document.released');
 		expect(actionLabel('customer.code_changed')).toBe(en.auditActionCustomerCodeChanged);
 		expect(actionLabel('part_number.updated')).toBe(en.auditActionPartNumberUpdated);
+		expect(actionLabel('process.created')).toBe(en.auditActionProcessCreated);
+		expect(actionLabel('process.updated')).toBe(en.auditActionProcessUpdated);
 	});
 
 	// Aktor manusia ditampilkan bersama orang pemegang akunnya (D-74).
@@ -53,6 +55,9 @@ describe('teks audit log', () => {
 		expect(detailsText({})).toBe('');
 		expect(detailsText({ project_group: 'GR1 → GR2', model_group: '- → Family' })).toBe(
 			`${en.auditDetailModelGroup}: - → Family; ${en.auditDetailProjectGroup}: GR1 → GR2`
+		);
+		expect(detailsText({ name: 'IQC', aliases: 'Incoming QC' })).toBe(
+			`${en.auditDetailAliases}: Incoming QC; ${en.auditDetailName}: IQC`
 		);
 	});
 

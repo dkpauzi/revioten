@@ -13,6 +13,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/audit"
 	"github.com/dkpauzi/revioten/internal/auth"
 	"github.com/dkpauzi/revioten/internal/customer"
+	"github.com/dkpauzi/revioten/internal/process"
 	"github.com/dkpauzi/revioten/internal/product"
 )
 
@@ -49,6 +50,15 @@ type ProductService interface {
 	ListPartNumbers(ctx context.Context, actor access.Actor, customerID string) ([]product.PartNumber, error)
 	CreatePartNumber(ctx context.Context, actor access.Actor, in product.NewPartNumber) (product.PartNumber, error)
 	UpdatePartNumber(ctx context.Context, actor access.Actor, id string, in product.PartNumberUpdate) (product.PartNumber, error)
+}
+
+// ProcessService adalah operasi master proses yang dipakai API (M1.5).
+// *process.Service memenuhinya; test memakai versi palsu.
+type ProcessService interface {
+	List(ctx context.Context, actor access.Actor) ([]process.Process, error)
+	Get(ctx context.Context, actor access.Actor, id string) (process.Process, error)
+	Create(ctx context.Context, actor access.Actor, in process.Input) (process.Process, error)
+	Update(ctx context.Context, actor access.Actor, id string, in process.Input) (process.Process, error)
 }
 
 // AuthService adalah operasi login, sesi, dan pengelolaan akun yang dipakai API.
@@ -89,6 +99,7 @@ type Deps struct {
 	Access    AccessService
 	Audit     AuditService
 	Products  ProductService
+	Processes ProcessService
 	// Logger untuk log server. Bila nil, dipakai slog.Default().
 	Logger *slog.Logger
 }
@@ -106,7 +117,7 @@ func NewHandler(ui fs.FS, deps Deps) http.Handler {
 	}
 	a := &apiServer{
 		db: deps.DB, customers: deps.Customers, auth: deps.Auth, access: deps.Access,
-		audit: deps.Audit, products: deps.Products, log: log,
+		audit: deps.Audit, products: deps.Products, processes: deps.Processes, log: log,
 	}
 
 	// Route dari kontrak didaftarkan oleh kode hasil generate ke mux khusus API.
@@ -154,5 +165,6 @@ type apiServer struct {
 	access    AccessService
 	audit     AuditService
 	products  ProductService
+	processes ProcessService
 	log       *slog.Logger
 }

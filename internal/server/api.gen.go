@@ -620,6 +620,17 @@ type NewPartNumber struct {
 	Number string `json:"number"`
 }
 
+// NewProcess defines model for NewProcess.
+type NewProcess struct {
+	// Aliases Leave it out for no aliases. Each alias follows the rules of the name.
+	Aliases *[]string `json:"aliases,omitempty"`
+
+	// Name 1 to 200 characters. Repeated spaces become one. Names and aliases
+	// of all processes share one namespace, ignoring case: a name used
+	// by any process, as a name or an alias, is taken.
+	Name string `json:"name"`
+}
+
 // PartNumber defines model for PartNumber.
 type PartNumber struct {
 	CreatedAt  time.Time `json:"created_at"`
@@ -667,6 +678,29 @@ type PersonInfo struct {
 	// Id Opaque stable ID.
 	Id   string `json:"id"`
 	Name string `json:"name"`
+}
+
+// Process A manufacturing step, for example IQC (D-06, R-DOC-04). The ID never
+// changes; the name is only a display value. Other data refers to the
+// process by its ID.
+type Process struct {
+	// Aliases Other names of the same process, for example the name used in an older document, ordered alphabetically.
+	Aliases   []string  `json:"aliases"`
+	CreatedAt time.Time `json:"created_at"`
+	Id        string    `json:"id"`
+	Name      string    `json:"name"`
+}
+
+// ProcessList defines model for ProcessList.
+type ProcessList struct {
+	Items []Process `json:"items"`
+}
+
+// ProcessUpdate defines model for ProcessUpdate.
+type ProcessUpdate struct {
+	// Aliases Replaces all aliases of the process. Send an empty list to remove them.
+	Aliases []string `json:"aliases"`
+	Name    string   `json:"name"`
 }
 
 // ProjectGroup defines model for ProjectGroup.
@@ -774,6 +808,9 @@ type ModelId = string
 // PartNumberId defines model for PartNumberId.
 type PartNumberId = string
 
+// ProcessId defines model for ProcessId.
+type ProcessId = string
+
 // ProjectGroupId defines model for ProjectGroupId.
 type ProjectGroupId = string
 
@@ -839,6 +876,12 @@ type CreatePartNumberJSONRequestBody = NewPartNumber
 
 // UpdatePartNumberJSONRequestBody defines body for UpdatePartNumber for application/json ContentType.
 type UpdatePartNumberJSONRequestBody = PartNumberUpdate
+
+// CreateProcessJSONRequestBody defines body for CreateProcess for application/json ContentType.
+type CreateProcessJSONRequestBody = NewProcess
+
+// UpdateProcessJSONRequestBody defines body for UpdateProcess for application/json ContentType.
+type UpdateProcessJSONRequestBody = ProcessUpdate
 
 // CreateProjectGroupJSONRequestBody defines body for CreateProjectGroup for application/json ContentType.
 type CreateProjectGroupJSONRequestBody = ProjectGroupInput
@@ -917,6 +960,18 @@ type ServerInterface interface {
 	// UpdatePartNumber Change the number and name of a part number (A-2)
 	// (PUT /api/v1/part-numbers/{partNumberId})
 	UpdatePartNumber(w http.ResponseWriter, r *http.Request, partNumberId PartNumberId)
+	// ListProcesses All processes with their aliases, ordered by name (UC-04)
+	// (GET /api/v1/processes)
+	ListProcesses(w http.ResponseWriter, r *http.Request)
+	// CreateProcess Add a process with a fixed ID, a display name, and aliases (E-6, D-06, D-64)
+	// (POST /api/v1/processes)
+	CreateProcess(w http.ResponseWriter, r *http.Request)
+	// GetProcess One process by its fixed ID, with the name in use today (D-06)
+	// (GET /api/v1/processes/{processId})
+	GetProcess(w http.ResponseWriter, r *http.Request, processId ProcessId)
+	// UpdateProcess Rename a process or replace its aliases. The ID stays, so references keep working (E-6, D-06)
+	// (PUT /api/v1/processes/{processId})
+	UpdateProcess(w http.ResponseWriter, r *http.Request, processId ProcessId)
 	// ListProjectGroups All project groups, ordered by code
 	// (GET /api/v1/project-groups)
 	ListProjectGroups(w http.ResponseWriter, r *http.Request)
@@ -1457,6 +1512,86 @@ func (siw *ServerInterfaceWrapper) UpdatePartNumber(w http.ResponseWriter, r *ht
 	handler.ServeHTTP(w, r)
 }
 
+// ListProcesses operation middleware
+func (siw *ServerInterfaceWrapper) ListProcesses(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListProcesses(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateProcess operation middleware
+func (siw *ServerInterfaceWrapper) CreateProcess(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateProcess(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetProcess operation middleware
+func (siw *ServerInterfaceWrapper) GetProcess(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "processId" -------------
+	var processId ProcessId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "processId", r.PathValue("processId"), &processId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "processId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetProcess(w, r, processId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateProcess operation middleware
+func (siw *ServerInterfaceWrapper) UpdateProcess(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "processId" -------------
+	var processId ProcessId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "processId", r.PathValue("processId"), &processId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "processId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateProcess(w, r, processId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListProjectGroups operation middleware
 func (siw *ServerInterfaceWrapper) ListProjectGroups(w http.ResponseWriter, r *http.Request) {
 
@@ -1729,6 +1864,10 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/part-numbers", wrapper.ListPartNumbers)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/part-numbers", wrapper.CreatePartNumber)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/part-numbers/{partNumberId}", wrapper.UpdatePartNumber)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/processes", wrapper.ListProcesses)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/processes", wrapper.CreateProcess)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/processes/{processId}", wrapper.GetProcess)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/processes/{processId}", wrapper.UpdateProcess)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/audit-log", wrapper.ListAuditLog)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/audit-log/verification", wrapper.VerifyAuditLog)
 
@@ -2670,6 +2809,162 @@ func (response UpdatePartNumberdefaultJSONResponse) VisitUpdatePartNumberRespons
 	return err
 }
 
+type ListProcessesRequestObject struct {
+}
+
+type ListProcessesResponseObject interface {
+	VisitListProcessesResponse(w http.ResponseWriter) error
+}
+
+type ListProcesses200JSONResponse ProcessList
+
+func (response ListProcesses200JSONResponse) VisitListProcessesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListProcessesdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ListProcessesdefaultJSONResponse) VisitListProcessesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateProcessRequestObject struct {
+	Body *CreateProcessJSONRequestBody
+}
+
+type CreateProcessResponseObject interface {
+	VisitCreateProcessResponse(w http.ResponseWriter) error
+}
+
+type CreateProcess201JSONResponse Process
+
+func (response CreateProcess201JSONResponse) VisitCreateProcessResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateProcessdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response CreateProcessdefaultJSONResponse) VisitCreateProcessResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProcessRequestObject struct {
+	ProcessId ProcessId `json:"processId"`
+}
+
+type GetProcessResponseObject interface {
+	VisitGetProcessResponse(w http.ResponseWriter) error
+}
+
+type GetProcess200JSONResponse Process
+
+func (response GetProcess200JSONResponse) VisitGetProcessResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProcessdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response GetProcessdefaultJSONResponse) VisitGetProcessResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateProcessRequestObject struct {
+	ProcessId ProcessId `json:"processId"`
+	Body      *UpdateProcessJSONRequestBody
+}
+
+type UpdateProcessResponseObject interface {
+	VisitUpdateProcessResponse(w http.ResponseWriter) error
+}
+
+type UpdateProcess200JSONResponse Process
+
+func (response UpdateProcess200JSONResponse) VisitUpdateProcessResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateProcessdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response UpdateProcessdefaultJSONResponse) VisitUpdateProcessResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListProjectGroupsRequestObject struct {
 }
 
@@ -3083,6 +3378,18 @@ type StrictServerInterface interface {
 	// UpdatePartNumber Change the number and name of a part number (A-2)
 	// (PUT /api/v1/part-numbers/{partNumberId})
 	UpdatePartNumber(ctx context.Context, request UpdatePartNumberRequestObject) (UpdatePartNumberResponseObject, error)
+	// ListProcesses All processes with their aliases, ordered by name (UC-04)
+	// (GET /api/v1/processes)
+	ListProcesses(ctx context.Context, request ListProcessesRequestObject) (ListProcessesResponseObject, error)
+	// CreateProcess Add a process with a fixed ID, a display name, and aliases (E-6, D-06, D-64)
+	// (POST /api/v1/processes)
+	CreateProcess(ctx context.Context, request CreateProcessRequestObject) (CreateProcessResponseObject, error)
+	// GetProcess One process by its fixed ID, with the name in use today (D-06)
+	// (GET /api/v1/processes/{processId})
+	GetProcess(ctx context.Context, request GetProcessRequestObject) (GetProcessResponseObject, error)
+	// UpdateProcess Rename a process or replace its aliases. The ID stays, so references keep working (E-6, D-06)
+	// (PUT /api/v1/processes/{processId})
+	UpdateProcess(ctx context.Context, request UpdateProcessRequestObject) (UpdateProcessResponseObject, error)
 	// ListProjectGroups All project groups, ordered by code
 	// (GET /api/v1/project-groups)
 	ListProjectGroups(ctx context.Context, request ListProjectGroupsRequestObject) (ListProjectGroupsResponseObject, error)
@@ -3779,6 +4086,120 @@ func (sh *strictHandler) UpdatePartNumber(w http.ResponseWriter, r *http.Request
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UpdatePartNumberResponseObject); ok {
 		if err := validResponse.VisitUpdatePartNumberResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListProcesses operation middleware
+func (sh *strictHandler) ListProcesses(w http.ResponseWriter, r *http.Request) {
+	var request ListProcessesRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListProcesses(ctx, request.(ListProcessesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListProcesses")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListProcessesResponseObject); ok {
+		if err := validResponse.VisitListProcessesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateProcess operation middleware
+func (sh *strictHandler) CreateProcess(w http.ResponseWriter, r *http.Request) {
+	var request CreateProcessRequestObject
+
+	var body CreateProcessJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateProcess(ctx, request.(CreateProcessRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateProcess")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateProcessResponseObject); ok {
+		if err := validResponse.VisitCreateProcessResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetProcess operation middleware
+func (sh *strictHandler) GetProcess(w http.ResponseWriter, r *http.Request, processId ProcessId) {
+	var request GetProcessRequestObject
+
+	request.ProcessId = processId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetProcess(ctx, request.(GetProcessRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetProcess")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetProcessResponseObject); ok {
+		if err := validResponse.VisitGetProcessResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateProcess operation middleware
+func (sh *strictHandler) UpdateProcess(w http.ResponseWriter, r *http.Request, processId ProcessId) {
+	var request UpdateProcessRequestObject
+
+	request.ProcessId = processId
+
+	var body UpdateProcessJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateProcess(ctx, request.(UpdateProcessRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateProcess")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateProcessResponseObject); ok {
+		if err := validResponse.VisitUpdateProcessResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
