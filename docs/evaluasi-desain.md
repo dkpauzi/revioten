@@ -39,7 +39,7 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-15 | Belum ada langkah desain layar (wireframe) di milestone dan paket UML | Celah | Tahap 4, paket UML | Tidak (perlu sebelum Tahap 4) | Diputuskan, D menunggu brief |
 | E-16 | Memindah dokumen aktif ke nomor baru setelah kode customer berganti | Celah | M2.1, M2.3, M2.5 | Tidak (perlu sebelum M2.1) | Diputuskan, D menunggu brief |
 | E-17 | Kedudukan /health terhadap /api/v1 dan kontrak OpenAPI | Ambigu | M0.2, M0.4, M0.5 | Tidak (perlu sebelum M0.5) | Diputuskan, D menunggu brief |
-| E-18 | Belum ada aturan tentang rahasia di log dan pesan error | Celah | M0.3, M0.5, M1.1, M1.3 | Tidak | Terbuka |
+| E-18 | Belum ada aturan tentang rahasia di log dan pesan error | Celah | M0.3, M0.5, M1.1, M1.3 | Tidak | Diputuskan, D menunggu brief |
 
 ## Rincian
 
@@ -330,8 +330,8 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (a). Murah ditegakkan sejak awal, dan sangat sulit diperbaiki setelah rahasia terlanjur masuk ke audit log yang tidak bisa diubah.
 - **Asumsi sementara di kode:** `Connect` tidak meneruskan pesan error pgx untuk alamat yang tidak bisa dibaca, dan `TestConnectError` memastikan password tidak muncul di pesan error. Ditandai `// ASUMSI E-18` di `internal/db/db.go`.
 - **Menghambat milestone?** Tidak
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan pemilik 28 Oktober 2026 (nomor D menunggu brief)
+- **Keputusan pemilik:** Opsi (a), sesuai rekomendasi ("E-18 setuju", 28 Oktober 2026). Aturan keamanan baru: password, token, kunci, dan alamat koneksi yang memuat password tidak pernah ditulis ke log, pesan error, atau audit log. Pesan error ke pengguna tidak memuat detail teknis internal; detailnya dicatat di log server bersama request ID (R-API-13). Aturan ini dibuktikan dengan test. Komentar `// ASUMSI E-18` di `internal/db/db.go` diganti dengan keterangan keputusan, dan aturannya ditambahkan ke CLAUDE.md bagian 7.
 
 ## Bahan dari dokumen referensi (untuk brief bagian 21)
 

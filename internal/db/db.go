@@ -17,9 +17,9 @@ import (
 func Connect(ctx context.Context, databaseURL string) (*pgxpool.Pool, error) {
 	config, err := pgxpool.ParseConfig(databaseURL)
 	if err != nil {
-		// ASUMSI E-18: pesan error asli sengaja tidak diteruskan. Menurut
-		// dokumentasi pgx, penyamaran password di pesan ini tidak dijamin,
-		// jadi password bisa bocor ke log atau ke layar.
+		// E-18 (diputuskan): rahasia tidak boleh muncul di log atau pesan error.
+		// Pesan error asli sengaja tidak diteruskan, karena menurut dokumentasi
+		// pgx penyamaran password di pesan ini tidak dijamin.
 		return nil, errors.New("alamat database tidak bisa dibaca: periksa format postgres://user:password@host:port/database")
 	}
 

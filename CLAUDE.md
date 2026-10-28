@@ -107,6 +107,7 @@ Kode sekarang punya dua tujuan: belajar, dan menguji apakah desain (brief, UML, 
 - Sampai pemilik memutuskan R-SEC-08, simpan dokumen asli di folder `data/` yang masuk `.gitignore`, dan jangan di-commit. Opsi lainnya adalah repo data private terpisah (R-SEC-08, usulan).
 - Jangan menulis nama orang asli di kode, data awal (seed), test, atau contoh. Pakai nama jabatan atau nama contoh **(usulan)**.
 - Password dan rahasia lain disimpan di `.env` yang tidak di-commit. Sediakan `.env.example`.
+- Password, token, kunci, dan alamat koneksi yang memuat password tidak pernah ditulis ke log, pesan error, atau audit log. Pesan error ke pengguna tidak memuat detail teknis internal; detailnya dicatat di log server bersama request ID (R-API-13). Aturan ini dibuktikan dengan test (E-18, keputusan pemilik 28 Oktober 2026).
 
 ## 8. Repo, perintah, dan git
 
