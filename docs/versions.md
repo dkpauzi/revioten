@@ -37,7 +37,7 @@ Halaman rilis resmi go.dev dan postgresql.org belum dicek. Silakan buka dari kom
 
 | Komponen | Versi yang dipakai | Tanggal rilis | Dicek | Sumber | Catatan |
 |---|---|---|---|---|---|
-| Go | 1.27.3 | 2026-10-19 | 2026-10-27 | proxy.golang.org, `golang.org/toolchain` | Terbaru. Line yang didukung: 1.27 dan 1.26 (terbaru 1.26.10), jadi memenuhi R-VER-02. Belum ada 1.28 (rc pun belum). Build `windows-amd64` tersedia. |
+| Go | 1.27.3 | 2026-10-19 | 2026-10-27 | proxy.golang.org, `golang.org/toolchain` | Terbaru. Line yang didukung: 1.27 dan 1.26 (terbaru 1.26.10), jadi memenuhi R-VER-02. Belum ada 1.28 (rc pun belum). Build `windows-amd64` tersedia. Dikunci di `go.mod` (`go 1.27.3`) sejak M0.2, setelah dicek ulang 28 Oktober 2026. |
 | PostgreSQL | 18.6 | 2026-08-11 | 2026-10-27 | Tag `REL_18_6` (commit "Stamp 18.6"), Docker Hub `postgres:18.6` | Terbaru di line 18. PostgreSQL 19 masih RC 1 (tag `REL_19_RC1`, 2026-10-12; image `19rc1`), jadi tidak dipakai (R-VER-01, R-VER-02). |
 | Image Docker PostgreSQL | `postgres:18.6` | Tag diperbarui 2026-10-21 | 2026-10-27 | Docker Hub | Digest saat dicek: `sha256:edb0c08dc33befd0262ab3b5cf1c4f3f8cfd8b09e88c05b45adee29d6761ddb6`, sama dengan `18.6-trixie` (basis Debian 13). Tag bisa dibangun ulang untuk patch OS, digest tidak. |
 | Node.js | 24.22.1 LTS (Krypton) | 2026-10-20 | 2026-10-27 | nodejs.org/dist/index.json | Terbaru di line 24 LTS. Node 26 (terbaru 26.12.1) masih Current, belum LTS. Cek lagi di M0.4. Memenuhi syarat SvelteKit 3 (Node 22.17 atau lebih baru). |

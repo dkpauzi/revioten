@@ -110,14 +110,28 @@ Kode sekarang punya dua tujuan: belajar, dan menguji apakah desain (brief, UML, 
 
 ## 8. Repo, perintah, dan git
 
-- **Struktur folder:** ditetapkan di M0.2 dan ditulis di sini setelah pemilik setuju. Sejak M0.1 di root sudah ada `compose.yaml`, `.env.example`, dan `.gitignore`.
+- **Struktur folder:** disetujui pemilik di M0.2 (28 Oktober 2026). Setiap folder baru dibuat saat milestone-nya tiba.
+
+| Folder atau file | Isi | Mulai |
+|---|---|---|
+| `cmd/revioten/` | Titik masuk program (`package main`): membaca flag, menjalankan server | M0.2 |
+| `internal/server/` | Adapter HTTP: daftar route dan handler. Tipis, tanpa aturan bisnis (R-API-01) | M0.2 |
+| `internal/<domain>/` | Aturan bisnis per area, misalnya `internal/customer` | M0.5 |
+| `internal/db/` | Koneksi pgx, lalu kode hasil sqlc (tidak diedit tangan) | M0.3 |
+| `sql/migrations/` | Migrasi goose | M0.5 |
+| `sql/queries/` | Query SQL untuk sqlc | M0.5 |
+| `api/openapi.yaml` | Kontrak OpenAPI 3.0.4 (D-38) | M0.5 |
+| `web/` | SvelteKit; hasil build di-embed ke binary Go | M0.4 |
+| `bin/` | Hasil `go build`, tidak di-commit | M0.2 |
+| `docs/` | Brief, milestone, UML, catatan milestone, evaluasi desain, versi | Sesi 1 |
+| Root | `go.mod`, `compose.yaml`, `.env.example`, `.gitignore`, `.gitattributes` | M0.1, M0.2 |
 - **Perintah:** hanya perintah yang sudah terbukti jalan (menjalankan database, test, build). Lihat bagian "Perintah yang sudah terbukti" di bawah.
 - **Commit:** kecil, jelas, dengan ID di pesannya, misalnya `M0.2: endpoint /health beserta test`.
 - **Branch:** commit langsung di `main` lalu push ke `main` (pernyataan pemilik, 27 Oktober 2026). Ini menggantikan usulan satu branch per milestone. Jangan force-push.
 
 ### Perintah yang sudah terbukti
 
-Dijalankan dari root repo. Terbukti di container cloud Linux (bash) pada M0.1, 27 Oktober 2026. Docker Compose membaca `.env` sendiri, jadi perintah `docker compose` sama di PowerShell Windows.
+Dijalankan dari root repo. Terbukti di container cloud Linux (bash) pada M0.1 (27 Oktober 2026) dan M0.2 (28 Oktober 2026). Docker Compose membaca `.env` sendiri, dan perintah `go` sama di PowerShell Windows. Catatan dalam kurung untuk Windows belum dicoba di komputer pemilik.
 
 | Tujuan | Perintah |
 |---|---|
@@ -131,6 +145,11 @@ Dijalankan dari root repo. Terbukti di container cloud Linux (bash) pada M0.1, 2
 | Buka psql di container | `docker compose exec db psql -U revioten -d revioten` |
 | Cek versi server | `docker compose exec db psql -U revioten -d revioten -c "select version();"` |
 | Matikan PostgreSQL, data tetap | `docker compose down` |
+| Jalankan semua test Go | `go test ./...` (rinci per kasus: `go test -v ./...`) |
+| Periksa kode Go | `go vet ./...`, lalu `gofmt -l .` (tanpa keluaran berarti sudah rapi) |
+| Jalankan server | `go run ./cmd/revioten`, atau di port lain: `go run ./cmd/revioten -addr 127.0.0.1:8081`. Hentikan dengan Ctrl+C |
+| Coba endpoint /health | `curl -i http://127.0.0.1:8080/health` (Windows: `curl.exe -i ...` atau `Invoke-RestMethod http://127.0.0.1:8080/health`) |
+| Build binary | `go build -o bin/revioten ./cmd/revioten` (Windows: `-o bin/revioten.exe`) |
 
 Jangan menjalankan `docker compose down -v` kecuali memang ingin menghapus seluruh isi database, karena `-v` ikut menghapus volume `revioten_pgdata`.
 

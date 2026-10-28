@@ -38,6 +38,7 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-14 | R-VER-04 belum menjawab line tunggal dan versi 0.x | Ambigu | M0.1, M0.4 | Tidak untuk M0.1, ya untuk M0.4 | Diputuskan, D menunggu brief |
 | E-15 | Belum ada langkah desain layar (wireframe) di milestone dan paket UML | Celah | Tahap 4, paket UML | Tidak (perlu sebelum Tahap 4) | Diputuskan, D menunggu brief |
 | E-16 | Memindah dokumen aktif ke nomor baru setelah kode customer berganti | Celah | M2.1, M2.3, M2.5 | Tidak (perlu sebelum M2.1) | Diputuskan, D menunggu brief |
+| E-17 | Kedudukan /health terhadap /api/v1 dan kontrak OpenAPI | Ambigu | M0.2, M0.4, M0.5 | Tidak (perlu sebelum M0.5) | Terbuka |
 
 ## Rincian
 
@@ -302,6 +303,20 @@ Salin blok ini untuk setiap temuan baru.
 - **Menghambat milestone?** Tidak untuk Tahap 0 dan 1. Perlu diputuskan sebelum M2.1.
 - **Status:** Diputuskan pemilik 28 Oktober 2026 (nomor D menunggu brief)
 - **Keputusan pemilik:** Opsi (a), dengan jawaban pemilik atas empat butir (28 Oktober 2026): (1) nomor revisi berlanjut di nomor baru; (2) nomor lama menjadi tidak aktif dan tidak bisa diteruskan, artinya tidak ada revisi baru di nomor lama; (3) pemindahan butuh revisi baru dan tanda tangan baru; (4) pemindahan dilakukan per dokumen. Asumsi untuk M2.3, dikonfirmasi saat itu: status "tidak aktif" memakai status Obsolete yang sudah ada (R-NUM-04), ditambah tautan ke nomor baru, supaya tidak muncul istilah baru. Butir 5 (penghitung per teks kode customer) tetap asumsi di M2.1.
+
+### E-17 · Kedudukan /health terhadap /api/v1 dan kontrak OpenAPI
+
+- **Tanggal dan milestone:** 28 Oktober 2026, M0.2. Berdampak ke M0.4 dan M0.5.
+- **Jenis:** Ambigu
+- **Rujukan:** M0.2, M0.4, M0.5, R-API-02 (DECIDED, D-61), R-API-13, R-API-15, brief bagian 16 (UI API `/api/v1` dengan kontrak OpenAPI, khusus untuk SPA), D-38, M8.3.
+- **Temuan:** Milestone menaruh endpoint pertama di `/health` (M0.2), lalu layar SPA memanggilnya di M0.4. Brief menyatakan API untuk layar ada di `/api/v1` dan kontraknya ditulis lebih dulu (R-API-02). Akibatnya `/health` dibuat sebelum ada kontrak (M0.5), dan tidak jelas apakah `/health` termasuk API untuk layar (di bawah `/api/v1` dan tercatat di kontrak OpenAPI) atau endpoint operasional di luar API, misalnya untuk healthcheck Docker di M8.3. Selain itu, jawaban 404 dan 405 bawaan `ServeMux` masih berupa teks biasa, belum memakai format error R-API-13. Format error itu memang dijadwalkan di M0.5.
+- **Dampak bila dibiarkan:** di M0.5 bisa muncul dua gaya endpoint: satu ditulis tangan di luar kontrak, satu dihasilkan dari kontrak. Layar M0.4 juga bisa memanggil endpoint yang tidak terdokumentasi.
+- **Opsi:** (a) `/health` tetap di root sebagai endpoint operasional, dan di M0.5 ikut dicatat di file OpenAPI untuk layar, sehingga panggilan dari layar tetap terdokumentasi. (b) `/health` tetap di root dan di luar kontrak. Mulai M0.5 layar hanya memanggil endpoint yang ada di kontrak, dan panggilan `/health` di M0.4 dianggap latihan. (c) `/health` dipindah ke `/api/v1/health`, di dalam kontrak.
+- **Rekomendasi Claude Code (usulan):** (a). Path di milestone tetap, healthcheck Docker nanti bisa memakai path yang sama, dan semua endpoint yang dipanggil layar tetap tercatat di kontrak (R-API-02).
+- **Asumsi sementara di kode:** sampai M0.5, `/health` ada di root, di luar `/api/v1`, dan belum masuk kontrak, sesuai milestone M0.2. Ditandai `// ASUMSI E-17` di `internal/server/server.go`.
+- **Menghambat milestone?** Tidak. Perlu diputuskan sebelum M0.5.
+- **Status:** Terbuka
+- **Keputusan pemilik:**
 
 ## Bahan dari dokumen referensi (untuk brief bagian 21)
 
