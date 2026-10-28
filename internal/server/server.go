@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/dkpauzi/revioten/internal/auth"
 	"github.com/dkpauzi/revioten/internal/customer"
 )
 
@@ -24,10 +25,20 @@ type CustomerService interface {
 	Create(ctx context.Context, in customer.NewCustomer) (customer.Customer, error)
 }
 
+// AuthService adalah operasi login dan sesi yang dipakai API.
+// *auth.Service memenuhinya; test memakai versi palsu.
+type AuthService interface {
+	Login(ctx context.Context, login, password string) (auth.Actor, string, error)
+	Authenticate(ctx context.Context, token string) (auth.Actor, error)
+	Logout(ctx context.Context, token string) error
+	ChangePassword(ctx context.Context, actor auth.Actor, current, newPassword string) (string, error)
+}
+
 // Deps berisi semua yang dibutuhkan handler.
 type Deps struct {
 	DB        Pinger
 	Customers CustomerService
+	Auth      AuthService
 	// Logger untuk log server. Bila nil, dipakai slog.Default().
 	Logger *slog.Logger
 }
@@ -36,13 +47,14 @@ type Deps struct {
 //   - route API dari kontrak api/openapi.yaml (lihat api.gen.go), termasuk /health;
 //   - tampilan web (SvelteKit) dari ui untuk alamat lainnya.
 //
-// Setiap permintaan mendapat request ID (requestid.go).
+// Setiap permintaan mendapat request ID (requestid.go), dan permintaan yang
+// mengubah data dari situs lain ditolak (cek Origin, brief bagian 16).
 func NewHandler(ui fs.FS, deps Deps) http.Handler {
 	log := deps.Logger
 	if log == nil {
 		log = slog.Default()
 	}
-	a := &apiServer{db: deps.DB, customers: deps.Customers, log: log}
+	a := &apiServer{db: deps.DB, customers: deps.Customers, auth: deps.Auth, log: log}
 
 	// Route dari kontrak didaftarkan oleh kode hasil generate ke mux khusus API.
 	// Strict handler membaca body JSON dan menulis jawaban bertipe; error-nya
@@ -55,6 +67,8 @@ func NewHandler(ui fs.FS, deps Deps) http.Handler {
 	HandlerWithOptions(strict, StdHTTPServerOptions{
 		BaseRouter:       apiMux,
 		ErrorHandlerFunc: a.requestError,
+		// Semua route API butuh sesi, kecuali publicRoutes (session.go).
+		Middlewares: []MiddlewareFunc{a.requireSession},
 	})
 	api := limitBody(a.routeAPI(apiMux))
 
@@ -67,14 +81,21 @@ func NewHandler(ui fs.FS, deps Deps) http.Handler {
 	// bentrok dengan "/api/": untuk GET /api/x, yang satu lebih sempit di
 	// method, yang lain lebih sempit di path, jadi tidak ada yang menang.
 	// Method selain GET dan HEAD ditolak di dalam handleSPA.
-	mux.Handle("/", handleSPA(ui))
-	return withRequestID(mux)
+	mux.Handle("/", handleSPA(ui, a.loggedIn))
+
+	// CrossOriginProtection (Go 1.25+) menolak POST, PUT, PATCH, dan DELETE
+	// yang datang dari situs lain, dengan membaca header Sec-Fetch-Site dan
+	// Origin dari browser. Ini perlindungan CSRF untuk cookie sesi.
+	csrf := http.NewCrossOriginProtection()
+	csrf.SetDenyHandler(http.HandlerFunc(a.crossOriginDenied))
+	return withRequestID(csrf.Handler(mux))
 }
 
 // apiServer menjalankan operasi di kontrak (StrictServerInterface di api.gen.go).
-// Isinya dibagi per file: health.go, customers.go, dan apierror.go.
+// Isinya dibagi per file: health.go, session.go, customers.go, dan apierror.go.
 type apiServer struct {
 	db        Pinger
 	customers CustomerService
+	auth      AuthService
 	log       *slog.Logger
 }

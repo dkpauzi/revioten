@@ -31,7 +31,10 @@ func TestAPIErrorFormat(t *testing.T) {
 	srv := newTestServer(t, testUI(), Deps{})
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rec := srv.do(tt.method, tt.path, tt.body)
+			// Request ID dibuat tetap. Request ID acak bisa kebetulan memuat
+			// teks seperti "EOF", sehingga pemeriksaan kebocoran di bawah
+			// salah menandainya.
+			rec := srv.do(tt.method, tt.path, tt.body, "X-Request-Id", "uji-format")
 
 			if rec.Code != tt.wantStatus {
 				t.Errorf("status %d, ingin %d", rec.Code, tt.wantStatus)

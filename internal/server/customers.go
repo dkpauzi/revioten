@@ -2,7 +2,7 @@ package server
 
 import (
 	"context"
-	"errors"
+	"net/http"
 
 	"github.com/dkpauzi/revioten/internal/customer"
 )
@@ -25,17 +25,13 @@ func (a *apiServer) ListCustomers(ctx context.Context, _ ListCustomersRequestObj
 // merapikan dan memeriksa input adalah tugas paket customer.
 func (a *apiServer) CreateCustomer(ctx context.Context, req CreateCustomerRequestObject) (CreateCustomerResponseObject, error) {
 	created, err := a.customers.Create(ctx, customer.NewCustomer{Code: req.Body.Code, Name: req.Body.Name})
-
-	var invalid *customer.ValidationError
-	var conflict *customer.ConflictError
-	switch {
-	case errors.As(err, &invalid):
-		return CreateCustomer422JSONResponse(errorBody(ctx, ErrorCodeValidationFailed,
-			"Some fields are not valid.", toDetails(invalid.Problems))), nil
-	case errors.As(err, &conflict):
-		return CreateCustomer409JSONResponse(errorBody(ctx, ErrorCodeConflict,
-			"The customer conflicts with existing data.", toDetails(conflict.Problems))), nil
-	case err != nil:
+	if status, body, ok := problemResponse(ctx, err); ok {
+		if status == http.StatusConflict {
+			return CreateCustomer409JSONResponse(body), nil
+		}
+		return CreateCustomer422JSONResponse(body), nil
+	}
+	if err != nil {
 		return nil, err
 	}
 	return CreateCustomer201JSONResponse(toAPICustomer(created)), nil
@@ -44,13 +40,4 @@ func (a *apiServer) CreateCustomer(ctx context.Context, req CreateCustomerReques
 // toAPICustomer mengubah Customer domain menjadi Customer kontrak API.
 func toAPICustomer(c customer.Customer) Customer {
 	return Customer{Id: c.ID, Code: c.Code, Name: c.Name, CreatedAt: c.CreatedAt}
-}
-
-// toDetails mengubah masalah input dari domain menjadi ErrorDetail kontrak.
-func toDetails(problems []customer.Problem) []ErrorDetail {
-	details := make([]ErrorDetail, 0, len(problems))
-	for _, p := range problems {
-		details = append(details, ErrorDetail{Field: p.Field, Code: ErrorDetailCode(p.Code), Message: p.Message})
-	}
-	return details
 }

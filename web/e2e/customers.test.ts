@@ -1,6 +1,12 @@
 // Test E2E M0.5: kriteria selesai "customer yang ditambah di layar tersimpan".
 import { expect, test } from '@playwright/test';
 import { en } from '../src/lib/i18n/en.ts';
+import { logIn } from './helpers.ts';
+
+// Sejak M1.1 semua halaman butuh login.
+test.beforeEach(async ({ page }) => {
+	await logIn(page);
+});
 
 test('customer yang ditambah di layar tersimpan di database', async ({ page }) => {
 	await page.goto('/customers');

@@ -22,6 +22,52 @@ export type Customer = {
     created_at: string;
 };
 
+export type Credentials = {
+    login: string;
+    password: string;
+};
+
+export type Session = {
+    account: Account;
+    person: Person;
+    /**
+     * True after an admin reset the password. Until the password is
+     * changed, other operations answer 403 `password_change_required`.
+     *
+     */
+    must_change_password: boolean;
+};
+
+export type Account = {
+    /**
+     * Opaque stable ID.
+     */
+    id: string;
+    login: string;
+    /**
+     * A work account, or the separate admin account (D-72).
+     */
+    kind: 'work' | 'admin';
+};
+
+export type Person = {
+    /**
+     * Opaque stable ID.
+     */
+    id: string;
+    name: string;
+};
+
+export type PasswordChange = {
+    current_password: string;
+    /**
+     * 15 to 128 characters. Common passwords and passwords that contain
+     * the login name, the person name, or the system name are refused.
+     *
+     */
+    new_password: string;
+};
+
 export type NewCustomer = {
     /**
      * Two letters A to Z. Spaces around the code are removed and letters
@@ -40,7 +86,7 @@ export type CustomerList = {
 };
 
 export type Error = {
-    code: 'invalid_request' | 'validation_failed' | 'conflict' | 'not_found' | 'method_not_allowed' | 'internal_error';
+    code: 'invalid_request' | 'validation_failed' | 'conflict' | 'not_found' | 'method_not_allowed' | 'unauthenticated' | 'invalid_credentials' | 'password_change_required' | 'forbidden' | 'internal_error';
     /**
      * Short explanation for people. Never contains technical details.
      */
@@ -57,7 +103,7 @@ export type ErrorDetail = {
      * Name of the field in the request body, for example code.
      */
     field: string;
-    code: 'required' | 'invalid_format' | 'too_long' | 'reserved' | 'taken';
+    code: 'required' | 'invalid_format' | 'too_short' | 'too_long' | 'too_common' | 'reserved' | 'taken' | 'incorrect';
     message: string;
 };
 
@@ -86,6 +132,178 @@ export type GetHealthResponses = {
 
 export type GetHealthResponse = GetHealthResponses[keyof GetHealthResponses];
 
+export type LogoutData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/session';
+};
+
+export type LogoutErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type LogoutError = LogoutErrors[keyof LogoutErrors];
+
+export type LogoutResponses = {
+    /**
+     * Logged out. The response removes the session cookie.
+     */
+    204: void;
+};
+
+export type LogoutResponse = LogoutResponses[keyof LogoutResponses];
+
+export type GetSessionData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/session';
+};
+
+export type GetSessionErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type GetSessionError = GetSessionErrors[keyof GetSessionErrors];
+
+export type GetSessionResponses = {
+    /**
+     * The caller is logged in.
+     */
+    200: Session;
+};
+
+export type GetSessionResponse = GetSessionResponses[keyof GetSessionResponses];
+
+export type LoginData = {
+    body: Credentials;
+    path?: never;
+    query?: never;
+    url: '/api/v1/session';
+};
+
+export type LoginErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403), or `internal_error` (500).
+     *
+     */
+    400: Error;
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403), or `internal_error` (500).
+     *
+     */
+    401: Error;
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type LoginError = LoginErrors[keyof LoginErrors];
+
+export type LoginResponses = {
+    /**
+     * Logged in. The response sets the session cookie.
+     */
+    200: Session;
+};
+
+export type LoginResponse = LoginResponses[keyof LoginResponses];
+
+export type ChangePasswordData = {
+    body: PasswordChange;
+    path?: never;
+    query?: never;
+    url: '/api/v1/account/password';
+};
+
+export type ChangePasswordErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403), or `internal_error` (500).
+     *
+     */
+    400: Error;
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403), or `internal_error` (500).
+     *
+     */
+    422: Error;
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ChangePasswordError = ChangePasswordErrors[keyof ChangePasswordErrors];
+
+export type ChangePasswordResponses = {
+    /**
+     * The password was changed. The response sets a new session cookie.
+     */
+    204: void;
+};
+
+export type ChangePasswordResponse = ChangePasswordResponses[keyof ChangePasswordResponses];
+
 export type ListCustomersData = {
     body?: never;
     path?: never;
@@ -98,7 +316,10 @@ export type ListCustomersErrors = {
      * The request failed. `code` says why: `invalid_request` (400, the body
      * cannot be read as JSON), `validation_failed` (422, see `details`),
      * `conflict` (409, for example the code is already used), `not_found`
-     * (404), `method_not_allowed` (405), or `internal_error` (500).
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403), or `internal_error` (500).
      *
      */
     default: Error;
@@ -127,7 +348,10 @@ export type CreateCustomerErrors = {
      * The request failed. `code` says why: `invalid_request` (400, the body
      * cannot be read as JSON), `validation_failed` (422, see `details`),
      * `conflict` (409, for example the code is already used), `not_found`
-     * (404), `method_not_allowed` (405), or `internal_error` (500).
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403), or `internal_error` (500).
      *
      */
     400: Error;
@@ -135,7 +359,10 @@ export type CreateCustomerErrors = {
      * The request failed. `code` says why: `invalid_request` (400, the body
      * cannot be read as JSON), `validation_failed` (422, see `details`),
      * `conflict` (409, for example the code is already used), `not_found`
-     * (404), `method_not_allowed` (405), or `internal_error` (500).
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403), or `internal_error` (500).
      *
      */
     409: Error;
@@ -143,7 +370,10 @@ export type CreateCustomerErrors = {
      * The request failed. `code` says why: `invalid_request` (400, the body
      * cannot be read as JSON), `validation_failed` (422, see `details`),
      * `conflict` (409, for example the code is already used), `not_found`
-     * (404), `method_not_allowed` (405), or `internal_error` (500).
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403), or `internal_error` (500).
      *
      */
     422: Error;
@@ -151,7 +381,10 @@ export type CreateCustomerErrors = {
      * The request failed. `code` says why: `invalid_request` (400, the body
      * cannot be read as JSON), `validation_failed` (422, see `details`),
      * `conflict` (409, for example the code is already used), `not_found`
-     * (404), `method_not_allowed` (405), or `internal_error` (500).
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403), or `internal_error` (500).
      *
      */
     default: Error;

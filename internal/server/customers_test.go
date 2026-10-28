@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/dkpauzi/revioten/internal/customer"
+	"github.com/dkpauzi/revioten/internal/problem"
 )
 
 // waktuUji adalah waktu tetap supaya isi JSON bisa dibandingkan persis.
@@ -83,9 +84,9 @@ func TestCreateCustomerRejected(t *testing.T) {
 	}{
 		{
 			name: "input tidak valid",
-			err: &customer.ValidationError{Problems: []customer.Problem{
-				{Field: "code", Code: customer.ProblemRequired, Message: "Enter the customer code."},
-				{Field: "name", Code: customer.ProblemTooLong, Message: "Use at most 200 characters."},
+			err: &problem.ValidationError{Problems: []problem.Problem{
+				{Field: "code", Code: problem.Required, Message: "Enter the customer code."},
+				{Field: "name", Code: problem.TooLong, Message: "Use at most 200 characters."},
 			}},
 			wantStatus: http.StatusUnprocessableEntity,
 			wantCode:   ErrorCodeValidationFailed,
@@ -96,8 +97,8 @@ func TestCreateCustomerRejected(t *testing.T) {
 		},
 		{
 			name: "kode sudah dipakai",
-			err: &customer.ConflictError{Problems: []customer.Problem{
-				{Field: "code", Code: customer.ProblemTaken, Message: "This code is already used by another customer."},
+			err: &problem.ConflictError{Problems: []problem.Problem{
+				{Field: "code", Code: problem.Taken, Message: "This code is already used by another customer."},
 			}},
 			wantStatus: http.StatusConflict,
 			wantCode:   ErrorCodeConflict,
@@ -129,13 +130,7 @@ func TestCreateCustomerRejected(t *testing.T) {
 // TestProblemCodesMatchContract: setiap kode masalah di domain harus ada di
 // enum ErrorDetail.code di kontrak, supaya klien bisa menerjemahkannya.
 func TestProblemCodesMatchContract(t *testing.T) {
-	for _, code := range []string{
-		customer.ProblemRequired,
-		customer.ProblemInvalidFormat,
-		customer.ProblemTooLong,
-		customer.ProblemReserved,
-		customer.ProblemTaken,
-	} {
+	for _, code := range problem.Codes {
 		if !ErrorDetailCode(code).Valid() {
 			t.Errorf("kode masalah %q tidak ada di kontrak API", code)
 		}

@@ -4,6 +4,8 @@ import (
 	"strings"
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/dkpauzi/revioten/internal/problem"
 )
 
 // maxNameLength adalah panjang nama paling banyak, dalam karakter.
@@ -23,7 +25,7 @@ func validate(in NewCustomer) (NewCustomer, error) {
 		Name: strings.TrimSpace(in.Name),
 	}
 
-	var problems []Problem
+	var problems []problem.Problem
 	if p, ok := checkCode(out.Code); !ok {
 		problems = append(problems, p)
 	}
@@ -31,22 +33,22 @@ func validate(in NewCustomer) (NewCustomer, error) {
 		problems = append(problems, p)
 	}
 	if len(problems) > 0 {
-		return NewCustomer{}, &ValidationError{Problems: problems}
+		return NewCustomer{}, &problem.ValidationError{Problems: problems}
 	}
 	return out, nil
 }
 
 // checkCode memeriksa kode yang sudah dirapikan: tepat dua huruf A sampai Z (E-12).
-func checkCode(code string) (Problem, bool) {
+func checkCode(code string) (problem.Problem, bool) {
 	switch {
 	case code == "":
-		return Problem{Field: "code", Code: ProblemRequired, Message: "Enter the customer code."}, false
+		return problem.Problem{Field: "code", Code: problem.Required, Message: "Enter the customer code."}, false
 	case !isTwoLetters(code):
-		return Problem{Field: "code", Code: ProblemInvalidFormat, Message: "Use two letters A to Z."}, false
+		return problem.Problem{Field: "code", Code: problem.InvalidFormat, Message: "Use two letters A to Z."}, false
 	case code == reservedCode:
-		return Problem{Field: "code", Code: ProblemReserved, Message: "ZZ is reserved for general documents."}, false
+		return problem.Problem{Field: "code", Code: problem.Reserved, Message: "ZZ is reserved for general documents."}, false
 	}
-	return Problem{}, true
+	return problem.Problem{}, true
 }
 
 // isTwoLetters melaporkan apakah s terdiri dari tepat dua huruf A sampai Z.
@@ -64,15 +66,15 @@ func isTwoLetters(s string) bool {
 }
 
 // checkName memeriksa nama yang sudah dirapikan.
-func checkName(name string) (Problem, bool) {
+func checkName(name string) (problem.Problem, bool) {
 	switch {
 	case name == "":
-		return Problem{Field: "name", Code: ProblemRequired, Message: "Enter the customer name."}, false
+		return problem.Problem{Field: "name", Code: problem.Required, Message: "Enter the customer name."}, false
 	case utf8.RuneCountInString(name) > maxNameLength:
-		return Problem{Field: "name", Code: ProblemTooLong, Message: "Use at most 200 characters."}, false
+		return problem.Problem{Field: "name", Code: problem.TooLong, Message: "Use at most 200 characters."}, false
 	case strings.ContainsFunc(name, unicode.IsControl):
 		// ASUMSI E-21: nama satu baris, karena dicetak di dokumen.
-		return Problem{Field: "name", Code: ProblemInvalidFormat, Message: "Use one line without control characters."}, false
+		return problem.Problem{Field: "name", Code: problem.InvalidFormat, Message: "Use one line without control characters."}, false
 	}
-	return Problem{}, true
+	return problem.Problem{}, true
 }

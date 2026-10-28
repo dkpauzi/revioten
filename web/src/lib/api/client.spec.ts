@@ -1,5 +1,13 @@
-import { describe, expect, it } from 'vitest';
-import { createCustomer, listCustomers } from './client.ts';
+import { afterEach, describe, expect, it } from 'vitest';
+import {
+	changePassword,
+	createCustomer,
+	getSession,
+	listCustomers,
+	login,
+	logout,
+	setUnauthenticatedHandler
+} from './client.ts';
 
 // Satu panggilan yang dicatat fakeFetch.
 type Call = { url: string; init: RequestInit | undefined };
@@ -82,5 +90,80 @@ describe('createCustomer', () => {
 			fakeFetch(new Response('Bad Gateway', { status: 502 }))
 		);
 		expect(result).toEqual({ ok: false, error: { status: 502, body: null } });
+	});
+});
+
+const session = {
+	account: { id: 'akun-1', login: 'admin.uji', kind: 'admin' },
+	person: { id: 'orang-1', name: 'Admin Uji' },
+	must_change_password: false
+};
+
+const unauthenticated = {
+	code: 'unauthenticated',
+	message: 'Log in to continue.',
+	request_id: 'uji-401'
+};
+
+describe('sesi', () => {
+	afterEach(() => setUnauthenticatedHandler(null));
+
+	it('login mengirim nama login dan password lewat POST /api/v1/session', async () => {
+		const calls: Call[] = [];
+		const result = await login(
+			{ login: 'admin.uji', password: 'kuda terbang di atas sawah' },
+			fakeFetch(Response.json(session), calls)
+		);
+		expect(calls[0].url).toBe('/api/v1/session');
+		expect(calls[0].init?.method).toBe('POST');
+		expect(JSON.parse(String(calls[0].init?.body))).toEqual({
+			login: 'admin.uji',
+			password: 'kuda terbang di atas sawah'
+		});
+		expect(result).toEqual({ ok: true, data: session });
+	});
+
+	it('getSession memanggil GET /api/v1/session', async () => {
+		const calls: Call[] = [];
+		expect(await getSession(fakeFetch(Response.json(session), calls))).toEqual({
+			ok: true,
+			data: session
+		});
+		expect(calls[0].init?.method).toBe('GET');
+	});
+
+	it('logout dan ganti password menerima jawaban 204 tanpa isi', async () => {
+		const calls: Call[] = [];
+		expect(await logout(fakeFetch(new Response(null, { status: 204 }), calls))).toEqual({
+			ok: true,
+			data: undefined
+		});
+		expect(calls[0]).toMatchObject({ url: '/api/v1/session', init: { method: 'DELETE' } });
+
+		const result = await changePassword(
+			{ current_password: 'lama', new_password: 'baru' },
+			fakeFetch(new Response(null, { status: 204 }), calls)
+		);
+		expect(result).toEqual({ ok: true, data: undefined });
+		expect(calls[1]).toMatchObject({ url: '/api/v1/account/password', init: { method: 'PUT' } });
+	});
+
+	it('memanggil penanganan sesi berakhir bila API menjawab 401', async () => {
+		let called = 0;
+		setUnauthenticatedHandler(() => called++);
+		await listCustomers(fakeFetch(Response.json(unauthenticated, { status: 401 })));
+		expect(called).toBe(1);
+	});
+
+	it('login yang gagal bukan tanda sesi berakhir', async () => {
+		let called = 0;
+		setUnauthenticatedHandler(() => called++);
+		const failed = { code: 'invalid_credentials', message: 'x', request_id: 'uji' };
+		const result = await login(
+			{ login: 'admin.uji', password: 'salah' },
+			fakeFetch(Response.json(failed, { status: 401 }))
+		);
+		expect(result).toEqual({ ok: false, error: { status: 401, body: failed } });
+		expect(called).toBe(0);
 	});
 });

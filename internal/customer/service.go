@@ -7,6 +7,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/dkpauzi/revioten/internal/db"
+	"github.com/dkpauzi/revioten/internal/problem"
 )
 
 // Service menjalankan operasi customer terhadap database.
@@ -33,8 +34,8 @@ func (s *Service) List(ctx context.Context) ([]Customer, error) {
 }
 
 // Create memeriksa input lalu menyimpan customer baru. Hasilnya
-// *ValidationError bila input salah, atau *ConflictError bila kodenya sudah
-// dipakai.
+// *problem.ValidationError bila input salah, atau *problem.ConflictError bila
+// kodenya sudah dipakai.
 func (s *Service) Create(ctx context.Context, in NewCustomer) (Customer, error) {
 	in, err := validate(in)
 	if err != nil {
@@ -46,9 +47,9 @@ func (s *Service) Create(ctx context.Context, in NewCustomer) (Customer, error) 
 	// datang bersamaan bisa sama-sama lolos. Batasan UNIQUE di database yang
 	// menjaganya, dan penolakannya diterjemahkan di sini.
 	if db.IsUniqueViolation(err, "customers_code_key") {
-		return Customer{}, &ConflictError{Problems: []Problem{{
+		return Customer{}, &problem.ConflictError{Problems: []problem.Problem{{
 			Field:   "code",
-			Code:    ProblemTaken,
+			Code:    problem.Taken,
 			Message: "This code is already used by another customer.",
 		}}}
 	}

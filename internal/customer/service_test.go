@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/dkpauzi/revioten/internal/db/dbtest"
+	"github.com/dkpauzi/revioten/internal/problem"
 )
 
 // TestMain menyalakan PostgreSQL untuk test di paket ini (lihat dbtest).
@@ -80,11 +81,11 @@ func TestCreateDuplicateCode(t *testing.T) {
 	// Kode yang sama setelah dirapikan (" ab " menjadi AB) harus ditolak.
 	_, err := s.Create(ctx, NewCustomer{Code: " ab ", Name: "Customer Kedua"})
 
-	var conflict *ConflictError
+	var conflict *problem.ConflictError
 	if !errors.As(err, &conflict) {
-		t.Fatalf("ingin *ConflictError, dapat %v", err)
+		t.Fatalf("ingin *problem.ConflictError, dapat %v", err)
 	}
-	if len(conflict.Problems) != 1 || conflict.Problems[0].Field != "code" || conflict.Problems[0].Code != ProblemTaken {
+	if len(conflict.Problems) != 1 || conflict.Problems[0].Field != "code" || conflict.Problems[0].Code != problem.Taken {
 		t.Errorf("masalah = %+v, ingin satu masalah code:taken", conflict.Problems)
 	}
 }
@@ -94,9 +95,9 @@ func TestCreateInvalidIsNotStored(t *testing.T) {
 	ctx := t.Context()
 
 	_, err := s.Create(ctx, NewCustomer{Code: "ZZ", Name: "General"})
-	var invalid *ValidationError
+	var invalid *problem.ValidationError
 	if !errors.As(err, &invalid) {
-		t.Fatalf("ingin *ValidationError, dapat %v", err)
+		t.Fatalf("ingin *problem.ValidationError, dapat %v", err)
 	}
 
 	list, err := s.List(ctx)

@@ -3,8 +3,10 @@
 // Cara menjalankan dari root repo (PostgreSQL harus sudah menyala lewat
 // docker compose up -d, dan file .env sudah diisi):
 //
-//	go run ./cmd/revioten
-//	go run ./cmd/revioten -addr 127.0.0.1:8081
+//	go run ./cmd/revioten                        menjalankan server
+//	go run ./cmd/revioten -addr 127.0.0.1:8081   server di port lain
+//	go run ./cmd/revioten create-admin -name "Nama Pemegang" -login admin.nama
+//	                                             membuat akun admin pertama (E-07)
 package main
 
 import (
@@ -15,6 +17,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/dkpauzi/revioten/internal/auth"
 	"github.com/dkpauzi/revioten/internal/customer"
 	"github.com/dkpauzi/revioten/internal/db"
 	"github.com/dkpauzi/revioten/internal/server"
@@ -22,19 +25,28 @@ import (
 )
 
 func main() {
-	if err := run(); err != nil {
-		slog.Error("server berhenti", "error", err)
+	if err := run(os.Args[1:]); err != nil {
+		slog.Error("program berhenti", "error", err)
 		os.Exit(1)
 	}
 }
 
-// run berisi seluruh langkah program. Semua error dikembalikan ke main, supaya
+// run memilih perintah dari argumen. Semua error dikembalikan ke main, supaya
 // perintah defer (misalnya menutup pool) tetap dijalankan sebelum program keluar.
-func run() error {
+func run(args []string) error {
+	if len(args) > 0 && args[0] == "create-admin" {
+		return runCreateAdmin(args[1:], os.Stdin, os.Stdout)
+	}
+	return runServer(args)
+}
+
+// runServer menjalankan server web.
+func runServer(args []string) error {
+	fs := flag.NewFlagSet("revioten", flag.ExitOnError)
 	// Alamat bawaan hanya localhost, jadi server tidak terbuka ke jaringan (D-36).
-	addr := flag.String("addr", "127.0.0.1:8080", "alamat dan port server")
-	envFile := flag.String("env", ".env", "file berisi pengaturan database")
-	flag.Parse()
+	addr := fs.String("addr", "127.0.0.1:8080", "alamat dan port server")
+	envFile := fs.String("env", ".env", "file berisi pengaturan database")
+	_ = fs.Parse(args) // ExitOnError: flag yang salah langsung menghentikan program
 
 	cfg, err := loadConfig(os.Getenv, *envFile)
 	if err != nil {
@@ -59,6 +71,7 @@ func run() error {
 		Handler: server.NewHandler(web.Files(), server.Deps{
 			DB:        pool,
 			Customers: customer.NewService(pool),
+			Auth:      auth.NewService(pool),
 		}),
 		// Batas waktu membaca header permintaan. Tanpa batas ini, klien yang
 		// sangat lambat bisa menahan koneksi selamanya (pengaman dasar, G9).

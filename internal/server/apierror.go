@@ -6,6 +6,8 @@ import (
 	"errors"
 	"net/http"
 	"strings"
+
+	"github.com/dkpauzi/revioten/internal/problem"
 )
 
 // maxBodyBytes adalah ukuran body permintaan API paling besar (1 MiB).
@@ -92,6 +94,43 @@ func (a *apiServer) writeError(w http.ResponseWriter, r *http.Request, status in
 		// Status sudah terkirim, jadi kegagalan ini hanya bisa dicatat.
 		a.log.Error("gagal menulis error API", "request_id", body.RequestId, "error", err)
 	}
+}
+
+// crossOriginDenied menjawab permintaan yang mengubah data dari situs lain
+// (CSRF), yang ditolak http.CrossOriginProtection di server.go.
+func (a *apiServer) crossOriginDenied(w http.ResponseWriter, r *http.Request) {
+	a.log.Warn("permintaan dari situs lain ditolak",
+		"request_id", requestIDFrom(r.Context()), "method", r.Method, "path", r.URL.Path,
+		"origin", r.Header.Get("Origin"), "sec_fetch_site", r.Header.Get("Sec-Fetch-Site"))
+	a.writeError(w, r, http.StatusForbidden, ErrorCodeForbidden,
+		"Requests that change data must come from this application.", nil)
+}
+
+// problemResponse menerjemahkan penolakan input dari paket domain
+// (internal/problem) menjadi status dan isi error API: ValidationError
+// menjadi 422 validation_failed, ConflictError menjadi 409 conflict.
+// ok bernilai false bila err bukan penolakan input.
+func problemResponse(ctx context.Context, err error) (status int, body Error, ok bool) {
+	var invalid *problem.ValidationError
+	var conflict *problem.ConflictError
+	switch {
+	case errors.As(err, &invalid):
+		return http.StatusUnprocessableEntity,
+			errorBody(ctx, ErrorCodeValidationFailed, "Some fields are not valid.", toDetails(invalid.Problems)), true
+	case errors.As(err, &conflict):
+		return http.StatusConflict,
+			errorBody(ctx, ErrorCodeConflict, "The data conflicts with data that already exists.", toDetails(conflict.Problems)), true
+	}
+	return 0, Error{}, false
+}
+
+// toDetails mengubah masalah input dari domain menjadi ErrorDetail kontrak.
+func toDetails(problems []problem.Problem) []ErrorDetail {
+	details := make([]ErrorDetail, 0, len(problems))
+	for _, p := range problems {
+		details = append(details, ErrorDetail{Field: p.Field, Code: ErrorDetailCode(p.Code), Message: p.Message})
+	}
+	return details
 }
 
 // errorBody menyusun isi error dengan request ID dari context.

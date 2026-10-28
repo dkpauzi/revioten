@@ -13,6 +13,8 @@ sql:
         sql_package: pgx/v5
         # Daftar kosong dikembalikan sebagai [] (bukan nil), supaya JSON-nya [] bukan null.
         emit_empty_slices: true
+        # Kolom yang boleh NULL menjadi pointer, misalnya *time.Time, bukan pgtype.
+        emit_pointers_for_null_types: true
         # Nama file berakhiran .gen.go supaya jelas tidak diedit tangan,
         # dan tidak bentrok dengan db.go yang ditulis tangan.
         output_db_file_name: queries.gen.go
@@ -23,3 +25,10 @@ sql:
             go_type: string
           - db_type: timestamptz
             go_type: time.Time
+          # Waktu yang boleh NULL (misalnya locked_until) menjadi *time.Time.
+          - db_type: timestamptz
+            nullable: true
+            go_type:
+              import: time
+              type: Time
+              pointer: true

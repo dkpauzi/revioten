@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { failureText, formatDateTime, problemText } from './customers.ts';
+import { failureText, problemText } from './errors.ts';
 import { en } from './i18n/en.ts';
 
 describe('problemText', () => {
@@ -9,6 +9,12 @@ describe('problemText', () => {
 		);
 		expect(problemText({ field: 'name', code: 'too_long', message: 'pesan server' })).toBe(
 			en.customerNameTooLong
+		);
+		expect(
+			problemText({ field: 'current_password', code: 'incorrect', message: 'pesan server' })
+		).toBe(en.passwordCurrentIncorrect);
+		expect(problemText({ field: 'new_password', code: 'too_common', message: 'pesan server' })).toBe(
+			en.passwordTooCommon
 		);
 	});
 
@@ -34,15 +40,5 @@ describe('failureText', () => {
 
 	it('memakai pesan umum bila isi error tidak ada', () => {
 		expect(failureText({ status: 502, body: null })).toBe(en.errorUnknown);
-	});
-});
-
-describe('formatDateTime', () => {
-	it('menulis tanggal dan jam lokal dalam bentuk YYYY-MM-DD HH:mm', () => {
-		const iso = '2026-10-28T03:04:00Z';
-		const d = new Date(iso);
-		const pad = (n: number) => String(n).padStart(2, '0');
-		const want = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-		expect(formatDateTime(iso)).toBe(want);
 	});
 });

@@ -2,7 +2,8 @@
 	import { onMount } from 'svelte';
 	import { createCustomer, listCustomers } from '#lib/api/client.ts';
 	import type { Customer } from '#lib/api/gen/index.ts';
-	import { failureText, formatDateTime, problemText } from '#lib/customers.ts';
+	import { failureText, problemText } from '#lib/errors.ts';
+	import { formatDateTime } from '#lib/format.ts';
 	import { t } from '#lib/i18n/index.ts';
 
 	// Daftar customer dari server. null berarti belum selesai dimuat.

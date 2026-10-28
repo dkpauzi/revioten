@@ -8,9 +8,38 @@ import (
 	"time"
 )
 
+type Account struct {
+	ID                 string
+	PersonID           string
+	Kind               string
+	Login              string
+	PasswordHash       string
+	MustChangePassword bool
+	FailedLogins       int32
+	LockedUntil        *time.Time
+	DisabledAt         *time.Time
+	ExternalID         *string
+	CreatedAt          time.Time
+}
+
 type Customer struct {
 	ID        string
 	Code      string
 	Name      string
 	CreatedAt time.Time
+}
+
+type Person struct {
+	ID             string
+	Name           string
+	EmployeeNumber *string
+	CreatedAt      time.Time
+}
+
+type Session struct {
+	TokenHash  []byte
+	AccountID  string
+	CreatedAt  time.Time
+	LastSeenAt time.Time
+	ExpiresAt  time.Time
 }

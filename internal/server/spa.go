@@ -3,6 +3,7 @@ package server
 import (
 	"io/fs"
 	"net/http"
+	"net/url"
 	"path"
 	"strings"
 )
@@ -11,12 +12,19 @@ import (
 // semua alamat halaman. Setelah halaman ini dimuat, routing dikerjakan di browser.
 const spaFallback = "200.html"
 
+// loginPage adalah satu-satunya halaman yang terbuka tanpa login.
+const loginPage = "/login"
+
 // handleSPA melayani tampilan web dari hasil build SvelteKit di ui:
 //   - hanya GET dan HEAD; method lain dijawab 405;
 //   - file yang ada (misalnya /_app/immutable/....js) dikirim apa adanya;
 //   - aset yang tidak ada dijawab 404;
+//   - halaman selain /login butuh sesi (M1.1): tanpa sesi, browser diarahkan
+//     ke /login?next=<alamat asal>;
 //   - alamat halaman lain dijawab dengan 200.html.
-func handleSPA(ui fs.FS) http.Handler {
+//
+// loggedIn memeriksa sesi dari cookie permintaan.
+func handleSPA(ui fs.FS, loggedIn func(*http.Request) bool) http.Handler {
 	files := http.FileServerFS(ui)
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -35,6 +43,12 @@ func handleSPA(ui fs.FS) http.Handler {
 
 		if isAsset(name) {
 			http.NotFound(w, r)
+			return
+		}
+
+		if r.URL.Path != loginPage && !loggedIn(r) {
+			// 303 See Other: browser membuka halaman login dengan GET.
+			http.Redirect(w, r, loginPage+"?next="+url.QueryEscape(r.URL.RequestURI()), http.StatusSeeOther)
 			return
 		}
 

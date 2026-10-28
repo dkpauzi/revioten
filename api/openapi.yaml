@@ -20,12 +20,23 @@ info:
       otherwise the server creates one.
     - Every error uses the `Error` schema, with the same request ID as the
       header. Technical details are written only to the server log.
+    - Every operation needs a session (cookie `__Host-revioten_session`,
+      set by `POST /api/v1/session`), except where `security` is empty.
+      Without a valid session the answer is 401 `unauthenticated`.
+    - Requests that change data from another site are refused with 403
+      `forbidden` (checked with the Sec-Fetch-Site and Origin headers).
+# Semua operasi butuh sesi login (M1.1, UC-01), kecuali yang menulis security: [].
+security:
+  - sessionCookie: []
 paths:
   # E-17 (diputuskan): /health ada di root, di luar /api/v1.
   /health:
     get:
       operationId: getHealth
       summary: Server and database status
+      # ASUMSI E-08: /health terbuka tanpa login, karena dipakai untuk memantau
+      # server dan tidak berisi data.
+      security: []
       responses:
         '200':
           description: The server and the database are reachable.
@@ -39,6 +50,84 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Health'
+  /api/v1/session:
+    get:
+      operationId: getSession
+      summary: The session of the caller
+      responses:
+        '200':
+          description: The caller is logged in.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: login
+      summary: Log in with a login name and password
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Credentials'
+      responses:
+        '200':
+          description: Logged in. The response sets the session cookie.
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
+    delete:
+      operationId: logout
+      summary: Log out and end the session
+      responses:
+        '204':
+          description: Logged out. The response removes the session cookie.
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/account/password:
+    put:
+      operationId: changePassword
+      summary: Change the password of the caller
+      description: |
+        Needs the current password. All sessions of the account end, and the
+        response sets a new session cookie for the caller.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordChange'
+      responses:
+        '204':
+          description: The password was changed. The response sets a new session cookie.
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/customers:
     get:
       operationId: listCustomers
@@ -77,13 +166,21 @@ paths:
         default:
           $ref: '#/components/responses/Error'
 components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: __Host-revioten_session
   responses:
     Error:
       description: |
         The request failed. `code` says why: `invalid_request` (400, the body
         cannot be read as JSON), `validation_failed` (422, see `details`),
         `conflict` (409, for example the code is already used), `not_found`
-        (404), `method_not_allowed` (405), or `internal_error` (500).
+        (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+        session), `invalid_credentials` (401, login failed),
+        `password_change_required` (403, change the password first),
+        `forbidden` (403), or `internal_error` (500).
       content:
         application/json:
           schema:
@@ -117,6 +214,64 @@ components:
         created_at:
           type: string
           format: date-time
+    Credentials:
+      type: object
+      required: [login, password]
+      properties:
+        login:
+          type: string
+          example: admin.example
+        password:
+          type: string
+          format: password
+    Session:
+      type: object
+      required: [account, person, must_change_password]
+      properties:
+        account:
+          $ref: '#/components/schemas/Account'
+        person:
+          $ref: '#/components/schemas/Person'
+        must_change_password:
+          type: boolean
+          description: |
+            True after an admin reset the password. Until the password is
+            changed, other operations answer 403 `password_change_required`.
+    Account:
+      type: object
+      required: [id, login, kind]
+      properties:
+        id:
+          type: string
+          description: Opaque stable ID.
+        login:
+          type: string
+        kind:
+          type: string
+          description: A work account, or the separate admin account (D-72).
+          enum: [work, admin]
+    Person:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+          description: Opaque stable ID.
+        name:
+          type: string
+    PasswordChange:
+      type: object
+      required: [current_password, new_password]
+      properties:
+        current_password:
+          type: string
+          format: password
+        new_password:
+          type: string
+          format: password
+          description: |
+            15 to 128 characters. Common passwords and passwords that contain
+            the login name, the person name, or the system name are refused.
     NewCustomer:
       type: object
       required: [code, name]
@@ -155,6 +310,10 @@ components:
             - conflict
             - not_found
             - method_not_allowed
+            - unauthenticated
+            - invalid_credentials
+            - password_change_required
+            - forbidden
             - internal_error
         message:
           type: string
@@ -175,6 +334,6 @@ components:
           description: Name of the field in the request body, for example code.
         code:
           type: string
-          enum: [required, invalid_format, too_long, reserved, taken]
+          enum: [required, invalid_format, too_short, too_long, too_common, reserved, taken, incorrect]
         message:
           type: string

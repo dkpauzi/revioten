@@ -5,6 +5,8 @@ import (
 	"slices"
 	"strings"
 	"testing"
+
+	"github.com/dkpauzi/revioten/internal/problem"
 )
 
 // TestValidate memeriksa aturan input customer tanpa database.
@@ -56,9 +58,9 @@ func TestValidate(t *testing.T) {
 				return
 			}
 
-			var invalid *ValidationError
+			var invalid *problem.ValidationError
 			if !errors.As(err, &invalid) {
-				t.Fatalf("ingin *ValidationError, dapat %v", err)
+				t.Fatalf("ingin *problem.ValidationError, dapat %v", err)
 			}
 			var codes []string
 			for _, p := range invalid.Problems {
