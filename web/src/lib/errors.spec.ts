@@ -18,6 +18,18 @@ describe('problemText', () => {
 		);
 	});
 
+	it('memakai teks khusus formulir bila ada, lalu teks umum field itu', () => {
+		const taken = { field: 'code', code: 'taken', message: 'pesan server' } as const;
+		expect(problemText(taken, 'projectGroup')).toBe(en.projectGroupCodeTaken);
+		expect(problemText(taken)).toBe(en.customerCodeTaken);
+		expect(problemText({ field: 'name', code: 'required', message: 'x' }, 'model')).toBe(
+			en.modelNameRequired
+		);
+		expect(problemText({ field: 'project_group_id', code: 'required', message: 'x' })).toBe(
+			en.customerProjectGroupRequired
+		);
+	});
+
 	it('memakai pesan dari server untuk masalah yang belum dikenal', () => {
 		expect(problemText({ field: 'lain', code: 'required', message: 'pesan server' })).toBe(
 			'pesan server'

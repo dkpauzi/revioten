@@ -13,6 +13,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/audit"
 	"github.com/dkpauzi/revioten/internal/auth"
 	"github.com/dkpauzi/revioten/internal/customer"
+	"github.com/dkpauzi/revioten/internal/product"
 )
 
 // Pinger adalah bagian database yang dipakai /health. *pgxpool.Pool memenuhinya.
@@ -24,11 +25,30 @@ type Pinger interface {
 // lewat access.Authorize (R-API-01, M1.2). Adapter HTTP ini hanya meneruskan
 // aktor dari sesi.
 
-// CustomerService adalah operasi customer yang dipakai API.
+// CustomerService adalah operasi customer dan Project Group yang dipakai API.
 // *customer.Service memenuhinya; test memakai versi palsu.
 type CustomerService interface {
 	List(ctx context.Context, actor access.Actor) ([]customer.Customer, error)
 	Create(ctx context.Context, actor access.Actor, in customer.NewCustomer) (customer.Customer, error)
+	Update(ctx context.Context, actor access.Actor, id string, in customer.CustomerUpdate) (customer.Customer, error)
+	ChangeCode(ctx context.Context, actor access.Actor, id, code string) (customer.Customer, error)
+	ListProjectGroups(ctx context.Context, actor access.Actor) ([]customer.ProjectGroup, error)
+	CreateProjectGroup(ctx context.Context, actor access.Actor, in customer.ProjectGroupInput) (customer.ProjectGroup, error)
+	UpdateProjectGroup(ctx context.Context, actor access.Actor, id string, in customer.ProjectGroupInput) (customer.ProjectGroup, error)
+}
+
+// ProductService adalah operasi group model, model, dan part number yang
+// dipakai API (M1.4). *product.Service memenuhinya; test memakai versi palsu.
+type ProductService interface {
+	ListModelGroups(ctx context.Context, actor access.Actor, customerID string) ([]product.ModelGroup, error)
+	CreateModelGroup(ctx context.Context, actor access.Actor, in product.NewModelGroup) (product.ModelGroup, error)
+	RenameModelGroup(ctx context.Context, actor access.Actor, id, name string) (product.ModelGroup, error)
+	ListModels(ctx context.Context, actor access.Actor, customerID string) ([]product.Model, error)
+	CreateModel(ctx context.Context, actor access.Actor, in product.NewModel) (product.Model, error)
+	UpdateModel(ctx context.Context, actor access.Actor, id string, in product.ModelUpdate) (product.Model, error)
+	ListPartNumbers(ctx context.Context, actor access.Actor, customerID string) ([]product.PartNumber, error)
+	CreatePartNumber(ctx context.Context, actor access.Actor, in product.NewPartNumber) (product.PartNumber, error)
+	UpdatePartNumber(ctx context.Context, actor access.Actor, id string, in product.PartNumberUpdate) (product.PartNumber, error)
 }
 
 // AuthService adalah operasi login, sesi, dan pengelolaan akun yang dipakai API.
@@ -68,6 +88,7 @@ type Deps struct {
 	Auth      AuthService
 	Access    AccessService
 	Audit     AuditService
+	Products  ProductService
 	// Logger untuk log server. Bila nil, dipakai slog.Default().
 	Logger *slog.Logger
 }
@@ -83,7 +104,10 @@ func NewHandler(ui fs.FS, deps Deps) http.Handler {
 	if log == nil {
 		log = slog.Default()
 	}
-	a := &apiServer{db: deps.DB, customers: deps.Customers, auth: deps.Auth, access: deps.Access, audit: deps.Audit, log: log}
+	a := &apiServer{
+		db: deps.DB, customers: deps.Customers, auth: deps.Auth, access: deps.Access,
+		audit: deps.Audit, products: deps.Products, log: log,
+	}
 
 	// Route dari kontrak didaftarkan oleh kode hasil generate ke mux khusus API.
 	// Strict handler membaca body JSON dan menulis jawaban bertipe; error-nya
@@ -129,5 +153,6 @@ type apiServer struct {
 	auth      AuthService
 	access    AccessService
 	audit     AuditService
+	products  ProductService
 	log       *slog.Logger
 }

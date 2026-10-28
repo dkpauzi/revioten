@@ -31,6 +31,20 @@ func TestAPIRequiresSession(t *testing.T) {
 		{http.MethodPost, "/api/v1/accounts/akun-1/enable", ""},
 		{http.MethodGet, "/api/v1/audit-log", ""},
 		{http.MethodGet, "/api/v1/audit-log/verification", ""},
+		{http.MethodPut, "/api/v1/customers/c-1", `{"name":"X","project_group_id":"g","active":true}`},
+		{http.MethodPost, "/api/v1/customers/c-1/code", `{"code":"AB"}`},
+		{http.MethodGet, "/api/v1/project-groups", ""},
+		{http.MethodPost, "/api/v1/project-groups", `{"code":"GR1","name":"X"}`},
+		{http.MethodPut, "/api/v1/project-groups/g-1", `{"code":"GR1","name":"X"}`},
+		{http.MethodGet, "/api/v1/model-groups?customer_id=c-1", ""},
+		{http.MethodPost, "/api/v1/model-groups", `{"customer_id":"c-1","name":"X"}`},
+		{http.MethodPut, "/api/v1/model-groups/mg-1", `{"name":"X"}`},
+		{http.MethodGet, "/api/v1/models?customer_id=c-1", ""},
+		{http.MethodPost, "/api/v1/models", `{"customer_id":"c-1","name":"X"}`},
+		{http.MethodPut, "/api/v1/models/m-1", `{"name":"X"}`},
+		{http.MethodGet, "/api/v1/part-numbers?customer_id=c-1", ""},
+		{http.MethodPost, "/api/v1/part-numbers", `{"model_id":"m-1","number":"X"}`},
+		{http.MethodPut, "/api/v1/part-numbers/p-1", `{"number":"X"}`},
 	}
 	srv := newTestServer(t, nil, Deps{})
 	for _, tt := range protected {

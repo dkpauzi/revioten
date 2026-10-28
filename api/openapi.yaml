@@ -285,6 +285,265 @@ paths:
           $ref: '#/components/responses/Error'
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/customers/{customerId}:
+    put:
+      operationId: updateCustomer
+      summary: Change the name, project group, and status of a customer (A-2)
+      description: |
+        Customers are never deleted; set `active` to false instead (E-09).
+        The code is changed with POST /api/v1/customers/{customerId}/code.
+      parameters:
+        - $ref: '#/components/parameters/CustomerId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerUpdate'
+      responses:
+        '200':
+          description: The customer was changed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/customers/{customerId}/code:
+    post:
+      operationId: changeCustomerCode
+      summary: Give a customer a new code; the old code stays in its history (A-2, E-11)
+      parameters:
+        - $ref: '#/components/parameters/CustomerId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerCodeChange'
+      responses:
+        '200':
+          description: The code was changed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/project-groups:
+    get:
+      operationId: listProjectGroups
+      summary: All project groups, ordered by code
+      responses:
+        '200':
+          description: All project groups.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectGroupList'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: createProjectGroup
+      summary: Add a project group (A-2)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectGroupInput'
+      responses:
+        '201':
+          description: The project group was added.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectGroup'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/project-groups/{projectGroupId}:
+    put:
+      operationId: updateProjectGroup
+      summary: Change the code and name of a project group (A-2)
+      parameters:
+        - $ref: '#/components/parameters/ProjectGroupId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectGroupInput'
+      responses:
+        '200':
+          description: The project group was changed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectGroup'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/model-groups:
+    get:
+      operationId: listModelGroups
+      summary: The model groups of one customer, ordered by name
+      parameters:
+        - $ref: '#/components/parameters/CustomerIdQuery'
+      responses:
+        '200':
+          description: The model groups of the customer.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelGroupList'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: createModelGroup
+      summary: Add a model group to a customer (A-2)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewModelGroup'
+      responses:
+        '201':
+          description: The model group was added.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelGroup'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/model-groups/{modelGroupId}:
+    put:
+      operationId: updateModelGroup
+      summary: Rename a model group (A-2)
+      parameters:
+        - $ref: '#/components/parameters/ModelGroupId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModelGroupUpdate'
+      responses:
+        '200':
+          description: The model group was renamed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelGroup'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/models:
+    get:
+      operationId: listModels
+      summary: The models of one customer, ordered by name
+      parameters:
+        - $ref: '#/components/parameters/CustomerIdQuery'
+      responses:
+        '200':
+          description: The models of the customer.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelList'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: createModel
+      summary: Add a model to a customer, in at most one model group (A-2, D-42)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewModel'
+      responses:
+        '201':
+          description: The model was added.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Model'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/models/{modelId}:
+    put:
+      operationId: updateModel
+      summary: Rename a model or move it to another model group of the same customer (A-2)
+      parameters:
+        - $ref: '#/components/parameters/ModelId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModelUpdate'
+      responses:
+        '200':
+          description: The model was changed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Model'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/part-numbers:
+    get:
+      operationId: listPartNumbers
+      summary: The part numbers of one customer, ordered by model and number
+      parameters:
+        - $ref: '#/components/parameters/CustomerIdQuery'
+      responses:
+        '200':
+          description: The part numbers of the customer.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartNumberList'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: createPartNumber
+      summary: Add a part number to a model (A-2)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewPartNumber'
+      responses:
+        '201':
+          description: The part number was added.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartNumber'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/part-numbers/{partNumberId}:
+    put:
+      operationId: updatePartNumber
+      summary: Change the number and name of a part number (A-2)
+      parameters:
+        - $ref: '#/components/parameters/PartNumberId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PartNumberUpdate'
+      responses:
+        '200':
+          description: The part number was changed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PartNumber'
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/audit-log:
     get:
       operationId: listAuditLog
@@ -340,6 +599,43 @@ components:
       required: true
       schema:
         type: string
+    CustomerId:
+      name: customerId
+      in: path
+      required: true
+      schema:
+        type: string
+    CustomerIdQuery:
+      name: customer_id
+      in: query
+      required: true
+      description: The customer whose master data is listed.
+      schema:
+        type: string
+    ProjectGroupId:
+      name: projectGroupId
+      in: path
+      required: true
+      schema:
+        type: string
+    ModelGroupId:
+      name: modelGroupId
+      in: path
+      required: true
+      schema:
+        type: string
+    ModelId:
+      name: modelId
+      in: path
+      required: true
+      schema:
+        type: string
+    PartNumberId:
+      name: partNumberId
+      in: path
+      required: true
+      schema:
+        type: string
   securitySchemes:
     sessionCookie:
       type: apiKey
@@ -373,22 +669,56 @@ components:
           enum: [ok, unreachable]
     Customer:
       type: object
-      required: [id, code, name, created_at]
+      required: [id, code, name, active, codes, created_at]
       properties:
         id:
           type: string
           description: Opaque stable ID.
         code:
           type: string
-          description: Customer code used in document numbers, for example SC-AB-001.
+          description: Current customer code used in document numbers, for example SC-AB-001.
           pattern: '^[A-Z]{2}$'
           example: AB
         name:
           type: string
           example: Example Customer
+        project_group:
+          $ref: '#/components/schemas/ProjectGroupRef'
+        active:
+          type: boolean
+          description: Customers are never deleted; inactive customers get no new models (E-09).
+        codes:
+          type: array
+          description: All codes of the customer, oldest first. The last one is the current code (E-11).
+          items:
+            $ref: '#/components/schemas/CustomerCode'
         created_at:
           type: string
           format: date-time
+    CustomerCode:
+      type: object
+      required: [code, valid_from]
+      properties:
+        code:
+          type: string
+        valid_from:
+          type: string
+          format: date-time
+        valid_until:
+          type: string
+          format: date-time
+          description: Missing for the current code.
+    ProjectGroupRef:
+      type: object
+      required: [id, code]
+      description: |
+        The project group of the customer (D-54). Missing only for customers
+        added before project groups existed.
+      properties:
+        id:
+          type: string
+        code:
+          type: string
     Credentials:
       type: object
       required: [login, password]
@@ -695,7 +1025,7 @@ components:
             `hash_mismatch`: the content no longer matches the hash, so it was changed.
     NewCustomer:
       type: object
-      required: [code, name]
+      required: [code, name, project_group_id]
       properties:
         code:
           type: string
@@ -707,6 +1037,203 @@ components:
           type: string
           description: 1 to 200 characters after spaces around it are removed.
           example: Example Customer
+        project_group_id:
+          type: string
+          description: Each customer is allocated to one project group (D-54).
+    CustomerUpdate:
+      type: object
+      required: [name, project_group_id, active]
+      properties:
+        name:
+          type: string
+        project_group_id:
+          type: string
+        active:
+          type: boolean
+    CustomerCodeChange:
+      type: object
+      required: [code]
+      properties:
+        code:
+          type: string
+          description: |
+            Two letters A to Z. A code that another customer uses, or used
+            before, is refused.
+    ProjectGroup:
+      type: object
+      required: [id, code, name, created_at]
+      properties:
+        id:
+          type: string
+        code:
+          type: string
+          example: GR1
+        name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    ProjectGroupInput:
+      type: object
+      required: [code, name]
+      properties:
+        code:
+          type: string
+          description: 1 to 10 letters A to Z or digits, made uppercase, for example GR1.
+        name:
+          type: string
+    ProjectGroupList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProjectGroup'
+    ModelGroup:
+      type: object
+      required: [id, customer_id, name, created_at]
+      description: A named set of models of one customer that share template content (D-39, D-42).
+      properties:
+        id:
+          type: string
+        customer_id:
+          type: string
+        name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    NewModelGroup:
+      type: object
+      required: [customer_id, name]
+      properties:
+        customer_id:
+          type: string
+        name:
+          type: string
+          description: 1 to 200 characters, unique within the customer.
+    ModelGroupUpdate:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+    ModelGroupList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModelGroup'
+    Model:
+      type: object
+      required: [id, customer_id, name, created_at]
+      properties:
+        id:
+          type: string
+        customer_id:
+          type: string
+        model_group:
+          $ref: '#/components/schemas/ModelGroupRef'
+        name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    ModelGroupRef:
+      type: object
+      required: [id, name]
+      description: The model group of the model. Missing when the model is in no group.
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+    NewModel:
+      type: object
+      required: [customer_id, name]
+      properties:
+        customer_id:
+          type: string
+        name:
+          type: string
+          description: 1 to 200 characters, unique within the customer.
+        model_group_id:
+          type: string
+          description: A model group of the same customer. Leave it out for no group.
+    ModelUpdate:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        model_group_id:
+          type: string
+          description: Leave it out to take the model out of its group.
+    ModelList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Model'
+    PartNumber:
+      type: object
+      required: [id, customer_id, model, number, created_at]
+      properties:
+        id:
+          type: string
+        customer_id:
+          type: string
+        model:
+          $ref: '#/components/schemas/ModelRef'
+        number:
+          type: string
+        name:
+          type: string
+          description: Name of the part, for example the description on the PFMEA.
+        created_at:
+          type: string
+          format: date-time
+    ModelRef:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+    NewPartNumber:
+      type: object
+      required: [model_id, number]
+      properties:
+        model_id:
+          type: string
+        number:
+          type: string
+          description: 1 to 100 characters, unique within the customer of the model.
+        name:
+          type: string
+    PartNumberUpdate:
+      type: object
+      required: [number]
+      properties:
+        number:
+          type: string
+        name:
+          type: string
+          description: Leave it out to remove the name.
+    PartNumberList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PartNumber'
     CustomerList:
       type: object
       required: [items]

@@ -7,8 +7,22 @@ import {
 	enableAccount,
 	getSession,
 	listAccounts,
+	changeCustomerCode,
+	createModel,
+	createModelGroup,
+	createPartNumber,
+	createProjectGroup,
 	listAuditLog,
 	listCustomers,
+	listModelGroups,
+	listModels,
+	listPartNumbers,
+	listProjectGroups,
+	renameModelGroup,
+	updateCustomer,
+	updateModel,
+	updatePartNumber,
+	updateProjectGroup,
 	listRoles,
 	login,
 	logout,
@@ -34,6 +48,9 @@ const customer = {
 	id: 'id-ab',
 	code: 'AB',
 	name: 'Example Customer',
+	project_group: { id: 'gr-1', code: 'GR1' },
+	active: true,
+	codes: [{ code: 'AB', valid_from: '2026-10-28T03:00:00Z' }],
 	created_at: '2026-10-28T03:00:00Z'
 };
 
@@ -68,14 +85,18 @@ describe('createCustomer', () => {
 	it('mengirim input sebagai JSON lewat POST', async () => {
 		const calls: Call[] = [];
 		const result = await createCustomer(
-			{ code: 'ab', name: 'Example Customer' },
+			{ code: 'ab', name: 'Example Customer', project_group_id: 'gr-1' },
 			fakeFetch(Response.json(customer, { status: 201 }), calls)
 		);
 
 		expect(calls[0].url).toBe('/api/v1/customers');
 		expect(calls[0].init?.method).toBe('POST');
 		expect(new Headers(calls[0].init?.headers).get('Content-Type')).toBe('application/json');
-		expect(JSON.parse(String(calls[0].init?.body))).toEqual({ code: 'ab', name: 'Example Customer' });
+		expect(JSON.parse(String(calls[0].init?.body))).toEqual({
+			code: 'ab',
+			name: 'Example Customer',
+			project_group_id: 'gr-1'
+		});
 		expect(result).toEqual({ ok: true, data: customer });
 	});
 
@@ -87,7 +108,7 @@ describe('createCustomer', () => {
 			request_id: 'uji-422'
 		};
 		const result = await createCustomer(
-			{ code: 'ZZ', name: 'X' },
+			{ code: 'ZZ', name: 'X', project_group_id: 'gr-1' },
 			fakeFetch(Response.json(error, { status: 422 }))
 		);
 		expect(result).toEqual({ ok: false, error: { status: 422, body: error } });
@@ -95,7 +116,7 @@ describe('createCustomer', () => {
 
 	it('mengabaikan isi error yang tidak sesuai kontrak', async () => {
 		const result = await createCustomer(
-			{ code: 'AB', name: 'X' },
+			{ code: 'AB', name: 'X', project_group_id: 'gr-1' },
 			fakeFetch(new Response('Bad Gateway', { status: 502 }))
 		);
 		expect(result).toEqual({ ok: false, error: { status: 502, body: null } });
@@ -236,5 +257,45 @@ describe('audit log (A-4)', () => {
 			'GET /api/v1/audit-log?before=42',
 			'GET /api/v1/audit-log/verification'
 		]);
+	});
+});
+
+describe('master data (M1.4)', () => {
+	it('memanggil alamat dan method yang benar, dengan ID yang dikodekan', async () => {
+		const calls: Call[] = [];
+		const ok = () => fakeFetch(Response.json({ items: [] }), calls);
+		await listProjectGroups(ok());
+		await createProjectGroup({ code: 'gr1', name: 'Project Group 1' }, ok());
+		await updateProjectGroup('gr/1', { code: 'GR1', name: 'Satu' }, ok());
+		await updateCustomer('c/1', { name: 'X', project_group_id: 'gr-1', active: false }, ok());
+		await changeCustomerCode('c/1', 'cd', ok());
+		await listModelGroups('c&1', ok());
+		await createModelGroup({ customer_id: 'c-1', name: 'Family' }, ok());
+		await renameModelGroup('mg-1', 'Family B', ok());
+		await listModels('c-1', ok());
+		await createModel({ customer_id: 'c-1', name: 'X100' }, ok());
+		await updateModel('m-1', { name: 'X100A' }, ok());
+		await listPartNumbers('c-1', ok());
+		await createPartNumber({ model_id: 'm-1', number: 'PN-1' }, ok());
+		await updatePartNumber('p-1', { number: 'PN-1A' }, ok());
+
+		expect(calls.map((c) => `${c.init?.method} ${c.url}`)).toEqual([
+			'GET /api/v1/project-groups',
+			'POST /api/v1/project-groups',
+			'PUT /api/v1/project-groups/gr%2F1',
+			'PUT /api/v1/customers/c%2F1',
+			'POST /api/v1/customers/c%2F1/code',
+			'GET /api/v1/model-groups?customer_id=c%261',
+			'POST /api/v1/model-groups',
+			'PUT /api/v1/model-groups/mg-1',
+			'GET /api/v1/models?customer_id=c-1',
+			'POST /api/v1/models',
+			'PUT /api/v1/models/m-1',
+			'GET /api/v1/part-numbers?customer_id=c-1',
+			'POST /api/v1/part-numbers',
+			'PUT /api/v1/part-numbers/p-1'
+		]);
+		expect(JSON.parse(String(calls[4].init?.body))).toEqual({ code: 'cd' });
+		expect(JSON.parse(String(calls[7].init?.body))).toEqual({ name: 'Family B' });
 	});
 });

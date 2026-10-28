@@ -414,22 +414,55 @@ type Credentials struct {
 
 // Customer defines model for Customer.
 type Customer struct {
-	// Code Customer code used in document numbers, for example SC-AB-001.
+	// Active Customers are never deleted; inactive customers get no new models (E-09).
+	Active bool `json:"active"`
+
+	// Code Current customer code used in document numbers, for example SC-AB-001.
 	//
 	// Example: AB
-	Code      string    `json:"code"`
-	CreatedAt time.Time `json:"created_at"`
+	Code string `json:"code"`
+
+	// Codes All codes of the customer, oldest first. The last one is the current code (E-11).
+	Codes     []CustomerCode `json:"codes"`
+	CreatedAt time.Time      `json:"created_at"`
 
 	// Id Opaque stable ID.
 	Id string `json:"id"`
 
 	// Name Example: Example Customer
 	Name string `json:"name"`
+
+	// ProjectGroup The project group of the customer (D-54). Missing only for customers
+	// added before project groups existed.
+	ProjectGroup *ProjectGroupRef `json:"project_group,omitempty"`
+}
+
+// CustomerCode defines model for CustomerCode.
+type CustomerCode struct {
+	Code      string    `json:"code"`
+	ValidFrom time.Time `json:"valid_from"`
+
+	// ValidUntil Missing for the current code.
+	ValidUntil *time.Time `json:"valid_until,omitempty"`
+}
+
+// CustomerCodeChange defines model for CustomerCodeChange.
+type CustomerCodeChange struct {
+	// Code Two letters A to Z. A code that another customer uses, or used
+	// before, is refused.
+	Code string `json:"code"`
 }
 
 // CustomerList defines model for CustomerList.
 type CustomerList struct {
 	Items []Customer `json:"items"`
+}
+
+// CustomerUpdate defines model for CustomerUpdate.
+type CustomerUpdate struct {
+	Active         bool   `json:"active"`
+	Name           string `json:"name"`
+	ProjectGroupId string `json:"project_group_id"`
 }
 
 // Error defines model for Error.
@@ -471,6 +504,59 @@ type HealthDatabase string
 // HealthStatus defines model for Health.Status.
 type HealthStatus string
 
+// Model defines model for Model.
+type Model struct {
+	CreatedAt  time.Time `json:"created_at"`
+	CustomerId string    `json:"customer_id"`
+	Id         string    `json:"id"`
+
+	// ModelGroup The model group of the model. Missing when the model is in no group.
+	ModelGroup *ModelGroupRef `json:"model_group,omitempty"`
+	Name       string         `json:"name"`
+}
+
+// ModelGroup A named set of models of one customer that share template content (D-39, D-42).
+type ModelGroup struct {
+	CreatedAt  time.Time `json:"created_at"`
+	CustomerId string    `json:"customer_id"`
+	Id         string    `json:"id"`
+	Name       string    `json:"name"`
+}
+
+// ModelGroupList defines model for ModelGroupList.
+type ModelGroupList struct {
+	Items []ModelGroup `json:"items"`
+}
+
+// ModelGroupRef The model group of the model. Missing when the model is in no group.
+type ModelGroupRef struct {
+	Id   string `json:"id"`
+	Name string `json:"name"`
+}
+
+// ModelGroupUpdate defines model for ModelGroupUpdate.
+type ModelGroupUpdate struct {
+	Name string `json:"name"`
+}
+
+// ModelList defines model for ModelList.
+type ModelList struct {
+	Items []Model `json:"items"`
+}
+
+// ModelRef defines model for ModelRef.
+type ModelRef struct {
+	Id   string `json:"id"`
+	Name string `json:"name"`
+}
+
+// ModelUpdate defines model for ModelUpdate.
+type ModelUpdate struct {
+	// ModelGroupId Leave it out to take the model out of its group.
+	ModelGroupId *string `json:"model_group_id,omitempty"`
+	Name         string  `json:"name"`
+}
+
 // NewAccount Give `person_id` for a person who already has an account (for example
 // an admin account for the PPAP Staff, D-72), or `person_name` for a
 // new person, not both.
@@ -501,6 +587,61 @@ type NewCustomer struct {
 	//
 	// Example: Example Customer
 	Name string `json:"name"`
+
+	// ProjectGroupId Each customer is allocated to one project group (D-54).
+	ProjectGroupId string `json:"project_group_id"`
+}
+
+// NewModel defines model for NewModel.
+type NewModel struct {
+	CustomerId string `json:"customer_id"`
+
+	// ModelGroupId A model group of the same customer. Leave it out for no group.
+	ModelGroupId *string `json:"model_group_id,omitempty"`
+
+	// Name 1 to 200 characters, unique within the customer.
+	Name string `json:"name"`
+}
+
+// NewModelGroup defines model for NewModelGroup.
+type NewModelGroup struct {
+	CustomerId string `json:"customer_id"`
+
+	// Name 1 to 200 characters, unique within the customer.
+	Name string `json:"name"`
+}
+
+// NewPartNumber defines model for NewPartNumber.
+type NewPartNumber struct {
+	ModelId string  `json:"model_id"`
+	Name    *string `json:"name,omitempty"`
+
+	// Number 1 to 100 characters, unique within the customer of the model.
+	Number string `json:"number"`
+}
+
+// PartNumber defines model for PartNumber.
+type PartNumber struct {
+	CreatedAt  time.Time `json:"created_at"`
+	CustomerId string    `json:"customer_id"`
+	Id         string    `json:"id"`
+	Model      ModelRef  `json:"model"`
+
+	// Name Name of the part, for example the description on the PFMEA.
+	Name   *string `json:"name,omitempty"`
+	Number string  `json:"number"`
+}
+
+// PartNumberList defines model for PartNumberList.
+type PartNumberList struct {
+	Items []PartNumber `json:"items"`
+}
+
+// PartNumberUpdate defines model for PartNumberUpdate.
+type PartNumberUpdate struct {
+	// Name Leave it out to remove the name.
+	Name   *string `json:"name,omitempty"`
+	Number string  `json:"number"`
 }
 
 // PasswordChange defines model for PasswordChange.
@@ -526,6 +667,34 @@ type PersonInfo struct {
 	// Id Opaque stable ID.
 	Id   string `json:"id"`
 	Name string `json:"name"`
+}
+
+// ProjectGroup defines model for ProjectGroup.
+type ProjectGroup struct {
+	// Code Example: GR1
+	Code      string    `json:"code"`
+	CreatedAt time.Time `json:"created_at"`
+	Id        string    `json:"id"`
+	Name      string    `json:"name"`
+}
+
+// ProjectGroupInput defines model for ProjectGroupInput.
+type ProjectGroupInput struct {
+	// Code 1 to 10 letters A to Z or digits, made uppercase, for example GR1.
+	Code string `json:"code"`
+	Name string `json:"name"`
+}
+
+// ProjectGroupList defines model for ProjectGroupList.
+type ProjectGroupList struct {
+	Items []ProjectGroup `json:"items"`
+}
+
+// ProjectGroupRef The project group of the customer (D-54). Missing only for customers
+// added before project groups existed.
+type ProjectGroupRef struct {
+	Code string `json:"code"`
+	Id   string `json:"id"`
 }
 
 // Role defines model for Role.
@@ -590,6 +759,24 @@ type TemporaryPassword struct {
 // AccountId defines model for AccountId.
 type AccountId = string
 
+// CustomerId defines model for CustomerId.
+type CustomerId = string
+
+// CustomerIdQuery defines model for CustomerIdQuery.
+type CustomerIdQuery = string
+
+// ModelGroupId defines model for ModelGroupId.
+type ModelGroupId = string
+
+// ModelId defines model for ModelId.
+type ModelId = string
+
+// PartNumberId defines model for PartNumberId.
+type PartNumberId = string
+
+// ProjectGroupId defines model for ProjectGroupId.
+type ProjectGroupId = string
+
 // ListAuditLogParams defines parameters for ListAuditLog.
 type ListAuditLogParams struct {
 	// Before Return entries with a lower number than this. Leave it out for the newest entries.
@@ -597,6 +784,24 @@ type ListAuditLogParams struct {
 
 	// Limit Number of entries to return.
 	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListModelGroupsParams defines parameters for ListModelGroups.
+type ListModelGroupsParams struct {
+	// CustomerId The customer whose master data is listed.
+	CustomerId CustomerIdQuery `form:"customer_id" json:"customer_id"`
+}
+
+// ListModelsParams defines parameters for ListModels.
+type ListModelsParams struct {
+	// CustomerId The customer whose master data is listed.
+	CustomerId CustomerIdQuery `form:"customer_id" json:"customer_id"`
+}
+
+// ListPartNumbersParams defines parameters for ListPartNumbers.
+type ListPartNumbersParams struct {
+	// CustomerId The customer whose master data is listed.
+	CustomerId CustomerIdQuery `form:"customer_id" json:"customer_id"`
 }
 
 // ChangePasswordJSONRequestBody defines body for ChangePassword for application/json ContentType.
@@ -610,6 +815,36 @@ type SetAccountRolesJSONRequestBody = RolesUpdate
 
 // CreateCustomerJSONRequestBody defines body for CreateCustomer for application/json ContentType.
 type CreateCustomerJSONRequestBody = NewCustomer
+
+// UpdateCustomerJSONRequestBody defines body for UpdateCustomer for application/json ContentType.
+type UpdateCustomerJSONRequestBody = CustomerUpdate
+
+// ChangeCustomerCodeJSONRequestBody defines body for ChangeCustomerCode for application/json ContentType.
+type ChangeCustomerCodeJSONRequestBody = CustomerCodeChange
+
+// CreateModelGroupJSONRequestBody defines body for CreateModelGroup for application/json ContentType.
+type CreateModelGroupJSONRequestBody = NewModelGroup
+
+// UpdateModelGroupJSONRequestBody defines body for UpdateModelGroup for application/json ContentType.
+type UpdateModelGroupJSONRequestBody = ModelGroupUpdate
+
+// CreateModelJSONRequestBody defines body for CreateModel for application/json ContentType.
+type CreateModelJSONRequestBody = NewModel
+
+// UpdateModelJSONRequestBody defines body for UpdateModel for application/json ContentType.
+type UpdateModelJSONRequestBody = ModelUpdate
+
+// CreatePartNumberJSONRequestBody defines body for CreatePartNumber for application/json ContentType.
+type CreatePartNumberJSONRequestBody = NewPartNumber
+
+// UpdatePartNumberJSONRequestBody defines body for UpdatePartNumber for application/json ContentType.
+type UpdatePartNumberJSONRequestBody = PartNumberUpdate
+
+// CreateProjectGroupJSONRequestBody defines body for CreateProjectGroup for application/json ContentType.
+type CreateProjectGroupJSONRequestBody = ProjectGroupInput
+
+// UpdateProjectGroupJSONRequestBody defines body for UpdateProjectGroup for application/json ContentType.
+type UpdateProjectGroupJSONRequestBody = ProjectGroupInput
 
 // LoginJSONRequestBody defines body for Login for application/json ContentType.
 type LoginJSONRequestBody = Credentials
@@ -649,6 +884,48 @@ type ServerInterface interface {
 	// CreateCustomer Add a customer
 	// (POST /api/v1/customers)
 	CreateCustomer(w http.ResponseWriter, r *http.Request)
+	// UpdateCustomer Change the name, project group, and status of a customer (A-2)
+	// (PUT /api/v1/customers/{customerId})
+	UpdateCustomer(w http.ResponseWriter, r *http.Request, customerId CustomerId)
+	// ChangeCustomerCode Give a customer a new code; the old code stays in its history (A-2, E-11)
+	// (POST /api/v1/customers/{customerId}/code)
+	ChangeCustomerCode(w http.ResponseWriter, r *http.Request, customerId CustomerId)
+	// ListModelGroups The model groups of one customer, ordered by name
+	// (GET /api/v1/model-groups)
+	ListModelGroups(w http.ResponseWriter, r *http.Request, params ListModelGroupsParams)
+	// CreateModelGroup Add a model group to a customer (A-2)
+	// (POST /api/v1/model-groups)
+	CreateModelGroup(w http.ResponseWriter, r *http.Request)
+	// UpdateModelGroup Rename a model group (A-2)
+	// (PUT /api/v1/model-groups/{modelGroupId})
+	UpdateModelGroup(w http.ResponseWriter, r *http.Request, modelGroupId ModelGroupId)
+	// ListModels The models of one customer, ordered by name
+	// (GET /api/v1/models)
+	ListModels(w http.ResponseWriter, r *http.Request, params ListModelsParams)
+	// CreateModel Add a model to a customer, in at most one model group (A-2, D-42)
+	// (POST /api/v1/models)
+	CreateModel(w http.ResponseWriter, r *http.Request)
+	// UpdateModel Rename a model or move it to another model group of the same customer (A-2)
+	// (PUT /api/v1/models/{modelId})
+	UpdateModel(w http.ResponseWriter, r *http.Request, modelId ModelId)
+	// ListPartNumbers The part numbers of one customer, ordered by model and number
+	// (GET /api/v1/part-numbers)
+	ListPartNumbers(w http.ResponseWriter, r *http.Request, params ListPartNumbersParams)
+	// CreatePartNumber Add a part number to a model (A-2)
+	// (POST /api/v1/part-numbers)
+	CreatePartNumber(w http.ResponseWriter, r *http.Request)
+	// UpdatePartNumber Change the number and name of a part number (A-2)
+	// (PUT /api/v1/part-numbers/{partNumberId})
+	UpdatePartNumber(w http.ResponseWriter, r *http.Request, partNumberId PartNumberId)
+	// ListProjectGroups All project groups, ordered by code
+	// (GET /api/v1/project-groups)
+	ListProjectGroups(w http.ResponseWriter, r *http.Request)
+	// CreateProjectGroup Add a project group (A-2)
+	// (POST /api/v1/project-groups)
+	CreateProjectGroup(w http.ResponseWriter, r *http.Request)
+	// UpdateProjectGroup Change the code and name of a project group (A-2)
+	// (PUT /api/v1/project-groups/{projectGroupId})
+	UpdateProjectGroup(w http.ResponseWriter, r *http.Request, projectGroupId ProjectGroupId)
 	// ListRoles The role catalog with the rights of each role (A-1)
 	// (GET /api/v1/roles)
 	ListRoles(w http.ResponseWriter, r *http.Request)
@@ -909,6 +1186,331 @@ func (siw *ServerInterfaceWrapper) CreateCustomer(w http.ResponseWriter, r *http
 	handler.ServeHTTP(w, r)
 }
 
+// UpdateCustomer operation middleware
+func (siw *ServerInterfaceWrapper) UpdateCustomer(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "customerId" -------------
+	var customerId CustomerId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "customerId", r.PathValue("customerId"), &customerId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customerId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateCustomer(w, r, customerId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ChangeCustomerCode operation middleware
+func (siw *ServerInterfaceWrapper) ChangeCustomerCode(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "customerId" -------------
+	var customerId CustomerId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "customerId", r.PathValue("customerId"), &customerId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customerId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ChangeCustomerCode(w, r, customerId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListModelGroups operation middleware
+func (siw *ServerInterfaceWrapper) ListModelGroups(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListModelGroupsParams
+
+	// ------------- Required query parameter "customer_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "customer_id", r.URL.Query(), &params.CustomerId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "customer_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customer_id", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListModelGroups(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateModelGroup operation middleware
+func (siw *ServerInterfaceWrapper) CreateModelGroup(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateModelGroup(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateModelGroup operation middleware
+func (siw *ServerInterfaceWrapper) UpdateModelGroup(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "modelGroupId" -------------
+	var modelGroupId ModelGroupId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "modelGroupId", r.PathValue("modelGroupId"), &modelGroupId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "modelGroupId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateModelGroup(w, r, modelGroupId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListModels operation middleware
+func (siw *ServerInterfaceWrapper) ListModels(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListModelsParams
+
+	// ------------- Required query parameter "customer_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "customer_id", r.URL.Query(), &params.CustomerId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "customer_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customer_id", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListModels(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateModel operation middleware
+func (siw *ServerInterfaceWrapper) CreateModel(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateModel(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateModel operation middleware
+func (siw *ServerInterfaceWrapper) UpdateModel(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "modelId" -------------
+	var modelId ModelId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "modelId", r.PathValue("modelId"), &modelId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "modelId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateModel(w, r, modelId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListPartNumbers operation middleware
+func (siw *ServerInterfaceWrapper) ListPartNumbers(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListPartNumbersParams
+
+	// ------------- Required query parameter "customer_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "customer_id", r.URL.Query(), &params.CustomerId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "customer_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customer_id", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListPartNumbers(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreatePartNumber operation middleware
+func (siw *ServerInterfaceWrapper) CreatePartNumber(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreatePartNumber(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdatePartNumber operation middleware
+func (siw *ServerInterfaceWrapper) UpdatePartNumber(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "partNumberId" -------------
+	var partNumberId PartNumberId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "partNumberId", r.PathValue("partNumberId"), &partNumberId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "partNumberId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdatePartNumber(w, r, partNumberId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListProjectGroups operation middleware
+func (siw *ServerInterfaceWrapper) ListProjectGroups(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListProjectGroups(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateProjectGroup operation middleware
+func (siw *ServerInterfaceWrapper) CreateProjectGroup(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateProjectGroup(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateProjectGroup operation middleware
+func (siw *ServerInterfaceWrapper) UpdateProjectGroup(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "projectGroupId" -------------
+	var projectGroupId ProjectGroupId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "projectGroupId", r.PathValue("projectGroupId"), &projectGroupId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "projectGroupId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateProjectGroup(w, r, projectGroupId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListRoles operation middleware
 func (siw *ServerInterfaceWrapper) ListRoles(w http.ResponseWriter, r *http.Request) {
 
@@ -1113,6 +1715,20 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/accounts/{accountId}/enable", wrapper.EnableAccount)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/customers", wrapper.ListCustomers)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/customers", wrapper.CreateCustomer)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/customers/{customerId}", wrapper.UpdateCustomer)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/customers/{customerId}/code", wrapper.ChangeCustomerCode)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/project-groups", wrapper.ListProjectGroups)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/project-groups", wrapper.CreateProjectGroup)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/project-groups/{projectGroupId}", wrapper.UpdateProjectGroup)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/model-groups", wrapper.ListModelGroups)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/model-groups", wrapper.CreateModelGroup)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/model-groups/{modelGroupId}", wrapper.UpdateModelGroup)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/models", wrapper.ListModels)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/models", wrapper.CreateModel)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/models/{modelId}", wrapper.UpdateModel)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/part-numbers", wrapper.ListPartNumbers)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/part-numbers", wrapper.CreatePartNumber)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/part-numbers/{partNumberId}", wrapper.UpdatePartNumber)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/audit-log", wrapper.ListAuditLog)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/audit-log/verification", wrapper.VerifyAuditLog)
 
@@ -1620,6 +2236,557 @@ func (response CreateCustomerdefaultJSONResponse) VisitCreateCustomerResponse(w 
 	return err
 }
 
+type UpdateCustomerRequestObject struct {
+	CustomerId CustomerId `json:"customerId"`
+	Body       *UpdateCustomerJSONRequestBody
+}
+
+type UpdateCustomerResponseObject interface {
+	VisitUpdateCustomerResponse(w http.ResponseWriter) error
+}
+
+type UpdateCustomer200JSONResponse Customer
+
+func (response UpdateCustomer200JSONResponse) VisitUpdateCustomerResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateCustomerdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response UpdateCustomerdefaultJSONResponse) VisitUpdateCustomerResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangeCustomerCodeRequestObject struct {
+	CustomerId CustomerId `json:"customerId"`
+	Body       *ChangeCustomerCodeJSONRequestBody
+}
+
+type ChangeCustomerCodeResponseObject interface {
+	VisitChangeCustomerCodeResponse(w http.ResponseWriter) error
+}
+
+type ChangeCustomerCode200JSONResponse Customer
+
+func (response ChangeCustomerCode200JSONResponse) VisitChangeCustomerCodeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ChangeCustomerCodedefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ChangeCustomerCodedefaultJSONResponse) VisitChangeCustomerCodeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListModelGroupsRequestObject struct {
+	Params ListModelGroupsParams
+}
+
+type ListModelGroupsResponseObject interface {
+	VisitListModelGroupsResponse(w http.ResponseWriter) error
+}
+
+type ListModelGroups200JSONResponse ModelGroupList
+
+func (response ListModelGroups200JSONResponse) VisitListModelGroupsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListModelGroupsdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ListModelGroupsdefaultJSONResponse) VisitListModelGroupsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateModelGroupRequestObject struct {
+	Body *CreateModelGroupJSONRequestBody
+}
+
+type CreateModelGroupResponseObject interface {
+	VisitCreateModelGroupResponse(w http.ResponseWriter) error
+}
+
+type CreateModelGroup201JSONResponse ModelGroup
+
+func (response CreateModelGroup201JSONResponse) VisitCreateModelGroupResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateModelGroupdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response CreateModelGroupdefaultJSONResponse) VisitCreateModelGroupResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateModelGroupRequestObject struct {
+	ModelGroupId ModelGroupId `json:"modelGroupId"`
+	Body         *UpdateModelGroupJSONRequestBody
+}
+
+type UpdateModelGroupResponseObject interface {
+	VisitUpdateModelGroupResponse(w http.ResponseWriter) error
+}
+
+type UpdateModelGroup200JSONResponse ModelGroup
+
+func (response UpdateModelGroup200JSONResponse) VisitUpdateModelGroupResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateModelGroupdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response UpdateModelGroupdefaultJSONResponse) VisitUpdateModelGroupResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListModelsRequestObject struct {
+	Params ListModelsParams
+}
+
+type ListModelsResponseObject interface {
+	VisitListModelsResponse(w http.ResponseWriter) error
+}
+
+type ListModels200JSONResponse ModelList
+
+func (response ListModels200JSONResponse) VisitListModelsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListModelsdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ListModelsdefaultJSONResponse) VisitListModelsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateModelRequestObject struct {
+	Body *CreateModelJSONRequestBody
+}
+
+type CreateModelResponseObject interface {
+	VisitCreateModelResponse(w http.ResponseWriter) error
+}
+
+type CreateModel201JSONResponse Model
+
+func (response CreateModel201JSONResponse) VisitCreateModelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateModeldefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response CreateModeldefaultJSONResponse) VisitCreateModelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateModelRequestObject struct {
+	ModelId ModelId `json:"modelId"`
+	Body    *UpdateModelJSONRequestBody
+}
+
+type UpdateModelResponseObject interface {
+	VisitUpdateModelResponse(w http.ResponseWriter) error
+}
+
+type UpdateModel200JSONResponse Model
+
+func (response UpdateModel200JSONResponse) VisitUpdateModelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateModeldefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response UpdateModeldefaultJSONResponse) VisitUpdateModelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPartNumbersRequestObject struct {
+	Params ListPartNumbersParams
+}
+
+type ListPartNumbersResponseObject interface {
+	VisitListPartNumbersResponse(w http.ResponseWriter) error
+}
+
+type ListPartNumbers200JSONResponse PartNumberList
+
+func (response ListPartNumbers200JSONResponse) VisitListPartNumbersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPartNumbersdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ListPartNumbersdefaultJSONResponse) VisitListPartNumbersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePartNumberRequestObject struct {
+	Body *CreatePartNumberJSONRequestBody
+}
+
+type CreatePartNumberResponseObject interface {
+	VisitCreatePartNumberResponse(w http.ResponseWriter) error
+}
+
+type CreatePartNumber201JSONResponse PartNumber
+
+func (response CreatePartNumber201JSONResponse) VisitCreatePartNumberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePartNumberdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response CreatePartNumberdefaultJSONResponse) VisitCreatePartNumberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdatePartNumberRequestObject struct {
+	PartNumberId PartNumberId `json:"partNumberId"`
+	Body         *UpdatePartNumberJSONRequestBody
+}
+
+type UpdatePartNumberResponseObject interface {
+	VisitUpdatePartNumberResponse(w http.ResponseWriter) error
+}
+
+type UpdatePartNumber200JSONResponse PartNumber
+
+func (response UpdatePartNumber200JSONResponse) VisitUpdatePartNumberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdatePartNumberdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response UpdatePartNumberdefaultJSONResponse) VisitUpdatePartNumberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListProjectGroupsRequestObject struct {
+}
+
+type ListProjectGroupsResponseObject interface {
+	VisitListProjectGroupsResponse(w http.ResponseWriter) error
+}
+
+type ListProjectGroups200JSONResponse ProjectGroupList
+
+func (response ListProjectGroups200JSONResponse) VisitListProjectGroupsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListProjectGroupsdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ListProjectGroupsdefaultJSONResponse) VisitListProjectGroupsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateProjectGroupRequestObject struct {
+	Body *CreateProjectGroupJSONRequestBody
+}
+
+type CreateProjectGroupResponseObject interface {
+	VisitCreateProjectGroupResponse(w http.ResponseWriter) error
+}
+
+type CreateProjectGroup201JSONResponse ProjectGroup
+
+func (response CreateProjectGroup201JSONResponse) VisitCreateProjectGroupResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateProjectGroupdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response CreateProjectGroupdefaultJSONResponse) VisitCreateProjectGroupResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateProjectGroupRequestObject struct {
+	ProjectGroupId ProjectGroupId `json:"projectGroupId"`
+	Body           *UpdateProjectGroupJSONRequestBody
+}
+
+type UpdateProjectGroupResponseObject interface {
+	VisitUpdateProjectGroupResponse(w http.ResponseWriter) error
+}
+
+type UpdateProjectGroup200JSONResponse ProjectGroup
+
+func (response UpdateProjectGroup200JSONResponse) VisitUpdateProjectGroupResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateProjectGroupdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response UpdateProjectGroupdefaultJSONResponse) VisitUpdateProjectGroupResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListRolesRequestObject struct {
 }
 
@@ -1883,6 +3050,48 @@ type StrictServerInterface interface {
 	// CreateCustomer Add a customer
 	// (POST /api/v1/customers)
 	CreateCustomer(ctx context.Context, request CreateCustomerRequestObject) (CreateCustomerResponseObject, error)
+	// UpdateCustomer Change the name, project group, and status of a customer (A-2)
+	// (PUT /api/v1/customers/{customerId})
+	UpdateCustomer(ctx context.Context, request UpdateCustomerRequestObject) (UpdateCustomerResponseObject, error)
+	// ChangeCustomerCode Give a customer a new code; the old code stays in its history (A-2, E-11)
+	// (POST /api/v1/customers/{customerId}/code)
+	ChangeCustomerCode(ctx context.Context, request ChangeCustomerCodeRequestObject) (ChangeCustomerCodeResponseObject, error)
+	// ListModelGroups The model groups of one customer, ordered by name
+	// (GET /api/v1/model-groups)
+	ListModelGroups(ctx context.Context, request ListModelGroupsRequestObject) (ListModelGroupsResponseObject, error)
+	// CreateModelGroup Add a model group to a customer (A-2)
+	// (POST /api/v1/model-groups)
+	CreateModelGroup(ctx context.Context, request CreateModelGroupRequestObject) (CreateModelGroupResponseObject, error)
+	// UpdateModelGroup Rename a model group (A-2)
+	// (PUT /api/v1/model-groups/{modelGroupId})
+	UpdateModelGroup(ctx context.Context, request UpdateModelGroupRequestObject) (UpdateModelGroupResponseObject, error)
+	// ListModels The models of one customer, ordered by name
+	// (GET /api/v1/models)
+	ListModels(ctx context.Context, request ListModelsRequestObject) (ListModelsResponseObject, error)
+	// CreateModel Add a model to a customer, in at most one model group (A-2, D-42)
+	// (POST /api/v1/models)
+	CreateModel(ctx context.Context, request CreateModelRequestObject) (CreateModelResponseObject, error)
+	// UpdateModel Rename a model or move it to another model group of the same customer (A-2)
+	// (PUT /api/v1/models/{modelId})
+	UpdateModel(ctx context.Context, request UpdateModelRequestObject) (UpdateModelResponseObject, error)
+	// ListPartNumbers The part numbers of one customer, ordered by model and number
+	// (GET /api/v1/part-numbers)
+	ListPartNumbers(ctx context.Context, request ListPartNumbersRequestObject) (ListPartNumbersResponseObject, error)
+	// CreatePartNumber Add a part number to a model (A-2)
+	// (POST /api/v1/part-numbers)
+	CreatePartNumber(ctx context.Context, request CreatePartNumberRequestObject) (CreatePartNumberResponseObject, error)
+	// UpdatePartNumber Change the number and name of a part number (A-2)
+	// (PUT /api/v1/part-numbers/{partNumberId})
+	UpdatePartNumber(ctx context.Context, request UpdatePartNumberRequestObject) (UpdatePartNumberResponseObject, error)
+	// ListProjectGroups All project groups, ordered by code
+	// (GET /api/v1/project-groups)
+	ListProjectGroups(ctx context.Context, request ListProjectGroupsRequestObject) (ListProjectGroupsResponseObject, error)
+	// CreateProjectGroup Add a project group (A-2)
+	// (POST /api/v1/project-groups)
+	CreateProjectGroup(ctx context.Context, request CreateProjectGroupRequestObject) (CreateProjectGroupResponseObject, error)
+	// UpdateProjectGroup Change the code and name of a project group (A-2)
+	// (PUT /api/v1/project-groups/{projectGroupId})
+	UpdateProjectGroup(ctx context.Context, request UpdateProjectGroupRequestObject) (UpdateProjectGroupResponseObject, error)
 	// ListRoles The role catalog with the rights of each role (A-1)
 	// (GET /api/v1/roles)
 	ListRoles(ctx context.Context, request ListRolesRequestObject) (ListRolesResponseObject, error)
@@ -2234,6 +3443,430 @@ func (sh *strictHandler) CreateCustomer(w http.ResponseWriter, r *http.Request) 
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(CreateCustomerResponseObject); ok {
 		if err := validResponse.VisitCreateCustomerResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateCustomer operation middleware
+func (sh *strictHandler) UpdateCustomer(w http.ResponseWriter, r *http.Request, customerId CustomerId) {
+	var request UpdateCustomerRequestObject
+
+	request.CustomerId = customerId
+
+	var body UpdateCustomerJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateCustomer(ctx, request.(UpdateCustomerRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateCustomer")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateCustomerResponseObject); ok {
+		if err := validResponse.VisitUpdateCustomerResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ChangeCustomerCode operation middleware
+func (sh *strictHandler) ChangeCustomerCode(w http.ResponseWriter, r *http.Request, customerId CustomerId) {
+	var request ChangeCustomerCodeRequestObject
+
+	request.CustomerId = customerId
+
+	var body ChangeCustomerCodeJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ChangeCustomerCode(ctx, request.(ChangeCustomerCodeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ChangeCustomerCode")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ChangeCustomerCodeResponseObject); ok {
+		if err := validResponse.VisitChangeCustomerCodeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListModelGroups operation middleware
+func (sh *strictHandler) ListModelGroups(w http.ResponseWriter, r *http.Request, params ListModelGroupsParams) {
+	var request ListModelGroupsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListModelGroups(ctx, request.(ListModelGroupsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListModelGroups")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListModelGroupsResponseObject); ok {
+		if err := validResponse.VisitListModelGroupsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateModelGroup operation middleware
+func (sh *strictHandler) CreateModelGroup(w http.ResponseWriter, r *http.Request) {
+	var request CreateModelGroupRequestObject
+
+	var body CreateModelGroupJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateModelGroup(ctx, request.(CreateModelGroupRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateModelGroup")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateModelGroupResponseObject); ok {
+		if err := validResponse.VisitCreateModelGroupResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateModelGroup operation middleware
+func (sh *strictHandler) UpdateModelGroup(w http.ResponseWriter, r *http.Request, modelGroupId ModelGroupId) {
+	var request UpdateModelGroupRequestObject
+
+	request.ModelGroupId = modelGroupId
+
+	var body UpdateModelGroupJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateModelGroup(ctx, request.(UpdateModelGroupRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateModelGroup")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateModelGroupResponseObject); ok {
+		if err := validResponse.VisitUpdateModelGroupResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListModels operation middleware
+func (sh *strictHandler) ListModels(w http.ResponseWriter, r *http.Request, params ListModelsParams) {
+	var request ListModelsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListModels(ctx, request.(ListModelsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListModels")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListModelsResponseObject); ok {
+		if err := validResponse.VisitListModelsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateModel operation middleware
+func (sh *strictHandler) CreateModel(w http.ResponseWriter, r *http.Request) {
+	var request CreateModelRequestObject
+
+	var body CreateModelJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateModel(ctx, request.(CreateModelRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateModel")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateModelResponseObject); ok {
+		if err := validResponse.VisitCreateModelResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateModel operation middleware
+func (sh *strictHandler) UpdateModel(w http.ResponseWriter, r *http.Request, modelId ModelId) {
+	var request UpdateModelRequestObject
+
+	request.ModelId = modelId
+
+	var body UpdateModelJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateModel(ctx, request.(UpdateModelRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateModel")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateModelResponseObject); ok {
+		if err := validResponse.VisitUpdateModelResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListPartNumbers operation middleware
+func (sh *strictHandler) ListPartNumbers(w http.ResponseWriter, r *http.Request, params ListPartNumbersParams) {
+	var request ListPartNumbersRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListPartNumbers(ctx, request.(ListPartNumbersRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListPartNumbers")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListPartNumbersResponseObject); ok {
+		if err := validResponse.VisitListPartNumbersResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreatePartNumber operation middleware
+func (sh *strictHandler) CreatePartNumber(w http.ResponseWriter, r *http.Request) {
+	var request CreatePartNumberRequestObject
+
+	var body CreatePartNumberJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreatePartNumber(ctx, request.(CreatePartNumberRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreatePartNumber")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreatePartNumberResponseObject); ok {
+		if err := validResponse.VisitCreatePartNumberResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdatePartNumber operation middleware
+func (sh *strictHandler) UpdatePartNumber(w http.ResponseWriter, r *http.Request, partNumberId PartNumberId) {
+	var request UpdatePartNumberRequestObject
+
+	request.PartNumberId = partNumberId
+
+	var body UpdatePartNumberJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdatePartNumber(ctx, request.(UpdatePartNumberRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdatePartNumber")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdatePartNumberResponseObject); ok {
+		if err := validResponse.VisitUpdatePartNumberResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListProjectGroups operation middleware
+func (sh *strictHandler) ListProjectGroups(w http.ResponseWriter, r *http.Request) {
+	var request ListProjectGroupsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListProjectGroups(ctx, request.(ListProjectGroupsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListProjectGroups")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListProjectGroupsResponseObject); ok {
+		if err := validResponse.VisitListProjectGroupsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateProjectGroup operation middleware
+func (sh *strictHandler) CreateProjectGroup(w http.ResponseWriter, r *http.Request) {
+	var request CreateProjectGroupRequestObject
+
+	var body CreateProjectGroupJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateProjectGroup(ctx, request.(CreateProjectGroupRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateProjectGroup")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateProjectGroupResponseObject); ok {
+		if err := validResponse.VisitCreateProjectGroupResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateProjectGroup operation middleware
+func (sh *strictHandler) UpdateProjectGroup(w http.ResponseWriter, r *http.Request, projectGroupId ProjectGroupId) {
+	var request UpdateProjectGroupRequestObject
+
+	request.ProjectGroupId = projectGroupId
+
+	var body UpdateProjectGroupJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateProjectGroup(ctx, request.(UpdateProjectGroupRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateProjectGroup")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateProjectGroupResponseObject); ok {
+		if err := validResponse.VisitUpdateProjectGroupResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

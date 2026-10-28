@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"net/http"
+	"reflect"
 	"slices"
 	"strings"
 	"testing"
@@ -15,11 +16,33 @@ import (
 // waktuUji adalah waktu tetap supaya isi JSON bisa dibandingkan persis.
 var waktuUji = time.Date(2026, 10, 28, 3, 0, 0, 0, time.UTC)
 
+// sampleCustomer adalah customer contoh dengan riwayat dua kode.
+var sampleCustomer = customer.Customer{
+	ID: "id-ab", Code: "CD", Name: "Example Customer", ProjectGroupID: "gr-1", ProjectGroupCode: "GR1",
+	Active: true, CreatedAt: waktuUji,
+	Codes: []customer.CodePeriod{
+		{Code: "AB", ValidFrom: waktuUji, ValidUntil: &waktuUji2},
+		{Code: "CD", ValidFrom: waktuUji2},
+	},
+}
+
+var waktuUji2 = waktuUji.Add(24 * time.Hour)
+
+// sampleAPICustomer adalah sampleCustomer dalam bentuk kontrak API.
+var sampleAPICustomer = Customer{
+	Id: "id-ab", Code: "CD", Name: "Example Customer", Active: true, CreatedAt: waktuUji,
+	ProjectGroup: &ProjectGroupRef{Id: "gr-1", Code: "GR1"},
+	Codes: []CustomerCode{
+		{Code: "AB", ValidFrom: waktuUji, ValidUntil: &waktuUji2},
+		{Code: "CD", ValidFrom: waktuUji2},
+	},
+}
+
 func TestListCustomers(t *testing.T) {
-	fake := &fakeCustomers{list: []customer.Customer{
-		{ID: "id-a", Code: "AA", Name: "Customer A", CreatedAt: waktuUji},
-		{ID: "id-b", Code: "BB", Name: "Customer B", CreatedAt: waktuUji},
-	}}
+	// Customer lama tanpa Project Group tetap tampil, tanpa field project_group.
+	legacy := customer.Customer{ID: "id-ee", Code: "EE", Name: "Customer E", Active: true, CreatedAt: waktuUji,
+		Codes: []customer.CodePeriod{{Code: "EE", ValidFrom: waktuUji}}}
+	fake := &fakeCustomers{list: []customer.Customer{sampleCustomer, legacy}}
 	rec := newTestServer(t, nil, Deps{Customers: fake}).do(http.MethodGet, "/api/v1/customers", "")
 
 	if rec.Code != http.StatusOK {
@@ -29,11 +52,9 @@ func TestListCustomers(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
 		t.Fatalf("isi bukan JSON yang valid: %v", err)
 	}
-	want := []Customer{
-		{Id: "id-a", Code: "AA", Name: "Customer A", CreatedAt: waktuUji},
-		{Id: "id-b", Code: "BB", Name: "Customer B", CreatedAt: waktuUji},
-	}
-	if !slices.Equal(body.Items, want) {
+	want := []Customer{sampleAPICustomer, {Id: "id-ee", Code: "EE", Name: "Customer E", Active: true, CreatedAt: waktuUji,
+		Codes: []CustomerCode{{Code: "EE", ValidFrom: waktuUji}}}}
+	if !reflect.DeepEqual(body.Items, want) {
 		t.Errorf("items %+v, ingin %+v", body.Items, want)
 	}
 	// Waktu ditulis dalam UTC dengan format ISO 8601 (R-API-13).
@@ -52,17 +73,18 @@ func TestListCustomersEmpty(t *testing.T) {
 }
 
 func TestCreateCustomer(t *testing.T) {
-	fake := &fakeCustomers{created: customer.Customer{ID: "id-ab", Code: "AB", Name: "Example Customer", CreatedAt: waktuUji}}
+	fake := &fakeCustomers{created: sampleCustomer}
 	srv := newTestServer(t, nil, Deps{Customers: fake})
 
-	rec := srv.do(http.MethodPost, "/api/v1/customers", `{"code":" ab ","name":"Example Customer"}`)
+	rec := srv.do(http.MethodPost, "/api/v1/customers", `{"code":" ab ","name":"Example Customer","project_group_id":"gr-1"}`)
 
 	if rec.Code != http.StatusCreated {
 		t.Fatalf("status %d, ingin 201: %s", rec.Code, rec.Body.String())
 	}
 	// Adapter HTTP meneruskan input apa adanya; merapikan adalah tugas domain.
-	if fake.gotInput == nil || *fake.gotInput != (customer.NewCustomer{Code: " ab ", Name: "Example Customer"}) {
-		t.Errorf("input ke service %+v, ingin kode \" ab \" dan nama Example Customer", fake.gotInput)
+	want := customer.NewCustomer{Code: " ab ", Name: "Example Customer", ProjectGroupID: "gr-1"}
+	if fake.gotInput == nil || *fake.gotInput != want {
+		t.Errorf("input ke service %+v, ingin %+v", fake.gotInput, want)
 	}
 	// Aktor dari sesi diteruskan ke service, yang memeriksa izinnya (M1.2).
 	if fake.gotActor != testActor {
@@ -72,9 +94,54 @@ func TestCreateCustomer(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
 		t.Fatalf("isi bukan JSON yang valid: %v", err)
 	}
-	want := Customer{Id: "id-ab", Code: "AB", Name: "Example Customer", CreatedAt: waktuUji}
-	if body != want {
-		t.Errorf("isi %+v, ingin %+v", body, want)
+	if !reflect.DeepEqual(body, sampleAPICustomer) {
+		t.Errorf("isi %+v, ingin %+v", body, sampleAPICustomer)
+	}
+}
+
+// TestUpdateCustomerAndCode: ubah customer dan ganti kode diteruskan ke
+// service dengan ID dari alamat.
+func TestUpdateCustomerAndCode(t *testing.T) {
+	fake := &fakeCustomers{created: sampleCustomer}
+	srv := newTestServer(t, nil, Deps{Customers: fake})
+
+	rec := srv.do(http.MethodPut, "/api/v1/customers/id-ab", `{"name":"Baru","project_group_id":"gr-2","active":false}`)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("ubah: status %d: %s", rec.Code, rec.Body.String())
+	}
+	if fake.gotID != "id-ab" || fake.gotUpdate == nil ||
+		*fake.gotUpdate != (customer.CustomerUpdate{Name: "Baru", ProjectGroupID: "gr-2", Active: false}) {
+		t.Errorf("Update menerima %q %+v", fake.gotID, fake.gotUpdate)
+	}
+
+	fake.gotID = ""
+	rec = srv.do(http.MethodPost, "/api/v1/customers/id-ab/code", `{"code":"cd"}`)
+	if rec.Code != http.StatusOK || fake.gotID != "id-ab" || fake.gotCode != "cd" {
+		t.Errorf("ganti kode: status %d, ID %q, kode %q", rec.Code, fake.gotID, fake.gotCode)
+	}
+}
+
+// TestProjectGroupEndpoints: daftar, tambah, dan ubah Project Group.
+func TestProjectGroupEndpoints(t *testing.T) {
+	gr1 := customer.ProjectGroup{ID: "gr-1", Code: "GR1", Name: "Project Group 1", CreatedAt: waktuUji}
+	fake := &fakeCustomers{groups: []customer.ProjectGroup{gr1}, group: gr1}
+	srv := newTestServer(t, nil, Deps{Customers: fake})
+	apiGR1 := ProjectGroup{Id: "gr-1", Code: "GR1", Name: "Project Group 1", CreatedAt: waktuUji}
+
+	var list ProjectGroupList
+	rec := srv.do(http.MethodGet, "/api/v1/project-groups", "")
+	if rec.Code != http.StatusOK || json.Unmarshal(rec.Body.Bytes(), &list) != nil || !slices.Equal(list.Items, []ProjectGroup{apiGR1}) {
+		t.Errorf("daftar: status %d: %s", rec.Code, rec.Body.String())
+	}
+
+	rec = srv.do(http.MethodPost, "/api/v1/project-groups", `{"code":"gr1","name":"Project Group 1"}`)
+	if rec.Code != http.StatusCreated || *fake.gotGroup != (customer.ProjectGroupInput{Code: "gr1", Name: "Project Group 1"}) {
+		t.Errorf("tambah: status %d, input %+v", rec.Code, fake.gotGroup)
+	}
+
+	rec = srv.do(http.MethodPut, "/api/v1/project-groups/gr-1", `{"code":"GR01","name":"Satu"}`)
+	if rec.Code != http.StatusOK || fake.gotID != "gr-1" || *fake.gotGroup != (customer.ProjectGroupInput{Code: "GR01", Name: "Satu"}) {
+		t.Errorf("ubah: status %d, ID %q, input %+v", rec.Code, fake.gotID, fake.gotGroup)
 	}
 }
 

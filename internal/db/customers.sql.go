@@ -7,54 +7,170 @@ package db
 
 import (
 	"context"
+	"time"
 )
 
+const addCustomerCode = `-- name: AddCustomerCode :exec
+INSERT INTO customer_codes (code, customer_id, valid_from) VALUES ($1, $2, $3)
+`
+
+type AddCustomerCodeParams struct {
+	Code       string
+	CustomerID string
+	ValidFrom  time.Time
+}
+
+func (q *Queries) AddCustomerCode(ctx context.Context, arg AddCustomerCodeParams) error {
+	_, err := q.db.Exec(ctx, addCustomerCode, arg.Code, arg.CustomerID, arg.ValidFrom)
+	return err
+}
+
+const closeCustomerCode = `-- name: CloseCustomerCode :exec
+UPDATE customer_codes SET valid_until = $2 WHERE customer_id = $1 AND valid_until IS NULL
+`
+
+type CloseCustomerCodeParams struct {
+	CustomerID string
+	ValidUntil *time.Time
+}
+
+// CloseCustomerCode mengakhiri masa berlaku kode yang sedang berlaku.
+func (q *Queries) CloseCustomerCode(ctx context.Context, arg CloseCustomerCodeParams) error {
+	_, err := q.db.Exec(ctx, closeCustomerCode, arg.CustomerID, arg.ValidUntil)
+	return err
+}
+
 const createCustomer = `-- name: CreateCustomer :one
-INSERT INTO customers (code, name)
-VALUES ($1, $2)
-RETURNING id, code, name, created_at
+INSERT INTO customers (code, name, project_group_id)
+VALUES ($1, $2, $3)
+RETURNING id, code, name, active, created_at, project_group_id
 `
 
 type CreateCustomerParams struct {
-	Code string
-	Name string
+	Code           string
+	Name           string
+	ProjectGroupID *string
+}
+
+type CreateCustomerRow struct {
+	ID             string
+	Code           string
+	Name           string
+	Active         bool
+	CreatedAt      time.Time
+	ProjectGroupID *string
 }
 
 // CreateCustomer menyimpan satu customer baru dan mengembalikan barisnya,
 // termasuk id dan created_at yang diisi database.
-func (q *Queries) CreateCustomer(ctx context.Context, arg CreateCustomerParams) (Customer, error) {
-	row := q.db.QueryRow(ctx, createCustomer, arg.Code, arg.Name)
-	var i Customer
+func (q *Queries) CreateCustomer(ctx context.Context, arg CreateCustomerParams) (CreateCustomerRow, error) {
+	row := q.db.QueryRow(ctx, createCustomer, arg.Code, arg.Name, arg.ProjectGroupID)
+	var i CreateCustomerRow
 	err := row.Scan(
 		&i.ID,
 		&i.Code,
 		&i.Name,
+		&i.Active,
 		&i.CreatedAt,
+		&i.ProjectGroupID,
 	)
 	return i, err
 }
 
-const listCustomers = `-- name: ListCustomers :many
-SELECT id, code, name, created_at
-FROM customers
-ORDER BY code
+const getCustomer = `-- name: GetCustomer :one
+SELECT c.id, c.code, c.name, c.active, c.created_at, c.project_group_id, g.code AS project_group_code
+FROM customers c
+LEFT JOIN project_groups g ON g.id = c.project_group_id
+WHERE c.id = $1
 `
 
-// ListCustomers mengambil semua customer, urut menurut kode.
-func (q *Queries) ListCustomers(ctx context.Context) ([]Customer, error) {
-	rows, err := q.db.Query(ctx, listCustomers)
+type GetCustomerRow struct {
+	ID               string
+	Code             string
+	Name             string
+	Active           bool
+	CreatedAt        time.Time
+	ProjectGroupID   *string
+	ProjectGroupCode *string
+}
+
+func (q *Queries) GetCustomer(ctx context.Context, id string) (GetCustomerRow, error) {
+	row := q.db.QueryRow(ctx, getCustomer, id)
+	var i GetCustomerRow
+	err := row.Scan(
+		&i.ID,
+		&i.Code,
+		&i.Name,
+		&i.Active,
+		&i.CreatedAt,
+		&i.ProjectGroupID,
+		&i.ProjectGroupCode,
+	)
+	return i, err
+}
+
+const listCodesOfCustomer = `-- name: ListCodesOfCustomer :many
+SELECT code, valid_from, valid_until
+FROM customer_codes
+WHERE customer_id = $1
+ORDER BY valid_from
+`
+
+type ListCodesOfCustomerRow struct {
+	Code       string
+	ValidFrom  time.Time
+	ValidUntil *time.Time
+}
+
+// ListCodesOfCustomer mengambil riwayat kode satu customer, lama ke baru.
+func (q *Queries) ListCodesOfCustomer(ctx context.Context, customerID string) ([]ListCodesOfCustomerRow, error) {
+	rows, err := q.db.Query(ctx, listCodesOfCustomer, customerID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []Customer{}
+	items := []ListCodesOfCustomerRow{}
 	for rows.Next() {
-		var i Customer
+		var i ListCodesOfCustomerRow
+		if err := rows.Scan(&i.Code, &i.ValidFrom, &i.ValidUntil); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listCustomerCodes = `-- name: ListCustomerCodes :many
+SELECT customer_id, code, valid_from, valid_until
+FROM customer_codes
+ORDER BY customer_id, valid_from
+`
+
+type ListCustomerCodesRow struct {
+	CustomerID string
+	Code       string
+	ValidFrom  time.Time
+	ValidUntil *time.Time
+}
+
+// ListCustomerCodes mengambil riwayat kode semua customer, lama ke baru.
+func (q *Queries) ListCustomerCodes(ctx context.Context) ([]ListCustomerCodesRow, error) {
+	rows, err := q.db.Query(ctx, listCustomerCodes)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListCustomerCodesRow{}
+	for rows.Next() {
+		var i ListCustomerCodesRow
 		if err := rows.Scan(
-			&i.ID,
+			&i.CustomerID,
 			&i.Code,
-			&i.Name,
-			&i.CreatedAt,
+			&i.ValidFrom,
+			&i.ValidUntil,
 		); err != nil {
 			return nil, err
 		}
@@ -64,4 +180,97 @@ func (q *Queries) ListCustomers(ctx context.Context) ([]Customer, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const listCustomers = `-- name: ListCustomers :many
+SELECT c.id, c.code, c.name, c.active, c.created_at, c.project_group_id, g.code AS project_group_code
+FROM customers c
+LEFT JOIN project_groups g ON g.id = c.project_group_id
+ORDER BY c.code
+`
+
+type ListCustomersRow struct {
+	ID               string
+	Code             string
+	Name             string
+	Active           bool
+	CreatedAt        time.Time
+	ProjectGroupID   *string
+	ProjectGroupCode *string
+}
+
+// ListCustomers mengambil semua customer beserta Project Group-nya, urut menurut kode.
+func (q *Queries) ListCustomers(ctx context.Context) ([]ListCustomersRow, error) {
+	rows, err := q.db.Query(ctx, listCustomers)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListCustomersRow{}
+	for rows.Next() {
+		var i ListCustomersRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Code,
+			&i.Name,
+			&i.Active,
+			&i.CreatedAt,
+			&i.ProjectGroupID,
+			&i.ProjectGroupCode,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const lockCustomer = `-- name: LockCustomer :exec
+SELECT id FROM customers WHERE id = $1 FOR NO KEY UPDATE
+`
+
+// LockCustomer mengunci baris customer sampai transaksi selesai, supaya isi
+// "sebelum" yang dicatat di audit log tidak berubah di tengah jalan.
+// FOR NO KEY UPDATE tidak bentrok dengan pemeriksaan foreign key (lihat LockAccount).
+func (q *Queries) LockCustomer(ctx context.Context, id string) error {
+	_, err := q.db.Exec(ctx, lockCustomer, id)
+	return err
+}
+
+const setCustomerCode = `-- name: SetCustomerCode :exec
+UPDATE customers SET code = $2 WHERE id = $1
+`
+
+type SetCustomerCodeParams struct {
+	ID   string
+	Code string
+}
+
+func (q *Queries) SetCustomerCode(ctx context.Context, arg SetCustomerCodeParams) error {
+	_, err := q.db.Exec(ctx, setCustomerCode, arg.ID, arg.Code)
+	return err
+}
+
+const updateCustomer = `-- name: UpdateCustomer :exec
+UPDATE customers SET name = $2, project_group_id = $3, active = $4 WHERE id = $1
+`
+
+type UpdateCustomerParams struct {
+	ID             string
+	Name           string
+	ProjectGroupID *string
+	Active         bool
+}
+
+func (q *Queries) UpdateCustomer(ctx context.Context, arg UpdateCustomerParams) error {
+	_, err := q.db.Exec(ctx, updateCustomer,
+		arg.ID,
+		arg.Name,
+		arg.ProjectGroupID,
+		arg.Active,
+	)
+	return err
 }

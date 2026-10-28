@@ -1,6 +1,7 @@
 package customer
 
 import (
+	"regexp"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -16,13 +17,15 @@ const maxNameLength = 200
 // ASUMSI E-12: kode ZZ di WI SW-ZZ-000 berarti dokumen umum.
 const reservedCode = "ZZ"
 
-// validate merapikan input lalu memeriksa aturannya. Bila ada masalah, semua
-// masalah dikumpulkan sekaligus supaya layar bisa menandai setiap field.
-// Aturan yang sama juga dijaga batasan tabel customers sebagai pengaman terakhir.
-func validate(in NewCustomer) (NewCustomer, error) {
+// validate merapikan input lalu memeriksa aturannya. Semua masalah dikumpulkan
+// sekaligus supaya layar bisa menandai setiap field. Aturan yang sama juga
+// dijaga batasan tabel customers sebagai pengaman terakhir. Keberadaan Project
+// Group diperiksa Service, karena butuh database.
+func validate(in NewCustomer) (NewCustomer, []problem.Problem) {
 	out := NewCustomer{
-		Code: strings.ToUpper(strings.TrimSpace(in.Code)),
-		Name: strings.TrimSpace(in.Name),
+		Code:           normalizeCode(in.Code),
+		Name:           strings.TrimSpace(in.Name),
+		ProjectGroupID: strings.TrimSpace(in.ProjectGroupID),
 	}
 
 	var problems []problem.Problem
@@ -32,10 +35,37 @@ func validate(in NewCustomer) (NewCustomer, error) {
 	if p, ok := checkName(out.Name); !ok {
 		problems = append(problems, p)
 	}
-	if len(problems) > 0 {
-		return NewCustomer{}, &problem.ValidationError{Problems: problems}
+	if out.ProjectGroupID == "" {
+		problems = append(problems, projectGroupRequired)
 	}
-	return out, nil
+	return out, problems
+}
+
+// validateUpdate seperti validate, untuk isian yang bisa diubah.
+func validateUpdate(in CustomerUpdate) (CustomerUpdate, []problem.Problem) {
+	out := CustomerUpdate{
+		Name:           strings.TrimSpace(in.Name),
+		ProjectGroupID: strings.TrimSpace(in.ProjectGroupID),
+		Active:         in.Active,
+	}
+	var problems []problem.Problem
+	if p, ok := checkName(out.Name); !ok {
+		problems = append(problems, p)
+	}
+	if out.ProjectGroupID == "" {
+		problems = append(problems, projectGroupRequired)
+	}
+	return out, problems
+}
+
+// projectGroupRequired: setiap customer dialokasikan ke satu Project Group (D-54).
+var projectGroupRequired = problem.Problem{
+	Field: "project_group_id", Code: problem.Required, Message: "Choose the project group of the customer.",
+}
+
+// normalizeCode membuang spasi di tepi dan membuat huruf menjadi huruf besar.
+func normalizeCode(code string) string {
+	return strings.ToUpper(strings.TrimSpace(code))
 }
 
 // checkCode memeriksa kode yang sudah dirapikan: tepat dua huruf A sampai Z (E-12).
@@ -77,4 +107,27 @@ func checkName(name string) (problem.Problem, bool) {
 		return problem.Problem{Field: "name", Code: problem.InvalidFormat, Message: "Use one line without control characters."}, false
 	}
 	return problem.Problem{}, true
+}
+
+// groupCodePattern: kode Project Group, misalnya GR1.
+// ASUMSI E-30: huruf besar A sampai Z dan angka, 1 sampai 10 karakter.
+var groupCodePattern = regexp.MustCompile(`^[A-Z0-9]{1,10}$`)
+
+// validateProjectGroup merapikan dan memeriksa isian Project Group.
+func validateProjectGroup(in ProjectGroupInput) (ProjectGroupInput, []problem.Problem) {
+	out := ProjectGroupInput{Code: normalizeCode(in.Code)}
+	var problems []problem.Problem
+	switch {
+	case out.Code == "":
+		problems = append(problems, problem.Problem{Field: "code", Code: problem.Required, Message: "Enter the project group code."})
+	case !groupCodePattern.MatchString(out.Code):
+		problems = append(problems, problem.Problem{Field: "code", Code: problem.InvalidFormat,
+			Message: "Use 1 to 10 letters A to Z or digits, for example GR1."})
+	}
+	name, p := problem.Text("name", in.Name, true, maxNameLength)
+	if p != nil {
+		problems = append(problems, *p)
+	}
+	out.Name = name
+	return out, problems
 }

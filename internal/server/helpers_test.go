@@ -16,6 +16,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/audit"
 	"github.com/dkpauzi/revioten/internal/auth"
 	"github.com/dkpauzi/revioten/internal/customer"
+	"github.com/dkpauzi/revioten/internal/product"
 )
 
 // fakePinger meniru database untuk /health. err nil berarti database hidup.
@@ -34,6 +35,13 @@ type fakeCustomers struct {
 	gotActor access.Actor
 	// gotRequest adalah asal permintaan yang sampai ke layanan (untuk audit log).
 	gotRequest audit.Request
+	// Untuk operasi ubah, ganti kode, dan Project Group.
+	groups    []customer.ProjectGroup
+	group     customer.ProjectGroup
+	gotID     string
+	gotUpdate *customer.CustomerUpdate
+	gotCode   string
+	gotGroup  *customer.ProjectGroupInput
 }
 
 func (f *fakeCustomers) List(ctx context.Context, actor access.Actor) ([]customer.Customer, error) {
@@ -46,6 +54,98 @@ func (f *fakeCustomers) Create(_ context.Context, actor access.Actor, in custome
 	f.gotActor = actor
 	f.gotInput = &in
 	return f.created, f.createErr
+}
+
+func (f *fakeCustomers) Update(_ context.Context, actor access.Actor, id string, in customer.CustomerUpdate) (customer.Customer, error) {
+	f.gotActor, f.gotID, f.gotUpdate = actor, id, &in
+	return f.created, f.createErr
+}
+
+func (f *fakeCustomers) ChangeCode(_ context.Context, actor access.Actor, id, code string) (customer.Customer, error) {
+	f.gotActor, f.gotID, f.gotCode = actor, id, code
+	return f.created, f.createErr
+}
+
+func (f *fakeCustomers) ListProjectGroups(_ context.Context, actor access.Actor) ([]customer.ProjectGroup, error) {
+	f.gotActor = actor
+	return f.groups, f.listErr
+}
+
+func (f *fakeCustomers) CreateProjectGroup(_ context.Context, actor access.Actor, in customer.ProjectGroupInput) (customer.ProjectGroup, error) {
+	f.gotActor, f.gotGroup = actor, &in
+	return f.group, f.createErr
+}
+
+func (f *fakeCustomers) UpdateProjectGroup(_ context.Context, actor access.Actor, id string, in customer.ProjectGroupInput) (customer.ProjectGroup, error) {
+	f.gotActor, f.gotID, f.gotGroup = actor, id, &in
+	return f.group, f.createErr
+}
+
+// fakeProducts meniru product.Service. Setiap method mencatat argumennya di
+// got, lalu mengembalikan nilai yang sudah diisi test.
+type fakeProducts struct {
+	groups []product.ModelGroup
+	group  product.ModelGroup
+	models []product.Model
+	model  product.Model
+	parts  []product.PartNumber
+	part   product.PartNumber
+	err    error
+	// got berisi argumen panggilan terakhir: nama method, ID, dan input.
+	got struct {
+		method string
+		id     string
+		input  any
+	}
+}
+
+func (f *fakeProducts) record(method, id string, input any) {
+	f.got.method, f.got.id, f.got.input = method, id, input
+}
+
+func (f *fakeProducts) ListModelGroups(_ context.Context, _ access.Actor, customerID string) ([]product.ModelGroup, error) {
+	f.record("ListModelGroups", customerID, nil)
+	return f.groups, f.err
+}
+
+func (f *fakeProducts) CreateModelGroup(_ context.Context, _ access.Actor, in product.NewModelGroup) (product.ModelGroup, error) {
+	f.record("CreateModelGroup", "", in)
+	return f.group, f.err
+}
+
+func (f *fakeProducts) RenameModelGroup(_ context.Context, _ access.Actor, id, name string) (product.ModelGroup, error) {
+	f.record("RenameModelGroup", id, name)
+	return f.group, f.err
+}
+
+func (f *fakeProducts) ListModels(_ context.Context, _ access.Actor, customerID string) ([]product.Model, error) {
+	f.record("ListModels", customerID, nil)
+	return f.models, f.err
+}
+
+func (f *fakeProducts) CreateModel(_ context.Context, _ access.Actor, in product.NewModel) (product.Model, error) {
+	f.record("CreateModel", "", in)
+	return f.model, f.err
+}
+
+func (f *fakeProducts) UpdateModel(_ context.Context, _ access.Actor, id string, in product.ModelUpdate) (product.Model, error) {
+	f.record("UpdateModel", id, in)
+	return f.model, f.err
+}
+
+func (f *fakeProducts) ListPartNumbers(_ context.Context, _ access.Actor, customerID string) ([]product.PartNumber, error) {
+	f.record("ListPartNumbers", customerID, nil)
+	return f.parts, f.err
+}
+
+func (f *fakeProducts) CreatePartNumber(_ context.Context, _ access.Actor, in product.NewPartNumber) (product.PartNumber, error) {
+	f.record("CreatePartNumber", "", in)
+	return f.part, f.err
+}
+
+func (f *fakeProducts) UpdatePartNumber(_ context.Context, _ access.Actor, id string, in product.PartNumberUpdate) (product.PartNumber, error) {
+	f.record("UpdatePartNumber", id, in)
+	return f.part, f.err
 }
 
 // testToken adalah token sesi yang diterima fakeAuth secara bawaan.
@@ -206,6 +306,9 @@ func newTestServer(t *testing.T, ui fs.FS, deps Deps) testServer {
 	}
 	if deps.Audit == nil {
 		deps.Audit = &fakeAudit{}
+	}
+	if deps.Products == nil {
+		deps.Products = &fakeProducts{}
 	}
 	var log bytes.Buffer
 	deps.Logger = slog.New(slog.NewTextHandler(&log, nil))

@@ -113,7 +113,7 @@
 	// ada (misalnya akun admin terakhir), atau teks kegagalan umum.
 	function failureMessage(error: ApiFailure): string {
 		const details = error.body?.details ?? [];
-		return details.length > 0 ? details.map(problemText).join(' ') : failureText(error);
+		return details.length > 0 ? details.map((d) => problemText(d)).join(' ') : failureText(error);
 	}
 
 	// run menjalankan satu aksi pada akun, lalu memuat ulang daftar bila

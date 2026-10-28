@@ -45,10 +45,43 @@ type AuditLog struct {
 }
 
 type Customer struct {
-	ID        string
-	Code      string
-	Name      string
-	CreatedAt time.Time
+	ID             string
+	Code           string
+	Name           string
+	CreatedAt      time.Time
+	ProjectGroupID *string
+	Active         bool
+}
+
+type CustomerCode struct {
+	Code       string
+	CustomerID string
+	ValidFrom  time.Time
+	ValidUntil *time.Time
+}
+
+type Model struct {
+	ID           string
+	CustomerID   string
+	ModelGroupID *string
+	Name         string
+	CreatedAt    time.Time
+}
+
+type ModelGroup struct {
+	ID         string
+	CustomerID string
+	Name       string
+	CreatedAt  time.Time
+}
+
+type PartNumber struct {
+	ID         string
+	CustomerID string
+	ModelID    string
+	Number     string
+	Name       *string
+	CreatedAt  time.Time
 }
 
 type Permission struct {
@@ -62,6 +95,13 @@ type Person struct {
 	Name           string
 	EmployeeNumber *string
 	CreatedAt      time.Time
+}
+
+type ProjectGroup struct {
+	ID        string
+	Code      string
+	Name      string
+	CreatedAt time.Time
 }
 
 type Role struct {

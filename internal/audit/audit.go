@@ -42,13 +42,39 @@ const (
 	ActionAccountDisabled      = "account.disabled"
 	ActionAccountEnabled       = "account.enabled"
 	ActionCustomerCreated      = "customer.created"
+	ActionCustomerUpdated      = "customer.updated"
+	ActionCustomerCodeChanged  = "customer.code_changed"
+	ActionProjectGroupCreated  = "project_group.created"
+	ActionProjectGroupUpdated  = "project_group.updated"
+	ActionModelGroupCreated    = "model_group.created"
+	ActionModelGroupUpdated    = "model_group.updated"
+	ActionModelCreated         = "model.created"
+	ActionModelUpdated         = "model.updated"
+	ActionPartNumberCreated    = "part_number.created"
+	ActionPartNumberUpdated    = "part_number.updated"
 )
 
 // Jenis sasaran entri.
 const (
-	TargetAccount  = "account"
-	TargetCustomer = "customer"
+	TargetAccount      = "account"
+	TargetCustomer     = "customer"
+	TargetProjectGroup = "project_group"
+	TargetModelGroup   = "model_group"
+	TargetModel        = "model"
+	TargetPartNumber   = "part_number"
 )
+
+// Change menulis perubahan satu field untuk rincian entri: "lama → baru".
+// Nilai kosong ditulis "-".
+func Change(before, after string) string {
+	dash := func(s string) string {
+		if s == "" {
+			return "-"
+		}
+		return s
+	}
+	return dash(before) + " → " + dash(after)
+}
 
 // Event adalah satu perubahan data yang dicatat.
 type Event struct {

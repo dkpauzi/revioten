@@ -24,6 +24,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/auth"
 	"github.com/dkpauzi/revioten/internal/customer"
 	"github.com/dkpauzi/revioten/internal/db"
+	"github.com/dkpauzi/revioten/internal/product"
 	"github.com/dkpauzi/revioten/internal/server"
 	"github.com/dkpauzi/revioten/web"
 )
@@ -75,6 +76,7 @@ func runServer(args []string) error {
 			Auth:      auth.NewService(pool, checker),
 			Access:    checker,
 			Audit:     audit.NewService(pool, checker),
+			Products:  product.NewService(pool, checker),
 		}),
 		// Batas waktu membaca header permintaan. Tanpa batas ini, klien yang
 		// sangat lambat bisa menahan koneksi selamanya (pengaman dasar, G9).

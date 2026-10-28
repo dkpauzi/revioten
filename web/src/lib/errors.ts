@@ -23,13 +23,40 @@ const problemKeys: Record<string, MessageKey> = {
 	'login:invalid_format': 'accountLoginInvalid',
 	'login:taken': 'accountLoginTaken',
 	'kind:taken': 'accountKindTaken',
-	'employee_number:taken': 'accountEmployeeNumberTaken'
+	'employee_number:taken': 'accountEmployeeNumberTaken',
+	'code:not_allowed': 'customerCodeSame',
+	'project_group_id:required': 'customerProjectGroupRequired',
+	'customer_id:not_allowed': 'customerInactive',
+	'model_group_id:not_allowed': 'modelGroupOtherCustomer',
+	'model_id:required': 'partNumberModelRequired',
+	'model_id:not_allowed': 'modelCustomerInactive'
 };
 
-// problemText memberi teks layar untuk satu masalah input. Masalah yang belum
-// ada di daftar memakai pesan dari server.
-export function problemText(detail: ErrorDetail): string {
-	const key = problemKeys[`${detail.field}:${detail.code}`];
+// ProblemScope adalah formulir tempat masalah ditampilkan. Field yang sama bisa
+// butuh teks berbeda, misalnya code:taken di formulir Project Group.
+export type ProblemScope = 'projectGroup' | 'customerCode' | 'modelGroup' | 'model' | 'partNumber';
+
+// scopedKeys memetakan "formulir.field:kode masalah" ke kunci teks layar.
+const scopedKeys: Record<string, MessageKey> = {
+	'projectGroup.code:required': 'projectGroupCodeRequired',
+	'projectGroup.code:invalid_format': 'projectGroupCodeInvalid',
+	'projectGroup.code:taken': 'projectGroupCodeTaken',
+	'projectGroup.name:required': 'projectGroupNameRequired',
+	'customerCode.code:taken': 'customerCodeUsedBefore',
+	'modelGroup.name:required': 'modelGroupNameRequired',
+	'modelGroup.name:taken': 'modelGroupNameTaken',
+	'model.name:required': 'modelNameRequired',
+	'model.name:taken': 'modelNameTaken',
+	'partNumber.number:required': 'partNumberRequired',
+	'partNumber.number:taken': 'partNumberTaken'
+};
+
+// problemText memberi teks layar untuk satu masalah input: teks khusus
+// formulir bila ada, lalu teks umum field itu. Masalah yang belum ada di
+// kedua daftar memakai pesan dari server.
+export function problemText(detail: ErrorDetail, scope?: ProblemScope): string {
+	const field = `${detail.field}:${detail.code}`;
+	const key = (scope && scopedKeys[`${scope}.${field}`]) || problemKeys[field];
 	return key ? t(key) : detail.message;
 }
 

@@ -15,11 +15,39 @@ export type Customer = {
      */
     id: string;
     /**
-     * Customer code used in document numbers, for example SC-AB-001.
+     * Current customer code used in document numbers, for example SC-AB-001.
      */
     code: string;
     name: string;
+    project_group?: ProjectGroupRef;
+    /**
+     * Customers are never deleted; inactive customers get no new models (E-09).
+     */
+    active: boolean;
+    /**
+     * All codes of the customer, oldest first. The last one is the current code (E-11).
+     */
+    codes: Array<CustomerCode>;
     created_at: string;
+};
+
+export type CustomerCode = {
+    code: string;
+    valid_from: string;
+    /**
+     * Missing for the current code.
+     */
+    valid_until?: string;
+};
+
+/**
+ * The project group of the customer (D-54). Missing only for customers
+ * added before project groups existed.
+ *
+ */
+export type ProjectGroupRef = {
+    id: string;
+    code: string;
 };
 
 export type Credentials = {
@@ -270,6 +298,148 @@ export type NewCustomer = {
      * 1 to 200 characters after spaces around it are removed.
      */
     name: string;
+    /**
+     * Each customer is allocated to one project group (D-54).
+     */
+    project_group_id: string;
+};
+
+export type CustomerUpdate = {
+    name: string;
+    project_group_id: string;
+    active: boolean;
+};
+
+export type CustomerCodeChange = {
+    /**
+     * Two letters A to Z. A code that another customer uses, or used
+     * before, is refused.
+     *
+     */
+    code: string;
+};
+
+export type ProjectGroup = {
+    id: string;
+    code: string;
+    name: string;
+    created_at: string;
+};
+
+export type ProjectGroupInput = {
+    /**
+     * 1 to 10 letters A to Z or digits, made uppercase, for example GR1.
+     */
+    code: string;
+    name: string;
+};
+
+export type ProjectGroupList = {
+    items: Array<ProjectGroup>;
+};
+
+/**
+ * A named set of models of one customer that share template content (D-39, D-42).
+ */
+export type ModelGroup = {
+    id: string;
+    customer_id: string;
+    name: string;
+    created_at: string;
+};
+
+export type NewModelGroup = {
+    customer_id: string;
+    /**
+     * 1 to 200 characters, unique within the customer.
+     */
+    name: string;
+};
+
+export type ModelGroupUpdate = {
+    name: string;
+};
+
+export type ModelGroupList = {
+    items: Array<ModelGroup>;
+};
+
+export type Model = {
+    id: string;
+    customer_id: string;
+    model_group?: ModelGroupRef;
+    name: string;
+    created_at: string;
+};
+
+/**
+ * The model group of the model. Missing when the model is in no group.
+ */
+export type ModelGroupRef = {
+    id: string;
+    name: string;
+};
+
+export type NewModel = {
+    customer_id: string;
+    /**
+     * 1 to 200 characters, unique within the customer.
+     */
+    name: string;
+    /**
+     * A model group of the same customer. Leave it out for no group.
+     */
+    model_group_id?: string;
+};
+
+export type ModelUpdate = {
+    name: string;
+    /**
+     * Leave it out to take the model out of its group.
+     */
+    model_group_id?: string;
+};
+
+export type ModelList = {
+    items: Array<Model>;
+};
+
+export type PartNumber = {
+    id: string;
+    customer_id: string;
+    model: ModelRef;
+    number: string;
+    /**
+     * Name of the part, for example the description on the PFMEA.
+     */
+    name?: string;
+    created_at: string;
+};
+
+export type ModelRef = {
+    id: string;
+    name: string;
+};
+
+export type NewPartNumber = {
+    model_id: string;
+    /**
+     * 1 to 100 characters, unique within the customer of the model.
+     */
+    number: string;
+    name?: string;
+};
+
+export type PartNumberUpdate = {
+    number: string;
+    /**
+     * Leave it out to remove the name.
+     */
+    name?: string;
+};
+
+export type PartNumberList = {
+    items: Array<PartNumber>;
 };
 
 export type CustomerList = {
@@ -299,6 +469,21 @@ export type ErrorDetail = {
 };
 
 export type AccountId = string;
+
+export type CustomerId = string;
+
+/**
+ * The customer whose master data is listed.
+ */
+export type CustomerIdQuery = string;
+
+export type ProjectGroupId = string;
+
+export type ModelGroupId = string;
+
+export type ModelId = string;
+
+export type PartNumberId = string;
 
 export type GetHealthData = {
     body?: never;
@@ -845,6 +1030,495 @@ export type CreateCustomerResponses = {
 };
 
 export type CreateCustomerResponse = CreateCustomerResponses[keyof CreateCustomerResponses];
+
+export type UpdateCustomerData = {
+    body: CustomerUpdate;
+    path: {
+        customerId: string;
+    };
+    query?: never;
+    url: '/api/v1/customers/{customerId}';
+};
+
+export type UpdateCustomerErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type UpdateCustomerError = UpdateCustomerErrors[keyof UpdateCustomerErrors];
+
+export type UpdateCustomerResponses = {
+    /**
+     * The customer was changed.
+     */
+    200: Customer;
+};
+
+export type UpdateCustomerResponse = UpdateCustomerResponses[keyof UpdateCustomerResponses];
+
+export type ChangeCustomerCodeData = {
+    body: CustomerCodeChange;
+    path: {
+        customerId: string;
+    };
+    query?: never;
+    url: '/api/v1/customers/{customerId}/code';
+};
+
+export type ChangeCustomerCodeErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ChangeCustomerCodeError = ChangeCustomerCodeErrors[keyof ChangeCustomerCodeErrors];
+
+export type ChangeCustomerCodeResponses = {
+    /**
+     * The code was changed.
+     */
+    200: Customer;
+};
+
+export type ChangeCustomerCodeResponse = ChangeCustomerCodeResponses[keyof ChangeCustomerCodeResponses];
+
+export type ListProjectGroupsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/project-groups';
+};
+
+export type ListProjectGroupsErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ListProjectGroupsError = ListProjectGroupsErrors[keyof ListProjectGroupsErrors];
+
+export type ListProjectGroupsResponses = {
+    /**
+     * All project groups.
+     */
+    200: ProjectGroupList;
+};
+
+export type ListProjectGroupsResponse = ListProjectGroupsResponses[keyof ListProjectGroupsResponses];
+
+export type CreateProjectGroupData = {
+    body: ProjectGroupInput;
+    path?: never;
+    query?: never;
+    url: '/api/v1/project-groups';
+};
+
+export type CreateProjectGroupErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type CreateProjectGroupError = CreateProjectGroupErrors[keyof CreateProjectGroupErrors];
+
+export type CreateProjectGroupResponses = {
+    /**
+     * The project group was added.
+     */
+    201: ProjectGroup;
+};
+
+export type CreateProjectGroupResponse = CreateProjectGroupResponses[keyof CreateProjectGroupResponses];
+
+export type UpdateProjectGroupData = {
+    body: ProjectGroupInput;
+    path: {
+        projectGroupId: string;
+    };
+    query?: never;
+    url: '/api/v1/project-groups/{projectGroupId}';
+};
+
+export type UpdateProjectGroupErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type UpdateProjectGroupError = UpdateProjectGroupErrors[keyof UpdateProjectGroupErrors];
+
+export type UpdateProjectGroupResponses = {
+    /**
+     * The project group was changed.
+     */
+    200: ProjectGroup;
+};
+
+export type UpdateProjectGroupResponse = UpdateProjectGroupResponses[keyof UpdateProjectGroupResponses];
+
+export type ListModelGroupsData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * The customer whose master data is listed.
+         */
+        customer_id: string;
+    };
+    url: '/api/v1/model-groups';
+};
+
+export type ListModelGroupsErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ListModelGroupsError = ListModelGroupsErrors[keyof ListModelGroupsErrors];
+
+export type ListModelGroupsResponses = {
+    /**
+     * The model groups of the customer.
+     */
+    200: ModelGroupList;
+};
+
+export type ListModelGroupsResponse = ListModelGroupsResponses[keyof ListModelGroupsResponses];
+
+export type CreateModelGroupData = {
+    body: NewModelGroup;
+    path?: never;
+    query?: never;
+    url: '/api/v1/model-groups';
+};
+
+export type CreateModelGroupErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type CreateModelGroupError = CreateModelGroupErrors[keyof CreateModelGroupErrors];
+
+export type CreateModelGroupResponses = {
+    /**
+     * The model group was added.
+     */
+    201: ModelGroup;
+};
+
+export type CreateModelGroupResponse = CreateModelGroupResponses[keyof CreateModelGroupResponses];
+
+export type UpdateModelGroupData = {
+    body: ModelGroupUpdate;
+    path: {
+        modelGroupId: string;
+    };
+    query?: never;
+    url: '/api/v1/model-groups/{modelGroupId}';
+};
+
+export type UpdateModelGroupErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type UpdateModelGroupError = UpdateModelGroupErrors[keyof UpdateModelGroupErrors];
+
+export type UpdateModelGroupResponses = {
+    /**
+     * The model group was renamed.
+     */
+    200: ModelGroup;
+};
+
+export type UpdateModelGroupResponse = UpdateModelGroupResponses[keyof UpdateModelGroupResponses];
+
+export type ListModelsData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * The customer whose master data is listed.
+         */
+        customer_id: string;
+    };
+    url: '/api/v1/models';
+};
+
+export type ListModelsErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ListModelsError = ListModelsErrors[keyof ListModelsErrors];
+
+export type ListModelsResponses = {
+    /**
+     * The models of the customer.
+     */
+    200: ModelList;
+};
+
+export type ListModelsResponse = ListModelsResponses[keyof ListModelsResponses];
+
+export type CreateModelData = {
+    body: NewModel;
+    path?: never;
+    query?: never;
+    url: '/api/v1/models';
+};
+
+export type CreateModelErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type CreateModelError = CreateModelErrors[keyof CreateModelErrors];
+
+export type CreateModelResponses = {
+    /**
+     * The model was added.
+     */
+    201: Model;
+};
+
+export type CreateModelResponse = CreateModelResponses[keyof CreateModelResponses];
+
+export type UpdateModelData = {
+    body: ModelUpdate;
+    path: {
+        modelId: string;
+    };
+    query?: never;
+    url: '/api/v1/models/{modelId}';
+};
+
+export type UpdateModelErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type UpdateModelError = UpdateModelErrors[keyof UpdateModelErrors];
+
+export type UpdateModelResponses = {
+    /**
+     * The model was changed.
+     */
+    200: Model;
+};
+
+export type UpdateModelResponse = UpdateModelResponses[keyof UpdateModelResponses];
+
+export type ListPartNumbersData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * The customer whose master data is listed.
+         */
+        customer_id: string;
+    };
+    url: '/api/v1/part-numbers';
+};
+
+export type ListPartNumbersErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ListPartNumbersError = ListPartNumbersErrors[keyof ListPartNumbersErrors];
+
+export type ListPartNumbersResponses = {
+    /**
+     * The part numbers of the customer.
+     */
+    200: PartNumberList;
+};
+
+export type ListPartNumbersResponse = ListPartNumbersResponses[keyof ListPartNumbersResponses];
+
+export type CreatePartNumberData = {
+    body: NewPartNumber;
+    path?: never;
+    query?: never;
+    url: '/api/v1/part-numbers';
+};
+
+export type CreatePartNumberErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type CreatePartNumberError = CreatePartNumberErrors[keyof CreatePartNumberErrors];
+
+export type CreatePartNumberResponses = {
+    /**
+     * The part number was added.
+     */
+    201: PartNumber;
+};
+
+export type CreatePartNumberResponse = CreatePartNumberResponses[keyof CreatePartNumberResponses];
+
+export type UpdatePartNumberData = {
+    body: PartNumberUpdate;
+    path: {
+        partNumberId: string;
+    };
+    query?: never;
+    url: '/api/v1/part-numbers/{partNumberId}';
+};
+
+export type UpdatePartNumberErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type UpdatePartNumberError = UpdatePartNumberErrors[keyof UpdatePartNumberErrors];
+
+export type UpdatePartNumberResponses = {
+    /**
+     * The part number was changed.
+     */
+    200: PartNumber;
+};
+
+export type UpdatePartNumberResponse = UpdatePartNumberResponses[keyof UpdatePartNumberResponses];
 
 export type ListAuditLogData = {
     body?: never;

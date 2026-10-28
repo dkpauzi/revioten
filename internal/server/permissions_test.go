@@ -15,6 +15,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/auth"
 	"github.com/dkpauzi/revioten/internal/customer"
 	"github.com/dkpauzi/revioten/internal/db/dbtest"
+	"github.com/dkpauzi/revioten/internal/product"
 )
 
 // TestMain menyalakan PostgreSQL untuk test integrasi di file ini. Test lain
@@ -39,9 +40,11 @@ func TestPermissionsPerOperation(t *testing.T) {
 	ctx := t.Context()
 	checker := access.NewChecker(pool)
 	authSvc := auth.NewService(pool, checker)
+	customers := customer.NewService(pool, checker)
+	products := product.NewService(pool, checker)
 	handler := NewHandler(fstest.MapFS{}, Deps{
-		DB: pool, Customers: customer.NewService(pool, checker), Auth: authSvc, Access: checker,
-		Audit: audit.NewService(pool, checker),
+		DB: pool, Customers: customers, Auth: authSvc, Access: checker,
+		Audit: audit.NewService(pool, checker), Products: products,
 	})
 
 	// Admin pertama, dan satu akun kerja tanpa peran (hanya hak dasar Viewer).
@@ -65,20 +68,61 @@ func TestPermissionsPerOperation(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	target := "/api/v1/accounts/" + viewerInfo.ID
-	// Urutan penting: operasi yang mengakhiri sesi atau menonaktifkan akun ada di akhir.
+	// Master data yang dirujuk operasi di bawah (M1.4).
+	group, err := customers.CreateProjectGroup(ctx, admin, customer.ProjectGroupInput{Code: "GR1", Name: "Project Group 1"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	cust, err := customers.Create(ctx, admin, customer.NewCustomer{Code: "XY", Name: "Customer Uji", ProjectGroupID: group.ID})
+	if err != nil {
+		t.Fatal(err)
+	}
+	modelGroup, err := products.CreateModelGroup(ctx, admin, product.NewModelGroup{CustomerID: cust.ID, Name: "Family"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	model, err := products.CreateModel(ctx, admin, product.NewModel{CustomerID: cust.ID, Name: "X100"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	part, err := products.CreatePartNumber(ctx, admin, product.NewPartNumber{ModelID: model.ID, Number: "PN-1"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// params mengisi {nama} di alamat dan isi permintaan dengan ID sungguhan.
+	params := map[string]string{
+		"accountId": viewerInfo.ID, "projectGroupId": group.ID, "customerId": cust.ID,
+		"modelGroupId": modelGroup.ID, "modelId": model.ID, "partNumberId": part.ID,
+	}
+
+	// Alamat ditulis seperti di kontrak. Urutan penting: operasi yang
+	// mengakhiri sesi atau menonaktifkan akun ada di akhir.
 	cases := []operationCase{
 		{http.MethodGet, "/api/v1/session", "", http.StatusOK, http.StatusOK},
 		{http.MethodPut, "/api/v1/account/password", `{"current_password":"salah","new_password":"x"}`, http.StatusUnprocessableEntity, http.StatusUnprocessableEntity},
 		{http.MethodGet, "/api/v1/customers", "", http.StatusOK, http.StatusOK},
-		{http.MethodPost, "/api/v1/customers", `{"code":"AB","name":"Customer Uji"}`, http.StatusForbidden, http.StatusCreated},
+		{http.MethodPost, "/api/v1/customers", `{"code":"AB","name":"Customer Baru","project_group_id":"{projectGroupId}"}`, http.StatusForbidden, http.StatusCreated},
+		{http.MethodPut, "/api/v1/customers/{customerId}", `{"name":"Customer Ubah","project_group_id":"{projectGroupId}","active":true}`, http.StatusForbidden, http.StatusOK},
+		{http.MethodPost, "/api/v1/customers/{customerId}/code", `{"code":"XZ"}`, http.StatusForbidden, http.StatusOK},
+		{http.MethodGet, "/api/v1/project-groups", "", http.StatusOK, http.StatusOK},
+		{http.MethodPost, "/api/v1/project-groups", `{"code":"GR2","name":"Project Group 2"}`, http.StatusForbidden, http.StatusCreated},
+		{http.MethodPut, "/api/v1/project-groups/{projectGroupId}", `{"code":"GR1","name":"Satu"}`, http.StatusForbidden, http.StatusOK},
+		{http.MethodGet, "/api/v1/model-groups?customer_id={customerId}", "", http.StatusOK, http.StatusOK},
+		{http.MethodPost, "/api/v1/model-groups", `{"customer_id":"{customerId}","name":"Family 2"}`, http.StatusForbidden, http.StatusCreated},
+		{http.MethodPut, "/api/v1/model-groups/{modelGroupId}", `{"name":"Family B"}`, http.StatusForbidden, http.StatusOK},
+		{http.MethodGet, "/api/v1/models?customer_id={customerId}", "", http.StatusOK, http.StatusOK},
+		{http.MethodPost, "/api/v1/models", `{"customer_id":"{customerId}","name":"X200"}`, http.StatusForbidden, http.StatusCreated},
+		{http.MethodPut, "/api/v1/models/{modelId}", `{"name":"X100A","model_group_id":"{modelGroupId}"}`, http.StatusForbidden, http.StatusOK},
+		{http.MethodGet, "/api/v1/part-numbers?customer_id={customerId}", "", http.StatusOK, http.StatusOK},
+		{http.MethodPost, "/api/v1/part-numbers", `{"model_id":"{modelId}","number":"PN-2"}`, http.StatusForbidden, http.StatusCreated},
+		{http.MethodPut, "/api/v1/part-numbers/{partNumberId}", `{"number":"PN-1A"}`, http.StatusForbidden, http.StatusOK},
 		{http.MethodGet, "/api/v1/roles", "", http.StatusForbidden, http.StatusOK},
 		{http.MethodGet, "/api/v1/accounts", "", http.StatusForbidden, http.StatusOK},
 		{http.MethodPost, "/api/v1/accounts", `{"person_name":"Orang Baru","kind":"work","login":"orang.baru"}`, http.StatusForbidden, http.StatusCreated},
-		{http.MethodPut, "{target}/roles", `{"roles":[{"role":"author","scope":"all"}]}`, http.StatusForbidden, http.StatusOK},
-		{http.MethodPost, "{target}/password-reset", "", http.StatusForbidden, http.StatusOK},
-		{http.MethodPost, "{target}/disable", "", http.StatusForbidden, http.StatusOK},
-		{http.MethodPost, "{target}/enable", "", http.StatusForbidden, http.StatusOK},
+		{http.MethodPut, "/api/v1/accounts/{accountId}/roles", `{"roles":[{"role":"author","scope":"all"}]}`, http.StatusForbidden, http.StatusOK},
+		{http.MethodPost, "/api/v1/accounts/{accountId}/password-reset", "", http.StatusForbidden, http.StatusOK},
+		{http.MethodPost, "/api/v1/accounts/{accountId}/disable", "", http.StatusForbidden, http.StatusOK},
+		{http.MethodPost, "/api/v1/accounts/{accountId}/enable", "", http.StatusForbidden, http.StatusOK},
 		// Audit log hanya lewat akun admin (D-72, D-75).
 		{http.MethodGet, "/api/v1/audit-log", "", http.StatusForbidden, http.StatusOK},
 		{http.MethodGet, "/api/v1/audit-log/verification", "", http.StatusForbidden, http.StatusOK},
@@ -86,10 +130,15 @@ func TestPermissionsPerOperation(t *testing.T) {
 	}
 	checkCoversContract(t, cases)
 
+	fill := func(text string) string {
+		for name, id := range params {
+			text = strings.ReplaceAll(text, "{"+name+"}", id)
+		}
+		return text
+	}
 	run := func(who, token string, want func(operationCase) int) {
 		for _, tc := range cases {
-			path := strings.Replace(tc.path, "{target}", target, 1)
-			req := httptest.NewRequest(tc.method, path, strings.NewReader(tc.body))
+			req := httptest.NewRequest(tc.method, fill(tc.path), strings.NewReader(fill(tc.body)))
 			req.Header.Set("Content-Type", "application/json")
 			req.AddCookie(&http.Cookie{Name: sessionCookieName, Value: token})
 			rec := httptest.NewRecorder()
@@ -122,7 +171,8 @@ func checkCoversContract(t *testing.T, cases []operationCase) {
 	}
 	covered := map[string]bool{}
 	for _, c := range cases {
-		path := strings.Replace(c.path, "{target}", "/api/v1/accounts/{accountId}", 1)
+		// Parameter query bukan bagian dari route di kontrak.
+		path, _, _ := strings.Cut(c.path, "?")
 		covered[c.method+" "+path] = true
 	}
 	for path, operations := range contract.Paths {

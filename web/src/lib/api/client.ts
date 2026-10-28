@@ -14,6 +14,21 @@ import type {
 	Credentials,
 	Customer,
 	CustomerList,
+	CustomerUpdate,
+	Model,
+	ModelGroup,
+	ModelGroupList,
+	ModelList,
+	ModelUpdate,
+	NewModel,
+	NewModelGroup,
+	NewPartNumber,
+	PartNumber,
+	PartNumberList,
+	PartNumberUpdate,
+	ProjectGroup,
+	ProjectGroupInput,
+	ProjectGroupList,
 	NewAccount,
 	NewCustomer,
 	PasswordChange,
@@ -52,6 +67,118 @@ export function createCustomer(
 	fetchFn: typeof fetch = fetch
 ): Promise<ApiResult<Customer>> {
 	return call<Customer>(fetchFn, '/api/v1/customers', jsonRequest('POST', input));
+}
+
+// updateCustomer memanggil PUT /api/v1/customers/{id}: nama, Project Group,
+// dan status aktif (A-2).
+export function updateCustomer(
+	id: string,
+	input: CustomerUpdate,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<Customer>> {
+	return call<Customer>(fetchFn, itemPath('customers', id), jsonRequest('PUT', input));
+}
+
+// changeCustomerCode memanggil POST /api/v1/customers/{id}/code. Kode lama
+// tetap tercatat di riwayat kode customer (E-11).
+export function changeCustomerCode(
+	id: string,
+	code: string,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<Customer>> {
+	return call<Customer>(fetchFn, itemPath('customers', id) + '/code', jsonRequest('POST', { code }));
+}
+
+// listProjectGroups memanggil GET /api/v1/project-groups.
+export function listProjectGroups(fetchFn: typeof fetch = fetch): Promise<ApiResult<ProjectGroupList>> {
+	return call<ProjectGroupList>(fetchFn, '/api/v1/project-groups', { method: 'GET' });
+}
+
+// createProjectGroup memanggil POST /api/v1/project-groups (A-2).
+export function createProjectGroup(
+	input: ProjectGroupInput,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<ProjectGroup>> {
+	return call<ProjectGroup>(fetchFn, '/api/v1/project-groups', jsonRequest('POST', input));
+}
+
+// updateProjectGroup memanggil PUT /api/v1/project-groups/{id} (A-2).
+export function updateProjectGroup(
+	id: string,
+	input: ProjectGroupInput,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<ProjectGroup>> {
+	return call<ProjectGroup>(fetchFn, itemPath('project-groups', id), jsonRequest('PUT', input));
+}
+
+// listModelGroups memanggil GET /api/v1/model-groups?customer_id=...
+export function listModelGroups(
+	customerId: string,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<ModelGroupList>> {
+	return call<ModelGroupList>(fetchFn, listPath('model-groups', customerId), { method: 'GET' });
+}
+
+// createModelGroup memanggil POST /api/v1/model-groups (A-2).
+export function createModelGroup(
+	input: NewModelGroup,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<ModelGroup>> {
+	return call<ModelGroup>(fetchFn, '/api/v1/model-groups', jsonRequest('POST', input));
+}
+
+// renameModelGroup memanggil PUT /api/v1/model-groups/{id} (A-2).
+export function renameModelGroup(
+	id: string,
+	name: string,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<ModelGroup>> {
+	return call<ModelGroup>(fetchFn, itemPath('model-groups', id), jsonRequest('PUT', { name }));
+}
+
+// listModels memanggil GET /api/v1/models?customer_id=...
+export function listModels(customerId: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<ModelList>> {
+	return call<ModelList>(fetchFn, listPath('models', customerId), { method: 'GET' });
+}
+
+// createModel memanggil POST /api/v1/models (A-2).
+export function createModel(input: NewModel, fetchFn: typeof fetch = fetch): Promise<ApiResult<Model>> {
+	return call<Model>(fetchFn, '/api/v1/models', jsonRequest('POST', input));
+}
+
+// updateModel memanggil PUT /api/v1/models/{id} (A-2). Tanpa model_group_id
+// berarti model dikeluarkan dari group-nya.
+export function updateModel(
+	id: string,
+	input: ModelUpdate,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<Model>> {
+	return call<Model>(fetchFn, itemPath('models', id), jsonRequest('PUT', input));
+}
+
+// listPartNumbers memanggil GET /api/v1/part-numbers?customer_id=...
+export function listPartNumbers(
+	customerId: string,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<PartNumberList>> {
+	return call<PartNumberList>(fetchFn, listPath('part-numbers', customerId), { method: 'GET' });
+}
+
+// createPartNumber memanggil POST /api/v1/part-numbers (A-2).
+export function createPartNumber(
+	input: NewPartNumber,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<PartNumber>> {
+	return call<PartNumber>(fetchFn, '/api/v1/part-numbers', jsonRequest('POST', input));
+}
+
+// updatePartNumber memanggil PUT /api/v1/part-numbers/{id} (A-2).
+export function updatePartNumber(
+	id: string,
+	input: PartNumberUpdate,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<PartNumber>> {
+	return call<PartNumber>(fetchFn, itemPath('part-numbers', id), jsonRequest('PUT', input));
 }
 
 // getSession memanggil GET /api/v1/session: siapa yang sedang login.
@@ -154,6 +281,16 @@ export function verifyAuditLog(fetchFn: typeof fetch = fetch): Promise<ApiResult
 // seperti / atau ? tidak mengubah alamat.
 function accountPath(accountId: string, action: string): string {
 	return `/api/v1/accounts/${encodeURIComponent(accountId)}/${action}`;
+}
+
+// itemPath menyusun alamat satu data, misalnya /api/v1/models/{id}, dengan ID dikodekan.
+function itemPath(collection: string, id: string): string {
+	return `/api/v1/${collection}/${encodeURIComponent(id)}`;
+}
+
+// listPath menyusun alamat daftar milik satu customer, dengan ID dikodekan.
+function listPath(collection: string, customerId: string): string {
+	return `/api/v1/${collection}?customer_id=${encodeURIComponent(customerId)}`;
 }
 
 // jsonRequest menyusun permintaan dengan isi JSON.

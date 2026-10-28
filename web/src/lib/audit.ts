@@ -14,7 +14,17 @@ const actionKeys: Record<string, MessageKey> = {
 	'account.password_reset': 'auditActionPasswordReset',
 	'account.disabled': 'auditActionAccountDisabled',
 	'account.enabled': 'auditActionAccountEnabled',
-	'customer.created': 'auditActionCustomerCreated'
+	'customer.created': 'auditActionCustomerCreated',
+	'customer.updated': 'auditActionCustomerUpdated',
+	'customer.code_changed': 'auditActionCustomerCodeChanged',
+	'project_group.created': 'auditActionProjectGroupCreated',
+	'project_group.updated': 'auditActionProjectGroupUpdated',
+	'model_group.created': 'auditActionModelGroupCreated',
+	'model_group.updated': 'auditActionModelGroupUpdated',
+	'model.created': 'auditActionModelCreated',
+	'model.updated': 'auditActionModelUpdated',
+	'part_number.created': 'auditActionPartNumberCreated',
+	'part_number.updated': 'auditActionPartNumberUpdated'
 };
 
 const detailKeys: Record<string, MessageKey> = {
@@ -28,7 +38,13 @@ const detailKeys: Record<string, MessageKey> = {
 	roles: 'auditDetailRoles',
 	via: 'auditDetailVia',
 	code: 'auditDetailCode',
-	name: 'auditDetailName'
+	name: 'auditDetailName',
+	active: 'auditDetailActive',
+	customer: 'auditDetailCustomer',
+	project_group: 'auditDetailProjectGroup',
+	model_group: 'auditDetailModelGroup',
+	model: 'auditDetailModel',
+	number: 'auditDetailNumber'
 };
 
 const reasonKeys: Record<string, MessageKey> = {

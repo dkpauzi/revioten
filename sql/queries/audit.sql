@@ -18,13 +18,18 @@ INSERT INTO audit_log (
 -- beserta login dan nama orang aktor (D-74) dan nama tampilan sasarannya.
 SELECT l.seq, l.occurred_at, l.actor_type, l.actor_account_id, a.login AS actor_login,
        l.actor_person_id, p.name AS actor_person_name, l.request_id, l.source_ip,
-       l.action, l.target_type, l.target_id, coalesce(ta.login, tc.code, '') AS target_label,
+       l.action, l.target_type, l.target_id,
+       coalesce(ta.login, tc.code, tp.code, tg.name, tm.name, tn.number, '') AS target_label,
        l.details, l.prev_hash, l.hash
 FROM audit_log l
 LEFT JOIN accounts a ON a.id = l.actor_account_id
 LEFT JOIN people p ON p.id = l.actor_person_id
 LEFT JOIN accounts ta ON l.target_type = 'account' AND ta.id = l.target_id
 LEFT JOIN customers tc ON l.target_type = 'customer' AND tc.id = l.target_id
+LEFT JOIN project_groups tp ON l.target_type = 'project_group' AND tp.id = l.target_id
+LEFT JOIN model_groups tg ON l.target_type = 'model_group' AND tg.id = l.target_id
+LEFT JOIN models tm ON l.target_type = 'model' AND tm.id = l.target_id
+LEFT JOIN part_numbers tn ON l.target_type = 'part_number' AND tn.id = l.target_id
 WHERE l.seq < sqlc.arg(before)
 ORDER BY l.seq DESC
 LIMIT sqlc.arg(max_entries);

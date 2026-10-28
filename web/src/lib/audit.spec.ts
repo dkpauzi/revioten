@@ -22,6 +22,8 @@ describe('teks audit log', () => {
 		expect(actionLabel('account.created')).toBe(en.auditActionAccountCreated);
 		expect(actionLabel('customer.created')).toBe(en.auditActionCustomerCreated);
 		expect(actionLabel('document.released')).toBe('document.released');
+		expect(actionLabel('customer.code_changed')).toBe(en.auditActionCustomerCodeChanged);
+		expect(actionLabel('part_number.updated')).toBe(en.auditActionPartNumberUpdated);
 	});
 
 	// Aktor manusia ditampilkan bersama orang pemegang akunnya (D-74).
@@ -49,6 +51,9 @@ describe('teks audit log', () => {
 			`baru: x; ${en.auditDetailVia}: create-admin`
 		);
 		expect(detailsText({})).toBe('');
+		expect(detailsText({ project_group: 'GR1 → GR2', model_group: '- → Family' })).toBe(
+			`${en.auditDetailModelGroup}: - → Family; ${en.auditDetailProjectGroup}: GR1 → GR2`
+		);
 	});
 
 	it('menjelaskan hasil pemeriksaan rantai', () => {
