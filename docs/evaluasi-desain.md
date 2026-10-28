@@ -51,6 +51,8 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-27 | Jenis aktor untuk perintah server dan orang yang belum login | Celah | M1.3, M8.1 | Tidak | Terbuka |
 | E-28 | Peristiwa apa saja yang masuk audit log | Ambigu | M1.3, Tahap 2 sampai 7 | Tidak | Terbuka |
 | E-29 | Kredensial pemilik database dan siapa yang menjalankan migrasi | Celah | M1.3, M8.3, M8.4 | Tidak | Terbuka |
+| E-30 | Field dan aturan Project Group, group model, model, dan part number belum ditetapkan | Celah | M1.4, M4.1 | Tidak | Terbuka |
+| E-31 | Kode customer lama: boleh dipakai customer lain, dan tanggal berlaku penggantian | Ambigu | M1.4, M2.1 | Tidak | Terbuka |
 
 ## Rincian
 
@@ -224,6 +226,7 @@ Salin blok ini untuk setiap temuan baru.
 - **Menghambat milestone?** Tidak
 - **Status:** Diputuskan pemilik 27 Oktober 2026 (nomor D menunggu brief)
 - **Keputusan pemilik:** Opsi (a) sesuai rekomendasi ("saya setuju dengan semua saran anda", 27 Oktober 2026). Catatan: WI SW-ZZ-000 rev 09 menunjukkan kode customer pernah diganti, jadi bagian "kode tidak bisa diubah" ditinjau ulang di E-11. Bagian itu digantikan keputusan E-11 (28 Oktober 2026): kode customer bisa diubah lewat master data, dengan riwayat kode.
+- **Pelaksanaan (M1.4, 28 Oktober 2026):** customer tidak bisa dihapus (role aplikasi tanpa `DELETE`), hanya dinonaktifkan lewat kolom `active`. Customer nonaktif tidak mendapat group model, model, atau part number baru. Kolom `project_group_id` boleh kosong hanya untuk customer yang dibuat sebelum M1.4 (ASUMSI E-09); customer baru dan customer yang diubah wajib punya Project Group. Pola kode tetap dua huruf A sampai Z dari WI (E-12).
 
 ### E-10 · Siapa yang mengelola group model dan model
 
@@ -272,6 +275,7 @@ Salin blok ini untuk setiap temuan baru.
 - **Menghambat milestone?** Tidak untuk Tahap 0 dan 1. Perlu diputuskan sebelum M2.1.
 - **Status:** Diputuskan pemilik 28 Oktober 2026 (nomor D menunggu brief)
 - **Keputusan pemilik:** Pakai aturan WI SW-ZZ-000, dan aturannya disimpan sebagai master data ("E-12 gunakan aturan sesuai dengan yang ada di WI, dan cantumkan juga aturannya di master data", 28 Oktober 2026). Ini opsi (a). Isi master data: kode pabrik (S); jenis dokumen (C, F, H, dan jenis lain di WI); kode customer 2 huruf beserta kode khusus ZZ dan HSE; format nomor berjalan; dan jumlah digit revisi (2). Dibangun di M1.4 (kode customer), M1.6 (kode pabrik dan jenis dokumen), dan M2.1 (struktur nomor). Dokumen referensi set TR-021 (SH, SF, SC) sesuai dengan struktur ini: nomor di cover ditulis tanpa revisi, revisi ada di tabel riwayat, dan nama file menyertakan revisi. Dua rincian dijawab pemilik pada 28 Oktober 2026: (1) Nomor di atas 999 memakai huruf dan 3 digit: A001 sampai A999, lalu B001, dan seterusnya. Aturan ini berlaku "untuk saat ini" dan berbeda dari tabel WI SW-ZZ-000 rev 09 (00-XXXX, A1-XXXX); pernyataan pemilik yang dipakai. Karena bisa berubah, format nomor berjalan disimpan sebagai master data. (2) SC-ESD-K001 diabaikan karena bukan control plan proses. Sistem tidak menomori dokumen seperti itu. Bila dirujuk dari CP, dokumen itu dicatat apa adanya sebagai dokumen terkait (R-DOC-10, R-DOC-11).
+- **Pelaksanaan (M1.4, 28 Oktober 2026):** kode customer dua huruf dengan riwayat sudah menjadi master data (E-11). Kode khusus ZZ dan HSE belum menjadi tabel master: ZZ tetap ditolak sebagai kode customer, dan HSE tidak bisa bentrok karena tiga huruf. Kode khusus disimpan sebagai master data di M1.6, bersama kode pabrik dan jenis dokumen, karena ketiganya bagian struktur nomor.
 
 ### E-13 · Versi terbaru berbeda dari brief bagian 7
 
@@ -528,6 +532,47 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (a) untuk demo localhost (D-36), dan (c) dicatat di dokumen untuk IT (M8.4).
 - **Asumsi sementara di kode (ASUMSI E-29):** (a). Ditandai di `cmd/revioten/main.go` (`openDatabase`).
 - **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-30 · Field dan aturan Project Group, group model, model, dan part number belum ditetapkan
+
+- **Tanggal dan milestone:** 28 Oktober 2026, M1.4. Berdampak ke M4.1 (header dokumen) dan Tahap 6 (cetakan).
+- **Jenis:** Celah
+- **Rujukan:** brief bagian 3 dan 4 (customer, model_group, model, part_number), D-39, D-42, D-54, R-DOC-08, UC-03, F-04, F-05, F-10, F-11, E-21.
+- **Temuan:** Brief hanya menyebut hubungan: group model milik satu customer, model paling banyak satu group (D-42), dan customer masuk satu Project Group (D-54). Belum ada field dan aturan:
+  1. Project Group: apakah punya nama selain kode GR1 sampai GR4, dan bentuk kodenya.
+  2. Group model: nama, dan apakah unik dalam satu customer.
+  3. Model: field apa saja (nama seperti "660A" di PFMEA, nomor model, deskripsi), dan apakah model selalu milik satu customer.
+  4. Part number: apakah selalu milik satu model, apakah unik per customer atau seluruh sistem, dan apakah nama part (misalnya deskripsi di PFMEA) disimpan.
+  5. Apakah model dan part number bisa dinonaktifkan seperti customer (E-09).
+- **Dampak bila dibiarkan:** header dokumen di M4.1 dan cetakan di Tahap 6 butuh field yang mungkin belum disimpan, misalnya nama part atau nomor model.
+- **Opsi:** (a) Pakai asumsi M1.4 di bawah, lalu tambah field lewat migrasi saat M4.1 butuh. (b) Pemilik menetapkan daftar field dari header PFD, PFMEA, dan CP yang ada sekarang (F-10, F-11) sebelum M4.1.
+- **Rekomendasi Claude Code (usulan):** (b), dibahas bersama pemilik saat evaluasi Tahap 1, karena header form sudah menunjukkan field yang dicetak.
+- **Asumsi sementara di kode (ASUMSI E-30):**
+  - Project Group: kode huruf besar A sampai Z dan angka, 1 sampai 10 karakter, dan nama wajib.
+  - Group model dan model: nama wajib, paling banyak 200 karakter, unik dalam satu customer.
+  - Part number: milik satu model, nomor wajib (paling banyak 100 karakter, unik dalam satu customer), dan nama part boleh kosong.
+  - Model tidak pindah customer, dan part number tidak pindah model. Belum ada status nonaktif untuk group model, model, dan part number.
+  - Ditandai di `sql/migrations/00005_create_master_data.sql`, `internal/customer/validate.go`, dan `internal/product/product.go`.
+- **Menghambat milestone?** Tidak (perlu sebelum M4.1)
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-31 · Kode customer lama: boleh dipakai customer lain, dan tanggal berlaku penggantian
+
+- **Tanggal dan milestone:** 28 Oktober 2026, M1.4. Berdampak ke M2.1 (penghitung nomor) dan R-POR-01.
+- **Jenis:** Ambigu
+- **Rujukan:** E-11, E-16, R-NUM-02, R-NUM-03, R-POR-01, WI SW-ZZ-000 rev 04 dan rev 09 (penggantian HL menjadi MS dan BA menjadi RB).
+- **Temuan:** E-11 menetapkan riwayat kode dengan tanggal berlaku. Belum jelas:
+  1. Apakah kode lama satu customer boleh dipakai customer lain nanti. Bila boleh, nomor lama dengan kode itu menunjuk dua customer.
+  2. Apakah customer boleh kembali ke kode lamanya sendiri.
+  3. Apakah tanggal berlaku penggantian boleh dipilih (misalnya mengikuti tanggal revisi WI), atau selalu saat penggantian dicatat.
+- **Dampak bila dibiarkan:** pencocokan nomor lama dengan customer (R-POR-01) dan penghitung per kode (E-16 butir 5) bisa memberi hasil yang salah.
+- **Opsi:** (a) Satu kode hanya pernah milik satu customer, tidak bisa kembali, dan berlaku saat dicatat. (b) Seperti (a), tapi tanggal berlaku bisa diisi admin. (c) Kode bebas dipakai lagi setelah masa berlakunya habis, dan pencocokan nomor lama memakai tanggal nomor.
+- **Rekomendasi Claude Code (usulan):** (a). Paling sederhana dan tidak pernah ambigu. Tanggal berlaku yang dipilih (b) bisa ditambah bila nanti dibutuhkan untuk mengimpor riwayat WI.
+- **Asumsi sementara di kode (ASUMSI E-31):** (a). Kode menjadi primary key `customer_codes`, jadi database menolak kode yang pernah dipakai. Ditandai di `sql/migrations/00005_create_master_data.sql` dan `internal/customer/service.go`.
+- **Menghambat milestone?** Tidak (perlu sebelum M2.1)
 - **Status:** Terbuka
 - **Keputusan pemilik:**
 
