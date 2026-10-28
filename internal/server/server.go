@@ -12,8 +12,8 @@ func NewHandler() http.Handler {
 
 	// Pola "GET /health" hanya cocok untuk method GET (dan HEAD).
 	// Method lain otomatis dijawab 405, dan path yang tidak terdaftar 404.
-	// ASUMSI E-17: /health ada di root, di luar /api/v1, dan belum masuk
-	// kontrak OpenAPI. Kedudukannya diputuskan sebelum M0.5.
+	// E-17 (diputuskan): /health ada di root sebagai endpoint operasional,
+	// di luar /api/v1. Mulai M0.5 endpoint ini ikut dicatat di kontrak OpenAPI.
 	mux.HandleFunc("GET /health", handleHealth)
 
 	return mux
