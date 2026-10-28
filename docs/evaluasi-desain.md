@@ -45,6 +45,9 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-21 | Field dan batas master customer belum ditentukan | Celah | M0.5, M1.4 | Tidak (perlu sebelum M1.4) | Terbuka |
 | E-22 | Tidak ada jalan keluar bila akun admin terakhir lupa password atau terkunci | Celah | M1.1, M1.2 | Tidak | Terbuka |
 | E-23 | Daftar password yang dilarang belum memenuhi ASVS 6.2.4 tanpa layanan luar | Sulit dibangun | M1.1 | Tidak | Terbuka |
+| E-24 | U3 belum punya hak untuk melihat master data | Celah | M1.2, M1.4 sampai M1.8 | Tidak (perlu sebelum M1.4) | Terbuka |
+| E-25 | Hak mengurus akun sendiri tidak ada di katalog U3 | Celah | M1.1, M1.2 | Tidak | Terbuka |
+| E-26 | Akun admin terakhir "tidak bisa dihapus", padahal hapus akun belum diatur | Ambigu | M1.2, M1.3 | Tidak | Terbuka |
 
 ## Rincian
 
@@ -79,6 +82,7 @@ Salin blok ini untuk setiap temuan baru.
 - **Menghambat milestone?** Ya, untuk M1.2. Tidak untuk Tahap 0.
 - **Status:** Diputuskan pemilik 27 Oktober 2026 (nomor D menunggu brief)
 - **Keputusan pemilik:** Opsi (a) sesuai rekomendasi: delapan peran U3 dan katalog hak L-1 sampai A-4 sebagai data awal di M1.2, tanpa peran approver dulu ("saya setuju dengan semua saran anda", 27 Oktober 2026).
+- **Pelaksanaan (M1.2, 28 Oktober 2026):** tabel `permissions`, `roles`, `role_permissions`, dan `account_roles` di `sql/migrations/00003_create_roles.sql`, diisi dari matriks U3 bagian 3. `TestRoleMatrix` di `internal/access` membandingkan isi database dengan matriks U3 yang ditulis ulang di test. Isi peran belum bisa diubah lewat layar sampai M8.1.
 
 ### E-02 · Akun dan orang belum dibedakan di model data
 
@@ -121,6 +125,7 @@ Salin blok ini untuk setiap temuan baru.
 - **Menghambat milestone?** Tidak untuk Tahap 0 dan M1.2. Harus diputuskan sebelum M5.3.
 - **Status:** Diputuskan pemilik 27 Oktober 2026 (nomor D menunggu brief)
 - **Keputusan pemilik:** Opsi (a) sesuai rekomendasi: cakupan Project Group dicek di fungsi izin sejak M1.2; row-level security tetap di M8.1 ("saya setuju dengan semua saran anda", 27 Oktober 2026).
+- **Pelaksanaan (M1.2, 28 Oktober 2026):** `access.Authorize` menerima `Resource{CustomerID}` dan memeriksa cakupan `own_project_group` untuk Penyusun dan Verifikator. Sumber datanya (master Project Group dan pemegang jabatan) baru ada di M1.4 dan M1.8, jadi sampai itu `inOwnProjectGroup` selalu menjawab tidak (ASUMSI E-04, pilihan paling aman). Saat ini belum ada operasi yang menyentuh satu customer, jadi aturan ini belum berpengaruh ke layar.
 
 ### E-05 · Dua sumber data untuk cakupan Project Group
 
@@ -429,6 +434,48 @@ Salin blok ini untuk setiap temuan baru.
 - **Opsi:** (a) Tetap memakai daftar offline yang ada (329 entri) dan mencatat kekurangannya. (b) Memakai API Pwned Passwords bila jaringan perusahaan mengizinkan server menghubungi internet (perlu jawaban Q-02). (c) Mengunduh dataset Pwned Passwords dan memasang filter lokal (berat untuk demo localhost).
 - **Rekomendasi Claude Code (usulan):** (a) untuk demo localhost, dan (b) dibahas dengan IT untuk versi perusahaan.
 - **Asumsi sementara di kode:** (a). File `internal/auth/common_passwords.txt` mencatat sumber dan cara penyaringannya.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-24 · U3 belum punya hak untuk melihat master data
+
+- **Tanggal dan milestone:** 28 Oktober 2026, M1.2. Berdampak ke M1.4 sampai M1.8.
+- **Jenis:** Celah
+- **Rujukan:** U3-peta-pengguna bagian 3 (L-1 sampai L-4, A-2), UC-03 sampai UC-06, E-10, D-66, R-SEC-09.
+- **Temuan:** Matriks U3 hanya punya A-2 "Kelola master data", yang dipegang Admin saja. Tidak ada hak untuk melihat master data. Padahal penyusun perlu memilih customer, model, proses, dan jenis dokumen saat mendaftarkan nomor dan menyusun dokumen, dan Viewer perlu melihat nama customer di register. Endpoint `GET /api/v1/customers` butuh satu hak untuk diperiksa (D-35).
+- **Dampak bila dibiarkan:** setiap master baru di M1.4 sampai M1.8 memilih haknya sendiri, sehingga aturannya tidak seragam.
+- **Opsi:** (a) Melihat master data termasuk L-2 (register, riwayat, dan diagram butuh nama customer, model, dan proses). Semua peran sudah punya L-2. (b) Hak baru di katalog, misalnya L-5 "Lihat master data", diberikan ke semua peran. (c) Master data terbuka untuk semua akun yang login, tanpa hak di katalog.
+- **Rekomendasi Claude Code (usulan):** (a). Tidak menambah hak baru, dan hasilnya sama dengan isi awal U3. Bila nanti ada data customer yang harus dibatasi, cakupan customer (D-71) yang membatasinya.
+- **Asumsi sementara di kode (ASUMSI E-24):** `GET /api/v1/customers` memeriksa L-2, di `internal/customer/service.go`.
+- **Menghambat milestone?** Tidak (perlu sebelum M1.4)
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-25 · Hak mengurus akun sendiri tidak ada di katalog U3
+
+- **Tanggal dan milestone:** 28 Oktober 2026, M1.2. Berdampak ke M1.1 (sesi dan ganti password).
+- **Jenis:** Celah
+- **Rujukan:** U3-peta-pengguna bagian 1, 3, dan 4, UC-01, D-35, R-SEC-09, R-SEC-11, E-08.
+- **Temuan:** Semua operasi lewat satu fungsi izin (D-35). Beberapa operasi tidak cocok dengan hak mana pun di U3: melihat sesi sendiri, logout, dan ganti password sendiri. Operasi ini harus selalu boleh untuk setiap akun, juga akun tanpa peran dan akun yang wajib ganti password (E-08).
+- **Dampak bila dibiarkan:** bila dimasukkan ke katalog sebagai hak biasa, admin bisa mencabutnya dari sebuah peran, sehingga pengguna tidak bisa logout atau mengganti password yang direset. Bila tidak lewat fungsi izin sama sekali, ada operasi yang melewati titik pemeriksaan.
+- **Opsi:** (a) Aturan tetap di luar katalog: setiap akun boleh mengurus akunnya sendiri, dan tidak ada yang bisa mematikannya. Tetap diperiksa fungsi izin, dengan resource berupa akun itu. Dicatat di U3 bagian 4. (b) Hak baru di katalog (misalnya L-0) yang diberikan ke semua peran dan tidak bisa dicabut.
+- **Rekomendasi Claude Code (usulan):** (a). Hak yang tidak boleh dicabut lebih jelas ditulis sebagai aturan tetap daripada sebagai baris katalog dengan pengecualian.
+- **Asumsi sementara di kode (ASUMSI E-25):** `access.ManageOwnAccount` di `internal/access/access.go`. `Authorize` mengizinkannya hanya bila resource adalah akun pemanggil sendiri.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-26 · Akun admin terakhir "tidak bisa dihapus", padahal hapus akun belum diatur
+
+- **Tanggal dan milestone:** 28 Oktober 2026, M1.2. Berdampak ke M1.3 (audit log menunjuk akun).
+- **Jenis:** Ambigu
+- **Rujukan:** D-73, R-SEC-11, U3-peta-pengguna bagian 4 aturan 7, D-74, R-SEC-03, UC-02, E-02.
+- **Temuan:** D-73 dan R-SEC-11 menyebut akun admin terakhir tidak bisa dihapus (removed). Belum ada aturan apakah akun boleh dihapus sama sekali. Audit log (D-74) dan riwayat dokumen menunjuk akun dan orangnya, sehingga menghapus baris akun memutus rujukan itu, atau audit log harus menyimpan salinan nama.
+- **Dampak bila dibiarkan:** bila operasi hapus akun dibuat, audit log dan riwayat bisa kehilangan pelaku, atau penghapusan ditolak foreign key dan admin tidak tahu kenapa.
+- **Opsi:** (a) Akun tidak pernah dihapus, hanya dinonaktifkan (semua sesi berakhir, tidak bisa login). "Dihapus" di D-73 dibaca sebagai "dinonaktifkan". (b) Hapus diizinkan hanya untuk akun yang belum pernah dipakai. (c) Hapus dengan anonimisasi data orang.
+- **Rekomendasi Claude Code (usulan):** (a). (b) atau (c) baru perlu bila ada kewajiban menghapus data pribadi, dan itu pertanyaan untuk perusahaan.
+- **Asumsi sementara di kode (ASUMSI E-26):** tidak ada operasi hapus akun. Akun admin aktif terakhir tidak bisa dinonaktifkan, dan peran akun admin tidak bisa diubah sama sekali (`internal/auth/accounts.go`, `internal/access/roles.go`).
 - **Menghambat milestone?** Tidak
 - **Status:** Terbuka
 - **Keputusan pemilik:**

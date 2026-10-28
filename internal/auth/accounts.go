@@ -247,6 +247,8 @@ func (s *Service) ResetPassword(ctx context.Context, actor access.Actor, account
 
 // DisableAccount menonaktifkan akun lain dan mengakhiri semua sesinya (A-1,
 // ASVS 7.4.2). Akun admin aktif terakhir tidak bisa dinonaktifkan (D-73).
+// ASUMSI E-26: akun tidak pernah dihapus, hanya dinonaktifkan, supaya audit
+// log dan riwayat dokumen tetap menunjuk akun dan orangnya (D-74).
 func (s *Service) DisableAccount(ctx context.Context, actor access.Actor, accountID string) (AccountInfo, error) {
 	if err := s.authz.Authorize(ctx, actor, access.ManageUsers, access.Resource{}); err != nil {
 		return AccountInfo{}, err

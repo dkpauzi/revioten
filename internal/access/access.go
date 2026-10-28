@@ -65,6 +65,7 @@ const (
 	// ManageOwnAccount bukan hak di katalog: setiap aktor boleh mengurus
 	// akunnya sendiri (lihat sesi, logout, ganti password). Tetap lewat
 	// Authorize, supaya semua operasi melewati satu titik pemeriksaan.
+	// ASUMSI E-25: aturan tetap yang tidak bisa dicabut admin, bukan hak di U3.
 	ManageOwnAccount Permission = "own-account"
 )
 
