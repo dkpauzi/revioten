@@ -1,0 +1,4 @@
+# Semua file teks memakai akhir baris LF, di repo maupun di folder kerja,
+# termasuk di Windows. Go, Docker Compose, dan file .env mengharapkan LF.
+# File biner (gambar, docx) dikenali otomatis dan tidak diubah.
+* text=auto eol=lf
