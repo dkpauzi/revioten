@@ -35,7 +35,8 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-11 | Kode customer pernah diganti (WI SW-ZZ-000) | Kontradiksi | M1.4, M2.1, M2.5 | Tidak (perlu sebelum M1.4) | Diputuskan, D menunggu brief |
 | E-12 | Struktur nomor di WI SW-ZZ-000 lebih rinci daripada pola di brief | Celah | M2.1, M2.4, M2.5 | Tidak (perlu sebelum M2.1) | Diputuskan, 2 rincian terbuka |
 | E-13 | Versi terbaru berbeda dari brief bagian 7 | Kontradiksi | M0.1 | Tidak | Diputuskan, D menunggu brief |
-| E-14 | R-VER-04 belum menjawab line tunggal dan versi 0.x | Ambigu | M0.1, M0.4 | Tidak untuk M0.1, ya untuk M0.4 | Terbuka |
+| E-14 | R-VER-04 belum menjawab line tunggal dan versi 0.x | Ambigu | M0.1, M0.4 | Tidak untuk M0.1, ya untuk M0.4 | Diputuskan, D menunggu brief |
+| E-15 | Belum ada langkah desain layar (wireframe) di milestone dan paket UML | Celah | Tahap 4, paket UML | Tidak (perlu sebelum Tahap 4) | Diputuskan, D menunggu brief |
 
 ## Rincian
 
@@ -229,7 +230,7 @@ Salin blok ini untuk setiap temuan baru.
 - **Asumsi sementara di kode:** tidak ada; temuan ini menyentuh Tahap 2.
 - **Menghambat milestone?** Tidak untuk Tahap 0 dan 1. Perlu diputuskan sebelum M2.1.
 - **Status:** Diputuskan pemilik 28 Oktober 2026 (nomor D menunggu brief). Dua rincian masih terbuka.
-- **Keputusan pemilik:** Pakai aturan WI SW-ZZ-000, dan aturannya disimpan sebagai master data ("E-12 gunakan aturan sesuai dengan yang ada di WI, dan cantumkan juga aturannya di master data", 28 Oktober 2026). Ini opsi (a). Isi master data: kode pabrik (S); jenis dokumen (C, F, H, dan jenis lain di WI); kode customer 2 huruf beserta kode khusus ZZ dan HSE; format nomor berjalan; dan jumlah digit revisi (2). Dibangun di M1.4 (kode customer), M1.6 (kode pabrik dan jenis dokumen), dan M2.1 (struktur nomor). Dokumen referensi set TR-021 (SH, SF, SC) sesuai dengan struktur ini: nomor di cover ditulis tanpa revisi, revisi ada di tabel riwayat, dan nama file menyertakan revisi. Masih terbuka dan ditanyakan di M2.1: (1) cara menulis nomor di atas 999, karena WI menyebut DD-DDD (6 karakter) tetapi tabelnya menulis 00-XXXX; (2) asal contoh SC-ESD-K001 di R-DOC-10.
+- **Keputusan pemilik:** Pakai aturan WI SW-ZZ-000, dan aturannya disimpan sebagai master data ("E-12 gunakan aturan sesuai dengan yang ada di WI, dan cantumkan juga aturannya di master data", 28 Oktober 2026). Ini opsi (a). Isi master data: kode pabrik (S); jenis dokumen (C, F, H, dan jenis lain di WI); kode customer 2 huruf beserta kode khusus ZZ dan HSE; format nomor berjalan; dan jumlah digit revisi (2). Dibangun di M1.4 (kode customer), M1.6 (kode pabrik dan jenis dokumen), dan M2.1 (struktur nomor). Dokumen referensi set TR-021 (SH, SF, SC) sesuai dengan struktur ini: nomor di cover ditulis tanpa revisi, revisi ada di tabel riwayat, dan nama file menyertakan revisi. Masih terbuka dan ditanyakan di M2.1: (1) cara menulis nomor di atas 999, karena WI menyebut DD-DDD (6 karakter) tetapi tabelnya menulis 00-XXXX; (2) aturan untuk nomor seperti SC-ESD-K001, yaitu control plan ESD yang dirujuk di kolom Relevant Document CP (brief F-12). Nomor ini memakai kode 3 huruf ESD dan nomor berjalan berawalan K, dan pola itu belum diatur di WI SW-ZZ-000.
 
 ### E-13 · Versi terbaru berbeda dari brief bagian 7
 
@@ -249,7 +250,7 @@ Salin blok ini untuk setiap temuan baru.
 - **Asumsi sementara di kode:** sampai diputuskan, kolom "Versi yang dipakai" di `docs/versions.md` mengikuti brief, dan versi terbaru ditulis di kolom Catatan.
 - **Menghambat milestone?** Tidak
 - **Status:** Diputuskan pemilik 28 Oktober 2026 (nomor D menunggu brief)
-- **Keputusan pemilik:** Pakai versi stabil atau LTS terbaru ("E-13 gunakan versi yang sudah stabil atau LTS", 28 Oktober 2026). Versi dicek ulang 28 Oktober 2026 dan tidak berubah sejak 27 Oktober. `docs/versions.md` dan CLAUDE.md bagian 4 diperbarui ke Svelte 5.57.3, oapi-codegen v2.8.1, dan Gotenberg v8.39.0. River tetap v0.49.0 sampai E-14 diputuskan, karena v0.50.0 baru berumur satu hari dan termasuk kasus 0.x di E-14.
+- **Keputusan pemilik:** Pakai versi stabil atau LTS terbaru ("E-13 gunakan versi yang sudah stabil atau LTS", 28 Oktober 2026). Versi dicek ulang 28 Oktober 2026 dan tidak berubah sejak 27 Oktober. `docs/versions.md` dan CLAUDE.md bagian 4 diperbarui ke Svelte 5.57.3, oapi-codegen v2.8.1, dan Gotenberg v8.39.0. River tetap v0.49.0 sampai E-14 diputuskan, karena v0.50.0 baru berumur satu hari dan termasuk kasus 0.x di E-14. E-14 diputuskan pada hari yang sama, dengan masa tunggu 14 hari, sehingga River tetap v0.49.0 sampai v0.50.0 memenuhi syarat (10 November 2026).
 
 ### E-14 · R-VER-04 belum menjawab line tunggal dan versi 0.x
 
@@ -261,9 +262,37 @@ Salin blok ini untuk setiap temuan baru.
 - **Opsi:** (a) Tambah pengecualian di R-VER-04: line dengan satu rilis boleh dipakai bila tidak ada line lain yang memenuhi R-VER-03. Pengecualian itu dicatat di `docs/versions.md` dan dicek ulang di setiap milestone yang memakainya. Untuk paket 0.x, minor dihitung sebagai line baru. (b) Tunda M0.4 sampai adapter-static 4.0.1 rilis. (c) Pakai SvelteKit 2 dengan adapter-static 3. Ini bertentangan dengan stack di brief bagian 7, dan line 2 sudah tidak mendapat rilis sejak 2.70.3.
 - **Rekomendasi Claude Code (usulan):** (a), dengan rincian berikut (diperjelas 28 Oktober 2026 atas pertanyaan pemilik):
   1. Line dengan satu rilis boleh dipakai bila tidak ada line lain yang memenuhi R-VER-03, dan rilisnya sudah berumur minimal 14 hari. adapter-static 4.0.0 (rilis 1 Oktober 2026) memenuhi syarat ini. Pengecualian dicatat di `docs/versions.md`, dan begitu patch 4.0.x keluar, pindah ke patch terbaru (R-VER-05).
-  2. Untuk paket 0.x, syarat "tunggu patch" diganti dengan masa tunggu yang sama (14 hari). Alasannya, proyek seperti River merilis minor tanpa patch (v0.45.0 sampai v0.50.0 semuanya .0), sehingga syarat patch tidak pernah terpenuhi. Per 28 Oktober 2026, River v0.49.0 (23 hari) memenuhi syarat, sedangkan v0.50.0 (1 hari) belum. Versi River dikunci saat pertama kali dipakai dan dicek ulang saat itu.
+  2. Untuk paket 0.x, syarat "tunggu patch" diganti dengan masa tunggu yang sama (14 hari). Alasannya, proyek seperti River merilis minor tanpa patch (v0.45.0 sampai v0.50.0 semuanya .0), sehingga syarat patch tidak pernah terpenuhi. Per 28 Oktober 2026, River v0.49.0 (22 hari) memenuhi syarat, sedangkan v0.50.0 (1 hari) belum. Versi River dikunci saat pertama kali dipakai dan dicek ulang saat itu.
   3. Angka 14 hari adalah usulan dan bisa diganti pemilik.
 - **Asumsi sementara di kode:** tidak ada untuk M0.1. Bila belum diputuskan saat M0.4 dan adapter-static masih 4.0.0, berhenti dan tanya pemilik.
 - **Menghambat milestone?** Tidak untuk M0.1. Ya untuk M0.4 bila adapter-static masih 4.0.0.
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan pemilik 28 Oktober 2026 (nomor D menunggu brief)
+- **Keputusan pemilik:** Opsi (a) dengan masa tunggu 14 hari, sesuai rekomendasi ("saya setuju untuk E-14" dan "saya setuju dengan usulan anda", 28 Oktober 2026). Line dengan satu rilis boleh dipakai bila tidak ada line lain yang memenuhi R-VER-03 dan rilisnya sudah berumur minimal 14 hari. Paket 0.x memakai versi terbaru yang sudah berumur minimal 14 hari saat pertama kali dipasang. Akibatnya: `@sveltejs/adapter-static` 4.0.0 boleh dipakai di M0.4 sebagai pengecualian yang tercatat di `docs/versions.md`, dan River memakai versi terbaru yang memenuhi masa tunggu saat pertama kali dipakai (per 28 Oktober 2026: v0.49.0; v0.50.0 memenuhi mulai 10 November 2026).
+
+### E-15 · Belum ada langkah desain layar (wireframe) di milestone dan paket UML
+
+- **Tanggal dan milestone:** 28 Oktober 2026, setelah M0.1. Muncul dari pertanyaan pemilik tentang desain UI/UX. Berdampak ke Tahap 4 dan 5 serta paket UML untuk tim IT.
+- **Jenis:** Celah
+- **Rujukan:** brief bagian 20 (isi paket U1 sampai U14), D-33, D-38, R-UML-02, Q-14, U3 (UC-30 sampai UC-36, UC-44, UC-47), M4.2, M4.5, M5.6, M5.9.
+- **Temuan:** Paket UML (U1 sampai U14) dan milestone tidak punya langkah desain layar. Layar yang paling rumit ada di Tahap 4 dan 5: editor tabel (M4.2), perakitan dua panel (M4.5), diff riwayat (M5.6), dan papan status yokoten (M5.9). Tanpa wireframe, tata letak layar baru ditentukan saat menulis kode, dan tim IT tidak mendapat gambaran layar dari paket UML. Bahasa UI juga belum diputuskan (Q-14).
+- **Dampak bila dibiarkan:** layar harus dibangun ulang bila alurnya tidak cocok dengan cara kerja pengguna, dan tim IT harus menebak tata letaknya.
+- **Opsi:** (a) Tambah satu langkah desain layar sebelum Tahap 4: alur pengguna dan wireframe untuk layar Tahap 4 dan 5, ditinjau pemilik, lalu disimpan sebagai bagian paket UML. (b) Desain layar dibuat per milestone, saat layarnya dibangun. (c) Tanpa wireframe.
+- **Rekomendasi Claude Code (usulan):** (a). Bila memungkinkan, wireframe juga diperlihatkan ke satu atau dua calon pengguna sebelum Tahap 4.
+- **Asumsi sementara di kode:** tidak ada. Layar Tahap 0 sampai 3 berupa daftar dan form sederhana.
+- **Menghambat milestone?** Tidak untuk Tahap 0 sampai 3. Perlu selesai sebelum Tahap 4.
+- **Status:** Diputuskan pemilik 28 Oktober 2026 (nomor D menunggu brief). Posisi di milestone dan nomor artefak UML-nya ditentukan di sesi desain.
+- **Keputusan pemilik:** Opsi (a): wireframe dibuat sebelum Tahap 4 ("saya setuju dengan usulan anda", 28 Oktober 2026). Bahasa UI (Q-14) perlu diputuskan sebelum wireframe dibuat.
+
+## Bahan dari dokumen referensi (untuk brief bagian 21)
+
+Bagian ini bukan temuan E. Isinya pengamatan dari dokumen referensi yang diberikan pemilik, untuk dibawa ke sesi desain dan dicatat sebagai item F di brief bagian 21 (usulan Claude Code, disetujui pemilik 28 Oktober 2026). Dokumennya tidak disimpan di repo, dan nama orang tidak ditulis.
+
+**Sumber:** set TR-021 dari customer TR, diberikan pemilik 28 Oktober 2026: SH-TR-021 revisi 02 (PFD), SF-TR-021 revisi 03 (PFMEA, di file bernama SF-TR-021-02), dan SC-TR-021 revisi 06 (CP). Set ini model saudara dari set TR-020 di brief bagian 21.
+
+| No | Pengamatan | Hubungan dengan brief |
+|---|---|---|
+| 1 | Pola yang sama dengan set TR-020 muncul lagi: nomor 021 dipakai bersama oleh ketiga dokumen; revisi berjalan per dokumen (PFD -02, PFMEA -03, CP -06); nama model ditulis berbeda di PFD dan di PFMEA serta CP; nomor baris riwayat revisi CP tidak urut; dan satu perubahan (AOI, rujukan SW-ZZ-116) muncul di PFMEA dan CP dengan nomor revisi berbeda. | Menguatkan F-03, F-05, F-06, dan F-07 dengan set kedua. |
+| 2 | Nama file PFMEA tertinggal satu revisi dari isinya: file bernama SF-TR-021-02 berisi revisi 03. | Varian baru dari F-04. Usulan: nama file cetak dibuat sistem dari nomor dan revisi (R-PRT-01, E-12). |
+| 3 | Isian header "Process or Line" berbeda di dalam satu set: isian di PFD berbeda dengan isian di PFMEA dan CP. | Varian baru dari F-05. Usulan: field header satu set diambil dari master data, bukan diketik per dokumen (R-DOC-08). |
+| 4 | Nomor di cover ditulis tanpa revisi (contoh: "PFD No : SH-TR-021"), revisi ada di tabel riwayat, dan nama file menyertakan revisi. | Sesuai WI SW-ZZ-000 dan R-REV-01. Dipakai di E-12. |
+| 5 | Riwayat revisi CP merujuk nomor WI (SW-ZZ-006, SW-ZZ-023, SW-ZZ-053, SW-ZZ-116, dan lainnya) dan dokumen QES-SSC-K049, yang polanya (K dan 3 digit) mirip SC-ESD-K001. | R-DOC-11 (master dokumen terkait), dan bahan pertanyaan E-12 rincian (2). |
