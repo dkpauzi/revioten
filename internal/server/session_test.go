@@ -29,6 +29,8 @@ func TestAPIRequiresSession(t *testing.T) {
 		{http.MethodPost, "/api/v1/accounts/akun-1/password-reset", ""},
 		{http.MethodPost, "/api/v1/accounts/akun-1/disable", ""},
 		{http.MethodPost, "/api/v1/accounts/akun-1/enable", ""},
+		{http.MethodGet, "/api/v1/audit-log", ""},
+		{http.MethodGet, "/api/v1/audit-log/verification", ""},
 	}
 	srv := newTestServer(t, nil, Deps{})
 	for _, tt := range protected {
@@ -116,7 +118,9 @@ func TestLogin(t *testing.T) {
 }
 
 // TestLoginFailed: login gagal dijawab 401 dengan pesan umum dan tanpa cookie.
-// Log mencatat nama login dan request ID, tapi tidak pernah password (E-18).
+// Log server hanya mencatat request ID. Nama login yang diketik tidak dicatat,
+// karena pengguna kadang mengetik password di kolom nama login (E-18).
+// Percobaan terhadap akun yang ada tercatat di audit log dengan ID akunnya.
 func TestLoginFailed(t *testing.T) {
 	srv := newTestServer(t, nil, Deps{})
 
@@ -133,11 +137,11 @@ func TestLoginFailed(t *testing.T) {
 		t.Errorf("login gagal tetap memasang cookie %q", got)
 	}
 	log := srv.log.String()
-	if !strings.Contains(log, "admin.uji") || !strings.Contains(log, "uji-login") {
-		t.Errorf("log harus memuat nama login dan request ID:\n%s", log)
+	if !strings.Contains(log, "login gagal") || !strings.Contains(log, "uji-login") {
+		t.Errorf("log harus memuat peristiwa dan request ID:\n%s", log)
 	}
-	if strings.Contains(log, "rahasia-salah-sekali") {
-		t.Errorf("password masuk log:\n%s", log)
+	if strings.Contains(log, "admin.uji") || strings.Contains(log, "rahasia-salah-sekali") {
+		t.Errorf("nama login atau password masuk log:\n%s", log)
 	}
 }
 

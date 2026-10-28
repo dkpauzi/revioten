@@ -23,6 +23,12 @@ sql:
           # ID dipakai sebagai teks di luar database (R-API-13: ID tidak dibaca isinya).
           - db_type: uuid
             go_type: string
+          # ID yang boleh NULL (misalnya aktor audit log yang bukan akun) menjadi *string.
+          - db_type: uuid
+            nullable: true
+            go_type:
+              type: string
+              pointer: true
           - db_type: timestamptz
             go_type: time.Time
           # Waktu yang boleh NULL (misalnya locked_until) menjadi *time.Time.

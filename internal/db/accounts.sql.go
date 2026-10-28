@@ -138,6 +138,21 @@ func (q *Queries) ListAccounts(ctx context.Context) ([]ListAccountsRow, error) {
 	return items, nil
 }
 
+const lockAccount = `-- name: LockAccount :exec
+SELECT id FROM accounts WHERE id = $1 FOR NO KEY UPDATE
+`
+
+// LockAccount mengunci baris akun sampai transaksi selesai, supaya isi akun
+// yang dibaca untuk audit log (misalnya peran sebelum diubah) tidak berubah
+// oleh transaksi lain di tengah jalan. FOR NO KEY UPDATE, bukan FOR UPDATE:
+// kunci ini tidak bentrok dengan pemeriksaan foreign key saat transaksi lain
+// menulis entri audit tentang akun yang sama, jadi tidak bisa terjadi deadlock
+// dengan kunci rantai audit (lihat TestLockAccountAllowsAudit).
+func (q *Queries) LockAccount(ctx context.Context, id string) error {
+	_, err := q.db.Exec(ctx, lockAccount, id)
+	return err
+}
+
 const resetAccountPassword = `-- name: ResetAccountPassword :exec
 UPDATE accounts
 SET password_hash = $2, must_change_password = true, failed_logins = 0, locked_until = NULL

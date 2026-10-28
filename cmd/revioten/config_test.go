@@ -29,16 +29,24 @@ POSTGRES_USER=revioten
 POSTGRES_PASSWORD=rahasia-uji
 POSTGRES_DB=revioten
 POSTGRES_PORT=5433
+APP_DB_PASSWORD=PasswordAplikasiUji2026
 `
 
+// TestLoadConfigFromEnvFile: dua alamat database dari isian .env, satu untuk
+// pemilik database (migrasi) dan satu untuk role aplikasi (E-06).
 func TestLoadConfigFromEnvFile(t *testing.T) {
 	cfg, err := loadConfig(fakeEnv(nil), writeEnvFile(t, sampleEnv))
 	if err != nil {
 		t.Fatalf("loadConfig: %v", err)
 	}
-	want := "postgres://revioten:rahasia-uji@127.0.0.1:5433/revioten?sslmode=disable"
-	if cfg.DatabaseURL != want {
-		t.Errorf("DatabaseURL %q, ingin %q", cfg.DatabaseURL, want)
+	if want := "postgres://revioten:rahasia-uji@127.0.0.1:5433/revioten?sslmode=disable"; cfg.OwnerURL != want {
+		t.Errorf("OwnerURL %q, ingin %q", cfg.OwnerURL, want)
+	}
+	if want := "postgres://revioten_app:PasswordAplikasiUji2026@127.0.0.1:5433/revioten?sslmode=disable"; cfg.AppURL != want {
+		t.Errorf("AppURL %q, ingin %q", cfg.AppURL, want)
+	}
+	if cfg.AppPassword != "PasswordAplikasiUji2026" {
+		t.Error("AppPassword tidak diambil dari APP_DB_PASSWORD")
 	}
 }
 
@@ -50,19 +58,29 @@ func TestLoadConfigEnvWins(t *testing.T) {
 	if err != nil {
 		t.Fatalf("loadConfig: %v", err)
 	}
-	if !strings.HasSuffix(cfg.DatabaseURL, "/revioten_e2e?sslmode=disable") {
-		t.Errorf("DatabaseURL %q tidak memakai POSTGRES_DB dari environment", cfg.DatabaseURL)
+	for _, u := range []string{cfg.OwnerURL, cfg.AppURL} {
+		if !strings.HasSuffix(u, "/revioten_e2e?sslmode=disable") {
+			t.Errorf("alamat %q tidak memakai POSTGRES_DB dari environment", u)
+		}
 	}
 }
 
+// TestLoadConfigDatabaseURL: DATABASE_URL dipakai apa adanya untuk pemilik
+// database. Role aplikasi memakai server dan database yang sama.
 func TestLoadConfigDatabaseURL(t *testing.T) {
-	env := fakeEnv(map[string]string{"DATABASE_URL": "postgres://u:p@db.example:6000/x"})
+	env := fakeEnv(map[string]string{
+		"DATABASE_URL":    "postgres://u:p@db.example:6000/x",
+		"APP_DB_PASSWORD": "PasswordAplikasiUji2026",
+	})
 	cfg, err := loadConfig(env, filepath.Join(t.TempDir(), "tidak-ada.env"))
 	if err != nil {
 		t.Fatalf("loadConfig: %v", err)
 	}
-	if cfg.DatabaseURL != "postgres://u:p@db.example:6000/x" {
-		t.Errorf("DatabaseURL %q, ingin nilai DATABASE_URL apa adanya", cfg.DatabaseURL)
+	if cfg.OwnerURL != "postgres://u:p@db.example:6000/x" {
+		t.Errorf("OwnerURL %q, ingin nilai DATABASE_URL apa adanya", cfg.OwnerURL)
+	}
+	if cfg.AppURL != "postgres://revioten_app:PasswordAplikasiUji2026@db.example:6000/x" {
+		t.Errorf("AppURL %q", cfg.AppURL)
 	}
 }
 
@@ -72,8 +90,8 @@ func TestLoadConfigDefaultPort(t *testing.T) {
 	if err != nil {
 		t.Fatalf("loadConfig: %v", err)
 	}
-	if !strings.Contains(cfg.DatabaseURL, "@127.0.0.1:5432/") {
-		t.Errorf("DatabaseURL %q tidak memakai port bawaan 5432", cfg.DatabaseURL)
+	if !strings.Contains(cfg.OwnerURL, "@127.0.0.1:5432/") {
+		t.Errorf("OwnerURL %q tidak memakai port bawaan 5432", cfg.OwnerURL)
 	}
 }
 
@@ -86,7 +104,7 @@ func TestLoadConfigSpecialPassword(t *testing.T) {
 	if err != nil {
 		t.Fatalf("loadConfig: %v", err)
 	}
-	parsed, err := pgxpool.ParseConfig(cfg.DatabaseURL)
+	parsed, err := pgxpool.ParseConfig(cfg.OwnerURL)
 	if err != nil {
 		t.Fatalf("URL tidak bisa dibaca pgx: %v", err)
 	}
@@ -101,10 +119,10 @@ func TestLoadConfigMissing(t *testing.T) {
 	env := fakeEnv(map[string]string{"POSTGRES_PASSWORD": "rahasia-uji"})
 	_, err := loadConfig(env, filepath.Join(t.TempDir(), "tidak-ada.env"))
 	if err == nil {
-		t.Fatal("ingin error karena POSTGRES_USER dan POSTGRES_DB kosong")
+		t.Fatal("ingin error karena POSTGRES_USER, POSTGRES_DB, dan APP_DB_PASSWORD kosong")
 	}
 	msg := err.Error()
-	for _, want := range []string{"POSTGRES_USER", "POSTGRES_DB", ".env.example"} {
+	for _, want := range []string{"POSTGRES_USER", "POSTGRES_DB", "APP_DB_PASSWORD", ".env.example"} {
 		if !strings.Contains(msg, want) {
 			t.Errorf("pesan %q tidak menyebut %s", msg, want)
 		}

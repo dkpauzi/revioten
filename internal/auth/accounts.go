@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
-	"log/slog"
 	"strings"
 	"time"
 	"unicode"
@@ -14,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/dkpauzi/revioten/internal/access"
+	"github.com/dkpauzi/revioten/internal/audit"
 	"github.com/dkpauzi/revioten/internal/db"
 	"github.com/dkpauzi/revioten/internal/problem"
 )
@@ -133,7 +133,13 @@ func (s *Service) CreateAccount(ctx context.Context, actor access.Actor, in NewA
 			return err
 		}
 		accountID = acc.ID
-		return access.ReplaceRoles(ctx, q, acc.ID, grants)
+		if err := access.ReplaceRoles(ctx, q, acc.ID, grants); err != nil {
+			return err
+		}
+		return audit.Record(ctx, q, actor, audit.Event{
+			Action: audit.ActionAccountCreated, TargetType: audit.TargetAccount, TargetID: acc.ID,
+			Details: map[string]string{"login": acc.Login, "kind": acc.Kind, "roles": describeGrants(grants)},
+		})
 	})
 	if conflict := accountConflict(err, in.Kind); conflict != nil {
 		return AccountInfo{}, "", conflict
@@ -146,8 +152,6 @@ func (s *Service) CreateAccount(ctx context.Context, actor access.Actor, in NewA
 	if err != nil {
 		return AccountInfo{}, "", err
 	}
-	// M1.3: setiap perubahan akses juga dicatat di audit log (R-SEC-10).
-	slog.Info("akun dibuat", "oleh", actor.Login, "login", info.Login, "jenis", info.Kind)
 	return info, temporary, nil
 }
 
@@ -236,12 +240,17 @@ func (s *Service) ResetPassword(ctx context.Context, actor access.Actor, account
 		if err := q.ResetAccountPassword(ctx, db.ResetAccountPasswordParams{ID: accountID, PasswordHash: hash}); err != nil {
 			return err
 		}
-		return q.DeleteAccountSessions(ctx, accountID)
+		if err := q.DeleteAccountSessions(ctx, accountID); err != nil {
+			return err
+		}
+		// Password sementara tidak pernah masuk audit log (E-18).
+		return audit.Record(ctx, q, actor, audit.Event{
+			Action: audit.ActionPasswordReset, TargetType: audit.TargetAccount, TargetID: accountID,
+		})
 	})
 	if err != nil {
 		return "", fmt.Errorf("mereset password: %w", err)
 	}
-	slog.Info("password akun direset", "oleh", actor.Login, "akun", accountID)
 	return temporary, nil
 }
 
@@ -276,7 +285,7 @@ func (s *Service) DisableAccount(ctx context.Context, actor access.Actor, accoun
 			return err
 		}
 		if target.DisabledAt != nil {
-			return nil // sudah nonaktif
+			return nil // sudah nonaktif: tidak ada yang berubah, jadi tidak dicatat
 		}
 		if target.Kind == KindAdmin {
 			enabled, err := q.CountEnabledAdmins(ctx)
@@ -294,7 +303,12 @@ func (s *Service) DisableAccount(ctx context.Context, actor access.Actor, accoun
 		if err := q.DisableAccount(ctx, db.DisableAccountParams{ID: accountID, DisabledAt: &now}); err != nil {
 			return err
 		}
-		return q.DeleteAccountSessions(ctx, accountID)
+		if err := q.DeleteAccountSessions(ctx, accountID); err != nil {
+			return err
+		}
+		return audit.Record(ctx, q, actor, audit.Event{
+			Action: audit.ActionAccountDisabled, TargetType: audit.TargetAccount, TargetID: accountID,
+		})
 	})
 	var invalid *problem.ValidationError
 	if errors.As(err, &invalid) {
@@ -303,7 +317,6 @@ func (s *Service) DisableAccount(ctx context.Context, actor access.Actor, accoun
 	if err != nil {
 		return AccountInfo{}, fmt.Errorf("menonaktifkan akun: %w", err)
 	}
-	slog.Info("akun dinonaktifkan", "oleh", actor.Login, "akun", accountID)
 	return s.accountInfo(ctx, accountID)
 }
 
@@ -317,11 +330,91 @@ func (s *Service) EnableAccount(ctx context.Context, actor access.Actor, account
 		return AccountInfo{}, err
 	}
 	accountID = target.ID
-	if err := s.q.EnableAccount(ctx, accountID); err != nil {
+	err = db.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
+		q := s.q.WithTx(tx)
+		if err := q.EnableAccount(ctx, accountID); err != nil {
+			return err
+		}
+		return audit.Record(ctx, q, actor, audit.Event{
+			Action: audit.ActionAccountEnabled, TargetType: audit.TargetAccount, TargetID: accountID,
+		})
+	})
+	if err != nil {
 		return AccountInfo{}, fmt.Errorf("mengaktifkan akun: %w", err)
 	}
-	slog.Info("akun diaktifkan", "oleh", actor.Login, "akun", accountID)
 	return s.accountInfo(ctx, accountID)
+}
+
+// SetRoles mengganti seluruh peran sebuah akun kerja (A-1). Peran akun admin
+// tidak bisa diubah, jadi akun admin terakhir juga tidak bisa kehilangan peran
+// Admin (D-73). Peran sebelum dan sesudah dicatat di audit log (R-SEC-10).
+func (s *Service) SetRoles(ctx context.Context, actor access.Actor, accountID string, grants []access.RoleGrant) error {
+	if err := s.authz.Authorize(ctx, actor, access.ManageUsers, access.Resource{}); err != nil {
+		return err
+	}
+	target, err := s.accountInfo(ctx, accountID)
+	if err != nil {
+		return err
+	}
+	if target.Kind == KindAdmin {
+		return &problem.ValidationError{Problems: []problem.Problem{{
+			Field: "roles", Code: problem.NotAllowed, Message: "The roles of an admin account cannot be changed.",
+		}}}
+	}
+	if problems := access.ValidateRoles(target.Kind, grants); len(problems) > 0 {
+		return &problem.ValidationError{Problems: problems}
+	}
+
+	err = db.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
+		q := s.q.WithTx(tx)
+		// Baris akun dikunci dulu, supaya peran "sebelum" yang dicatat tidak
+		// berubah oleh admin lain yang mengubah akun yang sama pada saat itu.
+		if err := q.LockAccount(ctx, target.ID); err != nil {
+			return err
+		}
+		before, err := rolesOf(ctx, q, target.ID)
+		if err != nil {
+			return err
+		}
+		if err := access.ReplaceRoles(ctx, q, target.ID, grants); err != nil {
+			return err
+		}
+		// Peran sesudah dibaca ulang, supaya urutannya sama dengan katalog.
+		after, err := rolesOf(ctx, q, target.ID)
+		if err != nil {
+			return err
+		}
+		return audit.Record(ctx, q, actor, audit.Event{
+			Action: audit.ActionRolesChanged, TargetType: audit.TargetAccount, TargetID: target.ID,
+			Details: map[string]string{"before": describeGrants(before), "after": describeGrants(after)},
+		})
+	})
+	if err != nil {
+		return fmt.Errorf("menyimpan peran: %w", err)
+	}
+	return nil
+}
+
+// rolesOf membaca peran akun, urut seperti katalog peran.
+func rolesOf(ctx context.Context, q *db.Queries, accountID string) ([]access.RoleGrant, error) {
+	rows, err := q.ListRolesOfAccount(ctx, accountID)
+	if err != nil {
+		return nil, fmt.Errorf("membaca peran akun: %w", err)
+	}
+	grants := make([]access.RoleGrant, 0, len(rows))
+	for _, r := range rows {
+		grants = append(grants, access.RoleGrant{Role: r.RoleID, Scope: r.Scope})
+	}
+	return grants, nil
+}
+
+// describeGrants menulis peran seperti "author(own_project_group), verifier(all)".
+func describeGrants(grants []access.RoleGrant) string {
+	parts := make([]string, 0, len(grants))
+	for _, g := range grants {
+		parts = append(parts, g.Role+"("+g.Scope+")")
+	}
+	return strings.Join(parts, ", ")
 }
 
 // accountInfo membaca satu akun. ID yang tidak ada (atau bukan UUID) memberi
@@ -337,20 +430,16 @@ func (s *Service) accountInfo(ctx context.Context, accountID string) (AccountInf
 	if err != nil {
 		return AccountInfo{}, fmt.Errorf("membaca akun: %w", err)
 	}
-	roles, err := s.q.ListRolesOfAccount(ctx, accountID)
+	roles, err := rolesOf(ctx, s.q, r.ID)
 	if err != nil {
-		return AccountInfo{}, fmt.Errorf("membaca peran akun: %w", err)
+		return AccountInfo{}, err
 	}
-	info := AccountInfo{
+	return AccountInfo{
 		ID: r.ID, Kind: r.Kind, Login: r.Login, PersonID: r.PersonID, PersonName: r.PersonName,
 		EmployeeNumber: deref(r.EmployeeNumber), MustChangePassword: r.MustChangePassword,
 		LockedUntil: r.LockedUntil, Disabled: r.DisabledAt != nil, CreatedAt: r.CreatedAt.UTC(),
-		Roles: make([]access.RoleGrant, 0, len(roles)),
-	}
-	for _, ar := range roles {
-		info.Roles = append(info.Roles, access.RoleGrant{Role: ar.RoleID, Scope: ar.Scope})
-	}
-	return info, nil
+		Roles: roles,
+	}, nil
 }
 
 // personExists melaporkan apakah orang dengan ID itu ada.

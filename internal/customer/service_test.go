@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/dkpauzi/revioten/internal/access"
+	"github.com/dkpauzi/revioten/internal/audit"
 	"github.com/dkpauzi/revioten/internal/db"
 	"github.com/dkpauzi/revioten/internal/db/dbtest"
 	"github.com/dkpauzi/revioten/internal/problem"
@@ -162,5 +163,38 @@ func TestCreateInvalidIsNotStored(t *testing.T) {
 	}
 	if len(list) != 0 {
 		t.Errorf("ada %d customer tersimpan, ingin 0", len(list))
+	}
+}
+
+// TestCreateWritesAudit: customer baru tercatat di audit log bersama
+// perubahannya (M1.3), dan percobaan yang ditolak tidak dicatat.
+func TestCreateWritesAudit(t *testing.T) {
+	pool := dbtest.NewPool(t)
+	s := NewService(pool, access.NewChecker(pool))
+	admin := newActor(t, pool, "admin.uji", access.AccountAdmin, access.RoleAdmin)
+	ctx := audit.WithRequest(t.Context(), audit.Request{ID: "UJI-CUST", IP: "192.0.2.40"})
+
+	c, err := s.Create(ctx, admin, NewCustomer{Code: " ab ", Name: "Example Customer"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Create(ctx, admin, NewCustomer{Code: "AB", Name: "Customer Ganda"}); err == nil {
+		t.Fatal("kode ganda diterima")
+	}
+
+	rows, err := db.New(pool).ListAuditChain(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rows) != 1 {
+		t.Fatalf("%d entri audit, ingin 1", len(rows))
+	}
+	r := rows[0]
+	if r.Action != audit.ActionCustomerCreated || r.ActorType != "human" || *r.ActorAccountID != admin.AccountID ||
+		*r.TargetType != audit.TargetCustomer || *r.TargetID != c.ID || *r.RequestID != "UJI-CUST" {
+		t.Errorf("entri audit: %+v", r)
+	}
+	if r.Details != `{"code":"AB","name":"Example Customer"}` {
+		t.Errorf("rincian: %s", r.Details)
 	}
 }

@@ -2,13 +2,8 @@ package access
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"log/slog"
 	"slices"
-	"strings"
-
-	"github.com/jackc/pgx/v5"
 
 	"github.com/dkpauzi/revioten/internal/db"
 	"github.com/dkpauzi/revioten/internal/problem"
@@ -110,51 +105,4 @@ func ReplaceRoles(ctx context.Context, q *db.Queries, accountID string, grants [
 		}
 	}
 	return nil
-}
-
-// SetRoles mengganti peran sebuah akun kerja (A-1). Peran akun admin tidak bisa
-// diubah, jadi akun admin terakhir juga tidak bisa kehilangan peran Admin (D-73).
-func (c *Checker) SetRoles(ctx context.Context, actor Actor, accountID string, grants []RoleGrant) error {
-	if err := c.Authorize(ctx, actor, ManageUsers, Resource{}); err != nil {
-		return err
-	}
-	if !db.IsUUID(accountID) {
-		return problem.ErrNotFound
-	}
-	// Bentuk baku UUID memakai huruf kecil, seperti yang ditulis database.
-	accountID = strings.ToLower(accountID)
-	kind, err := c.q.GetAccountKind(ctx, accountID)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return problem.ErrNotFound
-	}
-	if err != nil {
-		return fmt.Errorf("membaca akun: %w", err)
-	}
-	if kind == AccountAdmin {
-		return &problem.ValidationError{Problems: []problem.Problem{{
-			Field: "roles", Code: problem.NotAllowed, Message: "The roles of an admin account cannot be changed.",
-		}}}
-	}
-	if problems := ValidateRoles(kind, grants); len(problems) > 0 {
-		return &problem.ValidationError{Problems: problems}
-	}
-
-	err = db.WithTx(ctx, c.pool, func(tx pgx.Tx) error {
-		return ReplaceRoles(ctx, c.q.WithTx(tx), accountID, grants)
-	})
-	if err != nil {
-		return fmt.Errorf("menyimpan peran: %w", err)
-	}
-	// M1.3: setiap perubahan hak juga dicatat di audit log (R-SEC-10).
-	slog.Info("peran akun diubah", "oleh", actor.Login, "akun", accountID, "peran", describeGrants(grants))
-	return nil
-}
-
-// describeGrants menulis peran seperti "author(own_project_group), verifier(all)".
-func describeGrants(grants []RoleGrant) string {
-	parts := make([]string, 0, len(grants))
-	for _, g := range grants {
-		parts = append(parts, g.Role+"("+g.Scope+")")
-	}
-	return strings.Join(parts, ", ")
 }

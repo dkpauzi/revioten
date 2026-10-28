@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strconv"
 	"sync"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/dkpauzi/revioten/internal/access"
+	"github.com/dkpauzi/revioten/internal/audit"
 	"github.com/dkpauzi/revioten/internal/db"
 	"github.com/dkpauzi/revioten/internal/problem"
 )
@@ -71,12 +73,23 @@ func (s *Service) Login(ctx context.Context, login, password string) (access.Act
 		// penyerang paling banyak mendapat 10 tebakan per 15 menit.
 		return access.Actor{}, "", ErrInvalidCredentials
 	case !match:
-		if err := s.recordFailure(ctx, acc.ID, acc.Login, now); err != nil {
+		// Pelakunya belum login, jadi dicatat sebagai aktor anonim.
+		anonymous := access.Actor{Type: access.ActorAnonymous}
+		if err := s.recordFailure(ctx, acc.ID, acc.Login, anonymous, audit.ActionLoginFailed, now); err != nil {
 			return access.Actor{}, "", err
 		}
 		return access.Actor{}, "", ErrInvalidCredentials
 	}
 
+	actor := access.Actor{
+		Type:               access.ActorHuman,
+		AccountID:          acc.ID,
+		AccountKind:        acc.Kind,
+		Login:              acc.Login,
+		PersonID:           acc.PersonID,
+		PersonName:         acc.PersonName,
+		MustChangePassword: acc.MustChangePassword,
+	}
 	var token string
 	err = db.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
 		q := s.q.WithTx(tx)
@@ -104,40 +117,60 @@ func (s *Service) Login(ctx context.Context, login, password string) (access.Act
 			return err
 		}
 		token, err = startSession(ctx, q, acc.ID, now)
-		return err
+		if err != nil {
+			return err
+		}
+		return audit.Record(ctx, q, actor, audit.Event{
+			Action: audit.ActionLogin, TargetType: audit.TargetAccount, TargetID: acc.ID,
+		})
 	})
 	if err != nil {
 		return access.Actor{}, "", fmt.Errorf("membuat sesi: %w", err)
 	}
-	return access.Actor{
-		Type:               access.ActorHuman,
-		AccountID:          acc.ID,
-		AccountKind:        acc.Kind,
-		Login:              acc.Login,
-		PersonID:           acc.PersonID,
-		PersonName:         acc.PersonName,
-		MustChangePassword: acc.MustChangePassword,
-	}, token, nil
+	return actor, token, nil
 }
 
 // recordFailure menambah hitungan gagal login, lalu mengunci atau
-// menonaktifkan akun bila hitungannya mencapai batas.
-func (s *Service) recordFailure(ctx context.Context, accountID, login string, now time.Time) error {
-	count, err := s.q.RecordLoginFailure(ctx, accountID)
+// menonaktifkan akun bila hitungannya mencapai batas. Perubahan itu dan entri
+// auditnya (action, oleh actor) disimpan dalam satu transaksi.
+func (s *Service) recordFailure(ctx context.Context, accountID, login string, actor access.Actor, action string, now time.Time) error {
+	var count int32
+	var lockedUntil *time.Time
+	err := db.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
+		q := s.q.WithTx(tx)
+		var err error
+		count, err = q.RecordLoginFailure(ctx, accountID)
+		if err != nil {
+			return err
+		}
+		details := map[string]string{"failed_logins": strconv.Itoa(int(count))}
+		switch {
+		case count >= disableThreshold:
+			if err := q.DisableAccount(ctx, db.DisableAccountParams{ID: accountID, DisabledAt: &now}); err != nil {
+				return err
+			}
+			details["disabled"] = "true"
+		case count%lockThreshold == 0:
+			until := now.Add(lockDuration)
+			if err := q.LockAccountUntil(ctx, db.LockAccountUntilParams{ID: accountID, LockedUntil: &until}); err != nil {
+				return err
+			}
+			lockedUntil = &until
+			details["locked_until"] = until.UTC().Format(time.RFC3339)
+		}
+		return audit.Record(ctx, q, actor, audit.Event{
+			Action: action, TargetType: audit.TargetAccount, TargetID: accountID, Details: details,
+		})
+	})
 	if err != nil {
 		return fmt.Errorf("mencatat gagal login: %w", err)
 	}
+	// Peringatan di log server untuk yang memantau server; catatan resminya di audit log.
 	switch {
 	case count >= disableThreshold:
-		err = s.q.DisableAccount(ctx, db.DisableAccountParams{ID: accountID, DisabledAt: &now})
 		slog.Warn("akun dinonaktifkan karena gagal login berulang", "login", login, "gagal", count)
-	case count%lockThreshold == 0:
-		until := now.Add(lockDuration)
-		err = s.q.LockAccountUntil(ctx, db.LockAccountUntilParams{ID: accountID, LockedUntil: &until})
-		slog.Warn("akun dikunci sementara karena gagal login berulang", "login", login, "gagal", count, "sampai", until)
-	}
-	if err != nil {
-		return fmt.Errorf("mengunci akun: %w", err)
+	case lockedUntil != nil:
+		slog.Warn("akun dikunci sementara karena gagal login berulang", "login", login, "gagal", count, "sampai", *lockedUntil)
 	}
 	return nil
 }
@@ -201,7 +234,16 @@ func (s *Service) Logout(ctx context.Context, actor access.Actor, token string) 
 	if err := s.authz.Authorize(ctx, actor, access.ManageOwnAccount, access.Resource{AccountID: actor.AccountID}); err != nil {
 		return err
 	}
-	if err := s.q.DeleteSession(ctx, hashToken(token)); err != nil {
+	err := db.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
+		q := s.q.WithTx(tx)
+		if err := q.DeleteSession(ctx, hashToken(token)); err != nil {
+			return err
+		}
+		return audit.Record(ctx, q, actor, audit.Event{
+			Action: audit.ActionLogout, TargetType: audit.TargetAccount, TargetID: actor.AccountID,
+		})
+	})
+	if err != nil {
 		return fmt.Errorf("menghapus sesi: %w", err)
 	}
 	return nil
@@ -228,7 +270,7 @@ func (s *Service) ChangePassword(ctx context.Context, actor access.Actor, curren
 	if !match {
 		// Dihitung seperti gagal login, supaya sesi yang dicuri tidak bisa dipakai
 		// untuk menebak password tanpa batas.
-		if err := s.recordFailure(ctx, acc.ID, acc.Login, now); err != nil {
+		if err := s.recordFailure(ctx, acc.ID, acc.Login, actor, audit.ActionPasswordChangeFailed, now); err != nil {
 			return "", err
 		}
 		problems = append(problems, problem.Problem{
@@ -258,7 +300,12 @@ func (s *Service) ChangePassword(ctx context.Context, actor access.Actor, curren
 			return err
 		}
 		token, err = startSession(ctx, q, acc.ID, now)
-		return err
+		if err != nil {
+			return err
+		}
+		return audit.Record(ctx, q, actor, audit.Event{
+			Action: audit.ActionPasswordChanged, TargetType: audit.TargetAccount, TargetID: acc.ID,
+		})
 	})
 	if err != nil {
 		return "", fmt.Errorf("menyimpan password baru: %w", err)

@@ -41,5 +41,3 @@ DELETE FROM account_roles WHERE account_id = $1;
 -- name: AddAccountRole :exec
 INSERT INTO account_roles (account_id, role_id, scope) VALUES ($1, $2, $3);
 
--- name: GetAccountKind :one
-SELECT kind FROM accounts WHERE id = $1;

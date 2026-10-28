@@ -9,11 +9,22 @@ import (
 	"errors"
 )
 
-// ActorType adalah jenis aktor (R-API-03). Saat ini hanya manusia; service
-// account dan customer user menyusul di M8.1 dan Tahap 10.
+// ActorType adalah jenis aktor (R-API-03). Saat ini hanya manusia yang bisa
+// menjalankan operasi; service account dan customer user menyusul di M8.1 dan
+// Tahap 10.
 type ActorType string
 
-const ActorHuman ActorType = "human"
+const (
+	// ActorHuman adalah orang yang login dengan akunnya.
+	ActorHuman ActorType = "human"
+	// ActorSystem dan ActorAnonymous hanya dipakai untuk mencatat pelaku di
+	// audit log (M1.3), dan selalu ditolak Authorize karena tidak punya akun.
+	// ASUMSI E-27: R-API-03 belum menyebut keduanya.
+	//   - ActorSystem: perintah di komputer server, misalnya create-admin.
+	//   - ActorAnonymous: belum login, misalnya percobaan login yang gagal.
+	ActorSystem    ActorType = "system"
+	ActorAnonymous ActorType = "anonymous"
+)
 
 // Jenis akun (E-02, D-72). Akun admin hanya memegang peran Admin, dan akun
 // kerja tidak pernah memegang peran Admin (R-SEC-13).

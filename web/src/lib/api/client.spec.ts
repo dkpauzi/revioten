@@ -7,13 +7,15 @@ import {
 	enableAccount,
 	getSession,
 	listAccounts,
+	listAuditLog,
 	listCustomers,
 	listRoles,
 	login,
 	logout,
 	resetAccountPassword,
 	setAccountRoles,
-	setUnauthenticatedHandler
+	setUnauthenticatedHandler,
+	verifyAuditLog
 } from './client.ts';
 
 // Satu panggilan yang dicatat fakeFetch.
@@ -219,5 +221,20 @@ describe('akun dan peran (A-1)', () => {
 		const calls: Call[] = [];
 		await disableAccount('a/b?c', fakeFetch(Response.json(account), calls));
 		expect(calls[0].url).toBe('/api/v1/accounts/a%2Fb%3Fc/disable');
+	});
+});
+
+describe('audit log (A-4)', () => {
+	it('meminta entri terbaru, lalu entri yang lebih lama dengan before', async () => {
+		const calls: Call[] = [];
+		await listAuditLog(undefined, fakeFetch(Response.json({ items: [] }), calls));
+		await listAuditLog(42, fakeFetch(Response.json({ items: [] }), calls));
+		await verifyAuditLog(fakeFetch(Response.json({ valid: true, entries: 0 }), calls));
+
+		expect(calls.map((c) => `${c.init?.method} ${c.url}`)).toEqual([
+			'GET /api/v1/audit-log',
+			'GET /api/v1/audit-log?before=42',
+			'GET /api/v1/audit-log/verification'
+		]);
 	});
 });

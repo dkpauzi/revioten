@@ -54,7 +54,7 @@ func (a *apiServer) CreateAccount(ctx context.Context, req CreateAccountRequestO
 // SetAccountRoles menjawab PUT /api/v1/accounts/{accountId}/roles.
 func (a *apiServer) SetAccountRoles(ctx context.Context, req SetAccountRolesRequestObject) (SetAccountRolesResponseObject, error) {
 	actor := actorFrom(ctx)
-	if err := a.access.SetRoles(ctx, actor, req.AccountId, toGrants(req.Body.Roles)); err != nil {
+	if err := a.auth.SetRoles(ctx, actor, req.AccountId, toGrants(req.Body.Roles)); err != nil {
 		return nil, err
 	}
 	info, err := a.auth.GetAccount(ctx, actor, req.AccountId)

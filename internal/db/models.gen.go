@@ -28,6 +28,22 @@ type AccountRole struct {
 	Scope     string
 }
 
+type AuditLog struct {
+	Seq            int64
+	OccurredAt     time.Time
+	ActorType      string
+	ActorAccountID *string
+	ActorPersonID  *string
+	RequestID      *string
+	SourceIp       *string
+	Action         string
+	TargetType     *string
+	TargetID       *string
+	Details        string
+	PrevHash       string
+	Hash           string
+}
+
 type Customer struct {
 	ID        string
 	Code      string

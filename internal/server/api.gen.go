@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -46,6 +47,48 @@ func (e AccountInfoKind) Valid() bool {
 	case AccountInfoKindAdmin:
 		return true
 	case AccountInfoKindWork:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AuditActorType.
+const (
+	AuditActorTypeAnonymous AuditActorType = "anonymous"
+	AuditActorTypeHuman     AuditActorType = "human"
+	AuditActorTypeSystem    AuditActorType = "system"
+)
+
+// Valid indicates whether the value is a known member of the AuditActorType enum.
+func (e AuditActorType) Valid() bool {
+	switch e {
+	case AuditActorTypeAnonymous:
+		return true
+	case AuditActorTypeHuman:
+		return true
+	case AuditActorTypeSystem:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AuditVerificationReason.
+const (
+	AuditVerificationReasonHashMismatch AuditVerificationReason = "hash_mismatch"
+	AuditVerificationReasonLinkMismatch AuditVerificationReason = "link_mismatch"
+	AuditVerificationReasonSequenceGap  AuditVerificationReason = "sequence_gap"
+)
+
+// Valid indicates whether the value is a known member of the AuditVerificationReason enum.
+func (e AuditVerificationReason) Valid() bool {
+	switch e {
+	case AuditVerificationReasonHashMismatch:
+		return true
+	case AuditVerificationReasonLinkMismatch:
+		return true
+	case AuditVerificationReasonSequenceGap:
 		return true
 	default:
 		return false
@@ -267,6 +310,93 @@ type AccountList struct {
 	Items []AccountInfo `json:"items"`
 }
 
+// AuditActor `human` is a logged-in account, shown with the person who holds it
+// (D-74). `system` is a command on the server computer, for example
+// create-admin. `anonymous` is someone who is not logged in, for
+// example a failed login.
+type AuditActor struct {
+	AccountId  *string        `json:"account_id,omitempty"`
+	Login      *string        `json:"login,omitempty"`
+	PersonId   *string        `json:"person_id,omitempty"`
+	PersonName *string        `json:"person_name,omitempty"`
+	Type       AuditActorType `json:"type"`
+}
+
+// AuditActorType defines model for AuditActor.Type.
+type AuditActorType string
+
+// AuditEntry defines model for AuditEntry.
+type AuditEntry struct {
+	// Action Event code, for example account.created or customer.created.
+	Action string `json:"action"`
+
+	// Actor `human` is a logged-in account, shown with the person who holds it
+	// (D-74). `system` is a command on the server computer, for example
+	// create-admin. `anonymous` is someone who is not logged in, for
+	// example a failed login.
+	Actor AuditActor `json:"actor"`
+
+	// Details Never contains passwords, tokens, or keys.
+	Details map[string]string `json:"details"`
+
+	// Hash SHA-256 of this entry and prev_hash, 64 lowercase hexadecimal characters.
+	Hash       string    `json:"hash"`
+	OccurredAt time.Time `json:"occurred_at"`
+
+	// PrevHash Hash of the entry before this one (64 zeros for the first entry).
+	PrevHash  string  `json:"prev_hash"`
+	RequestId *string `json:"request_id,omitempty"`
+
+	// Seq Number in the chain, starting at 1, without gaps.
+	Seq      int64        `json:"seq"`
+	SourceIp *string      `json:"source_ip,omitempty"`
+	Target   *AuditTarget `json:"target,omitempty"`
+}
+
+// AuditEntryList defines model for AuditEntryList.
+type AuditEntryList struct {
+	Items []AuditEntry `json:"items"`
+
+	// NextBefore Give this as `before` to read older entries. Missing when there are no older entries.
+	NextBefore *int64 `json:"next_before,omitempty"`
+}
+
+// AuditTarget defines model for AuditTarget.
+type AuditTarget struct {
+	Id string `json:"id"`
+
+	// Label Display name, for example the login of an account or the code of a customer.
+	Label *string `json:"label,omitempty"`
+
+	// Type What the entry is about, for example account or customer.
+	Type string `json:"type"`
+}
+
+// AuditVerification defines model for AuditVerification.
+type AuditVerification struct {
+	// BrokenSeq The first entry that does not fit the chain.
+	BrokenSeq *int64 `json:"broken_seq,omitempty"`
+
+	// Entries Number of entries checked.
+	Entries int64 `json:"entries"`
+
+	// LastHash Hash of the last entry. Noted outside the system, it also reveals
+	// a removed last entry later.
+	LastHash *string `json:"last_hash,omitempty"`
+	LastSeq  *int64  `json:"last_seq,omitempty"`
+
+	// Reason `sequence_gap`: a number is missing, so an entry was removed.
+	// `link_mismatch`: prev_hash differs from the hash of the entry before.
+	// `hash_mismatch`: the content no longer matches the hash, so it was changed.
+	Reason *AuditVerificationReason `json:"reason,omitempty"`
+	Valid  bool                     `json:"valid"`
+}
+
+// AuditVerificationReason `sequence_gap`: a number is missing, so an entry was removed.
+// `link_mismatch`: prev_hash differs from the hash of the entry before.
+// `hash_mismatch`: the content no longer matches the hash, so it was changed.
+type AuditVerificationReason string
+
 // CreatedAccount defines model for CreatedAccount.
 type CreatedAccount struct {
 	Account AccountInfo `json:"account"`
@@ -460,6 +590,15 @@ type TemporaryPassword struct {
 // AccountId defines model for AccountId.
 type AccountId = string
 
+// ListAuditLogParams defines parameters for ListAuditLog.
+type ListAuditLogParams struct {
+	// Before Return entries with a lower number than this. Leave it out for the newest entries.
+	Before *int64 `form:"before,omitempty" json:"before,omitempty"`
+
+	// Limit Number of entries to return.
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
 // ChangePasswordJSONRequestBody defines body for ChangePassword for application/json ContentType.
 type ChangePasswordJSONRequestBody = PasswordChange
 
@@ -498,6 +637,12 @@ type ServerInterface interface {
 	// SetAccountRoles Replace the roles of a work account (A-1)
 	// (PUT /api/v1/accounts/{accountId}/roles)
 	SetAccountRoles(w http.ResponseWriter, r *http.Request, accountId AccountId)
+	// ListAuditLog Audit log entries, newest first (A-4, admin account only)
+	// (GET /api/v1/audit-log)
+	ListAuditLog(w http.ResponseWriter, r *http.Request, params ListAuditLogParams)
+	// VerifyAuditLog Check the whole hash chain of the audit log (A-4, admin account only)
+	// (GET /api/v1/audit-log/verification)
+	VerifyAuditLog(w http.ResponseWriter, r *http.Request)
 	// ListCustomers List all customers, ordered by code
 	// (GET /api/v1/customers)
 	ListCustomers(w http.ResponseWriter, r *http.Request)
@@ -667,6 +812,66 @@ func (siw *ServerInterfaceWrapper) SetAccountRoles(w http.ResponseWriter, r *htt
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.SetAccountRoles(w, r, accountId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListAuditLog operation middleware
+func (siw *ServerInterfaceWrapper) ListAuditLog(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListAuditLogParams
+
+	// ------------- Optional query parameter "before" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "before", r.URL.Query(), &params.Before, runtime.BindQueryParameterOptions{Type: "integer", Format: "int64"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "before"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "before", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAuditLog(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// VerifyAuditLog operation middleware
+func (siw *ServerInterfaceWrapper) VerifyAuditLog(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.VerifyAuditLog(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -908,6 +1113,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/accounts/{accountId}/enable", wrapper.EnableAccount)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/customers", wrapper.ListCustomers)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/customers", wrapper.CreateCustomer)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/audit-log", wrapper.ListAuditLog)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/audit-log/verification", wrapper.VerifyAuditLog)
 
 	return m
 }
@@ -1206,6 +1413,83 @@ type SetAccountRolesdefaultJSONResponse struct {
 }
 
 func (response SetAccountRolesdefaultJSONResponse) VisitSetAccountRolesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAuditLogRequestObject struct {
+	Params ListAuditLogParams
+}
+
+type ListAuditLogResponseObject interface {
+	VisitListAuditLogResponse(w http.ResponseWriter) error
+}
+
+type ListAuditLog200JSONResponse AuditEntryList
+
+func (response ListAuditLog200JSONResponse) VisitListAuditLogResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAuditLogdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ListAuditLogdefaultJSONResponse) VisitListAuditLogResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VerifyAuditLogRequestObject struct {
+}
+
+type VerifyAuditLogResponseObject interface {
+	VisitVerifyAuditLogResponse(w http.ResponseWriter) error
+}
+
+type VerifyAuditLog200JSONResponse AuditVerification
+
+func (response VerifyAuditLog200JSONResponse) VisitVerifyAuditLogResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VerifyAuditLogdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response VerifyAuditLogdefaultJSONResponse) VisitVerifyAuditLogResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -1587,6 +1871,12 @@ type StrictServerInterface interface {
 	// SetAccountRoles Replace the roles of a work account (A-1)
 	// (PUT /api/v1/accounts/{accountId}/roles)
 	SetAccountRoles(ctx context.Context, request SetAccountRolesRequestObject) (SetAccountRolesResponseObject, error)
+	// ListAuditLog Audit log entries, newest first (A-4, admin account only)
+	// (GET /api/v1/audit-log)
+	ListAuditLog(ctx context.Context, request ListAuditLogRequestObject) (ListAuditLogResponseObject, error)
+	// VerifyAuditLog Check the whole hash chain of the audit log (A-4, admin account only)
+	// (GET /api/v1/audit-log/verification)
+	VerifyAuditLog(ctx context.Context, request VerifyAuditLogRequestObject) (VerifyAuditLogResponseObject, error)
 	// ListCustomers List all customers, ordered by code
 	// (GET /api/v1/customers)
 	ListCustomers(ctx context.Context, request ListCustomersRequestObject) (ListCustomersResponseObject, error)
@@ -1839,6 +2129,56 @@ func (sh *strictHandler) SetAccountRoles(w http.ResponseWriter, r *http.Request,
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(SetAccountRolesResponseObject); ok {
 		if err := validResponse.VisitSetAccountRolesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListAuditLog operation middleware
+func (sh *strictHandler) ListAuditLog(w http.ResponseWriter, r *http.Request, params ListAuditLogParams) {
+	var request ListAuditLogRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAuditLog(ctx, request.(ListAuditLogRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAuditLog")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAuditLogResponseObject); ok {
+		if err := validResponse.VisitListAuditLogResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// VerifyAuditLog operation middleware
+func (sh *strictHandler) VerifyAuditLog(w http.ResponseWriter, r *http.Request) {
+	var request VerifyAuditLogRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.VerifyAuditLog(ctx, request.(VerifyAuditLogRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "VerifyAuditLog")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(VerifyAuditLogResponseObject); ok {
+		if err := validResponse.VisitVerifyAuditLogResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

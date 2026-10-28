@@ -4,15 +4,18 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/dkpauzi/revioten/internal/access"
+	"github.com/dkpauzi/revioten/internal/audit"
 	"github.com/dkpauzi/revioten/internal/db"
 	"github.com/dkpauzi/revioten/internal/problem"
 )
 
 // Service menjalankan operasi customer terhadap database.
 type Service struct {
+	pool    *pgxpool.Pool
 	queries *db.Queries
 	authz   access.Authorizer
 }
@@ -20,7 +23,7 @@ type Service struct {
 // NewService membuat Service yang memakai pool database. authz memeriksa izin
 // setiap operasi (M1.2).
 func NewService(pool *pgxpool.Pool, authz access.Authorizer) *Service {
-	return &Service{queries: db.New(pool), authz: authz}
+	return &Service{pool: pool, queries: db.New(pool), authz: authz}
 }
 
 // List mengembalikan semua customer, urut menurut kode.
@@ -56,7 +59,20 @@ func (s *Service) Create(ctx context.Context, actor access.Actor, in NewCustomer
 		return Customer{}, err
 	}
 
-	row, err := s.queries.CreateCustomer(ctx, db.CreateCustomerParams{Code: in.Code, Name: in.Name})
+	// Customer dan catatan auditnya disimpan dalam satu transaksi (M1.3).
+	var row db.Customer
+	err = db.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
+		q := s.queries.WithTx(tx)
+		var err error
+		row, err = q.CreateCustomer(ctx, db.CreateCustomerParams{Code: in.Code, Name: in.Name})
+		if err != nil {
+			return err
+		}
+		return audit.Record(ctx, q, actor, audit.Event{
+			Action: audit.ActionCustomerCreated, TargetType: audit.TargetCustomer, TargetID: row.ID,
+			Details: map[string]string{"code": row.Code, "name": row.Name},
+		})
+	})
 	// Kode ganda tidak diperiksa dengan SELECT lebih dulu: dua permintaan yang
 	// datang bersamaan bisa sama-sama lolos. Batasan UNIQUE di database yang
 	// menjaganya, dan penolakannya diterjemahkan di sini.

@@ -102,20 +102,17 @@ func TestCreateAccountEndpoint(t *testing.T) {
 }
 
 func TestSetAccountRolesEndpoint(t *testing.T) {
-	fakeA := &fakeAccess{}
-	fakeAu := newFakeAuth()
-	fakeAu.account = sampleAccount
-	rec := newTestServer(t, nil, Deps{Auth: fakeAu, Access: fakeA}).do(http.MethodPut, "/api/v1/accounts/akun-1/roles",
+	fake := newFakeAuth()
+	fake.account = sampleAccount
+	rec := newTestServer(t, nil, Deps{Auth: fake}).do(http.MethodPut, "/api/v1/accounts/akun-1/roles",
 		`{"roles":[{"role":"verifier","scope":"all"}]}`)
 
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status %d: %s", rec.Code, rec.Body.String())
 	}
-	if fakeA.setAccount != "akun-1" || !slices.Equal(fakeA.setGrants, []access.RoleGrant{{Role: access.RoleVerifier, Scope: access.ScopeAll}}) {
-		t.Errorf("SetRoles menerima %q %+v", fakeA.setAccount, fakeA.setGrants)
-	}
-	if fakeAu.targetAccount != "akun-1" {
-		t.Errorf("akun yang dibaca ulang %q", fakeAu.targetAccount)
+	// SetRoles lalu GetAccount sama-sama menerima akun-1.
+	if fake.targetAccount != "akun-1" || !slices.Equal(fake.setGrants, []access.RoleGrant{{Role: access.RoleVerifier, Scope: access.ScopeAll}}) {
+		t.Errorf("SetRoles menerima %q %+v", fake.targetAccount, fake.setGrants)
 	}
 }
 

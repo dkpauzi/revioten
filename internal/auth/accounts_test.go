@@ -386,3 +386,72 @@ func TestGetAccount(t *testing.T) {
 		t.Errorf("GetAccount oleh akun kerja: %v, ingin ErrForbidden", err)
 	}
 }
+
+// TestSetRoles: admin mengganti seluruh peran akun kerja (A-1), dan peran
+// barunya langsung berlaku. Aturan yang tidak bisa dimatikan tetap berlaku
+// (R-SEC-11 butir 8, D-72, D-73).
+func TestSetRoles(t *testing.T) {
+	s, admin := newAdminActor(t)
+	ctx := t.Context()
+	checker := access.NewChecker(s.pool)
+	info, temporary, err := s.CreateAccount(ctx, admin, NewAccount{PersonName: "Penyusun Uji", Kind: KindWork, Login: "penyusun.uji"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	worker, _, err := s.Login(ctx, "penyusun.uji", temporary)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	grants := []access.RoleGrant{
+		{Role: access.RoleAuthor, Scope: access.ScopeOwnProjectGroup},
+		{Role: access.RoleVerifier, Scope: access.ScopeAll},
+	}
+	if err := s.SetRoles(ctx, admin, info.ID, grants); err != nil {
+		t.Fatalf("SetRoles: %v", err)
+	}
+	if err := checker.Authorize(ctx, worker, access.VerifyChanges, access.Resource{CustomerID: "x"}); err != nil {
+		t.Errorf("peran baru belum berlaku: %v", err)
+	}
+	// Peran diganti seluruhnya, bukan ditambah.
+	if err := s.SetRoles(ctx, admin, info.ID, nil); err != nil {
+		t.Fatalf("SetRoles kosong: %v", err)
+	}
+	if err := checker.Authorize(ctx, worker, access.VerifyChanges, access.Resource{}); !errors.Is(err, access.ErrForbidden) {
+		t.Errorf("peran lama masih berlaku: %v", err)
+	}
+
+	tests := []struct {
+		name    string
+		account string
+		grants  []access.RoleGrant
+	}{
+		{"akun admin tidak bisa diubah perannya", admin.AccountID, []access.RoleGrant{{Role: access.RoleAuthor, Scope: access.ScopeAll}}},
+		{"akun kerja tidak boleh memegang Admin", info.ID, []access.RoleGrant{{Role: access.RoleAdmin, Scope: access.ScopeAll}}},
+		{"Viewer tidak diberikan karena sudah dimiliki semua", info.ID, []access.RoleGrant{{Role: access.RoleViewer, Scope: access.ScopeAll}}},
+		{"peran yang tidak ada", info.ID, []access.RoleGrant{{Role: "approver", Scope: access.ScopeAll}}},
+		{"peran ganda", info.ID, []access.RoleGrant{{Role: access.RoleAuthor, Scope: access.ScopeAll}, {Role: access.RoleAuthor, Scope: access.ScopeOwnProjectGroup}}},
+		{"cakupan group hanya untuk Penyusun dan Verifikator", info.ID, []access.RoleGrant{{Role: access.RoleDocumentControl, Scope: access.ScopeOwnProjectGroup}}},
+		{"cakupan yang tidak dikenal", info.ID, []access.RoleGrant{{Role: access.RoleAuthor, Scope: "gr1"}}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := s.SetRoles(ctx, admin, tt.account, tt.grants)
+			var invalid *problem.ValidationError
+			if !errors.As(err, &invalid) {
+				t.Errorf("ingin *problem.ValidationError, dapat %v", err)
+			}
+		})
+	}
+
+	if err := s.SetRoles(ctx, worker, info.ID, grants); !errors.Is(err, access.ErrForbidden) {
+		t.Errorf("SetRoles oleh akun kerja: %v, ingin ErrForbidden", err)
+	}
+	if err := s.SetRoles(ctx, admin, "01a180aa-a98b-7bf2-8e0d-b97a25ecc489", nil); !errors.Is(err, problem.ErrNotFound) {
+		t.Errorf("akun yang tidak ada: %v, ingin problem.ErrNotFound", err)
+	}
+	// ID yang bukan UUID juga berarti akun tidak ada, bukan error database (500).
+	if err := s.SetRoles(ctx, admin, "bukan-uuid", nil); !errors.Is(err, problem.ErrNotFound) {
+		t.Errorf("ID bukan UUID: %v, ingin problem.ErrNotFound", err)
+	}
+}

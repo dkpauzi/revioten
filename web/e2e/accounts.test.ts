@@ -83,6 +83,7 @@ test('akun baru wajib ganti password, lalu hanya mendapat hak dari perannya', as
 	// Penyusun tidak memegang A-1 dan A-2: menu akun dan formulir customer tidak ditawarkan.
 	await expect(page.getByRole('link', { name: en.navCustomers })).toBeVisible();
 	await expect(page.getByRole('link', { name: en.navAccounts })).toHaveCount(0);
+	await expect(page.getByRole('link', { name: en.navAuditLog })).toHaveCount(0);
 	await page.getByRole('link', { name: en.navCustomers }).click();
 	await expect(page.getByRole('heading', { name: en.customersListTitle })).toBeVisible();
 	await expect(page.getByRole('heading', { name: en.customerAddTitle })).toHaveCount(0);
@@ -95,9 +96,15 @@ test('akun baru wajib ganti password, lalu hanya mendapat hak dari perannya', as
 			body: JSON.stringify({ code: 'XY', name: 'Bypass Customer' })
 		});
 		const accounts = await fetch('/api/v1/accounts');
-		return { create: create.status, createCode: (await create.json()).code, accounts: accounts.status };
+		const auditLog = await fetch('/api/v1/audit-log');
+		return {
+			create: create.status,
+			createCode: (await create.json()).code,
+			accounts: accounts.status,
+			auditLog: auditLog.status
+		};
 	});
-	expect(statuses).toEqual({ create: 403, createCode: 'forbidden', accounts: 403 });
+	expect(statuses).toEqual({ create: 403, createCode: 'forbidden', accounts: 403, auditLog: 403 });
 });
 
 test('admin mengubah peran, menonaktifkan, mengaktifkan, dan mereset akun', async ({ page }) => {

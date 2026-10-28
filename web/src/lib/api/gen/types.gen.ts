@@ -168,6 +168,97 @@ export type RolesUpdate = {
     roles: Array<RoleGrant>;
 };
 
+export type AuditEntry = {
+    /**
+     * Number in the chain, starting at 1, without gaps.
+     */
+    seq: number;
+    occurred_at: string;
+    actor: AuditActor;
+    /**
+     * Event code, for example account.created or customer.created.
+     */
+    action: string;
+    target?: AuditTarget;
+    /**
+     * Never contains passwords, tokens, or keys.
+     */
+    details: {
+        [key: string]: string;
+    };
+    request_id?: string;
+    source_ip?: string;
+    /**
+     * Hash of the entry before this one (64 zeros for the first entry).
+     */
+    prev_hash: string;
+    /**
+     * SHA-256 of this entry and prev_hash, 64 lowercase hexadecimal characters.
+     */
+    hash: string;
+};
+
+/**
+ * `human` is a logged-in account, shown with the person who holds it
+ * (D-74). `system` is a command on the server computer, for example
+ * create-admin. `anonymous` is someone who is not logged in, for
+ * example a failed login.
+ *
+ */
+export type AuditActor = {
+    type: 'human' | 'system' | 'anonymous';
+    account_id?: string;
+    login?: string;
+    person_id?: string;
+    person_name?: string;
+};
+
+export type AuditTarget = {
+    /**
+     * What the entry is about, for example account or customer.
+     */
+    type: string;
+    id: string;
+    /**
+     * Display name, for example the login of an account or the code of a customer.
+     */
+    label?: string;
+};
+
+export type AuditEntryList = {
+    items: Array<AuditEntry>;
+    /**
+     * Give this as `before` to read older entries. Missing when there are no older entries.
+     */
+    next_before?: number;
+};
+
+export type AuditVerification = {
+    valid: boolean;
+    /**
+     * Number of entries checked.
+     */
+    entries: number;
+    last_seq?: number;
+    /**
+     * Hash of the last entry. Noted outside the system, it also reveals
+     * a removed last entry later.
+     *
+     */
+    last_hash?: string;
+    /**
+     * The first entry that does not fit the chain.
+     */
+    broken_seq?: number;
+    /**
+     * `sequence_gap`: a number is missing, so an entry was removed.
+     * `link_mismatch`: prev_hash differs from the hash of the entry before.
+     * `hash_mismatch`: the content no longer matches the hash, so it was changed.
+     *
+     */
+    reason?: 'sequence_gap' | 'link_mismatch' | 'hash_mismatch';
+};
+
 export type NewCustomer = {
     /**
      * Two letters A to Z. Spaces around the code are removed and letters
@@ -754,3 +845,78 @@ export type CreateCustomerResponses = {
 };
 
 export type CreateCustomerResponse = CreateCustomerResponses[keyof CreateCustomerResponses];
+
+export type ListAuditLogData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Return entries with a lower number than this. Leave it out for the newest entries.
+         */
+        before?: number;
+        /**
+         * Number of entries to return.
+         */
+        limit?: number;
+    };
+    url: '/api/v1/audit-log';
+};
+
+export type ListAuditLogErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ListAuditLogError = ListAuditLogErrors[keyof ListAuditLogErrors];
+
+export type ListAuditLogResponses = {
+    /**
+     * Audit log entries, newest first.
+     */
+    200: AuditEntryList;
+};
+
+export type ListAuditLogResponse = ListAuditLogResponses[keyof ListAuditLogResponses];
+
+export type VerifyAuditLogData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/audit-log/verification';
+};
+
+export type VerifyAuditLogErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type VerifyAuditLogError = VerifyAuditLogErrors[keyof VerifyAuditLogErrors];
+
+export type VerifyAuditLogResponses = {
+    /**
+     * The result of the check.
+     */
+    200: AuditVerification;
+};
+
+export type VerifyAuditLogResponse = VerifyAuditLogResponses[keyof VerifyAuditLogResponses];

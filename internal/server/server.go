@@ -10,6 +10,7 @@ import (
 	"net/http"
 
 	"github.com/dkpauzi/revioten/internal/access"
+	"github.com/dkpauzi/revioten/internal/audit"
 	"github.com/dkpauzi/revioten/internal/auth"
 	"github.com/dkpauzi/revioten/internal/customer"
 )
@@ -43,6 +44,7 @@ type AuthService interface {
 	ResetPassword(ctx context.Context, actor access.Actor, accountID string) (string, error)
 	DisableAccount(ctx context.Context, actor access.Actor, accountID string) (auth.AccountInfo, error)
 	EnableAccount(ctx context.Context, actor access.Actor, accountID string) (auth.AccountInfo, error)
+	SetRoles(ctx context.Context, actor access.Actor, accountID string, grants []access.RoleGrant) error
 }
 
 // AccessService adalah operasi hak akses yang dipakai API.
@@ -50,7 +52,13 @@ type AuthService interface {
 type AccessService interface {
 	Permissions(ctx context.Context, actor access.Actor) ([]access.Permission, error)
 	ListRoles(ctx context.Context, actor access.Actor) ([]access.Role, error)
-	SetRoles(ctx context.Context, actor access.Actor, accountID string, grants []access.RoleGrant) error
+}
+
+// AuditService adalah operasi membaca audit log yang dipakai API (M1.3).
+// *audit.Service memenuhinya; test memakai versi palsu.
+type AuditService interface {
+	List(ctx context.Context, actor access.Actor, before int64, limit int) ([]audit.Entry, error)
+	Verify(ctx context.Context, actor access.Actor) (audit.Verification, error)
 }
 
 // Deps berisi semua yang dibutuhkan handler.
@@ -59,6 +67,7 @@ type Deps struct {
 	Customers CustomerService
 	Auth      AuthService
 	Access    AccessService
+	Audit     AuditService
 	// Logger untuk log server. Bila nil, dipakai slog.Default().
 	Logger *slog.Logger
 }
@@ -74,7 +83,7 @@ func NewHandler(ui fs.FS, deps Deps) http.Handler {
 	if log == nil {
 		log = slog.Default()
 	}
-	a := &apiServer{db: deps.DB, customers: deps.Customers, auth: deps.Auth, access: deps.Access, log: log}
+	a := &apiServer{db: deps.DB, customers: deps.Customers, auth: deps.Auth, access: deps.Access, audit: deps.Audit, log: log}
 
 	// Route dari kontrak didaftarkan oleh kode hasil generate ke mux khusus API.
 	// Strict handler membaca body JSON dan menulis jawaban bertipe; error-nya
@@ -119,5 +128,6 @@ type apiServer struct {
 	customers CustomerService
 	auth      AuthService
 	access    AccessService
+	audit     AuditService
 	log       *slog.Logger
 }

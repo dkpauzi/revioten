@@ -17,7 +17,10 @@ import (
 	"os"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/dkpauzi/revioten/internal/access"
+	"github.com/dkpauzi/revioten/internal/audit"
 	"github.com/dkpauzi/revioten/internal/auth"
 	"github.com/dkpauzi/revioten/internal/customer"
 	"github.com/dkpauzi/revioten/internal/db"
@@ -55,16 +58,11 @@ func runServer(args []string) error {
 	}
 
 	ctx := context.Background()
-	pool, err := db.Connect(ctx, cfg.DatabaseURL)
+	pool, err := openDatabase(ctx, cfg)
 	if err != nil {
 		return err
 	}
 	defer pool.Close()
-
-	// Skema database diperbarui setiap kali program mulai (lihat sql/migrations).
-	if err := db.Migrate(ctx, pool); err != nil {
-		return err
-	}
 
 	// Satu titik pemeriksaan izin dipakai semua service (M1.2).
 	checker := access.NewChecker(pool)
@@ -76,6 +74,7 @@ func runServer(args []string) error {
 			Customers: customer.NewService(pool, checker),
 			Auth:      auth.NewService(pool, checker),
 			Access:    checker,
+			Audit:     audit.NewService(pool, checker),
 		}),
 		// Batas waktu membaca header permintaan. Tanpa batas ini, klien yang
 		// sangat lambat bisa menahan koneksi selamanya (pengaman dasar, G9).
@@ -88,4 +87,26 @@ func runServer(args []string) error {
 
 	// ListenAndServe baru kembali bila ada error, misalnya port sudah dipakai.
 	return srv.ListenAndServe()
+}
+
+// openDatabase menyiapkan database, lalu membuka pool untuk program (E-06):
+//  1. sebagai pemilik database: menjalankan migrasi yang belum dijalankan (lihat
+//     sql/migrations) dan memasang password role aplikasi dari APP_DB_PASSWORD;
+//  2. koneksi pemilik ditutup. Semua operasi berikutnya memakai role aplikasi,
+//     yang hanya punya hak yang dibutuhkan, dan tidak bisa mengubah atau
+//     menghapus audit log (R-SEC-03).
+func openDatabase(ctx context.Context, cfg config) (*pgxpool.Pool, error) {
+	owner, err := db.Connect(ctx, cfg.OwnerURL)
+	if err != nil {
+		return nil, err
+	}
+	err = db.Migrate(ctx, owner)
+	if err == nil {
+		err = db.SetAppRolePassword(ctx, owner, cfg.AppPassword)
+	}
+	owner.Close()
+	if err != nil {
+		return nil, err
+	}
+	return db.Connect(ctx, cfg.AppURL)
 }

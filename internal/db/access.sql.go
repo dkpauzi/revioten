@@ -33,17 +33,6 @@ func (q *Queries) DeleteAccountRoles(ctx context.Context, accountID string) erro
 	return err
 }
 
-const getAccountKind = `-- name: GetAccountKind :one
-SELECT kind FROM accounts WHERE id = $1
-`
-
-func (q *Queries) GetAccountKind(ctx context.Context, id string) (string, error) {
-	row := q.db.QueryRow(ctx, getAccountKind, id)
-	var kind string
-	err := row.Scan(&kind)
-	return kind, err
-}
-
 const listAccountRoles = `-- name: ListAccountRoles :many
 SELECT ar.account_id, ar.role_id, ar.scope
 FROM account_roles ar

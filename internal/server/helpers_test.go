@@ -13,6 +13,7 @@ import (
 	"testing/fstest"
 
 	"github.com/dkpauzi/revioten/internal/access"
+	"github.com/dkpauzi/revioten/internal/audit"
 	"github.com/dkpauzi/revioten/internal/auth"
 	"github.com/dkpauzi/revioten/internal/customer"
 )
@@ -31,10 +32,13 @@ type fakeCustomers struct {
 	// gotInput dan gotActor adalah input dan aktor terakhir yang diterima.
 	gotInput *customer.NewCustomer
 	gotActor access.Actor
+	// gotRequest adalah asal permintaan yang sampai ke layanan (untuk audit log).
+	gotRequest audit.Request
 }
 
-func (f *fakeCustomers) List(_ context.Context, actor access.Actor) ([]customer.Customer, error) {
+func (f *fakeCustomers) List(ctx context.Context, actor access.Actor) ([]customer.Customer, error) {
 	f.gotActor = actor
+	f.gotRequest = audit.RequestFrom(ctx)
 	return f.list, f.listErr
 }
 
@@ -72,6 +76,7 @@ type fakeAuth struct {
 	changeNew     string
 	newAccount    *auth.NewAccount
 	targetAccount string
+	setGrants     []access.RoleGrant
 }
 
 func newFakeAuth() *fakeAuth {
@@ -135,14 +140,16 @@ func (f *fakeAuth) EnableAccount(_ context.Context, _ access.Actor, accountID st
 	return f.account, f.adminErr
 }
 
-// fakeAccess meniru access.Checker untuk operasi peran.
+func (f *fakeAuth) SetRoles(_ context.Context, _ access.Actor, accountID string, grants []access.RoleGrant) error {
+	f.targetAccount, f.setGrants = accountID, grants
+	return f.adminErr
+}
+
+// fakeAccess meniru access.Checker untuk hak dan katalog peran.
 type fakeAccess struct {
 	permissions []access.Permission
 	roles       []access.Role
 	err         error
-	// Catatan panggilan SetRoles.
-	setAccount string
-	setGrants  []access.RoleGrant
 }
 
 func (f *fakeAccess) Permissions(context.Context, access.Actor) ([]access.Permission, error) {
@@ -153,9 +160,23 @@ func (f *fakeAccess) ListRoles(context.Context, access.Actor) ([]access.Role, er
 	return f.roles, f.err
 }
 
-func (f *fakeAccess) SetRoles(_ context.Context, _ access.Actor, accountID string, grants []access.RoleGrant) error {
-	f.setAccount, f.setGrants = accountID, grants
-	return f.err
+// fakeAudit meniru audit.Service tanpa database.
+type fakeAudit struct {
+	entries      []audit.Entry
+	verification audit.Verification
+	err          error
+	// Catatan panggilan List.
+	gotBefore int64
+	gotLimit  int
+}
+
+func (f *fakeAudit) List(_ context.Context, _ access.Actor, before int64, limit int) ([]audit.Entry, error) {
+	f.gotBefore, f.gotLimit = before, limit
+	return f.entries, f.err
+}
+
+func (f *fakeAudit) Verify(context.Context, access.Actor) (audit.Verification, error) {
+	return f.verification, f.err
 }
 
 // testServer adalah handler lengkap dengan dependensi palsu. Log server
@@ -182,6 +203,9 @@ func newTestServer(t *testing.T, ui fs.FS, deps Deps) testServer {
 	}
 	if deps.Access == nil {
 		deps.Access = &fakeAccess{permissions: []access.Permission{access.ViewReleased, access.ManageUsers}}
+	}
+	if deps.Audit == nil {
+		deps.Audit = &fakeAudit{}
 	}
 	var log bytes.Buffer
 	deps.Logger = slog.New(slog.NewTextHandler(&log, nil))

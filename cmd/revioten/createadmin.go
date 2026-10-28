@@ -14,7 +14,6 @@ import (
 
 	"github.com/dkpauzi/revioten/internal/access"
 	"github.com/dkpauzi/revioten/internal/auth"
-	"github.com/dkpauzi/revioten/internal/db"
 	"github.com/dkpauzi/revioten/internal/problem"
 )
 
@@ -60,14 +59,11 @@ func runCreateAdmin(args []string, in io.Reader, out io.Writer) error {
 	}
 
 	ctx := context.Background()
-	pool, err := db.Connect(ctx, cfg.DatabaseURL)
+	pool, err := openDatabase(ctx, cfg)
 	if err != nil {
 		return err
 	}
 	defer pool.Close()
-	if err := db.Migrate(ctx, pool); err != nil {
-		return err
-	}
 
 	actor, err := auth.NewService(pool, access.NewChecker(pool)).CreateFirstAdmin(ctx, opts.name, opts.login, password)
 	var invalid *problem.ValidationError

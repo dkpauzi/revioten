@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/dkpauzi/revioten/internal/access"
+	"github.com/dkpauzi/revioten/internal/audit"
 	"github.com/dkpauzi/revioten/internal/db"
 	"github.com/dkpauzi/revioten/internal/problem"
 )
@@ -69,7 +70,16 @@ func (s *Service) CreateFirstAdmin(ctx context.Context, name, login, password st
 			return err
 		}
 		// Akun admin selalu memegang peran Admin, dan hanya itu (D-72, M1.2).
-		err = access.ReplaceRoles(ctx, q, acc.ID, []access.RoleGrant{{Role: access.RoleAdmin, Scope: access.ScopeAll}})
+		grants := []access.RoleGrant{{Role: access.RoleAdmin, Scope: access.ScopeAll}}
+		if err := access.ReplaceRoles(ctx, q, acc.ID, grants); err != nil {
+			return err
+		}
+		// Belum ada akun yang bisa disebut pelakunya, jadi dicatat dengan
+		// aktor sistem: perintah yang dijalankan di komputer server (E-07).
+		err = audit.Record(ctx, q, access.Actor{Type: access.ActorSystem}, audit.Event{
+			Action: audit.ActionAccountCreated, TargetType: audit.TargetAccount, TargetID: acc.ID,
+			Details: map[string]string{"login": acc.Login, "kind": acc.Kind, "roles": describeGrants(grants), "via": "create-admin"},
+		})
 		if err != nil {
 			return err
 		}
@@ -89,7 +99,6 @@ func (s *Service) CreateFirstAdmin(ctx context.Context, name, login, password st
 	case err != nil:
 		return access.Actor{}, fmt.Errorf("membuat admin pertama: %w", err)
 	}
-	// M1.3: peristiwa ini juga dicatat di audit log dengan aktor sistem (E-07).
 	slog.Info("akun admin pertama dibuat", "login", actor.Login)
 	return actor, nil
 }

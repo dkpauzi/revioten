@@ -145,8 +145,10 @@ func (a *apiServer) GetSession(ctx context.Context, _ GetSessionRequestObject) (
 func (a *apiServer) Login(ctx context.Context, req LoginRequestObject) (LoginResponseObject, error) {
 	actor, token, err := a.auth.Login(ctx, req.Body.Login, req.Body.Password)
 	if errors.Is(err, auth.ErrInvalidCredentials) {
-		// Nama login dicatat untuk memantau serangan; password tidak pernah dicatat.
-		a.log.Info("login gagal", "request_id", requestIDFrom(ctx), "login", req.Body.Login)
+		// Nama login yang diketik tidak dicatat: pengguna kadang mengetik
+		// password di kolom itu (E-18). Percobaan terhadap akun yang ada
+		// tercatat di audit log dengan ID akunnya (M1.3).
+		a.log.Info("login gagal", "request_id", requestIDFrom(ctx))
 		return Login401JSONResponse(errorBody(ctx, ErrorCodeInvalidCredentials,
 			"The login name or password is not correct.", nil)), nil
 	}

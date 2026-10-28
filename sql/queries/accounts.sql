@@ -28,3 +28,12 @@ UPDATE accounts SET disabled_at = NULL, failed_logins = 0, locked_until = NULL W
 
 -- name: CountEnabledAdmins :one
 SELECT count(*) FROM accounts WHERE kind = 'admin' AND disabled_at IS NULL;
+
+-- name: LockAccount :exec
+-- LockAccount mengunci baris akun sampai transaksi selesai, supaya isi akun
+-- yang dibaca untuk audit log (misalnya peran sebelum diubah) tidak berubah
+-- oleh transaksi lain di tengah jalan. FOR NO KEY UPDATE, bukan FOR UPDATE:
+-- kunci ini tidak bentrok dengan pemeriksaan foreign key saat transaksi lain
+-- menulis entri audit tentang akun yang sama, jadi tidak bisa terjadi deadlock
+-- dengan kunci rantai audit (lihat TestLockAccountAllowsAudit).
+SELECT id FROM accounts WHERE id = $1 FOR NO KEY UPDATE;

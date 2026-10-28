@@ -7,6 +7,8 @@
 import type {
 	AccountInfo,
 	AccountList,
+	AuditEntryList,
+	AuditVerification,
 	Error as ApiError,
 	CreatedAccount,
 	Credentials,
@@ -130,6 +132,22 @@ export function enableAccount(
 	fetchFn: typeof fetch = fetch
 ): Promise<ApiResult<AccountInfo>> {
 	return call<AccountInfo>(fetchFn, accountPath(accountId, 'enable'), { method: 'POST' });
+}
+
+// listAuditLog memanggil GET /api/v1/audit-log: entri terbaru dulu (A-4).
+// Untuk entri yang lebih lama, isi before dengan next_before dari jawaban sebelumnya.
+export function listAuditLog(
+	before?: number,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<AuditEntryList>> {
+	const query = before === undefined ? '' : `?before=${before}`;
+	return call<AuditEntryList>(fetchFn, `/api/v1/audit-log${query}`, { method: 'GET' });
+}
+
+// verifyAuditLog memanggil GET /api/v1/audit-log/verification: server memeriksa
+// seluruh rantai hash audit log (A-4).
+export function verifyAuditLog(fetchFn: typeof fetch = fetch): Promise<ApiResult<AuditVerification>> {
+	return call<AuditVerification>(fetchFn, '/api/v1/audit-log/verification', { method: 'GET' });
 }
 
 // accountPath menyusun alamat operasi satu akun. ID dikodekan, supaya karakter

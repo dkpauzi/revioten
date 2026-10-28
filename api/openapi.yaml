@@ -285,6 +285,53 @@ paths:
           $ref: '#/components/responses/Error'
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/audit-log:
+    get:
+      operationId: listAuditLog
+      summary: Audit log entries, newest first (A-4, admin account only)
+      description: |
+        Every change of data writes one entry (R-SEC-03). The entries form one
+        hash chain: the hash of each entry covers its content and the hash of
+        the entry before it. Give `next_before` from the response as `before`
+        to read older entries.
+      parameters:
+        - name: before
+          in: query
+          description: Return entries with a lower number than this. Leave it out for the newest entries.
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+        - name: limit
+          in: query
+          description: Number of entries to return.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+      responses:
+        '200':
+          description: Audit log entries, newest first.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditEntryList'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/audit-log/verification:
+    get:
+      operationId: verifyAuditLog
+      summary: Check the whole hash chain of the audit log (A-4, admin account only)
+      responses:
+        '200':
+          description: The result of the check.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditVerification'
+        default:
+          $ref: '#/components/responses/Error'
 components:
   parameters:
     AccountId:
@@ -540,6 +587,112 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RoleGrant'
+    AuditEntry:
+      type: object
+      required: [seq, occurred_at, actor, action, details, prev_hash, hash]
+      properties:
+        seq:
+          type: integer
+          format: int64
+          description: Number in the chain, starting at 1, without gaps.
+        occurred_at:
+          type: string
+          format: date-time
+        actor:
+          $ref: '#/components/schemas/AuditActor'
+        action:
+          type: string
+          description: Event code, for example account.created or customer.created.
+        target:
+          $ref: '#/components/schemas/AuditTarget'
+        details:
+          type: object
+          additionalProperties:
+            type: string
+          description: Never contains passwords, tokens, or keys.
+        request_id:
+          type: string
+        source_ip:
+          type: string
+        prev_hash:
+          type: string
+          description: Hash of the entry before this one (64 zeros for the first entry).
+        hash:
+          type: string
+          description: SHA-256 of this entry and prev_hash, 64 lowercase hexadecimal characters.
+    AuditActor:
+      type: object
+      required: [type]
+      description: |
+        `human` is a logged-in account, shown with the person who holds it
+        (D-74). `system` is a command on the server computer, for example
+        create-admin. `anonymous` is someone who is not logged in, for
+        example a failed login.
+      properties:
+        type:
+          type: string
+          enum: [human, system, anonymous]
+        account_id:
+          type: string
+        login:
+          type: string
+        person_id:
+          type: string
+        person_name:
+          type: string
+    AuditTarget:
+      type: object
+      required: [type, id]
+      properties:
+        type:
+          type: string
+          description: What the entry is about, for example account or customer.
+        id:
+          type: string
+        label:
+          type: string
+          description: Display name, for example the login of an account or the code of a customer.
+    AuditEntryList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditEntry'
+        next_before:
+          type: integer
+          format: int64
+          description: Give this as `before` to read older entries. Missing when there are no older entries.
+    AuditVerification:
+      type: object
+      required: [valid, entries]
+      properties:
+        valid:
+          type: boolean
+        entries:
+          type: integer
+          format: int64
+          description: Number of entries checked.
+        last_seq:
+          type: integer
+          format: int64
+        last_hash:
+          type: string
+          description: |
+            Hash of the last entry. Noted outside the system, it also reveals
+            a removed last entry later.
+        broken_seq:
+          type: integer
+          format: int64
+          description: The first entry that does not fit the chain.
+        reason:
+          type: string
+          enum: [sequence_gap, link_mismatch, hash_mismatch]
+          description: |
+            `sequence_gap`: a number is missing, so an entry was removed.
+            `link_mismatch`: prev_hash differs from the hash of the entry before.
+            `hash_mismatch`: the content no longer matches the hash, so it was changed.
     NewCustomer:
       type: object
       required: [code, name]

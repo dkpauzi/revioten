@@ -68,6 +68,10 @@
 				{#if can('A-1')}
 					<a href="/admin/accounts">{t('navAccounts')}</a>
 				{/if}
+				<!-- Audit log hanya lewat akun admin (A-4, D-75). -->
+				{#if can('A-4')}
+					<a href="/admin/audit">{t('navAuditLog')}</a>
+				{/if}
 				<a href="/about">{t('navAbout')}</a>
 			</nav>
 		{/if}

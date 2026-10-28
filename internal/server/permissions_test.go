@@ -11,6 +11,7 @@ import (
 	"go.yaml.in/yaml/v3"
 
 	"github.com/dkpauzi/revioten/internal/access"
+	"github.com/dkpauzi/revioten/internal/audit"
 	"github.com/dkpauzi/revioten/internal/auth"
 	"github.com/dkpauzi/revioten/internal/customer"
 	"github.com/dkpauzi/revioten/internal/db/dbtest"
@@ -40,6 +41,7 @@ func TestPermissionsPerOperation(t *testing.T) {
 	authSvc := auth.NewService(pool, checker)
 	handler := NewHandler(fstest.MapFS{}, Deps{
 		DB: pool, Customers: customer.NewService(pool, checker), Auth: authSvc, Access: checker,
+		Audit: audit.NewService(pool, checker),
 	})
 
 	// Admin pertama, dan satu akun kerja tanpa peran (hanya hak dasar Viewer).
@@ -77,6 +79,9 @@ func TestPermissionsPerOperation(t *testing.T) {
 		{http.MethodPost, "{target}/password-reset", "", http.StatusForbidden, http.StatusOK},
 		{http.MethodPost, "{target}/disable", "", http.StatusForbidden, http.StatusOK},
 		{http.MethodPost, "{target}/enable", "", http.StatusForbidden, http.StatusOK},
+		// Audit log hanya lewat akun admin (D-72, D-75).
+		{http.MethodGet, "/api/v1/audit-log", "", http.StatusForbidden, http.StatusOK},
+		{http.MethodGet, "/api/v1/audit-log/verification", "", http.StatusForbidden, http.StatusOK},
 		{http.MethodDelete, "/api/v1/session", "", http.StatusNoContent, http.StatusNoContent},
 	}
 	checkCoversContract(t, cases)

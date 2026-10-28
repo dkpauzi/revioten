@@ -10,6 +10,10 @@
 //		pool := dbtest.NewPool(t) // database baru yang kosong, skema terbaru
 //		...
 //	}
+//
+// Pool dari NewPool login sebagai role aplikasi (db.AppRole), dengan hak yang
+// sama dengan server (E-06). Test yang lupa diberi GRANT di migrasi langsung
+// gagal di sini, bukan baru ketahuan saat server berjalan.
 package dbtest
 
 import (
@@ -33,6 +37,9 @@ import (
 // salinannya lewat CREATE DATABASE ... TEMPLATE, yang jauh lebih cepat daripada
 // menjalankan migrasi berulang kali.
 const templateDB = "revioten_template"
+
+// appPassword adalah password role aplikasi di container test.
+const appPassword = "PasswordAplikasiUji2026"
 
 var (
 	// serverURL adalah alamat container, diisi Main. Kosong bila -short.
@@ -82,22 +89,36 @@ func Main(m *testing.M) int {
 	return m.Run()
 }
 
-// migrateTemplate menjalankan migrasi sekali di database template, lalu
-// menutup semua koneksinya. CREATE DATABASE ... TEMPLATE menolak template
-// yang masih punya koneksi terbuka.
+// migrateTemplate menjalankan migrasi sekali di database template sebagai
+// pemilik, memasang password role aplikasi, lalu menutup semua koneksinya.
+// CREATE DATABASE ... TEMPLATE menolak template yang masih punya koneksi terbuka.
 func migrateTemplate(ctx context.Context) error {
-	pool, err := db.Connect(ctx, withDatabase(templateDB))
+	pool, err := db.Connect(ctx, ownerURL(templateDB))
 	if err != nil {
 		return err
 	}
 	defer pool.Close()
-	return db.Migrate(ctx, pool)
+	if err := db.Migrate(ctx, pool); err != nil {
+		return err
+	}
+	// Role berlaku untuk seluruh server PostgreSQL di container, jadi
+	// password ini cukup dipasang sekali untuk semua database test.
+	return db.SetAppRolePassword(ctx, pool, appPassword)
 }
 
 // NewPool membuat database baru dari template khusus untuk satu test, lalu
-// membuka pool ke database itu. Pool ditutup otomatis setelah test selesai.
-// Test dilewati bila dijalankan dengan -short.
+// membuka pool ke database itu sebagai role aplikasi. Pool ditutup otomatis
+// setelah test selesai. Test dilewati bila dijalankan dengan -short.
 func NewPool(t *testing.T) *pgxpool.Pool {
+	t.Helper()
+	app, _ := NewPools(t)
+	return app
+}
+
+// NewPools seperti NewPool, tapi juga memberi pool pemilik database (tanpa
+// batas hak role aplikasi). Pool pemilik dipakai test yang meniru admin
+// database, misalnya percobaan mengubah audit log (M1.3).
+func NewPools(t *testing.T) (app, owner *pgxpool.Pool) {
 	t.Helper()
 	if testing.Short() {
 		t.Skip("test database dilewati karena -short")
@@ -106,7 +127,7 @@ func NewPool(t *testing.T) *pgxpool.Pool {
 
 	name := fmt.Sprintf("test_%d", counter.Add(1))
 	// CREATE DATABASE dijalankan dari database bawaan "postgres".
-	admin, err := pgx.Connect(ctx, withDatabase("postgres"))
+	admin, err := pgx.Connect(ctx, ownerURL("postgres"))
 	if err != nil {
 		t.Fatalf("menghubungi database postgres: %v", err)
 	}
@@ -119,21 +140,34 @@ func NewPool(t *testing.T) *pgxpool.Pool {
 		t.Fatalf("membuat database %s: %v", name, err)
 	}
 
-	pool, err := db.Connect(ctx, withDatabase(name))
+	app, err = db.Connect(ctx, appURL(name))
 	if err != nil {
-		t.Fatalf("Connect ke database %s: %v", name, err)
+		t.Fatalf("Connect ke database %s sebagai %s: %v", name, db.AppRole, err)
 	}
-	t.Cleanup(pool.Close)
-	return pool
+	t.Cleanup(app.Close)
+	owner, err = db.Connect(ctx, ownerURL(name))
+	if err != nil {
+		t.Fatalf("Connect ke database %s sebagai pemilik: %v", name, err)
+	}
+	t.Cleanup(owner.Close)
+	return app, owner
 }
 
-// withDatabase mengganti nama database di alamat container.
-func withDatabase(name string) string {
+// ownerURL mengganti nama database di alamat container. User-nya pemilik
+// database (superuser di container test).
+func ownerURL(name string) string {
 	u, err := url.Parse(serverURL)
 	if err != nil {
 		// Alamat dibuat testcontainers sendiri, jadi ini hanya terjadi bila ada bug.
 		panic(fmt.Sprintf("alamat container tidak bisa dibaca: %v", err))
 	}
 	u.Path = "/" + name
+	return u.String()
+}
+
+// appURL seperti ownerURL, tapi login sebagai role aplikasi.
+func appURL(name string) string {
+	u, _ := url.Parse(ownerURL(name))
+	u.User = url.UserPassword(db.AppRole, appPassword)
 	return u.String()
 }
