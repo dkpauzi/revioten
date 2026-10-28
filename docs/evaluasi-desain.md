@@ -53,6 +53,9 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-29 | Kredensial pemilik database dan siapa yang menjalankan migrasi | Celah | M1.3, M8.3, M8.4 | Tidak | Terbuka |
 | E-30 | Field dan aturan Project Group, group model, model, dan part number belum ditetapkan | Celah | M1.4, M4.1 | Tidak | Terbuka |
 | E-31 | Kode customer lama: boleh dipakai customer lain, dan tanggal berlaku penggantian | Ambigu | M1.4, M2.1 | Tidak | Terbuka |
+| E-32 | Aturan nama dan alias master proses belum ditetapkan | Celah | M1.5, M3.2, Tahap 7 | Tidak | Terbuka |
+| E-33 | Pencocokan PFD, PFMEA, dan CP: di tingkat proses atau sub-proses | Ambigu | M1.5, M3.2, Tahap 3 | Tidak (perlu sebelum M3.2) | Terbuka |
+| E-34 | Field wajib di kontrak tidak diperiksa oleh server hasil generate | Celah | M1.5, M8.1, M9.3 | Tidak | Terbuka |
 
 ## Rincian
 
@@ -573,6 +576,57 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (a). Paling sederhana dan tidak pernah ambigu. Tanggal berlaku yang dipilih (b) bisa ditambah bila nanti dibutuhkan untuk mengimpor riwayat WI.
 - **Asumsi sementara di kode (ASUMSI E-31):** (a). Kode menjadi primary key `customer_codes`, jadi database menolak kode yang pernah dipakai. Ditandai di `sql/migrations/00005_create_master_data.sql` dan `internal/customer/service.go`.
 - **Menghambat milestone?** Tidak (perlu sebelum M2.1)
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-32 · Aturan nama dan alias master proses belum ditetapkan
+
+- **Tanggal dan milestone:** 28 Oktober 2026, M1.5. Berdampak ke M3.2 (process template) dan impor dokumen lama (R-DOC-04, R-MIG).
+- **Jenis:** Celah
+- **Rujukan:** D-06, D-64, R-DOC-04, UC-04, brief bagian 3 dan 4 (process), U1 (Proses), F-05.
+- **Temuan:** Brief menetapkan ID tetap, nama hanya tampilan, dan alias boleh ada. Belum ada aturan:
+  1. Apakah master proses satu untuk semua customer, atau per customer.
+  2. Apakah nama dan alias harus unik, dan di mana: antar nama saja, atau nama dan alias berbagi satu ruang nama. Bila tidak unik, satu nama di dokumen lama bisa menunjuk dua proses saat impor (R-DOC-04).
+  3. Apakah perbedaan huruf besar kecil dan spasi ganda dianggap nama yang sama. F-05 menunjukkan nama yang hampir sama ("Parts Receiving" dan "Part Receiving").
+  4. Batas panjang nama dan jumlah alias.
+  5. Apakah proses bisa dihapus atau dinonaktifkan.
+  6. Apakah nama lama otomatis menjadi alias saat proses diganti nama.
+- **Dampak bila dibiarkan:** pencocokan nama ke ID saat impor (R-DOC-04) bisa ambigu, dan daftar pilihan proses di PFMEA dan CP bisa berisi dua proses dengan nama yang sama.
+- **Opsi:** (a) Satu master untuk semua customer; nama dan alias berbagi satu ruang nama tanpa membedakan huruf besar kecil dan spasi ganda; proses tidak dihapus; nama lama tidak otomatis menjadi alias. (b) Seperti (a), tapi nama lama otomatis menjadi alias saat diganti. (c) Master per customer, dengan ruang nama per customer.
+- **Rekomendasi Claude Code (usulan):** (a). Ruang nama tunggal membuat pencocokan impor tidak pernah ambigu. Nama lama tidak otomatis menjadi alias, karena ganti nama sering untuk membetulkan salah ketik, dan salah ketik tidak perlu dipertahankan. Status nonaktif ditambah saat Tahap 3 membutuhkan daftar pilihan proses.
+- **Asumsi sementara di kode (ASUMSI E-32):** (a), dengan batas nama dan alias 200 karakter dan paling banyak 20 alias per proses. Database menegakkan ruang nama tunggal lewat primary key `name_key` (nama dalam huruf kecil) di tabel `process_names`. Ditandai di `sql/migrations/00006_create_processes.sql` dan `internal/process/process.go`.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-33 · Pencocokan PFD, PFMEA, dan CP: di tingkat proses atau sub-proses
+
+- **Tanggal dan milestone:** 28 Oktober 2026, M1.5. Berdampak ke M3.2 (process template) dan Tahap 3 (baris dokumen).
+- **Jenis:** Ambigu
+- **Rujukan:** R-DOC-04, R-TPL-01, R-TPL-04, brief bagian 3 (Process / sub-process / point), U1 (Proses, Sub-proses), F-05.
+- **Temuan:** R-DOC-04 berbunyi: PFD, PFMEA, dan CP dicocokkan per proses, dan ID-nya dipegang master proses. R-TPL-01 menaruh sub-proses (misalnya IQC General, IQC MSD, IQC PCB) di process template, bukan di master proses. Belum jelas apakah baris PFMEA dan CP cukup menunjuk proses (IQC), atau harus menunjuk sub-proses (IQC MSD). Beberapa contoh F-05 ("LED Test Lighting" dan "LED Lighting Test") tampak seperti nama setingkat sub-proses.
+- **Dampak bila dibiarkan:** bila pencocokan perlu sampai sub-proses, sub-proses juga butuh ID tetap dan alias, dan master proses M1.5 harus diperluas sebelum M3.2.
+- **Opsi:** (a) Pencocokan di tingkat proses. Sub-proses tetap varian di process template, dengan ID tetap dari template. (b) Sub-proses juga masuk master proses, masing-masing dengan ID tetap, alias, dan induk (proses). (c) Diputuskan setelah membandingkan satu set PFD, PFMEA, dan CP asli baris per baris.
+- **Rekomendasi Claude Code (usulan):** (c) sebelum M3.2, karena jawabannya bergantung pada cara dokumen sekarang ditulis. Skema M1.5 bisa diperluas ke (b) dengan kolom induk tanpa mengubah ID proses yang sudah ada.
+- **Asumsi sementara di kode:** master proses M1.5 hanya berisi proses. Sub-proses belum dibuat.
+- **Menghambat milestone?** Tidak (perlu sebelum M3.2)
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-34 · Field wajib di kontrak tidak diperiksa oleh server hasil generate
+
+- **Tanggal dan milestone:** 28 Oktober 2026, M1.5. Berdampak ke M8.1 (klien integrasi) dan M9.3 (konvensi API).
+- **Jenis:** Celah
+- **Rujukan:** R-API-02, R-API-13, R-API-15, D-61.
+- **Temuan:** oapi-codegen membuat tipe dari kontrak, tapi tidak memeriksa apakah field wajib (`required`) benar-benar dikirim. Field yang tidak dikirim menjadi nilai kosong. Untuk teks, layanan domain tetap menolaknya (wajib diisi). Untuk boolean dan daftar, nilai kosong punya arti:
+  1. `PUT /api/v1/customers/{id}` tanpa `active` dibaca sebagai `false`, sehingga customer dinonaktifkan.
+  2. `PUT /api/v1/processes/{id}` tanpa `aliases` akan menghapus semua alias. Di M1.5 kasus ini sudah ditolak handler dengan `aliases:required`.
+  Batas lain di kontrak, misalnya `maxItems` dan `enum`, juga belum diperiksa server; layanan domain yang memeriksa.
+- **Dampak bila dibiarkan:** klien API yang lupa satu field bisa mengubah data tanpa sengaja. Layar web selalu mengirim semua field, jadi risikonya muncul saat klien integrasi ada (M8.1).
+- **Opsi:** (a) Pasang middleware yang memeriksa setiap permintaan terhadap kontrak (misalnya kin-openapi lewat middleware oapi-codegen). Butuh paket baru dan pengecekan versi (R-VER). (b) Periksa di handler hanya untuk field yang nilai kosongnya berbahaya, seperti `aliases` di M1.5. (c) Ubah kontrak supaya field seperti itu bertipe pointer, sehingga "tidak dikirim" bisa dibedakan.
+- **Rekomendasi Claude Code (usulan):** (b) sekarang, termasuk `active` di customer, lalu (a) diputuskan sebelum M8.1, karena klien integrasi tidak bisa diandalkan selalu mengirim semua field.
+- **Asumsi sementara di kode (ASUMSI E-34):** (b) untuk `aliases` di `internal/server/processes.go`. `active` di customer belum diubah, supaya M1.5 tidak melebar ke M1.4.
+- **Menghambat milestone?** Tidak
 - **Status:** Terbuka
 - **Keputusan pemilik:**
 
