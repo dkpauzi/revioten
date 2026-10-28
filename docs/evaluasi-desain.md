@@ -39,6 +39,7 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-15 | Belum ada langkah desain layar (wireframe) di milestone dan paket UML | Celah | Tahap 4, paket UML | Tidak (perlu sebelum Tahap 4) | Diputuskan, D menunggu brief |
 | E-16 | Memindah dokumen aktif ke nomor baru setelah kode customer berganti | Celah | M2.1, M2.3, M2.5 | Tidak (perlu sebelum M2.1) | Diputuskan, D menunggu brief |
 | E-17 | Kedudukan /health terhadap /api/v1 dan kontrak OpenAPI | Ambigu | M0.2, M0.4, M0.5 | Tidak (perlu sebelum M0.5) | Diputuskan, D menunggu brief |
+| E-18 | Belum ada aturan tentang rahasia di log dan pesan error | Celah | M0.3, M0.5, M1.1, M1.3 | Tidak | Terbuka |
 
 ## Rincian
 
@@ -317,6 +318,20 @@ Salin blok ini untuk setiap temuan baru.
 - **Menghambat milestone?** Tidak. Perlu diputuskan sebelum M0.5.
 - **Status:** Diputuskan pemilik 28 Oktober 2026 (nomor D menunggu brief)
 - **Keputusan pemilik:** Opsi (a), sesuai rekomendasi ("E-17 setuju", 28 Oktober 2026): `/health` tetap di root sebagai endpoint operasional, di luar `/api/v1`, dan mulai M0.5 ikut dicatat di kontrak OpenAPI untuk layar. Komentar `// ASUMSI E-17` di `internal/server/server.go` diganti dengan keterangan keputusan ini.
+
+### E-18 · Belum ada aturan tentang rahasia di log dan pesan error
+
+- **Tanggal dan milestone:** 28 Oktober 2026, M0.3. Berdampak ke M0.5, M1.1, M1.3, dan tahap 9.
+- **Jenis:** Celah
+- **Rujukan:** G9, R-SEC-01, R-SEC-03, R-API-03, R-API-04, R-API-13, brief bagian 7 (pgx), M0.3, M0.5, M1.1, M1.3.
+- **Temuan:** Saat membuat `Connect`, terlihat bahwa pesan error pgx untuk alamat database yang salah format bisa memuat alamat lengkap, termasuk password. Dokumentasi pgx v5.11.0 menyebut penyamaran password di pesan itu hanya "best effort". Brief belum punya aturan bahwa password, token, dan alamat koneksi tidak boleh muncul di log, di pesan error API (R-API-13), atau di audit log (R-SEC-03). Aturan seperti ini dibutuhkan kode mulai sekarang: koneksi database (M0.3), format error API (M0.5), login dan password (M1.1), audit log (M1.3), dan token integrasi (R-API-04, tahap 9).
+- **Dampak bila dibiarkan:** rahasia bisa tercatat di log atau terkirim ke layar lewat pesan error. Bila rahasia sempat masuk ke audit log, ia tidak bisa dihapus lagi, karena audit log append-only (R-SEC-03).
+- **Opsi:** (a) Tambah aturan keamanan baru: password, token, kunci, dan alamat koneksi yang memuat password tidak pernah ditulis ke log, pesan error, atau audit log. Pesan error ke pengguna tidak memuat detail teknis internal; detailnya dicatat di log server bersama request ID (R-API-13). Aturan ini dibuktikan dengan test, seperti `TestConnectError`. (b) Tanpa aturan tertulis, cukup diserahkan ke kehati-hatian saat menulis kode.
+- **Rekomendasi Claude Code (usulan):** (a). Murah ditegakkan sejak awal, dan sangat sulit diperbaiki setelah rahasia terlanjur masuk ke audit log yang tidak bisa diubah.
+- **Asumsi sementara di kode:** `Connect` tidak meneruskan pesan error pgx untuk alamat yang tidak bisa dibaca, dan `TestConnectError` memastikan password tidak muncul di pesan error. Ditandai `// ASUMSI E-18` di `internal/db/db.go`.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
 
 ## Bahan dari dokumen referensi (untuk brief bagian 21)
 

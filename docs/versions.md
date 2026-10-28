@@ -17,6 +17,7 @@ Hasil cek ulang M0.1 terhadap R-VER-01 sampai R-VER-05 (D-44), untuk semua item 
 | Terbaru | Pakai versi stabil atau LTS terbaru, termasuk patch terbaru. | R-VER-05, E-13 |
 | Masa tunggu 14 hari | Major baru biasanya dipakai setelah ada patch. Dua kasus khusus mendapat masa tunggu: (1) line yang baru punya satu rilis boleh dipakai bila tidak ada line lain yang memenuhi peer dependency, dan rilisnya sudah berumur minimal 14 hari; pengecualiannya dicatat di tabel ini, dan begitu patch keluar, pindah ke patch terbaru. (2) Paket 0.x memakai versi terbaru yang sudah berumur minimal 14 hari saat pertama kali dipasang. | R-VER-04, E-14 |
 | Kapan dikunci | Versi dikunci saat paketnya pertama kali dipasang, dan dicek ulang di milestone itu. | E-13 |
+| Dependensi tidak langsung | Modul yang ditarik oleh paket lain (tanda `// indirect` di `go.mod`) mengikuti pilihan Go (minimal version selection) dan tidak dikunci satu per satu. Contoh: testcontainers-go menarik golang.org/x/crypto v0.54.0. Saat x/crypto dipakai langsung di M1.1, versinya naik ke versi yang dipilih (v0.58.0 atau lebih baru). | Catatan M0.3 |
 
 ## Sumber dan cara mengecek
 
@@ -47,12 +48,12 @@ Halaman rilis resmi go.dev dan postgresql.org belum dicek. Silakan buka dari kom
 
 | Komponen | Versi yang dipakai | Tanggal rilis | Dicek | Sumber | Catatan |
 |---|---|---|---|---|---|
-| pgx | v5.11.0 | 2026-09-07 | 2026-10-27 | proxy.golang.org | Terbaru. |
+| pgx | v5.11.0 | 2026-09-07 | 2026-10-28 | proxy.golang.org | Terbaru. Dikunci di `go.mod` sejak M0.3. |
 | sqlc | v1.31.1 | 2026-04-22 | 2026-10-27 | proxy.golang.org | Terbaru. |
 | goose | v3.29.0 | 2026-10-11 | 2026-10-27 | proxy.golang.org | Terbaru. |
 | River | v0.49.0 | 2026-10-05 | 2026-10-28 | proxy.golang.org | Paket 0.x, ikut masa tunggu 14 hari (E-14). v0.50.0 (rilis 2026-10-27) baru memenuhi syarat mulai 2026-11-10. River merilis minor tanpa patch (v0.45.0 sampai v0.50.0 semuanya .0). Versinya dikunci saat pertama kali dipakai. |
 | excelize | v2.11.0 | 2026-07-06 | 2026-10-27 | proxy.golang.org | Terbaru. Brief menulis 2026-07-07, selisih zona waktu. |
-| testcontainers-go | v0.44.0 | 2026-08-07 | 2026-10-27 | proxy.golang.org | Terbaru. |
+| testcontainers-go | v0.44.0 | 2026-08-07 | 2026-10-28 | proxy.golang.org | Terbaru. Paket 0.x, lolos masa tunggu 14 hari (E-14). Dikunci di `go.mod` sejak M0.3, bersama modul `modules/postgres` v0.44.0 (rilis yang sama). Saat test berjalan, ia memakai image `testcontainers/ryuk:0.14.0` (bawaan v0.44.0) untuk membuang container test, dan image `postgres:18.6` yang sama dengan `compose.yaml`. |
 | golang.org/x/crypto (argon2id) | v0.58.0 | 2026-10-09 | 2026-10-27 | proxy.golang.org | Terbaru. |
 | oapi-codegen (bila dipilih) | v2.8.1 | 2026-10-24 | 2026-10-28 | proxy.golang.org | Diperbarui dari v2.8.0 (E-13). README v2.8.1 masih menyebut dukungan OpenAPI 3.1 sebagai "initial", jadi kontrak tetap 3.0.4 (D-38). |
 

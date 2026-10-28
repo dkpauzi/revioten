@@ -131,7 +131,7 @@ Kode sekarang punya dua tujuan: belajar, dan menguji apakah desain (brief, UML, 
 
 ### Perintah yang sudah terbukti
 
-Dijalankan dari root repo. Terbukti di container cloud Linux (bash) pada M0.1 (27 Oktober 2026) dan M0.2 (28 Oktober 2026). Docker Compose membaca `.env` sendiri, dan perintah `go` sama di PowerShell Windows. Catatan dalam kurung untuk Windows belum dicoba di komputer pemilik.
+Dijalankan dari root repo. Terbukti di container cloud Linux (bash) pada M0.1 (27 Oktober 2026), M0.2, dan M0.3 (28 Oktober 2026). Docker Compose membaca `.env` sendiri, dan perintah `go` sama di PowerShell Windows. Catatan dalam kurung untuk Windows belum dicoba di komputer pemilik.
 
 | Tujuan | Perintah |
 |---|---|
@@ -145,7 +145,8 @@ Dijalankan dari root repo. Terbukti di container cloud Linux (bash) pada M0.1 (2
 | Buka psql di container | `docker compose exec db psql -U revioten -d revioten` |
 | Cek versi server | `docker compose exec db psql -U revioten -d revioten -c "select version();"` |
 | Matikan PostgreSQL, data tetap | `docker compose down` |
-| Jalankan semua test Go | `go test ./...` (rinci per kasus: `go test -v ./...`) |
+| Jalankan semua test Go | `go test ./...` (rinci per kasus: `go test -v ./...`). Sejak M0.3 butuh Docker yang sedang berjalan, karena test database menyalakan container PostgreSQL 18.6 sendiri lewat testcontainers-go |
+| Test tanpa Docker | `go test -short ./...` (test database dilewati, test lain tetap berjalan) |
 | Periksa kode Go | `go vet ./...`, lalu `gofmt -l .` (tanpa keluaran berarti sudah rapi) |
 | Jalankan server | `go run ./cmd/revioten`, atau di port lain: `go run ./cmd/revioten -addr 127.0.0.1:8081`. Hentikan dengan Ctrl+C |
 | Coba endpoint /health | `curl -i http://127.0.0.1:8080/health` (Windows: `curl.exe -i ...` atau `Invoke-RestMethod http://127.0.0.1:8080/health`) |
