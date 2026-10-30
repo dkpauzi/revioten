@@ -11,6 +11,15 @@ const statusKeys: Record<DocumentNumber['status'], MessageKey> = {
 	skipped: 'numberStatusSkipped'
 };
 
+// skippedText menulis nomor yang dilewati saat daftar sebagai set (M2.4,
+// ASUMSI E-64), dipisah koma, atau "" bila tidak ada.
+export function skippedText(numbers: DocumentNumber[]): string {
+	return numbers
+		.filter((n) => n.status === 'skipped')
+		.map((n) => n.number)
+		.join(', ');
+}
+
 // statusLabel memberi nama tampilan status nomor (R-NUM-04).
 export function statusLabel(status: DocumentNumber['status']): string {
 	return t(statusKeys[status]);

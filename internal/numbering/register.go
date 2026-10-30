@@ -197,51 +197,68 @@ func (s *Service) NextNumber(ctx context.Context, actor access.Actor, customerID
 	return pattern.Format(docType.Prefix, c.Code, seq), nil
 }
 
-// checkRegistration memeriksa isian pendaftaran: customer ada dan aktif, jenis
-// dokumen PFD, PFMEA, atau CP, revisi awal sesuai jumlah digit revisi, dan
-// kunci idempoten. Masalah input dikembalikan sebagai daftar; error hanya
-// untuk kegagalan database.
+// checkRegistration memeriksa isian pendaftaran satu nomor: customer ada dan
+// aktif, jenis dokumen PFD, PFMEA, atau CP, revisi awal sesuai jumlah digit
+// revisi, dan kunci idempoten. Masalah input dikembalikan sebagai daftar;
+// error hanya untuk kegagalan database.
 func (s *Service) checkRegistration(ctx context.Context, customerID, documentTypeID string, revision int, key string, revisionDigits int) (DocumentType, []*problem.Problem, error) {
-	var list []*problem.Problem
+	list, err := s.checkCustomer(ctx, customerID)
+	if err != nil {
+		return DocumentType{}, nil, err
+	}
+	docType, typeProblem, err := s.checkDocumentType(ctx, documentTypeID)
+	if err != nil {
+		return DocumentType{}, nil, err
+	}
+	list = append(list, typeProblem)
+	return docType, append(list, checkRevisionAndKey(revision, key, revisionDigits)...), nil
+}
+
+// checkCustomer memeriksa customer tujuan nomor: ada dan aktif.
+func (s *Service) checkCustomer(ctx context.Context, customerID string) ([]*problem.Problem, error) {
 	switch {
 	case customerID == "":
-		list = append(list, &problem.Problem{Field: "customer_id", Code: problem.Required, Message: "Choose the customer."})
+		return []*problem.Problem{{Field: "customer_id", Code: problem.Required, Message: "Choose the customer."}}, nil
 	case !db.IsUUID(customerID):
-		list = append(list, &problem.Problem{Field: "customer_id", Code: problem.InvalidFormat, Message: "Choose an existing customer."})
-	default:
-		c, err := s.q.GetCustomer(ctx, customerID)
-		switch {
-		case errors.Is(err, pgx.ErrNoRows):
-			list = append(list, &problem.Problem{Field: "customer_id", Code: problem.InvalidFormat, Message: "Choose an existing customer."})
-		case err != nil:
-			return DocumentType{}, nil, fmt.Errorf("membaca customer: %w", err)
-		case !c.Active:
-			// ASUMSI E-67: customer nonaktif tidak mendapat nomor baru, sama
-			// seperti tidak mendapat model baru (E-09).
-			list = append(list, &problem.Problem{Field: "customer_id", Code: problem.NotAllowed, Message: "This customer is inactive."})
-		}
+		return []*problem.Problem{{Field: "customer_id", Code: problem.InvalidFormat, Message: "Choose an existing customer."}}, nil
 	}
-
-	var docType DocumentType
+	c, err := s.q.GetCustomer(ctx, customerID)
 	switch {
-	case documentTypeID == "":
-		list = append(list, &problem.Problem{Field: "document_type_id", Code: problem.Required, Message: "Choose the document type."})
-	default:
-		d, err := getDocumentType(ctx, s.q, documentTypeID)
-		switch {
-		case errors.Is(err, problem.ErrNotFound):
-			list = append(list, &problem.Problem{Field: "document_type_id", Code: problem.InvalidFormat, Message: "Choose an existing document type."})
-		case err != nil:
-			return DocumentType{}, nil, err
-		case d.Key == "":
-			// Sistem hanya menomori PFD, PFMEA, dan CP (R-NUM-01). Jenis lain
-			// dari WI dicatat sebagai dokumen terkait (E-12).
-			list = append(list, &problem.Problem{Field: "document_type_id", Code: problem.NotAllowed, Message: "Only PFD, PFMEA, and CP numbers are registered here."})
-		default:
-			docType = d
-		}
+	case errors.Is(err, pgx.ErrNoRows):
+		return []*problem.Problem{{Field: "customer_id", Code: problem.InvalidFormat, Message: "Choose an existing customer."}}, nil
+	case err != nil:
+		return nil, fmt.Errorf("membaca customer: %w", err)
+	case !c.Active:
+		// ASUMSI E-67: customer nonaktif tidak mendapat nomor baru, sama
+		// seperti tidak mendapat model baru (E-09).
+		return []*problem.Problem{{Field: "customer_id", Code: problem.NotAllowed, Message: "This customer is inactive."}}, nil
 	}
+	return nil, nil
+}
 
+// checkDocumentType memeriksa jenis dokumen: hanya PFD, PFMEA, dan CP yang
+// dinomori sistem (R-NUM-01). Jenis lain dari WI dicatat sebagai dokumen
+// terkait (E-12).
+func (s *Service) checkDocumentType(ctx context.Context, documentTypeID string) (DocumentType, *problem.Problem, error) {
+	if documentTypeID == "" {
+		return DocumentType{}, &problem.Problem{Field: "document_type_id", Code: problem.Required, Message: "Choose the document type."}, nil
+	}
+	d, err := getDocumentType(ctx, s.q, documentTypeID)
+	switch {
+	case errors.Is(err, problem.ErrNotFound):
+		return DocumentType{}, &problem.Problem{Field: "document_type_id", Code: problem.InvalidFormat, Message: "Choose an existing document type."}, nil
+	case err != nil:
+		return DocumentType{}, nil, err
+	case d.Key == "":
+		return DocumentType{}, &problem.Problem{Field: "document_type_id", Code: problem.NotAllowed, Message: "Only PFD, PFMEA, and CP numbers are registered here."}, nil
+	}
+	return d, nil, nil
+}
+
+// checkRevisionAndKey memeriksa revisi awal (sesuai jumlah digit revisi di
+// master data, M2.4) dan kunci idempoten (M2.2).
+func checkRevisionAndKey(revision int, key string, revisionDigits int) []*problem.Problem {
+	var list []*problem.Problem
 	if maxRevision := pow10(revisionDigits) - 1; revision < 0 || revision > maxRevision {
 		list = append(list, &problem.Problem{Field: "initial_revision", Code: problem.InvalidFormat,
 			Message: fmt.Sprintf("Use a revision from 0 to %d.", maxRevision)})
@@ -253,7 +270,7 @@ func (s *Service) checkRegistration(ctx context.Context, customerID, documentTyp
 		list = append(list, &problem.Problem{Field: "idempotency_key", Code: problem.InvalidFormat,
 			Message: "Use 1 to 100 letters, digits, dots, colons, underscores, or hyphens."})
 	}
-	return docType, list, nil
+	return list
 }
 
 // pow10 mengembalikan 10 pangkat n.

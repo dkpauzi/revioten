@@ -73,6 +73,7 @@ type NumberingService interface {
 	GetSettings(ctx context.Context, actor access.Actor) (numbering.Settings, error)
 	UpdateSettings(ctx context.Context, actor access.Actor, in numbering.SettingsInput) (numbering.Settings, error)
 	Register(ctx context.Context, actor access.Actor, in numbering.NewNumber) (numbering.Registration, error)
+	RegisterSet(ctx context.Context, actor access.Actor, in numbering.NewSet) (numbering.Registration, error)
 	NextNumber(ctx context.Context, actor access.Actor, customerID, documentTypeID string) (string, error)
 	ListNumbers(ctx context.Context, actor access.Actor, f numbering.ListFilter) ([]numbering.DocumentNumber, string, error)
 	Void(ctx context.Context, actor access.Actor, id, reason string) (numbering.DocumentNumber, error)

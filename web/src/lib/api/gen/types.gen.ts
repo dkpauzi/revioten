@@ -534,6 +534,14 @@ export type NewDocumentNumber = {
     initial_revision?: number;
 };
 
+export type NewDocumentNumberSet = {
+    customer_id: string;
+    /**
+     * First revision of the three documents, for example 4 for -04. Default 0.
+     */
+    initial_revision?: number;
+};
+
 export type NextDocumentNumber = {
     number: string;
 };
@@ -2242,6 +2250,52 @@ export type RegisterDocumentNumberResponses = {
 };
 
 export type RegisterDocumentNumberResponse = RegisterDocumentNumberResponses[keyof RegisterDocumentNumberResponses];
+
+export type RegisterDocumentNumberSetData = {
+    body: NewDocumentNumberSet;
+    headers?: {
+        /**
+         * Required by the server (422 idempotency_key:required when missing).
+         * 1 to 100 characters - letters, digits, `.`, `:`, `_`, `-` - for example a UUID.
+         * It is kept per account.
+         *
+         */
+        'Idempotency-Key'?: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v1/document-numbers/sets';
+};
+
+export type RegisterDocumentNumberSetErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type RegisterDocumentNumberSetError = RegisterDocumentNumberSetErrors[keyof RegisterDocumentNumberSetErrors];
+
+export type RegisterDocumentNumberSetResponses = {
+    /**
+     * The Idempotency-Key was used before for the same request; the original numbers are returned.
+     */
+    200: NumberRegistration;
+    /**
+     * The set was registered.
+     */
+    201: NumberRegistration;
+};
+
+export type RegisterDocumentNumberSetResponse = RegisterDocumentNumberSetResponses[keyof RegisterDocumentNumberSetResponses];
 
 export type VoidDocumentNumberData = {
     body: StatusReason;

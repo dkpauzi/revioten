@@ -38,7 +38,9 @@ test('Penyusun mendaftarkan nomor CP dan mendapat nomor berurutan', async ({ pag
 	await logInAuthor(page, 'penyusun.nomor', ['author']);
 	await page.getByRole('link', { name: en.navNumbers }).click();
 
-	// .first(): formulir pendaftaran ada di atas saringan register yang berlabel sama.
+	// Satu nomor, bukan set. .first(): formulir pendaftaran ada di atas
+	// saringan register yang berlabel sama.
+	await page.getByLabel(en.numberAsSet).uncheck();
 	await page.getByLabel(en.numberCustomer, { exact: true }).first().selectOption({ label: 'NB · Customer NB' });
 	await page.getByLabel(en.numberType, { exact: true }).first().selectOption({ label: 'CP (SC)' });
 	await expect(page.getByText(en.numberNext.replace('{number}', 'SC-NB-001'))).toBeVisible();
@@ -78,6 +80,7 @@ test('dokumen kontrol membatalkan nomor dengan alasan, dan nomornya tetap di reg
 	// Seperti PPAP Engineer: Penyusun sekaligus Dokumen kontrol (U3 bagian 2).
 	await logInAuthor(page, 'ppap.nomor', ['author', 'document_control']);
 	await page.getByRole('link', { name: en.navNumbers }).click();
+	await page.getByLabel(en.numberAsSet).uncheck();
 	await page.getByLabel(en.numberCustomer, { exact: true }).first().selectOption({ label: 'NB · Customer NB' });
 	await page.getByLabel(en.numberType, { exact: true }).first().selectOption({ label: 'PFD (SH)' });
 	await page.getByRole('button', { name: en.numberRegister, exact: true }).click();
@@ -100,4 +103,23 @@ test('dokumen kontrol membatalkan nomor dengan alasan, dan nomornya tetap di reg
 	await page.getByLabel(en.numberFilterStatus).selectOption({ label: en.numberStatusVoid });
 	await page.getByRole('button', { name: en.numberFilterApply }).click();
 	await expect(page.getByRole('row', { name: new RegExp(`^${number} `) })).toContainText('Salah pilih customer');
+});
+
+test('Penyusun mendaftarkan set dengan revisi awal -04, dan nomor yang dilewati tercatat', async ({ page }) => {
+	await logInAuthor(page, 'penyusun.set', ['author']);
+	await page.getByRole('link', { name: en.navNumbers }).click();
+	await expect(page.getByLabel(en.numberAsSet)).toBeChecked();
+	await page.getByLabel(en.numberCustomer, { exact: true }).first().selectOption({ label: 'NB · Customer NB' });
+	await page.getByLabel(en.numberInitialRevision).fill('4');
+	await page.getByRole('button', { name: en.numberRegister, exact: true }).click();
+
+	// Test lain di file ini sudah memakai SC-NB-001 dan SC-NB-002, jadi set
+	// mendapat nomor bebas berikutnya di ketiga jenis.
+	const status = page.getByRole('status');
+	await expect(status).toContainText('SH-NB-');
+	const text = (await status.textContent()) ?? '';
+	const match = /SH-NB-(\d{3}) \(-04\), SF-NB-(\d{3}) \(-04\), SC-NB-(\d{3}) \(-04\)/.exec(text);
+	expect(match, text).not.toBeNull();
+	expect(new Set(match!.slice(1)).size).toBe(1);
+	await expect(page.getByText(en.numberSkipped.replace('{numbers}', ''))).toBeVisible();
 });

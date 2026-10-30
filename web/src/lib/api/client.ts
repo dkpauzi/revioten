@@ -32,6 +32,7 @@ import type {
 	NumberSettings,
 	NumberSettingsUpdate,
 	NewDocumentNumber,
+	NewDocumentNumberSet,
 	NextDocumentNumber,
 	NumberRegistration,
 	DocumentNumber,
@@ -260,6 +261,19 @@ export function registerDocumentNumber(
 	const init = jsonRequest('POST', input);
 	init.headers = { 'Content-Type': 'application/json', 'Idempotency-Key': key };
 	return call<NumberRegistration>(fetchFn, '/api/v1/document-numbers', init);
+}
+
+// registerDocumentNumberSet memanggil POST /api/v1/document-numbers/sets
+// (E-1, M2.4): PFD, PFMEA, dan CP dengan satu nomor berjalan. key seperti di
+// registerDocumentNumber.
+export function registerDocumentNumberSet(
+	input: NewDocumentNumberSet,
+	key: string,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<NumberRegistration>> {
+	const init = jsonRequest('POST', input);
+	init.headers = { 'Content-Type': 'application/json', 'Idempotency-Key': key };
+	return call<NumberRegistration>(fetchFn, '/api/v1/document-numbers/sets', init);
 }
 
 // NumberFilter adalah saringan register (M2.3). Field kosong tidak dikirim.

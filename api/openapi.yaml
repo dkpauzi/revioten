@@ -720,6 +720,38 @@ paths:
                 $ref: '#/components/schemas/NumberRegistration'
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/document-numbers/sets:
+    post:
+      operationId: registerDocumentNumberSet
+      summary: Register PFD, PFMEA, and CP of one model with the same running number (E-1, UC-11, R-NUM-05, M2.4)
+      description: |
+        The set takes the next running number that is free in all three
+        document types. Numbers skipped by a lagging counter are recorded with
+        status skipped, so the register has no gaps. The response lists the
+        skipped numbers too. Idempotency-Key works as for a single number.
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewDocumentNumberSet'
+      responses:
+        '201':
+          description: The set was registered.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NumberRegistration'
+        '200':
+          description: The Idempotency-Key was used before for the same request; the original numbers are returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NumberRegistration'
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/document-numbers/{documentNumberId}/void:
     post:
       operationId: voidDocumentNumber
@@ -2070,6 +2102,15 @@ components:
         initial_revision:
           type: integer
           description: First revision of the document that uses the number, for example 4 for a legacy document entering at -04 (M2.4). Default 0.
+    NewDocumentNumberSet:
+      type: object
+      required: [customer_id]
+      properties:
+        customer_id:
+          type: string
+        initial_revision:
+          type: integer
+          description: First revision of the three documents, for example 4 for -04. Default 0.
     NextDocumentNumber:
       type: object
       required: [number]

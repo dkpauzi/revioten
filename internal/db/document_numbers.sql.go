@@ -360,6 +360,32 @@ func (q *Queries) ListDocumentNumbers(ctx context.Context, arg ListDocumentNumbe
 	return items, nil
 }
 
+const lockCounter = `-- name: LockCounter :one
+INSERT INTO number_counters (customer_code, document_type_id, last_value)
+VALUES ($1, $2, $3::integer)
+ON CONFLICT (customer_code, document_type_id)
+DO UPDATE SET last_value = number_counters.last_value
+RETURNING last_value
+`
+
+type LockCounterParams struct {
+	CustomerCode   string
+	DocumentTypeID string
+	FirstValue     int32
+}
+
+// LockCounter membuat baris penghitung bila belum ada (nilai awal
+// first_value), lalu menguncinya sampai transaksi selesai dan mengembalikan
+// nilainya. Dipakai daftar sebagai set (M2.4) dan impor (M2.5), yang
+// mengunci beberapa penghitung sekaligus, selalu menurut urutan kode customer
+// lalu ID jenis dokumen, supaya dua transaksi tidak saling menunggu (deadlock).
+func (q *Queries) LockCounter(ctx context.Context, arg LockCounterParams) (int32, error) {
+	row := q.db.QueryRow(ctx, lockCounter, arg.CustomerCode, arg.DocumentTypeID, arg.FirstValue)
+	var last_value int32
+	err := row.Scan(&last_value)
+	return last_value, err
+}
+
 const lockCustomerForNumber = `-- name: LockCustomerForNumber :one
 SELECT id, code, active FROM customers WHERE id = $1 FOR SHARE
 `
@@ -417,6 +443,24 @@ func (q *Queries) NextCounterValue(ctx context.Context, arg NextCounterValuePara
 	var last_value int32
 	err := row.Scan(&last_value)
 	return last_value, err
+}
+
+const setCounter = `-- name: SetCounter :exec
+UPDATE number_counters SET last_value = greatest(last_value, $1::integer)
+WHERE customer_code = $2 AND document_type_id = $3
+`
+
+type SetCounterParams struct {
+	LastValue      int32
+	CustomerCode   string
+	DocumentTypeID string
+}
+
+// SetCounter mengganti nilai penghitung yang sudah dikunci. Penghitung tidak
+// pernah turun, jadi nomor yang sudah ada tidak pernah diberikan lagi.
+func (q *Queries) SetCounter(ctx context.Context, arg SetCounterParams) error {
+	_, err := q.db.Exec(ctx, setCounter, arg.LastValue, arg.CustomerCode, arg.DocumentTypeID)
+	return err
 }
 
 const setDocumentNumberStatus = `-- name: SetDocumentNumberStatus :exec

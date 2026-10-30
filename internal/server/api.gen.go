@@ -1083,6 +1083,14 @@ type NewDocumentNumber struct {
 	InitialRevision *int `json:"initial_revision,omitempty"`
 }
 
+// NewDocumentNumberSet defines model for NewDocumentNumberSet.
+type NewDocumentNumberSet struct {
+	CustomerId string `json:"customer_id"`
+
+	// InitialRevision First revision of the three documents, for example 4 for -04. Default 0.
+	InitialRevision *int `json:"initial_revision,omitempty"`
+}
+
 // NewModel defines model for NewModel.
 type NewModel struct {
 	CustomerId string `json:"customer_id"`
@@ -1552,6 +1560,14 @@ type GetNextDocumentNumberParams struct {
 	DocumentTypeId DocumentTypeIdQuery `form:"document_type_id" json:"document_type_id"`
 }
 
+// RegisterDocumentNumberSetParams defines parameters for RegisterDocumentNumberSet.
+type RegisterDocumentNumberSetParams struct {
+	// IdempotencyKey Required by the server (422 idempotency_key:required when missing).
+	// 1 to 100 characters - letters, digits, `.`, `:`, `_`, `-` - for example a UUID.
+	// It is kept per account.
+	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
+}
+
 // ListModelGroupsParams defines parameters for ListModelGroups.
 type ListModelGroupsParams struct {
 	// CustomerId The customer whose master data is listed.
@@ -1611,6 +1627,9 @@ type SetCustomerDefaultRouteJSONRequestBody = RouteChoice
 
 // RegisterDocumentNumberJSONRequestBody defines body for RegisterDocumentNumber for application/json ContentType.
 type RegisterDocumentNumberJSONRequestBody = NewDocumentNumber
+
+// RegisterDocumentNumberSetJSONRequestBody defines body for RegisterDocumentNumberSet for application/json ContentType.
+type RegisterDocumentNumberSetJSONRequestBody = NewDocumentNumberSet
 
 // MakeDocumentNumberObsoleteJSONRequestBody defines body for MakeDocumentNumberObsolete for application/json ContentType.
 type MakeDocumentNumberObsoleteJSONRequestBody = StatusReason
@@ -1758,6 +1777,9 @@ type ServerInterface interface {
 	// GetNextDocumentNumber The number the next registration would get, without registering it (L-2)
 	// (GET /api/v1/document-numbers/next)
 	GetNextDocumentNumber(w http.ResponseWriter, r *http.Request, params GetNextDocumentNumberParams)
+	// RegisterDocumentNumberSet Register PFD, PFMEA, and CP of one model with the same running number (E-1, UC-11, R-NUM-05, M2.4)
+	// (POST /api/v1/document-numbers/sets)
+	RegisterDocumentNumberSet(w http.ResponseWriter, r *http.Request, params RegisterDocumentNumberSetParams)
 	// MakeDocumentNumberObsolete Make a Released number obsolete, for example when it is withdrawn (E-8, UC-13)
 	// (POST /api/v1/document-numbers/{documentNumberId}/obsolete)
 	MakeDocumentNumberObsolete(w http.ResponseWriter, r *http.Request, documentNumberId DocumentNumberId)
@@ -2548,6 +2570,47 @@ func (siw *ServerInterfaceWrapper) GetNextDocumentNumber(w http.ResponseWriter, 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetNextDocumentNumber(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RegisterDocumentNumberSet operation middleware
+func (siw *ServerInterfaceWrapper) RegisterDocumentNumberSet(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RegisterDocumentNumberSetParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = &IdempotencyKey
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RegisterDocumentNumberSet(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -3493,6 +3556,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/number-settings", wrapper.UpdateNumberSettings)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/document-numbers", wrapper.ListDocumentNumbers)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/document-numbers", wrapper.RegisterDocumentNumber)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/document-numbers/sets", wrapper.RegisterDocumentNumberSet)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/document-numbers/{documentNumberId}/void", wrapper.VoidDocumentNumber)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/document-numbers/{documentNumberId}/obsolete", wrapper.MakeDocumentNumberObsolete)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/document-numbers/next", wrapper.GetNextDocumentNumber)
@@ -4620,6 +4684,60 @@ type GetNextDocumentNumberdefaultJSONResponse struct {
 }
 
 func (response GetNextDocumentNumberdefaultJSONResponse) VisitGetNextDocumentNumberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RegisterDocumentNumberSetRequestObject struct {
+	Params RegisterDocumentNumberSetParams
+	Body   *RegisterDocumentNumberSetJSONRequestBody
+}
+
+type RegisterDocumentNumberSetResponseObject interface {
+	VisitRegisterDocumentNumberSetResponse(w http.ResponseWriter) error
+}
+
+type RegisterDocumentNumberSet200JSONResponse NumberRegistration
+
+func (response RegisterDocumentNumberSet200JSONResponse) VisitRegisterDocumentNumberSetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RegisterDocumentNumberSet201JSONResponse NumberRegistration
+
+func (response RegisterDocumentNumberSet201JSONResponse) VisitRegisterDocumentNumberSetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RegisterDocumentNumberSetdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response RegisterDocumentNumberSetdefaultJSONResponse) VisitRegisterDocumentNumberSetResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -6264,6 +6382,9 @@ type StrictServerInterface interface {
 	// GetNextDocumentNumber The number the next registration would get, without registering it (L-2)
 	// (GET /api/v1/document-numbers/next)
 	GetNextDocumentNumber(ctx context.Context, request GetNextDocumentNumberRequestObject) (GetNextDocumentNumberResponseObject, error)
+	// RegisterDocumentNumberSet Register PFD, PFMEA, and CP of one model with the same running number (E-1, UC-11, R-NUM-05, M2.4)
+	// (POST /api/v1/document-numbers/sets)
+	RegisterDocumentNumberSet(ctx context.Context, request RegisterDocumentNumberSetRequestObject) (RegisterDocumentNumberSetResponseObject, error)
 	// MakeDocumentNumberObsolete Make a Released number obsolete, for example when it is withdrawn (E-8, UC-13)
 	// (POST /api/v1/document-numbers/{documentNumberId}/obsolete)
 	MakeDocumentNumberObsolete(ctx context.Context, request MakeDocumentNumberObsoleteRequestObject) (MakeDocumentNumberObsoleteResponseObject, error)
@@ -7167,6 +7288,39 @@ func (sh *strictHandler) GetNextDocumentNumber(w http.ResponseWriter, r *http.Re
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetNextDocumentNumberResponseObject); ok {
 		if err := validResponse.VisitGetNextDocumentNumberResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RegisterDocumentNumberSet operation middleware
+func (sh *strictHandler) RegisterDocumentNumberSet(w http.ResponseWriter, r *http.Request, params RegisterDocumentNumberSetParams) {
+	var request RegisterDocumentNumberSetRequestObject
+
+	request.Params = params
+
+	var body RegisterDocumentNumberSetJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RegisterDocumentNumberSet(ctx, request.(RegisterDocumentNumberSetRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RegisterDocumentNumberSet")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RegisterDocumentNumberSetResponseObject); ok {
+		if err := validResponse.VisitRegisterDocumentNumberSetResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

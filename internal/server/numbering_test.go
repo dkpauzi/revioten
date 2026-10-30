@@ -145,3 +145,15 @@ func TestRegisterEndpoints(t *testing.T) {
 		t.Errorf("obsolete: status %d, %+v", rec.Code, fake.got)
 	}
 }
+
+// TestDocumentNumberSetEndpoint: daftar sebagai set (M2.4) meneruskan
+// customer, revisi awal, dan Idempotency-Key.
+func TestDocumentNumberSetEndpoint(t *testing.T) {
+	fake := &fakeNumbering{}
+	srv := newTestServer(t, nil, Deps{Numbering: fake})
+	rec := srv.do(http.MethodPost, "/api/v1/document-numbers/sets", `{"customer_id":"c-1","initial_revision":4}`, "Idempotency-Key", "set-1")
+	want := numbering.NewSet{CustomerID: "c-1", InitialRevision: 4, IdempotencyKey: "set-1"}
+	if rec.Code != http.StatusCreated || fake.got != (called{method: "RegisterSet", input: want}) {
+		t.Errorf("set: status %d, %+v: %s", rec.Code, fake.got, rec.Body.String())
+	}
+}

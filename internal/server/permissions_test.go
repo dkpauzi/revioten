@@ -203,6 +203,7 @@ func TestPermissionsPerOperation(t *testing.T) {
 		{http.MethodGet, "/api/v1/document-numbers/next?customer_id={customerId}&document_type_id={cpTypeId}", "", http.StatusOK, http.StatusOK, http.StatusOK},
 		{http.MethodPost, "/api/v1/document-numbers", `{"customer_id":"{customerId}","document_type_id":"{cpTypeId}"}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/document-numbers?customer_id={customerId}", "", http.StatusOK, http.StatusOK, http.StatusOK},
+		{http.MethodPost, "/api/v1/document-numbers/sets", `{"customer_id":"{customerId}","initial_revision":4}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
 		// Status nomor diubah dokumen kontrol (E-8). Nomor yang dibuat setup ini Reserved.
 		{http.MethodPost, "/api/v1/document-numbers/{documentNumberId}/void", `{"reason":"Uji izin"}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodPost, "/api/v1/document-numbers/{documentNumberId}/obsolete", `{}`, http.StatusForbidden, http.StatusConflict, http.StatusForbidden},

@@ -99,3 +99,21 @@ SELECT id FROM document_numbers WHERE id = $1 FOR NO KEY UPDATE;
 
 -- name: SetDocumentNumberStatus :exec
 UPDATE document_numbers SET status = $2, status_reason = $3, status_changed_at = $4 WHERE id = $1;
+
+-- name: LockCounter :one
+-- LockCounter membuat baris penghitung bila belum ada (nilai awal
+-- first_value), lalu menguncinya sampai transaksi selesai dan mengembalikan
+-- nilainya. Dipakai daftar sebagai set (M2.4) dan impor (M2.5), yang
+-- mengunci beberapa penghitung sekaligus, selalu menurut urutan kode customer
+-- lalu ID jenis dokumen, supaya dua transaksi tidak saling menunggu (deadlock).
+INSERT INTO number_counters (customer_code, document_type_id, last_value)
+VALUES (sqlc.arg(customer_code), sqlc.arg(document_type_id), sqlc.arg(first_value)::integer)
+ON CONFLICT (customer_code, document_type_id)
+DO UPDATE SET last_value = number_counters.last_value
+RETURNING last_value;
+
+-- name: SetCounter :exec
+-- SetCounter mengganti nilai penghitung yang sudah dikunci. Penghitung tidak
+-- pernah turun, jadi nomor yang sudah ada tidak pernah diberikan lagi.
+UPDATE number_counters SET last_value = greatest(last_value, sqlc.arg(last_value)::integer)
+WHERE customer_code = sqlc.arg(customer_code) AND document_type_id = sqlc.arg(document_type_id);

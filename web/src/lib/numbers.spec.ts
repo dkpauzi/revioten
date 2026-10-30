@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { DocumentNumber } from './api/gen/index.ts';
 import { en } from './i18n/en.ts';
-import { canObsolete, canVoid, registeredText, reservedDays, statusLabel } from './numbers.ts';
+import { canObsolete, canVoid, registeredText, reservedDays, skippedText, statusLabel } from './numbers.ts';
 
 // number membuat satu nomor contoh; hanya field yang dipakai yang diisi berbeda.
 function number(text: string, revision: number, status: DocumentNumber['status'] = 'reserved'): DocumentNumber {
@@ -28,8 +28,11 @@ describe('teks register nomor', () => {
 		expect(registeredText([number('SH-AB-004', 4), number('SC-AB-004', 4)])).toBe('SH-AB-004 (-04), SC-AB-004 (-04)');
 	});
 
-	it('tidak menyebut nomor yang dilewati', () => {
-		expect(registeredText([number('SH-AB-002', 0, 'skipped'), number('SH-AB-003', 0)])).toBe('SH-AB-003');
+	it('tidak menyebut nomor yang dilewati, tapi menulisnya terpisah', () => {
+		const set = [number('SH-AB-002', 0, 'skipped'), number('SH-AB-003', 0)];
+		expect(registeredText(set)).toBe('SH-AB-003');
+		expect(skippedText(set)).toBe('SH-AB-002');
+		expect(skippedText([number('SC-AB-001', 0)])).toBe('');
 	});
 });
 

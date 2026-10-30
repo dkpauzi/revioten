@@ -85,6 +85,7 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-61 | Satu pola nomor untuk semua jenis dokumen dan customer | Ambigu | M2.1, M2.5 | Tidak | Terbuka |
 | E-62 | Isi register dan pengingat nomor Reserved yang terlalu lama | Celah | M2.3, M4.1 | Tidak | Terbuka |
 | E-63 | Kunci idempoten di UI API: cakupan, umur, dan pemakaian ulang | Celah | M2.2, M9.4 | Tidak | Terbuka |
+| E-64 | Nomor yang dilewati saat daftar sebagai set | Kontradiksi | M2.4 | Tidak | Terbuka |
 | E-67 | Pendaftaran nomor untuk customer nonaktif | Celah | M2.1 | Tidak | Terbuka |
 | E-68 | Perubahan status nomor yang dikerjakan tangan di Tahap 2, dan alasannya | Ambigu | M2.3, M4.1, M6.7 | Tidak | Terbuka |
 
@@ -1093,6 +1094,20 @@ Salin blok ini untuk setiap temuan baru.
 - **Opsi:** (a) Kunci dibuat klien untuk setiap pendaftaran baru (layar memakai UUID), berlaku per akun, dan disimpan selamanya bersama catatan permintaan. Kunci yang sama dengan isi yang sama mendapat hasil lama (200); dengan isi berbeda ditolak (422, `idempotency_key:taken`). (b) Seperti (a), tapi kunci dibuang setelah N hari. (c) Kunci berlaku untuk seluruh sistem.
 - **Rekomendasi Claude Code (usulan):** (a) untuk UI API, karena jumlah pendaftaran kecil dan catatannya berguna untuk audit. Lama simpan untuk API integrasi ditetapkan di M9.4.
 - **Asumsi sementara di kode (ASUMSI E-63):** (a), di `internal/numbering/register.go` dan tabel `number_batches`.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-64 · Nomor yang dilewati saat daftar sebagai set
+
+- **Tanggal dan milestone:** 30 Oktober 2026, M2.4.
+- **Jenis:** Kontradiksi
+- **Rujukan:** R-NUM-03 (tanpa lubang), R-NUM-05, Q-05, milestone M2.4 (usulan: status Dilewati, atau satu penghitung per customer untuk set).
+- **Temuan:** R-NUM-05 mengambil nomor bebas berikutnya di ketiga jenis, sehingga penghitung yang tertinggal melompati nomor, padahal R-NUM-03 menuntut tanpa lubang. Brief dan milestone sudah menyebut masalah ini tanpa memutuskannya.
+- **Dampak bila dibiarkan:** register berlubang, dan laporan lubang di impor (M2.5) tidak bisa membedakan nomor yang hilang dari nomor yang sengaja dilewati.
+- **Opsi:** (a) Nomor yang dilewati dicatat dengan status Skipped (usulan pertama milestone, istilah "Dilewati"); tidak pernah diberikan lagi. (b) Satu penghitung per customer untuk set, sehingga ketiga jenis selalu sejajar. (c) Set hanya boleh bila ketiga penghitung sudah sejajar.
+- **Rekomendasi Claude Code (usulan):** (a). Register tetap tanpa lubang, penghitung per jenis tetap sesuai R-NUM-03 dan D-93, dan nomor tunggal (yang masih dipakai untuk register lama yang tidak sejajar) tetap bisa didaftarkan. Opsi (b) mengubah penghitung yang sudah diputuskan, dan opsi (c) membuat set tidak pernah bisa dipakai untuk customer dengan register lama yang tidak sejajar.
+- **Asumsi sementara di kode (ASUMSI E-64):** (a), di `internal/numbering/set.go` dan status `skipped` di `document_numbers`. Di layar, istilahnya "Skipped" (bahasa layar Inggris, D-96).
 - **Menghambat milestone?** Tidak
 - **Status:** Terbuka
 - **Keputusan pemilik:**

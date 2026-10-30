@@ -8,12 +8,13 @@
 		getNextDocumentNumber,
 		listCustomers,
 		listDocumentTypes,
-		registerDocumentNumber
+		registerDocumentNumber,
+		registerDocumentNumberSet
 	} from '#lib/api/client.ts';
 	import type { Customer, DocumentType } from '#lib/api/gen/index.ts';
 	import { failureText, problemText } from '#lib/errors.ts';
 	import { t } from '#lib/i18n/index.ts';
-	import { registeredText } from '#lib/numbers.ts';
+	import { registeredText, skippedText } from '#lib/numbers.ts';
 	import RegisterSection from '#lib/numbers/RegisterSection.svelte';
 	import { can } from '#lib/session.svelte.ts';
 
@@ -28,7 +29,9 @@
 	// Hanya customer aktif yang mendapat nomor baru (ASUMSI E-67).
 	let activeCustomers = $derived((customers ?? []).filter((c) => c.active));
 
-	// Formulir pendaftaran.
+	// Formulir pendaftaran. Daftar sebagai set dicentang dulu, karena sebagian
+	// besar dokumen satu model berbagi satu nomor (R-NUM-05, M2.4).
+	let asSet = $state(true);
 	let customerId = $state('');
 	let typeId = $state('');
 	// Kotak angka memberi null bila dikosongkan; null dikirim sebagai 0.
@@ -36,6 +39,7 @@
 	let next = $state('');
 	let fieldErrors = $state<Record<string, string>>({});
 	let message = $state('');
+	let skipped = $state('');
 	let failure = $state('');
 	// Idempotency-Key untuk pendaftaran yang sedang diisi. Kunci yang sama
 	// dipakai lagi bila pendaftaran ini dikirim ulang (misalnya setelah jaringan
@@ -63,7 +67,7 @@
 	// dokumen sudah dipilih. Nomor sebenarnya ditentukan saat mendaftar.
 	async function showNext() {
 		next = '';
-		if (customerId === '' || typeId === '') {
+		if (asSet || customerId === '' || typeId === '') {
 			return;
 		}
 		const result = await getNextDocumentNumber(customerId, typeId);
@@ -76,11 +80,12 @@
 		event.preventDefault();
 		fieldErrors = {};
 		message = '';
+		skipped = '';
 		failure = '';
-		const result = await registerDocumentNumber(
-			{ customer_id: customerId, document_type_id: typeId, initial_revision: initialRevision ?? 0 },
-			key
-		);
+		const revision = initialRevision ?? 0;
+		const result = asSet
+			? await registerDocumentNumberSet({ customer_id: customerId, initial_revision: revision }, key)
+			: await registerDocumentNumber({ customer_id: customerId, document_type_id: typeId, initial_revision: revision }, key);
 		if (!result.ok) {
 			const details = result.error.body?.details ?? [];
 			fieldErrors = Object.fromEntries(details.map((d) => [d.field, problemText(d)]));
@@ -90,6 +95,7 @@
 			return;
 		}
 		message = t('numberRegistered', { numbers: registeredText(result.data.items) });
+		skipped = skippedText(result.data.items);
 		key = crypto.randomUUID();
 		refresh += 1;
 		await showNext();
@@ -111,6 +117,7 @@
 	<section>
 		<h2>{t('numberRegisterTitle')}</h2>
 		{#if message}<p role="status">{message}</p>{/if}
+		{#if skipped}<p>{t('numberSkipped', { numbers: skipped })}</p>{/if}
 		{#if failure}<p class="error" role="alert">{failure}</p>{/if}
 		{#if fieldErrors.idempotency_key}<p class="error" role="alert">{fieldErrors.idempotency_key}</p>{/if}
 		<form class="add" onsubmit={register} novalidate>
@@ -124,16 +131,18 @@
 				</select>
 				{#if fieldErrors.customer_id}<p class="error">{fieldErrors.customer_id}</p>{/if}
 			</div>
-			<div class="field">
-				<label for="number-type">{t('numberType')}</label>
-				<select id="number-type" bind:value={typeId} onchange={showNext}>
-					<option value="">{t('numberTypeChoose')}</option>
-					{#each types as d (d.id)}
-						<option value={d.id}>{d.name} ({d.prefix})</option>
-					{/each}
-				</select>
-				{#if fieldErrors.document_type_id}<p class="error">{fieldErrors.document_type_id}</p>{/if}
-			</div>
+			{#if !asSet}
+				<div class="field">
+					<label for="number-type">{t('numberType')}</label>
+					<select id="number-type" bind:value={typeId} onchange={showNext}>
+						<option value="">{t('numberTypeChoose')}</option>
+						{#each types as d (d.id)}
+							<option value={d.id}>{d.name} ({d.prefix})</option>
+						{/each}
+					</select>
+					{#if fieldErrors.document_type_id}<p class="error">{fieldErrors.document_type_id}</p>{/if}
+				</div>
+			{/if}
 			<div class="field">
 				<label for="number-revision">{t('numberInitialRevision')}</label>
 				<input id="number-revision" type="number" min="0" bind:value={initialRevision} />
@@ -141,8 +150,12 @@
 			</div>
 			<button type="submit">{t('numberRegister')}</button>
 		</form>
-		<p class="hint">{t('numberInitialRevisionHint')}</p>
-		{#if next}<p>{t('numberNext', { number: next })}</p>{/if}
+		<label class="check">
+			<input type="checkbox" bind:checked={asSet} onchange={showNext} />
+			{t('numberAsSet')}
+		</label>
+		<p class="hint">{asSet ? t('numberSetHint') : t('numberInitialRevisionHint')}</p>
+		{#if next && !asSet}<p>{t('numberNext', { number: next })}</p>{/if}
 	</section>
 {/if}
 
@@ -175,5 +188,10 @@
 
 	.hint {
 		color: #555;
+	}
+
+	.check {
+		display: block;
+		margin-top: 0.5rem;
 	}
 </style>

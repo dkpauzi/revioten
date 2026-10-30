@@ -92,6 +92,22 @@ func (a *apiServer) MakeDocumentNumberObsolete(ctx context.Context, req MakeDocu
 	return MakeDocumentNumberObsolete200JSONResponse(toAPIDocumentNumber(n)), nil
 }
 
+// RegisterDocumentNumberSet menjawab POST /api/v1/document-numbers/sets (M2.4).
+func (a *apiServer) RegisterDocumentNumberSet(ctx context.Context, req RegisterDocumentNumberSetRequestObject) (RegisterDocumentNumberSetResponseObject, error) {
+	in := numbering.NewSet{CustomerID: req.Body.CustomerId, IdempotencyKey: deref(req.Params.IdempotencyKey)}
+	if req.Body.InitialRevision != nil {
+		in.InitialRevision = *req.Body.InitialRevision
+	}
+	reg, err := a.numbering.RegisterSet(ctx, actorFrom(ctx), in)
+	if err != nil {
+		return nil, err
+	}
+	if reg.Replayed {
+		return RegisterDocumentNumberSet200JSONResponse(toAPIRegistration(reg)), nil
+	}
+	return RegisterDocumentNumberSet201JSONResponse(toAPIRegistration(reg)), nil
+}
+
 // GetNextDocumentNumber menjawab GET /api/v1/document-numbers/next.
 func (a *apiServer) GetNextDocumentNumber(ctx context.Context, req GetNextDocumentNumberRequestObject) (GetNextDocumentNumberResponseObject, error) {
 	number, err := a.numbering.NextNumber(ctx, actorFrom(ctx), req.Params.CustomerId, req.Params.DocumentTypeId)

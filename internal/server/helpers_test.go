@@ -241,6 +241,11 @@ func (f *fakeNumbering) Register(_ context.Context, _ access.Actor, in numbering
 	return f.registration, f.err
 }
 
+func (f *fakeNumbering) RegisterSet(_ context.Context, _ access.Actor, in numbering.NewSet) (numbering.Registration, error) {
+	f.got = called{method: "RegisterSet", input: in}
+	return f.registration, f.err
+}
+
 func (f *fakeNumbering) NextNumber(_ context.Context, _ access.Actor, customerID, documentTypeID string) (string, error) {
 	f.got = called{method: "NextNumber", id: customerID, input: documentTypeID}
 	return f.next, f.err
