@@ -81,6 +81,7 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-57 | Kolom baris UC-02 di daftar use case bergeser | Celah | UML | Tidak | Diperbaiki |
 | E-58 | README UML usang (U10 dan pertanyaan terbuka) | Celah | UML | Tidak | Diperbaiki |
 | E-59 | README di root repo hampir kosong | Celah | Repo | Tidak | Diperbaiki |
+| E-60 | Jadwal, retensi, dan penyimpanan passphrase backup belum ditetapkan | Celah | M1.7, M8.2, M8.4 | Tidak | Terbuka |
 
 ## Keputusan 30 Oktober 2026
 
@@ -1032,6 +1033,20 @@ Salin blok ini untuk setiap temuan baru.
 - **Menghambat milestone?** Tidak
 - **Status:** Diperbaiki (30 Oktober 2026).
 - **Keputusan pemilik:** tidak perlu (perbaikan teks).
+
+### E-60 · Jadwal, retensi, dan penyimpanan passphrase backup belum ditetapkan
+
+- **Tanggal dan milestone:** 30 Oktober 2026, M1.7. Berdampak ke M8.2 dan dokumen IT (M8.4).
+- **Jenis:** Celah
+- **Rujukan:** D-119, M1.7, M8.2, R-SEC-04, RK-23, RK-49, Q-18.
+- **Temuan:** M1.7 meminta backup harian terenkripsi ke disk lain. Belum ada aturan untuk tiga hal: (1) apa yang menjalankan backup setiap hari, aplikasi sendiri atau penjadwal sistem operasi; (2) berapa lama dan berapa banyak backup disimpan (Q-18 hanya membahas revisi dan lampiran); (3) di mana passphrase disimpan: di `.env` bersama password database, sehingga backup bisa berjalan tanpa orang, atau hanya diketik saat backup.
+- **Dampak bila dibiarkan:** backup menumpuk tanpa batas di disk tujuan, atau backup harian berhenti tanpa ada yang tahu.
+- **Opsi:** (a) Penjadwal sistem operasi (Task Scheduler di Windows, cron di Linux) menjalankan `revioten backup`; backup lama dihapus tangan oleh pemilik; passphrase di `.env`, dengan salinan di tempat lain. (b) Server menjalankan backup sendiri lewat job queue (River) dan membuang backup yang lebih tua dari N hari. (c) Seperti (a), ditambah perintah untuk membuang backup lama.
+- **Rekomendasi Claude Code (usulan):** (a) untuk demo localhost. Opsi (b) dibahas di dokumen IT (M8.4), karena versi IT memakai sistem backup perusahaan.
+- **Asumsi sementara di kode (ASUMSI E-60):** (a), di `internal/backup/backup.go`. Langkah Task Scheduler ditulis di catatan M1.7 dan belum dicoba di komputer pemilik.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
 
 ## Keputusan pemilik atas pertanyaan terbuka brief (bagian 12)
 

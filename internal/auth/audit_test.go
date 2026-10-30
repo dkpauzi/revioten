@@ -130,10 +130,18 @@ func TestAuditTrail(t *testing.T) {
 }
 
 // TestAuditLockAndDisable: kunci sementara dan penonaktifan karena gagal login
-// berulang tercatat di rincian entri login_failed.
+// berulang tercatat di rincian entri login_failed. Penonaktifan hanya untuk
+// akun kerja; akun admin hanya dikunci (E-22, D-101).
 func TestAuditLockAndDisable(t *testing.T) {
 	s, _ := newServiceWithAdmin(t)
 	ctx := t.Context()
+	admin, _, err := s.Login(ctx, adminLogin, adminPassword)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := s.CreateAccount(ctx, admin, NewAccount{PersonName: "Penyusun Uji", Kind: KindWork, Login: "penyusun.uji"}); err != nil {
+		t.Fatal(err)
+	}
 	for range lockThreshold {
 		if _, _, err := s.Login(ctx, adminLogin, "bukan password yang benar"); err == nil {
 			t.Fatal("login dengan password salah berhasil")
@@ -149,20 +157,25 @@ func TestAuditLockAndDisable(t *testing.T) {
 		t.Errorf("entri terakhir: %s %s", last.Action, last.Details)
 	}
 
-	// Satu percobaan sebelum batas penonaktifan (100 kali gagal).
+	// Satu percobaan sebelum batas penonaktifan (100 kali gagal), untuk kedua akun.
 	if _, err := s.pool.Exec(ctx, "UPDATE accounts SET failed_logins = $1, locked_until = NULL", disableThreshold-1); err != nil {
 		t.Fatal(err)
 	}
-	if _, _, err := s.Login(ctx, adminLogin, "bukan password yang benar"); err == nil {
-		t.Fatal("login dengan password salah berhasil")
-	}
-	rows, err = db.New(s.pool).ListAuditChain(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	last = rows[len(rows)-1]
-	if !strings.Contains(last.Details, `"disabled":"true"`) {
-		t.Errorf("penonaktifan tidak tercatat: %s", last.Details)
+	for _, tc := range []struct{ login, want, notWant string }{
+		{"penyusun.uji", `"disabled":"true"`, `"locked_until":`},
+		{adminLogin, `"locked_until":`, `"disabled"`},
+	} {
+		if _, _, err := s.Login(ctx, tc.login, "bukan password yang benar"); err == nil {
+			t.Fatal("login dengan password salah berhasil")
+		}
+		rows, err = db.New(s.pool).ListAuditChain(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		last = rows[len(rows)-1]
+		if !strings.Contains(last.Details, tc.want) || strings.Contains(last.Details, tc.notWant) {
+			t.Errorf("%s: rincian kegagalan ke-100 %s, ingin memuat %s", tc.login, last.Details, tc.want)
+		}
 	}
 }
 

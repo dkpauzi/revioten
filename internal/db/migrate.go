@@ -38,3 +38,16 @@ func Migrate(ctx context.Context, pool *pgxpool.Pool) error {
 	}
 	return nil
 }
+
+// SchemaVersion mengembalikan nomor migrasi terakhir yang sudah dijalankan di
+// database, misalnya 9 untuk 00009_single_holder_positions.sql. Dicatat di
+// manifest backup (M1.7), supaya jelas versi program mana yang cocok dengan
+// isi backup.
+func SchemaVersion(ctx context.Context, pool *pgxpool.Pool) (int64, error) {
+	var version int64
+	err := pool.QueryRow(ctx, "SELECT coalesce(max(version_id), 0) FROM goose_db_version WHERE is_applied").Scan(&version)
+	if err != nil {
+		return 0, fmt.Errorf("membaca versi skema: %w", err)
+	}
+	return version, nil
+}

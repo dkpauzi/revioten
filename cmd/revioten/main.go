@@ -10,6 +10,8 @@
 //	go run ./cmd/revioten reset-admin-password -login admin.nama
 //	                                             membuka akun admin yang lupa
 //	                                             password atau terkunci (E-22)
+//	go run ./cmd/revioten backup                 backup terenkripsi ke BACKUP_DIR (M1.7)
+//	go run ./cmd/revioten restore -file <file>   pulihkan backup ke database baru (M1.7)
 package main
 
 import (
@@ -53,6 +55,10 @@ func run(args []string) error {
 			return runCreateAdmin(args[1:], os.Stdin, os.Stdout)
 		case "reset-admin-password":
 			return runResetAdmin(args[1:], os.Stdout)
+		case "backup":
+			return runBackup(args[1:], os.Stdout)
+		case "restore":
+			return runRestore(args[1:], os.Stdout)
 		}
 	}
 	return runServer(args)

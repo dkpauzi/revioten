@@ -87,3 +87,21 @@ func hmacSHA256(key []byte, message string) []byte {
 	mac.Write([]byte(message))
 	return mac.Sum(nil)
 }
+
+// EnsureAppRole membuat role aplikasi bila belum ada, sama seperti migrasi
+// 00004. Dipakai restore (M1.7): isi backup memuat GRANT untuk role ini, dan
+// server PostgreSQL di komputer lain belum tentu punya role itu. Password-nya
+// dipasang server saat mulai (SetAppRolePassword).
+func EnsureAppRole(ctx context.Context, owner *pgxpool.Pool) error {
+	_, err := owner.Exec(ctx, `DO $$
+BEGIN
+    IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'revioten_app') THEN
+        CREATE ROLE revioten_app LOGIN;
+    END IF;
+END
+$$`)
+	if err != nil {
+		return fmt.Errorf("menyiapkan role %s: %w", AppRole, err)
+	}
+	return nil
+}

@@ -7,6 +7,11 @@ SELECT pg_advisory_xact_lock($1);
 -- GetAuditChainHead mengambil entri terakhir rantai: nomor urut dan hash-nya.
 SELECT seq, hash FROM audit_log ORDER BY seq DESC LIMIT 1;
 
+-- name: GetAuditHash :one
+-- GetAuditHash mengambil hash satu entri, untuk mencocokkan ujung rantai yang
+-- dicatat di manifest backup (M1.7).
+SELECT hash FROM audit_log WHERE seq = $1;
+
 -- name: InsertAuditEntry :exec
 INSERT INTO audit_log (
     seq, occurred_at, actor_type, actor_account_id, actor_person_id, request_id, source_ip,

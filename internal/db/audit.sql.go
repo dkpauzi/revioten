@@ -27,6 +27,19 @@ func (q *Queries) GetAuditChainHead(ctx context.Context) (GetAuditChainHeadRow, 
 	return i, err
 }
 
+const getAuditHash = `-- name: GetAuditHash :one
+SELECT hash FROM audit_log WHERE seq = $1
+`
+
+// GetAuditHash mengambil hash satu entri, untuk mencocokkan ujung rantai yang
+// dicatat di manifest backup (M1.7).
+func (q *Queries) GetAuditHash(ctx context.Context, seq int64) (string, error) {
+	row := q.db.QueryRow(ctx, getAuditHash, seq)
+	var hash string
+	err := row.Scan(&hash)
+	return hash, err
+}
+
 const insertAuditEntry = `-- name: InsertAuditEntry :exec
 INSERT INTO audit_log (
     seq, occurred_at, actor_type, actor_account_id, actor_person_id, request_id, source_ip,

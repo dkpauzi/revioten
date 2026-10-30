@@ -22,6 +22,14 @@ type config struct {
 	AppURL string
 	// AppPassword adalah password role aplikasi dari APP_DB_PASSWORD.
 	AppPassword string
+	// OwnerUser dan Database adalah nama user pemilik dan nama database dari
+	// alamat pemilik. Tidak rahasia. Dipakai perintah backup (M1.7).
+	OwnerUser string
+	Database  string
+	// BackupDir dan BackupPassphrase dari BACKUP_DIR dan BACKUP_PASSPHRASE.
+	// Tidak wajib untuk server; perintah backup dan restore memeriksanya.
+	BackupDir        string
+	BackupPassphrase string
 }
 
 // loadConfig membaca pengaturan dari environment dan dari file .env.
@@ -97,7 +105,23 @@ func loadConfig(getenv func(string) string, envFile string) (config, error) {
 	if ownerURL == "" {
 		ownerURL = owner.String()
 	}
-	return config{OwnerURL: ownerURL, AppURL: app.String(), AppPassword: get("APP_DB_PASSWORD")}, nil
+	return config{
+		OwnerURL: ownerURL, AppURL: app.String(), AppPassword: get("APP_DB_PASSWORD"),
+		OwnerUser: owner.User.Username(), Database: strings.TrimPrefix(owner.Path, "/"),
+		BackupDir: get("BACKUP_DIR"), BackupPassphrase: get("BACKUP_PASSPHRASE"),
+	}, nil
+}
+
+// withDatabase mengganti nama database di alamat database ownerURL. Dipakai
+// restore (M1.7) untuk membuka database hasil restore.
+func withDatabase(ownerURL, database string) string {
+	u, err := url.Parse(ownerURL)
+	if err != nil {
+		// ownerURL sudah diperiksa loadConfig, jadi ini hanya terjadi bila ada bug.
+		return ""
+	}
+	u.Path = "/" + database
+	return u.String()
 }
 
 // parseEnvFile membaca isi file .env dengan aturan yang sama dengan Docker

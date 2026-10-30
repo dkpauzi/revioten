@@ -3,10 +3,12 @@ package audit
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/dkpauzi/revioten/internal/access"
@@ -95,7 +97,15 @@ func (s *Service) Verify(ctx context.Context, actor access.Actor) (Verification,
 	if err := s.authz.Authorize(ctx, actor, access.ViewAuditLog, access.Resource{}); err != nil {
 		return Verification{}, err
 	}
-	rows, err := s.q.ListAuditChain(ctx)
+	return VerifyChain(ctx, s.q)
+}
+
+// VerifyChain memeriksa seluruh rantai di database q, tanpa pemeriksaan izin.
+// Hanya untuk perintah di komputer server, misalnya restore (M1.7), yang
+// berjalan tanpa akun, sama seperti create-admin (E-07). Layar dan API selalu
+// lewat Service.Verify.
+func VerifyChain(ctx context.Context, q *db.Queries) (Verification, error) {
+	rows, err := q.ListAuditChain(ctx)
 	if err != nil {
 		return Verification{}, fmt.Errorf("membaca rantai audit: %w", err)
 	}
@@ -104,6 +114,32 @@ func (s *Service) Verify(ctx context.Context, actor access.Actor) (Verification,
 		chain = append(chain, fieldsOf(r))
 	}
 	return verifyChain(chain), nil
+}
+
+// ChainHead mengembalikan ujung rantai: nomor urut dan hash entri terakhir.
+// Untuk rantai yang masih kosong hasilnya 0 dan "". Dipakai backup (M1.7)
+// untuk mencatat ujung rantai di luar database (R-SEC-03, D-119).
+func ChainHead(ctx context.Context, q *db.Queries) (int64, string, error) {
+	head, err := q.GetAuditChainHead(ctx)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return 0, "", nil
+	}
+	if err != nil {
+		return 0, "", fmt.Errorf("membaca ujung rantai audit: %w", err)
+	}
+	return head.Seq, head.Hash, nil
+}
+
+// HashAt mengembalikan hash entri bernomor seq, atau "" bila entri itu tidak ada.
+func HashAt(ctx context.Context, q *db.Queries, seq int64) (string, error) {
+	hash, err := q.GetAuditHash(ctx, seq)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", nil
+	}
+	if err != nil {
+		return "", fmt.Errorf("membaca entri audit %d: %w", seq, err)
+	}
+	return hash, nil
 }
 
 // detailsOf membaca rincian JSON. Rincian yang bukan JSON (hanya mungkin bila

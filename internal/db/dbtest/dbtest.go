@@ -20,6 +20,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"io"
 	"net/url"
 	"os"
 	"sync/atomic"
@@ -28,6 +29,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/testcontainers/testcontainers-go"
+	tcexec "github.com/testcontainers/testcontainers-go/exec"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 
 	"github.com/dkpauzi/revioten/internal/db"
@@ -42,6 +44,8 @@ const templateDB = "revioten_template"
 const appPassword = "PasswordAplikasiUji2026"
 
 var (
+	// container adalah container PostgreSQL yang dinyalakan Main. Nil bila -short.
+	container *postgres.PostgresContainer
 	// serverURL adalah alamat container, diisi Main. Kosong bila -short.
 	serverURL string
 	// counter membuat nama database test yang berbeda-beda.
@@ -59,9 +63,10 @@ func Main(m *testing.M) int {
 	}
 
 	ctx := context.Background()
-	container, err := postgres.Run(ctx, "postgres:18.6",
+	var err error
+	container, err = postgres.Run(ctx, "postgres:18.6",
 		postgres.WithDatabase(templateDB),
-		postgres.WithUsername("test"),
+		postgres.WithUsername(ownerUser),
 		postgres.WithPassword("test"),
 		postgres.BasicWaitStrategies(),
 	)
@@ -170,4 +175,43 @@ func appURL(name string) string {
 	u, _ := url.Parse(ownerURL(name))
 	u.User = url.UserPassword(db.AppRole, appPassword)
 	return u.String()
+}
+
+// ownerUser adalah user pemilik database di container test.
+const ownerUser = "test"
+
+// OwnerUser mengembalikan nama user pemilik database di container test,
+// misalnya untuk pg_dump -U (M1.7).
+func OwnerUser() string {
+	return ownerUser
+}
+
+// ConnectOwner membuka pool ke database name sebagai pemilik. Pemanggil
+// menutup pool-nya sendiri.
+func ConnectOwner(ctx context.Context, name string) (*pgxpool.Pool, error) {
+	return db.Connect(ctx, ownerURL(name))
+}
+
+// Exec menjalankan perintah di dalam container test, misalnya pg_dump (M1.7).
+// Bila kode keluarnya bukan 0, error memuat keluaran perintah.
+func Exec(ctx context.Context, cmd ...string) error {
+	code, out, err := container.Exec(ctx, cmd, tcexec.Multiplexed())
+	if err != nil {
+		return fmt.Errorf("menjalankan %s di container: %w", cmd[0], err)
+	}
+	if code != 0 {
+		text, _ := io.ReadAll(out)
+		return fmt.Errorf("%s keluar dengan kode %d: %s", cmd[0], code, text)
+	}
+	return nil
+}
+
+// CopyFromContainer membuka file di dalam container test untuk dibaca.
+func CopyFromContainer(ctx context.Context, path string) (io.ReadCloser, error) {
+	return container.CopyFileFromContainer(ctx, path)
+}
+
+// CopyToContainer menulis data sebagai file di dalam container test.
+func CopyToContainer(ctx context.Context, data []byte, path string) error {
+	return container.CopyToContainer(ctx, data, path, 0o644)
 }

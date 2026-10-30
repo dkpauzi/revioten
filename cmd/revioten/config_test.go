@@ -175,3 +175,44 @@ func TestParseEnvFileInvalidLine(t *testing.T) {
 		t.Errorf("pesan %q harus menyebut baris 2 tanpa isinya", err.Error())
 	}
 }
+
+// TestLoadConfigBackup: pengaturan backup (M1.7) dibaca dari .env tapi tidak
+// wajib untuk server. Nama user pemilik dan nama database diambil dari alamat
+// pemilik, juga bila alamat itu ditulis lewat DATABASE_URL.
+func TestLoadConfigBackup(t *testing.T) {
+	cfg, err := loadConfig(fakeEnv(nil), writeEnvFile(t, sampleEnv+"BACKUP_DIR=D:/backup-revioten\nBACKUP_PASSPHRASE=sapi perah di ladang jagung\n"))
+	if err != nil {
+		t.Fatalf("loadConfig: %v", err)
+	}
+	if cfg.BackupDir != "D:/backup-revioten" || cfg.BackupPassphrase != "sapi perah di ladang jagung" ||
+		cfg.OwnerUser != "revioten" || cfg.Database != "revioten" {
+		t.Errorf("hasil %+v", cfg)
+	}
+
+	env := fakeEnv(map[string]string{"DATABASE_URL": "postgres://pemilik:rahasia@127.0.0.1:5432/demo?sslmode=disable"})
+	cfg, err = loadConfig(env, writeEnvFile(t, "APP_DB_PASSWORD=PasswordAplikasiUji2026\n"))
+	if err != nil {
+		t.Fatalf("loadConfig dengan DATABASE_URL: %v", err)
+	}
+	if cfg.OwnerUser != "pemilik" || cfg.Database != "demo" || cfg.BackupDir != "" {
+		t.Errorf("hasil dengan DATABASE_URL %+v", cfg)
+	}
+	if got := withDatabase(cfg.OwnerURL, "revioten_restore"); got != "postgres://pemilik:rahasia@127.0.0.1:5432/revioten_restore?sslmode=disable" {
+		t.Errorf("withDatabase %q", got)
+	}
+}
+
+// TestBackupFlags: restore wajib diberi -file, dan nama database bawaannya
+// tidak pernah sama dengan database yang sedang dipakai.
+func TestBackupFlags(t *testing.T) {
+	if _, err := parseRestoreFlags(nil, &strings.Builder{}); err == nil {
+		t.Error("restore tanpa -file harus ditolak")
+	}
+	opts, err := parseRestoreFlags([]string{"-file", "D:/backup/revioten-20261030-134500.dump.age"}, &strings.Builder{})
+	if err != nil {
+		t.Fatalf("parseRestoreFlags: %v", err)
+	}
+	if opts.database != "revioten_restore" || opts.envFile != ".env" {
+		t.Errorf("hasil %+v", opts)
+	}
+}
