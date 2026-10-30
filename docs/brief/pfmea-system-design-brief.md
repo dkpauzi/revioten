@@ -1,7 +1,7 @@
 # PFMEA / Control Plan / PFD Web System: Design Brief for AI Collaborators
 
-- Version: 1.15
-- Date: 2026-10-27
+- Version: 1.16
+- Date: 2026-10-30
 - Status: living document. Update it whenever a decision changes, and mark replaced items [SUPERSEDED].
 - Owner language: Indonesian. This brief is in English for precision and to match the earlier spec package. Domain terms stay in Indonesian where they matter (section 3).
 
@@ -51,7 +51,7 @@ Context
 - The owner's code is a personal learning project, not company development. The company deliverable is the specification and UML. Company IT may build its own version from the UML (D-33). The personal version runs on localhost for demos (D-36), and all code, including stages 9 and 10, is written as practice (D-37). The work started with the UML (D-43). From 2026-10-27 the code is built in parallel with the remaining UML work and is used to evaluate the design (D-77). Only stable versions of the tech stack are used (D-44). Scope stays PFD, PFMEA, and CP. The system is API-first, so other applications (for example for other PPAP documents such as the PSW) can be combined later (D-61).
 - Expected scale (assumption inherited from the earlier spec): 10 to 50 concurrent internal users. See Q-21.
 - Workflow positions [DECIDED] (D-45 to D-56), named as in the NPI department organization chart (update date 2026-01-22): the PPAP Engineer, the PPAP Staff, the Project Leader, and the Project Engineer may prepare and update PFD, PFMEA, and CP (D-63, D-67). One person checks: the Project Engineer or the Project Leader of the customer's project group, never the preparer. The NPI Manager, then the QA QC Manager, then the final approver approve. The final slot is called GM and is held by the Advisor today, possibly by the Factory Manager later. The route ends at the QA QC Manager or at the GM slot. Change requests are verified by the Project Engineer or the Project Leader of the customer's project group, or by the APQP/PPAP Controller (the PPAP Supervisor), and the system records who verified.
-- System roles: author, verifier, approver, document control, admin, viewer (QA, QC, and internal audit: read-only, uses QR verification, D-32, D-41). Mapping to positions (D-51, D-54, D-63 to D-75): author is the PPAP Engineer, the PPAP Staff, the Project Leader, or the Project Engineer; the PPAP Engineer also maintains the process master and process templates and sets the PFMEA to CP check mark; verifier is the Project Engineer, the Project Leader, or the APQP/PPAP Controller. The full user map is artifact U3-peta-pengguna (section 20). Approvers still approve on paper, and every position up to GM level gets a viewer account (D-70). The document control role is held by the PPAP Staff and the PPAP Engineer today, and may be given to the Document Control Department (DCC) later (D-60, D-68). The admin works through a separate admin account, held by the PPAP Staff for now, so that person has two accounts (D-72). Each admin account is linked to its named holder (D-74), and only the admin account sees the audit log (D-75). The migration role is held by the PPAP Staff and the PPAP Engineer (D-69). The Project Leader and the Project Engineer work only on the customers of their own project group (D-71). The admin manages the access rules (D-66).
+- System roles (D-78): the eight roles of the user map U3-peta-pengguna, stored as data: author (Penyusun), template maintainer (Pengelola template), PFMEA–CP checker (Pemeriksa PFMEA–CP), verifier (Verifikator), document control (Dokumen kontrol), migration (Petugas migrasi), viewer, and admin. Every logged-in account has the viewer rights (QA, QC, and internal audit use only these: read-only, QR verification, D-32, D-41). An approver role is kept for in-app approval later and is not created until then (R-APR-04). Mapping to positions (D-51, D-54, D-63 to D-75): author is the PPAP Engineer, the PPAP Staff, the Project Leader, or the Project Engineer; the PPAP Engineer also maintains the process master and process templates and sets the PFMEA to CP check mark; verifier is the Project Engineer, the Project Leader, or the APQP/PPAP Controller. The full user map is artifact U3-peta-pengguna (section 20). Approvers still approve on paper, and every position up to GM level gets a viewer account (D-70). The document control role is held by the PPAP Staff and the PPAP Engineer today, and may be given to the Document Control Department (DCC) later (D-60, D-68). The admin works through a separate admin account, held by the PPAP Staff for now, so that person has two accounts (D-72). Each admin account is linked to its named holder (D-74), and only the admin account sees the audit log (D-75). The migration role is held by the PPAP Staff and the PPAP Engineer (D-69). The Project Leader and the Project Engineer work only on the customers of their own project group (D-71). The admin manages the access rules (D-66).
 
 ## 2. Current goals, non-goals, and success measures
 
@@ -114,7 +114,7 @@ Context
 | Document control (dokumen kontrol) | The function that records releases and manages numbers and copies. |
 | Prepared / Checked / Approved | The three signature stages on the cover page: the preparer, the checker, and the approvers (D-45). |
 | Approval route (rute approval) | An ordered list of signature slots for one document. Two routes exist today: up to QA QC Manager, and up to GM (D-46). |
-| Position (jabatan) | A job title in the workflow, named as in the organization chart (D-54): PPAP Engineer, Project Engineer, Project Leader, APQP/PPAP Controller, NPI Manager, QA QC Manager, Advisor, Factory Manager. Earlier names in this brief: Project Leader or Production Engineer for the Project Engineer, Project Leader Supervisor for the Project Leader, PPAP Supervisor for the APQP/PPAP Controller. PE Manager is only a possible future name of the NPI Manager (D-55). |
+| Position (jabatan) | A job title in the workflow, named as in the organization chart (D-54): PPAP Engineer, PPAP Staff, Project Engineer, Project Leader, APQP/PPAP Controller, NPI Manager, QA QC Manager, Advisor, Factory Manager. Earlier names in this brief: Project Leader or Production Engineer for the Project Engineer, Project Leader Supervisor for the Project Leader, PPAP Supervisor for the APQP/PPAP Controller. PE Manager is only a possible future name of the NPI Manager (D-55). |
 | Project group (GR) | A group of customers handled by one Project Leader and one Project Engineer. Each customer is allocated to one project group (GR1 to GR4 today, organization chart table 1) (D-54). |
 | Release date (tanggal rilis) | The date the document is created or printed (D-53). Not the date document control records the release. |
 | ECR | Engineering Change Request: a change request submitted to the customer. One of the change triggers (R-CHG-06). |
@@ -124,6 +124,11 @@ Context
 | NCP | Nonconforming product: an NG disposition in the PFD and CP flow, next to scrap and rework (section 21). |
 | PCP | Process Control Plan: the title on the SIIX Control Plan cover. Same document as CP. |
 | IQC | Incoming Quality Control. |
+| Person and account (orang dan akun) | A person is a named individual with an optional employee number. An account is a login of a person: a work account or an admin account, at most one of each per person. Positions are held by persons, and separation of duties compares persons (D-79). |
+| Position holder (pemegang jabatan) | A person recorded as holding a position. The Project Leader and the Project Engineer are recorded per project group, and these records are the only source of their customer scope (D-82). The approver positions and the APQP/PPAP Controller have one holder each (D-115). |
+| Plant code (kode pabrik) | The first letter of a document number prefix, S today. With the document type letter (H for PFD, F for PFMEA, C for CP) it forms the prefix SH, SF, or SC (D-89). |
+| Special code (kode khusus) | A code in the customer code position for documents that belong to no single customer, for example ZZ (General/Common) and HSE (Health, Safety, and Environment). It never equals a customer code (D-89, D-114). |
+| Running number (nomor berjalan) | The sequence part of a document number: three digits up to 999, then A001 to A999, B001, and so on (D-89). |
 
 ## 4. Domain model (conceptual)
 
@@ -131,16 +136,19 @@ All entities below are conceptual. Table and column names are decided during the
 
 | Entity | Purpose and key notes |
 |---|---|
-| customer, model_group, model, part_number | Master data. A document covers one or more models or part numbers. Customer has a code (for example KT) and belongs to one project group (D-54). A model group is a named set of models (D-39). A group belongs to one customer, and a model belongs to at most one group (D-42). |
+| customer, model_group, model, part_number | Master data, managed by the admin account (D-87). A document covers one or more models or part numbers. Customer has a code (for example KT) and belongs to one project group (D-54). Customers are never deleted, only deactivated (D-86). A model group is a named set of models (D-39). A group belongs to one customer, and a model belongs to at most one group (D-42). |
+| customer_code | History of customer codes with validity dates (D-88). A code belongs to one customer only, ever (D-109). Old document numbers keep their code and match the customer it belonged to. |
+| project_group | A group of customers (GR1 to GR4 today) with one Project Leader and one Project Engineer, recorded as position holders (D-54, D-82). |
+| person, account, session | A person holds at most one work account and one admin account (D-79). Accounts are never deleted, only disabled (D-105). Sessions follow the login rules of D-85. |
 | process | Process master with a fixed ID. The name is only a display value. Aliases allowed. |
-| doc_type | PFD, PFMEA, CP with editable prefixes (SH, SF, SC). |
+| doc_type, number_settings, special_code | Document types with a letter (H for PFD, F for PFMEA, C for CP, plus other WI types such as W); the prefix is the plant code plus the letter (D-89). Only PFD, PFMEA, and CP are numbered by the system. number_settings holds the plant code. Special codes stand in the customer code position (D-114). |
 | numbering_pattern, number_counter | Pattern per document type, optionally overridden per customer. One counter per customer and document type. |
 | document_number | Registered number text (unique), status, owner, linked document. |
 | format_template, format_template_version | Methodology (AIAG 4th, AIAG-VDA, customer SQAM), columns with immutable IDs, header fields, risk method and rating tables, export layout reference. Versioned. |
 | process_template, process_template_version, template_point | Process, sub-process, and point library with scope general, customer, model group, or model (D-39). Points have immutable IDs and an optional linked counterpart. Versioned. |
 | document | PFD, PFMEA, or CP of a model. Points to a number, a format template version, origin (new or migrated), and current revision. |
-| position, approval_route, route_slot | Positions are master data. An approval route is an ordered list of slots, each with a stage (Prepared, Checked, Approved) and the positions allowed in it (D-45, D-46). Each customer has a default route. A document may use another route with a recorded reason (D-47). The route in force is frozen into the revision when it is printed for signature ([PROPOSED], R-APR-11). Each project group names its Project Leader and Project Engineer (D-54). One person may hold more than one position at a time, for example a Project Leader who is also the APQP/PPAP Controller. Each slot has an optional sign date (D-52). |
-| role, permission, user_role | Access model [DECIDED] (D-66): permissions are a fixed catalog of actions defined by the system; a role is a named set of permissions that the admin can edit; a user holds one or more roles, each with a scope (all customers, or one or more project groups). Each position suggests default roles, so a new holder starts with the right access. Admin accounts are a separate account type that holds only admin rights (D-72). |
+| position, position_holder, approval_route, route_slot | Positions are master data with one holder rule each (D-115). An approval route is an ordered list of slots, each with a stage (Prepared, Checked, Approved) and the positions allowed in it (D-45, D-46). Each customer has a default route. A document may use another route with a recorded reason (D-47). The route in force is frozen into the revision when it is printed for signature ([PROPOSED], R-APR-11). Each project group names its Project Leader and Project Engineer (D-54). One person may hold more than one position at a time, for example a Project Leader who is also the APQP/PPAP Controller. Each slot has an optional sign date (D-52), switched by a system setting. A route has one Prepared slot, one Checked slot, then one or more Approved slots (D-117). A customer may have no default route yet (D-116). Each change type may name a route; empty means the customer default (D-112). |
+| role, permission, user_role | Access model [DECIDED] (D-66): permissions are a fixed catalog of actions defined by the system; a role is a named set of permissions that the admin can edit; an account holds one or more roles, each with a scope: all customers, or the own project group, which is read from the position holders (D-82). Each position suggests default roles, so a new holder starts with the right access. Admin accounts are a separate account type that holds only the admin role (D-72, D-120). |
 | revision | Revision number as an integer (displayed -00, -01). Status draft, awaiting approval ([PROPOSED], R-REV-06), released, obsolete. Released revisions hold a frozen snapshot, a SHA-256 hash, effective date, and the signed scan. |
 | document_row | One worksheet line. Immutable row ID, process ID, position, content in JSONB (validated against the format template version), optional template point ID, template link state (included, local override, detached), derived_from for copied rows, optional parent_id and node_type (VDA hook). |
 | template_link | Document to process-template link with mode follow, pinned, or detached and the pinned version. |
@@ -150,7 +158,9 @@ All entities below are conceptual. Table and column names are decided during the
 | verification | Supervisor decision on a change (accept or reject, mandatory note). |
 | attachment | Supporting file in private storage with SHA-256. |
 | process_check_mark | "Checked by X on date" for PFMEA to CP consistency, per process per revision. |
-| audit_log | Append-only record of every change to data. |
+| audit_log | Append-only record of every change to data, including sessions and failed logins (D-107). One hash chain for the whole system (D-83). Actor types human, system, and anonymous (D-106). |
+| change_type, change_source, four_m_category | Master lists for changes (R-TPL-10, R-CHG-06). Change sources used by system mechanisms are marked and always active (D-113). |
+| system_settings | Global switches, today the per-slot sign date (D-52). |
 | print_log | Who printed which revision, when, and which copy number. |
 | visibility_profile | Per customer, versioned rules that hide fields (columns, header fields) from the customer audience. |
 | release_print_manifest | Per release: layout version, visibility profile version, field IDs printed, and file hashes. |
@@ -162,8 +172,21 @@ Relationships
 
 ```mermaid
 erDiagram
+  PROJECT_GROUP ||--o{ CUSTOMER : groups
+  CUSTOMER ||--o{ CUSTOMER_CODE : "code history"
+  CUSTOMER ||--o{ MODEL_GROUP : has
+  MODEL_GROUP |o--o{ MODEL : contains
   CUSTOMER ||--o{ MODEL : has
   MODEL ||--o{ PART_NUMBER : has
+  PERSON ||--o{ ACCOUNT : "logs in with"
+  ACCOUNT ||--o{ ACCOUNT_ROLE : holds
+  ROLE ||--o{ ACCOUNT_ROLE : "granted as"
+  PERSON ||--o{ POSITION_HOLDER : holds
+  POSITION ||--o{ POSITION_HOLDER : "held by"
+  PROJECT_GROUP |o--o{ POSITION_HOLDER : "scopes"
+  APPROVAL_ROUTE ||--o{ ROUTE_SLOT : "ordered slots"
+  CUSTOMER }o--o| APPROVAL_ROUTE : "default route"
+  CHANGE_TYPE }o--o| APPROVAL_ROUTE : "route policy"
   CUSTOMER ||--o{ DOCUMENT_NUMBER : owns
   DOC_TYPE ||--o{ DOCUMENT_NUMBER : classifies
   DOCUMENT_NUMBER ||--o| DOCUMENT : identifies
@@ -225,7 +248,7 @@ stateDiagram-v2
 | R-TPL-07 | Customer SQAM templates are often retroactive: a new version can apply to existing active documents. Released and obsolete revisions are never rewritten. Retroactive means new revisions. | [DECIDED] principle |
 | R-TPL-08 | Each document to template link has mode follow, pinned, or detached. Each publication picks a scope: new documents only, active documents that follow (default), or all active documents including pinned ones (requires a reason, the SQAM revision reference, and an effective date). | [PROPOSED] |
 | R-TPL-09 | Before applying a version, show an impact preview (dry run): which documents and rows change and which conflict with local overrides. Conflicts are resolved per run: keep local and flag, or overwrite. | [PROPOSED] |
-| R-TPL-10 | Change type (content, layout only, administrative) decides the approval path. The policy per type is master data. | [DECIDED] |
+| R-TPL-10 | Change type (content, layout only, administrative) decides the approval path. The policy per type is master data: a route per change type, empty meaning the customer default route (D-112). | [DECIDED] |
 | R-TPL-11 | Format templates carry the symbol set (today Critical Process, Revision, Important Character, Regulation) and optional advisory highlights, such as the action rule printed on the current PFMEA form (RPN above 100 or severity 8). Highlights never block (R-DOC-06). | [PROPOSED] |
 | R-TPL-12 | The CP format template may carry the phase field from the AIAG Control Plan manual (2024): Prototype, Pre-Launch, Production, Safe Launch. The current SIIX form has no such field. | [PROPOSED] |
 
@@ -245,7 +268,7 @@ stateDiagram-v2
 | R-DOC-01 | PFD, PFMEA, and CP rows are flat rows (one worksheet line each), grouped by process. Content is JSONB validated against the format template version. Key fields are indexed. | [DECIDED] |
 | R-DOC-02 | Rows have immutable IDs across revisions. Order is stored separately. Copied rows (yokoten) record where they came from. | [DECIDED] |
 | R-DOC-03 | VDA hook: rows may carry parent_id and node_type. The failure network is deferred. | [DECIDED] for now |
-| R-DOC-04 | PFD, PFMEA, and CP are matched by process. The process master holds the ID. PFMEA and CP rows pick a process from the PFD list instead of typing a name. Imports pass a name-to-ID mapping step. | [DECIDED] |
+| R-DOC-04 | PFD, PFMEA, and CP are matched by process. The process master holds the ID. PFMEA and CP rows pick a process from the PFD list instead of typing a name. Imports pass a name-to-ID mapping step. One process master serves all customers; names and aliases share one case-insensitive namespace, and processes are never deleted (D-110). Whether matching works at process or sub-process level is open until real documents are compared. | [DECIDED] |
 | R-DOC-05 | PFMEA row to CP row links are manual or defined in the template, and optional. | [DECIDED] |
 | R-DOC-06 | People check PFMEA to CP consistency. The system offers a side-by-side view per process and a "checked by, date" mark per process per revision, set by the PPAP Engineer for now (D-65). The rule engine from the earlier spec stays disabled and may become an advisory audit later. | [DECIDED] |
 | R-DOC-07 | Two editors must not overwrite each other. Use optimistic locking and show conflicts. | [PROPOSED] |
@@ -262,7 +285,7 @@ stateDiagram-v2
 | R-CHG-03 | Each affected document gets a draft revision. If a draft is already open, the change merges into it with the source marked and conflicts shown. | [DECIDED] |
 | R-CHG-04 | Yokoten: choose targets by customer, model group (D-40), model, process, or text search. Each target owner decides apply, adapt, or not applicable (with a reason). A status board shows progress per model. | [DECIDED] principle |
 | R-CHG-05 | Impact checklist per change: which related documents are affected (PFD, PFMEA, CP, WI, inspection standard), the decision, and the reason. Not every PFMEA change needs a CP revision, and the checklist records the decision either way. | [PROPOSED] |
-| R-CHG-06 | Source master data starts with the triggers already used today: PP (pre-production), customer claim, and ECR (Engineering Change Request, a change request submitted to the customer), next to yokoten, template propagation, SQAM, and audit findings. | [PROPOSED] |
+| R-CHG-06 | Source master data starts with the triggers already used today: PP (pre-production), customer claim, and ECR (Engineering Change Request, a change request submitted to the customer), next to yokoten, template propagation, SQAM, and audit findings. Entries used by system mechanisms are marked and always active; at stage 5 mechanism and trigger become two fields of a change (D-113). | [PROPOSED], mechanism rule [DECIDED] (D-113) |
 | R-CHG-07 | Changes that need customer approval before they take effect (for example a 4M change with PPAP resubmission) are handled outside the system, as today. The system neither blocks nor flags them (D-34). | [DECIDED] |
 
 ### REV: revisions and history
@@ -282,8 +305,8 @@ stateDiagram-v2
 | ID | Rule | Status |
 |---|---|---|
 | R-NUM-01 | Register and track numbers for PFD, PFMEA, and CP, separated per customer and document type (example: SC-KT-000, SF-KT-000, SH-KT-000). The TR-020 documents show SH for PFD, SF for PFMEA, and SC for CP. | [DECIDED] |
-| R-NUM-02 | Prefix and pattern are master data and editable. A change affects only new numbers. Issued numbers are stored as text and never recomputed. | [DECIDED] |
-| R-NUM-03 | No collisions: allocation happens on the server at submit time with a transactional counter row (not a PostgreSQL sequence), a unique constraint on the full number, and an idempotency key. 50 parallel registrations must give 50 distinct numbers with no gaps. | [DECIDED] |
+| R-NUM-02 | Prefix and pattern are master data and editable. A change affects only new numbers. Issued numbers are stored as text and never recomputed. The parts follow WI SW-ZZ-000 (D-89): plant code and document type letter (prefix), customer code or special code, running number, and a two-digit revision that is not part of the registered number. | [DECIDED] |
+| R-NUM-03 | No collisions: allocation happens on the server at submit time with a transactional counter row (not a PostgreSQL sequence), a unique constraint on the full number, and an idempotency key. 50 parallel registrations must give 50 distinct numbers with no gaps. Counters are kept per customer code text and document type, so a new customer code starts again at the first number (D-93). | [DECIDED] |
 | R-NUM-04 | Statuses Reserved, In use, Released, Obsolete, Void. Numbers are never reused or deleted. Stale Reserved numbers raise reminders. Search, filter, and export the register as a master document list. | [PROPOSED] |
 | R-NUM-05 | Most documents of a model share one number across the set, some do not (legacy Excel registration). Counters are per document type, and a "register as set" action takes the next number free in all three types so they align. The lagging counters then skip numbers, which R-NUM-03 (no gaps) does not allow, so skipped numbers need a rule: a status Skipped, or one counter per customer for sets. | [PROPOSED] (see Q-05) |
 | R-NUM-06 | Legacy numbers are imported with their original text. Counters start at the highest existing number. Gaps, duplicates, and misaligned sets are reported and never fixed or renumbered automatically, because numbers may already be with customers. | [PROPOSED] |
@@ -298,14 +321,14 @@ stateDiagram-v2
 | R-APR-05 | Authority matrix (role, document type, customer, step), separation of duties, and delegation with a validity period are designed now and enforced later. The first version is the user map U3-peta-pengguna (R-SEC-10). | [PROPOSED] |
 | R-APR-06 | A read-only viewer role for QA, QC, and internal audit, so they can open verification pages and released documents without edit rights. | [DECIDED] (D-41) |
 | R-APR-07 | Signature stages: Prepared by one preparer: the PPAP Engineer, the PPAP Staff, the Project Leader, or the Project Engineer (D-63, D-67). Checked by one person, who is the Project Engineer or the Project Leader of the customer's project group and not the preparer (D-48, D-54, R-APR-12). Approved by the NPI Manager, then the QA QC Manager, then the GM slot when the route includes it. The GM slot is held by the Advisor today and may move to the Factory Manager (D-56). | [DECIDED] (D-45, D-48, D-54, D-56, D-63, D-67) |
-| R-APR-08 | The cover page and every page with signature blocks are built from the approval route, never fixed in the layout. A route is master data: an ordered list of slots with stage and allowed positions. Two routes now: up to QA QC Manager, and up to GM. | [DECIDED] (D-46), data shape [PROPOSED] |
-| R-APR-09 | Each customer has a default approval route. The preparer may choose another route for a document, with a reason recorded in the audit log. | [DECIDED] (D-47) |
+| R-APR-08 | The cover page and every page with signature blocks are built from the approval route, never fixed in the layout. A route is master data: an ordered list of slots with stage, print title, and allowed positions. Two routes now: up to QA QC Manager, and up to GM. Shape (D-117): one Prepared slot first, one Checked slot next, then one or more Approved slots; at most 10 slots; print titles of at most 100 characters. | [DECIDED] (D-46, D-117) |
+| R-APR-09 | Each customer has a default approval route. The preparer may choose another route for a document, with a reason recorded in the audit log. Until the admin sets it, a customer has no default route, and printing for signature is refused unless the preparer chooses another route with a reason (D-116). | [DECIDED] (D-47, D-116) |
 | R-APR-10 | Signing is sequential: Checked, then NPI Manager, then QA QC Manager, then the GM slot if the route includes it (D-49, D-55, D-56). Addition [PROPOSED]: when recording the release, document control confirms each slot in route order, and the release is refused while a slot is empty. | [DECIDED] (D-49), check [PROPOSED] |
 | R-APR-11 | The route is frozen into the revision when it is printed for signature (R-REV-06). Changing the route afterwards cancels that print, like an edit. | [PROPOSED] |
 | R-APR-12 | One person fills at most one slot in a route: the checker differs from the preparer, and an approver differs from both. | [PROPOSED] |
 | R-APR-13 | While approval stays on paper (R-APR-04), approvers act in the system only through the signed scan. They get viewer accounts, like every position up to GM level (D-70). | [DECIDED] (D-70) |
 | R-APR-14 | Each signature slot has an optional sign date. A setting switches it on or off, and when it is off the field is hidden. It is off for now, so only the release date (tanggal rilis: the date the document is created or printed, D-53) is recorded. Where the switch sits [PROPOSED]: one global admin setting. | [DECIDED] (D-52), switch location [PROPOSED] |
-| R-APR-15 | Positions have fixed IDs and editable names, like processes (R-DOC-04). Renaming the NPI department back to PE, or moving the GM slot from the Advisor to the Factory Manager, changes master data only. One person may hold more than one position. | [DECIDED] (D-58) |
+| R-APR-15 | Positions have fixed IDs and editable names, like processes (R-DOC-04). Renaming the NPI department back to PE, or moving the GM slot from the Advisor to the Factory Manager, changes master data only. One person may hold more than one position. Holders (D-115): one each for the approver positions and the APQP/PPAP Controller, one per project group for the Project Leader and the Project Engineer, several allowed for the other positions. | [DECIDED] (D-58, D-115) |
 | R-APR-16 | The QR code on printed documents is optional: a setting switches it on or off, and it is off for now because QR codes are not used today. The verification page stays reachable inside the system. [PROPOSED]: one global admin setting, and the short hash on the print follows the same switch. | [DECIDED] (D-62), details [PROPOSED] |
 | R-APR-17 | Each slot has a print title separate from the position name. The TR-020 covers print "Process. Eng", "Engineer", "NPI Manager", "QA / QC Mgr.", and "General Mgr.", each with the holder's name. | [DECIDED] (D-76) |
 
@@ -336,18 +359,20 @@ stateDiagram-v2
 | ID | Rule | Status |
 |---|---|---|
 | R-SEC-01 | Internal use only in the first release. Login required. Local accounts first. Active Directory or LDAP later. A customer portal is a future exception (section 17). | [DECIDED] |
-| R-SEC-02 | One permission-check function from the start that enforces coarse roles from milestone M1.2 (D-35), and a customer scope field on documents. The detailed authority matrix, customer scope enforcement, and row-level security come later (milestone M8.1). | [DECIDED], amended by D-35 |
-| R-SEC-03 | The audit log is append-only and enforced in the database: the application role has no UPDATE or DELETE, rejecting triggers exist, and a hash chain detects tampering. Addition [PROPOSED]: store the latest chain hash outside the database on a schedule (for example in the daily backup manifest), so a rewrite of the whole chain by a database admin is detected. | [PROPOSED] |
+| R-SEC-02 | One permission-check function from the start that enforces coarse roles from milestone M1.2 (D-35), and a customer scope field on documents. The project group scope (D-71) is checked in that function from M1.2 (D-81). The detailed authority matrix and row-level security come later (milestone M8.1). | [DECIDED], amended by D-35 and D-81 |
+| R-SEC-03 | The audit log is append-only and enforced in the database: the application role has no UPDATE or DELETE, rejecting triggers exist, and a hash chain detects tampering. Addition [PROPOSED]: store the latest chain hash outside the database on a schedule (for example in the daily backup manifest), so a rewrite of the whole chain by a database admin is detected. Built in M1.3 with one global chain (D-83); the external anchor is the backup manifest of M1.7 (D-119). | [DECIDED] (D-83, D-119) |
 | R-SEC-04 | Attachments sit in private storage with SHA-256 and antivirus scanning. Backups are encrypted and restores are tested. Hosting is on-premise with Docker and TLS for IT's version. The personal version runs on localhost with Docker Compose (D-36). | [PROPOSED] |
 | R-SEC-05 | No source code is shared with company IT. The code is the owner's personal learning project. IT receives the specification, the UML, and a non-code information document, and may build its own version from them (D-33). | [DECIDED] |
 | R-SEC-06 | Only the internal team writes PFD, PFMEA, and CP. Customers and any other external party have no write access of any kind. | [DECIDED] |
 | R-SEC-07 | Development uses real company and customer documents with Claude Code. Code lives in the owner's private GitHub repository (D-29). | [DECIDED] |
 | R-SEC-08 | Keep real data in a private repository separate from the code (or in an uncommitted folder when working locally), so the code repository never holds customer documents and the data can be removed in one step without rewriting git history. | [PROPOSED] |
-| R-SEC-09 | Enforce coarse roles (author, verifier, approver, document control, admin, viewer) from milestone M1.2, because R-CHG-02, R-APR-02, and R-MIG-06 need them before M8.1. Amends R-SEC-02. The roles become admin-editable permission sets under R-SEC-10. | [DECIDED] (D-35, D-41) |
+| R-SEC-09 | Enforce coarse roles from milestone M1.2, because R-CHG-02, R-APR-02, and R-MIG-06 need them before M8.1. The roles are the eight roles of U3-peta-pengguna with the permission catalog L-1 to A-4, stored as data from the start (D-78); the admin screen to edit them comes in M8.1. Amends R-SEC-02. | [DECIDED] (D-35, D-41, D-78) |
 | R-SEC-10 | Access has four levels: create and edit, verify, view only, and administer. The admin assigns roles to users and edits which permissions a role holds, so access can be granted later without code changes (for example edit rights for DCC). Every change of access is audit-logged. The current user map is artifact U3-peta-pengguna, the approved baseline. | [DECIDED] (D-66) |
-| R-SEC-11 | Guardrails that no role or admin setting can switch off: a requester never verifies their own request (R-CHG-02), one person fills at most one slot in a route (R-APR-12), the release recorder differs from the preparer (R-APR-02), released revisions are immutable (R-REV-02), the audit log is append-only (R-SEC-03), admin rights do not include editing document content, an admin account never holds work roles (R-SEC-13), and the last admin account cannot be removed or lose its admin role (D-73). | [DECIDED] for the admin account parts (D-72, D-73), rest [PROPOSED] |
-| R-SEC-12 | Scope: the Project Leader and the Project Engineer act (prepare, verify, check) only on the customers of their own project group (D-71); the PPAP Engineer, the PPAP Staff, the APQP/PPAP Controller, and document control act on all customers; viewers see released documents of all customers. Enforced with the customer scope in M8.1. | [DECIDED] for the Project Leader and the Project Engineer (D-71), rest [PROPOSED] |
-| R-SEC-13 | The admin uses a separate admin account that holds only admin rights (A-1 to A-4), including the audit log. An admin account never holds work roles, and a work account never holds the admin role. Today the PPAP Staff holds the admin account next to their own work account. Each admin account is linked to its named holder, and the audit log shows both the account and the holder (D-74). Only the admin account sees the audit log, including the log of access changes (D-75). | [DECIDED] (D-72, D-74, D-75) |
+| R-SEC-11 | Guardrails that no role or admin setting can switch off: a requester never verifies their own request (R-CHG-02), one person fills at most one slot in a route (R-APR-12), the release recorder differs from the preparer (R-APR-02), released revisions are immutable (R-REV-02), the audit log is append-only (R-SEC-03), admin rights do not include editing document content, an admin account never holds work roles (R-SEC-13), the last admin account cannot be removed or lose its admin role (D-73), accounts are never deleted, only disabled (D-105), and every account may manage itself (sessions, logout, password) (D-104). | [DECIDED] for the admin account parts (D-72, D-73), rest [PROPOSED] |
+| R-SEC-12 | Scope: the Project Leader and the Project Engineer act (prepare, verify, check) only on the customers of their own project group (D-71); the PPAP Engineer, the PPAP Staff, the APQP/PPAP Controller, and document control act on all customers; viewers see released documents of all customers. Enforced in the permission function from M1.2 (D-81); row-level security follows in M8.1. Project-group-scoped rights do not apply to operations without a customer (D-118). | [DECIDED] for the Project Leader and the Project Engineer (D-71), rest [PROPOSED] |
+| R-SEC-13 | The admin uses a separate admin account that holds the admin rights (A-1 to A-4), including the audit log, plus the basic view rights every account has (L-1 to L-3) (D-120). An admin account never holds work roles, and a work account never holds the admin role. Today the PPAP Staff holds the admin account next to their own work account. Each admin account is linked to its named holder, and the audit log shows both the account and the holder (D-74). Only the admin account sees the audit log, including the log of access changes (D-75). | [DECIDED] (D-72, D-74, D-75, D-120) |
+| R-SEC-14 | Passwords, tokens, keys, and connection strings that contain a password are never written to logs, error messages, or the audit log. Error messages to users carry no internal details; the details go to the server log with the request ID (R-API-13). Tests prove the rule. | [DECIDED] (D-95) |
+| R-SEC-15 | A forgotten or locked last admin account is recovered only with the command `revioten reset-admin-password` on the server machine, recorded with the system actor. Admin accounts are locked for 15 minutes after every 10 failed logins but never disabled by failed logins (D-85). | [DECIDED] (D-101) |
 
 ## 6. Decision log
 
@@ -371,7 +396,7 @@ stateDiagram-v2
 | D-16 | Three API surfaces: UI API, integration API, customer portal. | UI changes must not break integrations. Different actors need different authentication and stability. | [PROPOSED] |
 | D-17 | External writes are change proposals only. They never release, verify, or approve. | Keeps immutability, numbering, and approval rules intact. | [PROPOSED] |
 | D-18 | The customer portal is a future read-only feature: only the internal team writes, and customers can only read and download their own documents. | Customers get files quickly or check availability without asking. | [DECIDED] as a future feature |
-| D-19 | No integration token is issued before roles and customer scope are enforced (M8.1). | Until then roles are enforced but customer scope is not (D-35), so a token could read every customer. | [PROPOSED] |
+| D-19 | No integration token is issued before roles and customer scope are enforced (M8.1). | Until then roles and the project group scope of human users are enforced (D-35, D-81), but a token has no customer scope and row-level security does not exist yet, so a token could read every customer. | [PROPOSED] |
 | D-20 | Portal v1 is a document register plus PDF download, with no in-browser row view. | Smaller attack surface and much less to build. | [PROPOSED] |
 | D-21 | By default customers receive the signed scan when it exists, otherwise the system-generated PDF. Never Excel. The default can be switched per customer (D-25). | The signed scan is the approved form. Excel is editable. | [DECIDED] |
 | D-22 | A visibility filter lets the company hide selected information from customers. | Some information is internal. | [DEFERRED] (D-31), was [DECIDED] |
@@ -425,18 +450,61 @@ stateDiagram-v2
 | D-70 | Every position up to GM level gets a viewer account, including the approvers (NPI Manager, QA QC Manager, Advisor, Factory Manager), DCC, QA, QC, internal audit, and the WI team. | Owner's answer to Q-60 (2026-10-27). | [DECIDED] |
 | D-71 | The Project Leader and the Project Engineer prepare documents only for the customers of their own project group. | Owner's answer to Q-59 (2026-10-27). | [DECIDED] |
 | D-72 | The admin has a separate admin account. For now the PPAP Staff holds it, so that person has two different accounts. The audit log is viewed through the admin account. | Owner's answer (2026-10-27). | [DECIDED] |
-| D-73 | The last admin account cannot be removed and cannot lose its admin role. | Owner accepted the suggestion (2026-10-27). | [DECIDED] |
+| D-73 | The last admin account cannot be removed and cannot lose its admin role. "Removed" means disabled, because accounts are never deleted (D-105). | Owner accepted the suggestion (2026-10-27). | [DECIDED] |
 | D-74 | Each admin account is linked to its named holder, and the audit log shows both the account and the holder. | Owner accepted the suggestion (2026-10-27). | [DECIDED] |
 | D-75 | The NPI Manager does not get a view of the log of access changes. The audit log, access changes included, stays visible only through the admin account (D-72). | Owner rejected the suggestion (2026-10-27). | [DECIDED] |
 | D-76 | Covers and print titles follow the TR-020 covers: each slot prints its print title ("Process. Eng", "Engineer", "NPI Manager", "QA / QC Mgr.", "General Mgr.") with the holder's name. | Owner accepted the working assumption of Q-52 (2026-10-27). | [DECIDED] |
 | D-77 | Coding starts now, in parallel with the remaining UML work (U4 to U14). The code is built milestone by milestone with Claude Code and is used to evaluate the design. | Owner's decision (2026-10-27): "kita akan memulai membuat code sambil mengevaluasi design web yang kita rancang". Amends D-11. How findings are recorded: section 15, item 11. | [DECIDED] |
+| D-78 | The eight roles of U3-peta-pengguna and the permission catalog L-1 to A-4 are stored as data from M1.2, seeded from the U3 matrix. No approver role until in-app approval (R-APR-04). Amends R-SEC-09 and the role list in section 1. | Owner's decision on finding E-01 of `docs/evaluasi-desain.md` (2026-10-27). U3 is the approved baseline (D-66). | [DECIDED] |
+| D-79 | Person and account are separate entities. A person (name, optional employee number) has at most one work account and one admin account. Positions are held by persons, and separation of duties compares persons. | Owner's decision on finding E-02 of `docs/evaluasi-desain.md` (2026-10-27). | [DECIDED] |
+| D-80 | Stage 1 does not wait for U5 and U6. The UML is updated from the code as it is built. Replaces the mitigation proposed in RK-64. | Owner's decision on finding E-03 of `docs/evaluasi-desain.md` (2026-10-27): "untuk UML akan kita update sesuai code dikembangkan". | [DECIDED] |
+| D-81 | The project group scope (D-71) is checked in the permission function from M1.2. Row-level security stays in M8.1. Amends R-SEC-02 and R-SEC-12. | Owner's decision on finding E-04 of `docs/evaluasi-desain.md` (2026-10-27). | [DECIDED] |
+| D-82 | The project group master and its position holders are the single source of the Project Leader and Project Engineer scope. A role grant only says "all customers" or "own project group". | Owner's decision on finding E-05 of `docs/evaluasi-desain.md` (2026-10-27). | [DECIDED] |
+| D-83 | One hash chain for the whole audit log. The chain tip is locked, entries are written by the Go service layer in the same transaction as the change, and two database roles exist: the owner for migrations, and an application role without UPDATE and DELETE on the audit log. | Owner's decision on finding E-06 of `docs/evaluasi-desain.md` (2026-10-27). | [DECIDED] |
+| D-84 | The first admin account is created with a one-time command on the server machine (`revioten create-admin`), recorded with the system actor. | Owner's decision on finding E-07 of `docs/evaluasi-desain.md` (2026-10-27). | [DECIDED] |
+| D-85 | Login and session rules come from open standards (OWASP, ASVS 5.0, NIST SP 800-63B-4): argon2id, passwords of 15 to 128 characters checked against a blocklist, a 30-minute idle and an 8-hour absolute session limit, a 15-minute lock after every 10 failed logins, disabling at the 100th failure except for admin accounts (D-101), and a reset by the admin with a forced change. The exact values are in E-08. | Owner's decision on finding E-08 of `docs/evaluasi-desain.md` (2026-10-27); values confirmed by the general approval of 2026-10-30 (E-52). | [DECIDED] |
+| D-86 | Customer codes are unique, two letters A to Z, and never equal a special code. Customers are never deleted, only deactivated. Each customer belongs to one project group, required from M1.4. | Owner's decision on finding E-09 of `docs/evaluasi-desain.md` (2026-10-27); the code change rule is replaced by D-88. | [DECIDED] |
+| D-87 | The masters of M1.4 (customer, project group, model group, model, part number) are managed by the admin account (A-2). Who should own model groups later stays open (Q-46). | Owner's decision on finding E-10 of `docs/evaluasi-desain.md` (2026-10-27). | [DECIDED] |
+| D-88 | A customer code can be changed through master data. Old codes stay in a history with validity dates; old numbers keep their old code (R-NUM-02) and match the customer the code belonged to. After a change, the running number of the new code starts again, and active documents move to new numbers by hand (D-93). | Owner's decision on finding E-11 of `docs/evaluasi-desain.md` (2026-10-28). WI SW-ZZ-000 rev 04 and rev 09 record two code changes. | [DECIDED] |
+| D-89 | The number structure follows WI SW-ZZ-000 and is kept as master data: the plant code (S) and the document type letter (H for PFD, F for PFMEA, C for CP) form the prefix, then the customer code or a special code (ZZ, HSE), then the running number (three digits up to 999, then A001 to A999, B001, and so on, "for now"), and a two-digit revision outside the registered number. SC-ESD-K001 is not a process control plan; the system does not number such documents and records them as referenced documents (R-DOC-10, R-DOC-11). | Owner's decision on finding E-12 of `docs/evaluasi-desain.md` (2026-10-28). | [DECIDED] |
+| D-90 | Use the newest stable or LTS versions. `docs/versions.md` holds the exact versions with dates and sources; section 7 names only the lines. | Owner's decision on finding E-13 of `docs/evaluasi-desain.md` (2026-10-28); the line-only section 7 by the general approval of 2026-10-30. | [DECIDED] |
+| D-91 | R-VER-04 exception: a line with a single release may be used when no other line satisfies the peer dependencies and the release is at least 14 days old. A 0.x package uses its newest release that is at least 14 days old when first installed. Exceptions are recorded in `docs/versions.md`. | Owner's decision on finding E-14 of `docs/evaluasi-desain.md` (2026-10-28). | [DECIDED] |
+| D-92 | User flows and wireframes for the screens of stages 4 and 5 are made before stage 4 and stored with the UML package. The UI language is decided first (D-96). | Owner's decision on finding E-15 of `docs/evaluasi-desain.md` (2026-10-28). | [DECIDED] |
+| D-93 | After a customer code change, an active document moves to a new number through a document control action, per document: the revision continues, the old number becomes Obsolete with a link to the new one, and the move needs a new revision with new signatures. Counters are kept per customer code text and document type. | Owner's decision on finding E-16 of `docs/evaluasi-desain.md` (2026-10-28); the counter rule by the general approval of 2026-10-30. | [DECIDED] |
+| D-94 | `/health` stays at the root as an operational endpoint, outside `/api/v1`, and is documented in the OpenAPI contract. | Owner's decision on finding E-17 of `docs/evaluasi-desain.md` (2026-10-28). | [DECIDED] |
+| D-95 | Passwords, tokens, keys, and connection strings with passwords are never written to logs, error messages, or the audit log. Error messages to users carry no internal details; the details go to the server log with the request ID. Tests prove it (R-SEC-14). | Owner's decision on finding E-18 of `docs/evaluasi-desain.md` (2026-10-28). | [DECIDED] |
+| D-96 | The screens are in English for now. All screen texts sit in one catalog, so Indonesian can be added with the same keys. | Owner's answer to Q-14 (2026-10-28). | [DECIDED] |
+| D-97 | TypeScript types for the OpenAPI contract are generated with @hey-api/openapi-ts (types plugin only); the fetch calls are written by hand. openapi-typescript 7.13.0 fails R-VER-03 with TypeScript 6. | Test at M0.5 (2026-10-28), approved by the general approval of 2026-10-30 (Q-47). | [DECIDED] |
+| D-98 | The glossary U1 gets a column with the English screen term, and the screen text catalog follows it. | General approval of Claude Code's recommendations (2026-10-30), finding E-19 of `docs/evaluasi-desain.md`. | [DECIDED] |
+| D-99 | The earlier spec package is not available, so the error codes built in M0.5 are the baseline for R-API-13. | General approval of Claude Code's recommendations (2026-10-30), finding E-20 of `docs/evaluasi-desain.md`. | [DECIDED] |
+| D-100 | Customer name: required, at most 200 characters, one line, and may repeat. Customer code: unique, two letters A to Z. | General approval of Claude Code's recommendations (2026-10-30), finding E-21 of `docs/evaluasi-desain.md`. | [DECIDED] |
+| D-101 | A forgotten or locked last admin account is recovered with the command `revioten reset-admin-password` on the server machine, recorded with the system actor. Admin accounts are not disabled by failed logins; the 15-minute lock still applies (R-SEC-15). | General approval of Claude Code's recommendations (2026-10-30), finding E-22 of `docs/evaluasi-desain.md`. | [DECIDED] |
+| D-102 | The demo checks new passwords against an offline list of common passwords. Checking breached passwords through the Pwned Passwords API is discussed with IT for the company version. | General approval of Claude Code's recommendations (2026-10-30), finding E-23 of `docs/evaluasi-desain.md`. | [DECIDED] |
+| D-103 | Viewing master data is part of permission L-2. | General approval of Claude Code's recommendations (2026-10-30), finding E-24 of `docs/evaluasi-desain.md`. | [DECIDED] |
+| D-104 | Every account may manage itself (sessions, logout, password). This is a fixed rule outside the permission catalog, still checked by the permission function. | General approval of Claude Code's recommendations (2026-10-30), finding E-25 of `docs/evaluasi-desain.md`. | [DECIDED] |
+| D-105 | Accounts are never deleted, only disabled. "Removed" in D-73 means disabled. | General approval of Claude Code's recommendations (2026-10-30), finding E-26 of `docs/evaluasi-desain.md`. | [DECIDED] |
+| D-106 | Two more actor types for the audit log: system (a command on the server machine) and anonymous (not logged in). Neither has an account, and the permission function always refuses them. | General approval of Claude Code's recommendations (2026-10-30), finding E-27 of `docs/evaluasi-desain.md`. | [DECIDED] |
+| D-107 | The audit log records every change of data, including sessions and failed logins; reading is not recorded. Exports and prints are added in stage 6. | General approval of Claude Code's recommendations (2026-10-30), finding E-28 of `docs/evaluasi-desain.md`. | [DECIDED] |
+| D-108 | The demo runs migrations at program start with one `.env`. The document for IT recommends a separate migration step, owner credentials only at deploy time, a daily chain check, and an external chain anchor. | General approval of Claude Code's recommendations (2026-10-30), finding E-29 of `docs/evaluasi-desain.md`. | [DECIDED] |
+| D-109 | A customer code belongs to one customer only, ever, never returns to a customer, and takes effect when recorded. | General approval of Claude Code's recommendations (2026-10-30), finding E-31 of `docs/evaluasi-desain.md`. | [DECIDED] |
+| D-110 | One process master for all customers. Names and aliases share one case-insensitive namespace, with at most 200 characters and 20 aliases. Processes are never deleted, and an old name does not become an alias by itself. | General approval of Claude Code's recommendations (2026-10-30), finding E-32 of `docs/evaluasi-desain.md`. | [DECIDED] |
+| D-111 | Contract fields whose empty value would change data (for example `active`) are optional and mean "unchanged" when absent. A middleware that validates requests against the contract is decided before M8.1. | General approval of Claude Code's recommendations (2026-10-30), finding E-34 of `docs/evaluasi-desain.md`. | [DECIDED] |
+| D-112 | The approval policy per change type (R-TPL-10) is a route per change type; empty means the customer default route. Which route wins when the preparer chooses another route (R-APR-09) is still open, to be answered before stage 5. | General approval of Claude Code's recommendations (2026-10-30), finding E-35 of `docs/evaluasi-desain.md`. | [DECIDED], precedence [OPEN] |
+| D-113 | Change sources stay one list for now; entries used by system mechanisms (yokoten, template propagation, SQAM) are marked and always active. At stage 5 a change gets two fields: mechanism and trigger. | General approval of Claude Code's recommendations (2026-10-30), finding E-36 of `docs/evaluasi-desain.md`. | [DECIDED] |
+| D-114 | Special codes have two or three letters, the admin may add them, a code cannot be changed, and it never equals a customer code, now or before. Whether PFD, PFMEA, and CP may be numbered with a special code is still open. | General approval of Claude Code's recommendations (2026-10-30), finding E-37 of `docs/evaluasi-desain.md`. | [DECIDED], numbering with special codes [OPEN] |
+| D-115 | The approver positions (NPI Manager, QA QC Manager, Advisor, Factory Manager) and the APQP/PPAP Controller have one holder each. The Project Leader and the Project Engineer have one per project group. Other positions may have several. The holder history is the audit log. | General approval of Claude Code's recommendations (2026-10-30), finding E-38 of `docs/evaluasi-desain.md`, matching the working assumption of Q-50 (E-45). | [DECIDED] |
+| D-116 | A customer may have no default route yet ("Not set"). Printing for signature is refused until a route is set, unless the preparer chooses another route with a reason. | General approval of Claude Code's recommendations (2026-10-30), finding E-39 of `docs/evaluasi-desain.md`. | [DECIDED] |
+| D-117 | A route has exactly one Prepared slot first, one Checked slot next, then one or more Approved slots; at most 10 slots; print titles of at most 100 characters. Revisit after Q-15. | General approval of Claude Code's recommendations (2026-10-30), finding E-40 of `docs/evaluasi-desain.md`. | [DECIDED] |
+| D-118 | Project-group-scoped rights do not apply to operations without a customer. Lists across customers filter per customer. The yokoten target search (M5.9) gets the allowed customers from the permission function, so scoped users keep finding targets in their own project group. | General approval of Claude Code's recommendations (2026-10-30), finding E-41 of `docs/evaluasi-desain.md`, checked against the yokoten goal. | [DECIDED] |
+| D-119 | Local backup (M1.7) is built before M2.1: encrypted backups to another disk, the audit chain tip copied into the backup manifest, and a tested restore into an empty database. Disk encryption of the laptop is the owner's step. | General approval (2026-10-30) of the stage 1 evaluation (`docs/catatan/Tahap-1-evaluasi.md`, section 5). | [DECIDED] |
+| D-120 | The admin account holds the admin rights (A-1 to A-4) plus the basic view rights every account has (L-1 to L-3), and never holds work roles. Amends R-SEC-13. | General approval of Claude Code's recommendations (2026-10-30), finding E-42 of `docs/evaluasi-desain.md`. | [DECIDED] |
 
 ## 7. Technology stack
 
 Stack [DECIDED] (D-01)
 - Backend: Go 1.27 with `net/http`, pgx v5, sqlc, goose, River (job queue inside PostgreSQL), excelize (Excel output). No ORM, no Redis.
 - Database: PostgreSQL 18.
-- Frontend: Svelte 5 and SvelteKit 3 as a static SPA embedded in the Go binary. Tabulator for grids, Svelte Flow with ELK for the PFD diagram.
+- Frontend: Svelte 5 and SvelteKit 3 as a static SPA embedded in the Go binary. Tabulator for grids, Svelte Flow with ELK for the PFD diagram. TypeScript types for the API come from the OpenAPI contract through @hey-api/openapi-ts (D-97).
 - PDF engine: decided by test (R-PRT-03). Gotenberg (LibreOffice) is option A.
 - Supporting: ClamAV for uploads, Caddy for TLS, Docker Compose for deployment, Playwright for end-to-end tests, Node.js LTS to build the frontend only.
 - Design: PlantUML with the C4-PlantUML library for the UML package (D-38).
@@ -448,45 +516,37 @@ Version policy (D-44: stable versions only)
 | R-VER-01 | Stable channel only: no alpha, beta, rc, next, canary, or nightly builds. For npm packages this means the `latest` dist-tag. | [DECIDED] (D-44) |
 | R-VER-02 | Runtimes and the database use a supported line: Node.js an LTS line, Go one of the two newest major releases, PostgreSQL the newest generally available major (never a release candidate). | [PROPOSED] |
 | R-VER-03 | All chosen versions must satisfy each other's peer dependencies without `--force` or `--legacy-peer-deps`. | [PROPOSED] |
-| R-VER-04 | A new major release line is used only after it has at least one patch release. A line with a single release is a watch item and is re-checked at M0.1. | [PROPOSED] |
-| R-VER-05 | Use the newest patch of the chosen line. Re-check every version at M0.1 and record it with the date in `docs/versions.md`. | [PROPOSED] |
+| R-VER-04 | A new major release line is used only after it has at least one patch release. A line with a single release is a watch item and is re-checked at M0.1. Exception (D-91): a single-release line may be used when no other line satisfies R-VER-03 and the release is at least 14 days old; a 0.x package uses its newest release that is at least 14 days old when first installed. Exceptions are recorded in `docs/versions.md`. | [PROPOSED], exception [DECIDED] (D-91) |
+| R-VER-05 | Use the newest stable or LTS release, including the newest patch. Versions are pinned when a package is first installed and re-checked in that milestone; `docs/versions.md` records each version with its date and source. | [DECIDED] (D-90) |
 
-Verified versions (checked on 2026-10-24 against the npm registry, the Git tags of the official repositories, and the official release pages of Go, Node.js, and PostgreSQL)
-| Item | Version to use | Released | Note |
-|---|---|---|---|
-| Go | 1.27.3 | 2026-10-19 | 1.27.0 on 2026-08-19. Go 1.27 and 1.26 are the supported lines. |
-| PostgreSQL | 18.6 | 2026-08-11 | PostgreSQL 19 is only at RC 1 (2026-10-15), so it is excluded (R-VER-02). |
-| Node.js | 24.22.1 LTS (Krypton) | 2026-10-20 | Node 26 is still Current, not LTS. Re-check at M0.1: it may become LTS by then. Meets SvelteKit 3 (22.17 or newer). |
-| pgx | v5.11.0 | 2026-09-07 | |
-| sqlc | v1.31.1 | 2026-04-22 | |
-| goose | v3.29.0 | 2026-10-11 | |
-| River | v0.49.0 | 2026-10-05 | Now exists. The earlier note that it was unverified is resolved. Still a 0.x project. |
-| excelize | v2.11.0 | 2026-07-07 | |
-| testcontainers-go | v0.44.0 | 2026-08-07 | |
-| golang.org/x/crypto (argon2id) | v0.58.0 | 2026-10-09 | |
-| oapi-codegen (Go, if chosen) | v2.8.0 | 2026-07-17 | Full OpenAPI 3.0 support. Only initial OpenAPI 3.1 support, none for 3.2. |
-| SvelteKit | 3.1.0 | 2026-10-14 | 3.0.0 on 2026-10-01, then 3.0.1. Requires Node 22.17 or newer, TypeScript 6, Svelte 5.57.1 or newer, Vite 8.0.12 or newer, vite-plugin-svelte 7. Configuration moves into `vite.config.ts`, and `$lib` becomes `#lib`. The 2.x line has had no release since 2.70.3 (2026-08-18). |
-| Svelte | 5.57.2 | 2026-10-06 | |
-| Vite | 8.3.5 | 2026-10-21 | |
-| @sveltejs/vite-plugin-svelte | 7.3.1 | 2026-09-23 | |
-| @sveltejs/adapter-static | 4.0.0 | 2026-10-01 | Watch item (R-VER-04): the only release of the line, and the only line that supports SvelteKit 3. |
-| TypeScript | 6.0.3 | 2026-04-16 | TypeScript 7.0.2 (2026-07-08) is excluded by R-VER-03: SvelteKit 3 and svelte-check accept only 6. |
-| svelte-check | 4.7.7 | 2026-10-16 | Accepts TypeScript 5 or 6. |
-| Vitest | 5.0.5 | 2026-10-15 | Stable now. The earlier beta note is resolved. |
-| Playwright | 1.64.1 | 2026-10-14 | |
-| tabulator-tables | 6.7.1 | 2026-10-22 | |
-| @xyflow/svelte (Svelte Flow) | 1.7.0 | 2026-09-24 | Requires Svelte 5.25 or newer. |
-| elkjs | 0.12.0 | 2026-07-17 | |
-| openapi-typescript | 7.13.0 | 2026-02-11 | Declares TypeScript 5 only, which conflicts with TypeScript 6 (R-VER-03). See Q-47. |
-| openapi-fetch | 0.17.0 | 2026-02-11 | |
-| PlantUML | v1.2026.9 | 2026-10-17 | Needed first, at milestone S2 (D-43). Use the official Docker image or an editor extension. |
-| C4-PlantUML | v2.14.0 | 2026-08-26 | |
-| Caddy | v2.11.7 | 2026-10-03 | |
-| Gotenberg (PDF option A) | v8.38.1 | 2026-10-15 | Only if the S5 test picks it. |
-| ClamAV | 1.5.4 | 2026-08-06 | |
-| OpenAPI specification | 3.0.4 | 2024-10-24 | The newest version that every tool in the chain fully supports (D-38). |
+Version lines in use. The exact versions, release dates, and sources are in `docs/versions.md` of the code repository, which wins over this table (D-90). Versions are pinned when a package is first installed (`go.mod`, `web/package-lock.json`, `compose.yaml`, and the `go:generate` lines for the code generators).
 
-Rule: never write unverified minimum versions into specs. Release dates come from the release tags and pages listed above. At milestone M0.1 re-check every version against R-VER-01 to R-VER-05 and record the result with a date in `docs/versions.md`.
+| Item | Line | Note |
+|---|---|---|
+| Go | 1.27 | Supported lines are 1.27 and 1.26 (R-VER-02). |
+| PostgreSQL | 18 | 19 is still a release candidate, so it is excluded (R-VER-01, R-VER-02). |
+| Node.js | 24 LTS | Used only to build the frontend. 26 is not LTS yet. |
+| pgx | v5 | |
+| sqlc | v1 | Pinned in a `go:generate` line, not in `go.mod`. |
+| goose | v3 | Migrations embedded in the binary. |
+| River | v0 | Still 0.x: the newest release that is at least 14 days old when first used (D-91). Not used yet. |
+| excelize | v2 | Not used yet. |
+| testcontainers-go | v0 | 0.x, under D-91. |
+| golang.org/x/crypto | v0 | argon2id. 0.x, under D-91. |
+| oapi-codegen | v2 | Pinned in a `go:generate` line. Initial OpenAPI 3.1 support only, so the contract stays 3.0.4 (D-38). |
+| SvelteKit | 3 | Configuration in `vite.config.ts`, import alias `#lib` instead of `$lib`. |
+| Svelte | 5 | |
+| Vite | 8 | |
+| @sveltejs/adapter-static | 4 | A single-release line, used under the D-91 exception because it is the only line that supports SvelteKit 3. |
+| TypeScript | 6 | 7 is excluded by R-VER-03: SvelteKit 3 and svelte-check accept only 5 or 6. |
+| svelte-check, Vitest, Playwright | 4, 5, 1 | |
+| @hey-api/openapi-ts | 0 | Types only (D-97). 0.x, under D-91. |
+| tabulator-tables, @xyflow/svelte, elkjs | 6, 1, 0 | From stage 4. |
+| PlantUML, C4-PlantUML | 1.2026, 2 | UML package (D-38). |
+| Caddy, Gotenberg, ClamAV | 2, 8, 1.5 | Stages 6 and 8. Gotenberg only if the S5 test picks it. |
+| OpenAPI specification | 3.0.4 | The newest version the whole tool chain supports (D-38). The newest specification is 3.2.1. |
+
+Rule: never write unverified minimum versions into specs. Check each version with the package registry or the official release tags when the package is first installed, and record it with the date in `docs/versions.md`.
 
 ## 8. Future design (deferred, with hooks kept now)
 
@@ -497,7 +557,7 @@ Rule: never write unverified minimum versions into specs. Release dates come fro
 | In-app approval and digital signatures | [DEFERRED] | Release record with a method field (wet, simple electronic, visible signature, cryptographic). Authority matrix tables. Immutable signature record bound to the snapshot hash. |
 | Full AIAG-VDA (structure, function, failure network, Action Priority) | [DEFERRED], re-evaluate later | Risk method and rating tables live in the format template. Rows have parent_id and node_type. |
 | Admin-editable layout designer | [DEFERRED] | Layout stored as data (R-PRT-02). |
-| Detailed authority matrix, customer scope enforcement, and row-level security in PostgreSQL | [DEFERRED] (M8.1) | Single permission function with coarse roles from M1.2 (D-35). Customer scope field on documents. |
+| Detailed authority matrix and row-level security in PostgreSQL | [DEFERRED] (M8.1) | Single permission function with the U3 roles from M1.2 (D-35, D-78) and the project group scope (D-81). Customer scope field on documents. |
 | Real-time push updates (WebSocket) as in the earlier spec | [OPEN] (Q-13) | Optimistic locking is the baseline. |
 | Integration API for other internal applications, with writes as change proposals | [DEFERRED] (stage 9) | Contract-first, idempotency keys, one error format, pagination, request IDs in the audit log, an actor model that knows service accounts. See section 16. |
 | Customer portal: read-only access to the customer's own PFD, PFMEA, and CP | [DEFERRED] (stage 10) | customer_id on every document, customer-visible flag and published timestamp on revisions, internal-only flag per template column, customer user actor type, signed scan and generated PDF stored per revision, field audience attribute, visibility profile, print manifest, content hash, per-customer publication policy, display permission records. See sections 17 to 19. |
@@ -521,7 +581,7 @@ Authority and authenticity (applies to every level)
 - No automatic PFMEA to CP consistency check. Quality depends on people and the side-by-side view plus the "checked by" mark.
 - VDA support is form compatible only. The failure network is not modeled.
 - Approval and release are paper-based. The system relies on the signed scan and the document control record.
-- Local accounts only. Roles are minimal at first, so every logged-in user can do everything until M8.1.
+- Local accounts only. The eight roles of the user map and the project group scope are enforced from M1.2 (D-78, D-81); the detailed authority matrix and row-level security come in M8.1.
 - Layouts are written by developers. Admins cannot edit them yet.
 - PDF fidelity is unproven until the S5 test.
 - No real-time push updates (Q-13).
@@ -599,7 +659,7 @@ Likelihood (L) and impact (I) are assistant assessments on a High, Medium, Low s
 | RK-46 | Separation of duties exists only on paper until M8.1, including during the pilot, because every logged-in user may do everything. | L | M | Resolved by D-35: coarse roles from M1.2. |
 | RK-47 | A signed copy does not match the recorded revision because the draft can still be edited after printing. | M | H | Awaiting-approval state (R-REV-06). |
 | RK-48 | Content in internal-only fields is used in practice without ever being approved, because it never appears on the signed copy. | M | M | Not active while internal fields are on hold (D-31). Re-evaluate if the filter resumes. |
-| RK-49 | Real data sits in a personal environment (laptop, repository, test machine) without encrypted backups, disk encryption, or access control. | H | H | Encrypted local backups with a tested restore (milestone M1.7), disk encryption on the laptop, R-SEC-08. The localhost demo (D-36) keeps the data on the owner's machine. |
+| RK-49 | Real data sits in a personal environment (laptop, repository, test machine) without encrypted backups, disk encryption, or access control. | H | H | Encrypted local backups with a tested restore (milestone M1.7, built before M2.1, D-119), disk encryption on the laptop, R-SEC-08. The localhost demo (D-36) keeps the data on the owner's machine. |
 | RK-50 | QCC results cannot be shown because no "before" numbers exist, or are judged weak because the "after" numbers come from a localhost demo rather than daily use (D-36). | H | M | Measure baselines now with the Excel process (milestone S7). [PROPOSED] Time the demo runs with the same tasks as the baseline and label them as demo results. |
 | RK-51 | Capacity: about 70 milestones up to stage 8, plus about 15 in stages 9 and 10 now that all code is practice (D-37), for one person outside a Monday-to-Saturday work week, next to routine Control Plan updates. At an assumed 1 to 2 milestones per week this is roughly 8 to 16 months (assumption, not measured). | H | H | Measure the real pace after gate 0. Use a thin MVP for the QCC. |
 | RK-52 | Changes that need customer approval or PPAP resubmission are released without customer approval evidence. | M | H | Handled outside the system, as today (D-34). Re-evaluate for IT's version. |
@@ -614,7 +674,7 @@ Likelihood (L) and impact (I) are assistant assessments on a High, Medium, Low s
 | RK-61 | Change requests wait when no verifier is available. | L | M | Mostly resolved by D-51: three people can verify. Delegation with a validity period (R-APR-05) stays a later option. |
 | RK-62 | Release recording deadlock: the PPAP Staff is both a preparer (D-63) and a document control holder (D-60), and the recorder must differ from the preparer (R-APR-02). | L | M | Resolved by D-68: the PPAP Engineer also holds document control, so each records the other's documents. A document prepared by the Project Leader or the Project Engineer can be recorded by either. |
 | RK-63 | Access rights drift when the admin edits roles freely: users gain rights nobody reviewed, or separation of duties weakens. The admin account holder (the PPAP Staff) is also a preparer, so they could grant their own work account more rights. | M | M | Separate admin account (D-72, R-SEC-13), guardrails that cannot be switched off (R-SEC-11), audit log of every access change, the user map as the approved baseline (U3-peta-pengguna), each admin account linked to its holder (D-74). The owner rejected a review of the access-change log by the NPI Manager (D-75). |
-| RK-64 | Code is written before the UML is complete (D-77). Stage 1 and later milestones may build rules that the domain classes (U5) or the state machines (U6) would change, which causes rework, or the code and the UML drift apart, which weakens the UML as IT's deliverable (D-33). | M | M | [PROPOSED] Finish U5 and U6 before stage 1 starts (stage 0 needs only the customer entity). Record every gap the code finds in `docs/evaluasi-desain.md` (section 15, item 11), update the brief and the UML from the owner's decisions, and compare the UML with the code at each gate. |
+| RK-64 | Code is written before the UML is complete (D-77). Stage 1 and later milestones may build rules that the domain classes (U5) or the state machines (U6) would change, which causes rework, or the code and the UML drift apart, which weakens the UML as IT's deliverable (D-33). | M | M | [SUPERSEDED] by D-80: stage 1 did not wait for U5 and U6; the UML is updated from the code after each stage. Record every gap the code finds in `docs/evaluasi-desain.md` (section 15, item 11), update the brief and the UML from the owner's decisions, and compare the UML with the code at each gate. |
 
 ## 12. Unconfirmed items and open questions
 
@@ -633,14 +693,14 @@ Likelihood (L) and impact (I) are assistant assessments on a High, Medium, Low s
 | Q-11 | Does a document control role exist? Will approvers ever use the web? | Release recording (R-APR-02). | Document control records releases. |
 | Q-12 | Do customers require 4M change notification? | Whether the 4M category is mandatory. | Optional field. |
 | Q-13 | Keep real-time push updates and dashboards from the earlier spec? | Scope and architecture. | Drop for now. Optimistic locking only. |
-| Q-14 | UI language and file naming conventions. | i18n and UI work. | Code comments in Indonesian. UI language to be decided. |
-| Q-15 | Which approval steps apply to content, layout-only, and administrative changes? | Change type policy master data. | Same flow for all until defined. |
+| Q-14 | PARTLY RESOLVED 2026-10-28: the screens are in English for now, from one text catalog (D-96). File naming conventions are still open. | i18n and UI work. | Code comments in Indonesian. |
+| Q-15 | Which approval steps apply to content, layout-only, and administrative changes? | Change type policy master data. | Same flow for all until defined. The data shape is a route per change type (D-112). |
 | Q-16 | QCC schedule, deadline, and baseline measurements. | Plan and success measures. | None. Baselines to be measured by the owner. "After" numbers come from timed demo runs (D-36). |
-| Q-17 | Final library versions (River minimum, Vitest 5, unchecked libraries). | Project setup. | Verify at M0.1. |
+| Q-17 | RESOLVED 2026-10-28: every version was re-checked at M0.1 and is recorded in `docs/versions.md` (D-90, D-91). | Project setup. | |
 | Q-18 | Retention and archive rules for obsolete revisions and attachments. | Storage and compliance. | Keep everything. |
 | Q-19 | More than one plant or line? Numbering per plant? | Numbering and access scope. | Single plant. |
 | Q-20 | Company data classification rules for customer-confidential documents. | Security controls and hosting. | Treat all documents as confidential. |
-| Q-21 | Real roles, headcount per role, and concurrency. | Capacity and permissions. | 10 to 50 concurrent users, five roles from section 1. |
+| Q-21 | Real roles, headcount per role, and concurrency. | Capacity and permissions. | 10 to 50 concurrent users, the eight roles of U3-peta-pengguna (D-78). |
 | Q-22 | Which internal application connects first, what exactly does it write (data, frequency, trigger), and who owns it? | Scopes, change proposal shape, load. | Writes are change proposals. Candidate list in R-API-08. |
 | Q-23 | Can one customer account see several customer codes (for example a customer group)? Who administers customer accounts? | Portal scoping and account lifecycle. | One customer, one code. Company admin manages accounts. |
 | Q-24 | Portal policy: may customers see history or older revisions? Hosting model (separate DMZ portal, same application with row-level security, or VPN)? Any customer requirements of their own? | Portal architecture and security. | Latest released revision only, no history, separate DMZ portal preferred. |
@@ -665,11 +725,11 @@ Likelihood (L) and impact (I) are assistant assessments on a High, Medium, Low s
 | Q-43 | RESOLVED 2026-10-23: use current best practice, because IT's needs are unknown (D-38, section 20). | D-33, milestone S2. | Section 20. |
 | Q-44 | PARTLY ANSWERED 2026-10-24: not decided yet. IT will probably review after the whole design is finished. Who reviews is still open. | D-38, milestone M8.4, RK-54. | The owner reviews with the spec-reviewer agent until IT names a reviewer. |
 | Q-45 | RESOLVED 2026-10-24: a group belongs to one customer, and a model belongs to at most one group (D-42). Part (c) moved to Q-46. | D-39, R-TPL-03, RK-11. | |
-| Q-46 | What defines a model group (for example the same PCB platform or product family), and who creates and maintains groups? | Model group master data (milestone M1.4). | Template authors maintain groups, with no fixed definition. |
-| Q-47 | TypeScript client generator for OpenAPI: openapi-typescript 7.13.0 declares TypeScript 5 only (conflict with TypeScript 6), and @hey-api/openapi-ts 0.99.0 accepts TypeScript 6 but is still 0.x. Which one, or another? | R-API-02, R-VER-03, milestone M0.5. | Decide at M0.5 after a small test. |
+| Q-46 | What defines a model group (for example the same PCB platform or product family), and who creates and maintains groups? | Model group master data (milestone M1.4), model group as a yokoten target (D-40). | The admin account maintains groups for now (D-87), with no fixed definition. |
+| Q-47 | RESOLVED 2026-10-30: @hey-api/openapi-ts with the types plugin only, after the M0.5 test (D-97). | R-API-02, R-VER-03, milestone M0.5. | |
 | Q-48 | RESOLVED 2026-10-24: each customer has one Project Leader and one Project Leader Supervisor. A change request is verified by one of them or by the PPAP Supervisor, and the verifier is recorded (D-51). | Names printed in the slots, R-CHG-02, RK-61. | Remaining holder questions moved to Q-50. |
 | Q-49 | RESOLVED 2026-10-24: per-slot sign dates are prepared with an off switch. For now only the release date is recorded (D-52). | R-APR-10, R-APR-14. | |
-| Q-50 | RESOLVED 2026-10-24: one APQP/PPAP Controller (PPAP Supervisor), one Project Engineer and one Project Leader per project group, the GM slot held by the Advisor (D-54 to D-56). | Position master data (milestone M1.8). | The QA QC Manager sits outside the NPI chart. One holder is assumed. |
+| Q-50 | RESOLVED 2026-10-24: one APQP/PPAP Controller (PPAP Supervisor), one Project Engineer and one Project Leader per project group, the GM slot held by the Advisor (D-54 to D-56). | Position master data (milestone M1.8). | The QA QC Manager sits outside the NPI chart. One holder, as for the other approver positions (D-115). |
 | Q-51 | RESOLVED 2026-10-27: the release date is filled in at the print for signature, and the effective date equals the release date for now, changeable later (D-59). | R-REV-06, R-REV-08, U6. | |
 | Q-52 | RESOLVED 2026-10-27: the owner accepted the working assumption. Print titles follow the TR-020 covers, with the holder's name (D-76). | Cover layout (R-APR-08, R-APR-17, R-PRT-07), milestone M6.1. | |
 | Q-53 | RESOLVED 2026-10-27: the PPAP Staff today, possibly DCC later (D-60). | R-APR-02, R-APR-12, U3. | |
@@ -683,7 +743,7 @@ Likelihood (L) and impact (I) are assistant assessments on a High, Medium, Low s
 
 ## 13. Relation to the earlier spec package (`pfmea-system-phase1-spec-v2`)
 
-The package is reference material. Where it conflicts with this brief, this brief wins.
+The package is reference material. Where it conflicts with this brief, this brief wins. It is not in the code repository; its error code table was therefore replaced by the baseline built in M0.5 (D-99).
 
 | Area | Earlier spec | Now |
 |---|---|---|
@@ -709,7 +769,7 @@ The detailed milestones are in the separate document "Milestone Pembangunan Web 
 |---|---|
 | S | Mature the specification, starting with the UML (D-43), in parallel with the code from 2026-10-27 (D-77): UML (the company deliverable, D-33), update spec files, real sample material (D-29), paper scenarios, throwaway PDF test, review. [PROPOSED] additions: baseline measurement with the current Excel process, early talk with IT and management. |
 | 0 | Preparation and learning basics: tools and versions, first Go server, PostgreSQL, first SvelteKit page, first vertical slice (customer). |
-| 1 | Foundation: local login, permission check point, tamper-resistant audit log, master data (customer, model, part number, process, document types, change types, positions and approval routes, D-45 to D-47). |
+| 1 | Foundation: local login, permission check point, tamper-resistant audit log, master data (customer, model, part number, process, document types, change types, positions and approval routes, D-45 to D-47), local encrypted backup (M1.7, D-119). |
 | 2 | Document numbering: patterns, atomic counters, register, set registration, legacy import. |
 | 3 | Templates: format templates, process template library, four scopes and precedence (D-39), template versions. |
 | 4 | Documents and composition: rows, grid editor, locking, paste from Excel, two-panel composition, ordering, local differences, side-by-side check. |
@@ -740,7 +800,7 @@ The detailed milestones are in the separate document "Milestone Pembangunan Web 
 Status: [PROPOSED] unless marked. Decisions needed from the owner are in Q-22 to Q-26.
 
 Facts
-- The web UI is an API client: the SPA talks to the Go backend over JSON HTTP at `/api/v1`, described by an OpenAPI contract with generated server and client code. [DECIDED, inherited from the earlier spec]
+- The web UI is an API client: the SPA talks to the Go backend over JSON HTTP at `/api/v1`, described by an OpenAPI contract (`api/openapi.yaml`) with generated server code and generated client types (D-97). [DECIDED, inherited from the earlier spec]
 - The first future internal consumer must write into the system, not only read. [DECIDED] (D-15)
 
 Three API surfaces (D-16)
@@ -754,17 +814,17 @@ Three API surfaces (D-16)
 |---|---|---|
 | R-API-01 | One domain service layer holds every rule: authorization, validation, audit, immutability, numbering, change workflow. The three surfaces are thin adapters over it. No adapter reads or writes tables on its own, and no other application touches the database. | [DECIDED] (D-61) |
 | R-API-02 | Contract first. Each surface has its own OpenAPI file, so UI changes cannot break integrations. Types are generated on both sides. | [DECIDED] (D-61) |
-| R-API-03 | Every call has an actor of type human, service, or customer user. The permission function takes (actor, action, resource) and evaluates role, scope, and customer scope. The audit log records actor type, service account, token ID, request ID, and source IP. | [PROPOSED] |
+| R-API-03 | Every call has an actor of type human, service, or customer user. The permission function takes (actor, action, resource) and evaluates role, scope, and customer scope. The audit log records actor type, service account, token ID, request ID, and source IP. For the audit log there are also the actor types system (a command on the server machine) and anonymous (not logged in); the permission function always refuses both (D-106). | [PROPOSED], system and anonymous [DECIDED] (D-106) |
 | R-API-04 | Service accounts are created by an admin with name, owning team and contact, purpose, scopes, allowed customer IDs, allowed network ranges, and expiry. Tokens are random 256-bit values shown once, stored only as a hash, identifiable by a prefix, expiring (suggest 90 days), rotatable with overlap, and revocable. OAuth2 client credentials or mutual TLS are later options if IT requires them (Q-25). | [PROPOSED] |
 | R-API-05 | Scopes are named resource:action, for example `documents:read`, `revisions:read`, `numbers:read`, `numbers:reserve`, `changes:read`, `changes:propose`, `attachments:write`, `exports:create`, `templates:read`. A token is also bound to a set of customers. | [PROPOSED] |
-| R-API-06 | No integration token is issued before roles and customer scope are enforced (M8.1). Until then roles are enforced but customer scope is not (D-35), so a token could read every customer (D-19). | [PROPOSED] |
+| R-API-06 | No integration token is issued before roles and customer scope are enforced (M8.1). Until then roles and the project group scope of human users are enforced (D-35, D-81), but a token has no customer scope, so it could read every customer (D-19). | [PROPOSED] |
 | R-API-07 | Writes are proposals. An external application never edits documents or released revisions directly. It creates a change (source type integration, with the source application name) containing patch operations (add, modify, remove a row, by stable row ID) against an expected base revision. The system builds the draft revision and diff, and humans verify and approve under the normal rules. An integration can never verify, approve, release, record signed scans, void numbers, edit master data, or delete anything. | [PROPOSED] |
 | R-API-08 | Candidate writes (to be confirmed by Q-22): create change proposals, upload attachments to a change, reserve a document number (atomic and idempotent), create export jobs. | [PROPOSED] |
 | R-API-09 | A calling application may state which person a proposal is for (`on_behalf_of`). It is recorded and shown as asserted, never trusted for authorization. The verifier must be a different person from the stated requester. | [PROPOSED] |
 | R-API-10 | Every write requires an `Idempotency-Key`, kept for a defined period. A repeated request returns the original result. | [PROPOSED] |
 | R-API-11 | Patch proposals carry the base revision (or an ETag). A mismatch returns 409 `conflict` with the current state. The system never merges external changes silently. | [PROPOSED] |
 | R-API-12 | Readable resources: customers, models, part numbers, processes, the number register, documents, released revisions and their rows, revision history and diffs, change status, published template versions and points, attachment downloads, exports. Only released data by default. Draft data needs an explicit scope. | [PROPOSED] |
-| R-API-13 | Conventions: JSON over HTTPS, opaque stable IDs, UTC ISO 8601 times, cursor pagination with a maximum page size, filters (customer, model, status, updated_since) for incremental sync, one error format with code, message, details, and request ID (reuse the error code table of the earlier spec), `X-Request-Id` accepted and returned. | [PROPOSED] |
+| R-API-13 | Conventions: JSON over HTTPS, opaque stable IDs, UTC ISO 8601 times, cursor pagination with a maximum page size, filters (customer, model, status, updated_since) for incremental sync, one error format with code, message, details, and request ID, `X-Request-Id` accepted and returned. Error codes (D-99, baseline from M0.5): `invalid_request` (400, or 413 for a body over 1 MiB), `validation_failed` (422, with details per field), `conflict` (409), `not_found` (404), `method_not_allowed` (405 with an Allow header), `unauthenticated` (401), `invalid_credentials` (401), `password_change_required` (403), `forbidden` (403), and `internal_error` (500). JSON field names are snake_case. | [PROPOSED], error codes [DECIDED] (D-99) |
 | R-API-14 | Heavy work (Excel and PDF exports) is asynchronous: create a job, poll the job resource, download the file. Rate limits per token return 429 with Retry-After. | [PROPOSED] |
 | R-API-15 | Versioning: the major version is in the path. Within a major version only additive changes. A breaking change needs a new major version, `Deprecation` and `Sunset` headers, and a notice period (suggest six months, Q-26). Contract tests run in CI. | [PROPOSED] |
 | R-API-16 | Webhooks come later: events such as revision released, change accepted or rejected, document number registered, template version published. Signed with HMAC, delivered at least once from an outbox through the job queue, consumers must be idempotent. Polling with updated_since is the initial alternative. | [PROPOSED] |
@@ -981,3 +1041,4 @@ Findings from the TR-020 documents
 - 1.13 (2026-10-27): recorded D-67 (the Project Engineer also prepares), D-68 (the PPAP Engineer also holds document control; answer to Q-58), D-69 (admin and migration roles: PPAP Staff and PPAP Engineer), and D-70 (viewer accounts for every position up to GM level). Resolved Q-58 and Q-60 and RK-62. Q-59 stays open. Updated the role summary, R-APR-07, R-APR-13, R-MIG-06, R-SEC-12, D-60, D-63, and RK-63.
 - 1.14 (2026-10-27): recorded D-71 (Project Leader and Project Engineer prepare only for their own project group) and D-72 (separate admin account, held by the PPAP Staff, audit log through it). Confirmed D-66: the admin manages the access rules, and the user map U3-peta-pengguna is the baseline. Added R-SEC-13. Resolved Q-59. Updated the role summary, domain model, R-SEC-10 to R-SEC-12, D-69, and RK-63.
 - 1.15 (2026-10-27): recorded D-73 (the last admin account cannot be removed), D-74 (each admin account linked to its holder), D-75 (no access-change log review by the NPI Manager, rejected suggestion), D-76 (print titles as on the TR-020 covers, answer to Q-52), and D-77 (coding starts in parallel with the UML and is used to evaluate the design; amends D-11). Resolved Q-52. Added RK-64 and working agreements 11 and 12. Updated the role summary, R-SEC-11, R-SEC-13, R-APR-17, R-PRT-03, R-PRT-07, D-11, D-43, RK-55, RK-59, RK-63, section 13, and the stage S row.
+- 1.16 (2026-10-30): recorded the owner's decisions on the code findings of `docs/evaluasi-desain.md` as D-78 to D-120: E-01 to E-18 (decided 2026-10-27 and 2026-10-28), Q-14 (D-96), Q-47 (D-97), and E-19 to E-42 together with the stage 1 evaluation, approved on 2026-10-30 through the owner's general approval of Claude Code's recommendations, each checked against the main goal of easier yokoten revisions. E-30 and E-33 wait for real documents; the precedence question of D-112 and numbering with special codes (D-114) stay open. As the owner allowed ("anda juga saya izinkan untuk merubah brief sesuai dengan aktual code"), the text now follows the code of stages 0 and 1: the role list in section 1; the glossary (PPAP Staff, person and account, position holder, plant code, special code, running number); the domain model and ER diagram of section 4; R-DOC-04, R-TPL-10, R-CHG-06, R-NUM-02, R-NUM-03, R-APR-08, R-APR-09, R-APR-15, R-SEC-02, R-SEC-03, R-SEC-09, R-SEC-11, R-SEC-12, R-SEC-13, the new R-SEC-14 and R-SEC-15, R-VER-04, R-VER-05, R-API-03, R-API-06, and R-API-13; D-19 and D-73; section 7 (lines only, exact versions in `docs/versions.md`); sections 8, 9, 13, 14, and 16; RK-49 and RK-64; and Q-14, Q-15, Q-17, Q-21, Q-46, Q-47, and Q-50.

@@ -3,7 +3,7 @@
 Hasil cek ulang M0.1 terhadap R-VER-01 sampai R-VER-05 (D-44), untuk semua item di brief bagian 7.
 
 - **Tanggal dicek:** 27 Oktober 2026, dari container cloud Claude Code. Dicek ulang 28 Oktober 2026 tanpa perubahan.
-- **Versi yang dipakai** adalah versi stabil atau LTS terbaru (keputusan pemilik E-13, 28 Oktober 2026), dengan masa tunggu untuk dua kasus khusus (E-14, lihat bagian "Aturan yang berlaku"). Brief bagian 7 diperbarui lewat sesi desain.
+- **Versi yang dipakai** adalah versi stabil atau LTS terbaru (D-90), dengan masa tunggu untuk dua kasus khusus (D-91, lihat bagian "Aturan yang berlaku"). Sejak brief v1.16, brief bagian 7 hanya menyebut line, dan versi tepatnya hanya ada di file ini.
 - **Tanggal rilis** memakai UTC dari sumber yang disebut. Tanggal di brief bisa berbeda satu hari karena zona waktu (WIB = UTC+7).
 - Versi dikunci saat paketnya pertama kali dipasang: modul Go di `go.mod` dan `go.sum` (mulai M0.2), paket npm di `package.json` dan `package-lock.json` (mulai M0.4), dan image Docker di `compose.yaml` (M0.1).
 - Alat generate Go (oapi-codegen dan sqlc, mulai M0.5) tidak masuk `go.mod`. Versinya dikunci di baris `//go:generate go run <modul>@<versi>` (`internal/server/generate.go` dan `internal/db/generate.go`), dan isi unduhannya diperiksa lewat checksum database Go (sum.golang.org).
@@ -40,7 +40,7 @@ Halaman rilis resmi go.dev dan postgresql.org belum dicek. Silakan buka dari kom
 | Komponen | Versi yang dipakai | Tanggal rilis | Dicek | Sumber | Catatan |
 |---|---|---|---|---|---|
 | Go | 1.27.3 | 2026-10-19 | 2026-10-27 | proxy.golang.org, `golang.org/toolchain` | Terbaru. Line yang didukung: 1.27 dan 1.26 (terbaru 1.26.10), jadi memenuhi R-VER-02. Belum ada 1.28 (rc pun belum). Build `windows-amd64` tersedia. Dikunci di `go.mod` (`go 1.27.3`) sejak M0.2, setelah dicek ulang 28 Oktober 2026. |
-| PostgreSQL | 18.6 | 2026-08-11 | 2026-10-27 | Tag `REL_18_6` (commit "Stamp 18.6"), Docker Hub `postgres:18.6` | Terbaru di line 18. PostgreSQL 19 masih RC 1 (tag `REL_19_RC1`, 2026-10-12; image `19rc1`), jadi tidak dipakai (R-VER-01, R-VER-02). |
+| PostgreSQL | 18.6 | 2026-08-11 | 2026-10-27 | Tag `REL_18_6` (commit "Stamp 18.6"), Docker Hub `postgres:18.6` | Terbaru di line 18. PostgreSQL 19 masih RC 1 (tag `REL_19_RC1`, 2026-10-12; image `19rc1`), jadi tidak dipakai (R-VER-01, R-VER-02). Brief v1.15 menulis 2026-10-15 dari halaman rilis; halaman postgresql.org tidak bisa dibuka dari cloud, jadi belum diverifikasi apakah 15 Oktober adalah tanggal pengumuman resminya (E-53). |
 | Image Docker PostgreSQL | `postgres:18.6` | Tag diperbarui 2026-10-21 | 2026-10-27 | Docker Hub | Digest saat dicek: `sha256:edb0c08dc33befd0262ab3b5cf1c4f3f8cfd8b09e88c05b45adee29d6761ddb6`, sama dengan `18.6-trixie` (basis Debian 13). Tag bisa dibangun ulang untuk patch OS, digest tidak. |
 | Node.js | 24.22.1 LTS (Krypton) | 2026-10-20 | 2026-10-27 | nodejs.org/dist/index.json | Terbaru di line 24 LTS. Node 26 (terbaru 26.12.1) masih Current, belum LTS. Cek lagi di M0.4. Memenuhi syarat SvelteKit 3 (Node 22.17 atau lebih baru). |
 | npm | 11.19.1 | Ikut Node 24.22.1 | 2026-10-27 | `npm -v` setelah memasang Node 24.22.1 | Tidak dipasang terpisah. Versinya mengikuti Node. |
@@ -81,7 +81,7 @@ Hasil `npm audit` setelah M0.5: 8 temuan (4 rendah, 4 tinggi). Yang rendah masih
 | TypeScript | 6.0.3 | 2026-04-16 | 2026-10-27 | npm | Versi terbaru di line 6. dist-tag `latest` sudah 7.0.2, tapi SvelteKit 3.1.0 (^6.0.0) dan svelte-check 4.7.7 (^5 atau ^6) belum menerima 7 (R-VER-03). |
 | svelte-check | 4.7.7 | 2026-10-16 | 2026-10-27 | npm | Terbaru. Peer typescript ^5.0.0 atau ^6.0.0. |
 | Vitest | 5.0.5 | 2026-10-15 | 2026-10-27 | npm | Terbaru. Peer vite ^8 cocok. Engines: Node ^22.12, ^24, atau >=26. |
-| Playwright (`@playwright/test`) | 1.64.1 | 2026-10-14 | 2026-10-28 | npm | Terbaru. Dipasang sejak M0.5 untuk test E2E. Butuh Chromium revisi 1248 (Chrome for Testing 156.0.8078.4): di komputer pemilik pasang sekali dengan `npx --prefix web playwright install chromium`. Container cloud hanya punya Chromium revisi 1243 di `/opt/pw-browsers`, jadi di cloud test memakai variabel `PLAYWRIGHT_CHROMIUM_EXECUTABLE=/opt/pw-browsers/chromium`. |
+| Playwright (`@playwright/test`) | 1.64.1 | 2026-10-14 | 2026-10-28 | npm | Terbaru. Dipasang sejak M0.5 untuk test E2E. Butuh Chromium revisi 1248 (Chrome for Testing 156.0.8078.4): di komputer pemilik pasang sekali dengan `npm --prefix web exec -- playwright install chromium` (perintah yang sama dengan CLAUDE.md, E-55). Container cloud hanya punya Chromium revisi 1243 di `/opt/pw-browsers`, jadi di cloud test memakai variabel `PLAYWRIGHT_CHROMIUM_EXECUTABLE=/opt/pw-browsers/chromium`. |
 | `@types/node` | 24.19.2 | 2026-10-09 | 2026-10-28 | npm | Dipasang sejak M0.5 supaya file Node (konfigurasi Playwright, `web/e2e/server.mjs`) lolos svelte-check. Mengikuti line Node yang dipakai (24), bukan dist-tag `latest` (26.6.5, untuk Node 26). Tidak punya peer dependency. |
 | tabulator-tables | 6.7.1 | 2026-10-22 | 2026-10-27 | npm | Terbaru. Dipakai mulai M4.2. |
 | `@xyflow/svelte` (Svelte Flow) | 1.7.0 | 2026-09-24 | 2026-10-27 | npm | Terbaru. Peer svelte ^5.25.0. Dipakai di M4.10 (opsional). |

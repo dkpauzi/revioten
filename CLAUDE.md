@@ -2,7 +2,7 @@
 
 File ini dibaca Claude Code di awal setiap sesi. Isinya aturan kerja untuk menulis kode, diringkas dari brief desain. Bila file ini berbeda dengan brief, brief yang berlaku (brief bagian 0 dan bagian 15, butir 12).
 
-- Dibuat 27 Oktober 2026 dari brief desain v1.15 (D-77).
+- Dibuat 27 Oktober 2026 dari brief desain v1.15 (D-77), diperbarui 30 Oktober 2026 mengikuti brief desain v1.16 (D-78 sampai D-120).
 - Baris bertanda **(usulan)** adalah usulan Claude yang belum diputuskan pemilik. Ikuti sebagai rencana kerja, tapi bisa berubah.
 
 ## 1. Proyek ini
@@ -57,7 +57,7 @@ Versi di bawah dicek ulang di M0.1 (27 dan 28 Oktober 2026). Daftar lengkap bese
 - **Database:** PostgreSQL 18.6 di Docker. PostgreSQL 19 masih RC, jadi tidak dipakai. Docker tetap dipakai. Bila Docker Desktop terkendala lisensi atau izin IT, pakai Docker Engine di dalam WSL 2 (keputusan pemilik, 28 Oktober 2026).
 - **Frontend:** Svelte 5.57.3 dan SvelteKit 3.1.0 sebagai SPA statis (`@sveltejs/adapter-static` 4.0.0) yang di-embed ke binary Go. Juga Vite 8.3.5, `@sveltejs/vite-plugin-svelte` 7.3.1, TypeScript 6.0.3 (bukan 7), svelte-check 4.7.7, Vitest 5.0.5, dan Playwright 1.64.1. Node 24.22.1 LTS dipakai hanya untuk build.
 - **Nanti:** tabulator-tables (grid), @xyflow/svelte dengan elkjs (diagram PFD), ClamAV, Caddy, Docker Compose untuk deployment. Mesin PDF diputuskan lewat uji S5 (R-PRT-03), sebelum Tahap 6 **(usulan)**.
-- **Generator TypeScript untuk OpenAPI:** masih terbuka (Q-47) dan diputuskan di M0.5 lewat uji kecil.
+- **Generator TypeScript untuk OpenAPI:** @hey-api/openapi-ts dengan plugin tipe saja; pemanggilan fetch ditulis tangan (D-97).
 
 Aturan versi (R-VER-01 sampai R-VER-05, D-44):
 - Hanya rilis stabil. Tanpa alpha, beta, rc, next, canary, atau nightly. Untuk npm berarti dist-tag `latest`.
@@ -82,7 +82,7 @@ Ini ringkasan. Teks lengkap dan statusnya ada di brief bagian 5 dan 6.
 - **Model akses:** katalog hak tetap, peran adalah kumpulan hak yang isinya diatur admin, dan ada empat level: Buat/Edit, Verifikasi, Lihat, Admin (D-66, R-SEC-10). Isi awalnya di `docs/uml/U3-peta-pengguna.md`.
 - **Akun admin:** akun terpisah yang hanya memegang hak admin dan tidak pernah memegang peran kerja. Akun ini ditautkan ke pemegangnya, dan akun admin terakhir tidak bisa dihapus (D-72, D-73, D-74). Audit log hanya dilihat lewat akun admin (D-75).
 - **Cakupan:** Project Leader dan Project Engineer hanya bekerja untuk customer di Project Group sendiri (D-71).
-- **Aturan yang tidak bisa dimatikan** (R-SEC-11, sebagian masih usulan): pemohon tidak memverifikasi permintaannya sendiri, satu orang hanya satu slot dalam satu rute, pencatat rilis berbeda dari penyusun, revisi rilis tidak bisa diubah, dan audit log append-only.
+- **Aturan yang tidak bisa dimatikan** (R-SEC-11, sebagian masih usulan): pemohon tidak memverifikasi permintaannya sendiri, satu orang hanya satu slot dalam satu rute, pencatat rilis berbeda dari penyusun, revisi rilis tidak bisa diubah, audit log append-only, akun tidak pernah dihapus (D-105), dan setiap akun boleh mengurus akunnya sendiri (D-104).
 - **Audit log:** append-only dan ditegakkan di database. Role aplikasi tanpa UPDATE dan DELETE, ada trigger penolak, dan ada hash chain (R-SEC-03).
 - **Nomor dokumen:** dialokasikan server dengan baris penghitung dalam transaksi, bukan sequence PostgreSQL. Ada unique constraint dan kunci idempoten, dan 50 pendaftaran paralel harus menghasilkan 50 nomor berbeda tanpa lubang (R-NUM-03). Nomor disimpan sebagai teks dan tidak dihitung ulang (R-NUM-02).
 - **ID tetap, nama hanya tampilan:** proses (D-06), jabatan (D-58), kolom format template (R-TPL-02), dan baris dokumen (R-DOC-02).
@@ -107,7 +107,7 @@ Kode sekarang punya dua tujuan: belajar, dan menguji apakah desain (brief, UML, 
 - Sampai pemilik memutuskan R-SEC-08, simpan dokumen asli di folder `data/` yang masuk `.gitignore`, dan jangan di-commit. Opsi lainnya adalah repo data private terpisah (R-SEC-08, usulan).
 - Jangan menulis nama orang asli di kode, data awal (seed), test, atau contoh. Pakai nama jabatan atau nama contoh **(usulan)**.
 - Password dan rahasia lain disimpan di `.env` yang tidak di-commit. Sediakan `.env.example`.
-- Password, token, kunci, dan alamat koneksi yang memuat password tidak pernah ditulis ke log, pesan error, atau audit log. Pesan error ke pengguna tidak memuat detail teknis internal; detailnya dicatat di log server bersama request ID (R-API-13). Aturan ini dibuktikan dengan test (E-18, keputusan pemilik 28 Oktober 2026).
+- Password, token, kunci, dan alamat koneksi yang memuat password tidak pernah ditulis ke log, pesan error, atau audit log. Pesan error ke pengguna tidak memuat detail teknis internal; detailnya dicatat di log server bersama request ID (R-API-13). Aturan ini dibuktikan dengan test (R-SEC-14, D-95).
 
 ## 8. Repo, perintah, dan git
 
