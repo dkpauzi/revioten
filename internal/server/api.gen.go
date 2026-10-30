@@ -389,6 +389,87 @@ func (e NewAccountKind) Valid() bool {
 	}
 }
 
+// Defines values for NumberImportLineResult.
+const (
+	NumberImportLineResultCustomerMismatch NumberImportLineResult = "customer_mismatch"
+	NumberImportLineResultDuplicate        NumberImportLineResult = "duplicate"
+	NumberImportLineResultExisting         NumberImportLineResult = "existing"
+	NumberImportLineResultImported         NumberImportLineResult = "imported"
+	NumberImportLineResultInvalid          NumberImportLineResult = "invalid"
+)
+
+// Valid indicates whether the value is a known member of the NumberImportLineResult enum.
+func (e NumberImportLineResult) Valid() bool {
+	switch e {
+	case NumberImportLineResultCustomerMismatch:
+		return true
+	case NumberImportLineResultDuplicate:
+		return true
+	case NumberImportLineResultExisting:
+		return true
+	case NumberImportLineResultImported:
+		return true
+	case NumberImportLineResultInvalid:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for NumberImportReportStatus.
+const (
+	NumberImportReportStatusInUse    NumberImportReportStatus = "in_use"
+	NumberImportReportStatusObsolete NumberImportReportStatus = "obsolete"
+	NumberImportReportStatusReleased NumberImportReportStatus = "released"
+	NumberImportReportStatusReserved NumberImportReportStatus = "reserved"
+	NumberImportReportStatusVoid     NumberImportReportStatus = "void"
+)
+
+// Valid indicates whether the value is a known member of the NumberImportReportStatus enum.
+func (e NumberImportReportStatus) Valid() bool {
+	switch e {
+	case NumberImportReportStatusInUse:
+		return true
+	case NumberImportReportStatusObsolete:
+		return true
+	case NumberImportReportStatusReleased:
+		return true
+	case NumberImportReportStatusReserved:
+		return true
+	case NumberImportReportStatusVoid:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for NumberImportRequestStatus.
+const (
+	NumberImportRequestStatusInUse    NumberImportRequestStatus = "in_use"
+	NumberImportRequestStatusObsolete NumberImportRequestStatus = "obsolete"
+	NumberImportRequestStatusReleased NumberImportRequestStatus = "released"
+	NumberImportRequestStatusReserved NumberImportRequestStatus = "reserved"
+	NumberImportRequestStatusVoid     NumberImportRequestStatus = "void"
+)
+
+// Valid indicates whether the value is a known member of the NumberImportRequestStatus enum.
+func (e NumberImportRequestStatus) Valid() bool {
+	switch e {
+	case NumberImportRequestStatusInUse:
+		return true
+	case NumberImportRequestStatusObsolete:
+		return true
+	case NumberImportRequestStatusReleased:
+		return true
+	case NumberImportRequestStatusReserved:
+		return true
+	case NumberImportRequestStatusVoid:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for NumberSettingsSequenceFormat.
 const (
 	NumberSettingsSequenceFormatLetterBlock NumberSettingsSequenceFormat = "letter_block"
@@ -1150,6 +1231,81 @@ type NextDocumentNumber struct {
 	Number string `json:"number"`
 }
 
+// NumberImportGroup defines model for NumberImportGroup.
+type NumberImportGroup struct {
+	// Count Numbers in the register, all statuses.
+	Count        int             `json:"count"`
+	CustomerCode string          `json:"customer_code"`
+	DocumentType DocumentTypeRef `json:"document_type"`
+
+	// Gaps Running numbers missing from 001 to the highest. They are reported, never filled.
+	Gaps []SequenceRange `json:"gaps"`
+
+	// Highest The highest running number, for example 007. Missing when count is 0.
+	Highest *string `json:"highest,omitempty"`
+}
+
+// NumberImportLine defines model for NumberImportLine.
+type NumberImportLine struct {
+	// FirstLine For a duplicate, the line where the number first appears.
+	FirstLine *int `json:"first_line,omitempty"`
+
+	// Line The line in the pasted text, from 1. Blank lines are left out.
+	Line   int                    `json:"line"`
+	Result NumberImportLineResult `json:"result"`
+
+	// Text The first column of the line, without surrounding spaces.
+	Text string `json:"text"`
+}
+
+// NumberImportLineResult defines model for NumberImportLine.Result.
+type NumberImportLineResult string
+
+// NumberImportReport defines model for NumberImportReport.
+type NumberImportReport struct {
+	DryRun bool `json:"dry_run"`
+
+	// Groups The register of each customer code (old codes first) and document type after the import.
+	Groups []NumberImportGroup `json:"groups"`
+
+	// Imported Numbers imported, or the numbers a dry run would import.
+	Imported int                `json:"imported"`
+	Lines    []NumberImportLine `json:"lines"`
+
+	// Misaligned Running numbers that only some of PFD, PFMEA, and CP have. Skipped numbers do not count.
+	Misaligned []NumberMisalignment     `json:"misaligned"`
+	Status     NumberImportReportStatus `json:"status"`
+}
+
+// NumberImportReportStatus defines model for NumberImportReport.Status.
+type NumberImportReportStatus string
+
+// NumberImportRequest defines model for NumberImportRequest.
+type NumberImportRequest struct {
+	CustomerId string `json:"customer_id"`
+
+	// DryRun True to get the report without saving anything. Default false.
+	DryRun *bool `json:"dry_run,omitempty"`
+
+	// Status The status of every number in this import.
+	Status NumberImportRequestStatus `json:"status"`
+
+	// Text Legacy numbers, one per line, at most 5000 lines that are not blank.
+	Text string `json:"text"`
+}
+
+// NumberImportRequestStatus The status of every number in this import.
+type NumberImportRequestStatus string
+
+// NumberMisalignment defines model for NumberMisalignment.
+type NumberMisalignment struct {
+	CustomerCode string `json:"customer_code"`
+
+	// Present The document types that have a number in this range.
+	Present []DocumentTypeRef `json:"present"`
+	Range   SequenceRange     `json:"range"`
+}
+
 // NumberRegistration defines model for NumberRegistration.
 type NumberRegistration struct {
 	Items []DocumentNumber `json:"items"`
@@ -1405,6 +1561,15 @@ type RouteSlotInput struct {
 // RouteSlotInputStage defines model for RouteSlotInput.Stage.
 type RouteSlotInputStage string
 
+// SequenceRange defines model for SequenceRange.
+type SequenceRange struct {
+	// First Example: 003
+	First string `json:"first"`
+
+	// Last Example: 006
+	Last string `json:"last"`
+}
+
 // Session defines model for Session.
 type Session struct {
 	Account Account `json:"account"`
@@ -1625,6 +1790,9 @@ type ChangeCustomerCodeJSONRequestBody = CustomerCodeChange
 // SetCustomerDefaultRouteJSONRequestBody defines body for SetCustomerDefaultRoute for application/json ContentType.
 type SetCustomerDefaultRouteJSONRequestBody = RouteChoice
 
+// ImportDocumentNumbersJSONRequestBody defines body for ImportDocumentNumbers for application/json ContentType.
+type ImportDocumentNumbersJSONRequestBody = NumberImportRequest
+
 // RegisterDocumentNumberJSONRequestBody defines body for RegisterDocumentNumber for application/json ContentType.
 type RegisterDocumentNumberJSONRequestBody = NewDocumentNumber
 
@@ -1768,6 +1936,9 @@ type ServerInterface interface {
 	// SetCustomerDefaultRoute Set the default approval route of a customer (A-2, D-47)
 	// (PUT /api/v1/customers/{customerId}/default-route)
 	SetCustomerDefaultRoute(w http.ResponseWriter, r *http.Request, customerId CustomerId)
+	// ImportDocumentNumbers Import legacy numbers of one customer, with a report (E-8, UC-14, R-NUM-06)
+	// (POST /api/v1/document-number-imports)
+	ImportDocumentNumbers(w http.ResponseWriter, r *http.Request)
 	// ListDocumentNumbers The number register, newest first, with filters (L-2, UC-12, R-NUM-04)
 	// (GET /api/v1/document-numbers)
 	ListDocumentNumbers(w http.ResponseWriter, r *http.Request, params ListDocumentNumbersParams)
@@ -2385,6 +2556,20 @@ func (siw *ServerInterfaceWrapper) SetCustomerDefaultRoute(w http.ResponseWriter
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.SetCustomerDefaultRoute(w, r, customerId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ImportDocumentNumbers operation middleware
+func (siw *ServerInterfaceWrapper) ImportDocumentNumbers(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ImportDocumentNumbers(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -3560,6 +3745,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/document-numbers/{documentNumberId}/void", wrapper.VoidDocumentNumber)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/document-numbers/{documentNumberId}/obsolete", wrapper.MakeDocumentNumberObsolete)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/document-numbers/next", wrapper.GetNextDocumentNumber)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/document-number-imports", wrapper.ImportDocumentNumbers)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/document-types", wrapper.ListDocumentTypes)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/document-types", wrapper.CreateDocumentType)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/document-types/{documentTypeId}", wrapper.UpdateDocumentType)
@@ -4552,6 +4738,45 @@ type SetCustomerDefaultRoutedefaultJSONResponse struct {
 }
 
 func (response SetCustomerDefaultRoutedefaultJSONResponse) VisitSetCustomerDefaultRouteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ImportDocumentNumbersRequestObject struct {
+	Body *ImportDocumentNumbersJSONRequestBody
+}
+
+type ImportDocumentNumbersResponseObject interface {
+	VisitImportDocumentNumbersResponse(w http.ResponseWriter) error
+}
+
+type ImportDocumentNumbers200JSONResponse NumberImportReport
+
+func (response ImportDocumentNumbers200JSONResponse) VisitImportDocumentNumbersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ImportDocumentNumbersdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ImportDocumentNumbersdefaultJSONResponse) VisitImportDocumentNumbersResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -6373,6 +6598,9 @@ type StrictServerInterface interface {
 	// SetCustomerDefaultRoute Set the default approval route of a customer (A-2, D-47)
 	// (PUT /api/v1/customers/{customerId}/default-route)
 	SetCustomerDefaultRoute(ctx context.Context, request SetCustomerDefaultRouteRequestObject) (SetCustomerDefaultRouteResponseObject, error)
+	// ImportDocumentNumbers Import legacy numbers of one customer, with a report (E-8, UC-14, R-NUM-06)
+	// (POST /api/v1/document-number-imports)
+	ImportDocumentNumbers(ctx context.Context, request ImportDocumentNumbersRequestObject) (ImportDocumentNumbersResponseObject, error)
 	// ListDocumentNumbers The number register, newest first, with filters (L-2, UC-12, R-NUM-04)
 	// (GET /api/v1/document-numbers)
 	ListDocumentNumbers(ctx context.Context, request ListDocumentNumbersRequestObject) (ListDocumentNumbersResponseObject, error)
@@ -7203,6 +7431,37 @@ func (sh *strictHandler) SetCustomerDefaultRoute(w http.ResponseWriter, r *http.
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(SetCustomerDefaultRouteResponseObject); ok {
 		if err := validResponse.VisitSetCustomerDefaultRouteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ImportDocumentNumbers operation middleware
+func (sh *strictHandler) ImportDocumentNumbers(w http.ResponseWriter, r *http.Request) {
+	var request ImportDocumentNumbersRequestObject
+
+	var body ImportDocumentNumbersJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ImportDocumentNumbers(ctx, request.(ImportDocumentNumbersRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ImportDocumentNumbers")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ImportDocumentNumbersResponseObject); ok {
+		if err := validResponse.VisitImportDocumentNumbersResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

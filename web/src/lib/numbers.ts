@@ -1,5 +1,5 @@
 // Teks layar untuk register nomor dokumen (Tahap 2).
-import type { DocumentNumber } from './api/gen/index.ts';
+import type { DocumentNumber, DocumentTypeRef, NumberImportLine, SequenceRange } from './api/gen/index.ts';
 import { t, type MessageKey } from './i18n/index.ts';
 
 const statusKeys: Record<DocumentNumber['status'], MessageKey> = {
@@ -50,4 +50,35 @@ export function registeredText(numbers: DocumentNumber[]): string {
 		.filter((n) => n.status !== 'skipped')
 		.map((n) => (n.initial_revision === 0 ? n.number : `${n.number} (${n.revision_label})`))
 		.join(', ');
+}
+
+const lineResultKeys: Record<NumberImportLine['result'], MessageKey> = {
+	imported: 'numberImportLineImported',
+	existing: 'numberImportLineExisting',
+	duplicate: 'numberImportLineDuplicate',
+	customer_mismatch: 'numberImportLineMismatch',
+	invalid: 'numberImportLineInvalid'
+};
+
+// lineResultText memberi teks hasil satu baris impor nomor lama (M2.5). Nomor
+// ganda menunjuk baris tempat nomor itu pertama muncul.
+export function lineResultText(line: NumberImportLine): string {
+	return t(lineResultKeys[line.result], { line: String(line.first_line ?? '') });
+}
+
+// notImported mengembalikan baris yang tidak masuk ke register, untuk tabel
+// di laporan impor. Baris yang masuk cukup dihitung.
+export function notImported(lines: NumberImportLine[]): NumberImportLine[] {
+	return lines.filter((l) => l.result !== 'imported');
+}
+
+// rangesText menulis rentang nomor berjalan dari laporan impor, misalnya
+// "003–006, 010". Daftar kosong menjadi "".
+export function rangesText(ranges: SequenceRange[]): string {
+	return ranges.map((r) => (r.first === r.last ? r.first : `${r.first}–${r.last}`)).join(', ');
+}
+
+// typeNames menulis nama jenis dokumen, dipisah koma, misalnya "PFD, CP".
+export function typeNames(types: DocumentTypeRef[]): string {
+	return types.map((d) => d.name).join(', ');
 }

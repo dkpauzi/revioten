@@ -117,3 +117,18 @@ RETURNING last_value;
 -- pernah turun, jadi nomor yang sudah ada tidak pernah diberikan lagi.
 UPDATE number_counters SET last_value = greatest(last_value, sqlc.arg(last_value)::integer)
 WHERE customer_code = sqlc.arg(customer_code) AND document_type_id = sqlc.arg(document_type_id);
+
+-- name: ListRegisterOfCodes :many
+-- ListRegisterOfCodes mengambil kode, jenis dokumen, nomor berjalan, dan
+-- status semua nomor dengan kode customer itu, untuk pemeriksaan dan laporan
+-- impor (M2.5). Kode customer unik di semua customer, jadi hasilnya adalah
+-- register satu customer bila kodenya kode customer itu.
+SELECT number, customer_code, document_type_id, sequence, status
+FROM document_numbers
+WHERE customer_code = ANY(sqlc.arg(codes)::text[])
+ORDER BY customer_code, document_type_id, sequence;
+
+-- name: ListNumbersByText :many
+-- ListNumbersByText mengambil teks nomor yang sudah ada di register dari
+-- daftar teks (impor, M2.5).
+SELECT number FROM document_numbers WHERE number = ANY(sqlc.arg(numbers)::text[]);

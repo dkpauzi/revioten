@@ -811,6 +811,36 @@ paths:
                 $ref: '#/components/schemas/NextDocumentNumber'
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/document-number-imports:
+    post:
+      operationId: importDocumentNumbers
+      summary: Import legacy numbers of one customer, with a report (E-8, UC-14, R-NUM-06)
+      description: |
+        Paste the legacy numbers one per line, for example the number column
+        copied from the Excel register; only the first column (before a tab)
+        is read. Numbers keep their original text, and the counter of each
+        customer code and document type rises to the highest number, so new
+        numbers continue after it. Gaps, duplicates, and misaligned sets are
+        reported and never fixed or renumbered. Lines that are not a PFD,
+        PFMEA, or CP number in the current pattern, and numbers with another
+        customer's code (R-POR-01), are reported and not imported. With
+        `dry_run`, nothing is saved. Repeating an import imports nothing new:
+        the numbers are reported as existing.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NumberImportRequest'
+      responses:
+        '200':
+          description: The import report. Nothing was saved with dry_run, or when no line was new.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NumberImportReport'
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/document-types:
     get:
       operationId: listDocumentTypes
@@ -2192,6 +2222,106 @@ components:
         reason:
           type: string
           description: Required to void a number; optional to make it obsolete. One line, at most 500 characters.
+    NumberImportRequest:
+      type: object
+      required: [customer_id, status, text]
+      properties:
+        customer_id:
+          type: string
+        status:
+          type: string
+          enum: [reserved, in_use, released, obsolete, void]
+          description: The status of every number in this import.
+        text:
+          type: string
+          description: Legacy numbers, one per line, at most 5000 lines that are not blank.
+        dry_run:
+          type: boolean
+          description: True to get the report without saving anything. Default false.
+    NumberImportReport:
+      type: object
+      required: [dry_run, status, imported, lines, groups, misaligned]
+      properties:
+        dry_run:
+          type: boolean
+        status:
+          type: string
+          enum: [reserved, in_use, released, obsolete, void]
+        imported:
+          type: integer
+          description: Numbers imported, or the numbers a dry run would import.
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/NumberImportLine'
+        groups:
+          type: array
+          description: The register of each customer code (old codes first) and document type after the import.
+          items:
+            $ref: '#/components/schemas/NumberImportGroup'
+        misaligned:
+          type: array
+          description: Running numbers that only some of PFD, PFMEA, and CP have. Skipped numbers do not count.
+          items:
+            $ref: '#/components/schemas/NumberMisalignment'
+    NumberImportLine:
+      type: object
+      required: [line, text, result]
+      properties:
+        line:
+          type: integer
+          description: The line in the pasted text, from 1. Blank lines are left out.
+        text:
+          type: string
+          description: The first column of the line, without surrounding spaces.
+        result:
+          type: string
+          enum: [imported, existing, duplicate, customer_mismatch, invalid]
+        first_line:
+          type: integer
+          description: For a duplicate, the line where the number first appears.
+    NumberImportGroup:
+      type: object
+      required: [customer_code, document_type, count, gaps]
+      properties:
+        customer_code:
+          type: string
+        document_type:
+          $ref: '#/components/schemas/DocumentTypeRef'
+        count:
+          type: integer
+          description: Numbers in the register, all statuses.
+        highest:
+          type: string
+          description: The highest running number, for example 007. Missing when count is 0.
+        gaps:
+          type: array
+          description: Running numbers missing from 001 to the highest. They are reported, never filled.
+          items:
+            $ref: '#/components/schemas/SequenceRange'
+    NumberMisalignment:
+      type: object
+      required: [customer_code, range, present]
+      properties:
+        customer_code:
+          type: string
+        range:
+          $ref: '#/components/schemas/SequenceRange'
+        present:
+          type: array
+          description: The document types that have a number in this range.
+          items:
+            $ref: '#/components/schemas/DocumentTypeRef'
+    SequenceRange:
+      type: object
+      required: [first, last]
+      properties:
+        first:
+          type: string
+          example: '003'
+        last:
+          type: string
+          example: '006'
     CustomerRef:
       type: object
       required: [id, code, name]

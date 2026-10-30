@@ -1,6 +1,7 @@
 // Test E2E Tahap 2: register nomor dokumen lewat layar. M2.1: pola
 // menghasilkan nomor seperti SC-KT-001, dan pengaturan pola ada di master
-// data. Pendaftaran bersamaan (M2.2) dibuktikan test Go TestRegisterConcurrent.
+// data. Pendaftaran bersamaan (M2.2) dibuktikan test Go TestRegisterConcurrent,
+// dan impor bersamaan (M2.5) oleh TestImportConcurrent.
 import { expect, test, type Page } from '@playwright/test';
 import { en } from '../src/lib/i18n/en.ts';
 import { createWorkAccount, ensureProjectGroup, logIn, logInFirstTime } from './helpers.ts';
@@ -25,10 +26,10 @@ async function ensureCustomer(page: Page, code: string): Promise<void> {
 }
 
 // logInAuthor membuat akun Penyusun baru (bila login itu belum ada) lewat akun
-// admin, lalu masuk dengannya.
-async function logInAuthor(page: Page, login: string, roles: string[]): Promise<void> {
+// admin, lalu masuk dengannya. Customer dengan kode itu (bawaan NB) dipastikan ada.
+async function logInAuthor(page: Page, login: string, roles: string[], customer = 'NB'): Promise<void> {
 	await logIn(page);
-	await ensureCustomer(page, 'NB');
+	await ensureCustomer(page, customer);
 	const temporary = await createWorkAccount(page, `Penyusun ${login}`, login, roles);
 	await page.getByRole('button', { name: en.logout }).click();
 	await logInFirstTime(page, login, temporary, 'nomor dokumen tidak pernah dipakai ulang');
@@ -122,4 +123,37 @@ test('Penyusun mendaftarkan set dengan revisi awal -04, dan nomor yang dilewati 
 	expect(match, text).not.toBeNull();
 	expect(new Set(match!.slice(1)).size).toBe(1);
 	await expect(page.getByText(en.numberSkipped.replace('{numbers}', ''))).toBeVisible();
+});
+
+test('dokumen kontrol mengimpor nomor lama: pratinjau, laporan, lalu impor', async ({ page }) => {
+	await logInAuthor(page, 'dokumen.impor', ['document_control'], 'LG');
+	await page.getByRole('link', { name: en.navNumbers }).click();
+	await page.getByRole('link', { name: en.numberImportLink }).click();
+	await expect(page.getByRole('heading', { name: en.numberImportTitle })).toBeVisible();
+
+	await page.getByLabel(en.numberCustomer, { exact: true }).selectOption({ label: 'LG · Customer LG' });
+	await page.getByLabel(en.numberImportStatus).selectOption({ label: en.numberStatusReleased });
+	const lines = ['SH-LG-001', 'SH-LG-002\tModel A', '', 'SC-LG-001', 'SC-LG-004', 'SC-LG-004', 'SC-NB-001', 'hello'];
+	await page.getByLabel(en.numberImportText).fill(lines.join('\n'));
+	await page.getByRole('button', { name: en.numberImportPreview }).click();
+
+	// Pratinjau: empat nomor akan masuk; baris lain dilaporkan dengan alasannya.
+	await expect(page.getByRole('status')).toHaveText(en.numberImportPreviewed.replace('{count}', '4'));
+	await expect(page.getByRole('row', { name: /^6 SC-LG-004 / })).toContainText(en.numberImportLineDuplicate.replace('{line}', '5'));
+	await expect(page.getByRole('row', { name: /^7 SC-NB-001 / })).toContainText(en.numberImportLineMismatch);
+	await expect(page.getByRole('row', { name: /^8 hello / })).toContainText(en.numberImportLineInvalid);
+	// Lubang CP 002 sampai 003, dan nomor berjalan yang tidak dimiliki ketiga jenis.
+	await expect(page.getByRole('row', { name: /^LG CP 2 004 / })).toContainText('002–003');
+	await expect(page.getByRole('row', { name: /^LG 001 / })).toContainText('PFD, CP');
+	await expect(page.getByRole('row', { name: /^LG 004 / })).toContainText('CP');
+
+	await page.getByRole('button', { name: en.numberImportRun, exact: true }).click();
+	await expect(page.getByRole('status')).toHaveText(en.numberImportDone.replace('{count}', '4'));
+	await expect(page.getByRole('button', { name: en.numberImportRun, exact: true })).toHaveCount(0);
+
+	// Nomor lama ada di register dengan status pilihan dan teks aslinya.
+	await page.getByRole('link', { name: en.numberImportBack }).click();
+	await page.getByLabel(en.numberFilterSearch).fill('SC-LG-004');
+	await page.getByRole('button', { name: en.numberFilterApply }).click();
+	await expect(page.getByRole('row', { name: /^SC-LG-004 / })).toContainText(en.numberStatusReleased);
 });

@@ -205,6 +205,7 @@ type called struct {
 type fakeNumbering struct {
 	registration numbering.Registration
 	number       numbering.DocumentNumber
+	report       numbering.ImportReport
 	next         string
 	settings     numbering.Settings
 	types        []numbering.DocumentType
@@ -244,6 +245,11 @@ func (f *fakeNumbering) Register(_ context.Context, _ access.Actor, in numbering
 func (f *fakeNumbering) RegisterSet(_ context.Context, _ access.Actor, in numbering.NewSet) (numbering.Registration, error) {
 	f.got = called{method: "RegisterSet", input: in}
 	return f.registration, f.err
+}
+
+func (f *fakeNumbering) Import(_ context.Context, _ access.Actor, in numbering.ImportInput) (numbering.ImportReport, error) {
+	f.got = called{method: "Import", input: in}
+	return f.report, f.err
 }
 
 func (f *fakeNumbering) NextNumber(_ context.Context, _ access.Actor, customerID, documentTypeID string) (string, error) {

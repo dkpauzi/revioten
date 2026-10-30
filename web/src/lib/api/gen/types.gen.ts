@@ -608,6 +608,87 @@ export type StatusReason = {
     reason?: string;
 };
 
+export type NumberImportRequest = {
+    customer_id: string;
+    /**
+     * The status of every number in this import.
+     */
+    status: 'reserved' | 'in_use' | 'released' | 'obsolete' | 'void';
+    /**
+     * Legacy numbers, one per line, at most 5000 lines that are not blank.
+     */
+    text: string;
+    /**
+     * True to get the report without saving anything. Default false.
+     */
+    dry_run?: boolean;
+};
+
+export type NumberImportReport = {
+    dry_run: boolean;
+    status: 'reserved' | 'in_use' | 'released' | 'obsolete' | 'void';
+    /**
+     * Numbers imported, or the numbers a dry run would import.
+     */
+    imported: number;
+    lines: Array<NumberImportLine>;
+    /**
+     * The register of each customer code (old codes first) and document type after the import.
+     */
+    groups: Array<NumberImportGroup>;
+    /**
+     * Running numbers that only some of PFD, PFMEA, and CP have. Skipped numbers do not count.
+     */
+    misaligned: Array<NumberMisalignment>;
+};
+
+export type NumberImportLine = {
+    /**
+     * The line in the pasted text, from 1. Blank lines are left out.
+     */
+    line: number;
+    /**
+     * The first column of the line, without surrounding spaces.
+     */
+    text: string;
+    result: 'imported' | 'existing' | 'duplicate' | 'customer_mismatch' | 'invalid';
+    /**
+     * For a duplicate, the line where the number first appears.
+     */
+    first_line?: number;
+};
+
+export type NumberImportGroup = {
+    customer_code: string;
+    document_type: DocumentTypeRef;
+    /**
+     * Numbers in the register, all statuses.
+     */
+    count: number;
+    /**
+     * The highest running number, for example 007. Missing when count is 0.
+     */
+    highest?: string;
+    /**
+     * Running numbers missing from 001 to the highest. They are reported, never filled.
+     */
+    gaps: Array<SequenceRange>;
+};
+
+export type NumberMisalignment = {
+    customer_code: string;
+    range: SequenceRange;
+    /**
+     * The document types that have a number in this range.
+     */
+    present: Array<DocumentTypeRef>;
+};
+
+export type SequenceRange = {
+    first: string;
+    last: string;
+};
+
 export type CustomerRef = {
     id: string;
     /**
@@ -2408,6 +2489,39 @@ export type GetNextDocumentNumberResponses = {
 };
 
 export type GetNextDocumentNumberResponse = GetNextDocumentNumberResponses[keyof GetNextDocumentNumberResponses];
+
+export type ImportDocumentNumbersData = {
+    body: NumberImportRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/document-number-imports';
+};
+
+export type ImportDocumentNumbersErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ImportDocumentNumbersError = ImportDocumentNumbersErrors[keyof ImportDocumentNumbersErrors];
+
+export type ImportDocumentNumbersResponses = {
+    /**
+     * The import report. Nothing was saved with dry_run, or when no line was new.
+     */
+    200: NumberImportReport;
+};
+
+export type ImportDocumentNumbersResponse = ImportDocumentNumbersResponses[keyof ImportDocumentNumbersResponses];
 
 export type ListDocumentTypesData = {
     body?: never;

@@ -1,7 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import type { DocumentNumber } from './api/gen/index.ts';
 import { en } from './i18n/en.ts';
-import { canObsolete, canVoid, registeredText, reservedDays, skippedText, statusLabel } from './numbers.ts';
+import {
+	canObsolete,
+	canVoid,
+	lineResultText,
+	notImported,
+	rangesText,
+	registeredText,
+	reservedDays,
+	skippedText,
+	statusLabel,
+	typeNames
+} from './numbers.ts';
 
 // number membuat satu nomor contoh; hanya field yang dipakai yang diisi berbeda.
 function number(text: string, revision: number, status: DocumentNumber['status'] = 'reserved'): DocumentNumber {
@@ -48,5 +59,41 @@ describe('status nomor (M2.3)', () => {
 	it('menghitung hari penuh sejak nomor didaftarkan', () => {
 		expect(reservedDays('2026-10-01T08:00:00Z', new Date('2026-10-30T07:59:59Z'))).toBe(28);
 		expect(reservedDays('2026-10-30T08:00:00Z', new Date('2026-10-30T09:00:00Z'))).toBe(0);
+	});
+});
+
+describe('laporan impor nomor lama (M2.5)', () => {
+	it('menulis rentang nomor berjalan, satu nomor tanpa tanda pisah', () => {
+		expect(rangesText([])).toBe('');
+		expect(
+			rangesText([
+				{ first: '003', last: '006' },
+				{ first: '010', last: '010' }
+			])
+		).toBe('003–006, 010');
+	});
+
+	it('menulis nama jenis dokumen yang punya nomor', () => {
+		expect(
+			typeNames([
+				{ id: 'dt-1', key: 'pfd', name: 'PFD' },
+				{ id: 'dt-3', key: 'cp', name: 'CP' }
+			])
+		).toBe('PFD, CP');
+	});
+
+	it('menulis hasil baris, dan nomor ganda menunjuk baris pertamanya', () => {
+		expect(lineResultText({ line: 9, text: 'SC-AB-002', result: 'duplicate', first_line: 8 })).toBe(
+			en.numberImportLineDuplicate.replace('{line}', '8')
+		);
+		expect(lineResultText({ line: 2, text: 'hello', result: 'invalid' })).toBe(en.numberImportLineInvalid);
+	});
+
+	it('hanya baris yang tidak masuk yang ditampilkan di tabel', () => {
+		const lines = [
+			{ line: 1, text: 'SC-AB-001', result: 'imported' as const },
+			{ line: 2, text: 'SC-AB-001', result: 'duplicate' as const, first_line: 1 }
+		];
+		expect(notImported(lines).map((l) => l.line)).toEqual([2]);
 	});
 });

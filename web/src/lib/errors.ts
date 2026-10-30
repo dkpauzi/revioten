@@ -57,7 +57,12 @@ const problemKeys: Record<string, MessageKey> = {
 	'initial_revision:invalid_format': 'numberInitialRevisionInvalid',
 	'idempotency_key:taken': 'numberKeyReused',
 	'reason:required': 'numberReasonRequired',
-	'status:not_allowed': 'numberStatusNotAllowed'
+	'status:not_allowed': 'numberStatusNotAllowed',
+	'status:required': 'numberImportStatusRequired',
+	'status:invalid_format': 'numberImportStatusInvalid',
+	'text:required': 'numberImportTextRequired',
+	'text:too_long': 'numberImportTextTooLong',
+	'text:taken': 'numberImportRetry'
 };
 
 // ProblemScope adalah formulir tempat masalah ditampilkan. Field yang sama bisa

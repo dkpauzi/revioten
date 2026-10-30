@@ -108,6 +108,67 @@ func (a *apiServer) RegisterDocumentNumberSet(ctx context.Context, req RegisterD
 	return RegisterDocumentNumberSet201JSONResponse(toAPIRegistration(reg)), nil
 }
 
+// ImportDocumentNumbers menjawab POST /api/v1/document-number-imports (M2.5).
+// Pratinjau (dry_run) dan impor sungguhan sama-sama dijawab 200 dengan laporan.
+func (a *apiServer) ImportDocumentNumbers(ctx context.Context, req ImportDocumentNumbersRequestObject) (ImportDocumentNumbersResponseObject, error) {
+	in := numbering.ImportInput{
+		CustomerID: req.Body.CustomerId, Status: string(req.Body.Status), Text: req.Body.Text,
+		DryRun: req.Body.DryRun != nil && *req.Body.DryRun,
+	}
+	report, err := a.numbering.Import(ctx, actorFrom(ctx), in)
+	if err != nil {
+		return nil, err
+	}
+	return ImportDocumentNumbers200JSONResponse(toAPIImportReport(report)), nil
+}
+
+// toAPIImportReport mengubah ImportReport domain menjadi NumberImportReport
+// kontrak API. Daftar kosong dikirim sebagai [] dan bukan null.
+func toAPIImportReport(r numbering.ImportReport) NumberImportReport {
+	out := NumberImportReport{
+		DryRun: r.DryRun, Status: NumberImportReportStatus(r.Status), Imported: r.Imported,
+		Lines:      make([]NumberImportLine, 0, len(r.Lines)),
+		Groups:     make([]NumberImportGroup, 0, len(r.Groups)),
+		Misaligned: make([]NumberMisalignment, 0, len(r.Misaligned)),
+	}
+	for _, l := range r.Lines {
+		line := NumberImportLine{Line: l.Line, Text: l.Text, Result: NumberImportLineResult(l.Result)}
+		if l.FirstLine != 0 {
+			line.FirstLine = &l.FirstLine
+		}
+		out.Lines = append(out.Lines, line)
+	}
+	for _, g := range r.Groups {
+		group := NumberImportGroup{
+			CustomerCode: g.CustomerCode, DocumentType: toAPIDocumentTypeRef(g.DocumentType), Count: g.Count,
+			Gaps: make([]SequenceRange, 0, len(g.Gaps)),
+		}
+		for _, gap := range g.Gaps {
+			group.Gaps = append(group.Gaps, SequenceRange{First: gap.First, Last: gap.Last})
+		}
+		if g.Highest != "" {
+			group.Highest = &g.Highest
+		}
+		out.Groups = append(out.Groups, group)
+	}
+	for _, m := range r.Misaligned {
+		present := make([]DocumentTypeRef, 0, len(m.Present))
+		for _, d := range m.Present {
+			present = append(present, toAPIDocumentTypeRef(d))
+		}
+		out.Misaligned = append(out.Misaligned, NumberMisalignment{
+			CustomerCode: m.CustomerCode, Range: SequenceRange{First: m.Range.First, Last: m.Range.Last}, Present: present,
+		})
+	}
+	return out
+}
+
+// toAPIDocumentTypeRef mengubah jenis dokumen PFD, PFMEA, atau CP menjadi
+// DocumentTypeRef kontrak API.
+func toAPIDocumentTypeRef(d numbering.DocumentType) DocumentTypeRef {
+	return DocumentTypeRef{Id: d.ID, Key: DocumentTypeRefKey(d.Key), Name: d.Name}
+}
+
 // GetNextDocumentNumber menjawab GET /api/v1/document-numbers/next.
 func (a *apiServer) GetNextDocumentNumber(ctx context.Context, req GetNextDocumentNumberRequestObject) (GetNextDocumentNumberResponseObject, error) {
 	number, err := a.numbering.NextNumber(ctx, actorFrom(ctx), req.Params.CustomerId, req.Params.DocumentTypeId)

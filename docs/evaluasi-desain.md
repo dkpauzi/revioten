@@ -86,6 +86,8 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-62 | Isi register dan pengingat nomor Reserved yang terlalu lama | Celah | M2.3, M4.1 | Tidak | Terbuka |
 | E-63 | Kunci idempoten di UI API: cakupan, umur, dan pemakaian ulang | Celah | M2.2, M9.4 | Tidak | Terbuka |
 | E-64 | Nomor yang dilewati saat daftar sebagai set | Kontradiksi | M2.4 | Tidak | Terbuka |
+| E-65 | Bentuk impor nomor lama dan isi laporannya | Ambigu | M2.5, M7.1 | Tidak | Terbuka |
+| E-66 | Nomor lama yang tidak bisa masuk apa adanya: bentuk lain dan nomor ganda | Celah | M2.5, M4.1, M7.1 | Tidak | Terbuka |
 | E-67 | Pendaftaran nomor untuk customer nonaktif | Celah | M2.1 | Tidak | Terbuka |
 | E-68 | Perubahan status nomor yang dikerjakan tangan di Tahap 2, dan alasannya | Ambigu | M2.3, M4.1, M6.7 | Tidak | Terbuka |
 
@@ -1112,6 +1114,34 @@ Salin blok ini untuk setiap temuan baru.
 - **Status:** Terbuka
 - **Keputusan pemilik:**
 
+### E-65 · Bentuk impor nomor lama dan isi laporannya
+
+- **Tanggal dan milestone:** 30 Oktober 2026, M2.5.
+- **Jenis:** Ambigu
+- **Rujukan:** R-NUM-06, UC-14, milestone M2.5, R-MIG-02 (tempel dari Excel untuk dokumen), RK-24.
+- **Temuan:** brief dan milestone menyebut apa yang dilaporkan (lubang, nomor ganda, set tidak sejajar), tapi tidak menyebut bentuk masukan impor: file atau tempel, kolom apa saja, status nomor lama, revisi awalnya, dan batas jumlahnya. Arti "set tidak sejajar" juga belum ditulis, termasuk apakah nomor Skipped (E-64) dihitung.
+- **Dampak bila dibiarkan:** kolom lain di register Excel (status, model, revisi, tanggal) tidak ikut masuk, dan laporan bisa dibaca berbeda oleh orang yang berbeda.
+- **Opsi:** (a) Tempel kolom nomor saja; satu status untuk satu impor (Reserved, In use, Released, Obsolete, atau Void), tanpa alasan status; revisi awal 0; paling banyak 5000 baris per impor. "Tidak sejajar" berarti nomor berjalan yang hanya dimiliki sebagian dari PFD, PFMEA, dan CP, dengan Skipped dianggap tidak ada. (b) Tempel beberapa kolom dengan langkah pemetaan kolom (nomor, status, model, revisi), seperti R-MIG-02. (c) Unggah file register Excel (excelize sudah ada di stack).
+- **Rekomendasi Claude Code (usulan):** (a) untuk sekarang. Pilihan (b) dikerjakan setelah pemilik memeriksa bentuk register Excel yang asli, karena kolomnya belum diverifikasi dan tidak boleh dikarang.
+- **Asumsi sementara di kode (ASUMSI E-65):** (a), di `internal/numbering/import.go`. Kolom pertama setiap baris yang dibaca (Excel memisahkan kolom dengan tab), baris kosong dilewati, dan pratinjau (dry run) memberi laporan yang sama tanpa menyimpan apa pun. Laporan mencakup seluruh register customer itu setelah impor, bukan hanya baris yang ditempel, supaya impor bertahap (misalnya per status) tetap memberi lubang yang benar.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-66 · Nomor lama yang tidak bisa masuk apa adanya: bentuk lain dan nomor ganda
+
+- **Tanggal dan milestone:** 30 Oktober 2026, M2.5.
+- **Jenis:** Celah
+- **Rujukan:** R-NUM-06 (nomor lama masuk dengan teks aslinya; nomor ganda dilaporkan dan tidak pernah diperbaiki), R-NUM-02, R-POR-01, D-89, E-61, milestone M4.1 (header dokumen terhubung ke nomor register), M7.1 (form dokumen lama dengan nomor asli).
+- **Temuan:** dua jenis nomor lama tidak punya tempat di register. (1) Nomor dengan bentuk lain dari pola sekarang, misalnya SC-KT-01 (dua digit) atau pola lama tanpa pemisah, tidak bisa dibaca menjadi kode customer, jenis dokumen, dan nomor berjalan, jadi penghitung tidak tahu nomor itu ada. (2) Nomor ganda di register lama (dua dokumen dengan nomor yang sama): register menyimpan setiap nomor sekali (UNIQUE), dan di M4.1 header dokumen menunjuk satu nomor, jadi dokumen kedua tidak punya nomor sendiri.
+- **Dampak bila dibiarkan:** nomor baru bisa sama maknanya dengan nomor lama di luar pola (SC-KT-001 dan SC-KT-01), dan dokumen kedua dari nomor ganda tidak bisa dimigrasi di Tahap 7 tanpa keputusan.
+- **Opsi:** (a) Hanya dilaporkan (Invalid dan Duplicate) dan tidak masuk; dokumen kontrol memutuskan di luar sistem. (b) Untuk bentuk lain: impor bisa memakai pola lama dan bentuk nomor berjalan lama yang dipilih per impor, sehingga kode, jenis, dan nomor berjalan tetap terbaca dan teks asli tetap disimpan. (c) Untuk nomor ganda: register tetap unik, tetapi satu nomor boleh ditunjuk lebih dari satu dokumen di M4.1, dengan tanda di register.
+- **Rekomendasi Claude Code (usulan):** (a) untuk sekarang, karena register asli belum diperiksa. Sebelum M4.1 dan Tahap 7, pemilik memeriksa register Excel: bila ada nomor lama di luar pola, pilih (b); bila ada nomor ganda yang keduanya masih berlaku, pilih (c).
+- **Asumsi sementara di kode (ASUMSI E-66):** (a), di `internal/numbering/import.go`. Baris di luar pola sekarang menjadi Invalid; nomor ganda masuk sekali (baris pertama), dan baris berikutnya dilaporkan Duplicate dengan nomor baris pertamanya.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
 ### E-67 · Pendaftaran nomor untuk customer nonaktif
 
 - **Tanggal dan milestone:** 30 Oktober 2026, M2.1.
@@ -1121,7 +1151,7 @@ Salin blok ini untuk setiap temuan baru.
 - **Dampak bila dibiarkan:** nomor bisa didaftarkan untuk customer yang sudah tidak dilayani.
 - **Opsi:** (a) Ditolak, sama seperti model baru; customer bisa diaktifkan lagi bila perlu. (b) Diizinkan.
 - **Rekomendasi Claude Code (usulan):** (a). Revisi dokumen lama tidak butuh nomor baru, jadi pekerjaan yang sedang berjalan tidak terhenti.
-- **Asumsi sementara di kode (ASUMSI E-67):** (a), di `internal/numbering/register.go`. Layar Numbers hanya menawarkan customer aktif.
+- **Asumsi sementara di kode (ASUMSI E-67):** (a), di `internal/numbering/register.go`. Layar Numbers hanya menawarkan customer aktif. Impor nomor lama (M2.5) juga menolak customer nonaktif, dengan aturan dan pemeriksaan yang sama.
 - **Menghambat milestone?** Tidak
 - **Status:** Terbuka
 - **Keputusan pemilik:**

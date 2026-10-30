@@ -157,3 +157,44 @@ func TestDocumentNumberSetEndpoint(t *testing.T) {
 		t.Errorf("set: status %d, %+v: %s", rec.Code, fake.got, rec.Body.String())
 	}
 }
+
+// TestImportEndpoint: impor nomor lama (M2.5) meneruskan isian, dan laporan
+// dikirim dengan array kosong (bukan null) serta field yang tidak ada dilewati.
+func TestImportEndpoint(t *testing.T) {
+	cp := numbering.DocumentType{ID: "dt-3", Key: numbering.KeyCP, Name: "CP"}
+	fake := &fakeNumbering{report: numbering.ImportReport{
+		DryRun: true, Status: numbering.StatusReleased, Imported: 1,
+		Lines: []numbering.ImportLine{
+			{Line: 1, Text: "SC-AB-002", Result: numbering.LineImported},
+			{Line: 3, Text: "SC-AB-002", Result: numbering.LineDuplicate, FirstLine: 1},
+		},
+		Groups: []numbering.ImportGroup{
+			{CustomerCode: "AB", DocumentType: numbering.DocumentType{ID: "dt-1", Key: numbering.KeyPFD, Name: "PFD"}},
+			{CustomerCode: "AB", DocumentType: cp, Count: 1, Highest: "002", Gaps: []numbering.SequenceRange{{First: "001", Last: "001"}}},
+		},
+		Misaligned: []numbering.MisalignedRange{{CustomerCode: "AB", Range: numbering.SequenceRange{First: "002", Last: "002"}, Present: []numbering.DocumentType{cp}}},
+	}}
+	srv := newTestServer(t, nil, Deps{Numbering: fake})
+
+	rec := srv.do(http.MethodPost, "/api/v1/document-number-imports", `{"customer_id":"c-1","status":"released","text":"SC-AB-002\n\nSC-AB-002","dry_run":true}`)
+	want := numbering.ImportInput{CustomerID: "c-1", Status: "released", Text: "SC-AB-002\n\nSC-AB-002", DryRun: true}
+	if rec.Code != http.StatusOK || fake.got != (called{method: "Import", input: want}) {
+		t.Fatalf("impor: status %d, %+v: %s", rec.Code, fake.got, rec.Body.String())
+	}
+	wantBody := `{"dry_run":true,"groups":[` +
+		`{"count":0,"customer_code":"AB","document_type":{"id":"dt-1","key":"pfd","name":"PFD"},"gaps":[]},` +
+		`{"count":1,"customer_code":"AB","document_type":{"id":"dt-3","key":"cp","name":"CP"},"gaps":[{"first":"001","last":"001"}],"highest":"002"}],` +
+		`"imported":1,"lines":[{"line":1,"result":"imported","text":"SC-AB-002"},{"first_line":1,"line":3,"result":"duplicate","text":"SC-AB-002"}],` +
+		`"misaligned":[{"customer_code":"AB","present":[{"id":"dt-3","key":"cp","name":"CP"}],"range":{"first":"002","last":"002"}}],` +
+		`"status":"released"}` + "\n"
+	if rec.Body.String() != wantBody {
+		t.Errorf("isi laporan:\n%s\ningin:\n%s", rec.Body.String(), wantBody)
+	}
+
+	// Tanpa dry_run berarti impor sungguhan.
+	rec = srv.do(http.MethodPost, "/api/v1/document-number-imports", `{"customer_id":"c-1","status":"void","text":"SC-AB-003"}`)
+	want = numbering.ImportInput{CustomerID: "c-1", Status: "void", Text: "SC-AB-003"}
+	if rec.Code != http.StatusOK || fake.got != (called{method: "Import", input: want}) {
+		t.Errorf("impor tanpa dry_run: status %d, %+v", rec.Code, fake.got)
+	}
+}

@@ -108,6 +108,10 @@
 
 <h1>{t('numbersTitle')}</h1>
 <p>{t('numbersIntro')}</p>
+{#if canManage}
+	<!-- Impor nomor lama untuk dokumen kontrol (E-8, M2.5). -->
+	<p><a href="/numbers/import">{t('numberImportLink')}</a></p>
+{/if}
 
 {#if loadError}
 	<p class="error" role="alert">{loadError}</p>

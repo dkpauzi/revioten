@@ -34,6 +34,8 @@ import type {
 	NewDocumentNumber,
 	NewDocumentNumberSet,
 	NextDocumentNumber,
+	NumberImportReport,
+	NumberImportRequest,
 	NumberRegistration,
 	DocumentNumber,
 	DocumentNumberList,
@@ -317,6 +319,16 @@ export function makeDocumentNumberObsolete(
 	fetchFn: typeof fetch = fetch
 ): Promise<ApiResult<DocumentNumber>> {
 	return call<DocumentNumber>(fetchFn, itemPath('document-numbers', id) + '/obsolete', jsonRequest('POST', { reason }));
+}
+
+// importDocumentNumbers memanggil POST /api/v1/document-number-imports (E-8,
+// M2.5): nomor lama satu customer beserta laporannya. Dengan dry_run true,
+// hanya laporan (pratinjau) dan tidak ada yang disimpan.
+export function importDocumentNumbers(
+	input: NumberImportRequest,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<NumberImportReport>> {
+	return call<NumberImportReport>(fetchFn, '/api/v1/document-number-imports', jsonRequest('POST', input));
 }
 
 // getNextDocumentNumber memanggil GET /api/v1/document-numbers/next: nomor yang

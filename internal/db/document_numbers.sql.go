@@ -360,6 +360,77 @@ func (q *Queries) ListDocumentNumbers(ctx context.Context, arg ListDocumentNumbe
 	return items, nil
 }
 
+const listNumbersByText = `-- name: ListNumbersByText :many
+SELECT number FROM document_numbers WHERE number = ANY($1::text[])
+`
+
+// ListNumbersByText mengambil teks nomor yang sudah ada di register dari
+// daftar teks (impor, M2.5).
+func (q *Queries) ListNumbersByText(ctx context.Context, numbers []string) ([]string, error) {
+	rows, err := q.db.Query(ctx, listNumbersByText, numbers)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var number string
+		if err := rows.Scan(&number); err != nil {
+			return nil, err
+		}
+		items = append(items, number)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listRegisterOfCodes = `-- name: ListRegisterOfCodes :many
+SELECT number, customer_code, document_type_id, sequence, status
+FROM document_numbers
+WHERE customer_code = ANY($1::text[])
+ORDER BY customer_code, document_type_id, sequence
+`
+
+type ListRegisterOfCodesRow struct {
+	Number         string
+	CustomerCode   string
+	DocumentTypeID string
+	Sequence       int32
+	Status         string
+}
+
+// ListRegisterOfCodes mengambil kode, jenis dokumen, nomor berjalan, dan
+// status semua nomor dengan kode customer itu, untuk pemeriksaan dan laporan
+// impor (M2.5). Kode customer unik di semua customer, jadi hasilnya adalah
+// register satu customer bila kodenya kode customer itu.
+func (q *Queries) ListRegisterOfCodes(ctx context.Context, codes []string) ([]ListRegisterOfCodesRow, error) {
+	rows, err := q.db.Query(ctx, listRegisterOfCodes, codes)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListRegisterOfCodesRow{}
+	for rows.Next() {
+		var i ListRegisterOfCodesRow
+		if err := rows.Scan(
+			&i.Number,
+			&i.CustomerCode,
+			&i.DocumentTypeID,
+			&i.Sequence,
+			&i.Status,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const lockCounter = `-- name: LockCounter :one
 INSERT INTO number_counters (customer_code, document_type_id, last_value)
 VALUES ($1, $2, $3::integer)

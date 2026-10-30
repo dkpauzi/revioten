@@ -207,6 +207,8 @@ func TestPermissionsPerOperation(t *testing.T) {
 		// Status nomor diubah dokumen kontrol (E-8). Nomor yang dibuat setup ini Reserved.
 		{http.MethodPost, "/api/v1/document-numbers/{documentNumberId}/void", `{"reason":"Uji izin"}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodPost, "/api/v1/document-numbers/{documentNumberId}/obsolete", `{}`, http.StatusForbidden, http.StatusConflict, http.StatusForbidden},
+		// Impor nomor lama juga lewat E-8 (UC-14); pratinjau, supaya register tidak berubah.
+		{http.MethodPost, "/api/v1/document-number-imports", `{"customer_id":"{customerId}","status":"released","text":"SC-XY-900","dry_run":true}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/project-groups", "", http.StatusOK, http.StatusOK, http.StatusOK},
 		{http.MethodPost, "/api/v1/project-groups", `{"code":"GR2","name":"Project Group 2"}`, http.StatusForbidden, http.StatusForbidden, http.StatusCreated},
 		{http.MethodPut, "/api/v1/project-groups/{projectGroupId}", `{"code":"GR1","name":"Satu"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
