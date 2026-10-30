@@ -46,7 +46,7 @@ test('admin mengubah kode pabrik, jenis dokumen, dan kode khusus', async ({ page
 	await page.getByRole('button', { name: en.specialCodeAdd }).click();
 	await expect(page.getByRole('row', { name: /^QX/ })).toContainText('Quality general');
 
-	// Customer tidak bisa memakai kode khusus, juga yang baru ditambah (ASUMSI E-37).
+	// Customer tidak bisa memakai kode khusus, juga yang baru ditambah (E-37, D-114).
 	await ensureProjectGroup(page, 'GR1');
 	await page.getByRole('link', { name: en.navCustomers }).click();
 	await field(page, en.customerCode).fill('qx');
@@ -75,7 +75,7 @@ test('admin mengubah jenis perubahan, sumber perubahan, dan kategori 4M', async 
 	await page.getByRole('button', { name: en.masterSave, exact: true }).click();
 	await expect(page.getByRole('row', { name: /^Kaizen/ })).toContainText(en.changeSourceInactive);
 
-	// Sumber milik mekanisme sistem selalu aktif: kotaknya tidak bisa diubah (ASUMSI E-36).
+	// Sumber milik mekanisme sistem selalu aktif: kotaknya tidak bisa diubah (E-36, D-113).
 	await page.getByRole('row', { name: /^Yokoten/ }).getByRole('button', { name: en.customerEdit }).click();
 	await expect(field(page, en.changeSourceActive)).toBeDisabled();
 	await page.getByRole('button', { name: en.masterCancel }).click();

@@ -14,7 +14,7 @@ import (
 )
 
 // ListProjectGroups mengembalikan semua Project Group, urut menurut kode
-// (L-2, ASUMSI E-24).
+// (L-2, E-24, D-103).
 func (s *Service) ListProjectGroups(ctx context.Context, actor access.Actor) ([]ProjectGroup, error) {
 	if err := s.authz.Authorize(ctx, actor, access.ViewRegister, access.Resource{}); err != nil {
 		return nil, err

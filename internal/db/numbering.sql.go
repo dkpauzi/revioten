@@ -207,7 +207,7 @@ SELECT pg_advisory_xact_lock(11003)
 // Kode customer dan kode khusus menempati posisi yang sama di nomor dokumen
 // (E-12), dan disimpan di dua tabel, jadi UNIQUE tidak bisa menjaga keduanya.
 // Semua pendaftaran kode di posisi itu mengambil kunci ini dulu, supaya
-// berjalan bergantian (ASUMSI E-37). Kunci lain: 11001 admin pertama, 11002
+// berjalan bergantian (E-37, D-114). Kunci lain: 11001 admin pertama, 11002
 // rantai audit.
 func (q *Queries) LockNumberCodes(ctx context.Context) error {
 	_, err := q.db.Exec(ctx, lockNumberCodes)

@@ -46,7 +46,7 @@ func remoteIP(r *http.Request) string {
 // validRequestID menerima 1 sampai 64 karakter: huruf, angka, titik, garis
 // bawah, dan tanda hubung. Batas ini mencegah baris log palsu (misalnya lewat
 // karakter baris baru) dan header yang sangat panjang.
-// ASUMSI E-20: brief tidak menyebut bentuk request ID.
+// E-20 (D-99): bentuk request ID ini bagian dari baseline konvensi API M0.5.
 func validRequestID(id string) bool {
 	if len(id) == 0 || len(id) > 64 {
 		return false

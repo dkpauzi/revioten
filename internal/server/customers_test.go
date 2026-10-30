@@ -110,8 +110,18 @@ func TestUpdateCustomerAndCode(t *testing.T) {
 		t.Fatalf("ubah: status %d: %s", rec.Code, rec.Body.String())
 	}
 	if fake.gotID != "id-ab" || fake.gotUpdate == nil ||
-		*fake.gotUpdate != (customer.CustomerUpdate{Name: "Baru", ProjectGroupID: "gr-2", Active: false}) {
+		fake.gotUpdate.Name != "Baru" || fake.gotUpdate.ProjectGroupID != "gr-2" ||
+		fake.gotUpdate.Active == nil || *fake.gotUpdate.Active {
 		t.Errorf("Update menerima %q %+v", fake.gotID, fake.gotUpdate)
+	}
+
+	// active tidak dikirim: diteruskan sebagai nil, artinya status tetap (E-34, D-111).
+	rec = srv.do(http.MethodPut, "/api/v1/customers/id-ab", `{"name":"Baru","project_group_id":"gr-2"}`)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("ubah tanpa active: status %d: %s", rec.Code, rec.Body.String())
+	}
+	if fake.gotUpdate == nil || fake.gotUpdate.Active != nil {
+		t.Errorf("Update tanpa active menerima %+v, ingin Active nil", fake.gotUpdate)
 	}
 
 	fake.gotID = ""

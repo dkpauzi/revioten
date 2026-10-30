@@ -705,7 +705,8 @@ type CustomerList struct {
 
 // CustomerUpdate defines model for CustomerUpdate.
 type CustomerUpdate struct {
-	Active         bool   `json:"active"`
+	// Active Leave it out to keep the current status.
+	Active         *bool  `json:"active,omitempty"`
 	Name           string `json:"name"`
 	ProjectGroupId string `json:"project_group_id"`
 }
@@ -1013,6 +1014,11 @@ type Position struct {
 
 	// PerProjectGroup True for the Project Leader and the Project Engineer, who are held once per project group.
 	PerProjectGroup bool `json:"per_project_group"`
+
+	// SingleHolder True for the approver positions and the APQP/PPAP Controller, which
+	// have one holder only (D-115). A second holder is refused with
+	// 409 conflict, detail position_id:taken.
+	SingleHolder bool `json:"single_holder"`
 }
 
 // PositionKey defines model for Position.Key.

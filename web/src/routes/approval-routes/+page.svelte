@@ -2,7 +2,7 @@
 	// Halaman rute approval (M1.8, UC-06). Konsep: alur kerja sebagai data.
 	// Rute berisi slot berurutan (D-45 sampai D-49); setiap customer punya rute
 	// default (D-47), dan setiap jenis perubahan boleh punya rute sendiri
-	// (R-TPL-10, ASUMSI E-35). Semua akun bisa melihat; mengubah hanya untuk
+	// (R-TPL-10, E-35, D-112). Semua akun bisa melihat; mengubah hanya untuk
 	// pemegang A-2.
 	import { onMount } from 'svelte';
 	import {

@@ -129,7 +129,7 @@ type ListChangeTypesRow struct {
 }
 
 // ListChangeTypes mengambil jenis perubahan beserta rute approval-nya (M1.8).
-// Rute kosong berarti rute default customer (ASUMSI E-35).
+// Rute kosong berarti rute default customer (E-35, D-112).
 func (q *Queries) ListChangeTypes(ctx context.Context) ([]ListChangeTypesRow, error) {
 	rows, err := q.db.Query(ctx, listChangeTypes)
 	if err != nil {

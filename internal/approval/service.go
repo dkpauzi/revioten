@@ -27,7 +27,7 @@ func NewService(pool *pgxpool.Pool, authz access.Authorizer) *Service {
 	return &Service{pool: pool, q: db.New(pool), authz: authz}
 }
 
-// Melihat memakai hak L-2 seperti master lain (ASUMSI E-24). Jabatan dan
+// Melihat memakai hak L-2 seperti master lain (E-24, D-103). Jabatan dan
 // pemegangnya diubah lewat A-1 (UC-02: kelola pengguna, peran, dan jabatan),
 // dan rute lewat A-2 (UC-06).
 
@@ -51,7 +51,7 @@ func (s *Service) ListPositions(ctx context.Context, actor access.Actor) ([]Posi
 	}
 	list := make([]Position, 0, len(rows))
 	for _, r := range rows {
-		p := Position{ID: r.ID, Key: r.Key, Name: r.Name, PerProjectGroup: r.PerProjectGroup, Holders: byPosition[r.ID]}
+		p := Position{ID: r.ID, Key: r.Key, Name: r.Name, PerProjectGroup: r.PerProjectGroup, SingleHolder: r.SingleHolder, Holders: byPosition[r.ID]}
 		if p.Holders == nil {
 			p.Holders = []Holder{}
 		}
@@ -84,7 +84,7 @@ func (s *Service) RenamePosition(ctx context.Context, actor access.Actor, id, na
 		if err != nil {
 			return notFound(err)
 		}
-		renamed = Position{ID: row.ID, Key: row.Key, Name: name, PerProjectGroup: row.PerProjectGroup}
+		renamed = Position{ID: row.ID, Key: row.Key, Name: name, PerProjectGroup: row.PerProjectGroup, SingleHolder: row.SingleHolder}
 		if row.Name == name {
 			return nil // tidak ada yang berubah, jadi tidak dicatat
 		}
@@ -128,6 +128,24 @@ func (s *Service) AddHolder(ctx context.Context, actor access.Actor, positionID 
 	var id string
 	err = db.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
 		q := s.q.WithTx(tx)
+		// Baris jabatan dikunci sampai transaksi selesai, jadi dua admin yang
+		// mencatat pemegang jabatan yang sama berjalan bergantian, dan
+		// hitungan pemegang di bawah tidak bisa didahului (E-38, D-115).
+		if err := q.LockPosition(ctx, position.ID); err != nil {
+			return err
+		}
+		if position.SingleHolder {
+			count, err := q.CountPositionHolders(ctx, position.ID)
+			if err != nil {
+				return err
+			}
+			if count > 0 {
+				return &problem.ConflictError{Problems: []problem.Problem{{
+					Field: "position_id", Code: problem.Taken,
+					Message: "This position already has a holder. Remove the current holder first.",
+				}}}
+			}
+		}
 		var err error
 		id, err = q.AddPositionHolder(ctx, db.AddPositionHolderParams{
 			PositionID: position.ID, PerProjectGroup: position.PerProjectGroup, PersonID: person.ID, ProjectGroupID: nullable(groupID),
@@ -423,7 +441,7 @@ func getPosition(ctx context.Context, q *db.Queries, id string) (Position, error
 	if err != nil {
 		return Position{}, notFound(err)
 	}
-	return Position{ID: r.ID, Key: r.Key, Name: r.Name, PerProjectGroup: r.PerProjectGroup}, nil
+	return Position{ID: r.ID, Key: r.Key, Name: r.Name, PerProjectGroup: r.PerProjectGroup, SingleHolder: r.SingleHolder}, nil
 }
 
 // fromHolder mengubah baris hasil sqlc menjadi Holder.
@@ -464,6 +482,7 @@ func result(err error, doing string) error {
 		return &problem.ConflictError{Problems: []problem.Problem{{Field: field, Code: problem.Taken, Message: message}}}
 	}
 	var invalid *problem.ValidationError
+	var conflict *problem.ConflictError
 	switch {
 	case err == nil:
 		return nil
@@ -475,7 +494,7 @@ func result(err error, doing string) error {
 		return taken("project_group_id", "This project group already has a holder for this position.")
 	case db.IsUniqueViolation(err, "position_holders_unique"):
 		return taken("person_id", "This person already holds this position.")
-	case errors.As(err, &invalid), errors.Is(err, problem.ErrNotFound):
+	case errors.As(err, &invalid), errors.As(err, &conflict), errors.Is(err, problem.ErrNotFound):
 		return err
 	}
 	return fmt.Errorf("%s: %w", doing, err)

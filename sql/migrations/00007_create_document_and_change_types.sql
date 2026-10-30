@@ -50,7 +50,7 @@ INSERT INTO document_types (key, name, letter, position) VALUES
 -- Kode khusus di posisi kode customer, untuk dokumen yang bukan milik satu
 -- customer (E-12): ZZ untuk General/Common dan HSE untuk Health, Safety, and
 -- Environment. Kode customer tidak boleh sama dengan kode khusus, dan
--- sebaliknya; aplikasi menjaganya dengan kunci advisory 11003 (ASUMSI E-37).
+-- sebaliknya; aplikasi menjaganya dengan kunci advisory 11003 (E-37, D-114).
 -- Kode tidak bisa diubah, hanya namanya.
 CREATE TABLE special_codes (
     id uuid PRIMARY KEY DEFAULT uuidv7(),
@@ -70,7 +70,7 @@ INSERT INTO special_codes (code, name) VALUES
 
 -- Jenis perubahan (R-TPL-10): isi, tata letak saja, dan administratif. Jenis
 -- ini menentukan jalur approval. Kebijakannya dibuat bersama rute approval di
--- M1.8; sampai itu semua jenis memakai alur yang sama (Q-15, ASUMSI E-35).
+-- M1.8; sampai itu semua jenis memakai alur yang sama (Q-15, E-35, D-112).
 CREATE TABLE change_types (
     id uuid PRIMARY KEY DEFAULT uuidv7(),
     key text NOT NULL,
@@ -92,7 +92,7 @@ INSERT INTO change_types (key, name, position) VALUES
 -- Sumber perubahan (R-CHG-06): pemicu yang dipakai sekarang (PP, customer
 -- claim, ECR, temuan audit) dan sumber dari mekanisme sistem (R-CHG-01).
 -- mechanism menandai sumber yang dipakai mekanisme sistem: yokoten,
--- propagasi template, dan SQAM. Sumber itu selalu aktif (ASUMSI E-36).
+-- propagasi template, dan SQAM. Sumber itu selalu aktif (E-36, D-113).
 CREATE TABLE change_sources (
     id uuid PRIMARY KEY DEFAULT uuidv7(),
     name text NOT NULL,

@@ -137,7 +137,7 @@ func TestDefaults(t *testing.T) {
 
 // TestEditChangeLists: kriteria selesai M1.6 untuk daftar perubahan. Admin
 // mengganti nama jenis perubahan dan kategori 4M, menambah sumber perubahan,
-// lalu menonaktifkannya. Sumber milik mekanisme sistem selalu aktif (ASUMSI E-36).
+// lalu menonaktifkannya. Sumber milik mekanisme sistem selalu aktif (E-36, D-113).
 func TestEditChangeLists(t *testing.T) {
 	f := newFixture(t)
 	ctx := t.Context()
@@ -218,7 +218,7 @@ func TestEditChangeLists(t *testing.T) {
 }
 
 // TestPermissions: daftar perubahan hanya diubah Admin (A-2, UC-05). Semua
-// akun bisa melihatnya (ASUMSI E-24).
+// akun bisa melihatnya (E-24, D-103).
 func TestPermissions(t *testing.T) {
 	f := newFixture(t)
 	ctx := t.Context()
@@ -308,7 +308,7 @@ func TestAudit(t *testing.T) {
 }
 
 // TestSetApprovalRoute: kebijakan approval per jenis perubahan adalah rute
-// yang dipakai (R-TPL-10, ASUMSI E-35). Kosong berarti rute default customer,
+// yang dipakai (R-TPL-10, E-35, D-112). Kosong berarti rute default customer,
 // sehingga semua jenis memakai alur yang sama sampai diatur lain (Q-15).
 func TestSetApprovalRoute(t *testing.T) {
 	f := newFixture(t)

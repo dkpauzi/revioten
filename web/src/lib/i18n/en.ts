@@ -5,8 +5,9 @@
 // yang sama, misalnya id.ts untuk bahasa Indonesia (lihat index.ts).
 // Tempat seperti {code} diisi saat dipanggil: t('customerSaved', { code: 'AB' }).
 //
-// ASUMSI E-19: istilah Inggris diambil dari brief bagian 3 dan 4 (dan dari form
-// serta WI), sampai glosarium U1 punya kolom istilah layar berbahasa Inggris.
+// E-19 (D-98): istilah Inggris mengikuti kolom "Istilah layar (Inggris)" di
+// glosarium U1 (docs/uml/U1-glosarium.md), yang diisi dari brief bagian 3 dan 4
+// serta form dan WI. Istilah baru di layar ditambahkan ke U1 lebih dulu.
 export const en = {
 	appTitle: 'PFD, PFMEA, and CP System',
 	navHome: 'Home',
@@ -200,6 +201,9 @@ export const en = {
 	holderGroupRequired: 'Choose the project group. This position is held once per project group.',
 	holderGroupTaken: 'This project group already has a holder for this position. Remove the current holder first.',
 	holderGroupNotAllowed: 'This position is not held per project group.',
+	holderPositionTaken: 'This position already has a holder. Remove the current holder first.',
+	positionSingleHolder: 'One holder',
+	positionPerGroup: 'One holder per project group',
 	navApprovalRoutes: 'Approval routes',
 	routesTitle: 'Approval routes',
 	routesIntro:

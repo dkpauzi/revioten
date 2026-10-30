@@ -24,7 +24,7 @@ $$;
 -- membuat tabel atau operasi baru juga menulis GRANT-nya sendiri.
 GRANT SELECT, INSERT ON customers TO revioten_app;
 GRANT SELECT, INSERT ON people TO revioten_app;
--- Tanpa DELETE: akun tidak pernah dihapus, hanya dinonaktifkan (ASUMSI E-26).
+-- Tanpa DELETE: akun tidak pernah dihapus, hanya dinonaktifkan (E-26, D-105).
 GRANT SELECT, INSERT, UPDATE ON accounts TO revioten_app;
 GRANT SELECT, INSERT, UPDATE, DELETE ON sessions TO revioten_app;
 -- Katalog hak dan peran hanya dibaca; isinya diubah lewat migrasi sampai M8.1.
@@ -42,7 +42,7 @@ CREATE TABLE audit_log (
     occurred_at timestamptz NOT NULL,
     -- Jenis aktor (R-API-03). human: akun yang login. system: perintah di
     -- komputer server, misalnya create-admin. anonymous: belum login, misalnya
-    -- login gagal. ASUMSI E-27.
+    -- login gagal. E-27 (D-106).
     actor_type text NOT NULL CHECK (actor_type IN ('human', 'system', 'anonymous')),
     actor_account_id uuid REFERENCES accounts (id),
     -- Orang pemegang akun saat itu, supaya log menampilkan akun dan orangnya (D-74).

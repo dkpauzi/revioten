@@ -5,11 +5,13 @@ import (
 	"errors"
 	"os"
 	"slices"
+	"strings"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/dkpauzi/revioten/internal/access"
+	"github.com/dkpauzi/revioten/internal/audit"
 	"github.com/dkpauzi/revioten/internal/db"
 	"github.com/dkpauzi/revioten/internal/db/dbtest"
 	"github.com/dkpauzi/revioten/internal/problem"
@@ -186,7 +188,7 @@ func TestLoginRejected(t *testing.T) {
 }
 
 // TestLoginLockout: setelah 10 kali gagal berturut-turut, akun dikunci 15 menit.
-// Selama terkunci, password yang benar pun ditolak (ASUMSI E-08).
+// Selama terkunci, password yang benar pun ditolak (E-08, D-85).
 func TestLoginLockout(t *testing.T) {
 	s, clock := newServiceWithAdmin(t)
 	ctx := t.Context()
@@ -215,26 +217,105 @@ func TestLoginLockout(t *testing.T) {
 }
 
 // TestLoginDisabledAfterLimit: kegagalan ke-100 berturut-turut menonaktifkan
-// akun (NIST SP 800-63B-4: paling banyak 100). Hanya admin yang bisa membukanya lagi.
+// akun kerja (NIST SP 800-63B-4: paling banyak 100); hanya admin yang bisa
+// membukanya lagi. Akun admin tidak dinonaktifkan, hanya dikunci 15 menit,
+// supaya orang yang tahu nama login admin tidak bisa mengunci admin terakhir
+// selamanya (E-22 opsi c, D-101).
 func TestLoginDisabledAfterLimit(t *testing.T) {
 	s, clock := newServiceWithAdmin(t)
 	ctx := t.Context()
+	admin, _, err := s.Login(ctx, adminLogin, adminPassword)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, temporary, err := s.CreateAccount(ctx, admin, NewAccount{PersonName: "Penyusun Uji", Kind: KindWork, Login: "penyusun.uji"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Kedua akun tinggal satu kegagalan sebelum batas penonaktifan.
 	if _, err := s.pool.Exec(ctx, "UPDATE accounts SET failed_logins = $1", disableThreshold-1); err != nil {
 		t.Fatal(err)
 	}
 
+	_, _, _ = s.Login(ctx, "penyusun.uji", "bukan password yang benar")
 	_, _, _ = s.Login(ctx, adminLogin, "bukan password yang benar")
 	clock.Advance(24 * time.Hour)
 
-	if _, _, err := s.Login(ctx, adminLogin, adminPassword); !errors.Is(err, ErrInvalidCredentials) {
-		t.Errorf("Login akun nonaktif: %v, ingin ErrInvalidCredentials", err)
+	if _, _, err := s.Login(ctx, "penyusun.uji", temporary); !errors.Is(err, ErrInvalidCredentials) {
+		t.Errorf("Login akun kerja nonaktif: %v, ingin ErrInvalidCredentials", err)
 	}
-	var disabled bool
-	if err := s.pool.QueryRow(ctx, "SELECT disabled_at IS NOT NULL FROM accounts").Scan(&disabled); err != nil {
+	if _, _, err := s.Login(ctx, adminLogin, adminPassword); err != nil {
+		t.Errorf("Login admin setelah kunci habis: %v, ingin berhasil", err)
+	}
+	disabled := map[string]bool{}
+	rows, err := s.pool.Query(ctx, "SELECT login, disabled_at IS NOT NULL FROM accounts")
+	if err != nil {
 		t.Fatal(err)
 	}
-	if !disabled {
-		t.Error("akun belum dinonaktifkan setelah kegagalan ke-100")
+	for rows.Next() {
+		var login string
+		var off bool
+		if err := rows.Scan(&login, &off); err != nil {
+			t.Fatal(err)
+		}
+		disabled[login] = off
+	}
+	if !disabled["penyusun.uji"] || disabled[adminLogin] {
+		t.Errorf("nonaktif: %v, ingin hanya penyusun.uji", disabled)
+	}
+}
+
+// TestResetAdminPassword: perintah reset-admin-password di komputer server
+// membuka akun admin yang lupa password, terkunci, atau nonaktif, memasang
+// password sementara yang wajib diganti, dan mencatatnya dengan aktor sistem
+// (E-22 opsi a, D-101). Akun kerja tetap direset admin lewat aplikasi.
+func TestResetAdminPassword(t *testing.T) {
+	s, _ := newServiceWithAdmin(t)
+	ctx := t.Context()
+	admin, token, err := s.Login(ctx, adminLogin, adminPassword)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := s.CreateAccount(ctx, admin, NewAccount{PersonName: "Penyusun Uji", Kind: KindWork, Login: "penyusun.uji"}); err != nil {
+		t.Fatal(err)
+	}
+	// Admin terkunci dan nonaktif, seperti setelah banyak percobaan gagal.
+	if _, err := s.pool.Exec(ctx, "UPDATE accounts SET failed_logins = 120, locked_until = now() + interval '1 hour', disabled_at = now() WHERE login = $1", adminLogin); err != nil {
+		t.Fatal(err)
+	}
+
+	temporary, err := s.ResetAdminPassword(ctx, " Admin.Uji ")
+	if err != nil {
+		t.Fatalf("ResetAdminPassword: %v", err)
+	}
+	if _, err := s.Authenticate(ctx, token); !errors.Is(err, ErrUnauthenticated) {
+		t.Errorf("sesi lama masih berlaku: %v", err)
+	}
+	actor, _, err := s.Login(ctx, adminLogin, temporary)
+	if err != nil {
+		t.Fatalf("Login dengan password sementara: %v", err)
+	}
+	if !actor.MustChangePassword {
+		t.Error("password sementara harus wajib diganti")
+	}
+	var actorType, details string
+	err = s.pool.QueryRow(ctx, "SELECT actor_type, details FROM audit_log WHERE action = $1 ORDER BY seq DESC LIMIT 1",
+		audit.ActionPasswordReset).Scan(&actorType, &details)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if actorType != string(access.ActorSystem) || details != `{"enabled":"true","via":"reset-admin-password"}` {
+		t.Errorf("entri audit: %s %s", actorType, details)
+	}
+	if strings.Contains(details, temporary) {
+		t.Error("password sementara masuk audit log")
+	}
+
+	if _, err := s.ResetAdminPassword(ctx, "penyusun.uji"); !errors.Is(err, ErrNotAdminAccount) {
+		t.Errorf("akun kerja: %v, ingin ErrNotAdminAccount", err)
+	}
+	if _, err := s.ResetAdminPassword(ctx, "tidak.ada"); !errors.Is(err, ErrNotAdminAccount) {
+		t.Errorf("login tidak ada: %v, ingin ErrNotAdminAccount", err)
 	}
 }
 

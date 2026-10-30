@@ -16,7 +16,7 @@ type Customer struct {
 	ProjectGroupID   string
 	ProjectGroupCode string
 	// Rute approval default customer (D-47, M1.8). Kosong bila belum diatur
-	// Admin (ASUMSI E-39).
+	// Admin (E-39, D-116).
 	DefaultRouteID   string
 	DefaultRouteName string
 	// Active false berarti customer dinonaktifkan. Customer tidak pernah dihapus (E-09).
@@ -45,7 +45,10 @@ type NewCustomer struct {
 type CustomerUpdate struct {
 	Name           string
 	ProjectGroupID string
-	Active         bool
+	// Active nil berarti statusnya tetap. Pointer membedakan "tidak dikirim"
+	// dari false, supaya klien API yang lupa mengirim field ini tidak
+	// menonaktifkan customer tanpa sengaja (E-34, D-111).
+	Active *bool
 }
 
 // ProjectGroup adalah satu Project Group (GR): kelompok customer yang dipegang

@@ -256,7 +256,7 @@ func (s *Service) ResetPassword(ctx context.Context, actor access.Actor, account
 
 // DisableAccount menonaktifkan akun lain dan mengakhiri semua sesinya (A-1,
 // ASVS 7.4.2). Akun admin aktif terakhir tidak bisa dinonaktifkan (D-73).
-// ASUMSI E-26: akun tidak pernah dihapus, hanya dinonaktifkan, supaya audit
+// E-26 (D-105): akun tidak pernah dihapus, hanya dinonaktifkan, supaya audit
 // log dan riwayat dokumen tetap menunjuk akun dan orangnya (D-74).
 func (s *Service) DisableAccount(ctx context.Context, actor access.Actor, accountID string) (AccountInfo, error) {
 	if err := s.authz.Authorize(ctx, actor, access.ManageUsers, access.Resource{}); err != nil {
@@ -458,7 +458,7 @@ func (s *Service) personExists(ctx context.Context, personID string) (bool, erro
 }
 
 // checkEmployeeNumber memeriksa nomor karyawan, yang boleh kosong.
-// ASUMSI E-02: paling banyak 50 karakter, satu baris.
+// E-02 (D-79): paling banyak 50 karakter, satu baris.
 func checkEmployeeNumber(number string) (problem.Problem, bool) {
 	switch {
 	case utf8.RuneCountInString(number) > 50:

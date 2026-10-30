@@ -13,7 +13,7 @@ import (
 
 // maxBodyBytes adalah ukuran body permintaan API paling besar (1 MiB).
 // Unggahan file nanti punya batasnya sendiri.
-// ASUMSI E-20: brief belum menyebut batas ini.
+// E-20 (D-99): bagian dari baseline konvensi API M0.5 (brief R-API-13).
 const maxBodyBytes = 1 << 20
 
 // limitBody membatasi ukuran body permintaan, supaya klien tidak bisa

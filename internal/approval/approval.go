@@ -47,7 +47,10 @@ type Position struct {
 	// PerProjectGroup true untuk Project Leader dan Project Engineer: satu
 	// pemegang per Project Group (D-54).
 	PerProjectGroup bool
-	Holders         []Holder // tidak pernah nil
+	// SingleHolder true untuk jabatan approver dan APQP/PPAP Controller: satu
+	// pemegang saja, karena satu slot mencetak satu nama (E-38, D-115).
+	SingleHolder bool
+	Holders      []Holder // tidak pernah nil
 }
 
 // Holder adalah satu orang yang memegang jabatan. Project Group hanya diisi
@@ -105,7 +108,7 @@ type RouteInput struct {
 
 // Batas isian.
 // ASUMSI E-30: nama paling banyak 200 karakter, seperti master lain.
-// ASUMSI E-40: judul cetak paling banyak 100 karakter, dan paling banyak 10
+// E-40 (D-117): judul cetak paling banyak 100 karakter, dan paling banyak 10
 // slot per rute; cover TR-020 punya lima slot (F-01).
 const (
 	maxNameLength       = 200
@@ -116,7 +119,7 @@ const (
 // cleanRoute merapikan dan memeriksa isian rute. known berisi semua jabatan
 // yang ada, menurut ID. Bentuk rute mengikuti keputusan yang sudah ada: satu
 // Prepared di depan, lalu satu Checked (D-48), lalu satu atau lebih Approved
-// (D-46, D-49). ASUMSI E-40: rute tanpa Approved belum diizinkan (lihat E-35).
+// (D-46, D-49). E-40 (D-117): rute tanpa Approved belum diizinkan (lihat E-35).
 func cleanRoute(in RouteInput, known map[string]string) (RouteInput, error) {
 	name, nameProblem := problem.Text("name", in.Name, true, maxNameLength)
 	out := RouteInput{Name: name}

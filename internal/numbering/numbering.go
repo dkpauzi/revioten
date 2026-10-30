@@ -66,7 +66,7 @@ const maxNameLength = 200
 
 // Bentuk kode menurut WI SW-ZZ-000 (E-12): kode pabrik dan huruf jenis
 // dokumen masing-masing satu huruf. Kode khusus dua atau tiga huruf, seperti
-// ZZ dan HSE (ASUMSI E-37).
+// ZZ dan HSE (E-37, D-114).
 var (
 	letterPattern      = regexp.MustCompile(`^[A-Z]$`)
 	specialCodePattern = regexp.MustCompile(`^[A-Z]{2,3}$`)

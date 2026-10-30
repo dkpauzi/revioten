@@ -47,7 +47,7 @@ func (a *apiServer) UpdateProcess(ctx context.Context, req UpdateProcessRequestO
 	// aliases wajib di kontrak, karena isinya menggantikan semua alias. JSON []
 	// menjadi daftar kosong, sedangkan field yang tidak dikirim menjadi nil:
 	// klien yang lupa field ini ditolak, bukan menghapus semua alias.
-	// ASUMSI E-34: kode hasil generate tidak memeriksa field wajib, jadi
+	// E-34 (D-111): kode hasil generate tidak memeriksa field wajib, jadi
 	// field yang nilai kosongnya berbahaya diperiksa di sini.
 	if req.Body.Aliases == nil {
 		return nil, &problem.ValidationError{Problems: []problem.Problem{{

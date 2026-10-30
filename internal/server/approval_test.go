@@ -19,7 +19,7 @@ func TestPositionEndpoints(t *testing.T) {
 		ID: "pos-1", Key: approval.KeyProjectLeader, Name: "Project Leader", PerProjectGroup: true,
 		Holders: []approval.Holder{{ID: "h-1", PersonID: "p-1", PersonName: "Orang Contoh", ProjectGroupID: "g-1", ProjectGroupCode: "GR1", CreatedAt: waktuUji}},
 	}
-	npi := approval.Position{ID: "pos-2", Key: approval.KeyNPIManager, Name: "NPI Manager", Holders: []approval.Holder{}}
+	npi := approval.Position{ID: "pos-2", Key: approval.KeyNPIManager, Name: "NPI Manager", SingleHolder: true, Holders: []approval.Holder{}}
 	fake := &fakeApproval{positions: []approval.Position{leader, npi}, position: npi, holder: leader.Holders[0]}
 	srv := newTestServer(t, nil, Deps{Approval: fake})
 
@@ -32,7 +32,7 @@ func TestPositionEndpoints(t *testing.T) {
 		{Id: "pos-1", Key: PositionKeyProjectLeader, Name: "Project Leader", PerProjectGroup: true, Holders: []PositionHolder{{
 			Id: "h-1", Person: Person{Id: "p-1", Name: "Orang Contoh"}, ProjectGroup: &ProjectGroupRef{Id: "g-1", Code: "GR1"}, CreatedAt: waktuUji,
 		}}},
-		{Id: "pos-2", Key: PositionKeyNpiManager, Name: "NPI Manager", Holders: []PositionHolder{}},
+		{Id: "pos-2", Key: PositionKeyNpiManager, Name: "NPI Manager", SingleHolder: true, Holders: []PositionHolder{}},
 	}
 	if !reflect.DeepEqual(list.Items, want) {
 		t.Errorf("daftar: %s", rec.Body.String())
@@ -87,7 +87,7 @@ func TestRouteEndpoints(t *testing.T) {
 }
 
 // TestDefaultRouteEndpoints: rute default customer (D-47) dan rute per jenis
-// perubahan (ASUMSI E-35). route_id yang tidak dikirim di jenis perubahan
+// perubahan (E-35, D-112). route_id yang tidak dikirim di jenis perubahan
 // berarti rute default customer.
 func TestDefaultRouteEndpoints(t *testing.T) {
 	customers := &fakeCustomers{created: customer.Customer{

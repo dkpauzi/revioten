@@ -22,7 +22,8 @@ const (
 	KindAdmin = access.AccountAdmin
 )
 
-// Aturan sesi dan gagal login (ASUMSI E-08, dicek 28 Oktober 2026):
+// Aturan sesi dan gagal login (E-08, D-85; nilai dicek 28 Oktober 2026 dan
+// dikonfirmasi pemilik 30 Oktober 2026):
 //   - idleTimeout 30 menit: OWASP Session Management Cheat Sheet menyebut
 //     15 sampai 30 menit untuk aplikasi berisiko rendah; NIST SP 800-63B-4
 //     untuk AAL2 meminta paling lama 1 jam.
@@ -31,8 +32,10 @@ const (
 //     lama 30 hari dan AAL2 24 jam.
 //   - setiap 10 kali gagal berturut-turut, akun dikunci 15 menit (OWASP
 //     Authentication Cheat Sheet: ambang dan lama kunci dipilih aplikasi).
-//   - kegagalan ke-100 berturut-turut menonaktifkan akun (NIST SP 800-63B-4
-//     bagian rate limiting: paling banyak 100).
+//   - kegagalan ke-100 berturut-turut menonaktifkan akun kerja (NIST SP
+//     800-63B-4 bagian rate limiting: paling banyak 100). Akun admin tidak
+//     dinonaktifkan, hanya dikunci, supaya orang yang tahu nama login admin
+//     tidak bisa mengunci admin terakhir selamanya (E-22 opsi c, D-101).
 const (
 	idleTimeout      = 30 * time.Minute
 	absoluteTimeout  = 8 * time.Hour
@@ -50,6 +53,9 @@ var (
 	ErrUnauthenticated = errors.New("belum login atau sesi sudah berakhir")
 	// ErrAdminExists berarti akun admin pertama sudah pernah dibuat (E-07).
 	ErrAdminExists = errors.New("akun admin sudah ada")
+	// ErrNotAdminAccount berarti nama login untuk reset-admin-password tidak
+	// ada atau bukan akun admin (E-22). Akun kerja direset admin lewat aplikasi.
+	ErrNotAdminAccount = errors.New("tidak ada akun admin dengan nama login itu")
 )
 
 // normalizeLogin merapikan nama login: spasi di tepi dibuang dan huruf dibuat kecil.
@@ -58,7 +64,7 @@ func normalizeLogin(login string) string {
 }
 
 // loginPattern: 3 sampai 64 karakter huruf kecil a-z, angka, titik, garis
-// bawah, atau tanda hubung. ASUMSI E-08: brief belum menyebut bentuk nama login.
+// bawah, atau tanda hubung (E-08, D-85; dipilih supaya mudah diketik).
 var loginPattern = regexp.MustCompile(`^[a-z0-9._-]{3,64}$`)
 
 // checkLogin memeriksa nama login yang sudah dirapikan.
@@ -74,7 +80,7 @@ func checkLogin(login string) (problem.Problem, bool) {
 }
 
 // checkPersonName memeriksa nama orang yang sudah dirapikan: wajib, paling
-// banyak 200 karakter, dan satu baris (sama dengan nama customer, ASUMSI E-21).
+// banyak 200 karakter, dan satu baris (sama dengan nama customer, E-21, D-100).
 // field adalah nama field di kontrak API.
 func checkPersonName(field, name string) (problem.Problem, bool) {
 	switch {

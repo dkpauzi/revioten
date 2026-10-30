@@ -1,7 +1,7 @@
 // Test E2E M1.8: kriteria selesai "admin bisa mengatur rute default customer
 // tanpa mengubah kode", lewat layar. Juga: slot GM dipindah ke Factory Manager
 // lewat master data (R-APR-15), pemegang Project Leader per Project Group
-// (D-54), dan saklar tanggal tanda tangan (D-52).
+// (D-54), satu pemegang NPI Manager (D-115), dan saklar tanggal tanda tangan (D-52).
 import { expect, test, type Page } from '@playwright/test';
 import { en } from '../src/lib/i18n/en.ts';
 import { createWorkAccount, ensureProjectGroup, logIn } from './helpers.ts';
@@ -92,6 +92,27 @@ test('Project Leader dipegang satu orang per Project Group', async ({ page }) =>
 	await page.getByLabel(en.holderGroup, { exact: true }).selectOption({ index: 1 });
 	await page.getByRole('button', { name: en.holderAdd }).click();
 	await expect(page.getByText(en.holderGroupTaken)).toBeVisible();
+});
+
+test('NPI Manager dipegang satu orang', async ({ page }) => {
+	// Jabatan approver dan APQP/PPAP Controller hanya punya satu pemegang,
+	// karena satu slot mencetak satu nama (E-38, D-115).
+	await logIn(page);
+	await createWorkAccount(page, 'NPI Manager E2E', 'npi.e2e', []);
+	await page.getByRole('link', { name: en.navPositions }).click();
+	await expect(page.getByRole('row', { name: /^NPI Manager / })).toContainText(en.positionSingleHolder);
+
+	await page.getByLabel(en.positionName, { exact: true }).selectOption({ label: 'NPI Manager' });
+	await page.getByLabel(en.holderPerson, { exact: true }).selectOption({ label: 'NPI Manager E2E' });
+	await page.getByRole('button', { name: en.holderAdd }).click();
+	await expect(
+		page.getByText(en.holderAdded.replace('{name}', 'NPI Manager E2E').replace('{position}', 'NPI Manager'))
+	).toBeVisible();
+
+	await page.getByLabel(en.positionName, { exact: true }).selectOption({ label: 'NPI Manager' });
+	await page.getByLabel(en.holderPerson, { exact: true }).selectOption({ label: 'Admin E2E' });
+	await page.getByRole('button', { name: en.holderAdd }).click();
+	await expect(page.getByText(en.holderPositionTaken)).toBeVisible();
 });
 
 test('tanggal tanda tangan per slot mati, dan bisa dinyalakan admin', async ({ page }) => {

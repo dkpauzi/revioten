@@ -39,7 +39,7 @@ func NewService(pool *pgxpool.Pool, authz access.Authorizer) *Service {
 }
 
 // Get mengembalikan pengaturan yang berlaku. Semua akun boleh membacanya
-// (ASUMSI E-24), karena layar dan cetakan mengikutinya.
+// (E-24, D-103), karena layar dan cetakan mengikutinya.
 func (s *Service) Get(ctx context.Context, actor access.Actor) (Settings, error) {
 	if err := s.authz.Authorize(ctx, actor, access.ViewRegister, access.Resource{}); err != nil {
 		return Settings{}, err

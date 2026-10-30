@@ -15,9 +15,9 @@ CREATE TABLE customers (
     -- Aturan yang sama juga diperiksa di internal/customer. Batasan di sini
     -- adalah pengaman terakhir bila ada kode lain yang menulis langsung.
     CONSTRAINT customers_code_format CHECK (code ~ '^[A-Z]{2}$'),
-    -- ASUMSI E-12: ZZ dipakai untuk dokumen General/Common, bukan customer.
+    -- E-12 (D-89): ZZ dipakai untuk dokumen General/Common, bukan customer.
     CONSTRAINT customers_code_not_zz CHECK (code <> 'ZZ'),
-    -- ASUMSI E-21: nama wajib, paling panjang 200 karakter, tanpa spasi di tepi.
+    -- E-21 (D-100): nama wajib, paling panjang 200 karakter, tanpa spasi di tepi.
     CONSTRAINT customers_name_check CHECK (
         name <> '' AND name = btrim(name) AND char_length(name) <= 200
     )

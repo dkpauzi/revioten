@@ -9,7 +9,7 @@ import (
 
 // Text merapikan dan memeriksa isian teks satu baris, misalnya nama di master
 // data: spasi di tepi dibuang, wajib diisi bila required, paling banyak max
-// karakter, dan tanpa karakter kontrol seperti baris baru (ASUMSI E-21: teks
+// karakter, dan tanpa karakter kontrol seperti baris baru (E-21, D-100: teks
 // master dicetak di dokumen, jadi satu baris). Hasilnya teks yang sudah
 // dirapikan, dan masalahnya (nil bila tidak ada).
 func Text(field, value string, required bool, max int) (string, *Problem) {

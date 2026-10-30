@@ -5,7 +5,7 @@
 // dengan perubahannya. Data dan catatannya selalu tersimpan bersama atau batal
 // bersama.
 //
-// ASUMSI E-28: yang dicatat adalah perubahan data, termasuk sesi (login dan
+// E-28 (D-107): yang dicatat adalah perubahan data, termasuk sesi (login dan
 // logout) dan hitungan gagal login. Membaca data tidak dicatat, dan
 // pembersihan sesi yang sudah habis waktunya juga tidak. Entri membentuk satu rantai hash untuk seluruh sistem: hash setiap
 // entri dihitung dari isinya dan hash entri sebelumnya (hash.go).

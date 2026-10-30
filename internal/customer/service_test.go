@@ -99,7 +99,7 @@ func lastAudit(t *testing.T, pool *pgxpool.Pool) db.AuditLog {
 }
 
 // TestPermissions: mengubah master butuh hak A-2 (hanya akun admin, E-10),
-// sedangkan melihat daftar cukup hak dasar semua akun (ASUMSI E-24).
+// sedangkan melihat daftar cukup hak dasar semua akun (E-24, D-103).
 func TestPermissions(t *testing.T) {
 	f := newFixture(t)
 	ctx := t.Context()
@@ -126,7 +126,7 @@ func TestPermissions(t *testing.T) {
 		t.Fatalf("Create oleh admin: %v", err)
 	}
 	for _, actor := range []access.Actor{author, viewer} {
-		if _, err := f.s.Update(ctx, actor, c.ID, CustomerUpdate{Name: "X", ProjectGroupID: f.group.ID, Active: true}); !errors.Is(err, access.ErrForbidden) {
+		if _, err := f.s.Update(ctx, actor, c.ID, CustomerUpdate{Name: "X", ProjectGroupID: f.group.ID, Active: new(true)}); !errors.Is(err, access.ErrForbidden) {
 			t.Errorf("Update oleh %s: %v, ingin ErrForbidden", actor.Login, err)
 		}
 		if _, err := f.s.ChangeCode(ctx, actor, c.ID, "CD"); !errors.Is(err, access.ErrForbidden) {
@@ -284,7 +284,9 @@ func TestUpdate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	updated, err := f.s.Update(ctx, f.admin, c.ID, CustomerUpdate{Name: " Customer Baru ", ProjectGroupID: gr2.ID, Active: false})
+	// new(false) (Go 1.26+) membuat pointer ke nilai false. Active nil berarti
+	// "tidak dikirim", dan statusnya tetap (E-34, D-111).
+	updated, err := f.s.Update(ctx, f.admin, c.ID, CustomerUpdate{Name: " Customer Baru ", ProjectGroupID: gr2.ID, Active: new(false)})
 	if err != nil {
 		t.Fatalf("Update: %v", err)
 	}
@@ -295,6 +297,19 @@ func TestUpdate(t *testing.T) {
 	want := `{"active":"true → false","name":"Customer Lama → Customer Baru","project_group":"GR1 → GR2"}`
 	if r.Action != audit.ActionCustomerUpdated || r.Details != want {
 		t.Errorf("entri audit: %s %s", r.Action, r.Details)
+	}
+
+	// Tanpa Active, customer yang nonaktif tetap nonaktif: klien yang lupa
+	// mengirim field ini tidak mengubah status tanpa sengaja (E-34, D-111).
+	kept, err := f.s.Update(ctx, f.admin, c.ID, CustomerUpdate{Name: "Customer Baru Lagi", ProjectGroupID: gr2.ID})
+	if err != nil {
+		t.Fatalf("Update tanpa Active: %v", err)
+	}
+	if kept.Active {
+		t.Errorf("Update tanpa Active mengaktifkan customer: %+v", kept)
+	}
+	if r := lastAudit(t, f.pool); r.Details != `{"name":"Customer Baru → Customer Baru Lagi"}` {
+		t.Errorf("entri audit tanpa Active: %s", r.Details)
 	}
 
 	tests := []struct {
@@ -320,7 +335,7 @@ func TestUpdate(t *testing.T) {
 
 // TestChangeCode: kode customer bisa diganti, dan kode lama tetap tercatat
 // dengan masa berlakunya (E-11). Satu kode hanya pernah dipakai satu customer
-// (ASUMSI E-31), supaya nomor lama tidak pernah menunjuk dua customer.
+// (E-31, D-109), supaya nomor lama tidak pernah menunjuk dua customer.
 func TestChangeCode(t *testing.T) {
 	f := newFixture(t)
 	ctx := t.Context()
@@ -459,7 +474,7 @@ func TestSetDefaultRoute(t *testing.T) {
 		t.Fatal(err)
 	}
 	if ab.DefaultRouteID != "" {
-		t.Errorf("customer baru sudah punya rute default: %+v (ASUMSI E-39: belum diatur)", ab)
+		t.Errorf("customer baru sudah punya rute default: %+v (E-39, D-116: belum diatur)", ab)
 	}
 
 	set, err := f.s.SetDefaultRoute(ctx, f.admin, ab.ID, routes["Up to GM"])

@@ -29,7 +29,7 @@ func (a *apiServer) UpdateChangeType(ctx context.Context, req UpdateChangeTypeRe
 }
 
 // SetChangeTypeRoute menjawab PUT /api/v1/change-types/{changeTypeId}/approval-route.
-// route_id yang tidak dikirim berarti rute default setiap customer (ASUMSI E-35).
+// route_id yang tidak dikirim berarti rute default setiap customer (E-35, D-112).
 func (a *apiServer) SetChangeTypeRoute(ctx context.Context, req SetChangeTypeRouteRequestObject) (SetChangeTypeRouteResponseObject, error) {
 	routeID := ""
 	if req.Body.RouteId != nil {

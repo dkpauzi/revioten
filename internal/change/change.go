@@ -2,7 +2,7 @@
 // perubahan (R-TPL-10), sumber perubahan (R-CHG-06), dan kategori 4M
 // (R-CHG-01). Semuanya diubah Admin (A-2) dan tidak pernah dihapus. Entitas
 // perubahan sendiri menyusul di Tahap 5. Kebijakan approval per jenis
-// perubahan (rute yang dipakai) diatur lewat paket approval (M1.8, ASUMSI E-35).
+// perubahan (rute yang dipakai) diatur lewat paket approval (M1.8, E-35, D-112).
 package change
 
 import "time"
@@ -15,7 +15,7 @@ const (
 )
 
 // Mekanisme sistem yang memakai sumber perubahan (R-CHG-01). Sumber dengan
-// mekanisme selalu aktif (ASUMSI E-36).
+// mekanisme selalu aktif (E-36, D-113).
 const (
 	MechanismYokoten  = "yokoten"
 	MechanismTemplate = "template"
@@ -28,7 +28,7 @@ type ChangeType struct {
 	Key  string
 	Name string
 	// Rute approval untuk jenis ini (R-TPL-10, M1.8). Kosong berarti rute
-	// default customer (ASUMSI E-35). Diatur lewat paket approval.
+	// default customer (E-35, D-112). Diatur lewat paket approval.
 	ApprovalRouteID   string
 	ApprovalRouteName string
 }

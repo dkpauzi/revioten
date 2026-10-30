@@ -43,7 +43,7 @@ test('nama proses diganti tanpa memutus rujukan', async ({ page }) => {
 	await expect(row).toContainText('Part Receiving');
 	await expect(row).toContainText('Receiving Area');
 
-	// Satu nama hanya menunjuk satu proses, juga sebagai alias (ASUMSI E-32).
+	// Satu nama hanya menunjuk satu proses, juga sebagai alias (E-32, D-110).
 	await field(page, en.processName).fill('IQC');
 	await field(page, en.processAliases).fill('parts receiving');
 	await page.getByRole('button', { name: en.processAdd }).click();

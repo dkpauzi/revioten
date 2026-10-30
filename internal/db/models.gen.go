@@ -146,6 +146,7 @@ type Position struct {
 	Name            string
 	PerProjectGroup bool
 	SortOrder       int16
+	SingleHolder    bool
 }
 
 type PositionHolder struct {

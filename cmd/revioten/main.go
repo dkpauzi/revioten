@@ -7,6 +7,9 @@
 //	go run ./cmd/revioten -addr 127.0.0.1:8081   server di port lain
 //	go run ./cmd/revioten create-admin -name "Nama Pemegang" -login admin.nama
 //	                                             membuat akun admin pertama (E-07)
+//	go run ./cmd/revioten reset-admin-password -login admin.nama
+//	                                             membuka akun admin yang lupa
+//	                                             password atau terkunci (E-22)
 package main
 
 import (
@@ -44,8 +47,13 @@ func main() {
 // run memilih perintah dari argumen. Semua error dikembalikan ke main, supaya
 // perintah defer (misalnya menutup pool) tetap dijalankan sebelum program keluar.
 func run(args []string) error {
-	if len(args) > 0 && args[0] == "create-admin" {
-		return runCreateAdmin(args[1:], os.Stdin, os.Stdout)
+	if len(args) > 0 {
+		switch args[0] {
+		case "create-admin":
+			return runCreateAdmin(args[1:], os.Stdin, os.Stdout)
+		case "reset-admin-password":
+			return runResetAdmin(args[1:], os.Stdout)
+		}
 	}
 	return runServer(args)
 }
@@ -108,7 +116,7 @@ func runServer(args []string) error {
 //     yang hanya punya hak yang dibutuhkan, dan tidak bisa mengubah atau
 //     menghapus audit log (R-SEC-03).
 //
-// ASUMSI E-29: untuk demo di localhost, program yang sama memegang kredensial
+// E-29 (D-108): untuk demo di localhost, program yang sama memegang kredensial
 // pemilik saat mulai. Versi IT sebaiknya menjalankan migrasi sebagai langkah
 // terpisah, supaya server yang berjalan tidak pernah memegangnya.
 func openDatabase(ctx context.Context, cfg config) (*pgxpool.Pool, error) {

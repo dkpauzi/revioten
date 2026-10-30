@@ -28,7 +28,7 @@ func NewService(pool *pgxpool.Pool, authz access.Authorizer) *Service {
 	return &Service{pool: pool, q: db.New(pool), authz: authz}
 }
 
-// Melihat memakai hak L-2 seperti master lain (ASUMSI E-24), dan mengubah
+// Melihat memakai hak L-2 seperti master lain (E-24, D-103), dan mengubah
 // memakai A-2 (UC-05).
 
 // ListChangeTypes mengembalikan jenis perubahan menurut urutan tetapnya.
@@ -93,7 +93,7 @@ func (s *Service) RenameChangeType(ctx context.Context, actor access.Actor, id, 
 
 // SetApprovalRoute mengatur rute approval untuk satu jenis perubahan
 // (R-TPL-10, M1.8). routeID kosong berarti rute default customer, sehingga
-// semua jenis memakai alur yang sama sampai diatur lain (Q-15, ASUMSI E-35).
+// semua jenis memakai alur yang sama sampai diatur lain (Q-15, E-35, D-112).
 func (s *Service) SetApprovalRoute(ctx context.Context, actor access.Actor, id, routeID string) (ChangeType, error) {
 	if err := s.authz.Authorize(ctx, actor, access.ManageMasterData, access.Resource{}); err != nil {
 		return ChangeType{}, err
@@ -204,7 +204,7 @@ func (s *Service) CreateChangeSource(ctx context.Context, actor access.Actor, na
 
 // UpdateChangeSource mengganti nama sumber perubahan, dan menonaktifkan atau
 // mengaktifkannya lagi. Sumber milik mekanisme sistem tidak bisa dinonaktifkan,
-// karena sistem membuat perubahan dengan sumber itu (ASUMSI E-36).
+// karena sistem membuat perubahan dengan sumber itu (E-36, D-113).
 func (s *Service) UpdateChangeSource(ctx context.Context, actor access.Actor, id string, in ChangeSourceUpdate) (ChangeSource, error) {
 	if err := s.authz.Authorize(ctx, actor, access.ManageMasterData, access.Resource{}); err != nil {
 		return ChangeSource{}, err

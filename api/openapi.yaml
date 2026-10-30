@@ -37,7 +37,7 @@ paths:
     get:
       operationId: getHealth
       summary: Server and database status
-      # ASUMSI E-08: /health terbuka tanpa login, karena dipakai untuk memantau
+      # E-08 (D-85): /health terbuka tanpa login, karena dipakai untuk memantau
       # server dan tidak berisi data.
       security: []
       responses:
@@ -1611,7 +1611,7 @@ components:
           description: Each customer is allocated to one project group (D-54).
     CustomerUpdate:
       type: object
-      required: [name, project_group_id, active]
+      required: [name, project_group_id]
       properties:
         name:
           type: string
@@ -1619,6 +1619,9 @@ components:
           type: string
         active:
           type: boolean
+          # E-34 (D-111): opsional, supaya klien yang lupa mengirimnya tidak
+          # menonaktifkan customer tanpa sengaja.
+          description: Leave it out to keep the current status.
     CustomerCodeChange:
       type: object
       required: [code]
@@ -2021,7 +2024,7 @@ components:
             $ref: '#/components/schemas/FourMCategory'
     Position:
       type: object
-      required: [id, key, name, per_project_group, holders]
+      required: [id, key, name, per_project_group, single_holder, holders]
       description: A job title in the approval workflow (D-54). The key never changes; the name may (D-58).
       properties:
         id:
@@ -2034,6 +2037,12 @@ components:
         per_project_group:
           type: boolean
           description: True for the Project Leader and the Project Engineer, who are held once per project group.
+        single_holder:
+          type: boolean
+          description: |
+            True for the approver positions and the APQP/PPAP Controller, which
+            have one holder only (D-115). A second holder is refused with
+            409 conflict, detail position_id:taken.
         holders:
           type: array
           items:
@@ -2191,8 +2200,8 @@ components:
       properties:
         code:
           type: string
-          # ASUMSI E-20: tabel kode error spec lama tidak ada di repo, jadi
-          # daftar ini disusun sendiri dan dicatat sebagai temuan.
+          # E-20 (D-99): spec lama tidak ada di repo, jadi daftar dari M0.5
+          # ini menjadi baseline kode error (brief R-API-13).
           enum:
             - invalid_request
             - validation_failed

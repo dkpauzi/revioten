@@ -19,7 +19,7 @@ const (
 	ActorHuman ActorType = "human"
 	// ActorSystem dan ActorAnonymous hanya dipakai untuk mencatat pelaku di
 	// audit log (M1.3), dan selalu ditolak Authorize karena tidak punya akun.
-	// ASUMSI E-27: R-API-03 belum menyebut keduanya.
+	// E-27 (D-106): tambahan pada jenis aktor R-API-03.
 	//   - ActorSystem: perintah di komputer server, misalnya create-admin.
 	//   - ActorAnonymous: belum login, misalnya percobaan login yang gagal.
 	ActorSystem    ActorType = "system"
@@ -76,7 +76,7 @@ const (
 	// ManageOwnAccount bukan hak di katalog: setiap aktor boleh mengurus
 	// akunnya sendiri (lihat sesi, logout, ganti password). Tetap lewat
 	// Authorize, supaya semua operasi melewati satu titik pemeriksaan.
-	// ASUMSI E-25: aturan tetap yang tidak bisa dicabut admin, bukan hak di U3.
+	// E-25 (D-104): aturan tetap yang tidak bisa dicabut admin, bukan hak di U3.
 	ManageOwnAccount Permission = "own-account"
 )
 

@@ -308,7 +308,10 @@ export type NewCustomer = {
 export type CustomerUpdate = {
     name: string;
     project_group_id: string;
-    active: boolean;
+    /**
+     * Leave it out to keep the current status.
+     */
+    active?: boolean;
 };
 
 export type CustomerCodeChange = {
@@ -606,6 +609,13 @@ export type Position = {
      * True for the Project Leader and the Project Engineer, who are held once per project group.
      */
     per_project_group: boolean;
+    /**
+     * True for the approver positions and the APQP/PPAP Controller, which
+     * have one holder only (D-115). A second holder is refused with
+     * 409 conflict, detail position_id:taken.
+     *
+     */
+    single_holder: boolean;
     holders: Array<PositionHolder>;
 };
 

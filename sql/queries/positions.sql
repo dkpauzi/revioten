@@ -1,9 +1,9 @@
 -- name: ListPositions :many
 -- ListPositions mengambil semua jabatan menurut urutan bagan organisasi.
-SELECT id, key, name, per_project_group FROM positions ORDER BY sort_order;
+SELECT id, key, name, per_project_group, single_holder FROM positions ORDER BY sort_order;
 
 -- name: GetPosition :one
-SELECT id, key, name, per_project_group FROM positions WHERE id = $1;
+SELECT id, key, name, per_project_group, single_holder FROM positions WHERE id = $1;
 
 -- name: LockPosition :exec
 SELECT id FROM positions WHERE id = $1 FOR NO KEY UPDATE;
@@ -33,6 +33,9 @@ WHERE h.id = $1;
 INSERT INTO position_holders (position_id, per_project_group, person_id, project_group_id)
 VALUES ($1, $2, $3, $4)
 RETURNING id;
+
+-- name: CountPositionHolders :one
+SELECT count(*) FROM position_holders WHERE position_id = $1;
 
 -- name: DeletePositionHolder :exec
 DELETE FROM position_holders WHERE id = $1;

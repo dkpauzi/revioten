@@ -102,7 +102,7 @@ func (a *apiServer) UpdateSystemSettings(ctx context.Context, req UpdateSystemSe
 
 // toAPIPosition mengubah Position domain menjadi Position kontrak API.
 func toAPIPosition(p approval.Position) Position {
-	out := Position{Id: p.ID, Key: PositionKey(p.Key), Name: p.Name, PerProjectGroup: p.PerProjectGroup, Holders: make([]PositionHolder, 0, len(p.Holders))}
+	out := Position{Id: p.ID, Key: PositionKey(p.Key), Name: p.Name, PerProjectGroup: p.PerProjectGroup, SingleHolder: p.SingleHolder, Holders: make([]PositionHolder, 0, len(p.Holders))}
 	for _, h := range p.Holders {
 		out.Holders = append(out.Holders, toAPIHolder(h))
 	}

@@ -89,6 +89,7 @@ const scopedKeys: Record<string, MessageKey> = {
 	'holder.project_group_id:required': 'holderGroupRequired',
 	'holder.project_group_id:taken': 'holderGroupTaken',
 	'holder.project_group_id:not_allowed': 'holderGroupNotAllowed',
+	'holder.position_id:taken': 'holderPositionTaken',
 	'route.name:taken': 'routeNameTaken'
 };
 

@@ -31,9 +31,8 @@ func NewService(pool *pgxpool.Pool, authz access.Authorizer) *Service {
 }
 
 // List mengembalikan semua customer, urut menurut kode, beserta riwayat kodenya.
-// ASUMSI E-24: matriks U3 belum punya hak "lihat master data". Semua akun
-// butuh daftar customer (misalnya untuk menyaring dokumen), jadi cukup hak
-// dasar L-2 yang dimiliki semua akun.
+// E-24 (D-103): melihat master data termasuk hak L-2, yang dimiliki semua akun.
+// Semua akun butuh daftar customer, misalnya untuk menyaring dokumen.
 func (s *Service) List(ctx context.Context, actor access.Actor) ([]Customer, error) {
 	if err := s.authz.Authorize(ctx, actor, access.ViewRegister, access.Resource{}); err != nil {
 		return nil, err
@@ -63,7 +62,7 @@ func (s *Service) List(ctx context.Context, actor access.Actor) ([]Customer, err
 	return list, nil
 }
 
-// Get mengembalikan satu customer beserta riwayat kodenya (L-2, ASUMSI E-24).
+// Get mengembalikan satu customer beserta riwayat kodenya (L-2, E-24, D-103).
 func (s *Service) Get(ctx context.Context, actor access.Actor, id string) (Customer, error) {
 	if err := s.authz.Authorize(ctx, actor, access.ViewRegister, access.Resource{CustomerID: id}); err != nil {
 		return Customer{}, err
@@ -162,7 +161,11 @@ func (s *Service) Update(ctx context.Context, actor access.Actor, id string, in 
 			return err
 		}
 		id = before.ID
-		err = q.UpdateCustomer(ctx, db.UpdateCustomerParams{ID: id, Name: in.Name, ProjectGroupID: &group.ID, Active: in.Active})
+		active := before.Active
+		if in.Active != nil {
+			active = *in.Active
+		}
+		err = q.UpdateCustomer(ctx, db.UpdateCustomerParams{ID: id, Name: in.Name, ProjectGroupID: &group.ID, Active: active})
 		if err != nil {
 			return err
 		}
@@ -173,8 +176,8 @@ func (s *Service) Update(ctx context.Context, actor access.Actor, id string, in 
 		if before.ProjectGroupID != group.ID {
 			details["project_group"] = audit.Change(before.ProjectGroupCode, group.Code)
 		}
-		if before.Active != in.Active {
-			details["active"] = audit.Change(strconv.FormatBool(before.Active), strconv.FormatBool(in.Active))
+		if before.Active != active {
+			details["active"] = audit.Change(strconv.FormatBool(before.Active), strconv.FormatBool(active))
 		}
 		if len(details) == 0 {
 			return nil // tidak ada yang berubah, jadi tidak dicatat
@@ -195,7 +198,7 @@ func (s *Service) Update(ctx context.Context, actor access.Actor, id string, in 
 // ChangeCode mengganti kode customer (A-2, E-11). Kode lama tetap tercatat
 // beserta masa berlakunya, sehingga nomor dokumen lama yang memakai kode lama
 // tetap bisa dicocokkan dengan customer ini (R-NUM-02).
-// ASUMSI E-31: satu kode hanya pernah dipakai satu customer, termasuk kode
+// E-31 (D-109): satu kode hanya pernah dipakai satu customer, termasuk kode
 // lama, supaya nomor lama tidak pernah menunjuk dua customer.
 func (s *Service) ChangeCode(ctx context.Context, actor access.Actor, id, code string) (Customer, error) {
 	if err := s.authz.Authorize(ctx, actor, access.ManageMasterData, access.Resource{CustomerID: id}); err != nil {
@@ -321,7 +324,7 @@ func specialCode(ctx context.Context, q *db.Queries, code string) (*problem.Prob
 // lockCodeAndCheck mengambil kunci kode di posisi customer (kunci advisory
 // 11003, dipakai juga saat kode khusus ditambah), lalu memeriksa kode khusus
 // sekali lagi. Dengan kunci itu, kode khusus baru tidak bisa terdaftar di
-// antara pemeriksaan dan penyimpanan kode customer (ASUMSI E-37).
+// antara pemeriksaan dan penyimpanan kode customer (E-37, D-114).
 func lockCodeAndCheck(ctx context.Context, q *db.Queries, code string) error {
 	if err := q.LockNumberCodes(ctx); err != nil {
 		return err

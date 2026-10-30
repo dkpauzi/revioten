@@ -1,6 +1,6 @@
 -- name: ListChangeTypes :many
 -- ListChangeTypes mengambil jenis perubahan beserta rute approval-nya (M1.8).
--- Rute kosong berarti rute default customer (ASUMSI E-35).
+-- Rute kosong berarti rute default customer (E-35, D-112).
 SELECT t.id, t.key, t.name, t.approval_route_id, r.name AS approval_route_name
 FROM change_types t
 LEFT JOIN approval_routes r ON r.id = t.approval_route_id

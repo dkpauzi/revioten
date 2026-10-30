@@ -184,7 +184,7 @@ func TestAuthorizeScope(t *testing.T) {
 	leader := hold("project_leader")
 	check("customer di group sendiri", grouped, ab, true)
 	check("customer di group lain", grouped, cd, false)
-	// ASUMSI E-41: hak bercakupan tidak berlaku untuk operasi tanpa customer.
+	// E-41 (D-118): hak bercakupan tidak berlaku untuk operasi tanpa customer.
 	check("tanpa customer", grouped, Resource{}, false)
 	check("cakupan semua customer", everyone, cd, true)
 	check("cakupan semua customer, tanpa customer", everyone, Resource{}, true)

@@ -49,7 +49,7 @@ func (c *Checker) Authorize(ctx context.Context, actor Actor, perm Permission, r
 		}
 		// Hak bercakupan Project Group hanya berlaku untuk operasi pada satu
 		// customer. Operasi tanpa customer ditolak, bukan dianggap boleh
-		// (ASUMSI E-41: tolak bila ragu).
+		// (E-41, D-118: tolak bila ragu).
 		if res.CustomerID == "" {
 			continue
 		}

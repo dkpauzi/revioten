@@ -1,8 +1,7 @@
 // Teks layar untuk peran dan cakupannya. Peran adalah data di server (D-66),
 // jadi ID yang belum punya teks tetap ditampilkan apa adanya.
-// ASUMSI E-19: nama Inggris diambil dari brief (author, verifier, document
-// control, viewer, admin, migration role) dan dari uraian peran di brief
-// bagian 1 untuk Template maintainer dan PFMEA–CP checker.
+// E-19 (D-98): nama Inggris mengikuti kolom istilah layar di glosarium U1
+// bagian 7, yang diisi dari brief bagian 1 (D-78).
 import type { Role, RoleGrant } from './api/gen/index.ts';
 import { t, type MessageKey } from './i18n/index.ts';
 

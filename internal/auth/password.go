@@ -22,7 +22,7 @@ type argonParams struct {
 
 // defaultParams mengikuti konfigurasi minimum OWASP Password Storage Cheat
 // Sheet (dicek 28 Oktober 2026): m=19456 (19 MiB), t=2, p=1. Salt 16 byte dan
-// hash 32 byte. ASUMSI E-08.
+// hash 32 byte. E-08 (D-85).
 var defaultParams = argonParams{memory: 19 * 1024, iterations: 2, threads: 1, saltLength: 16, keyLength: 32}
 
 // errBrokenHash berarti teks hash di database tidak bisa dibaca.

@@ -186,6 +186,11 @@ func TestDefaults(t *testing.T) {
 		if p.PerProjectGroup != perGroup || p.Holders == nil {
 			t.Errorf("jabatan %s: per Project Group %v, pemegang %#v", p.Key, p.PerProjectGroup, p.Holders)
 		}
+		// Satu pemegang untuk jabatan approver dan APQP/PPAP Controller (E-38, D-115).
+		single := slices.Contains([]string{KeyAPQPController, KeyNPIManager, KeyQAQCManager, KeyAdvisor, KeyFactoryManager}, p.Key)
+		if p.SingleHolder != single {
+			t.Errorf("jabatan %s: satu pemegang %v, ingin %v", p.Key, p.SingleHolder, single)
+		}
 	}
 	want := []string{
 		"PPAP Engineer", "PPAP Staff", "Project Engineer", "Project Leader", "APQP/PPAP Controller",
@@ -211,8 +216,9 @@ func TestDefaults(t *testing.T) {
 }
 
 // TestHolders: Project Leader dan Project Engineer tepat satu per Project
-// Group (D-54). Jabatan lain tidak per group, dan satu orang boleh merangkap
-// (D-58), misalnya Project Leader GR3 yang juga APQP/PPAP Controller.
+// Group (D-54). Jabatan approver dan APQP/PPAP Controller dipegang satu orang
+// (E-38, D-115); jabatan lain boleh punya beberapa pemegang. Satu orang boleh
+// merangkap (D-58), misalnya Project Leader GR3 yang juga APQP/PPAP Controller.
 func TestHolders(t *testing.T) {
 	f := newFixture(t)
 	ctx := t.Context()
@@ -231,6 +237,13 @@ func TestHolders(t *testing.T) {
 	if _, err := f.s.AddHolder(ctx, f.admin, leader.ID, NewHolder{PersonID: personB, ProjectGroupID: f.gr1.ID}); err != nil {
 		t.Errorf("Project Leader GR1: %v", err)
 	}
+	// PPAP Engineer boleh lebih dari satu orang.
+	engineer := f.position(t, KeyPPAPEngineer)
+	for _, person := range []string{personA, personB} {
+		if _, err := f.s.AddHolder(ctx, f.admin, engineer.ID, NewHolder{PersonID: person}); err != nil {
+			t.Errorf("PPAP Engineer: %v", err)
+		}
+	}
 
 	tests := []struct {
 		name string
@@ -240,7 +253,8 @@ func TestHolders(t *testing.T) {
 		{"group sudah punya Project Leader", second(f.s.AddHolder(ctx, f.admin, leader.ID, NewHolder{PersonID: personB, ProjectGroupID: f.gr3.ID})), []string{"project_group_id:taken"}},
 		{"Project Leader tanpa group", second(f.s.AddHolder(ctx, f.admin, leader.ID, NewHolder{PersonID: personB})), []string{"project_group_id:required"}},
 		{"NPI Manager dengan group", second(f.s.AddHolder(ctx, f.admin, npi.ID, NewHolder{PersonID: personB, ProjectGroupID: f.gr1.ID})), []string{"project_group_id:not_allowed"}},
-		{"orang yang sama dua kali", second(f.s.AddHolder(ctx, f.admin, controller.ID, NewHolder{PersonID: personA})), []string{"person_id:taken"}},
+		{"orang yang sama dua kali", second(f.s.AddHolder(ctx, f.admin, engineer.ID, NewHolder{PersonID: personA})), []string{"person_id:taken"}},
+		{"APQP/PPAP Controller kedua", second(f.s.AddHolder(ctx, f.admin, controller.ID, NewHolder{PersonID: personB})), []string{"position_id:taken"}},
 		{"orang tidak ada", second(f.s.AddHolder(ctx, f.admin, npi.ID, NewHolder{PersonID: "01a180aa-a98b-7bf2-8e0d-b97a25ecc489"})), []string{"person_id:invalid_format"}},
 		{"orang kosong", second(f.s.AddHolder(ctx, f.admin, npi.ID, NewHolder{})), []string{"person_id:required"}},
 		{"group tidak ada", second(f.s.AddHolder(ctx, f.admin, leader.ID, NewHolder{PersonID: personB, ProjectGroupID: "bukan-uuid"})), []string{"project_group_id:invalid_format"}},
@@ -359,7 +373,7 @@ func TestEditRoutes(t *testing.T) {
 }
 
 // TestPermissions: jabatan dan pemegangnya diubah lewat hak A-1 (UC-02), rute
-// lewat A-2 (UC-06). Semua akun bisa melihat (ASUMSI E-24).
+// lewat A-2 (UC-06). Semua akun bisa melihat (E-24, D-103).
 func TestPermissions(t *testing.T) {
 	f := newFixture(t)
 	ctx := t.Context()
@@ -432,4 +446,40 @@ func TestAudit(t *testing.T) {
 		t.Fatal(err)
 	}
 	check("rute diganti nama", audit.ActionApprovalRouteUpdated, `{"name":"Short → Short route"}`)
+}
+
+// TestSingleHolderConcurrent: dua admin yang mencatat pemegang NPI Manager
+// pada saat bersamaan tidak bisa sama-sama berhasil (E-38, D-115). Baris
+// jabatan dikunci dulu, jadi pemeriksaan jumlah pemegang berjalan bergantian.
+func TestSingleHolderConcurrent(t *testing.T) {
+	f := newFixture(t)
+	ctx := t.Context()
+	npi := f.position(t, KeyNPIManager)
+	people := []string{newPerson(t, f.pool, "Pemegang Contoh A"), newPerson(t, f.pool, "Pemegang Contoh B")}
+
+	errs := make(chan error, len(people))
+	for _, person := range people {
+		go func() {
+			_, err := f.s.AddHolder(ctx, f.admin, npi.ID, NewHolder{PersonID: person})
+			errs <- err
+		}()
+	}
+	var ok, taken int
+	for range people {
+		err := <-errs
+		switch {
+		case err == nil:
+			ok++
+		case slices.Equal(problemCodes(t, err), []string{"position_id:taken"}):
+			taken++
+		default:
+			t.Errorf("error tak terduga: %v", err)
+		}
+	}
+	if ok != 1 || taken != 1 {
+		t.Errorf("berhasil %d, ditolak %d; ingin 1 dan 1", ok, taken)
+	}
+	if holders := f.position(t, KeyNPIManager).Holders; len(holders) != 1 {
+		t.Errorf("pemegang NPI Manager: %d, ingin 1", len(holders))
+	}
 }

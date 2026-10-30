@@ -166,7 +166,15 @@
 								{#if fieldErrors.name}<p class="error">{fieldErrors.name}</p>{/if}
 							</td>
 						{:else}
-							<td>{position.name}</td>
+							<td>
+								{position.name}
+								<!-- Aturan jumlah pemegang (D-54, D-115); server tetap menegakkannya. -->
+								{#if position.single_holder}
+									<br /><small>{t('positionSingleHolder')}</small>
+								{:else if position.per_project_group}
+									<br /><small>{t('positionPerGroup')}</small>
+								{/if}
+							</td>
 						{/if}
 						<td>
 							{#if position.holders.length === 0}

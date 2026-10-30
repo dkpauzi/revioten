@@ -29,9 +29,9 @@ func NewService(pool *pgxpool.Pool, authz access.Authorizer) *Service {
 	return &Service{pool: pool, q: db.New(pool), authz: authz}
 }
 
-// Melihat master proses memakai hak L-2 seperti master lain (ASUMSI E-24), dan
+// Melihat master proses memakai hak L-2 seperti master lain (E-24, D-103), dan
 // mengubahnya memakai E-6 milik Pengelola template (D-64). Master ini berlaku
-// untuk semua customer (ASUMSI E-32), jadi Resource-nya kosong.
+// untuk semua customer (E-32, D-110), jadi Resource-nya kosong.
 
 // List mengembalikan semua proses beserta aliasnya, urut menurut nama.
 func (s *Service) List(ctx context.Context, actor access.Actor) ([]Process, error) {

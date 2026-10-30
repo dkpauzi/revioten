@@ -10,7 +10,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/problem"
 )
 
-// Aturan panjang password (ASUMSI E-08, dicek 28 Oktober 2026):
+// Aturan panjang password (E-08 (D-85), dicek 28 Oktober 2026):
 //   - minimal 15 karakter: NIST SP 800-63B-4 mewajibkannya untuk password
 //     yang dipakai sendirian (tanpa faktor kedua), dan ASVS 5.0 6.2.1
 //     sangat menyarankannya;

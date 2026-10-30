@@ -21,7 +21,7 @@ CREATE TABLE project_groups (
 
 -- Setiap customer dialokasikan ke satu Project Group (D-54). Kolomnya boleh
 -- kosong hanya untuk customer yang dibuat sebelum M1.4; aplikasi mewajibkannya
--- untuk customer baru dan saat customer diubah (ASUMSI E-09).
+-- untuk customer baru dan saat customer diubah (E-09, D-86).
 -- Customer tidak dihapus, hanya dinonaktifkan (E-09).
 ALTER TABLE customers
     ADD COLUMN project_group_id uuid REFERENCES project_groups (id),
@@ -31,7 +31,7 @@ ALTER TABLE customers
 -- ini menyimpan semua kode yang pernah berlaku beserta masanya, supaya nomor
 -- lama yang memakai kode lama tetap bisa dicocokkan (R-NUM-02, R-POR-01).
 -- Satu kode hanya pernah dipakai satu customer, jadi nomor lama tidak pernah
--- menunjuk dua customer (ASUMSI E-31).
+-- menunjuk dua customer (E-31, D-109).
 CREATE TABLE customer_codes (
     code text PRIMARY KEY,
     customer_id uuid NOT NULL REFERENCES customers (id),

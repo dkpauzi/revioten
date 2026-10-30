@@ -75,7 +75,7 @@ func (s *Service) Login(ctx context.Context, login, password string) (access.Act
 	case !match:
 		// Pelakunya belum login, jadi dicatat sebagai aktor anonim.
 		anonymous := access.Actor{Type: access.ActorAnonymous}
-		if err := s.recordFailure(ctx, acc.ID, acc.Login, anonymous, audit.ActionLoginFailed, now); err != nil {
+		if err := s.recordFailure(ctx, acc.ID, acc.Login, acc.Kind, anonymous, audit.ActionLoginFailed, now); err != nil {
 			return access.Actor{}, "", err
 		}
 		return access.Actor{}, "", ErrInvalidCredentials
@@ -131,11 +131,13 @@ func (s *Service) Login(ctx context.Context, login, password string) (access.Act
 }
 
 // recordFailure menambah hitungan gagal login, lalu mengunci atau
-// menonaktifkan akun bila hitungannya mencapai batas. Perubahan itu dan entri
+// menonaktifkan akun bila hitungannya mencapai batas. Akun admin (kind) tidak
+// pernah dinonaktifkan, hanya dikunci (E-22, D-101). Perubahan itu dan entri
 // auditnya (action, oleh actor) disimpan dalam satu transaksi.
-func (s *Service) recordFailure(ctx context.Context, accountID, login string, actor access.Actor, action string, now time.Time) error {
+func (s *Service) recordFailure(ctx context.Context, accountID, login, kind string, actor access.Actor, action string, now time.Time) error {
 	var count int32
 	var lockedUntil *time.Time
+	var disabled bool
 	err := db.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
 		q := s.q.WithTx(tx)
 		var err error
@@ -145,10 +147,11 @@ func (s *Service) recordFailure(ctx context.Context, accountID, login string, ac
 		}
 		details := map[string]string{"failed_logins": strconv.Itoa(int(count))}
 		switch {
-		case count >= disableThreshold:
+		case count >= disableThreshold && kind != KindAdmin:
 			if err := q.DisableAccount(ctx, db.DisableAccountParams{ID: accountID, DisabledAt: &now}); err != nil {
 				return err
 			}
+			disabled = true
 			details["disabled"] = "true"
 		case count%lockThreshold == 0:
 			until := now.Add(lockDuration)
@@ -167,7 +170,7 @@ func (s *Service) recordFailure(ctx context.Context, accountID, login string, ac
 	}
 	// Peringatan di log server untuk yang memantau server; catatan resminya di audit log.
 	switch {
-	case count >= disableThreshold:
+	case disabled:
 		slog.Warn("akun dinonaktifkan karena gagal login berulang", "login", login, "gagal", count)
 	case lockedUntil != nil:
 		slog.Warn("akun dikunci sementara karena gagal login berulang", "login", login, "gagal", count, "sampai", *lockedUntil)
@@ -270,7 +273,7 @@ func (s *Service) ChangePassword(ctx context.Context, actor access.Actor, curren
 	if !match {
 		// Dihitung seperti gagal login, supaya sesi yang dicuri tidak bisa dipakai
 		// untuk menebak password tanpa batas.
-		if err := s.recordFailure(ctx, acc.ID, acc.Login, actor, audit.ActionPasswordChangeFailed, now); err != nil {
+		if err := s.recordFailure(ctx, acc.ID, acc.Login, acc.Kind, actor, audit.ActionPasswordChangeFailed, now); err != nil {
 			return "", err
 		}
 		problems = append(problems, problem.Problem{

@@ -24,7 +24,7 @@ CREATE TABLE accounts (
     -- work: akun kerja. admin: akun admin terpisah (D-72, R-SEC-13).
     kind text NOT NULL,
     -- Nama login selalu huruf kecil, jadi UNIQUE di bawah sekaligus berarti
-    -- tidak membedakan huruf besar dan kecil. ASUMSI E-08: 3 sampai 64 karakter.
+    -- tidak membedakan huruf besar dan kecil. E-08 (D-85): 3 sampai 64 karakter.
     login text NOT NULL,
     -- Hash argon2id dalam format PHC, misalnya $argon2id$v=19$m=19456,t=2,p=1$...
     -- Password asli tidak pernah disimpan.

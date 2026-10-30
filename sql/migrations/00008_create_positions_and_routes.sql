@@ -42,8 +42,9 @@ INSERT INTO positions (key, name, per_project_group, sort_order) VALUES
 -- Pemegang jabatan: orang, bukan akun (E-02). Satu orang boleh memegang lebih
 -- dari satu jabatan (D-58), misalnya Project Leader GR3 yang merangkap
 -- APQP/PPAP Controller (D-54).
--- ASUMSI E-38: hanya Project Leader dan Project Engineer yang dibatasi satu
--- orang (per Project Group); jabatan lain boleh punya beberapa pemegang.
+-- Project Leader dan Project Engineer dibatasi satu orang per Project Group
+-- (D-54). Batas satu pemegang untuk jabatan approver dan APQP/PPAP
+-- Controller ditambah migrasi 00009 (E-38, D-115).
 CREATE TABLE position_holders (
     id uuid PRIMARY KEY DEFAULT uuidv7(),
     position_id uuid NOT NULL,
@@ -131,12 +132,12 @@ JOIN positions p ON
     OR (s.slot_order = 5 AND p.key = 'advisor');
 
 -- Rute default customer (D-47). Kosong untuk customer yang belum diatur
--- (ASUMSI E-39); Admin mengaturnya di layar Approval routes.
+-- (E-39, D-116); Admin mengaturnya di layar Approval routes.
 ALTER TABLE customers ADD COLUMN default_route_id uuid REFERENCES approval_routes (id);
 
 -- Kebijakan approval per jenis perubahan (R-TPL-10): rute yang dipakai.
 -- Kosong berarti rute default customer, jadi semua jenis memakai alur yang
--- sama sampai diatur lain (Q-15, ASUMSI E-35).
+-- sama sampai diatur lain (Q-15, E-35, D-112).
 ALTER TABLE change_types ADD COLUMN approval_route_id uuid REFERENCES approval_routes (id);
 
 -- Pengaturan sistem, satu baris (UC-07). Tanggal tanda tangan per slot bisa

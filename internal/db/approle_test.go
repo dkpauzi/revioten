@@ -112,7 +112,7 @@ func TestAppRolePrivileges(t *testing.T) {
 		{"ubah sesi", "UPDATE sessions SET last_seen_at = last_seen_at WHERE false", true},
 		{"hapus sesi", "DELETE FROM sessions WHERE false", true},
 		{"ubah akun", "UPDATE accounts SET failed_logins = failed_logins WHERE false", true},
-		// Akun tidak pernah dihapus (ASUMSI E-26).
+		// Akun tidak pernah dihapus (E-26, D-105).
 		{"hapus akun", "DELETE FROM accounts WHERE false", false},
 		// Katalog peran hanya dibaca sampai layar pengelolaannya ada (M8.1).
 		{"ubah katalog peran", "UPDATE role_permissions SET role_id = role_id WHERE false", false},

@@ -30,7 +30,7 @@ describe('problemText', () => {
 		);
 	});
 
-	// Nama proses dan alias berbagi satu ruang nama (M1.5, ASUMSI E-32).
+	// Nama proses dan alias berbagi satu ruang nama (M1.5, E-32, D-110).
 	it('memberi teks master proses', () => {
 		expect(problemText({ field: 'name', code: 'taken', message: 'x' }, 'process')).toBe(
 			en.processNameTaken

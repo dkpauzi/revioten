@@ -173,7 +173,7 @@ func TestRenameKeepsReferences(t *testing.T) {
 }
 
 // TestNamesAndAliasesUnique: nama tampilan dan alias berbagi satu ruang nama,
-// tanpa membedakan huruf besar kecil dan spasi ganda (ASUMSI E-32).
+// tanpa membedakan huruf besar kecil dan spasi ganda (E-32, D-110).
 func TestNamesAndAliasesUnique(t *testing.T) {
 	f := newFixture(t)
 	ctx := t.Context()
@@ -313,7 +313,7 @@ func TestUpdateConcurrent(t *testing.T) {
 	}
 }
 
-// TestValidation: aturan isian nama dan alias (ASUMSI E-32).
+// TestValidation: aturan isian nama dan alias (E-32, D-110).
 func TestValidation(t *testing.T) {
 	f := newFixture(t)
 	ctx := t.Context()
@@ -359,7 +359,7 @@ func TestValidation(t *testing.T) {
 
 // TestPermissions: master proses diubah pemegang E-6, yaitu Pengelola
 // template milik PPAP Engineer (D-64). Akun admin dan penyusun biasa tidak
-// bisa mengubahnya, tapi semua akun bisa melihat (ASUMSI E-24).
+// bisa mengubahnya, tapi semua akun bisa melihat (E-24, D-103).
 func TestPermissions(t *testing.T) {
 	f := newFixture(t)
 	ctx := t.Context()

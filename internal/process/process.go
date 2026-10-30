@@ -41,7 +41,7 @@ const (
 )
 
 // Batas isian.
-// ASUMSI E-32: brief belum menyebut batas ini.
+// E-32 (D-110): nama dan alias paling banyak 200 karakter, dan paling banyak 20 alias.
 const (
 	maxNameLength = 200
 	maxAliases    = 20
@@ -50,7 +50,7 @@ const (
 // cleanName merapikan dan memeriksa satu nama: aturan teks master biasa
 // (wajib, paling banyak 200 karakter, satu baris), lalu spasi berturut-turut
 // di tengah dijadikan satu. Dengan begitu "Part  Receiving" dan
-// "Part Receiving" tidak menjadi dua nama (ASUMSI E-32).
+// "Part Receiving" tidak menjadi dua nama (E-32, D-110).
 func cleanName(field, value string) (string, *problem.Problem) {
 	name, p := problem.Text(field, value, true, maxNameLength)
 	if p != nil {

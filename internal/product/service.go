@@ -26,7 +26,7 @@ func NewService(pool *pgxpool.Pool, authz access.Authorizer) *Service {
 	return &Service{pool: pool, q: db.New(pool), authz: authz}
 }
 
-// Melihat master produk memakai hak L-2 (ASUMSI E-24), dan mengubahnya memakai
+// Melihat master produk memakai hak L-2 (E-24, D-103), dan mengubahnya memakai
 // A-2 (E-10). Customer dikirim ke Authorize, supaya cakupan customer bisa
 // berlaku tanpa mengubah pemanggil (E-04).
 

@@ -10,7 +10,7 @@ import (
 )
 
 // maxNameLength adalah panjang nama paling banyak, dalam karakter.
-// ASUMSI E-21: brief belum menyebut batas ini.
+// E-21 (D-100): nama wajib, satu baris, paling banyak 200 karakter, dan boleh sama.
 const maxNameLength = 200
 
 // validate merapikan input lalu memeriksa aturannya. Semua masalah dikumpulkan
@@ -99,7 +99,7 @@ func checkName(name string) (problem.Problem, bool) {
 	case utf8.RuneCountInString(name) > maxNameLength:
 		return problem.Problem{Field: "name", Code: problem.TooLong, Message: "Use at most 200 characters."}, false
 	case strings.ContainsFunc(name, unicode.IsControl):
-		// ASUMSI E-21: nama satu baris, karena dicetak di dokumen.
+		// E-21 (D-100): nama satu baris, karena dicetak di dokumen.
 		return problem.Problem{Field: "name", Code: problem.InvalidFormat, Message: "Use one line without control characters."}, false
 	}
 	return problem.Problem{}, true

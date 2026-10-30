@@ -269,7 +269,7 @@ func TestInactiveCustomer(t *testing.T) {
 		t.Fatal(err)
 	}
 	customers := customer.NewService(f.pool, access.NewChecker(f.pool))
-	_, err = customers.Update(ctx, f.admin, f.ab.ID, customer.CustomerUpdate{Name: f.ab.Name, ProjectGroupID: f.ab.ProjectGroupID, Active: false})
+	_, err = customers.Update(ctx, f.admin, f.ab.ID, customer.CustomerUpdate{Name: f.ab.Name, ProjectGroupID: f.ab.ProjectGroupID, Active: new(false)})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -293,7 +293,7 @@ func TestInactiveCustomer(t *testing.T) {
 }
 
 // TestPermissions: hanya akun admin yang mengubah master (A-2, E-10); semua
-// akun bisa melihat daftar (ASUMSI E-24).
+// akun bisa melihat daftar (E-24, D-103).
 func TestPermissions(t *testing.T) {
 	f := newFixture(t)
 	ctx := t.Context()

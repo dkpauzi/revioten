@@ -102,3 +102,55 @@ func (s *Service) CreateFirstAdmin(ctx context.Context, name, login, password st
 	slog.Info("akun admin pertama dibuat", "login", actor.Login)
 	return actor, nil
 }
+
+// ResetAdminPassword membuka kembali akun admin yang lupa password, terkunci,
+// atau nonaktif (E-22 opsi a, D-101): password sementara dipasang dan wajib
+// diganti saat login berikutnya, hitungan gagal dan kunci dihapus, akun
+// diaktifkan lagi, dan semua sesinya berakhir. Hasilnya password sementara,
+// yang hanya ditampilkan sekali.
+//
+// Dipanggil dari perintah CLI `revioten reset-admin-password`, yang hanya bisa
+// dijalankan di komputer server. Orang yang bisa menjalankannya sudah memegang
+// database, jadi perintah ini tidak membuka jalan baru. Peristiwanya dicatat
+// dengan aktor sistem, seperti create-admin (E-07). Akun kerja tetap direset
+// admin lewat aplikasi (A-1), jadi login yang bukan akun admin ditolak.
+func (s *Service) ResetAdminPassword(ctx context.Context, login string) (string, error) {
+	acc, err := s.q.GetAccountByLogin(ctx, normalizeLogin(login))
+	if errors.Is(err, pgx.ErrNoRows) || (err == nil && acc.Kind != KindAdmin) {
+		return "", ErrNotAdminAccount
+	}
+	if err != nil {
+		return "", fmt.Errorf("mengambil akun: %w", err)
+	}
+
+	temporary := newTemporaryPassword()
+	hash, err := hashPassword(temporary)
+	if err != nil {
+		return "", err
+	}
+	err = db.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
+		q := s.q.WithTx(tx)
+		if err := q.ResetAccountPassword(ctx, db.ResetAccountPasswordParams{ID: acc.ID, PasswordHash: hash}); err != nil {
+			return err
+		}
+		details := map[string]string{"via": "reset-admin-password"}
+		if acc.DisabledAt != nil {
+			if err := q.EnableAccount(ctx, acc.ID); err != nil {
+				return err
+			}
+			details["enabled"] = "true"
+		}
+		if err := q.DeleteAccountSessions(ctx, acc.ID); err != nil {
+			return err
+		}
+		// Password sementara tidak pernah masuk audit log (E-18, D-95).
+		return audit.Record(ctx, q, access.Actor{Type: access.ActorSystem}, audit.Event{
+			Action: audit.ActionPasswordReset, TargetType: audit.TargetAccount, TargetID: acc.ID, Details: details,
+		})
+	})
+	if err != nil {
+		return "", fmt.Errorf("mereset password admin: %w", err)
+	}
+	slog.Info("password akun admin direset dari komputer server", "login", acc.Login)
+	return temporary, nil
+}

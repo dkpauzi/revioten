@@ -35,6 +35,17 @@ func (q *Queries) AddPositionHolder(ctx context.Context, arg AddPositionHolderPa
 	return id, err
 }
 
+const countPositionHolders = `-- name: CountPositionHolders :one
+SELECT count(*) FROM position_holders WHERE position_id = $1
+`
+
+func (q *Queries) CountPositionHolders(ctx context.Context, positionID string) (int64, error) {
+	row := q.db.QueryRow(ctx, countPositionHolders, positionID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const deletePositionHolder = `-- name: DeletePositionHolder :exec
 DELETE FROM position_holders WHERE id = $1
 `
@@ -45,7 +56,7 @@ func (q *Queries) DeletePositionHolder(ctx context.Context, id string) error {
 }
 
 const getPosition = `-- name: GetPosition :one
-SELECT id, key, name, per_project_group FROM positions WHERE id = $1
+SELECT id, key, name, per_project_group, single_holder FROM positions WHERE id = $1
 `
 
 type GetPositionRow struct {
@@ -53,6 +64,7 @@ type GetPositionRow struct {
 	Key             string
 	Name            string
 	PerProjectGroup bool
+	SingleHolder    bool
 }
 
 func (q *Queries) GetPosition(ctx context.Context, id string) (GetPositionRow, error) {
@@ -63,6 +75,7 @@ func (q *Queries) GetPosition(ctx context.Context, id string) (GetPositionRow, e
 		&i.Key,
 		&i.Name,
 		&i.PerProjectGroup,
+		&i.SingleHolder,
 	)
 	return i, err
 }
@@ -151,7 +164,7 @@ func (q *Queries) ListPositionHolders(ctx context.Context) ([]ListPositionHolder
 }
 
 const listPositions = `-- name: ListPositions :many
-SELECT id, key, name, per_project_group FROM positions ORDER BY sort_order
+SELECT id, key, name, per_project_group, single_holder FROM positions ORDER BY sort_order
 `
 
 type ListPositionsRow struct {
@@ -159,6 +172,7 @@ type ListPositionsRow struct {
 	Key             string
 	Name            string
 	PerProjectGroup bool
+	SingleHolder    bool
 }
 
 // ListPositions mengambil semua jabatan menurut urutan bagan organisasi.
@@ -176,6 +190,7 @@ func (q *Queries) ListPositions(ctx context.Context) ([]ListPositionsRow, error)
 			&i.Key,
 			&i.Name,
 			&i.PerProjectGroup,
+			&i.SingleHolder,
 		); err != nil {
 			return nil, err
 		}

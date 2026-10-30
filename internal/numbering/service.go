@@ -27,7 +27,7 @@ func NewService(pool *pgxpool.Pool, authz access.Authorizer) *Service {
 	return &Service{pool: pool, q: db.New(pool), authz: authz}
 }
 
-// Melihat memakai hak L-2 seperti master lain (ASUMSI E-24), dan mengubah
+// Melihat memakai hak L-2 seperti master lain (E-24, D-103), dan mengubah
 // memakai A-2 (UC-05).
 
 // GetSettings mengembalikan pengaturan nomor.
@@ -186,7 +186,7 @@ func (s *Service) ListSpecialCodes(ctx context.Context, actor access.Actor) ([]S
 
 // CreateSpecialCode menambah kode khusus. Kodenya tidak boleh sama dengan kode
 // customer, sekarang atau dulu (E-11), karena keduanya menempati posisi yang
-// sama di nomor dokumen (ASUMSI E-37).
+// sama di nomor dokumen (E-37, D-114).
 func (s *Service) CreateSpecialCode(ctx context.Context, actor access.Actor, in NewSpecialCode) (SpecialCode, error) {
 	if err := s.authz.Authorize(ctx, actor, access.ManageMasterData, access.Resource{}); err != nil {
 		return SpecialCode{}, err

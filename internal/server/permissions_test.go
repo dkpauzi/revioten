@@ -151,13 +151,18 @@ func TestPermissionsPerOperation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var npi approval.Position
+	// Operasi pemegang memakai PPAP Engineer, yang boleh punya beberapa
+	// pemegang; NPI Manager hanya satu (E-38, D-115).
+	var npi, ppapEngineer approval.Position
 	for _, p := range positions {
-		if p.Key == approval.KeyNPIManager {
+		switch p.Key {
+		case approval.KeyNPIManager:
 			npi = p
+		case approval.KeyPPAPEngineer:
+			ppapEngineer = p
 		}
 	}
-	holder, err := approvals.AddHolder(ctx, admin, npi.ID, approval.NewHolder{PersonID: admin.PersonID})
+	holder, err := approvals.AddHolder(ctx, admin, ppapEngineer.ID, approval.NewHolder{PersonID: admin.PersonID})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -167,7 +172,7 @@ func TestPermissionsPerOperation(t *testing.T) {
 		`{"stage":"approved","print_title":"NPI Manager","position_ids":["` + npi.ID + `"]}]}`
 	// params mengisi {nama} di alamat dan isi permintaan dengan ID sungguhan.
 	params := map[string]string{
-		"positionId": npi.ID, "holderId": holder.ID, "approvalRouteId": routes[0].ID, "routeId": routes[1].ID,
+		"positionId": ppapEngineer.ID, "holderId": holder.ID, "approvalRouteId": routes[0].ID, "routeId": routes[1].ID,
 		"viewerPersonId": viewerInfo.PersonID,
 		"accountId":      viewerInfo.ID, "projectGroupId": group.ID, "customerId": cust.ID,
 		"modelGroupId": modelGroup.ID, "modelId": model.ID, "partNumberId": part.ID,
@@ -219,7 +224,7 @@ func TestPermissionsPerOperation(t *testing.T) {
 		{http.MethodPut, "/api/v1/four-m-categories/{fourMCategoryId}", `{"name":"Manpower"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
 		// Jabatan lewat A-1 (UC-02), rute lewat A-2 (UC-06), pengaturan lewat A-3 (UC-07).
 		{http.MethodGet, "/api/v1/positions", "", http.StatusOK, http.StatusOK, http.StatusOK},
-		{http.MethodPut, "/api/v1/positions/{positionId}", `{"name":"PE Manager"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodPut, "/api/v1/positions/{positionId}", `{"name":"PPAP Engineer Senior"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
 		{http.MethodPost, "/api/v1/positions/{positionId}/holders", `{"person_id":"{viewerPersonId}"}`, http.StatusForbidden, http.StatusForbidden, http.StatusCreated},
 		{http.MethodDelete, "/api/v1/positions/{positionId}/holders/{holderId}", "", http.StatusForbidden, http.StatusForbidden, http.StatusNoContent},
 		{http.MethodGet, "/api/v1/approval-routes", "", http.StatusOK, http.StatusOK, http.StatusOK},

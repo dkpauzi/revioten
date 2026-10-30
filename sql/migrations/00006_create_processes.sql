@@ -6,7 +6,7 @@
 -- +goose Up
 -- Tabel processes hanya berisi identitas proses. Semua namanya ada di
 -- process_names, jadi mengganti nama tidak pernah menyentuh baris ini.
--- ASUMSI E-32: satu master untuk semua customer, dan proses tidak dihapus.
+-- E-32 (D-110): satu master untuk semua customer, dan proses tidak dihapus.
 CREATE TABLE processes (
     id uuid PRIMARY KEY DEFAULT uuidv7(),
     created_at timestamptz NOT NULL DEFAULT now()
@@ -14,7 +14,7 @@ CREATE TABLE processes (
 
 -- Nama tampilan dan alias setiap proses. Keduanya disimpan di satu tabel
 -- supaya satu kunci menjaga semua nama: satu nama hanya menunjuk satu proses,
--- baik sebagai nama tampilan maupun sebagai alias (ASUMSI E-32).
+-- baik sebagai nama tampilan maupun sebagai alias (E-32, D-110).
 CREATE TABLE process_names (
     process_id uuid NOT NULL REFERENCES processes (id),
     -- 'display' untuk nama tampilan, 'alias' untuk nama lain proses yang sama,

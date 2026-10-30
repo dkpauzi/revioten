@@ -175,7 +175,7 @@ func TestEditNumberParts(t *testing.T) {
 }
 
 // TestSpecialCodes: kode khusus bisa ditambah dan diganti namanya. Kodenya
-// tidak boleh sama dengan kode customer, sekarang atau dulu (E-11, ASUMSI E-37).
+// tidak boleh sama dengan kode customer, sekarang atau dulu (E-11, E-37, D-114).
 func TestSpecialCodes(t *testing.T) {
 	f := newFixture(t)
 	ctx := t.Context()
@@ -234,7 +234,7 @@ func TestSpecialCodes(t *testing.T) {
 
 // TestCodePositionConcurrent: kode khusus dan kode customer didaftarkan
 // bersamaan dengan kode yang sama. Karena keduanya mengambil kunci 11003,
-// tepat satu yang berhasil untuk setiap kode (ASUMSI E-37).
+// tepat satu yang berhasil untuk setiap kode (E-37, D-114).
 func TestCodePositionConcurrent(t *testing.T) {
 	f := newFixture(t)
 	ctx := t.Context()
@@ -315,7 +315,7 @@ func TestCodeRegistrationWaitsForLock(t *testing.T) {
 }
 
 // TestPermissions: bagian nomor hanya diubah Admin (A-2, UC-05). Semua akun
-// bisa melihatnya (ASUMSI E-24).
+// bisa melihatnya (E-24, D-103).
 func TestPermissions(t *testing.T) {
 	f := newFixture(t)
 	ctx := t.Context()
