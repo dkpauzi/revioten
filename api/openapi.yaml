@@ -613,7 +613,7 @@ paths:
   /api/v1/number-settings:
     get:
       operationId: getNumberSettings
-      summary: Number settings, today the factory code (E-12)
+      summary: Number settings - factory code, number pattern, running number format, and revision digits (D-89)
       responses:
         '200':
           description: The number settings.
@@ -625,7 +625,7 @@ paths:
           $ref: '#/components/responses/Error'
     put:
       operationId: updateNumberSettings
-      summary: Change the factory code. Issued numbers keep their text (A-2, R-NUM-02)
+      summary: Change the number settings. Issued numbers keep their text (A-2, R-NUM-02)
       requestBody:
         required: true
         content:
@@ -639,6 +639,57 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NumberSettings'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/document-numbers:
+    post:
+      operationId: registerDocumentNumber
+      summary: Register one PFD, PFMEA, or CP number for a customer (E-1, UC-10, R-NUM-03)
+      description: |
+        The server takes the next running number of the customer code and
+        document type inside one transaction, so parallel registrations never
+        collide and leave no gaps. Send a new `Idempotency-Key` for every new
+        registration and the same key when retrying it: a repeated request
+        returns the original number with status 200 instead of a new number.
+        Only active customers get numbers, and the number always carries the
+        current customer code (R-POR-01).
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewDocumentNumber'
+      responses:
+        '201':
+          description: The number was registered.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NumberRegistration'
+        '200':
+          description: The Idempotency-Key was used before for the same request; the original numbers are returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NumberRegistration'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/document-numbers/next:
+    get:
+      operationId: getNextDocumentNumber
+      summary: The number the next registration would get, without registering it (L-2)
+      parameters:
+        - $ref: '#/components/parameters/CustomerIdQuery'
+        - $ref: '#/components/parameters/DocumentTypeIdQuery'
+      responses:
+        '200':
+          description: The next number. Someone else may still register it first.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NextDocumentNumber'
         default:
           $ref: '#/components/responses/Error'
   /api/v1/document-types:
@@ -1123,6 +1174,23 @@ components:
       in: query
       required: true
       description: The customer whose master data is listed.
+      schema:
+        type: string
+    DocumentTypeIdQuery:
+      name: document_type_id
+      in: query
+      required: true
+      description: The document type, PFD, PFMEA, or CP.
+      schema:
+        type: string
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      description: |
+        Required by the server (422 idempotency_key:required when missing).
+        1 to 100 characters - letters, digits, `.`, `:`, `_`, `-` - for example a UUID.
+        It is kept per account.
       schema:
         type: string
     ProjectGroupId:
@@ -1864,17 +1932,136 @@ components:
             $ref: '#/components/schemas/Process'
     NumberSettings:
       type: object
-      required: [factory_code]
+      required: [factory_code, pattern, sequence_format, revision_digits]
       properties:
         factory_code:
           type: string
           description: One letter A to Z, the first letter of every number prefix (E-12).
           example: S
+        pattern:
+          type: string
+          description: |
+            Number pattern for new numbers (R-NUM-02, M2.1) with the tokens
+            {prefix} (factory code and document type letter), {customer}, and
+            {seq} (running number), separated by punctuation.
+          example: '{prefix}-{customer}-{seq}'
+        sequence_format:
+          type: string
+          enum: [letter_block]
+          description: Running number format - 001 to 999, then A001 to A999, B001, up to Z999 (D-89).
+        revision_digits:
+          type: integer
+          description: Digits of the revision label, for example 2 for -04 (R-REV-01).
+          example: 2
     NumberSettingsUpdate:
       type: object
       required: [factory_code]
       properties:
         factory_code:
+          type: string
+        pattern:
+          type: string
+          description: Leave it out to keep the current pattern.
+        revision_digits:
+          type: integer
+          description: 1 to 3. Leave it out to keep the current value.
+    NewDocumentNumber:
+      type: object
+      required: [customer_id, document_type_id]
+      properties:
+        customer_id:
+          type: string
+        document_type_id:
+          type: string
+          description: PFD, PFMEA, or CP. Other document types are not numbered by the system.
+        initial_revision:
+          type: integer
+          description: First revision of the document that uses the number, for example 4 for a legacy document entering at -04 (M2.4). Default 0.
+    NextDocumentNumber:
+      type: object
+      required: [number]
+      properties:
+        number:
+          type: string
+          example: SC-AB-001
+    NumberRegistration:
+      type: object
+      required: [items, replayed]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentNumber'
+        replayed:
+          type: boolean
+          description: True when the Idempotency-Key was used before for the same request.
+    DocumentNumber:
+      type: object
+      required: [id, number, customer, customer_code, document_type, sequence, status, initial_revision, revision_label, origin, batch_id, registered_by, created_at]
+      description: One number in the register (R-NUM-04). Numbers are never deleted or reused; only the status changes.
+      properties:
+        id:
+          type: string
+        number:
+          type: string
+          description: The number as registered. It is never recomputed (R-NUM-02).
+          example: SC-AB-001
+        customer:
+          $ref: '#/components/schemas/CustomerRef'
+        customer_code:
+          type: string
+          description: The customer code inside the number. An older code when the customer code was changed later (E-11).
+        document_type:
+          $ref: '#/components/schemas/DocumentTypeRef'
+        sequence:
+          type: integer
+          description: Value of the running number, for example 1 for 001 and 1000 for A001.
+        status:
+          type: string
+          enum: [reserved, in_use, released, obsolete, void, skipped]
+        initial_revision:
+          type: integer
+        revision_label:
+          type: string
+          description: The initial revision as printed, for example -04.
+        origin:
+          type: string
+          enum: [single, set, import]
+          description: How the number entered the register. Numbers of one set share batch_id.
+        batch_id:
+          type: string
+        registered_by:
+          $ref: '#/components/schemas/Person'
+        status_reason:
+          type: string
+          description: Reason given when the number was voided or made obsolete.
+        status_changed_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+    CustomerRef:
+      type: object
+      required: [id, code, name]
+      properties:
+        id:
+          type: string
+        code:
+          type: string
+          description: The current customer code.
+        name:
+          type: string
+    DocumentTypeRef:
+      type: object
+      required: [id, key, name]
+      properties:
+        id:
+          type: string
+        key:
+          type: string
+          enum: [pfd, pfmea, cp]
+        name:
           type: string
     DocumentType:
       type: object

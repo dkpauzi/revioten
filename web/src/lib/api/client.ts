@@ -30,6 +30,10 @@ import type {
 	FourMCategoryList,
 	NewSpecialCode,
 	NumberSettings,
+	NumberSettingsUpdate,
+	NewDocumentNumber,
+	NextDocumentNumber,
+	NumberRegistration,
 	SpecialCode,
 	SpecialCodeList,
 	Error as ApiError,
@@ -233,12 +237,38 @@ export function getNumberSettings(fetchFn: typeof fetch = fetch): Promise<ApiRes
 	return call<NumberSettings>(fetchFn, '/api/v1/number-settings', { method: 'GET' });
 }
 
-// updateNumberSettings memanggil PUT /api/v1/number-settings (A-2).
+// updateNumberSettings memanggil PUT /api/v1/number-settings (A-2). pattern dan
+// revision_digits yang tidak dikirim berarti tetap (D-111).
 export function updateNumberSettings(
-	input: NumberSettings,
+	input: NumberSettingsUpdate,
 	fetchFn: typeof fetch = fetch
 ): Promise<ApiResult<NumberSettings>> {
 	return call<NumberSettings>(fetchFn, '/api/v1/number-settings', jsonRequest('PUT', input));
+}
+
+// registerDocumentNumber memanggil POST /api/v1/document-numbers (E-1, M2.1).
+// key adalah Idempotency-Key: dibuat sekali untuk setiap pendaftaran baru, dan
+// dipakai lagi bila permintaan yang sama dikirim ulang, supaya tombol yang
+// ditekan dua kali tidak menghasilkan dua nomor (R-NUM-03, M2.2).
+export function registerDocumentNumber(
+	input: NewDocumentNumber,
+	key: string,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<NumberRegistration>> {
+	const init = jsonRequest('POST', input);
+	init.headers = { 'Content-Type': 'application/json', 'Idempotency-Key': key };
+	return call<NumberRegistration>(fetchFn, '/api/v1/document-numbers', init);
+}
+
+// getNextDocumentNumber memanggil GET /api/v1/document-numbers/next: nomor yang
+// akan didapat pendaftaran berikutnya, tanpa mendaftarkannya (L-2).
+export function getNextDocumentNumber(
+	customerId: string,
+	documentTypeId: string,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<NextDocumentNumber>> {
+	const query = `customer_id=${encodeURIComponent(customerId)}&document_type_id=${encodeURIComponent(documentTypeId)}`;
+	return call<NextDocumentNumber>(fetchFn, `/api/v1/document-numbers/next?${query}`, { method: 'GET' });
 }
 
 // listDocumentTypes memanggil GET /api/v1/document-types.

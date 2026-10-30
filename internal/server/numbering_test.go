@@ -16,19 +16,23 @@ func TestNumberingEndpoints(t *testing.T) {
 	wi := numbering.DocumentType{ID: "dt-4", Name: "Work Instruction", Letter: "W", Prefix: "SW"}
 	zz := numbering.SpecialCode{ID: "sc-1", Code: "ZZ", Name: "General/Common", CreatedAt: waktuUji}
 	fake := &fakeNumbering{
-		settings: numbering.Settings{ID: "ns-1", FactoryCode: "S"},
+		settings: numbering.Settings{ID: "ns-1", FactoryCode: "S", Pattern: numbering.DefaultPattern, SequenceFormat: "letter_block", RevisionDigits: 2},
 		types:    []numbering.DocumentType{pfd, wi}, docType: wi,
 		codes: []numbering.SpecialCode{zz}, code: zz,
 	}
 	srv := newTestServer(t, nil, Deps{Numbering: fake})
 
 	rec := srv.do(http.MethodGet, "/api/v1/number-settings", "")
-	if rec.Code != http.StatusOK || rec.Body.String() != `{"factory_code":"S"}`+"\n" {
+	if rec.Code != http.StatusOK || rec.Body.String() != `{"factory_code":"S","pattern":"{prefix}-{customer}-{seq}","revision_digits":2,"sequence_format":"letter_block"}`+"\n" {
 		t.Errorf("pengaturan nomor: status %d: %s", rec.Code, rec.Body.String())
 	}
 	rec = srv.do(http.MethodPut, "/api/v1/number-settings", `{"factory_code":"t"}`)
-	if rec.Code != http.StatusOK || fake.got != (called{method: "SetFactoryCode", input: "t"}) {
+	if rec.Code != http.StatusOK || fake.got != (called{method: "UpdateSettings", input: "t|-|-"}) {
 		t.Errorf("ganti kode pabrik: status %d, %+v", rec.Code, fake.got)
+	}
+	rec = srv.do(http.MethodPut, "/api/v1/number-settings", `{"factory_code":"S","pattern":"{customer}/{prefix}/{seq}","revision_digits":3}`)
+	if rec.Code != http.StatusOK || fake.got != (called{method: "UpdateSettings", input: "S|{customer}/{prefix}/{seq}|3"}) {
+		t.Errorf("ganti pola: status %d, %+v", rec.Code, fake.got)
 	}
 
 	var types DocumentTypeList
@@ -66,5 +70,50 @@ func TestNumberingEndpoints(t *testing.T) {
 	rec = srv.do(http.MethodPut, "/api/v1/special-codes/sc-1", `{"name":"General"}`)
 	if rec.Code != http.StatusOK || fake.got != (called{method: "RenameSpecialCode", id: "sc-1", input: "General"}) {
 		t.Errorf("ganti nama kode khusus: status %d, %+v", rec.Code, fake.got)
+	}
+}
+
+// TestDocumentNumberEndpoints: pendaftaran nomor (M2.1, M2.2). Idempotency-Key
+// diteruskan dari header, permintaan baru dijawab 201, dan permintaan yang
+// diulang dengan kunci yang sama dijawab 200 dengan nomor lamanya.
+func TestDocumentNumberEndpoints(t *testing.T) {
+	number := numbering.DocumentNumber{
+		ID: "dn-1", Number: "SC-AB-001", CustomerID: "c-1", CustomerCurrentCode: "AB", CustomerName: "Customer AB",
+		CustomerCode: "AB", DocumentTypeID: "dt-3", DocumentTypeKey: numbering.KeyCP, DocumentTypeName: "CP",
+		Sequence: 1, Status: numbering.StatusReserved, InitialRevision: 4, RevisionLabel: "-04", BatchID: "b-1",
+		Origin: numbering.OriginSingle, RegisteredByID: "p-1", RegisteredByName: "Penyusun Contoh", CreatedAt: waktuUji,
+	}
+	fake := &fakeNumbering{registration: numbering.Registration{Numbers: []numbering.DocumentNumber{number}}, next: "SC-AB-002"}
+	srv := newTestServer(t, nil, Deps{Numbering: fake})
+
+	rec := srv.do(http.MethodPost, "/api/v1/document-numbers", `{"customer_id":"c-1","document_type_id":"dt-3","initial_revision":4}`,
+		"Idempotency-Key", "kunci-1")
+	want := numbering.NewNumber{CustomerID: "c-1", DocumentTypeID: "dt-3", InitialRevision: 4, IdempotencyKey: "kunci-1"}
+	if rec.Code != http.StatusCreated || fake.got != (called{method: "Register", input: want}) {
+		t.Fatalf("daftar: status %d, %+v: %s", rec.Code, fake.got, rec.Body.String())
+	}
+	var body NumberRegistration
+	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+		t.Fatal(err)
+	}
+	wantBody := NumberRegistration{Items: []DocumentNumber{{
+		Id: "dn-1", Number: "SC-AB-001", Customer: CustomerRef{Id: "c-1", Code: "AB", Name: "Customer AB"}, CustomerCode: "AB",
+		DocumentType: DocumentTypeRef{Id: "dt-3", Key: DocumentTypeRefKeyCp, Name: "CP"}, Sequence: 1,
+		Status: DocumentNumberStatusReserved, InitialRevision: 4, RevisionLabel: "-04", Origin: DocumentNumberOriginSingle,
+		BatchId: "b-1", RegisteredBy: Person{Id: "p-1", Name: "Penyusun Contoh"}, CreatedAt: waktuUji,
+	}}}
+	if !reflect.DeepEqual(body, wantBody) {
+		t.Errorf("isi %+v", body)
+	}
+
+	fake.registration.Replayed = true
+	if rec := srv.do(http.MethodPost, "/api/v1/document-numbers", `{"customer_id":"c-1","document_type_id":"dt-3"}`); rec.Code != http.StatusOK {
+		t.Errorf("permintaan ulang: status %d, ingin 200", rec.Code)
+	}
+
+	rec = srv.do(http.MethodGet, "/api/v1/document-numbers/next?customer_id=c-1&document_type_id=dt-3", "")
+	if rec.Code != http.StatusOK || rec.Body.String() != `{"number":"SC-AB-002"}`+"\n" ||
+		fake.got != (called{method: "NextNumber", id: "c-1", input: "dt-3"}) {
+		t.Errorf("nomor berikutnya: status %d, %+v: %s", rec.Code, fake.got, rec.Body.String())
 	}
 }

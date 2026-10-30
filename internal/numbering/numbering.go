@@ -3,8 +3,8 @@
 // posisi kode customer. Awalan nomor adalah kode pabrik ditambah huruf jenis,
 // misalnya SH untuk PFD (R-NUM-01). Semua bagian ini master data yang diubah
 // Admin (A-2); perubahan hanya berlaku untuk nomor baru, karena nomor yang
-// sudah terdaftar disimpan sebagai teks (R-NUM-02). Pola nomor dan
-// penghitungnya menyusul di M2.1.
+// sudah terdaftar disimpan sebagai teks (R-NUM-02). Sejak Tahap 2 paket ini
+// juga memegang pola nomor, penghitung, dan register nomor (M2.1 sampai M2.5).
 package numbering
 
 import (
@@ -23,10 +23,22 @@ const (
 	KeyCP    = "cp"
 )
 
-// Settings adalah pengaturan nomor. Untuk sekarang isinya kode pabrik (E-12).
+// Settings adalah pengaturan nomor (E-12, D-89): kode pabrik, pola nomor,
+// bentuk nomor berjalan, dan jumlah digit revisi. Semuanya master data (A-2).
 type Settings struct {
-	ID          string
-	FactoryCode string
+	ID             string
+	FactoryCode    string
+	Pattern        string // misalnya {prefix}-{customer}-{seq} (M2.1)
+	SequenceFormat string // SequenceFormatLetterBlock: 001 sampai 999, lalu A001 sampai Z999
+	RevisionDigits int    // jumlah digit revisi, misalnya 2 untuk -04 (M2.4)
+}
+
+// SettingsInput adalah isian pengaturan nomor. Pattern dan RevisionDigits nil
+// berarti nilainya tetap (D-111).
+type SettingsInput struct {
+	FactoryCode    string
+	Pattern        *string
+	RevisionDigits *int
 }
 
 // DocumentType adalah satu jenis dokumen (huruf B di WI SW-ZZ-000).

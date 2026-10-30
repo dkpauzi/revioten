@@ -125,9 +125,9 @@ func TestDefaults(t *testing.T) {
 func TestEditNumberParts(t *testing.T) {
 	f := newFixture(t)
 	ctx := t.Context()
-	settings, err := f.s.SetFactoryCode(ctx, f.admin, " t ")
+	settings, err := f.s.UpdateSettings(ctx, f.admin, SettingsInput{FactoryCode: " t "})
 	if err != nil || settings.FactoryCode != "T" {
-		t.Fatalf("SetFactoryCode: %+v, %v", settings, err)
+		t.Fatalf("UpdateSettings: %+v, %v", settings, err)
 	}
 	if got := prefixes(t, f); !slices.Equal(got, []string{"PFD=TH", "PFMEA=TF", "CP=TC"}) {
 		t.Errorf("awalan setelah kode pabrik diganti: %v", got)
@@ -155,8 +155,8 @@ func TestEditNumberParts(t *testing.T) {
 		err  error
 		want []string
 	}{
-		{"kode pabrik dua huruf", second(f.s.SetFactoryCode(ctx, f.admin, "ST")), []string{"factory_code:invalid_format"}},
-		{"kode pabrik kosong", second(f.s.SetFactoryCode(ctx, f.admin, " ")), []string{"factory_code:required"}},
+		{"kode pabrik dua huruf", second(f.s.UpdateSettings(ctx, f.admin, SettingsInput{FactoryCode: "ST"})), []string{"factory_code:invalid_format"}},
+		{"kode pabrik kosong", second(f.s.UpdateSettings(ctx, f.admin, SettingsInput{FactoryCode: " "})), []string{"factory_code:required"}},
 		{"huruf dipakai jenis lain", second(f.s.CreateDocumentType(ctx, f.admin, DocumentTypeInput{Name: "Inspection Standard", Letter: "F"})), []string{"letter:taken"}},
 		{"nama dipakai jenis lain", second(f.s.UpdateDocumentType(ctx, f.admin, wi.ID, DocumentTypeInput{Name: "pfmea", Letter: "W"})), []string{"name:taken"}},
 		{"huruf bukan satu huruf", second(f.s.CreateDocumentType(ctx, f.admin, DocumentTypeInput{Name: "Inspection Standard", Letter: "IS"})), []string{"letter:invalid_format"}},
@@ -333,7 +333,7 @@ func TestPermissions(t *testing.T) {
 	}
 
 	for name, err := range map[string]error{
-		"SetFactoryCode":     second(f.s.SetFactoryCode(ctx, author, "T")),
+		"UpdateSettings":     second(f.s.UpdateSettings(ctx, author, SettingsInput{FactoryCode: "T"})),
 		"CreateDocumentType": second(f.s.CreateDocumentType(ctx, author, DocumentTypeInput{Name: "Work Instruction", Letter: "W"})),
 		"UpdateDocumentType": second(f.s.UpdateDocumentType(ctx, author, types[0].ID, DocumentTypeInput{Name: "X", Letter: "H"})),
 		"CreateSpecialCode":  second(f.s.CreateSpecialCode(ctx, author, NewSpecialCode{Code: "QA", Name: "X"})),
@@ -365,7 +365,7 @@ func TestAudit(t *testing.T) {
 		}
 	}
 
-	if _, err := f.s.SetFactoryCode(ctx, f.admin, "T"); err != nil {
+	if _, err := f.s.UpdateSettings(ctx, f.admin, SettingsInput{FactoryCode: "T"}); err != nil {
 		t.Fatal(err)
 	}
 	check("kode pabrik", audit.ActionNumberSettingsUpdated, `{"factory_code":"S → T"}`)
@@ -393,7 +393,7 @@ func TestAudit(t *testing.T) {
 
 	// Tanpa perubahan: tidak ada entri baru.
 	before := last().Seq
-	if _, err := f.s.SetFactoryCode(ctx, f.admin, "T"); err != nil {
+	if _, err := f.s.UpdateSettings(ctx, f.admin, SettingsInput{FactoryCode: "T"}); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := f.s.RenameSpecialCode(ctx, f.admin, qa.ID, "Quality Assurance"); err != nil {

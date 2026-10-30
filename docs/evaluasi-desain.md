@@ -82,6 +82,9 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-58 | README UML usang (U10 dan pertanyaan terbuka) | Celah | UML | Tidak | Diperbaiki |
 | E-59 | README di root repo hampir kosong | Celah | Repo | Tidak | Diperbaiki |
 | E-60 | Jadwal, retensi, dan penyimpanan passphrase backup belum ditetapkan | Celah | M1.7, M8.2, M8.4 | Tidak | Terbuka |
+| E-61 | Satu pola nomor untuk semua jenis dokumen dan customer | Ambigu | M2.1, M2.5 | Tidak | Terbuka |
+| E-63 | Kunci idempoten di UI API: cakupan, umur, dan pemakaian ulang | Celah | M2.2, M9.4 | Tidak | Terbuka |
+| E-67 | Pendaftaran nomor untuk customer nonaktif | Celah | M2.1 | Tidak | Terbuka |
 
 ## Keputusan 30 Oktober 2026
 
@@ -323,6 +326,7 @@ Salin blok ini untuk setiap temuan baru.
 - **Status:** Diputuskan pemilik 28 Oktober 2026 (D-89)
 - **Keputusan pemilik:** Pakai aturan WI SW-ZZ-000, dan aturannya disimpan sebagai master data ("E-12 gunakan aturan sesuai dengan yang ada di WI, dan cantumkan juga aturannya di master data", 28 Oktober 2026). Ini opsi (a). Isi master data: kode pabrik (S); jenis dokumen (C, F, H, dan jenis lain di WI); kode customer 2 huruf beserta kode khusus ZZ dan HSE; format nomor berjalan; dan jumlah digit revisi (2). Dibangun di M1.4 (kode customer), M1.6 (kode pabrik dan jenis dokumen), dan M2.1 (struktur nomor). Dokumen referensi set TR-021 (SH, SF, SC) sesuai dengan struktur ini: nomor di cover ditulis tanpa revisi, revisi ada di tabel riwayat, dan nama file menyertakan revisi. Dua rincian dijawab pemilik pada 28 Oktober 2026: (1) Nomor di atas 999 memakai huruf dan 3 digit: A001 sampai A999, lalu B001, dan seterusnya. Aturan ini berlaku "untuk saat ini" dan berbeda dari tabel WI SW-ZZ-000 rev 09 (00-XXXX, A1-XXXX); pernyataan pemilik yang dipakai. Karena bisa berubah, format nomor berjalan disimpan sebagai master data. (2) SC-ESD-K001 diabaikan karena bukan control plan proses. Sistem tidak menomori dokumen seperti itu. Bila dirujuk dari CP, dokumen itu dicatat apa adanya sebagai dokumen terkait (R-DOC-10, R-DOC-11).
 - **Pelaksanaan (M1.4, 28 Oktober 2026):** kode customer dua huruf dengan riwayat sudah menjadi master data (E-11). Kode khusus ZZ dan HSE belum menjadi tabel master: ZZ tetap ditolak sebagai kode customer, dan HSE tidak bisa bentrok karena tiga huruf. Kode khusus disimpan sebagai master data di M1.6, bersama kode pabrik dan jenis dokumen, karena ketiganya bagian struktur nomor.
+- **Pelaksanaan (M2.1, 30 Oktober 2026):** pola nomor (`{prefix}-{customer}-{seq}`), bentuk nomor berjalan (001 sampai 999, lalu A001 sampai Z999), dan jumlah digit revisi (2) kini master data di `number_settings`, diubah Admin di layar Document types. Nomor berjalan pertama 001 (ASUMSI E-44), dan pola memakai satu pola untuk semua jenis dan customer (ASUMSI E-61).
 - **Pelaksanaan (M1.6, 28 Oktober 2026):** kode pabrik (S), jenis dokumen dengan hurufnya (H untuk PFD, F untuk PFMEA, C untuk CP), dan kode khusus (ZZ dan HSE) sekarang master data yang diubah Admin. Awalan nomor dihitung dari kode pabrik dan huruf, jadi tidak disimpan. Jenis dokumen lain dari WI (misalnya W dan I) bisa ditambah Admin; isinya tidak disalin dari WI, karena WI tidak disimpan di repo. Kode customer kini diperiksa terhadap daftar kode khusus di database, bukan "ZZ" yang ditulis tetap di kode (E-37). Format nomor berjalan dan jumlah digit revisi tetap dibangun di M2.1.
 
 ### E-13 · Versi terbaru berbeda dari brief bagian 7
@@ -718,6 +722,7 @@ Salin blok ini untuk setiap temuan baru.
 - **Dampak bila dibiarkan:** tanpa aturan butir 3, satu kode di posisi customer bisa punya dua arti, dan pencocokan nomor lama (R-POR-01) bisa salah.
 - **Opsi:** (a) Dua atau tiga huruf, bisa ditambah Admin, kodenya tidak bisa diubah, dan tidak boleh sama dengan kode customer mana pun (sekarang atau dulu), begitu pula sebaliknya. Dijaga kunci bersama di aplikasi. (b) Seperti (a), tapi daftarnya tetap (hanya ZZ dan HSE). (c) Satu tabel untuk semua kode di posisi customer (kode customer dan kode khusus), sehingga database menjaga keunikan dengan satu UNIQUE.
 - **Rekomendasi Claude Code (usulan):** (a) untuk sekarang. (c) lebih kuat karena dijaga database, tapi mengubah tabel riwayat kode M1.4, jadi layak dipertimbangkan di M2.1 saat struktur nomor dibangun. Butir 4 diputuskan di M2.1.
+- **Pelaksanaan (M2.1, 30 Oktober 2026):** opsi (c), satu tabel untuk semua kode di posisi customer, dipertimbangkan dan tidak dibangun: kunci advisory 11003 sudah menjaga keunikan, dan memindah riwayat kode customer M1.4 ke tabel baru menambah risiko tanpa manfaat untuk Tahap 2. Butir 4 memakai asumsi paling aman sesuai R-NUM-01 [DECIDED]: pendaftaran nomor selalu untuk satu customer, jadi kode khusus belum bisa dipakai untuk menomori PFD, PFMEA, dan CP (`internal/numbering/register.go`).
 - **Asumsi sementara di kode (ASUMSI E-37):** (a). Kunci advisory 11003 diambil saat customer dibuat, saat kode customer diganti, dan saat kode khusus ditambah, lalu pemeriksaan dilakukan di dalam kunci itu. Ditandai di `sql/migrations/00007_create_document_and_change_types.sql`, `sql/queries/numbering.sql`, `internal/numbering/`, dan `internal/customer/service.go`.
 - **Menghambat milestone?** Tidak (perlu sebelum M2.1)
 - **Status:** Diputuskan sebagian pemilik 30 Oktober 2026 (D-114), lewat persetujuan umum atas semua saran Claude Code (lihat bagian "Keputusan 30 Oktober 2026"). Butir 4 terbuka
@@ -1044,6 +1049,48 @@ Salin blok ini untuk setiap temuan baru.
 - **Opsi:** (a) Penjadwal sistem operasi (Task Scheduler di Windows, cron di Linux) menjalankan `revioten backup`; backup lama dihapus tangan oleh pemilik; passphrase di `.env`, dengan salinan di tempat lain. (b) Server menjalankan backup sendiri lewat job queue (River) dan membuang backup yang lebih tua dari N hari. (c) Seperti (a), ditambah perintah untuk membuang backup lama.
 - **Rekomendasi Claude Code (usulan):** (a) untuk demo localhost. Opsi (b) dibahas di dokumen IT (M8.4), karena versi IT memakai sistem backup perusahaan.
 - **Asumsi sementara di kode (ASUMSI E-60):** (a), di `internal/backup/backup.go`. Langkah Task Scheduler ditulis di catatan M1.7 dan belum dicoba di komputer pemilik.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-61 · Satu pola nomor untuk semua jenis dokumen dan customer
+
+- **Tanggal dan milestone:** 30 Oktober 2026, M2.1. Berdampak ke M2.5 (impor nomor lama).
+- **Jenis:** Ambigu
+- **Rujukan:** brief bagian 4 (numbering_pattern: "Pattern per document type, optionally overridden per customer"), R-NUM-02, Q-05, E-12, D-89.
+- **Temuan:** model domain brief menyebut pola per jenis dokumen yang bisa ditimpa per customer. WI SW-ZZ-000 (D-89) memberi satu struktur untuk semua jenis, dan Q-05 masih menanyakan apakah ada customer dengan pola khusus. Selain itu, impor nomor lama (M2.5) harus bisa membaca teks nomor kembali menjadi bagiannya, padahal pola bebas seperti `{prefix}{customer}{seq}` bisa dibaca dua cara (KT + A001 atau KTA + 001).
+- **Dampak bila dibiarkan:** pola per customer butuh layar dan aturan tambahan, dan pola yang tidak bisa dibaca kembali membuat impor salah membaca nomor.
+- **Opsi:** (a) Satu pola untuk semua jenis dan customer; token `{prefix}` sudah membedakan jenis. Pola wajib memisahkan token dengan tanda baca. (b) Satu pola per jenis dokumen. (c) Pola per jenis, ditambah pola khusus per customer.
+- **Rekomendasi Claude Code (usulan):** (a) sampai Q-05 menunjukkan customer dengan pola khusus. Satu pola juga menjaga nomor satu set tetap sejajar bentuknya.
+- **Asumsi sementara di kode (ASUMSI E-61):** (a), di `sql/migrations/00010_create_document_numbers.sql` dan `internal/numbering/format.go`.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-63 · Kunci idempoten di UI API: cakupan, umur, dan pemakaian ulang
+
+- **Tanggal dan milestone:** 30 Oktober 2026, M2.2. Berdampak ke M9.4 (API integrasi).
+- **Jenis:** Celah
+- **Rujukan:** R-NUM-03, R-API-10 ("kept for a defined period"), R-API-18.
+- **Temuan:** R-NUM-03 meminta kunci idempoten untuk pendaftaran nomor, tapi tidak menyebut siapa yang membuat kunci, cakupannya (per akun atau untuk seluruh sistem), berapa lama disimpan, dan jawaban bila kunci yang sama dikirim dengan isi berbeda. R-API-10 untuk API integrasi juga belum menyebut lamanya.
+- **Dampak bila dibiarkan:** setiap endpoint menulis aturan idempotensinya sendiri.
+- **Opsi:** (a) Kunci dibuat klien untuk setiap pendaftaran baru (layar memakai UUID), berlaku per akun, dan disimpan selamanya bersama catatan permintaan. Kunci yang sama dengan isi yang sama mendapat hasil lama (200); dengan isi berbeda ditolak (422, `idempotency_key:taken`). (b) Seperti (a), tapi kunci dibuang setelah N hari. (c) Kunci berlaku untuk seluruh sistem.
+- **Rekomendasi Claude Code (usulan):** (a) untuk UI API, karena jumlah pendaftaran kecil dan catatannya berguna untuk audit. Lama simpan untuk API integrasi ditetapkan di M9.4.
+- **Asumsi sementara di kode (ASUMSI E-63):** (a), di `internal/numbering/register.go` dan tabel `number_batches`.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-67 · Pendaftaran nomor untuk customer nonaktif
+
+- **Tanggal dan milestone:** 30 Oktober 2026, M2.1.
+- **Jenis:** Celah
+- **Rujukan:** E-09 (D-86), R-NUM-01, UC-10.
+- **Temuan:** E-09 menetapkan customer nonaktif tidak mendapat group model, model, atau part number baru. Belum ada aturan untuk nomor dokumen baru.
+- **Dampak bila dibiarkan:** nomor bisa didaftarkan untuk customer yang sudah tidak dilayani.
+- **Opsi:** (a) Ditolak, sama seperti model baru; customer bisa diaktifkan lagi bila perlu. (b) Diizinkan.
+- **Rekomendasi Claude Code (usulan):** (a). Revisi dokumen lama tidak butuh nomor baru, jadi pekerjaan yang sedang berjalan tidak terhenti.
+- **Asumsi sementara di kode (ASUMSI E-67):** (a), di `internal/numbering/register.go`. Layar Numbers hanya menawarkan customer aktif.
 - **Menghambat milestone?** Tidak
 - **Status:** Terbuka
 - **Keputusan pemilik:**

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -30,8 +31,8 @@ func TestMain(m *testing.M) {
 }
 
 // operationCase adalah satu operasi kontrak beserta status yang diharapkan
-// untuk akun Viewer (tanpa peran), akun PPAP Engineer (Pengelola template,
-// E-6), dan akun admin.
+// untuk akun Viewer (tanpa peran), akun PPAP Engineer (Penyusun, Pengelola
+// template, dan Dokumen kontrol, seperti di U3 bagian 2), dan akun admin.
 type operationCase struct {
 	method, path, body      string
 	viewer, engineer, admin int
@@ -81,7 +82,11 @@ func TestPermissionsPerOperation(t *testing.T) {
 	}
 	_, temporary, err = authSvc.CreateAccount(ctx, admin, auth.NewAccount{
 		PersonName: "PPAP Engineer Uji", Kind: auth.KindWork, Login: "ppap.engineer.uji",
-		Roles: []access.RoleGrant{{Role: access.RoleTemplateMaintainer, Scope: access.ScopeAll}},
+		Roles: []access.RoleGrant{
+			{Role: access.RoleAuthor, Scope: access.ScopeAll},
+			{Role: access.RoleTemplateMaintainer, Scope: access.ScopeAll},
+			{Role: access.RoleDocumentControl, Scope: access.ScopeAll},
+		},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -176,7 +181,7 @@ func TestPermissionsPerOperation(t *testing.T) {
 		"viewerPersonId": viewerInfo.PersonID,
 		"accountId":      viewerInfo.ID, "projectGroupId": group.ID, "customerId": cust.ID,
 		"modelGroupId": modelGroup.ID, "modelId": model.ID, "partNumberId": part.ID,
-		"processId": proc.ID, "documentTypeId": docTypes[0].ID, "specialCodeId": specialCodes[0].ID,
+		"processId": proc.ID, "documentTypeId": docTypes[0].ID, "cpTypeId": docTypes[2].ID, "specialCodeId": specialCodes[0].ID,
 		"changeTypeId": changeTypes[0].ID, "changeSourceId": sources[0].ID, "fourMCategoryId": categories[0].ID,
 	}
 
@@ -189,6 +194,9 @@ func TestPermissionsPerOperation(t *testing.T) {
 		{http.MethodPost, "/api/v1/customers", `{"code":"AB","name":"Customer Baru","project_group_id":"{projectGroupId}"}`, http.StatusForbidden, http.StatusForbidden, http.StatusCreated},
 		{http.MethodPut, "/api/v1/customers/{customerId}", `{"name":"Customer Ubah","project_group_id":"{projectGroupId}","active":true}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
 		{http.MethodPost, "/api/v1/customers/{customerId}/code", `{"code":"XZ"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		// Register nomor (Tahap 2): mendaftarkan lewat E-1 (Penyusun), melihat lewat L-2.
+		{http.MethodGet, "/api/v1/document-numbers/next?customer_id={customerId}&document_type_id={cpTypeId}", "", http.StatusOK, http.StatusOK, http.StatusOK},
+		{http.MethodPost, "/api/v1/document-numbers", `{"customer_id":"{customerId}","document_type_id":"{cpTypeId}"}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/project-groups", "", http.StatusOK, http.StatusOK, http.StatusOK},
 		{http.MethodPost, "/api/v1/project-groups", `{"code":"GR2","name":"Project Group 2"}`, http.StatusForbidden, http.StatusForbidden, http.StatusCreated},
 		{http.MethodPut, "/api/v1/project-groups/{projectGroupId}", `{"code":"GR1","name":"Satu"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
@@ -255,9 +263,11 @@ func TestPermissionsPerOperation(t *testing.T) {
 		return text
 	}
 	run := func(who, token string, want func(operationCase) int) {
-		for _, tc := range cases {
+		for i, tc := range cases {
 			req := httptest.NewRequest(tc.method, fill(tc.path), strings.NewReader(fill(tc.body)))
 			req.Header.Set("Content-Type", "application/json")
+			// Kunci idempoten baru untuk setiap permintaan (pendaftaran nomor, R-NUM-03).
+			req.Header.Set("Idempotency-Key", fmt.Sprintf("%s-%d", who, i))
 			req.AddCookie(&http.Cookie{Name: sessionCookieName, Value: token})
 			rec := httptest.NewRecorder()
 			handler.ServeHTTP(rec, req)

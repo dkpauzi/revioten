@@ -1,0 +1,70 @@
+-- name: LockCustomerForNumber :one
+-- LockCustomerForNumber membaca kode customer yang sedang berlaku dan
+-- menguncinya FOR SHARE sampai transaksi selesai. Pendaftaran nomor untuk
+-- customer yang sama tidak saling menunggu, tapi ganti kode customer (FOR NO
+-- KEY UPDATE) menunggu pendaftaran selesai, jadi kode di nomor selalu kode
+-- yang berlaku saat nomor dibuat (R-POR-01).
+SELECT id, code, active FROM customers WHERE id = $1 FOR SHARE;
+
+-- name: InsertNumberBatch :one
+-- InsertNumberBatch mencatat satu permintaan pendaftaran beserta kunci
+-- idempotennya. Bila akun yang sama sudah memakai kunci itu, tidak ada baris
+-- baru dan hasilnya pgx.ErrNoRows. Permintaan kedua yang datang bersamaan
+-- menunggu di sini sampai permintaan pertama selesai (R-NUM-03).
+INSERT INTO number_batches (kind, customer_id, account_id, person_id, idempotency_key, request_hash)
+VALUES ($1, $2, $3, $4, $5, $6)
+ON CONFLICT (account_id, idempotency_key) DO NOTHING
+RETURNING id;
+
+-- name: GetNumberBatchByKey :one
+SELECT id, kind, request_hash FROM number_batches WHERE account_id = $1 AND idempotency_key = $2;
+
+-- name: NextCounterValue :one
+-- NextCounterValue menaikkan penghitung satu kode customer dan jenis dokumen,
+-- lalu mengembalikan nomor berjalan yang baru. Baris penghitung terkunci
+-- sampai transaksi selesai, jadi pendaftaran lain untuk kode dan jenis yang
+-- sama menunggu. Bila transaksi batal, nilainya ikut kembali, jadi tidak ada
+-- lubang (R-NUM-03).
+INSERT INTO number_counters (customer_code, document_type_id, last_value)
+VALUES (sqlc.arg(customer_code), sqlc.arg(document_type_id), sqlc.arg(first_value)::integer)
+ON CONFLICT (customer_code, document_type_id)
+DO UPDATE SET last_value = number_counters.last_value + 1
+RETURNING last_value;
+
+-- name: GetCounterValue :one
+SELECT last_value FROM number_counters WHERE customer_code = $1 AND document_type_id = $2;
+
+-- name: InsertDocumentNumber :one
+INSERT INTO document_numbers (number, customer_id, customer_code, document_type_id, sequence, status, initial_revision, batch_id)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+RETURNING id;
+
+-- name: GetDocumentNumber :one
+-- GetDocumentNumber mengambil satu nomor beserta customer, jenis dokumen,
+-- asal, dan orang yang mendaftarkannya.
+SELECT n.id, n.number, n.customer_id, c.code AS customer_current_code, c.name AS customer_name,
+       n.customer_code, n.document_type_id, d.name AS document_type_name, d.key AS document_type_key,
+       n.sequence, n.status, n.initial_revision, n.batch_id, b.kind AS origin,
+       b.person_id AS registered_by_id, p.name AS registered_by_name,
+       n.status_reason, n.status_changed_at, n.created_at
+FROM document_numbers n
+JOIN customers c ON c.id = n.customer_id
+JOIN document_types d ON d.id = n.document_type_id
+JOIN number_batches b ON b.id = n.batch_id
+JOIN people p ON p.id = b.person_id
+WHERE n.id = $1;
+
+-- name: ListBatchNumbers :many
+-- ListBatchNumbers mengambil nomor hasil satu permintaan, menurut urutan dibuat.
+SELECT n.id, n.number, n.customer_id, c.code AS customer_current_code, c.name AS customer_name,
+       n.customer_code, n.document_type_id, d.name AS document_type_name, d.key AS document_type_key,
+       n.sequence, n.status, n.initial_revision, n.batch_id, b.kind AS origin,
+       b.person_id AS registered_by_id, p.name AS registered_by_name,
+       n.status_reason, n.status_changed_at, n.created_at
+FROM document_numbers n
+JOIN customers c ON c.id = n.customer_id
+JOIN document_types d ON d.id = n.document_type_id
+JOIN number_batches b ON b.id = n.batch_id
+JOIN people p ON p.id = b.person_id
+WHERE n.batch_id = $1
+ORDER BY n.id;

@@ -130,7 +130,7 @@ SELECT l.seq, l.occurred_at, l.actor_type, l.actor_account_id, a.login AS actor_
        l.action, l.target_type, l.target_id,
        coalesce(ta.login, tc.code, tp.code, tg.name, tm.name, tn.number, tpr.name,
                 tns.factory_code, tdt.name, tsc.code, tct.name, tcs.name, tfm.name,
-                tpo.name, tar.name, '') AS target_label,
+                tpo.name, tar.name, tdn.number, '') AS target_label,
        l.details, l.prev_hash, l.hash
 FROM audit_log l
 LEFT JOIN accounts a ON a.id = l.actor_account_id
@@ -145,6 +145,7 @@ LEFT JOIN process_names tpr ON l.target_type = 'process' AND tpr.process_id = l.
 LEFT JOIN number_settings tns ON l.target_type = 'number_settings' AND tns.id = l.target_id
 LEFT JOIN document_types tdt ON l.target_type = 'document_type' AND tdt.id = l.target_id
 LEFT JOIN special_codes tsc ON l.target_type = 'special_code' AND tsc.id = l.target_id
+LEFT JOIN document_numbers tdn ON l.target_type = 'document_number' AND tdn.id = l.target_id
 LEFT JOIN change_types tct ON l.target_type = 'change_type' AND tct.id = l.target_id
 LEFT JOIN change_sources tcs ON l.target_type = 'change_source' AND tcs.id = l.target_id
 LEFT JOIN four_m_categories tfm ON l.target_type = 'four_m_category' AND tfm.id = l.target_id

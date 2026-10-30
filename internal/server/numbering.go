@@ -12,16 +12,83 @@ func (a *apiServer) GetNumberSettings(ctx context.Context, _ GetNumberSettingsRe
 	if err != nil {
 		return nil, err
 	}
-	return GetNumberSettings200JSONResponse{FactoryCode: settings.FactoryCode}, nil
+	return GetNumberSettings200JSONResponse(toAPINumberSettings(settings)), nil
 }
 
-// UpdateNumberSettings menjawab PUT /api/v1/number-settings.
+// UpdateNumberSettings menjawab PUT /api/v1/number-settings. pattern dan
+// revision_digits yang tidak dikirim berarti tetap (D-111).
 func (a *apiServer) UpdateNumberSettings(ctx context.Context, req UpdateNumberSettingsRequestObject) (UpdateNumberSettingsResponseObject, error) {
-	settings, err := a.numbering.SetFactoryCode(ctx, actorFrom(ctx), req.Body.FactoryCode)
+	in := numbering.SettingsInput{FactoryCode: req.Body.FactoryCode, Pattern: req.Body.Pattern, RevisionDigits: req.Body.RevisionDigits}
+	settings, err := a.numbering.UpdateSettings(ctx, actorFrom(ctx), in)
 	if err != nil {
 		return nil, err
 	}
-	return UpdateNumberSettings200JSONResponse{FactoryCode: settings.FactoryCode}, nil
+	return UpdateNumberSettings200JSONResponse(toAPINumberSettings(settings)), nil
+}
+
+// RegisterDocumentNumber menjawab POST /api/v1/document-numbers (M2.1, M2.2).
+// Permintaan yang diulang dengan Idempotency-Key yang sama dijawab 200 dengan
+// nomor lamanya, bukan 201 dengan nomor baru.
+func (a *apiServer) RegisterDocumentNumber(ctx context.Context, req RegisterDocumentNumberRequestObject) (RegisterDocumentNumberResponseObject, error) {
+	in := numbering.NewNumber{CustomerID: req.Body.CustomerId, DocumentTypeID: req.Body.DocumentTypeId}
+	if req.Body.InitialRevision != nil {
+		in.InitialRevision = *req.Body.InitialRevision
+	}
+	if req.Params.IdempotencyKey != nil {
+		in.IdempotencyKey = *req.Params.IdempotencyKey
+	}
+	reg, err := a.numbering.Register(ctx, actorFrom(ctx), in)
+	if err != nil {
+		return nil, err
+	}
+	if reg.Replayed {
+		return RegisterDocumentNumber200JSONResponse(toAPIRegistration(reg)), nil
+	}
+	return RegisterDocumentNumber201JSONResponse(toAPIRegistration(reg)), nil
+}
+
+// GetNextDocumentNumber menjawab GET /api/v1/document-numbers/next.
+func (a *apiServer) GetNextDocumentNumber(ctx context.Context, req GetNextDocumentNumberRequestObject) (GetNextDocumentNumberResponseObject, error) {
+	number, err := a.numbering.NextNumber(ctx, actorFrom(ctx), req.Params.CustomerId, req.Params.DocumentTypeId)
+	if err != nil {
+		return nil, err
+	}
+	return GetNextDocumentNumber200JSONResponse{Number: number}, nil
+}
+
+// toAPINumberSettings mengubah Settings domain menjadi NumberSettings kontrak API.
+func toAPINumberSettings(s numbering.Settings) NumberSettings {
+	return NumberSettings{
+		FactoryCode: s.FactoryCode, Pattern: s.Pattern,
+		SequenceFormat: NumberSettingsSequenceFormat(s.SequenceFormat), RevisionDigits: s.RevisionDigits,
+	}
+}
+
+// toAPIRegistration mengubah hasil pendaftaran menjadi NumberRegistration kontrak API.
+func toAPIRegistration(r numbering.Registration) NumberRegistration {
+	items := make([]DocumentNumber, 0, len(r.Numbers))
+	for _, n := range r.Numbers {
+		items = append(items, toAPIDocumentNumber(n))
+	}
+	return NumberRegistration{Items: items, Replayed: r.Replayed}
+}
+
+// toAPIDocumentNumber mengubah DocumentNumber domain menjadi DocumentNumber kontrak API.
+func toAPIDocumentNumber(n numbering.DocumentNumber) DocumentNumber {
+	out := DocumentNumber{
+		Id: n.ID, Number: n.Number,
+		Customer:     CustomerRef{Id: n.CustomerID, Code: n.CustomerCurrentCode, Name: n.CustomerName},
+		CustomerCode: n.CustomerCode,
+		DocumentType: DocumentTypeRef{Id: n.DocumentTypeID, Key: DocumentTypeRefKey(n.DocumentTypeKey), Name: n.DocumentTypeName},
+		Sequence:     n.Sequence, Status: DocumentNumberStatus(n.Status), InitialRevision: n.InitialRevision,
+		RevisionLabel: n.RevisionLabel, Origin: DocumentNumberOrigin(n.Origin), BatchId: n.BatchID,
+		RegisteredBy: Person{Id: n.RegisteredByID, Name: n.RegisteredByName}, CreatedAt: n.CreatedAt,
+		StatusChangedAt: n.StatusChangedAt,
+	}
+	if n.StatusReason != "" {
+		out.StatusReason = &n.StatusReason
+	}
+	return out
 }
 
 // ListDocumentTypes menjawab GET /api/v1/document-types.

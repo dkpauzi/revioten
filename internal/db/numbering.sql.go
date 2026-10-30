@@ -92,13 +92,19 @@ func (q *Queries) GetDocumentType(ctx context.Context, id string) (GetDocumentTy
 }
 
 const getNumberSettings = `-- name: GetNumberSettings :one
-SELECT id, factory_code FROM number_settings
+SELECT id, factory_code, pattern, sequence_format, revision_digits FROM number_settings
 `
 
 func (q *Queries) GetNumberSettings(ctx context.Context) (NumberSetting, error) {
 	row := q.db.QueryRow(ctx, getNumberSettings)
 	var i NumberSetting
-	err := row.Scan(&i.ID, &i.FactoryCode)
+	err := row.Scan(
+		&i.ID,
+		&i.FactoryCode,
+		&i.Pattern,
+		&i.SequenceFormat,
+		&i.RevisionDigits,
+	)
 	return i, err
 }
 
@@ -215,13 +221,19 @@ func (q *Queries) LockNumberCodes(ctx context.Context) error {
 }
 
 const lockNumberSettings = `-- name: LockNumberSettings :one
-SELECT id, factory_code FROM number_settings FOR NO KEY UPDATE
+SELECT id, factory_code, pattern, sequence_format, revision_digits FROM number_settings FOR NO KEY UPDATE
 `
 
 func (q *Queries) LockNumberSettings(ctx context.Context) (NumberSetting, error) {
 	row := q.db.QueryRow(ctx, lockNumberSettings)
 	var i NumberSetting
-	err := row.Scan(&i.ID, &i.FactoryCode)
+	err := row.Scan(
+		&i.ID,
+		&i.FactoryCode,
+		&i.Pattern,
+		&i.SequenceFormat,
+		&i.RevisionDigits,
+	)
 	return i, err
 }
 
@@ -248,15 +260,6 @@ func (q *Queries) RenameSpecialCode(ctx context.Context, arg RenameSpecialCodePa
 	return err
 }
 
-const setFactoryCode = `-- name: SetFactoryCode :exec
-UPDATE number_settings SET factory_code = $1
-`
-
-func (q *Queries) SetFactoryCode(ctx context.Context, factoryCode string) error {
-	_, err := q.db.Exec(ctx, setFactoryCode, factoryCode)
-	return err
-}
-
 const specialCodeExists = `-- name: SpecialCodeExists :one
 SELECT EXISTS (SELECT 1 FROM special_codes WHERE code = $1)
 `
@@ -280,5 +283,20 @@ type UpdateDocumentTypeParams struct {
 
 func (q *Queries) UpdateDocumentType(ctx context.Context, arg UpdateDocumentTypeParams) error {
 	_, err := q.db.Exec(ctx, updateDocumentType, arg.ID, arg.Name, arg.Letter)
+	return err
+}
+
+const updateNumberSettings = `-- name: UpdateNumberSettings :exec
+UPDATE number_settings SET factory_code = $1, pattern = $2, revision_digits = $3
+`
+
+type UpdateNumberSettingsParams struct {
+	FactoryCode    string
+	Pattern        string
+	RevisionDigits int16
+}
+
+func (q *Queries) UpdateNumberSettings(ctx context.Context, arg UpdateNumberSettingsParams) error {
+	_, err := q.db.Exec(ctx, updateNumberSettings, arg.FactoryCode, arg.Pattern, arg.RevisionDigits)
 	return err
 }

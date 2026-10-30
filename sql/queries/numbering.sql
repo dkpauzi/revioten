@@ -15,13 +15,13 @@ SELECT EXISTS (SELECT 1 FROM special_codes WHERE code = $1);
 SELECT EXISTS (SELECT 1 FROM customer_codes WHERE code = $1);
 
 -- name: GetNumberSettings :one
-SELECT id, factory_code FROM number_settings;
+SELECT id, factory_code, pattern, sequence_format, revision_digits FROM number_settings;
 
 -- name: LockNumberSettings :one
-SELECT id, factory_code FROM number_settings FOR NO KEY UPDATE;
+SELECT id, factory_code, pattern, sequence_format, revision_digits FROM number_settings FOR NO KEY UPDATE;
 
--- name: SetFactoryCode :exec
-UPDATE number_settings SET factory_code = $1;
+-- name: UpdateNumberSettings :exec
+UPDATE number_settings SET factory_code = $1, pattern = $2, revision_digits = $3;
 
 -- name: ListDocumentTypes :many
 -- ListDocumentTypes mengambil jenis dokumen beserta awalan nomornya: kode

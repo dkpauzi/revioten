@@ -493,10 +493,111 @@ export type NumberSettings = {
      * One letter A to Z, the first letter of every number prefix (E-12).
      */
     factory_code: string;
+    /**
+     * Number pattern for new numbers (R-NUM-02, M2.1) with the tokens
+     * {prefix} (factory code and document type letter), {customer}, and
+     * {seq} (running number), separated by punctuation.
+     *
+     */
+    pattern: string;
+    /**
+     * Running number format - 001 to 999, then A001 to A999, B001, up to Z999 (D-89).
+     */
+    sequence_format: 'letter_block';
+    /**
+     * Digits of the revision label, for example 2 for -04 (R-REV-01).
+     */
+    revision_digits: number;
 };
 
 export type NumberSettingsUpdate = {
     factory_code: string;
+    /**
+     * Leave it out to keep the current pattern.
+     */
+    pattern?: string;
+    /**
+     * 1 to 3. Leave it out to keep the current value.
+     */
+    revision_digits?: number;
+};
+
+export type NewDocumentNumber = {
+    customer_id: string;
+    /**
+     * PFD, PFMEA, or CP. Other document types are not numbered by the system.
+     */
+    document_type_id: string;
+    /**
+     * First revision of the document that uses the number, for example 4 for a legacy document entering at -04 (M2.4). Default 0.
+     */
+    initial_revision?: number;
+};
+
+export type NextDocumentNumber = {
+    number: string;
+};
+
+export type NumberRegistration = {
+    items: Array<DocumentNumber>;
+    /**
+     * True when the Idempotency-Key was used before for the same request.
+     */
+    replayed: boolean;
+};
+
+/**
+ * One number in the register (R-NUM-04). Numbers are never deleted or reused; only the status changes.
+ */
+export type DocumentNumber = {
+    id: string;
+    /**
+     * The number as registered. It is never recomputed (R-NUM-02).
+     */
+    number: string;
+    customer: CustomerRef;
+    /**
+     * The customer code inside the number. An older code when the customer code was changed later (E-11).
+     */
+    customer_code: string;
+    document_type: DocumentTypeRef;
+    /**
+     * Value of the running number, for example 1 for 001 and 1000 for A001.
+     */
+    sequence: number;
+    status: 'reserved' | 'in_use' | 'released' | 'obsolete' | 'void' | 'skipped';
+    initial_revision: number;
+    /**
+     * The initial revision as printed, for example -04.
+     */
+    revision_label: string;
+    /**
+     * How the number entered the register. Numbers of one set share batch_id.
+     */
+    origin: 'single' | 'set' | 'import';
+    batch_id: string;
+    registered_by: Person;
+    /**
+     * Reason given when the number was voided or made obsolete.
+     */
+    status_reason?: string;
+    status_changed_at?: string;
+    created_at: string;
+};
+
+export type CustomerRef = {
+    id: string;
+    /**
+     * The current customer code.
+     */
+    code: string;
+    name: string;
+};
+
+export type DocumentTypeRef = {
+    id: string;
+    key: 'pfd' | 'pfmea' | 'cp';
+    name: string;
 };
 
 export type DocumentType = {
@@ -753,6 +854,19 @@ export type CustomerId = string;
  * The customer whose master data is listed.
  */
 export type CustomerIdQuery = string;
+
+/**
+ * The document type, PFD, PFMEA, or CP.
+ */
+export type DocumentTypeIdQuery = string;
+
+/**
+ * Required by the server (422 idempotency_key:required when missing).
+ * 1 to 100 characters - letters, digits, `.`, `:`, `_`, `-` - for example a UUID.
+ * It is kept per account.
+ *
+ */
+export type IdempotencyKey = string;
 
 export type ProjectGroupId = string;
 
@@ -2016,6 +2130,94 @@ export type UpdateNumberSettingsResponses = {
 };
 
 export type UpdateNumberSettingsResponse = UpdateNumberSettingsResponses[keyof UpdateNumberSettingsResponses];
+
+export type RegisterDocumentNumberData = {
+    body: NewDocumentNumber;
+    headers?: {
+        /**
+         * Required by the server (422 idempotency_key:required when missing).
+         * 1 to 100 characters - letters, digits, `.`, `:`, `_`, `-` - for example a UUID.
+         * It is kept per account.
+         *
+         */
+        'Idempotency-Key'?: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/v1/document-numbers';
+};
+
+export type RegisterDocumentNumberErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type RegisterDocumentNumberError = RegisterDocumentNumberErrors[keyof RegisterDocumentNumberErrors];
+
+export type RegisterDocumentNumberResponses = {
+    /**
+     * The Idempotency-Key was used before for the same request; the original numbers are returned.
+     */
+    200: NumberRegistration;
+    /**
+     * The number was registered.
+     */
+    201: NumberRegistration;
+};
+
+export type RegisterDocumentNumberResponse = RegisterDocumentNumberResponses[keyof RegisterDocumentNumberResponses];
+
+export type GetNextDocumentNumberData = {
+    body?: never;
+    path?: never;
+    query: {
+        /**
+         * The customer whose master data is listed.
+         */
+        customer_id: string;
+        /**
+         * The document type, PFD, PFMEA, or CP.
+         */
+        document_type_id: string;
+    };
+    url: '/api/v1/document-numbers/next';
+};
+
+export type GetNextDocumentNumberErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type GetNextDocumentNumberError = GetNextDocumentNumberErrors[keyof GetNextDocumentNumberErrors];
+
+export type GetNextDocumentNumberResponses = {
+    /**
+     * The next number. Someone else may still register it first.
+     */
+    200: NextDocumentNumber;
+};
+
+export type GetNextDocumentNumberResponse = GetNextDocumentNumberResponses[keyof GetNextDocumentNumberResponses];
 
 export type ListDocumentTypesData = {
     body?: never;

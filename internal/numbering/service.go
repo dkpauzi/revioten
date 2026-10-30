@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -39,40 +40,80 @@ func (s *Service) GetSettings(ctx context.Context, actor access.Actor) (Settings
 	if err != nil {
 		return Settings{}, fmt.Errorf("membaca pengaturan nomor: %w", err)
 	}
-	return Settings{ID: row.ID, FactoryCode: row.FactoryCode}, nil
+	return fromSettings(row), nil
 }
 
-// SetFactoryCode mengganti kode pabrik. Semua awalan ikut berubah untuk nomor
-// baru; nomor yang sudah terdaftar tetap (R-NUM-02).
-func (s *Service) SetFactoryCode(ctx context.Context, actor access.Actor, code string) (Settings, error) {
+// UpdateSettings mengganti kode pabrik, pola nomor, dan jumlah digit revisi
+// (A-2). Pattern dan RevisionDigits nil berarti tetap (D-111). Perubahan hanya
+// berlaku untuk nomor baru; nomor yang sudah terdaftar tetap (R-NUM-02).
+func (s *Service) UpdateSettings(ctx context.Context, actor access.Actor, in SettingsInput) (Settings, error) {
 	if err := s.authz.Authorize(ctx, actor, access.ManageMasterData, access.Resource{}); err != nil {
 		return Settings{}, err
 	}
-	code = upper(code)
-	if err := problems(checkCode("factory_code", code, letterPattern, "Use one letter A to Z.")); err != nil {
+	code := upper(in.FactoryCode)
+	var list []*problem.Problem
+	list = append(list, checkCode("factory_code", code, letterPattern, "Use one letter A to Z."))
+	if in.Pattern != nil {
+		if _, err := ParsePattern(*in.Pattern); err != nil {
+			list = append(list, &problem.Problem{Field: "pattern", Code: problem.InvalidFormat,
+				Message: "Use {prefix}, {customer}, and {seq} once each, separated by punctuation such as -, at most 50 characters."})
+		}
+	}
+	if in.RevisionDigits != nil && (*in.RevisionDigits < 1 || *in.RevisionDigits > 3) {
+		list = append(list, &problem.Problem{Field: "revision_digits", Code: problem.InvalidFormat, Message: "Use 1 to 3 digits."})
+	}
+	if err := problems(list...); err != nil {
 		return Settings{}, err
 	}
 
 	var settings Settings
 	err := db.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
 		q := s.q.WithTx(tx)
-		before, err := q.LockNumberSettings(ctx)
+		row, err := q.LockNumberSettings(ctx)
 		if err != nil {
 			return err
 		}
-		settings = Settings{ID: before.ID, FactoryCode: code}
-		if before.FactoryCode == code {
+		before := fromSettings(row)
+		settings = before
+		settings.FactoryCode = code
+		if in.Pattern != nil {
+			settings.Pattern = *in.Pattern
+		}
+		if in.RevisionDigits != nil {
+			settings.RevisionDigits = *in.RevisionDigits
+		}
+		details := map[string]string{}
+		if before.FactoryCode != settings.FactoryCode {
+			details["factory_code"] = audit.Change(before.FactoryCode, settings.FactoryCode)
+		}
+		if before.Pattern != settings.Pattern {
+			details["pattern"] = audit.Change(before.Pattern, settings.Pattern)
+		}
+		if before.RevisionDigits != settings.RevisionDigits {
+			details["revision_digits"] = audit.Change(strconv.Itoa(before.RevisionDigits), strconv.Itoa(settings.RevisionDigits))
+		}
+		if len(details) == 0 {
 			return nil // tidak ada yang berubah, jadi tidak dicatat
 		}
-		if err := q.SetFactoryCode(ctx, code); err != nil {
+		err = q.UpdateNumberSettings(ctx, db.UpdateNumberSettingsParams{
+			FactoryCode: settings.FactoryCode, Pattern: settings.Pattern, RevisionDigits: int16(settings.RevisionDigits),
+		})
+		if err != nil {
 			return err
 		}
 		return audit.Record(ctx, q, actor, audit.Event{
-			Action: audit.ActionNumberSettingsUpdated, TargetType: audit.TargetNumberSettings, TargetID: before.ID,
-			Details: map[string]string{"factory_code": audit.Change(before.FactoryCode, code)},
+			Action: audit.ActionNumberSettingsUpdated, TargetType: audit.TargetNumberSettings, TargetID: before.ID, Details: details,
 		})
 	})
-	return settings, result(err, "mengganti kode pabrik")
+	return settings, result(err, "mengubah pengaturan nomor")
+}
+
+// fromSettings mengubah baris pengaturan nomor menjadi Settings.
+func fromSettings(r db.NumberSetting) Settings {
+	return Settings{
+		ID: r.ID, FactoryCode: r.FactoryCode, Pattern: r.Pattern,
+		SequenceFormat: r.SequenceFormat, RevisionDigits: int(r.RevisionDigits),
+	}
 }
 
 // ListDocumentTypes mengembalikan semua jenis dokumen beserta awalannya.

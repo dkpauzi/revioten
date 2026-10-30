@@ -71,6 +71,11 @@ const (
 	ActionCustomerRouteChanged   = "customer.default_route_changed"
 	ActionChangeTypeRouteChanged = "change_type.route_changed"
 	ActionSystemSettingsUpdated  = "system_settings.updated"
+	// Register nomor dokumen (Tahap 2).
+	ActionDocumentNumberRegistered = "document_number.registered"
+	ActionDocumentNumberImported   = "document_number.imported"
+	ActionDocumentNumberVoided     = "document_number.voided"
+	ActionDocumentNumberObsoleted  = "document_number.obsoleted"
 )
 
 // Jenis sasaran entri.
@@ -91,6 +96,7 @@ const (
 	TargetPosition       = "position"
 	TargetApprovalRoute  = "approval_route"
 	TargetSystemSettings = "system_settings"
+	TargetDocumentNumber = "document_number"
 )
 
 // Change menulis perubahan satu field untuk rincian entri: "lama → baru".

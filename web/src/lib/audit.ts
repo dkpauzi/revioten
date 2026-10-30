@@ -43,7 +43,11 @@ const actionKeys: Record<string, MessageKey> = {
 	'approval_route.updated': 'auditActionApprovalRouteUpdated',
 	'customer.default_route_changed': 'auditActionCustomerRouteChanged',
 	'change_type.route_changed': 'auditActionChangeTypeRouteChanged',
-	'system_settings.updated': 'auditActionSystemSettingsUpdated'
+	'system_settings.updated': 'auditActionSystemSettingsUpdated',
+	'document_number.registered': 'auditActionDocumentNumberRegistered',
+	'document_number.imported': 'auditActionDocumentNumberImported',
+	'document_number.voided': 'auditActionDocumentNumberVoided',
+	'document_number.obsoleted': 'auditActionDocumentNumberObsoleted'
 };
 
 const detailKeys: Record<string, MessageKey> = {
@@ -71,7 +75,12 @@ const detailKeys: Record<string, MessageKey> = {
 	slots: 'auditDetailSlots',
 	default_route: 'auditDetailDefaultRoute',
 	approval_route: 'auditDetailApprovalRoute',
-	sign_dates_enabled: 'auditDetailSignDates'
+	sign_dates_enabled: 'auditDetailSignDates',
+	pattern: 'auditDetailPattern',
+	revision_digits: 'auditDetailRevisionDigits',
+	status: 'auditDetailStatus',
+	initial_revision: 'auditDetailInitialRevision',
+	reason: 'auditDetailReason'
 };
 
 const reasonKeys: Record<string, MessageKey> = {

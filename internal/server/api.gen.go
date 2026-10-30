@@ -137,6 +137,57 @@ func (e ChangeTypeKey) Valid() bool {
 	}
 }
 
+// Defines values for DocumentNumberOrigin.
+const (
+	DocumentNumberOriginImport DocumentNumberOrigin = "import"
+	DocumentNumberOriginSet    DocumentNumberOrigin = "set"
+	DocumentNumberOriginSingle DocumentNumberOrigin = "single"
+)
+
+// Valid indicates whether the value is a known member of the DocumentNumberOrigin enum.
+func (e DocumentNumberOrigin) Valid() bool {
+	switch e {
+	case DocumentNumberOriginImport:
+		return true
+	case DocumentNumberOriginSet:
+		return true
+	case DocumentNumberOriginSingle:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DocumentNumberStatus.
+const (
+	DocumentNumberStatusInUse    DocumentNumberStatus = "in_use"
+	DocumentNumberStatusObsolete DocumentNumberStatus = "obsolete"
+	DocumentNumberStatusReleased DocumentNumberStatus = "released"
+	DocumentNumberStatusReserved DocumentNumberStatus = "reserved"
+	DocumentNumberStatusSkipped  DocumentNumberStatus = "skipped"
+	DocumentNumberStatusVoid     DocumentNumberStatus = "void"
+)
+
+// Valid indicates whether the value is a known member of the DocumentNumberStatus enum.
+func (e DocumentNumberStatus) Valid() bool {
+	switch e {
+	case DocumentNumberStatusInUse:
+		return true
+	case DocumentNumberStatusObsolete:
+		return true
+	case DocumentNumberStatusReleased:
+		return true
+	case DocumentNumberStatusReserved:
+		return true
+	case DocumentNumberStatusSkipped:
+		return true
+	case DocumentNumberStatusVoid:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for DocumentTypeKey.
 const (
 	DocumentTypeKeyCp    DocumentTypeKey = "cp"
@@ -152,6 +203,27 @@ func (e DocumentTypeKey) Valid() bool {
 	case DocumentTypeKeyPfd:
 		return true
 	case DocumentTypeKeyPfmea:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DocumentTypeRefKey.
+const (
+	DocumentTypeRefKeyCp    DocumentTypeRefKey = "cp"
+	DocumentTypeRefKeyPfd   DocumentTypeRefKey = "pfd"
+	DocumentTypeRefKeyPfmea DocumentTypeRefKey = "pfmea"
+)
+
+// Valid indicates whether the value is a known member of the DocumentTypeRefKey enum.
+func (e DocumentTypeRefKey) Valid() bool {
+	switch e {
+	case DocumentTypeRefKeyCp:
+		return true
+	case DocumentTypeRefKeyPfd:
+		return true
+	case DocumentTypeRefKeyPfmea:
 		return true
 	default:
 		return false
@@ -311,6 +383,21 @@ func (e NewAccountKind) Valid() bool {
 	case NewAccountKindAdmin:
 		return true
 	case NewAccountKindWork:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for NumberSettingsSequenceFormat.
+const (
+	NumberSettingsSequenceFormatLetterBlock NumberSettingsSequenceFormat = "letter_block"
+)
+
+// Valid indicates whether the value is a known member of the NumberSettingsSequenceFormat enum.
+func (e NumberSettingsSequenceFormat) Valid() bool {
+	switch e {
+	case NumberSettingsSequenceFormatLetterBlock:
 		return true
 	default:
 		return false
@@ -703,6 +790,14 @@ type CustomerList struct {
 	Items []Customer `json:"items"`
 }
 
+// CustomerRef defines model for CustomerRef.
+type CustomerRef struct {
+	// Code The current customer code.
+	Code string `json:"code"`
+	Id   string `json:"id"`
+	Name string `json:"name"`
+}
+
 // CustomerUpdate defines model for CustomerUpdate.
 type CustomerUpdate struct {
 	// Active Leave it out to keep the current status.
@@ -710,6 +805,45 @@ type CustomerUpdate struct {
 	Name           string `json:"name"`
 	ProjectGroupId string `json:"project_group_id"`
 }
+
+// DocumentNumber One number in the register (R-NUM-04). Numbers are never deleted or reused; only the status changes.
+type DocumentNumber struct {
+	BatchId   string      `json:"batch_id"`
+	CreatedAt time.Time   `json:"created_at"`
+	Customer  CustomerRef `json:"customer"`
+
+	// CustomerCode The customer code inside the number. An older code when the customer code was changed later (E-11).
+	CustomerCode    string          `json:"customer_code"`
+	DocumentType    DocumentTypeRef `json:"document_type"`
+	Id              string          `json:"id"`
+	InitialRevision int             `json:"initial_revision"`
+
+	// Number The number as registered. It is never recomputed (R-NUM-02).
+	//
+	// Example: SC-AB-001
+	Number string `json:"number"`
+
+	// Origin How the number entered the register. Numbers of one set share batch_id.
+	Origin       DocumentNumberOrigin `json:"origin"`
+	RegisteredBy Person               `json:"registered_by"`
+
+	// RevisionLabel The initial revision as printed, for example -04.
+	RevisionLabel string `json:"revision_label"`
+
+	// Sequence Value of the running number, for example 1 for 001 and 1000 for A001.
+	Sequence        int                  `json:"sequence"`
+	Status          DocumentNumberStatus `json:"status"`
+	StatusChangedAt *time.Time           `json:"status_changed_at,omitempty"`
+
+	// StatusReason Reason given when the number was voided or made obsolete.
+	StatusReason *string `json:"status_reason,omitempty"`
+}
+
+// DocumentNumberOrigin How the number entered the register. Numbers of one set share batch_id.
+type DocumentNumberOrigin string
+
+// DocumentNumberStatus defines model for DocumentNumber.Status.
+type DocumentNumberStatus string
 
 // DocumentType defines model for DocumentType.
 type DocumentType struct {
@@ -741,6 +875,16 @@ type DocumentTypeInput struct {
 type DocumentTypeList struct {
 	Items []DocumentType `json:"items"`
 }
+
+// DocumentTypeRef defines model for DocumentTypeRef.
+type DocumentTypeRef struct {
+	Id   string             `json:"id"`
+	Key  DocumentTypeRefKey `json:"key"`
+	Name string             `json:"name"`
+}
+
+// DocumentTypeRefKey defines model for DocumentTypeRef.Key.
+type DocumentTypeRefKey string
 
 // Error defines model for Error.
 type Error struct {
@@ -890,6 +1034,17 @@ type NewCustomer struct {
 	ProjectGroupId string `json:"project_group_id"`
 }
 
+// NewDocumentNumber defines model for NewDocumentNumber.
+type NewDocumentNumber struct {
+	CustomerId string `json:"customer_id"`
+
+	// DocumentTypeId PFD, PFMEA, or CP. Other document types are not numbered by the system.
+	DocumentTypeId string `json:"document_type_id"`
+
+	// InitialRevision First revision of the document that uses the number, for example 4 for a legacy document entering at -04 (M2.4). Default 0.
+	InitialRevision *int `json:"initial_revision,omitempty"`
+}
+
 // NewModel defines model for NewModel.
 type NewModel struct {
 	CustomerId string `json:"customer_id"`
@@ -943,17 +1098,56 @@ type NewSpecialCode struct {
 	Name string `json:"name"`
 }
 
+// NextDocumentNumber defines model for NextDocumentNumber.
+type NextDocumentNumber struct {
+	// Number Example: SC-AB-001
+	Number string `json:"number"`
+}
+
+// NumberRegistration defines model for NumberRegistration.
+type NumberRegistration struct {
+	Items []DocumentNumber `json:"items"`
+
+	// Replayed True when the Idempotency-Key was used before for the same request.
+	Replayed bool `json:"replayed"`
+}
+
 // NumberSettings defines model for NumberSettings.
 type NumberSettings struct {
 	// FactoryCode One letter A to Z, the first letter of every number prefix (E-12).
 	//
 	// Example: S
 	FactoryCode string `json:"factory_code"`
+
+	// Pattern Number pattern for new numbers (R-NUM-02, M2.1) with the tokens
+	// {prefix} (factory code and document type letter), {customer}, and
+	// {seq} (running number), separated by punctuation.
+	//
+	//
+	// Example: {prefix}-{customer}-{seq}
+	Pattern string `json:"pattern"`
+
+	// RevisionDigits Digits of the revision label, for example 2 for -04 (R-REV-01).
+	//
+	// Example: 2
+	RevisionDigits int `json:"revision_digits"`
+
+	// SequenceFormat Running number format - 001 to 999, then A001 to A999, B001, up to Z999 (D-89).
+	SequenceFormat NumberSettingsSequenceFormat `json:"sequence_format"`
 }
+
+// NumberSettingsSequenceFormat Running number format - 001 to 999, then A001 to A999, B001, up to Z999 (D-89).
+type NumberSettingsSequenceFormat string
 
 // NumberSettingsUpdate defines model for NumberSettingsUpdate.
 type NumberSettingsUpdate struct {
 	FactoryCode string `json:"factory_code"`
+
+	// Pattern Leave it out to keep the current pattern.
+	Pattern *string `json:"pattern,omitempty"`
+
+	// RevisionDigits 1 to 3. Leave it out to keep the current value.
+	RevisionDigits *int `json:"revision_digits,omitempty"`
 }
 
 // PartNumber defines model for PartNumber.
@@ -1233,11 +1427,17 @@ type CustomerIdQuery = string
 // DocumentTypeId defines model for DocumentTypeId.
 type DocumentTypeId = string
 
+// DocumentTypeIdQuery defines model for DocumentTypeIdQuery.
+type DocumentTypeIdQuery = string
+
 // FourMCategoryId defines model for FourMCategoryId.
 type FourMCategoryId = string
 
 // HolderId defines model for HolderId.
 type HolderId = string
+
+// IdempotencyKey defines model for IdempotencyKey.
+type IdempotencyKey = string
 
 // ModelGroupId defines model for ModelGroupId.
 type ModelGroupId = string
@@ -1267,6 +1467,23 @@ type ListAuditLogParams struct {
 
 	// Limit Number of entries to return.
 	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// RegisterDocumentNumberParams defines parameters for RegisterDocumentNumber.
+type RegisterDocumentNumberParams struct {
+	// IdempotencyKey Required by the server (422 idempotency_key:required when missing).
+	// 1 to 100 characters - letters, digits, `.`, `:`, `_`, `-` - for example a UUID.
+	// It is kept per account.
+	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
+}
+
+// GetNextDocumentNumberParams defines parameters for GetNextDocumentNumber.
+type GetNextDocumentNumberParams struct {
+	// CustomerId The customer whose master data is listed.
+	CustomerId CustomerIdQuery `form:"customer_id" json:"customer_id"`
+
+	// DocumentTypeId The document type, PFD, PFMEA, or CP.
+	DocumentTypeId DocumentTypeIdQuery `form:"document_type_id" json:"document_type_id"`
 }
 
 // ListModelGroupsParams defines parameters for ListModelGroups.
@@ -1325,6 +1542,9 @@ type ChangeCustomerCodeJSONRequestBody = CustomerCodeChange
 
 // SetCustomerDefaultRouteJSONRequestBody defines body for SetCustomerDefaultRoute for application/json ContentType.
 type SetCustomerDefaultRouteJSONRequestBody = RouteChoice
+
+// RegisterDocumentNumberJSONRequestBody defines body for RegisterDocumentNumber for application/json ContentType.
+type RegisterDocumentNumberJSONRequestBody = NewDocumentNumber
 
 // CreateDocumentTypeJSONRequestBody defines body for CreateDocumentType for application/json ContentType.
 type CreateDocumentTypeJSONRequestBody = DocumentTypeInput
@@ -1457,6 +1677,12 @@ type ServerInterface interface {
 	// SetCustomerDefaultRoute Set the default approval route of a customer (A-2, D-47)
 	// (PUT /api/v1/customers/{customerId}/default-route)
 	SetCustomerDefaultRoute(w http.ResponseWriter, r *http.Request, customerId CustomerId)
+	// RegisterDocumentNumber Register one PFD, PFMEA, or CP number for a customer (E-1, UC-10, R-NUM-03)
+	// (POST /api/v1/document-numbers)
+	RegisterDocumentNumber(w http.ResponseWriter, r *http.Request, params RegisterDocumentNumberParams)
+	// GetNextDocumentNumber The number the next registration would get, without registering it (L-2)
+	// (GET /api/v1/document-numbers/next)
+	GetNextDocumentNumber(w http.ResponseWriter, r *http.Request, params GetNextDocumentNumberParams)
 	// ListDocumentTypes Document types with their number prefix (R-NUM-01, E-12)
 	// (GET /api/v1/document-types)
 	ListDocumentTypes(w http.ResponseWriter, r *http.Request)
@@ -1490,10 +1716,10 @@ type ServerInterface interface {
 	// UpdateModel Rename a model or move it to another model group of the same customer (A-2)
 	// (PUT /api/v1/models/{modelId})
 	UpdateModel(w http.ResponseWriter, r *http.Request, modelId ModelId)
-	// GetNumberSettings Number settings, today the factory code (E-12)
+	// GetNumberSettings Number settings - factory code, number pattern, running number format, and revision digits (D-89)
 	// (GET /api/v1/number-settings)
 	GetNumberSettings(w http.ResponseWriter, r *http.Request)
-	// UpdateNumberSettings Change the factory code. Issued numbers keep their text (A-2, R-NUM-02)
+	// UpdateNumberSettings Change the number settings. Issued numbers keep their text (A-2, R-NUM-02)
 	// (PUT /api/v1/number-settings)
 	UpdateNumberSettings(w http.ResponseWriter, r *http.Request)
 	// ListPartNumbers The part numbers of one customer, ordered by model and number
@@ -2056,6 +2282,93 @@ func (siw *ServerInterfaceWrapper) SetCustomerDefaultRoute(w http.ResponseWriter
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.SetCustomerDefaultRoute(w, r, customerId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RegisterDocumentNumber operation middleware
+func (siw *ServerInterfaceWrapper) RegisterDocumentNumber(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RegisterDocumentNumberParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = &IdempotencyKey
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RegisterDocumentNumber(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetNextDocumentNumber operation middleware
+func (siw *ServerInterfaceWrapper) GetNextDocumentNumber(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetNextDocumentNumberParams
+
+	// ------------- Required query parameter "customer_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "customer_id", r.URL.Query(), &params.CustomerId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "customer_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customer_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "document_type_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "document_type_id", r.URL.Query(), &params.DocumentTypeId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "document_type_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "document_type_id", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetNextDocumentNumber(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2947,6 +3260,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/processes/{processId}", wrapper.UpdateProcess)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/number-settings", wrapper.GetNumberSettings)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/number-settings", wrapper.UpdateNumberSettings)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/document-numbers", wrapper.RegisterDocumentNumber)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/document-numbers/next", wrapper.GetNextDocumentNumber)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/document-types", wrapper.ListDocumentTypes)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/document-types", wrapper.CreateDocumentType)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/document-types/{documentTypeId}", wrapper.UpdateDocumentType)
@@ -3939,6 +4254,99 @@ type SetCustomerDefaultRoutedefaultJSONResponse struct {
 }
 
 func (response SetCustomerDefaultRoutedefaultJSONResponse) VisitSetCustomerDefaultRouteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RegisterDocumentNumberRequestObject struct {
+	Params RegisterDocumentNumberParams
+	Body   *RegisterDocumentNumberJSONRequestBody
+}
+
+type RegisterDocumentNumberResponseObject interface {
+	VisitRegisterDocumentNumberResponse(w http.ResponseWriter) error
+}
+
+type RegisterDocumentNumber200JSONResponse NumberRegistration
+
+func (response RegisterDocumentNumber200JSONResponse) VisitRegisterDocumentNumberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RegisterDocumentNumber201JSONResponse NumberRegistration
+
+func (response RegisterDocumentNumber201JSONResponse) VisitRegisterDocumentNumberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RegisterDocumentNumberdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response RegisterDocumentNumberdefaultJSONResponse) VisitRegisterDocumentNumberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetNextDocumentNumberRequestObject struct {
+	Params GetNextDocumentNumberParams
+}
+
+type GetNextDocumentNumberResponseObject interface {
+	VisitGetNextDocumentNumberResponse(w http.ResponseWriter) error
+}
+
+type GetNextDocumentNumber200JSONResponse NextDocumentNumber
+
+func (response GetNextDocumentNumber200JSONResponse) VisitGetNextDocumentNumberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetNextDocumentNumberdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response GetNextDocumentNumberdefaultJSONResponse) VisitGetNextDocumentNumberResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -5494,6 +5902,12 @@ type StrictServerInterface interface {
 	// SetCustomerDefaultRoute Set the default approval route of a customer (A-2, D-47)
 	// (PUT /api/v1/customers/{customerId}/default-route)
 	SetCustomerDefaultRoute(ctx context.Context, request SetCustomerDefaultRouteRequestObject) (SetCustomerDefaultRouteResponseObject, error)
+	// RegisterDocumentNumber Register one PFD, PFMEA, or CP number for a customer (E-1, UC-10, R-NUM-03)
+	// (POST /api/v1/document-numbers)
+	RegisterDocumentNumber(ctx context.Context, request RegisterDocumentNumberRequestObject) (RegisterDocumentNumberResponseObject, error)
+	// GetNextDocumentNumber The number the next registration would get, without registering it (L-2)
+	// (GET /api/v1/document-numbers/next)
+	GetNextDocumentNumber(ctx context.Context, request GetNextDocumentNumberRequestObject) (GetNextDocumentNumberResponseObject, error)
 	// ListDocumentTypes Document types with their number prefix (R-NUM-01, E-12)
 	// (GET /api/v1/document-types)
 	ListDocumentTypes(ctx context.Context, request ListDocumentTypesRequestObject) (ListDocumentTypesResponseObject, error)
@@ -5527,10 +5941,10 @@ type StrictServerInterface interface {
 	// UpdateModel Rename a model or move it to another model group of the same customer (A-2)
 	// (PUT /api/v1/models/{modelId})
 	UpdateModel(ctx context.Context, request UpdateModelRequestObject) (UpdateModelResponseObject, error)
-	// GetNumberSettings Number settings, today the factory code (E-12)
+	// GetNumberSettings Number settings - factory code, number pattern, running number format, and revision digits (D-89)
 	// (GET /api/v1/number-settings)
 	GetNumberSettings(ctx context.Context, request GetNumberSettingsRequestObject) (GetNumberSettingsResponseObject, error)
-	// UpdateNumberSettings Change the factory code. Issued numbers keep their text (A-2, R-NUM-02)
+	// UpdateNumberSettings Change the number settings. Issued numbers keep their text (A-2, R-NUM-02)
 	// (PUT /api/v1/number-settings)
 	UpdateNumberSettings(ctx context.Context, request UpdateNumberSettingsRequestObject) (UpdateNumberSettingsResponseObject, error)
 	// ListPartNumbers The part numbers of one customer, ordered by model and number
@@ -6306,6 +6720,65 @@ func (sh *strictHandler) SetCustomerDefaultRoute(w http.ResponseWriter, r *http.
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(SetCustomerDefaultRouteResponseObject); ok {
 		if err := validResponse.VisitSetCustomerDefaultRouteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RegisterDocumentNumber operation middleware
+func (sh *strictHandler) RegisterDocumentNumber(w http.ResponseWriter, r *http.Request, params RegisterDocumentNumberParams) {
+	var request RegisterDocumentNumberRequestObject
+
+	request.Params = params
+
+	var body RegisterDocumentNumberJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RegisterDocumentNumber(ctx, request.(RegisterDocumentNumberRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RegisterDocumentNumber")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RegisterDocumentNumberResponseObject); ok {
+		if err := validResponse.VisitRegisterDocumentNumberResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetNextDocumentNumber operation middleware
+func (sh *strictHandler) GetNextDocumentNumber(w http.ResponseWriter, r *http.Request, params GetNextDocumentNumberParams) {
+	var request GetNextDocumentNumberRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetNextDocumentNumber(ctx, request.(GetNextDocumentNumberRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetNextDocumentNumber")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetNextDocumentNumberResponseObject); ok {
+		if err := validResponse.VisitGetNextDocumentNumberResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

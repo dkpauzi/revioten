@@ -66,12 +66,14 @@ type ProcessService interface {
 	Update(ctx context.Context, actor access.Actor, id string, in process.Input) (process.Process, error)
 }
 
-// NumberingService adalah operasi bagian nomor dokumen yang dipakai API
-// (M1.6): kode pabrik, jenis dokumen, dan kode khusus. *numbering.Service
-// memenuhinya; test memakai versi palsu.
+// NumberingService adalah operasi nomor dokumen yang dipakai API: bagian nomor
+// (M1.6) dan register nomor (Tahap 2). *numbering.Service memenuhinya; test
+// memakai versi palsu.
 type NumberingService interface {
 	GetSettings(ctx context.Context, actor access.Actor) (numbering.Settings, error)
-	SetFactoryCode(ctx context.Context, actor access.Actor, code string) (numbering.Settings, error)
+	UpdateSettings(ctx context.Context, actor access.Actor, in numbering.SettingsInput) (numbering.Settings, error)
+	Register(ctx context.Context, actor access.Actor, in numbering.NewNumber) (numbering.Registration, error)
+	NextNumber(ctx context.Context, actor access.Actor, customerID, documentTypeID string) (string, error)
 	ListDocumentTypes(ctx context.Context, actor access.Actor) ([]numbering.DocumentType, error)
 	CreateDocumentType(ctx context.Context, actor access.Actor, in numbering.DocumentTypeInput) (numbering.DocumentType, error)
 	UpdateDocumentType(ctx context.Context, actor access.Actor, id string, in numbering.DocumentTypeInput) (numbering.DocumentType, error)

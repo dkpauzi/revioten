@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/fs"
 	"log/slog"
 	"net/http"
@@ -202,13 +203,15 @@ type called struct {
 
 // fakeNumbering meniru numbering.Service.
 type fakeNumbering struct {
-	settings numbering.Settings
-	types    []numbering.DocumentType
-	docType  numbering.DocumentType
-	codes    []numbering.SpecialCode
-	code     numbering.SpecialCode
-	err      error
-	got      called
+	registration numbering.Registration
+	next         string
+	settings     numbering.Settings
+	types        []numbering.DocumentType
+	docType      numbering.DocumentType
+	codes        []numbering.SpecialCode
+	code         numbering.SpecialCode
+	err          error
+	got          called
 }
 
 func (f *fakeNumbering) GetSettings(context.Context, access.Actor) (numbering.Settings, error) {
@@ -216,9 +219,30 @@ func (f *fakeNumbering) GetSettings(context.Context, access.Actor) (numbering.Se
 	return f.settings, f.err
 }
 
-func (f *fakeNumbering) SetFactoryCode(_ context.Context, _ access.Actor, code string) (numbering.Settings, error) {
-	f.got = called{method: "SetFactoryCode", input: code}
+func (f *fakeNumbering) UpdateSettings(_ context.Context, _ access.Actor, in numbering.SettingsInput) (numbering.Settings, error) {
+	// Pointer tidak bisa dibandingkan isinya dengan !=, jadi isian ditulis sebagai teks.
+	text := func(p *string) string {
+		if p == nil {
+			return "-"
+		}
+		return *p
+	}
+	digits := "-"
+	if in.RevisionDigits != nil {
+		digits = fmt.Sprint(*in.RevisionDigits)
+	}
+	f.got = called{method: "UpdateSettings", input: in.FactoryCode + "|" + text(in.Pattern) + "|" + digits}
 	return f.settings, f.err
+}
+
+func (f *fakeNumbering) Register(_ context.Context, _ access.Actor, in numbering.NewNumber) (numbering.Registration, error) {
+	f.got = called{method: "Register", input: in}
+	return f.registration, f.err
+}
+
+func (f *fakeNumbering) NextNumber(_ context.Context, _ access.Actor, customerID, documentTypeID string) (string, error) {
+	f.got = called{method: "NextNumber", id: customerID, input: documentTypeID}
+	return f.next, f.err
 }
 
 func (f *fakeNumbering) ListDocumentTypes(context.Context, access.Actor) ([]numbering.DocumentType, error) {

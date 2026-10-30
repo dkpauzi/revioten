@@ -83,6 +83,21 @@ type CustomerCode struct {
 	ValidUntil *time.Time
 }
 
+type DocumentNumber struct {
+	ID              string
+	Number          string
+	CustomerID      string
+	CustomerCode    string
+	DocumentTypeID  string
+	Sequence        int32
+	Status          string
+	InitialRevision int16
+	BatchID         string
+	StatusReason    *string
+	StatusChangedAt *time.Time
+	CreatedAt       time.Time
+}
+
 type DocumentType struct {
 	ID       string
 	Key      *string
@@ -113,9 +128,29 @@ type ModelGroup struct {
 	CreatedAt  time.Time
 }
 
+type NumberBatch struct {
+	ID             string
+	Kind           string
+	CustomerID     string
+	AccountID      string
+	PersonID       string
+	IdempotencyKey *string
+	RequestHash    *string
+	CreatedAt      time.Time
+}
+
+type NumberCounter struct {
+	CustomerCode   string
+	DocumentTypeID string
+	LastValue      int32
+}
+
 type NumberSetting struct {
-	ID          string
-	FactoryCode string
+	ID             string
+	FactoryCode    string
+	Pattern        string
+	SequenceFormat string
+	RevisionDigits int16
 }
 
 type PartNumber struct {

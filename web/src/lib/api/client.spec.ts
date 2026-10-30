@@ -35,6 +35,8 @@ import {
 	verifyAuditLog,
 	getNumberSettings,
 	updateNumberSettings,
+	registerDocumentNumber,
+	getNextDocumentNumber,
 	listDocumentTypes,
 	createDocumentType,
 	updateDocumentType,
@@ -425,5 +427,22 @@ describe('jabatan dan rute approval (M1.8)', () => {
 		expect(JSON.parse(String(calls[7].init?.body))).toEqual({ route_id: 'r-1' });
 		// null berarti rute default customer: route_id tidak dikirim.
 		expect(JSON.parse(String(calls[9].init?.body))).toEqual({});
+	});
+});
+
+describe('register nomor (Tahap 2)', () => {
+	it('mengirim Idempotency-Key bersama pendaftaran, dan menanyakan nomor berikutnya', async () => {
+		const calls: Call[] = [];
+		const ok = () => fakeFetch(Response.json({ items: [], replayed: false }), calls);
+		await registerDocumentNumber({ customer_id: 'c/1', document_type_id: 'dt-3' }, 'kunci-1', ok());
+		await getNextDocumentNumber('c/1', 'dt-3', ok());
+
+		expect(calls.map((c) => `${c.init?.method} ${c.url}`)).toEqual([
+			'POST /api/v1/document-numbers',
+			'GET /api/v1/document-numbers/next?customer_id=c%2F1&document_type_id=dt-3'
+		]);
+		const headers = calls[0].init?.headers as Record<string, string>;
+		expect(headers['Idempotency-Key']).toBe('kunci-1');
+		expect(headers['Content-Type']).toBe('application/json');
 	});
 });

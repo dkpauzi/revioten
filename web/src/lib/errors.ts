@@ -47,7 +47,15 @@ const problemKeys: Record<string, MessageKey> = {
 	'position_ids:required': 'routeSlotPositionsRequired',
 	'position_ids:invalid_format': 'routeSlotPositionsInvalid',
 	'route_id:required': 'routeIdRequired',
-	'route_id:invalid_format': 'routeIdInvalid'
+	'route_id:invalid_format': 'routeIdInvalid',
+	'pattern:invalid_format': 'numberPatternInvalid',
+	'revision_digits:invalid_format': 'numberRevisionDigitsInvalid',
+	'customer_id:required': 'numberCustomerRequired',
+	'document_type_id:required': 'numberTypeRequired',
+	'document_type_id:not_allowed': 'numberTypeNotNumbered',
+	'document_type_id:taken': 'numberTaken',
+	'initial_revision:invalid_format': 'numberInitialRevisionInvalid',
+	'idempotency_key:taken': 'numberKeyReused'
 };
 
 // ProblemScope adalah formulir tempat masalah ditampilkan. Field yang sama bisa

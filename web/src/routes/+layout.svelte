@@ -70,6 +70,7 @@
 				<a href="/change-types">{t('navChangeTypes')}</a>
 				<a href="/positions">{t('navPositions')}</a>
 				<a href="/approval-routes">{t('navApprovalRoutes')}</a>
+				<a href="/numbers">{t('navNumbers')}</a>
 				<!-- Menu hanya untuk pemegang hak A-1; server tetap memeriksa setiap operasi. -->
 				{#if can('A-1')}
 					<a href="/admin/accounts">{t('navAccounts')}</a>
