@@ -1,6 +1,6 @@
 # Paket UML · Sistem PFD, PFMEA, dan CP
 
-- **Versi:** draft 0.7, 27 Oktober 2026. Sumbernya brief desain v1.15. Nama jabatan mengikuti bagan organisasi NPI (D-54), tanpa nama orang.
+- **Versi:** draft 0.8, 30 Oktober 2026. Sumbernya brief desain v1.16 dan kode Tahap 0 sampai 2 (D-80: UML diperbarui mengikuti kode). Nama jabatan mengikuti bagan organisasi NPI (D-54), tanpa nama orang.
 - **Tujuan:** bahan bagi tim IT untuk membangun versi mereka sendiri tanpa melihat kode (D-33, D-38). Paket ini dibekukan sebagai v1.0 di milestone M8.4 (R-UML-03).
 - **Kode berjalan sejajar:** mulai 27 Oktober 2026 kode dibangun sejajar dengan UML yang tersisa, dan dipakai untuk mengevaluasi desain (D-77). Temuan dari kode dicatat di `docs/evaluasi-desain.md` lalu diputuskan pemilik (usulan, brief bagian 15).
 
@@ -8,17 +8,17 @@
 
 | ID | Artefak | File | Status |
 |---|---|---|---|
-| U1 | Glosarium | `U1-glosarium.md` | Draft 0.7. Kolom Cek WI diisi pemilik. |
+| U1 | Glosarium | `U1-glosarium.md` | Draft 0.8, dengan kolom istilah layar Inggris (D-98). Kolom Cek WI diisi pemilik. |
 | U2 | Diagram konteks C4 | `U2-c4-konteks.puml`, `export/U2-c4-konteks.svg`, `export/U2-c4-konteks.png` | Draft 0.7 |
-| U3 | Diagram use case dan spesifikasi use case | `U3-daftar-use-case.md`, `U3-use-case.puml` (8 diagram), `U3-gaya.iuml`, `export/U3-*.svg` dan `.png` | Draft 0.7: daftar dan diagram. Spesifikasi lengkap di langkah 5. |
-| U3 (lampiran) | Peta pengguna dan hak akses | `U3-peta-pengguna.md`, `U3-peta-pengguna.puml`, `export/U3-H-peta-pengguna.svg` dan `.png` | Baseline, disetujui pemilik 27 Oktober 2026 (D-66) |
+| U3 | Diagram use case dan spesifikasi use case | `U3-daftar-use-case.md`, `U3-use-case.puml` (8 diagram), `U3-gaya.iuml`, `export/U3-*.svg` dan `.png` | Draft 0.8: daftar dan diagram. Spesifikasi lengkap (prasyarat, alur, hasil) masih langkah 5 urutan S2 di milestone. |
+| U3 (lampiran) | Peta pengguna dan hak akses | `U3-peta-pengguna.md`, `U3-peta-pengguna.puml`, `export/U3-H-peta-pengguna.svg` dan `.png` | Baseline, disetujui pemilik 27 Oktober 2026 (D-66); draft 0.8 menambah aturan tetap D-104 dan D-118 |
 | U4 | Activity diagram dengan swimlane | | Belum |
 | U5 | Diagram kelas domain | | Belum |
 | U6 | State machine | | Belum |
 | U7 | Sequence diagram | | Belum |
 | U8 | ERD fisik | | Belum (per milestone) |
 | U9 | Diagram komponen C4 dan deployment | | Belum (M8.4) |
-| U10 | File OpenAPI | | Belum (per milestone) |
+| U10 | File OpenAPI | `api/openapi.yaml` di root repo (UI API `/api/v1`) | Berjalan per milestone. Kontrak integrasi `/integration/v1` dibuat di Tahap 9 |
 | U11 | Catatan keputusan | Log keputusan di brief bagian 6 | Berjalan |
 | U12 | Skenario penerimaan (Given, When, Then) | | Belum (S4) |
 | U13 | Matriks keterlacakan | | Belum |
@@ -54,4 +54,4 @@ File diagram memasang `RELATIVE_INCLUDE` sebelum include. Dengan begitu C4-Plant
 
 ## Yang masih menunggu jawaban
 
-Tidak ada pertanyaan terbuka untuk paket ini. Pertanyaan yang lebih luas ada di brief bagian 12.
+Pertanyaan yang lebih luas ada di brief bagian 12. Temuan dari kode yang belum diputuskan pemilik, termasuk yang menyentuh U1, U3, U5, dan U8, ada di `docs/evaluasi-desain.md` (status Terbuka).

@@ -1,6 +1,6 @@
 # U3 · Daftar use case
 
-- Paket UML: draft 0.7, 27 Oktober 2026. Sumber: brief desain v1.15.
+- Paket UML: draft 0.8, 30 Oktober 2026. Sumber: brief desain v1.16.
 - Peta jabatan ke peran dan matriks hak akses ada di `U3-peta-pengguna.md`.
 - Isi: daftar use case tanpa detail (S2 langkah 2). Spesifikasi lengkap (prasyarat, alur utama, alur alternatif, hasil) dibuat di langkah 5.
 - Diagram: `U3-use-case.puml`, terdiri dari satu diagram ringkasan dan tujuh diagram per kelompok, diekspor ke `export/`.
@@ -38,7 +38,7 @@ Pengecek dan approver menandatangani cetakan di kertas, jadi tanda tangan itu ti
 | ID | Use case | Aktor utama | Aktor lain | Ringkasan | Rujukan | Milestone | Status |
 |---|---|---|---|---|---|---|---|
 | UC-01 | Masuk dan keluar sistem | Pengguna internal | | Login lokal, sesi, semua halaman butuh login. | R-SEC-01 | M1.1 | MVP |
-| UC-02 | Kelola pengguna, peran, dan jabatan | Admin | | Akun, peran kasar, dan jabatan yang dipegang, termasuk rangkap jabatan. | Akun, peran, dan jabatan yang dipegang, termasuk rangkap jabatan. Admin juga mengubah isi peran (hak akses), sesuai peta pengguna. | M1.2, M1.8, R-SEC-10, D-66 | MVP |
+| UC-02 | Kelola pengguna, peran, dan jabatan | Admin | | Akun, peran, dan jabatan yang dipegang, termasuk rangkap jabatan. Admin juga mengubah isi peran (hak akses), sesuai peta pengguna. | R-SEC-10, D-66, D-115 | M1.2, M1.8, M8.1 | MVP |
 | UC-03 | Kelola customer, Project Group, group model, model, dan part number | Admin | | Master data dengan kode customer, alokasi ke Project Group, dan satu group per model. | R-DOC-08, D-42, D-54 | M1.4 | MVP |
 | UC-04 | Kelola master proses | PPAP Engineer | | ID tetap, nama tampilan, dan alias. | R-DOC-04 | M1.5, D-64 | MVP |
 | UC-05 | Kelola jenis dokumen, jenis perubahan, dan sumber perubahan | Admin | | Awalan SH, SF, SC, kebijakan approval per jenis perubahan, dan pemicu PP, customer claim, ECR. | R-NUM-02, R-TPL-10, R-CHG-06 | M1.6 | MVP |
@@ -94,13 +94,13 @@ Pengecek dan approver menandatangani cetakan di kertas, jadi tanda tangan itu ti
 | ID | Use case | Aktor utama | Aktor lain | Ringkasan | Rujukan | Milestone | Status |
 |---|---|---|---|---|---|---|---|
 | UC-50 | Cetak untuk tanda tangan | Penyusun | | Revisi dikunci, tanggal rilis diisi otomatis, kotak tanda tangan dibentuk dari rute. | R-REV-06, R-REV-08, R-APR-01, D-59 | M6.1, M6.2, M6.3 | MVP |
-| UC-51 | Catat dokumen dikembalikan | Penyusun | | Approver minta perubahan di kertas; revisi kembali ke draft. | D-30, R-REV-06 | M5.5a | MVP |
+| UC-51 | Catat dokumen dikembalikan | Penyusun | | Approver minta perubahan di kertas; revisi kembali ke draft. | D-30, R-REV-06 | M5.5a (usulan); bila M5.5a ditolak, M5.4 | MVP |
 | UC-52 | Catat rilis | Dokumen kontrol | | Unggah scan, konfirmasi slot sesuai urutan rute. Pencatat bukan penyusun. | R-APR-02, R-APR-10 | M6.7 | MVP |
 | UC-53 | Cetak salinan terkendali | Dokumen kontrol | | Watermark CONTROLLED COPY, beserta catatan cetak. | R-PRT-04 | M6.4, M6.6 | Usulan |
 | UC-54 | Ekspor Excel dan PDF | Pengguna internal | Microsoft Excel | Excel A3 dan A4, PDF yang sama rapinya. | R-PRT-01 | M6.2, M6.3 | MVP |
 | UC-55 | Lihat salinan yang harus ditarik | Dokumen kontrol | | Daftar dari catatan cetak saat revisi baru rilis. | R-PRT-06 | M6.6 | Usulan |
 | UC-56 | Buka halaman verifikasi | Viewer | | Status berlaku, digantikan, atau dibatalkan. Lewat QR bila QR menyala. | R-APR-03, R-APR-16, D-62 | M6.5 | Saklar |
-| UC-57 | Baca dokumen rilis | Viewer | | Hanya baca. | R-APR-06, D-41 | M1.2 | MVP |
+| UC-57 | Baca dokumen rilis | Viewer | | Hanya baca. | R-APR-06, D-41 | M1.2 (hak L-1), M5.5 | MVP |
 
 ## F. Migrasi dan ukuran
 
@@ -126,4 +126,4 @@ Pengecek dan approver menandatangani cetakan di kertas, jadi tanda tangan itu ti
 
 ## Yang masih menunggu jawaban
 
-Tidak ada pertanyaan terbuka untuk U3.
+Tidak ada pertanyaan terbuka khusus untuk U3. Temuan dari kode yang menyentuh use case dicatat di `docs/evaluasi-desain.md`.

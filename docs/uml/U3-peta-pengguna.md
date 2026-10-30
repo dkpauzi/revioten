@@ -1,6 +1,6 @@
 # U3 · Peta pengguna dan hak akses
 
-- Paket UML: draft 0.7, 27 Oktober 2026. Sumber: brief desain v1.15.
+- Paket UML: draft 0.8, 30 Oktober 2026. Sumber: brief desain v1.16. Draft 0.8 menambah keputusan D-103, D-104, D-115, D-118, dan D-120 tanpa mengubah isi matriks hak.
 - Status: **baseline hak akses, disetujui pemilik pada 27 Oktober 2026** (D-66, R-SEC-10). Admin mengubah hak akses mulai dari baseline ini, dan setiap perubahannya tercatat di audit log. Hal yang masih bertanda usulan di dalam peta ini tetap usulan.
 - Diagram: `U3-peta-pengguna.puml`, diekspor ke `export/U3-H-peta-pengguna.png` dan `.svg`.
 - Nama jabatan mengikuti bagan organisasi NPI (D-54). Nama orang tidak dicantumkan.
@@ -14,7 +14,7 @@
 | **Lihat** | Hanya membaca dan mengekspor dokumen rilis. | Viewer |
 | **Admin** | Mengelola pengguna, hak akses, master data, dan pengaturan, serta melihat audit log. Dikerjakan lewat akun admin terpisah yang tidak memegang peran kerja (D-72, R-SEC-13). | Admin |
 
-Semua pengguna yang login otomatis punya hak dasar level Lihat. Satu orang boleh memegang beberapa peran, dan hak akhirnya adalah gabungan semua perannya (D-58).
+Semua pengguna yang login otomatis punya hak dasar level Lihat (L-1 sampai L-3), termasuk akun admin (D-120). Satu orang boleh memegang beberapa peran, dan hak akhirnya adalah gabungan semua perannya (D-58).
 
 ## 2. Peta jabatan ke peran (saat ini)
 
@@ -25,8 +25,8 @@ Semua pengguna yang login otomatis punya hak dasar level Lihat. Satu orang boleh
 | Akun admin (terpisah) | Admin | Admin | Semua | D-72 sampai D-75. Saat ini dipegang PPAP Staff, sehingga ia punya dua akun. Hanya untuk tugas admin, dan hanya akun ini yang melihat audit log (D-75). Akun ditautkan ke pemegangnya, sehingga audit log menampilkan akun dan orangnya (D-74). |
 | Project Leader (level Supervisor, satu per Project Group) | Buat / Edit | Penyusun, Verifikator | Customer di Project Group sendiri (D-71) | D-51, D-54, D-63, D-67. Juga pengecek di kertas. |
 | Project Engineer (level Leader, satu per Project Group) | Buat / Edit | Penyusun, Verifikator | Customer di Project Group sendiri (D-71) | D-51, D-54, D-67. Juga pengecek di kertas. |
-| APQP/PPAP Controller (PPAP Supervisor) | Verifikasi | Verifikator | Semua customer | D-51, D-54 |
-| NPI Manager, QA QC Manager, Advisor (slot GM), Factory Manager | Lihat | Viewer | Semua customer, dokumen rilis | D-70. Tetap menandatangani di kertas. |
+| APQP/PPAP Controller (PPAP Supervisor) | Verifikasi | Verifikator | Semua customer | D-51, D-54. Dipegang satu orang (D-115). |
+| NPI Manager, QA QC Manager, Advisor (slot GM), Factory Manager | Lihat | Viewer | Semua customer, dokumen rilis | D-70. Tetap menandatangani di kertas. Setiap jabatan ini dipegang satu orang, karena satu slot mencetak satu nama (D-115). |
 | QA, QC, internal audit | Lihat | Viewer | Semua customer, dokumen rilis | D-41, D-70 |
 | DCC (Dept Document Control) | Lihat, saat ini | Viewer | Semua customer, dokumen rilis | D-70. Nanti admin bisa menambahkan peran Dokumen kontrol (D-60, D-66). |
 | Tim WI (WI Handler, WI Engineer, WI Editor) dan ECN & SAP Coordinator | Lihat | Viewer | Semua customer, dokumen rilis | D-70 |
@@ -44,7 +44,7 @@ Semua pengguna yang login otomatis punya hak dasar level Lihat. Satu orang boleh
 | Kode | Hak | Use case | Penyusun | Pengelola template | Pemeriksa PFMEA–CP | Verifikator | Dokumen kontrol | Petugas migrasi | Viewer | Admin |
 |---|---|---|---|---|---|---|---|---|---|---|
 | **L-1** | Lihat dokumen rilis dan halaman verifikasi | UC-56, UC-57 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| **L-2** | Lihat register nomor, riwayat dan diff, diagram PFD, serta dasbor | UC-12, UC-37, UC-47, UC-64 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| **L-2** | Lihat register nomor, riwayat dan diff, diagram PFD, dasbor, dan master data (D-103) | UC-12, UC-37, UC-47, UC-64 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | **L-3** | Ekspor Excel dan PDF dokumen rilis | UC-54 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | **L-4** | Lihat draft dan permintaan perubahan yang sedang berjalan (usulan) | UC-47 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — | — |
 | **E-1** | Daftarkan nomor dokumen, termasuk sebagai set | UC-10, UC-11 | ✓ | — | — | — | — | — | — | — |
@@ -76,8 +76,12 @@ Aturan 7 dan 8 sudah diputuskan (D-72, D-73). Aturan 1 sampai 6 masih usulan seb
 4. Revisi yang sudah rilis tidak bisa diubah siapa pun, termasuk admin (R-REV-02).
 5. Audit log tidak bisa diubah atau dihapus (R-SEC-03).
 6. Hak admin tidak mencakup mengedit isi dokumen. Kalau pemegang akun admin perlu menyusun, ia memakai akun kerjanya sendiri (aturan 8).
-7. Akun admin terakhir tidak bisa dihapus atau kehilangan peran admin (D-73).
+7. Akun admin terakhir tidak bisa dihapus atau kehilangan peran admin (D-73). Akun tidak pernah dihapus, hanya dinonaktifkan, jadi "dihapus" berarti dinonaktifkan (D-105).
 8. Akun admin tidak pernah memegang peran kerja, dan akun kerja tidak pernah memegang peran admin (R-SEC-13, D-72).
+9. Setiap akun boleh mengurus akunnya sendiri: melihat sesinya, logout, dan mengganti password. Ini bukan hak di katalog, jadi tidak bisa dicabut admin, tapi tetap diperiksa fungsi izin (D-104).
+10. Hak bercakupan Project Group (Penyusun dan Verifikator milik Project Leader dan Project Engineer) hanya berlaku untuk operasi pada satu customer. Operasi tanpa customer ditolak untuk hak itu; daftar lintas customer menyaring per customer (D-118).
+
+Aturan 9 dan 10 diputuskan 30 Oktober 2026. Akun admin yang lupa password atau terkunci dibuka lewat perintah di komputer server, bukan lewat hak di katalog (D-101).
 
 ## 5. Contoh: DCC diberi hak edit di masa depan
 
@@ -97,4 +101,4 @@ Tidak ada perubahan kode. Yang berubah hanya data peran pengguna (D-66).
 
 ## 7. Yang masih menunggu jawaban
 
-Tidak ada pertanyaan terbuka untuk peta ini.
+Tidak ada pertanyaan terbuka khusus untuk peta ini. Temuan dari kode yang menyentuh hak akses dicatat di `docs/evaluasi-desain.md`.
