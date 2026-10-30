@@ -47,6 +47,51 @@ func (a *apiServer) RegisterDocumentNumber(ctx context.Context, req RegisterDocu
 	return RegisterDocumentNumber201JSONResponse(toAPIRegistration(reg)), nil
 }
 
+// ListDocumentNumbers menjawab GET /api/v1/document-numbers (M2.3).
+func (a *apiServer) ListDocumentNumbers(ctx context.Context, req ListDocumentNumbersRequestObject) (ListDocumentNumbersResponseObject, error) {
+	p := req.Params
+	f := numbering.ListFilter{
+		CustomerID: deref(p.CustomerId), DocumentTypeID: deref(p.DocumentTypeId), Query: deref(p.Q), Before: deref(p.Before),
+	}
+	if p.Status != nil {
+		f.Status = string(*p.Status)
+	}
+	if p.Limit != nil {
+		f.Limit = *p.Limit
+	}
+	list, next, err := a.numbering.ListNumbers(ctx, actorFrom(ctx), f)
+	if err != nil {
+		return nil, err
+	}
+	items := make([]DocumentNumber, 0, len(list))
+	for _, n := range list {
+		items = append(items, toAPIDocumentNumber(n))
+	}
+	out := ListDocumentNumbers200JSONResponse{Items: items}
+	if next != "" {
+		out.NextBefore = &next
+	}
+	return out, nil
+}
+
+// VoidDocumentNumber menjawab POST /api/v1/document-numbers/{documentNumberId}/void (M2.3).
+func (a *apiServer) VoidDocumentNumber(ctx context.Context, req VoidDocumentNumberRequestObject) (VoidDocumentNumberResponseObject, error) {
+	n, err := a.numbering.Void(ctx, actorFrom(ctx), req.DocumentNumberId, deref(req.Body.Reason))
+	if err != nil {
+		return nil, err
+	}
+	return VoidDocumentNumber200JSONResponse(toAPIDocumentNumber(n)), nil
+}
+
+// MakeDocumentNumberObsolete menjawab POST /api/v1/document-numbers/{documentNumberId}/obsolete (M2.3).
+func (a *apiServer) MakeDocumentNumberObsolete(ctx context.Context, req MakeDocumentNumberObsoleteRequestObject) (MakeDocumentNumberObsoleteResponseObject, error) {
+	n, err := a.numbering.MakeObsolete(ctx, actorFrom(ctx), req.DocumentNumberId, deref(req.Body.Reason))
+	if err != nil {
+		return nil, err
+	}
+	return MakeDocumentNumberObsolete200JSONResponse(toAPIDocumentNumber(n)), nil
+}
+
 // GetNextDocumentNumber menjawab GET /api/v1/document-numbers/next.
 func (a *apiServer) GetNextDocumentNumber(ctx context.Context, req GetNextDocumentNumberRequestObject) (GetNextDocumentNumberResponseObject, error) {
 	number, err := a.numbering.NextNumber(ctx, actorFrom(ctx), req.Params.CustomerId, req.Params.DocumentTypeId)
@@ -170,4 +215,12 @@ func toAPIDocumentType(d numbering.DocumentType) DocumentType {
 // toAPISpecialCode mengubah SpecialCode domain menjadi SpecialCode kontrak API.
 func toAPISpecialCode(c numbering.SpecialCode) SpecialCode {
 	return SpecialCode{Id: c.ID, Code: c.Code, Name: c.Name, CreatedAt: c.CreatedAt}
+}
+
+// deref mengembalikan isi pointer teks, atau "" bila nil (parameter yang tidak dikirim).
+func deref(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
 }

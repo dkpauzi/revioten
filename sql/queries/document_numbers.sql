@@ -68,3 +68,34 @@ JOIN number_batches b ON b.id = n.batch_id
 JOIN people p ON p.id = b.person_id
 WHERE n.batch_id = $1
 ORDER BY n.id;
+
+-- name: ListDocumentNumbers :many
+-- ListDocumentNumbers mengambil register dengan saringan yang boleh kosong
+-- (M2.3), terbaru dulu. ID buatan uuidv7() urut menurut waktu dibuat, jadi
+-- halaman berikutnya diminta dengan before = ID terakhir di halaman ini.
+-- Pencarian teks memakai strpos, jadi % dan _ dari pengguna tidak berarti apa-apa.
+SELECT n.id, n.number, n.customer_id, c.code AS customer_current_code, c.name AS customer_name,
+       n.customer_code, n.document_type_id, d.name AS document_type_name, d.key AS document_type_key,
+       n.sequence, n.status, n.initial_revision, n.batch_id, b.kind AS origin,
+       b.person_id AS registered_by_id, p.name AS registered_by_name,
+       n.status_reason, n.status_changed_at, n.created_at
+FROM document_numbers n
+JOIN customers c ON c.id = n.customer_id
+JOIN document_types d ON d.id = n.document_type_id
+JOIN number_batches b ON b.id = n.batch_id
+JOIN people p ON p.id = b.person_id
+WHERE (sqlc.narg(customer_id)::uuid IS NULL OR n.customer_id = sqlc.narg(customer_id)::uuid)
+  AND (sqlc.narg(document_type_id)::uuid IS NULL OR n.document_type_id = sqlc.narg(document_type_id)::uuid)
+  AND (sqlc.narg(status)::text IS NULL OR n.status = sqlc.narg(status)::text)
+  AND (sqlc.narg(query)::text IS NULL OR strpos(lower(n.number), lower(sqlc.narg(query)::text)) > 0)
+  AND (sqlc.narg(before)::uuid IS NULL OR n.id < sqlc.narg(before)::uuid)
+ORDER BY n.id DESC
+LIMIT sqlc.arg(max_items);
+
+-- name: LockDocumentNumber :exec
+-- LockDocumentNumber mengunci baris nomor sampai transaksi selesai, supaya
+-- status yang diperiksa tidak berubah oleh transaksi lain di tengah jalan.
+SELECT id FROM document_numbers WHERE id = $1 FOR NO KEY UPDATE;
+
+-- name: SetDocumentNumberStatus :exec
+UPDATE document_numbers SET status = $2, status_reason = $3, status_changed_at = $4 WHERE id = $1;

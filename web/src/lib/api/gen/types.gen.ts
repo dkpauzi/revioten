@@ -585,6 +585,21 @@ export type DocumentNumber = {
     created_at: string;
 };
 
+export type DocumentNumberList = {
+    items: Array<DocumentNumber>;
+    /**
+     * Give this as `before` to read the next page. Missing on the last page.
+     */
+    next_before?: string;
+};
+
+export type StatusReason = {
+    /**
+     * Required to void a number; optional to make it obsolete. One line, at most 500 characters.
+     */
+    reason?: string;
+};
+
 export type CustomerRef = {
     id: string;
     /**
@@ -859,6 +874,8 @@ export type CustomerIdQuery = string;
  * The document type, PFD, PFMEA, or CP.
  */
 export type DocumentTypeIdQuery = string;
+
+export type DocumentNumberId = string;
 
 /**
  * Required by the server (422 idempotency_key:required when missing).
@@ -2131,6 +2148,55 @@ export type UpdateNumberSettingsResponses = {
 
 export type UpdateNumberSettingsResponse = UpdateNumberSettingsResponses[keyof UpdateNumberSettingsResponses];
 
+export type ListDocumentNumbersData = {
+    body?: never;
+    path?: never;
+    query?: {
+        customer_id?: string;
+        document_type_id?: string;
+        status?: 'reserved' | 'in_use' | 'released' | 'obsolete' | 'void' | 'skipped';
+        /**
+         * Part of the number text, at most 50 characters.
+         */
+        q?: string;
+        /**
+         * Return numbers registered before this number ID.
+         */
+        before?: string;
+        /**
+         * 1 to 500, default 100.
+         */
+        limit?: number;
+    };
+    url: '/api/v1/document-numbers';
+};
+
+export type ListDocumentNumbersErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ListDocumentNumbersError = ListDocumentNumbersErrors[keyof ListDocumentNumbersErrors];
+
+export type ListDocumentNumbersResponses = {
+    /**
+     * One page of the register.
+     */
+    200: DocumentNumberList;
+};
+
+export type ListDocumentNumbersResponse = ListDocumentNumbersResponses[keyof ListDocumentNumbersResponses];
+
 export type RegisterDocumentNumberData = {
     body: NewDocumentNumber;
     headers?: {
@@ -2176,6 +2242,76 @@ export type RegisterDocumentNumberResponses = {
 };
 
 export type RegisterDocumentNumberResponse = RegisterDocumentNumberResponses[keyof RegisterDocumentNumberResponses];
+
+export type VoidDocumentNumberData = {
+    body: StatusReason;
+    path: {
+        documentNumberId: string;
+    };
+    query?: never;
+    url: '/api/v1/document-numbers/{documentNumberId}/void';
+};
+
+export type VoidDocumentNumberErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type VoidDocumentNumberError = VoidDocumentNumberErrors[keyof VoidDocumentNumberErrors];
+
+export type VoidDocumentNumberResponses = {
+    /**
+     * The number is void.
+     */
+    200: DocumentNumber;
+};
+
+export type VoidDocumentNumberResponse = VoidDocumentNumberResponses[keyof VoidDocumentNumberResponses];
+
+export type MakeDocumentNumberObsoleteData = {
+    body: StatusReason;
+    path: {
+        documentNumberId: string;
+    };
+    query?: never;
+    url: '/api/v1/document-numbers/{documentNumberId}/obsolete';
+};
+
+export type MakeDocumentNumberObsoleteErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type MakeDocumentNumberObsoleteError = MakeDocumentNumberObsoleteErrors[keyof MakeDocumentNumberObsoleteErrors];
+
+export type MakeDocumentNumberObsoleteResponses = {
+    /**
+     * The number is obsolete.
+     */
+    200: DocumentNumber;
+};
+
+export type MakeDocumentNumberObsoleteResponse = MakeDocumentNumberObsoleteResponses[keyof MakeDocumentNumberObsoleteResponses];
 
 export type GetNextDocumentNumberData = {
     body?: never;

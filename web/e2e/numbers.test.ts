@@ -38,8 +38,9 @@ test('Penyusun mendaftarkan nomor CP dan mendapat nomor berurutan', async ({ pag
 	await logInAuthor(page, 'penyusun.nomor', ['author']);
 	await page.getByRole('link', { name: en.navNumbers }).click();
 
-	await page.getByLabel(en.numberCustomer, { exact: true }).selectOption({ label: 'NB · Customer NB' });
-	await page.getByLabel(en.numberType, { exact: true }).selectOption({ label: 'CP (SC)' });
+	// .first(): formulir pendaftaran ada di atas saringan register yang berlabel sama.
+	await page.getByLabel(en.numberCustomer, { exact: true }).first().selectOption({ label: 'NB · Customer NB' });
+	await page.getByLabel(en.numberType, { exact: true }).first().selectOption({ label: 'CP (SC)' });
 	await expect(page.getByText(en.numberNext.replace('{number}', 'SC-NB-001'))).toBeVisible();
 
 	await page.getByRole('button', { name: en.numberRegister, exact: true }).click();
@@ -71,4 +72,32 @@ test('admin mengubah pola nomor di master data', async ({ page }) => {
 	await pattern.fill('{prefix}-{customer}-{seq}');
 	await page.getByRole('button', { name: en.factoryCodeSave }).click();
 	await expect(page.getByText(en.factoryCodeSaved.replace('{code}', 'S'))).toBeVisible();
+});
+
+test('dokumen kontrol membatalkan nomor dengan alasan, dan nomornya tetap di register', async ({ page }) => {
+	// Seperti PPAP Engineer: Penyusun sekaligus Dokumen kontrol (U3 bagian 2).
+	await logInAuthor(page, 'ppap.nomor', ['author', 'document_control']);
+	await page.getByRole('link', { name: en.navNumbers }).click();
+	await page.getByLabel(en.numberCustomer, { exact: true }).first().selectOption({ label: 'NB · Customer NB' });
+	await page.getByLabel(en.numberType, { exact: true }).first().selectOption({ label: 'PFD (SH)' });
+	await page.getByRole('button', { name: en.numberRegister, exact: true }).click();
+	const status = page.getByRole('status');
+	await expect(status).toContainText(en.numberRegistered.replace('{numbers}', ''));
+	const number = ((await status.textContent()) ?? '').replace(en.numberRegistered.replace('{numbers}', ''), '').trim();
+
+	const row = page.getByRole('row', { name: new RegExp(`^${number} `) });
+	await expect(row).toContainText(en.numberStatusReserved);
+	await row.getByRole('button', { name: en.numberVoid }).click();
+
+	// Alasan wajib untuk Void.
+	await page.getByRole('button', { name: en.numberVoid, exact: true }).last().click();
+	await expect(page.getByText(en.numberReasonRequired)).toBeVisible();
+	await page.getByLabel(en.numberReason.replace('{number}', number)).fill('Salah pilih customer');
+	await page.getByRole('button', { name: en.numberVoid, exact: true }).last().click();
+	await expect(page.getByText(en.numberStatusChanged.replace('{number}', number).replace('{status}', en.numberStatusVoid))).toBeVisible();
+
+	// Saring status Void: nomornya masih ada, dengan alasannya.
+	await page.getByLabel(en.numberFilterStatus).selectOption({ label: en.numberStatusVoid });
+	await page.getByRole('button', { name: en.numberFilterApply }).click();
+	await expect(page.getByRole('row', { name: new RegExp(`^${number} `) })).toContainText('Salah pilih customer');
 });

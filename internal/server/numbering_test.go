@@ -117,3 +117,31 @@ func TestDocumentNumberEndpoints(t *testing.T) {
 		t.Errorf("nomor berikutnya: status %d, %+v: %s", rec.Code, fake.got, rec.Body.String())
 	}
 }
+
+// TestRegisterEndpoints: daftar register dengan saringan dari query, dan
+// perubahan status Void dan Obsolete (M2.3).
+func TestRegisterEndpoints(t *testing.T) {
+	number := numbering.DocumentNumber{ID: "dn-1", Number: "SC-AB-001", Status: numbering.StatusVoid, StatusReason: "Salah daftar", CreatedAt: waktuUji}
+	fake := &fakeNumbering{registration: numbering.Registration{Numbers: []numbering.DocumentNumber{number}}, number: number, next: "dn-1"}
+	srv := newTestServer(t, nil, Deps{Numbering: fake})
+
+	rec := srv.do(http.MethodGet, "/api/v1/document-numbers?customer_id=c-1&status=void&q=sc-ab&before=dn-9&limit=2", "")
+	want := numbering.ListFilter{CustomerID: "c-1", Status: "void", Query: "sc-ab", Before: "dn-9", Limit: 2}
+	if rec.Code != http.StatusOK || fake.got != (called{method: "ListNumbers", input: want}) {
+		t.Fatalf("daftar: status %d, %+v: %s", rec.Code, fake.got, rec.Body.String())
+	}
+	var list DocumentNumberList
+	if err := json.Unmarshal(rec.Body.Bytes(), &list); err != nil || len(list.Items) != 1 || list.NextBefore == nil || *list.NextBefore != "dn-1" ||
+		list.Items[0].StatusReason == nil || *list.Items[0].StatusReason != "Salah daftar" {
+		t.Errorf("isi daftar: %s", rec.Body.String())
+	}
+
+	rec = srv.do(http.MethodPost, "/api/v1/document-numbers/dn-1/void", `{"reason":"Salah daftar"}`)
+	if rec.Code != http.StatusOK || fake.got != (called{method: "Void", id: "dn-1", input: "Salah daftar"}) {
+		t.Errorf("void: status %d, %+v", rec.Code, fake.got)
+	}
+	rec = srv.do(http.MethodPost, "/api/v1/document-numbers/dn-1/obsolete", `{}`)
+	if rec.Code != http.StatusOK || fake.got != (called{method: "MakeObsolete", id: "dn-1", input: ""}) {
+		t.Errorf("obsolete: status %d, %+v", rec.Code, fake.got)
+	}
+}

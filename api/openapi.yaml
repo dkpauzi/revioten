@@ -642,6 +642,50 @@ paths:
         default:
           $ref: '#/components/responses/Error'
   /api/v1/document-numbers:
+    get:
+      operationId: listDocumentNumbers
+      summary: The number register, newest first, with filters (L-2, UC-12, R-NUM-04)
+      description: |
+        Give `next_before` from the response as `before` to read the next page.
+        `q` matches part of the number text, ignoring case.
+      parameters:
+        - name: customer_id
+          in: query
+          schema:
+            type: string
+        - name: document_type_id
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [reserved, in_use, released, obsolete, void, skipped]
+        - name: q
+          in: query
+          description: Part of the number text, at most 50 characters.
+          schema:
+            type: string
+        - name: before
+          in: query
+          description: Return numbers registered before this number ID.
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: 1 to 500, default 100.
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: One page of the register.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentNumberList'
+        default:
+          $ref: '#/components/responses/Error'
     post:
       operationId: registerDocumentNumber
       summary: Register one PFD, PFMEA, or CP number for a customer (E-1, UC-10, R-NUM-03)
@@ -674,6 +718,49 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NumberRegistration'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/document-numbers/{documentNumberId}/void:
+    post:
+      operationId: voidDocumentNumber
+      summary: Void a Reserved or In use number, with a reason (E-8, UC-13)
+      description: The number stays in the register and is never given again (R-NUM-04).
+      parameters:
+        - $ref: '#/components/parameters/DocumentNumberId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StatusReason'
+      responses:
+        '200':
+          description: The number is void.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentNumber'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/document-numbers/{documentNumberId}/obsolete:
+    post:
+      operationId: makeDocumentNumberObsolete
+      summary: Make a Released number obsolete, for example when it is withdrawn (E-8, UC-13)
+      parameters:
+        - $ref: '#/components/parameters/DocumentNumberId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StatusReason'
+      responses:
+        '200':
+          description: The number is obsolete.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentNumber'
         default:
           $ref: '#/components/responses/Error'
   /api/v1/document-numbers/next:
@@ -1181,6 +1268,12 @@ components:
       in: query
       required: true
       description: The document type, PFD, PFMEA, or CP.
+      schema:
+        type: string
+    DocumentNumberId:
+      name: documentNumberId
+      in: path
+      required: true
       schema:
         type: string
     IdempotencyKey:
@@ -2041,6 +2134,23 @@ components:
         created_at:
           type: string
           format: date-time
+    DocumentNumberList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentNumber'
+        next_before:
+          type: string
+          description: Give this as `before` to read the next page. Missing on the last page.
+    StatusReason:
+      type: object
+      properties:
+        reason:
+          type: string
+          description: Required to void a number; optional to make it obsolete. One line, at most 500 characters.
     CustomerRef:
       type: object
       required: [id, code, name]

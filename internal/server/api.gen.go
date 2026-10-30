@@ -527,6 +527,36 @@ func (e RouteSlotInputStage) Valid() bool {
 	}
 }
 
+// Defines values for ListDocumentNumbersParamsStatus.
+const (
+	ListDocumentNumbersParamsStatusInUse    ListDocumentNumbersParamsStatus = "in_use"
+	ListDocumentNumbersParamsStatusObsolete ListDocumentNumbersParamsStatus = "obsolete"
+	ListDocumentNumbersParamsStatusReleased ListDocumentNumbersParamsStatus = "released"
+	ListDocumentNumbersParamsStatusReserved ListDocumentNumbersParamsStatus = "reserved"
+	ListDocumentNumbersParamsStatusSkipped  ListDocumentNumbersParamsStatus = "skipped"
+	ListDocumentNumbersParamsStatusVoid     ListDocumentNumbersParamsStatus = "void"
+)
+
+// Valid indicates whether the value is a known member of the ListDocumentNumbersParamsStatus enum.
+func (e ListDocumentNumbersParamsStatus) Valid() bool {
+	switch e {
+	case ListDocumentNumbersParamsStatusInUse:
+		return true
+	case ListDocumentNumbersParamsStatusObsolete:
+		return true
+	case ListDocumentNumbersParamsStatusReleased:
+		return true
+	case ListDocumentNumbersParamsStatusReserved:
+		return true
+	case ListDocumentNumbersParamsStatusSkipped:
+		return true
+	case ListDocumentNumbersParamsStatusVoid:
+		return true
+	default:
+		return false
+	}
+}
+
 // Account defines model for Account.
 type Account struct {
 	// Id Opaque stable ID.
@@ -844,6 +874,14 @@ type DocumentNumberOrigin string
 
 // DocumentNumberStatus defines model for DocumentNumber.Status.
 type DocumentNumberStatus string
+
+// DocumentNumberList defines model for DocumentNumberList.
+type DocumentNumberList struct {
+	Items []DocumentNumber `json:"items"`
+
+	// NextBefore Give this as `before` to read the next page. Missing on the last page.
+	NextBefore *string `json:"next_before,omitempty"`
+}
 
 // DocumentType defines model for DocumentType.
 type DocumentType struct {
@@ -1388,6 +1426,12 @@ type SpecialCodeList struct {
 	Items []SpecialCode `json:"items"`
 }
 
+// StatusReason defines model for StatusReason.
+type StatusReason struct {
+	// Reason Required to void a number; optional to make it obsolete. One line, at most 500 characters.
+	Reason *string `json:"reason,omitempty"`
+}
+
 // SystemSettings defines model for SystemSettings.
 type SystemSettings struct {
 	// SignDatesEnabled When false, signature slots have no sign date and the field is hidden (D-52).
@@ -1423,6 +1467,9 @@ type CustomerId = string
 
 // CustomerIdQuery defines model for CustomerIdQuery.
 type CustomerIdQuery = string
+
+// DocumentNumberId defines model for DocumentNumberId.
+type DocumentNumberId = string
 
 // DocumentTypeId defines model for DocumentTypeId.
 type DocumentTypeId = string
@@ -1468,6 +1515,25 @@ type ListAuditLogParams struct {
 	// Limit Number of entries to return.
 	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
 }
+
+// ListDocumentNumbersParams defines parameters for ListDocumentNumbers.
+type ListDocumentNumbersParams struct {
+	CustomerId     *string                          `form:"customer_id,omitempty" json:"customer_id,omitempty"`
+	DocumentTypeId *string                          `form:"document_type_id,omitempty" json:"document_type_id,omitempty"`
+	Status         *ListDocumentNumbersParamsStatus `form:"status,omitempty" json:"status,omitempty"`
+
+	// Q Part of the number text, at most 50 characters.
+	Q *string `form:"q,omitempty" json:"q,omitempty"`
+
+	// Before Return numbers registered before this number ID.
+	Before *string `form:"before,omitempty" json:"before,omitempty"`
+
+	// Limit 1 to 500, default 100.
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListDocumentNumbersParamsStatus defines parameters for ListDocumentNumbers.
+type ListDocumentNumbersParamsStatus string
 
 // RegisterDocumentNumberParams defines parameters for RegisterDocumentNumber.
 type RegisterDocumentNumberParams struct {
@@ -1545,6 +1611,12 @@ type SetCustomerDefaultRouteJSONRequestBody = RouteChoice
 
 // RegisterDocumentNumberJSONRequestBody defines body for RegisterDocumentNumber for application/json ContentType.
 type RegisterDocumentNumberJSONRequestBody = NewDocumentNumber
+
+// MakeDocumentNumberObsoleteJSONRequestBody defines body for MakeDocumentNumberObsolete for application/json ContentType.
+type MakeDocumentNumberObsoleteJSONRequestBody = StatusReason
+
+// VoidDocumentNumberJSONRequestBody defines body for VoidDocumentNumber for application/json ContentType.
+type VoidDocumentNumberJSONRequestBody = StatusReason
 
 // CreateDocumentTypeJSONRequestBody defines body for CreateDocumentType for application/json ContentType.
 type CreateDocumentTypeJSONRequestBody = DocumentTypeInput
@@ -1677,12 +1749,21 @@ type ServerInterface interface {
 	// SetCustomerDefaultRoute Set the default approval route of a customer (A-2, D-47)
 	// (PUT /api/v1/customers/{customerId}/default-route)
 	SetCustomerDefaultRoute(w http.ResponseWriter, r *http.Request, customerId CustomerId)
+	// ListDocumentNumbers The number register, newest first, with filters (L-2, UC-12, R-NUM-04)
+	// (GET /api/v1/document-numbers)
+	ListDocumentNumbers(w http.ResponseWriter, r *http.Request, params ListDocumentNumbersParams)
 	// RegisterDocumentNumber Register one PFD, PFMEA, or CP number for a customer (E-1, UC-10, R-NUM-03)
 	// (POST /api/v1/document-numbers)
 	RegisterDocumentNumber(w http.ResponseWriter, r *http.Request, params RegisterDocumentNumberParams)
 	// GetNextDocumentNumber The number the next registration would get, without registering it (L-2)
 	// (GET /api/v1/document-numbers/next)
 	GetNextDocumentNumber(w http.ResponseWriter, r *http.Request, params GetNextDocumentNumberParams)
+	// MakeDocumentNumberObsolete Make a Released number obsolete, for example when it is withdrawn (E-8, UC-13)
+	// (POST /api/v1/document-numbers/{documentNumberId}/obsolete)
+	MakeDocumentNumberObsolete(w http.ResponseWriter, r *http.Request, documentNumberId DocumentNumberId)
+	// VoidDocumentNumber Void a Reserved or In use number, with a reason (E-8, UC-13)
+	// (POST /api/v1/document-numbers/{documentNumberId}/void)
+	VoidDocumentNumber(w http.ResponseWriter, r *http.Request, documentNumberId DocumentNumberId)
 	// ListDocumentTypes Document types with their number prefix (R-NUM-01, E-12)
 	// (GET /api/v1/document-types)
 	ListDocumentTypes(w http.ResponseWriter, r *http.Request)
@@ -2291,6 +2372,104 @@ func (siw *ServerInterfaceWrapper) SetCustomerDefaultRoute(w http.ResponseWriter
 	handler.ServeHTTP(w, r)
 }
 
+// ListDocumentNumbers operation middleware
+func (siw *ServerInterfaceWrapper) ListDocumentNumbers(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListDocumentNumbersParams
+
+	// ------------- Optional query parameter "customer_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "customer_id", r.URL.Query(), &params.CustomerId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "customer_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customer_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "document_type_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "document_type_id", r.URL.Query(), &params.DocumentTypeId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "document_type_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "document_type_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "q" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "q", r.URL.Query(), &params.Q, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "q"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "q", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "before" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "before", r.URL.Query(), &params.Before, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "before"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "before", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListDocumentNumbers(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // RegisterDocumentNumber operation middleware
 func (siw *ServerInterfaceWrapper) RegisterDocumentNumber(w http.ResponseWriter, r *http.Request) {
 
@@ -2369,6 +2548,58 @@ func (siw *ServerInterfaceWrapper) GetNextDocumentNumber(w http.ResponseWriter, 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetNextDocumentNumber(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// MakeDocumentNumberObsolete operation middleware
+func (siw *ServerInterfaceWrapper) MakeDocumentNumberObsolete(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentNumberId" -------------
+	var documentNumberId DocumentNumberId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentNumberId", r.PathValue("documentNumberId"), &documentNumberId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentNumberId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.MakeDocumentNumberObsolete(w, r, documentNumberId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// VoidDocumentNumber operation middleware
+func (siw *ServerInterfaceWrapper) VoidDocumentNumber(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentNumberId" -------------
+	var documentNumberId DocumentNumberId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentNumberId", r.PathValue("documentNumberId"), &documentNumberId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentNumberId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.VoidDocumentNumber(w, r, documentNumberId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -3260,7 +3491,10 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/processes/{processId}", wrapper.UpdateProcess)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/number-settings", wrapper.GetNumberSettings)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/number-settings", wrapper.UpdateNumberSettings)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/document-numbers", wrapper.ListDocumentNumbers)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/document-numbers", wrapper.RegisterDocumentNumber)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/document-numbers/{documentNumberId}/void", wrapper.VoidDocumentNumber)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/document-numbers/{documentNumberId}/obsolete", wrapper.MakeDocumentNumberObsolete)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/document-numbers/next", wrapper.GetNextDocumentNumber)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/document-types", wrapper.ListDocumentTypes)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/document-types", wrapper.CreateDocumentType)
@@ -4265,6 +4499,45 @@ func (response SetCustomerDefaultRoutedefaultJSONResponse) VisitSetCustomerDefau
 	return err
 }
 
+type ListDocumentNumbersRequestObject struct {
+	Params ListDocumentNumbersParams
+}
+
+type ListDocumentNumbersResponseObject interface {
+	VisitListDocumentNumbersResponse(w http.ResponseWriter) error
+}
+
+type ListDocumentNumbers200JSONResponse DocumentNumberList
+
+func (response ListDocumentNumbers200JSONResponse) VisitListDocumentNumbersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDocumentNumbersdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ListDocumentNumbersdefaultJSONResponse) VisitListDocumentNumbersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type RegisterDocumentNumberRequestObject struct {
 	Params RegisterDocumentNumberParams
 	Body   *RegisterDocumentNumberJSONRequestBody
@@ -4347,6 +4620,86 @@ type GetNextDocumentNumberdefaultJSONResponse struct {
 }
 
 func (response GetNextDocumentNumberdefaultJSONResponse) VisitGetNextDocumentNumberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type MakeDocumentNumberObsoleteRequestObject struct {
+	DocumentNumberId DocumentNumberId `json:"documentNumberId"`
+	Body             *MakeDocumentNumberObsoleteJSONRequestBody
+}
+
+type MakeDocumentNumberObsoleteResponseObject interface {
+	VisitMakeDocumentNumberObsoleteResponse(w http.ResponseWriter) error
+}
+
+type MakeDocumentNumberObsolete200JSONResponse DocumentNumber
+
+func (response MakeDocumentNumberObsolete200JSONResponse) VisitMakeDocumentNumberObsoleteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type MakeDocumentNumberObsoletedefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response MakeDocumentNumberObsoletedefaultJSONResponse) VisitMakeDocumentNumberObsoleteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VoidDocumentNumberRequestObject struct {
+	DocumentNumberId DocumentNumberId `json:"documentNumberId"`
+	Body             *VoidDocumentNumberJSONRequestBody
+}
+
+type VoidDocumentNumberResponseObject interface {
+	VisitVoidDocumentNumberResponse(w http.ResponseWriter) error
+}
+
+type VoidDocumentNumber200JSONResponse DocumentNumber
+
+func (response VoidDocumentNumber200JSONResponse) VisitVoidDocumentNumberResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VoidDocumentNumberdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response VoidDocumentNumberdefaultJSONResponse) VisitVoidDocumentNumberResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -5902,12 +6255,21 @@ type StrictServerInterface interface {
 	// SetCustomerDefaultRoute Set the default approval route of a customer (A-2, D-47)
 	// (PUT /api/v1/customers/{customerId}/default-route)
 	SetCustomerDefaultRoute(ctx context.Context, request SetCustomerDefaultRouteRequestObject) (SetCustomerDefaultRouteResponseObject, error)
+	// ListDocumentNumbers The number register, newest first, with filters (L-2, UC-12, R-NUM-04)
+	// (GET /api/v1/document-numbers)
+	ListDocumentNumbers(ctx context.Context, request ListDocumentNumbersRequestObject) (ListDocumentNumbersResponseObject, error)
 	// RegisterDocumentNumber Register one PFD, PFMEA, or CP number for a customer (E-1, UC-10, R-NUM-03)
 	// (POST /api/v1/document-numbers)
 	RegisterDocumentNumber(ctx context.Context, request RegisterDocumentNumberRequestObject) (RegisterDocumentNumberResponseObject, error)
 	// GetNextDocumentNumber The number the next registration would get, without registering it (L-2)
 	// (GET /api/v1/document-numbers/next)
 	GetNextDocumentNumber(ctx context.Context, request GetNextDocumentNumberRequestObject) (GetNextDocumentNumberResponseObject, error)
+	// MakeDocumentNumberObsolete Make a Released number obsolete, for example when it is withdrawn (E-8, UC-13)
+	// (POST /api/v1/document-numbers/{documentNumberId}/obsolete)
+	MakeDocumentNumberObsolete(ctx context.Context, request MakeDocumentNumberObsoleteRequestObject) (MakeDocumentNumberObsoleteResponseObject, error)
+	// VoidDocumentNumber Void a Reserved or In use number, with a reason (E-8, UC-13)
+	// (POST /api/v1/document-numbers/{documentNumberId}/void)
+	VoidDocumentNumber(ctx context.Context, request VoidDocumentNumberRequestObject) (VoidDocumentNumberResponseObject, error)
 	// ListDocumentTypes Document types with their number prefix (R-NUM-01, E-12)
 	// (GET /api/v1/document-types)
 	ListDocumentTypes(ctx context.Context, request ListDocumentTypesRequestObject) (ListDocumentTypesResponseObject, error)
@@ -6727,6 +7089,32 @@ func (sh *strictHandler) SetCustomerDefaultRoute(w http.ResponseWriter, r *http.
 	}
 }
 
+// ListDocumentNumbers operation middleware
+func (sh *strictHandler) ListDocumentNumbers(w http.ResponseWriter, r *http.Request, params ListDocumentNumbersParams) {
+	var request ListDocumentNumbersRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListDocumentNumbers(ctx, request.(ListDocumentNumbersRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListDocumentNumbers")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListDocumentNumbersResponseObject); ok {
+		if err := validResponse.VisitListDocumentNumbersResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // RegisterDocumentNumber operation middleware
 func (sh *strictHandler) RegisterDocumentNumber(w http.ResponseWriter, r *http.Request, params RegisterDocumentNumberParams) {
 	var request RegisterDocumentNumberRequestObject
@@ -6779,6 +7167,72 @@ func (sh *strictHandler) GetNextDocumentNumber(w http.ResponseWriter, r *http.Re
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetNextDocumentNumberResponseObject); ok {
 		if err := validResponse.VisitGetNextDocumentNumberResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// MakeDocumentNumberObsolete operation middleware
+func (sh *strictHandler) MakeDocumentNumberObsolete(w http.ResponseWriter, r *http.Request, documentNumberId DocumentNumberId) {
+	var request MakeDocumentNumberObsoleteRequestObject
+
+	request.DocumentNumberId = documentNumberId
+
+	var body MakeDocumentNumberObsoleteJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.MakeDocumentNumberObsolete(ctx, request.(MakeDocumentNumberObsoleteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "MakeDocumentNumberObsolete")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(MakeDocumentNumberObsoleteResponseObject); ok {
+		if err := validResponse.VisitMakeDocumentNumberObsoleteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// VoidDocumentNumber operation middleware
+func (sh *strictHandler) VoidDocumentNumber(w http.ResponseWriter, r *http.Request, documentNumberId DocumentNumberId) {
+	var request VoidDocumentNumberRequestObject
+
+	request.DocumentNumberId = documentNumberId
+
+	var body VoidDocumentNumberJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.VoidDocumentNumber(ctx, request.(VoidDocumentNumberRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "VoidDocumentNumber")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(VoidDocumentNumberResponseObject); ok {
+		if err := validResponse.VisitVoidDocumentNumberResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

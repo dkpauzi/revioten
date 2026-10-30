@@ -83,8 +83,10 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-59 | README di root repo hampir kosong | Celah | Repo | Tidak | Diperbaiki |
 | E-60 | Jadwal, retensi, dan penyimpanan passphrase backup belum ditetapkan | Celah | M1.7, M8.2, M8.4 | Tidak | Terbuka |
 | E-61 | Satu pola nomor untuk semua jenis dokumen dan customer | Ambigu | M2.1, M2.5 | Tidak | Terbuka |
+| E-62 | Isi register dan pengingat nomor Reserved yang terlalu lama | Celah | M2.3, M4.1 | Tidak | Terbuka |
 | E-63 | Kunci idempoten di UI API: cakupan, umur, dan pemakaian ulang | Celah | M2.2, M9.4 | Tidak | Terbuka |
 | E-67 | Pendaftaran nomor untuk customer nonaktif | Celah | M2.1 | Tidak | Terbuka |
+| E-68 | Perubahan status nomor yang dikerjakan tangan di Tahap 2, dan alasannya | Ambigu | M2.3, M4.1, M6.7 | Tidak | Terbuka |
 
 ## Keputusan 30 Oktober 2026
 
@@ -1067,6 +1069,20 @@ Salin blok ini untuk setiap temuan baru.
 - **Status:** Terbuka
 - **Keputusan pemilik:**
 
+### E-62 · Isi register dan pengingat nomor Reserved yang terlalu lama
+
+- **Tanggal dan milestone:** 30 Oktober 2026, M2.3. Berdampak ke M4.1 (dokumen menunjuk nomor).
+- **Jenis:** Celah
+- **Rujukan:** R-NUM-04 ("Stale Reserved numbers raise reminders. Search, filter, and export the register as a master document list"), brief bagian 4 (document_number: number text, status, owner, linked document), UC-12, UC-15.
+- **Temuan:** brief belum menyebut kolom register selain teks nomor, status, pemilik, dan dokumen tertaut. Nomor Reserved belum punya dokumen, jadi register tidak bisa menunjukkan model atau judul yang dimaksud. R-NUM-04 juga meminta pengingat untuk nomor Reserved yang terlalu lama, tanpa ambang (berapa hari) dan tanpa cara (layar, email, atau job terjadwal). Ekspor master document list belum punya format.
+- **Dampak bila dibiarkan:** register nomor Reserved hanya bisa dikenali dari pendaftarnya, dan nomor yang terlupa menumpuk.
+- **Opsi:** (a) Seperti sekarang: register memuat nomor, customer, jenis, status, pendaftar, waktu daftar, dan alasan; umur nomor Reserved ditampilkan dalam hari; model dan judul datang dari dokumen di M4.1; pengingat dan ekspor menunggu ambang dan format dari pemilik. (b) Tambah kolom catatan bebas (misalnya nama model) saat mendaftar. (c) Ambang tetap (misalnya 30 hari) dan pengingat lewat job terjadwal (River).
+- **Rekomendasi Claude Code (usulan):** (a) sekarang. Ambang pengingat dan format ekspor ditanyakan ke pemilik, karena angkanya tidak boleh dikarang.
+- **Asumsi sementara di kode (ASUMSI E-62):** (a), di `web/src/lib/numbers.ts` (umur nomor Reserved). UC-15 (pengingat) dan ekspor UC-12 belum dibangun.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
 ### E-63 · Kunci idempoten di UI API: cakupan, umur, dan pemakaian ulang
 
 - **Tanggal dan milestone:** 30 Oktober 2026, M2.2. Berdampak ke M9.4 (API integrasi).
@@ -1091,6 +1107,20 @@ Salin blok ini untuk setiap temuan baru.
 - **Opsi:** (a) Ditolak, sama seperti model baru; customer bisa diaktifkan lagi bila perlu. (b) Diizinkan.
 - **Rekomendasi Claude Code (usulan):** (a). Revisi dokumen lama tidak butuh nomor baru, jadi pekerjaan yang sedang berjalan tidak terhenti.
 - **Asumsi sementara di kode (ASUMSI E-67):** (a), di `internal/numbering/register.go`. Layar Numbers hanya menawarkan customer aktif.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-68 · Perubahan status nomor yang dikerjakan tangan di Tahap 2, dan alasannya
+
+- **Tanggal dan milestone:** 30 Oktober 2026, M2.3. Berdampak ke M4.1 (In use) dan M6.7 (Released).
+- **Jenis:** Ambigu
+- **Rujukan:** R-NUM-04, brief bagian 4 (diagram status nomor), UC-13, E-8, D-93.
+- **Temuan:** diagram status nomor menyebut Reserved ke In use saat dokumen dibuat, In use ke Released saat rilis dicatat, Released ke Obsolete saat ditarik, dan Reserved atau In use ke Void "cancelled with reason". Di Tahap 2 belum ada dokumen dan rilis, jadi yang bisa dikerjakan tangan hanya Void dan Obsolete. Belum jelas apakah Obsolete juga wajib beralasan, dan apakah status lain (misalnya Released untuk nomor lama) boleh dipasang tangan.
+- **Dampak bila dibiarkan:** nomor lama yang sudah rilis di Excel tidak bisa ditandai Released, kecuali lewat impor (M2.5).
+- **Opsi:** (a) Tahap 2 hanya membuka Void (dari Reserved atau In use, alasan wajib) dan Obsolete (dari Released, alasan opsional). Status lain dipasang sistem (M4.1, M6.7) atau lewat impor (M2.5). (b) Seperti (a), dengan alasan wajib untuk Obsolete juga. (c) Dokumen kontrol boleh memasang status apa pun dengan alasan.
+- **Rekomendasi Claude Code (usulan):** (a). Diagram status hanya mewajibkan alasan untuk Void, dan status lain mengikuti peristiwa nyata (dokumen dibuat, rilis dicatat).
+- **Asumsi sementara di kode (ASUMSI E-68):** (a), di `internal/numbering/registry.go`.
 - **Menghambat milestone?** Tidak
 - **Status:** Terbuka
 - **Keputusan pemilik:**

@@ -55,7 +55,9 @@ const problemKeys: Record<string, MessageKey> = {
 	'document_type_id:not_allowed': 'numberTypeNotNumbered',
 	'document_type_id:taken': 'numberTaken',
 	'initial_revision:invalid_format': 'numberInitialRevisionInvalid',
-	'idempotency_key:taken': 'numberKeyReused'
+	'idempotency_key:taken': 'numberKeyReused',
+	'reason:required': 'numberReasonRequired',
+	'status:not_allowed': 'numberStatusNotAllowed'
 };
 
 // ProblemScope adalah formulir tempat masalah ditampilkan. Field yang sama bisa

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { DocumentNumber } from './api/gen/index.ts';
-import { registeredText } from './numbers.ts';
+import { en } from './i18n/en.ts';
+import { canObsolete, canVoid, registeredText, reservedDays, statusLabel } from './numbers.ts';
 
 // number membuat satu nomor contoh; hanya field yang dipakai yang diisi berbeda.
 function number(text: string, revision: number, status: DocumentNumber['status'] = 'reserved'): DocumentNumber {
@@ -29,5 +30,20 @@ describe('teks register nomor', () => {
 
 	it('tidak menyebut nomor yang dilewati', () => {
 		expect(registeredText([number('SH-AB-002', 0, 'skipped'), number('SH-AB-003', 0)])).toBe('SH-AB-003');
+	});
+});
+
+describe('status nomor (M2.3)', () => {
+	it('memberi nama status dan tombol yang boleh', () => {
+		expect(statusLabel('in_use')).toBe(en.numberStatusInUse);
+		expect(canVoid(number('SC-AB-001', 0, 'reserved'))).toBe(true);
+		expect(canVoid(number('SC-AB-001', 0, 'released'))).toBe(false);
+		expect(canObsolete(number('SC-AB-001', 0, 'released'))).toBe(true);
+		expect(canObsolete(number('SC-AB-001', 0, 'void'))).toBe(false);
+	});
+
+	it('menghitung hari penuh sejak nomor didaftarkan', () => {
+		expect(reservedDays('2026-10-01T08:00:00Z', new Date('2026-10-30T07:59:59Z'))).toBe(28);
+		expect(reservedDays('2026-10-30T08:00:00Z', new Date('2026-10-30T09:00:00Z'))).toBe(0);
 	});
 });

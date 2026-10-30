@@ -14,6 +14,7 @@
 	import { failureText, problemText } from '#lib/errors.ts';
 	import { t } from '#lib/i18n/index.ts';
 	import { registeredText } from '#lib/numbers.ts';
+	import RegisterSection from '#lib/numbers/RegisterSection.svelte';
 	import { can } from '#lib/session.svelte.ts';
 
 	// Data dari server. null berarti belum selesai dimuat.
@@ -21,6 +22,9 @@
 	let types = $state<DocumentType[]>([]);
 	let loadError = $state('');
 	let canRegister = $derived(can('E-1'));
+	let canManage = $derived(can('E-8'));
+	// Dinaikkan setiap ada nomor baru, supaya register dimuat ulang.
+	let refresh = $state(0);
 	// Hanya customer aktif yang mendapat nomor baru (ASUMSI E-67).
 	let activeCustomers = $derived((customers ?? []).filter((c) => c.active));
 
@@ -87,6 +91,7 @@
 		}
 		message = t('numberRegistered', { numbers: registeredText(result.data.items) });
 		key = crypto.randomUUID();
+		refresh += 1;
 		await showNext();
 	}
 
@@ -139,6 +144,10 @@
 		<p class="hint">{t('numberInitialRevisionHint')}</p>
 		{#if next}<p>{t('numberNext', { number: next })}</p>{/if}
 	</section>
+{/if}
+
+{#if customers !== null}
+	<RegisterSection {customers} {types} {canManage} {refresh} />
 {/if}
 
 <style>

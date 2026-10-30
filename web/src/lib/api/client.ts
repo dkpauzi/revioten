@@ -34,6 +34,8 @@ import type {
 	NewDocumentNumber,
 	NextDocumentNumber,
 	NumberRegistration,
+	DocumentNumber,
+	DocumentNumberList,
 	SpecialCode,
 	SpecialCodeList,
 	Error as ApiError,
@@ -258,6 +260,49 @@ export function registerDocumentNumber(
 	const init = jsonRequest('POST', input);
 	init.headers = { 'Content-Type': 'application/json', 'Idempotency-Key': key };
 	return call<NumberRegistration>(fetchFn, '/api/v1/document-numbers', init);
+}
+
+// NumberFilter adalah saringan register (M2.3). Field kosong tidak dikirim.
+export type NumberFilter = {
+	customer_id?: string;
+	document_type_id?: string;
+	status?: string;
+	q?: string;
+	before?: string;
+	limit?: number;
+};
+
+// listDocumentNumbers memanggil GET /api/v1/document-numbers (L-2, M2.3).
+export function listDocumentNumbers(
+	filter: NumberFilter,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<DocumentNumberList>> {
+	const query = new URLSearchParams();
+	for (const [name, value] of Object.entries(filter)) {
+		if (value !== undefined && value !== '') {
+			query.set(name, String(value));
+		}
+	}
+	const text = query.toString();
+	return call<DocumentNumberList>(fetchFn, '/api/v1/document-numbers' + (text ? '?' + text : ''), { method: 'GET' });
+}
+
+// voidDocumentNumber memanggil POST /api/v1/document-numbers/{id}/void (E-8).
+export function voidDocumentNumber(
+	id: string,
+	reason: string,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<DocumentNumber>> {
+	return call<DocumentNumber>(fetchFn, itemPath('document-numbers', id) + '/void', jsonRequest('POST', { reason }));
+}
+
+// makeDocumentNumberObsolete memanggil POST /api/v1/document-numbers/{id}/obsolete (E-8).
+export function makeDocumentNumberObsolete(
+	id: string,
+	reason: string,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<DocumentNumber>> {
+	return call<DocumentNumber>(fetchFn, itemPath('document-numbers', id) + '/obsolete', jsonRequest('POST', { reason }));
 }
 
 // getNextDocumentNumber memanggil GET /api/v1/document-numbers/next: nomor yang

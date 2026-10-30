@@ -175,13 +175,18 @@ func TestPermissionsPerOperation(t *testing.T) {
 		`{"stage":"prepared","print_title":"Process. Eng","position_ids":["` + positions[0].ID + `"]},` +
 		`{"stage":"checked","print_title":"Engineer","position_ids":["` + positions[2].ID + `"]},` +
 		`{"stage":"approved","print_title":"NPI Manager","position_ids":["` + npi.ID + `"]}]}`
+	// Satu nomor terdaftar untuk operasi status (Tahap 2).
+	reg, err := numbers.Register(ctx, engineer, numbering.NewNumber{CustomerID: cust.ID, DocumentTypeID: docTypes[2].ID, IdempotencyKey: "setup"})
+	if err != nil {
+		t.Fatal(err)
+	}
 	// params mengisi {nama} di alamat dan isi permintaan dengan ID sungguhan.
 	params := map[string]string{
 		"positionId": ppapEngineer.ID, "holderId": holder.ID, "approvalRouteId": routes[0].ID, "routeId": routes[1].ID,
 		"viewerPersonId": viewerInfo.PersonID,
 		"accountId":      viewerInfo.ID, "projectGroupId": group.ID, "customerId": cust.ID,
 		"modelGroupId": modelGroup.ID, "modelId": model.ID, "partNumberId": part.ID,
-		"processId": proc.ID, "documentTypeId": docTypes[0].ID, "cpTypeId": docTypes[2].ID, "specialCodeId": specialCodes[0].ID,
+		"processId": proc.ID, "documentTypeId": docTypes[0].ID, "cpTypeId": docTypes[2].ID, "documentNumberId": reg.Numbers[0].ID, "specialCodeId": specialCodes[0].ID,
 		"changeTypeId": changeTypes[0].ID, "changeSourceId": sources[0].ID, "fourMCategoryId": categories[0].ID,
 	}
 
@@ -197,6 +202,10 @@ func TestPermissionsPerOperation(t *testing.T) {
 		// Register nomor (Tahap 2): mendaftarkan lewat E-1 (Penyusun), melihat lewat L-2.
 		{http.MethodGet, "/api/v1/document-numbers/next?customer_id={customerId}&document_type_id={cpTypeId}", "", http.StatusOK, http.StatusOK, http.StatusOK},
 		{http.MethodPost, "/api/v1/document-numbers", `{"customer_id":"{customerId}","document_type_id":"{cpTypeId}"}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
+		{http.MethodGet, "/api/v1/document-numbers?customer_id={customerId}", "", http.StatusOK, http.StatusOK, http.StatusOK},
+		// Status nomor diubah dokumen kontrol (E-8). Nomor yang dibuat setup ini Reserved.
+		{http.MethodPost, "/api/v1/document-numbers/{documentNumberId}/void", `{"reason":"Uji izin"}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		{http.MethodPost, "/api/v1/document-numbers/{documentNumberId}/obsolete", `{}`, http.StatusForbidden, http.StatusConflict, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/project-groups", "", http.StatusOK, http.StatusOK, http.StatusOK},
 		{http.MethodPost, "/api/v1/project-groups", `{"code":"GR2","name":"Project Group 2"}`, http.StatusForbidden, http.StatusForbidden, http.StatusCreated},
 		{http.MethodPut, "/api/v1/project-groups/{projectGroupId}", `{"code":"GR1","name":"Satu"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},

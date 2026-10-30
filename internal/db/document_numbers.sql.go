@@ -258,6 +258,108 @@ func (q *Queries) ListBatchNumbers(ctx context.Context, batchID string) ([]ListB
 	return items, nil
 }
 
+const listDocumentNumbers = `-- name: ListDocumentNumbers :many
+SELECT n.id, n.number, n.customer_id, c.code AS customer_current_code, c.name AS customer_name,
+       n.customer_code, n.document_type_id, d.name AS document_type_name, d.key AS document_type_key,
+       n.sequence, n.status, n.initial_revision, n.batch_id, b.kind AS origin,
+       b.person_id AS registered_by_id, p.name AS registered_by_name,
+       n.status_reason, n.status_changed_at, n.created_at
+FROM document_numbers n
+JOIN customers c ON c.id = n.customer_id
+JOIN document_types d ON d.id = n.document_type_id
+JOIN number_batches b ON b.id = n.batch_id
+JOIN people p ON p.id = b.person_id
+WHERE ($1::uuid IS NULL OR n.customer_id = $1::uuid)
+  AND ($2::uuid IS NULL OR n.document_type_id = $2::uuid)
+  AND ($3::text IS NULL OR n.status = $3::text)
+  AND ($4::text IS NULL OR strpos(lower(n.number), lower($4::text)) > 0)
+  AND ($5::uuid IS NULL OR n.id < $5::uuid)
+ORDER BY n.id DESC
+LIMIT $6
+`
+
+type ListDocumentNumbersParams struct {
+	CustomerID     *string
+	DocumentTypeID *string
+	Status         *string
+	Query          *string
+	Before         *string
+	MaxItems       int32
+}
+
+type ListDocumentNumbersRow struct {
+	ID                  string
+	Number              string
+	CustomerID          string
+	CustomerCurrentCode string
+	CustomerName        string
+	CustomerCode        string
+	DocumentTypeID      string
+	DocumentTypeName    string
+	DocumentTypeKey     *string
+	Sequence            int32
+	Status              string
+	InitialRevision     int16
+	BatchID             string
+	Origin              string
+	RegisteredByID      string
+	RegisteredByName    string
+	StatusReason        *string
+	StatusChangedAt     *time.Time
+	CreatedAt           time.Time
+}
+
+// ListDocumentNumbers mengambil register dengan saringan yang boleh kosong
+// (M2.3), terbaru dulu. ID buatan uuidv7() urut menurut waktu dibuat, jadi
+// halaman berikutnya diminta dengan before = ID terakhir di halaman ini.
+// Pencarian teks memakai strpos, jadi % dan _ dari pengguna tidak berarti apa-apa.
+func (q *Queries) ListDocumentNumbers(ctx context.Context, arg ListDocumentNumbersParams) ([]ListDocumentNumbersRow, error) {
+	rows, err := q.db.Query(ctx, listDocumentNumbers,
+		arg.CustomerID,
+		arg.DocumentTypeID,
+		arg.Status,
+		arg.Query,
+		arg.Before,
+		arg.MaxItems,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListDocumentNumbersRow{}
+	for rows.Next() {
+		var i ListDocumentNumbersRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Number,
+			&i.CustomerID,
+			&i.CustomerCurrentCode,
+			&i.CustomerName,
+			&i.CustomerCode,
+			&i.DocumentTypeID,
+			&i.DocumentTypeName,
+			&i.DocumentTypeKey,
+			&i.Sequence,
+			&i.Status,
+			&i.InitialRevision,
+			&i.BatchID,
+			&i.Origin,
+			&i.RegisteredByID,
+			&i.RegisteredByName,
+			&i.StatusReason,
+			&i.StatusChangedAt,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const lockCustomerForNumber = `-- name: LockCustomerForNumber :one
 SELECT id, code, active FROM customers WHERE id = $1 FOR SHARE
 `
@@ -278,6 +380,17 @@ func (q *Queries) LockCustomerForNumber(ctx context.Context, id string) (LockCus
 	var i LockCustomerForNumberRow
 	err := row.Scan(&i.ID, &i.Code, &i.Active)
 	return i, err
+}
+
+const lockDocumentNumber = `-- name: LockDocumentNumber :exec
+SELECT id FROM document_numbers WHERE id = $1 FOR NO KEY UPDATE
+`
+
+// LockDocumentNumber mengunci baris nomor sampai transaksi selesai, supaya
+// status yang diperiksa tidak berubah oleh transaksi lain di tengah jalan.
+func (q *Queries) LockDocumentNumber(ctx context.Context, id string) error {
+	_, err := q.db.Exec(ctx, lockDocumentNumber, id)
+	return err
 }
 
 const nextCounterValue = `-- name: NextCounterValue :one
@@ -304,4 +417,25 @@ func (q *Queries) NextCounterValue(ctx context.Context, arg NextCounterValuePara
 	var last_value int32
 	err := row.Scan(&last_value)
 	return last_value, err
+}
+
+const setDocumentNumberStatus = `-- name: SetDocumentNumberStatus :exec
+UPDATE document_numbers SET status = $2, status_reason = $3, status_changed_at = $4 WHERE id = $1
+`
+
+type SetDocumentNumberStatusParams struct {
+	ID              string
+	Status          string
+	StatusReason    *string
+	StatusChangedAt *time.Time
+}
+
+func (q *Queries) SetDocumentNumberStatus(ctx context.Context, arg SetDocumentNumberStatusParams) error {
+	_, err := q.db.Exec(ctx, setDocumentNumberStatus,
+		arg.ID,
+		arg.Status,
+		arg.StatusReason,
+		arg.StatusChangedAt,
+	)
+	return err
 }

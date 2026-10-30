@@ -204,6 +204,7 @@ type called struct {
 // fakeNumbering meniru numbering.Service.
 type fakeNumbering struct {
 	registration numbering.Registration
+	number       numbering.DocumentNumber
 	next         string
 	settings     numbering.Settings
 	types        []numbering.DocumentType
@@ -243,6 +244,21 @@ func (f *fakeNumbering) Register(_ context.Context, _ access.Actor, in numbering
 func (f *fakeNumbering) NextNumber(_ context.Context, _ access.Actor, customerID, documentTypeID string) (string, error) {
 	f.got = called{method: "NextNumber", id: customerID, input: documentTypeID}
 	return f.next, f.err
+}
+
+func (f *fakeNumbering) ListNumbers(_ context.Context, _ access.Actor, filter numbering.ListFilter) ([]numbering.DocumentNumber, string, error) {
+	f.got = called{method: "ListNumbers", input: filter}
+	return f.registration.Numbers, f.next, f.err
+}
+
+func (f *fakeNumbering) Void(_ context.Context, _ access.Actor, id, reason string) (numbering.DocumentNumber, error) {
+	f.got = called{method: "Void", id: id, input: reason}
+	return f.number, f.err
+}
+
+func (f *fakeNumbering) MakeObsolete(_ context.Context, _ access.Actor, id, reason string) (numbering.DocumentNumber, error) {
+	f.got = called{method: "MakeObsolete", id: id, input: reason}
+	return f.number, f.err
 }
 
 func (f *fakeNumbering) ListDocumentTypes(context.Context, access.Actor) ([]numbering.DocumentType, error) {
