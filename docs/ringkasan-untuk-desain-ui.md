@@ -746,7 +746,7 @@ Disalin dari `docs/uml/U3-daftar-use-case.md`, ditambah kolom status kode per 31
 | UC-13 | Ubah status nomor | Dokumen kontrol | Void atau Obsolete. Nomor tidak pernah dihapus atau dipakai ulang. | M2.3 | Usulan | Sudah |
 | UC-14 | Impor nomor lama | Dokumen kontrol | Nomor lama masuk apa adanya, beserta laporan lubang, ganda, dan set tidak sejajar. | M2.5 | Usulan | Sudah |
 | UC-15 | Ingatkan nomor Reserved yang terlalu lama | Penjadwal | Pengingat untuk nomor yang dipesan tetapi tidak dipakai. | M2.3 | Usulan | Belum; umur nomor Reserved sudah tampil |
-| UC-20 | Kelola format template | Admin | Kolom ber-ID tetap, metode risiko, tabel skala, simbol, dan layout ekspor. | M3.1 | MVP | Belum |
+| UC-20 | Kelola format template | Admin | Kolom ber-ID tetap, metode risiko, tabel skala, simbol, dan layout ekspor. | M3.1 | MVP | Sebagian: M3.1 sudah; layout ekspor menyusul di M6.1 |
 | UC-21 | Kelola process template | PPAP Engineer | Proses, sub-proses, dan poin di empat tingkat: umum, customer, group model, model. | M3.2, M3.3, D-64 | MVP | Belum |
 | UC-22 | Terbitkan versi template | PPAP Engineer | Versi draft menjadi terbit, dan tidak bisa diubah lagi. | M3.4, D-64 | Usulan | Belum |
 | UC-23 | Propagasikan versi template | PPAP Engineer | Pratinjau dampak, pilih cakupan, tangani konflik lokal. Hasilnya sebuah perubahan, bukan edit langsung. | M5.8, D-64 | MVP | Belum |
