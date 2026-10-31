@@ -910,6 +910,163 @@ export type ChangeTypeRouteChoice = {
     route_id?: string;
 };
 
+export type FormatTemplateList = {
+    items: Array<FormatTemplate>;
+};
+
+export type FormatTemplate = {
+    id: string;
+    name: string;
+    document_type: DocumentTypeRef;
+    /**
+     * Missing for the forms in use today (PFD, CP).
+     */
+    methodology?: 'aiag_4th' | 'aiag_vda' | 'sqam';
+    /**
+     * Missing for a general format template; set for a customer SQAM format.
+     */
+    customer_id?: string;
+    customer_code?: string;
+    versions: Array<FormatVersionSummary>;
+    created_at: string;
+};
+
+export type FormatVersionSummary = {
+    id: string;
+    version: number;
+    status: 'draft' | 'published';
+    risk_method: 'rpn' | 'ap' | 'none';
+};
+
+export type NewFormatTemplate = {
+    name: string;
+    document_type_id: string;
+    methodology?: 'aiag_4th' | 'aiag_vda' | 'sqam';
+    customer_id?: string;
+    /**
+     * Required without copy_from_version_id; a copy takes the risk method of its source.
+     */
+    risk_method?: 'rpn' | 'ap' | 'none';
+    copy_from_version_id?: string;
+};
+
+export type FormatTemplateRename = {
+    name: string;
+};
+
+export type FormatVersion = {
+    id: string;
+    template_id: string;
+    version: number;
+    status: 'draft' | 'published';
+    risk_method: 'rpn' | 'ap' | 'none';
+    /**
+     * Highlight an RPN above this value; 0 means off.
+     */
+    highlight_rpn_above: number;
+    /**
+     * Highlight a severity of at least this value; 0 means off.
+     */
+    highlight_severity_at_least: number;
+    /**
+     * Header fields first, then columns, each by position.
+     */
+    fields: Array<FormatField>;
+    /**
+     * Severity, occurrence, then detection, values 1 to 10. Empty without a risk method.
+     */
+    ratings: Array<RatingCriterion>;
+    symbols: Array<FormatSymbol>;
+    created_at: string;
+};
+
+export type FormatField = {
+    /**
+     * Fixed across versions; row content uses this ID.
+     */
+    id: string;
+    area: 'header' | 'row';
+    kind: 'text' | 'date' | 'select' | 'symbol' | 'rating' | 'rpn';
+    rating_scale?: 'severity' | 'occurrence' | 'detection';
+    /**
+     * For rating and rpn, 1 for the current values and 2 for the action results.
+     */
+    rating_set?: number;
+    label: string;
+    /**
+     * Position within the area, from 1.
+     */
+    position: number;
+    required: boolean;
+    hidden: boolean;
+    options?: Array<FieldOption>;
+};
+
+export type FieldOption = {
+    /**
+     * Fixed key used by row content. Missing for a new option.
+     */
+    key?: string;
+    label: string;
+};
+
+export type NewFormatField = {
+    area: 'header' | 'row';
+    kind: 'text' | 'date' | 'select' | 'symbol' | 'rating' | 'rpn';
+    label: string;
+    required?: boolean;
+    rating_scale?: 'severity' | 'occurrence' | 'detection';
+    rating_set?: number;
+    /**
+     * The options of a select field, by label.
+     */
+    options?: Array<FieldOption>;
+};
+
+export type FormatFieldUpdate = {
+    label: string;
+    required?: boolean;
+    hidden?: boolean;
+    position?: number;
+    options?: Array<FieldOption>;
+};
+
+export type FormatHighlights = {
+    highlight_rpn_above?: number;
+    highlight_severity_at_least?: number;
+};
+
+export type RatingCriterion = {
+    scale: 'severity' | 'occurrence' | 'detection';
+    value: number;
+    criteria: string;
+};
+
+export type RatingCriteriaUpdate = {
+    items: Array<RatingCriterionInput>;
+};
+
+export type RatingCriterionInput = {
+    scale: 'severity' | 'occurrence' | 'detection';
+    value: number;
+    /**
+     * The new criteria text. An item without criteria changes nothing.
+     */
+    criteria?: string;
+};
+
+export type FormatSymbolList = {
+    items: Array<FormatSymbol>;
+};
+
+export type FormatSymbol = {
+    /**
+     * Fixed key used by row content. Missing for a new symbol.
+     */
+    key?: string;
+    name: string;
+};
+
 export type SystemSettings = {
     /**
      * When false, signature slots have no sign date and the field is hidden (D-52).
@@ -999,6 +1156,12 @@ export type PositionId = string;
 export type HolderId = string;
 
 export type ApprovalRouteId = string;
+
+export type FormatTemplateId = string;
+
+export type FormatVersionId = string;
+
+export type FormatFieldId = string;
 
 export type GetHealthData = {
     body?: never;
@@ -3271,6 +3434,318 @@ export type SetChangeTypeRouteResponses = {
 };
 
 export type SetChangeTypeRouteResponse = SetChangeTypeRouteResponses[keyof SetChangeTypeRouteResponses];
+
+export type ListFormatTemplatesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/format-templates';
+};
+
+export type ListFormatTemplatesErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ListFormatTemplatesError = ListFormatTemplatesErrors[keyof ListFormatTemplatesErrors];
+
+export type ListFormatTemplatesResponses = {
+    /**
+     * The format templates, by document type and name.
+     */
+    200: FormatTemplateList;
+};
+
+export type ListFormatTemplatesResponse = ListFormatTemplatesResponses[keyof ListFormatTemplatesResponses];
+
+export type CreateFormatTemplateData = {
+    body: NewFormatTemplate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/format-templates';
+};
+
+export type CreateFormatTemplateErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type CreateFormatTemplateError = CreateFormatTemplateErrors[keyof CreateFormatTemplateErrors];
+
+export type CreateFormatTemplateResponses = {
+    /**
+     * The format template was added.
+     */
+    201: FormatTemplate;
+};
+
+export type CreateFormatTemplateResponse = CreateFormatTemplateResponses[keyof CreateFormatTemplateResponses];
+
+export type RenameFormatTemplateData = {
+    body: FormatTemplateRename;
+    path: {
+        formatTemplateId: string;
+    };
+    query?: never;
+    url: '/api/v1/format-templates/{formatTemplateId}';
+};
+
+export type RenameFormatTemplateErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type RenameFormatTemplateError = RenameFormatTemplateErrors[keyof RenameFormatTemplateErrors];
+
+export type RenameFormatTemplateResponses = {
+    /**
+     * The format template was renamed.
+     */
+    200: FormatTemplate;
+};
+
+export type RenameFormatTemplateResponse = RenameFormatTemplateResponses[keyof RenameFormatTemplateResponses];
+
+export type GetFormatVersionData = {
+    body?: never;
+    path: {
+        formatVersionId: string;
+    };
+    query?: never;
+    url: '/api/v1/format-template-versions/{formatVersionId}';
+};
+
+export type GetFormatVersionErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type GetFormatVersionError = GetFormatVersionErrors[keyof GetFormatVersionErrors];
+
+export type GetFormatVersionResponses = {
+    /**
+     * The version.
+     */
+    200: FormatVersion;
+};
+
+export type GetFormatVersionResponse = GetFormatVersionResponses[keyof GetFormatVersionResponses];
+
+export type UpdateFormatHighlightsData = {
+    body: FormatHighlights;
+    path: {
+        formatVersionId: string;
+    };
+    query?: never;
+    url: '/api/v1/format-template-versions/{formatVersionId}';
+};
+
+export type UpdateFormatHighlightsErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type UpdateFormatHighlightsError = UpdateFormatHighlightsErrors[keyof UpdateFormatHighlightsErrors];
+
+export type UpdateFormatHighlightsResponses = {
+    /**
+     * The version after the change.
+     */
+    200: FormatVersion;
+};
+
+export type UpdateFormatHighlightsResponse = UpdateFormatHighlightsResponses[keyof UpdateFormatHighlightsResponses];
+
+export type AddFormatFieldData = {
+    body: NewFormatField;
+    path: {
+        formatVersionId: string;
+    };
+    query?: never;
+    url: '/api/v1/format-template-versions/{formatVersionId}/fields';
+};
+
+export type AddFormatFieldErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type AddFormatFieldError = AddFormatFieldErrors[keyof AddFormatFieldErrors];
+
+export type AddFormatFieldResponses = {
+    /**
+     * The version with the new field.
+     */
+    201: FormatVersion;
+};
+
+export type AddFormatFieldResponse = AddFormatFieldResponses[keyof AddFormatFieldResponses];
+
+export type UpdateFormatFieldData = {
+    body: FormatFieldUpdate;
+    path: {
+        formatVersionId: string;
+        formatFieldId: string;
+    };
+    query?: never;
+    url: '/api/v1/format-template-versions/{formatVersionId}/fields/{formatFieldId}';
+};
+
+export type UpdateFormatFieldErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type UpdateFormatFieldError = UpdateFormatFieldErrors[keyof UpdateFormatFieldErrors];
+
+export type UpdateFormatFieldResponses = {
+    /**
+     * The version after the change.
+     */
+    200: FormatVersion;
+};
+
+export type UpdateFormatFieldResponse = UpdateFormatFieldResponses[keyof UpdateFormatFieldResponses];
+
+export type SetFormatRatingCriteriaData = {
+    body: RatingCriteriaUpdate;
+    path: {
+        formatVersionId: string;
+    };
+    query?: never;
+    url: '/api/v1/format-template-versions/{formatVersionId}/rating-criteria';
+};
+
+export type SetFormatRatingCriteriaErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type SetFormatRatingCriteriaError = SetFormatRatingCriteriaErrors[keyof SetFormatRatingCriteriaErrors];
+
+export type SetFormatRatingCriteriaResponses = {
+    /**
+     * The version after the change.
+     */
+    200: FormatVersion;
+};
+
+export type SetFormatRatingCriteriaResponse = SetFormatRatingCriteriaResponses[keyof SetFormatRatingCriteriaResponses];
+
+export type SaveFormatSymbolsData = {
+    body: FormatSymbolList;
+    path: {
+        formatVersionId: string;
+    };
+    query?: never;
+    url: '/api/v1/format-template-versions/{formatVersionId}/symbols';
+};
+
+export type SaveFormatSymbolsErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type SaveFormatSymbolsError = SaveFormatSymbolsErrors[keyof SaveFormatSymbolsErrors];
+
+export type SaveFormatSymbolsResponses = {
+    /**
+     * The version after the change.
+     */
+    200: FormatVersion;
+};
+
+export type SaveFormatSymbolsResponse = SaveFormatSymbolsResponses[keyof SaveFormatSymbolsResponses];
 
 export type GetSystemSettingsData = {
     body?: never;

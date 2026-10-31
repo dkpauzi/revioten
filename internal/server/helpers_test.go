@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 	"testing/fstest"
@@ -23,6 +24,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/process"
 	"github.com/dkpauzi/revioten/internal/product"
 	"github.com/dkpauzi/revioten/internal/settings"
+	"github.com/dkpauzi/revioten/internal/template"
 )
 
 // fakePinger meniru database untuk /health. err nil berarti database hidup.
@@ -354,6 +356,78 @@ func (f *fakeChanges) RenameFourMCategory(_ context.Context, _ access.Actor, id,
 	return f.category, f.err
 }
 
+// fakeTemplates meniru template.Service. got.input menyimpan isian terakhir;
+// gotRatings dan gotSymbols menyimpan daftar, karena slice tidak bisa
+// dibandingkan dengan ==.
+type fakeTemplates struct {
+	templates  []template.FormatTemplate
+	template   template.FormatTemplate
+	version    template.FormatVersion
+	err        error
+	got        called
+	gotField   template.FieldUpdate
+	gotNew     template.NewField
+	gotRatings []template.Rating
+	gotSymbols []template.Symbol
+}
+
+func (f *fakeTemplates) ListFormatTemplates(context.Context, access.Actor) ([]template.FormatTemplate, error) {
+	f.got = called{method: "ListFormatTemplates"}
+	return f.templates, f.err
+}
+
+func (f *fakeTemplates) GetFormatVersion(_ context.Context, _ access.Actor, id string) (template.FormatVersion, error) {
+	f.got = called{method: "GetFormatVersion", id: id}
+	return f.version, f.err
+}
+
+func (f *fakeTemplates) CreateFormatTemplate(_ context.Context, _ access.Actor, in template.NewTemplate) (template.FormatTemplate, error) {
+	f.got = called{method: "CreateFormatTemplate", input: in}
+	return f.template, f.err
+}
+
+func (f *fakeTemplates) RenameFormatTemplate(_ context.Context, _ access.Actor, id, name string) (template.FormatTemplate, error) {
+	f.got = called{method: "RenameFormatTemplate", id: id, input: name}
+	return f.template, f.err
+}
+
+func (f *fakeTemplates) AddField(_ context.Context, _ access.Actor, versionID string, in template.NewField) (template.FormatVersion, error) {
+	f.got, f.gotNew = called{method: "AddField", id: versionID}, in
+	return f.version, f.err
+}
+
+func (f *fakeTemplates) UpdateField(_ context.Context, _ access.Actor, versionID, fieldID string, in template.FieldUpdate) (template.FormatVersion, error) {
+	f.got, f.gotField = called{method: "UpdateField", id: versionID, input: fieldID}, in
+	return f.version, f.err
+}
+
+func (f *fakeTemplates) SetRatingCriteria(_ context.Context, _ access.Actor, versionID string, ratings []template.Rating) (template.FormatVersion, error) {
+	f.got, f.gotRatings = called{method: "SetRatingCriteria", id: versionID}, ratings
+	return f.version, f.err
+}
+
+func (f *fakeTemplates) SaveSymbols(_ context.Context, _ access.Actor, versionID string, symbols []template.Symbol) (template.FormatVersion, error) {
+	f.got, f.gotSymbols = called{method: "SaveSymbols", id: versionID}, symbols
+	return f.version, f.err
+}
+
+func (f *fakeTemplates) SetHighlights(_ context.Context, _ access.Actor, versionID string, in template.HighlightSettings) (template.FormatVersion, error) {
+	f.got = called{method: "SetHighlights", id: versionID, input: highlightText(in)}
+	return f.version, f.err
+}
+
+// highlightText menulis aturan sorot dengan nil sebagai "-", supaya bisa
+// dibandingkan di test.
+func highlightText(in template.HighlightSettings) string {
+	text := func(n *int) string {
+		if n == nil {
+			return "-"
+		}
+		return strconv.Itoa(*n)
+	}
+	return text(in.RPNAbove) + "/" + text(in.SeverityAtLeast)
+}
+
 // fakeApproval meniru approval.Service.
 type fakeApproval struct {
 	positions []approval.Position
@@ -601,6 +675,9 @@ func newTestServer(t *testing.T, ui fs.FS, deps Deps) testServer {
 	}
 	if deps.Settings == nil {
 		deps.Settings = &fakeSettings{}
+	}
+	if deps.Templates == nil {
+		deps.Templates = &fakeTemplates{}
 	}
 	var log bytes.Buffer
 	deps.Logger = slog.New(slog.NewTextHandler(&log, nil))

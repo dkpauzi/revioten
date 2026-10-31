@@ -130,7 +130,7 @@ SELECT l.seq, l.occurred_at, l.actor_type, l.actor_account_id, a.login AS actor_
        l.action, l.target_type, l.target_id,
        coalesce(ta.login, tc.code, tp.code, tg.name, tm.name, tn.number, tpr.name,
                 tns.factory_code, tdt.name, tsc.code, tct.name, tcs.name, tfm.name,
-                tpo.name, tar.name, tdn.number, '') AS target_label,
+                tpo.name, tar.name, tdn.number, tft.name, '') AS target_label,
        l.details, l.prev_hash, l.hash
 FROM audit_log l
 LEFT JOIN accounts a ON a.id = l.actor_account_id
@@ -151,6 +151,7 @@ LEFT JOIN change_sources tcs ON l.target_type = 'change_source' AND tcs.id = l.t
 LEFT JOIN four_m_categories tfm ON l.target_type = 'four_m_category' AND tfm.id = l.target_id
 LEFT JOIN positions tpo ON l.target_type = 'position' AND tpo.id = l.target_id
 LEFT JOIN approval_routes tar ON l.target_type = 'approval_route' AND tar.id = l.target_id
+LEFT JOIN format_templates tft ON l.target_type = 'format_template' AND tft.id = l.target_id
 WHERE l.seq < $1
 ORDER BY l.seq DESC
 LIMIT $2

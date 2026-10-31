@@ -36,6 +36,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/product"
 	"github.com/dkpauzi/revioten/internal/server"
 	"github.com/dkpauzi/revioten/internal/settings"
+	"github.com/dkpauzi/revioten/internal/template"
 	"github.com/dkpauzi/revioten/web"
 )
 
@@ -101,6 +102,7 @@ func runServer(args []string) error {
 			Changes:   change.NewService(pool, checker),
 			Approval:  approval.NewService(pool, checker),
 			Settings:  settings.NewService(pool, checker),
+			Templates: template.NewService(pool, checker),
 		}),
 		// Batas waktu membaca header permintaan. Tanpa batas ini, klien yang
 		// sangat lambat bisa menahan koneksi selamanya (pengaman dasar, G9).

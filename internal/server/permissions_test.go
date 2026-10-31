@@ -22,6 +22,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/process"
 	"github.com/dkpauzi/revioten/internal/product"
 	"github.com/dkpauzi/revioten/internal/settings"
+	"github.com/dkpauzi/revioten/internal/template"
 )
 
 // TestMain menyalakan PostgreSQL untuk test integrasi di file ini. Test lain
@@ -57,6 +58,7 @@ func TestPermissionsPerOperation(t *testing.T) {
 		DB: pool, Customers: customers, Auth: authSvc, Access: checker,
 		Audit: audit.NewService(pool, checker), Products: products, Processes: processes,
 		Numbering: numbers, Changes: changes, Approval: approvals, Settings: settings.NewService(pool, checker),
+		Templates: template.NewService(pool, checker),
 	})
 
 	// Admin pertama, satu akun kerja tanpa peran (hanya hak dasar Viewer), dan
@@ -180,6 +182,17 @@ func TestPermissionsPerOperation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// Format template isian awal (M3.1): PFMEA AIAG 4th, versi 1, field pertamanya.
+	templates := template.NewService(pool, checker)
+	formats, err := templates.ListFormatTemplates(ctx, admin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pfmeaFormat := formats[1]
+	pfmeaVersion, err := templates.GetFormatVersion(ctx, admin, pfmeaFormat.Versions[0].ID)
+	if err != nil {
+		t.Fatal(err)
+	}
 	// params mengisi {nama} di alamat dan isi permintaan dengan ID sungguhan.
 	params := map[string]string{
 		"positionId": ppapEngineer.ID, "holderId": holder.ID, "approvalRouteId": routes[0].ID, "routeId": routes[1].ID,
@@ -188,6 +201,7 @@ func TestPermissionsPerOperation(t *testing.T) {
 		"modelGroupId": modelGroup.ID, "modelId": model.ID, "partNumberId": part.ID,
 		"processId": proc.ID, "documentTypeId": docTypes[0].ID, "cpTypeId": docTypes[2].ID, "documentNumberId": reg.Numbers[0].ID, "specialCodeId": specialCodes[0].ID,
 		"changeTypeId": changeTypes[0].ID, "changeSourceId": sources[0].ID, "fourMCategoryId": categories[0].ID,
+		"formatTemplateId": pfmeaFormat.ID, "formatVersionId": pfmeaVersion.ID, "formatFieldId": pfmeaVersion.Fields[0].ID,
 	}
 
 	// Alamat ditulis seperti di kontrak. Urutan penting: operasi yang
@@ -235,6 +249,16 @@ func TestPermissionsPerOperation(t *testing.T) {
 		{http.MethodGet, "/api/v1/special-codes", "", http.StatusOK, http.StatusOK, http.StatusOK},
 		{http.MethodPost, "/api/v1/special-codes", `{"code":"QA","name":"Quality"}`, http.StatusForbidden, http.StatusForbidden, http.StatusCreated},
 		{http.MethodPut, "/api/v1/special-codes/{specialCodeId}", `{"name":"Health and Safety"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		// Format template (M3.1): semua akun melihat (L-2), admin mengubah (A-2, UC-20).
+		{http.MethodGet, "/api/v1/format-templates", "", http.StatusOK, http.StatusOK, http.StatusOK},
+		{http.MethodPost, "/api/v1/format-templates", `{"name":"PFD copy","document_type_id":"{documentTypeId}","risk_method":"none"}`, http.StatusForbidden, http.StatusForbidden, http.StatusCreated},
+		{http.MethodPut, "/api/v1/format-templates/{formatTemplateId}", `{"name":"PFMEA AIAG 4th"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodGet, "/api/v1/format-template-versions/{formatVersionId}", "", http.StatusOK, http.StatusOK, http.StatusOK},
+		{http.MethodPut, "/api/v1/format-template-versions/{formatVersionId}", `{"highlight_rpn_above":100}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodPost, "/api/v1/format-template-versions/{formatVersionId}/fields", `{"area":"row","kind":"text","label":"Note"}`, http.StatusForbidden, http.StatusForbidden, http.StatusCreated},
+		{http.MethodPut, "/api/v1/format-template-versions/{formatVersionId}/fields/{formatFieldId}", `{"label":"Process or Line"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodPut, "/api/v1/format-template-versions/{formatVersionId}/rating-criteria", `{"items":[{"scale":"severity","value":1,"criteria":""}]}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodPut, "/api/v1/format-template-versions/{formatVersionId}/symbols", `{"items":[{"key":"critical_process","name":"Critical Process"},{"key":"revision","name":"Revision"},{"key":"important_character","name":"Important Character"},{"key":"regulation","name":"Regulation"}]}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
 		{http.MethodGet, "/api/v1/change-types", "", http.StatusOK, http.StatusOK, http.StatusOK},
 		{http.MethodPut, "/api/v1/change-types/{changeTypeId}", `{"name":"Content change"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
 		{http.MethodGet, "/api/v1/change-sources", "", http.StatusOK, http.StatusOK, http.StatusOK},

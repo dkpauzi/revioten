@@ -91,6 +91,8 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-67 | Pendaftaran nomor untuk customer nonaktif | Celah | M2.1 | Tidak | Terbuka |
 | E-68 | Perubahan status nomor yang dikerjakan tangan di Tahap 2, dan alasannya | Ambigu | M2.3, M4.1, M6.7 | Tidak | Terbuka |
 | E-69 | Urutan kunci transaksi penomoran: deadlock dengan ganti kode customer | Sulit dibangun | M2.1, M2.2, M2.4 | Tidak (sudah diperbaiki di kode) | Terbuka |
+| E-70 | Isi awal format template dan aturan field yang belum ditetapkan | Celah | M3.1, M4.1 | Tidak (perlu sebelum M4.1) | Terbuka |
+| E-71 | Aturan sorot PFMEA: arti "severity 8" dan nilai mana yang disorot | Ambigu | M3.1 | Tidak | Terbuka |
 
 ## Keputusan 30 Oktober 2026
 
@@ -1192,6 +1194,63 @@ Salin blok ini untuk setiap temuan baru.
 - **Di kode sekarang:** (a), di `customerCodeForNumber` (`internal/numbering/register.go`). Fungsi itu kini langkah pertama `Register` dan `RegisterSet`; `Import` sudah begitu sejak M2.5. Bukti: `TestRegisterDuringCodeChange` lulus 30 kali berturut-turut (300 putaran).
 - **Menghambat milestone?** Tidak (sudah diperbaiki di kode)
 - **Status:** Terbuka (menunggu konfirmasi aturan urutan kunci di brief dan U8)
+- **Keputusan pemilik:**
+
+### E-70 · Isi awal format template dan aturan field yang belum ditetapkan
+
+- **Tanggal dan milestone:** 31 Oktober 2026, M3.1. Berdampak ke M4.1 (baris dokumen) dan Tahap 6 (cetakan).
+- **Jenis:** Celah
+- **Rujukan:** R-TPL-01, R-TPL-02, R-TPL-11, R-TPL-12, R-DOC-01, R-DOC-04, R-DOC-09, R-CMP-01, F-09, F-10, F-11, usulan M3.1, UC-20.
+- **Temuan:** brief menetapkan isi format template: kolom ber-ID tetap, metode risiko, tabel skala, field header, dan simbol. Yang belum ditetapkan:
+  1. Kolom dan field header mana yang wajib diisi.
+  2. Teks kriteria tabel skala severity, occurrence, dan detection. Form yang dipakai punya teksnya, tetapi teks manual AIAG tidak boleh disalin begitu saja.
+  3. Apakah proses dan nomor langkah termasuk field template, atau atribut baris (R-DOC-04, R-CMP-01).
+  4. Metodologi untuk PFD dan CP, karena AIAG 4th dan AIAG-VDA adalah buku FMEA.
+  5. Batas panjang label, teks sel, dan kriteria.
+  6. Apakah satu sel boleh berisi lebih dari satu simbol.
+  7. Apakah metode risiko boleh diubah setelah versi dibuat.
+  8. Apakah pilihan field select dan simbol boleh dihapus.
+- **Dampak bila dibiarkan:**
+  - isi awal bisa berbeda dari form asli;
+  - kolom wajib yang ditambah belakangan menandai banyak dokumen "belum lengkap" di Tahap 4;
+  - teks kriteria tercetak kosong.
+- **Opsi:**
+  - (a) Asumsi di bawah dipakai, lalu diganti setelah pemilik membandingkannya dengan form asli.
+  - (b) Pemilik menetapkan daftar kolom, field wajib, dan teks kriteria dari form PFD, PFMEA, dan CP asli sebelum M4.1. Teks cukup diketik lewat layar Format templates, tanpa menyimpan form-nya di repo.
+- **Rekomendasi Claude Code (usulan):** (b) sebelum M4.1, karena bahannya ada di form asli. Sampai saat itu (a).
+- **Asumsi sementara di kode (ASUMSI E-70):**
+  - Kolom dan field header diambil dari F-09 (PFD), F-10 dengan kolom standar AIAG 4th (PFMEA), dan F-11 (CP). Labelnya bahasa Inggris sesuai judul kolom, dan semuanya tidak wajib.
+  - Teks kriteria kosong.
+  - Proses dan nomor langkah adalah atribut baris, bukan field.
+  - Metodologi kosong untuk PFD dan CP.
+  - Batas: label 100 karakter, teks sel 2000, kriteria 500, paling banyak 50 pilihan per field dan 20 simbol per versi.
+  - Satu simbol per sel.
+  - Metode risiko tetap sejak versi dibuat; area dan jenis field juga tetap.
+  - Pilihan dan simbol tidak bisa dihapus, hanya diganti nama.
+  - Template SQAM hanya untuk customer aktif.
+
+  Semua ini ada di `sql/migrations/00011_create_format_templates.sql` dan `internal/template/template.go`.
+- **Menghambat milestone?** Tidak (perlu sebelum M4.1)
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-71 · Aturan sorot PFMEA: arti "severity 8" dan nilai mana yang disorot
+
+- **Tanggal dan milestone:** 31 Oktober 2026, M3.1.
+- **Jenis:** Ambigu
+- **Rujukan:** R-TPL-11, R-DOC-06, F-10.
+- **Temuan:** form PFMEA sekarang menulis aturan aksi "RPN di atas 100 atau severity 8". Ada dua hal yang belum jelas:
+  - apakah severity 8 berarti tepat 8 atau 8 ke atas;
+  - apakah aturan ini berlaku juga untuk nilai hasil tindakan (Result Severity dan Result RPN).
+- **Dampak bila dibiarkan:** sorotan di layar bisa lebih banyak atau lebih sedikit daripada cara tim membaca form.
+- **Opsi:**
+  - (a) Severity 8 ke atas, untuk nilai sekarang dan hasil tindakan.
+  - (b) Severity 8 ke atas, hanya untuk nilai sekarang.
+  - (c) Tepat 8. Kurang masuk akal, karena severity 9 dan 10 lebih berat.
+- **Rekomendasi Claude Code (usulan):** (a). Sorotan pada hasil tindakan menunjukkan risiko yang masih tinggi sesudah tindakan. Ambangnya bisa diubah di layar, dan sorotan tidak pernah memblokir.
+- **Asumsi sementara di kode (ASUMSI E-71):** (a), di `Highlights` (`internal/template/template.go`).
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
 - **Keputusan pemilik:**
 
 ## Keputusan pemilik atas pertanyaan terbuka brief (bagian 12)

@@ -1,6 +1,6 @@
 # Sistem PFD, PFMEA, dan CP · ringkasan untuk desain UI/UX
 
-- **Dibuat:** 31 Oktober 2026, sesudah Tahap 2 (penomoran dokumen) selesai. Tahap 3 (template) belum dimulai.
+- **Dibuat:** 31 Oktober 2026, sesudah Tahap 2 (penomoran dokumen) selesai; diperbarui 31 Oktober 2026 sesudah M3.1 (format template).
 - **Untuk:** Claude chat, atau siapa pun yang mendesain tampilan web ini, supaya konsepnya bisa dipahami tanpa membaca kode.
 - **Sumber:**
   - brief desain v1.17 (`docs/brief/pfmea-system-design-brief.md`);
@@ -139,7 +139,7 @@
 - **Kode customer bisa berganti.** Nomor lama tetap memakai kode lama dan tetap milik customer itu; kode baru mulai lagi dari 001.
 - **Impor nomor lama.** Register Excel lama ditempel dan nomornya masuk dengan teks aslinya. Penghitung naik ke nomor tertinggi. Lubang, nomor ganda, dan set yang tidak sejajar hanya dilaporkan.
 
-### 3.3 Template (Tahap 3, belum dibangun)
+### 3.3 Template (Tahap 3; format template sudah dibangun di M3.1)
 
 - **Format template:**
   - metodologi: AIAG 4th, AIAG-VDA, atau format SQAM customer;
@@ -327,7 +327,7 @@ Pengguna lain mendapat akun Viewer: QA, QC, internal audit, DCC (Dept Document C
 
 **Header di setiap halaman setelah login:**
 - judul aplikasi "PFD, PFMEA, and CP System";
-- menu Home, Customers, Models, Processes, Document types, Change types, Positions, Approval routes, Numbers, lalu Accounts (A-1), Audit log (A-4), Settings (A-3), dan About;
+- menu Home, Customers, Models, Processes, Format templates, Document types, Change types, Positions, Approval routes, Numbers, lalu Accounts (A-1), Audit log (A-4), Settings (A-3), dan About;
 - di kanan: "Logged in as {nama} ({login})", label "Admin account" bila akun admin, tautan "Change password", dan tombol "Log out".
 
 Menu disembunyikan selama password wajib diganti.
@@ -343,6 +343,7 @@ Menu disembunyikan selama password wajib diganti.
 | System settings (`/admin/settings`) | Admin (A-3) | Saklar "Sign date in every signature slot" (sekarang mati). |
 | Customers (`/customers`) | Semua melihat; Admin (A-2) mengubah | Project groups (kode seperti GR1, nama). Customers: kode dua huruf, nama, Project Group, status Active atau Inactive, dan kode sebelumnya. Aksinya Edit dan Change code (kode lama tetap di riwayat). Ada juga formulir tambah customer. |
 | Models and part numbers (`/models`) | Semua melihat; Admin mengubah | Pilih customer, lalu kelola Model groups (tambah, ganti nama), Models (tambah, ubah nama dan group), dan Part numbers (tambah, ubah; nama part opsional). |
+| Format templates (`/format-templates`) | Semua melihat; Admin (A-2) mengubah | Pilih template (PFD, PFMEA AIAG 4th, CP, atau buatan sendiri). Terlihat jenis dokumen, metodologi, customer, metode risiko, dan versi (Version 1 · Draft). Tabel Header fields dan Columns: No., Label, Kind, Required, Hidden, Options, dengan aksi Edit, naik, dan turun. Bagian lain: Add a header field or column, Highlight rule (RPN di atas, severity paling sedikit), Rating tables (Severity, Occurrence, Detection nilai 1 sampai 10 dengan teks kriteria), Symbols (satu per baris), dan Add a format template (kosong atau salinan). Kolom disembunyikan, tidak pernah dihapus. |
 | Processes (`/processes`) | Semua melihat; Template maintainer (E-6) mengubah | Daftar proses beserta aliasnya, tambah proses (nama, dan alias satu per baris), dan ubah. Nama dan alias berbagi satu ruang nama tanpa membedakan huruf besar kecil. |
 | Document types and number codes (`/document-types`) | Semua melihat; Admin mengubah | Number settings: kode pabrik, pola nomor (`{prefix}-{customer}-{seq}`), digit revisi, dan keterangan format nomor berjalan. Document types: nama, huruf, awalan, dan tanda "Built in this system" untuk PFD, PFMEA, CP; bisa menambah jenis lain dari WI. Special codes: kode dan artinya (ZZ, HSE). |
 | Change types, sources, and 4M (`/change-types`) | Semua melihat; Admin mengubah | Change types (ganti nama). Change sources (tambah, ganti nama, aktif atau nonaktif; sumber milik sistem selalu aktif). 4M categories (ganti nama). |
@@ -503,6 +504,8 @@ Disalin dari `docs/evaluasi-desain.md`. Kode memakai asumsi paling aman untuk se
 | E-67 | Pendaftaran nomor untuk customer nonaktif | Celah | Terbuka |
 | E-68 | Perubahan status nomor yang dikerjakan tangan di Tahap 2, dan alasannya | Ambigu | Terbuka |
 | E-69 | Urutan kunci transaksi penomoran: deadlock dengan ganti kode customer | Sulit dibangun | Terbuka |
+| E-70 | Isi awal format template dan aturan field yang belum ditetapkan | Celah | Terbuka |
+| E-71 | Aturan sorot PFMEA: arti "severity 8" dan nilai mana yang disorot | Ambigu | Terbuka |
 
 ### 10.3 Pertanyaan terbuka di brief
 
@@ -552,7 +555,7 @@ Pertanyaan yang belum selesai, beserta asumsi kerjanya (bahasa Inggris, dari bri
 | 0 | Persiapan: alat, server Go pertama, PostgreSQL, SvelteKit, irisan customer | Selesai |
 | 1 | Fondasi: login, titik pemeriksaan izin, audit log, master data, jabatan dan rute approval, backup terenkripsi | Selesai |
 | 2 | Penomoran: pola, penghitung atomik, register, set, impor nomor lama | Selesai (Gerbang 2 menunggu pemilik) |
-| 3 | Template: format template, pustaka proses, empat tingkat cakupan, versi template | Belum (ditahan sampai desain UI/UX) |
+| 3 | Template: format template, pustaka proses, empat tingkat cakupan, versi template | Berjalan: M3.1 selesai; M3.2 menunggu keputusan E-33 |
 | 4 | Dokumen dan perakitan: baris, editor grid, penguncian, tempel Excel, perakitan dua panel, urutan, perbedaan lokal, cek berdampingan | Belum |
 | 5 | Perubahan, revisi, dan riwayat: entitas perubahan, lampiran, verifikasi, draft revisi, snapshot, diff, daftar periksa dampak, propagasi, yokoten, SQAM | Belum |
 | 6 | Cetak dan rilis manual: layout sebagai data, Excel, PDF, watermark, QR dan hash, catatan cetak, catat rilis, tabel riwayat revisi | Belum |
@@ -848,6 +851,13 @@ Disalin dari `docs/uml/U1-glosarium.md`. Kolom Istilah layar adalah teks yang di
 | Group model | Model group | Kumpulan model dalam satu customer yang berbagi isi template. Satu model paling banyak masuk satu group. Bisa dipilih sebagai target yokoten. |
 | Model | Model | Produk customer, misalnya nama di kolom Model pada PFMEA. Milik satu customer dan paling banyak satu group model. |
 | Part number | Part number | Nomor part customer, milik satu model. |
+| Kolom | Column | Satu kolom baris dokumen di format template. ID-nya tetap; labelnya hanya tampilan, jadi bisa diganti tanpa merusak data. |
+| Field header | Header field | Isian di bagian header dokumen yang diketik tangan, misalnya Core Team atau Key Date. ID-nya tetap, seperti kolom. |
+| Kolom tersembunyi | Hidden | Kolom atau field header yang tidak dipakai lagi. Tidak dihapus: datanya tetap tersimpan dan tetap sah. |
+| Metode risiko | Risk method | RPN (AIAG 4th), AP (AIAG-VDA), atau tanpa metode risiko (PFD dan CP). Tetap sejak versi format template dibuat (ASUMSI E-70). |
+| Tabel skala | Rating tables | Kriteria nilai 1 sampai 10 untuk severity, occurrence, dan detection di satu versi format template. Teksnya diisi dari form yang dipakai. |
+| Nilai sekarang dan hasil tindakan | Current, action results | Dua set rating dan RPN di PFMEA AIAG 4th: nilai sekarang, dan nilai sesudah tindakan (kolom Action Results). |
+| Aturan sorot | Highlight rule | Tanda untuk RPN di atas ambang atau severity paling sedikit ambang, misalnya RPN di atas 100 atau severity 8 (ASUMSI E-71). Hanya menandai, tidak memblokir. (usulan) |
 | Perakitan | Composition | Menyusun dokumen dari process template dengan kotak centang dan drag and drop. |
 | Poin dikecualikan | Excluded point | Poin template yang sengaja tidak dipakai satu model. Tetap tercatat, tidak dihapus diam-diam. (usulan) |
 | Perbedaan lokal | Local override | Baris yang diubah hanya untuk satu dokumen dan ditandai berbeda dari template. (usulan) |
@@ -1000,7 +1010,7 @@ Disalin dari `docs/uml/U1-glosarium.md`. Kolom Istilah layar adalah teks yang di
 
 ## Lampiran D. Operasi API yang sudah ada
 
-Disalin dari kontrak `api/openapi.yaml` (67 operasi). Semua butuh login kecuali `/health` dan login. Kode hak di ringkasan menunjukkan hak yang diperiksa server.
+Disalin dari kontrak `api/openapi.yaml` (75 operasi). Semua butuh login kecuali `/health` dan login. Kode hak di ringkasan menunjukkan hak yang diperiksa server.
 
 | Method | Path | Ringkasan |
 |---|---|---|
@@ -1067,6 +1077,15 @@ Disalin dari kontrak `api/openapi.yaml` (67 operasi). Semua butuh login kecuali 
 | PUT | `/api/v1/approval-routes/{approvalRouteId}` | Rename an approval route and replace its slots (A-2, R-APR-15) |
 | PUT | `/api/v1/customers/{customerId}/default-route` | Set the default approval route of a customer (A-2, D-47) |
 | PUT | `/api/v1/change-types/{changeTypeId}/approval-route` | Set the approval route of a change type, or use the customer default (A-2, R-TPL-10) |
+| GET | `/api/v1/format-templates` | Format templates with a summary of their versions (L-2, UC-20, R-TPL-01) |
+| POST | `/api/v1/format-templates` | Add a format template with a draft version 1, empty or copied from another version (A-2, UC-20) |
+| PUT | `/api/v1/format-templates/{formatTemplateId}` | Rename a format template (A-2) |
+| GET | `/api/v1/format-template-versions/{formatVersionId}` | One format template version with its fields, rating criteria, and symbols (L-2) |
+| PUT | `/api/v1/format-template-versions/{formatVersionId}` | Change the highlight rule of a draft version (A-2, R-TPL-11) |
+| POST | `/api/v1/format-template-versions/{formatVersionId}/fields` | Add a header field or a column at the end of its area in a draft version (A-2, R-TPL-02) |
+| PUT | `/api/v1/format-template-versions/{formatVersionId}/fields/{formatFieldId}` | Change the label, required flag, hidden flag, position, or options of a field in a draft version (A-2, R-TPL-02) |
+| PUT | `/api/v1/format-template-versions/{formatVersionId}/rating-criteria` | Change the criteria text of rating values in a draft version (A-2, R-TPL-01) |
+| PUT | `/api/v1/format-template-versions/{formatVersionId}/symbols` | Rename symbols and add new ones in a draft version (A-2, R-TPL-11) |
 | GET | `/api/v1/system-settings` | System settings, today the sign date switch (D-52) |
 | PUT | `/api/v1/system-settings` | Change the system settings (A-3, UC-07) |
 | GET | `/api/v1/audit-log` | Audit log entries, newest first (A-4, admin account only) |

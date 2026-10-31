@@ -1226,6 +1226,189 @@ paths:
                 $ref: '#/components/schemas/ChangeType'
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/format-templates:
+    get:
+      operationId: listFormatTemplates
+      summary: Format templates with a summary of their versions (L-2, UC-20, R-TPL-01)
+      responses:
+        '200':
+          description: The format templates, by document type and name.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormatTemplateList'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: createFormatTemplate
+      summary: Add a format template with a draft version 1, empty or copied from another version (A-2, UC-20)
+      description: |
+        A copy gets new field IDs that belong to the new template, with the
+        same labels, order, options, risk method, highlight rule, rating
+        criteria, and symbols. Without a copy, risk_method is required.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewFormatTemplate'
+      responses:
+        '201':
+          description: The format template was added.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormatTemplate'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/format-templates/{formatTemplateId}:
+    put:
+      operationId: renameFormatTemplate
+      summary: Rename a format template (A-2)
+      parameters:
+        - $ref: '#/components/parameters/FormatTemplateId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FormatTemplateRename'
+      responses:
+        '200':
+          description: The format template was renamed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormatTemplate'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/format-template-versions/{formatVersionId}:
+    get:
+      operationId: getFormatVersion
+      summary: One format template version with its fields, rating criteria, and symbols (L-2)
+      parameters:
+        - $ref: '#/components/parameters/FormatVersionId'
+      responses:
+        '200':
+          description: The version.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormatVersion'
+        default:
+          $ref: '#/components/responses/Error'
+    put:
+      operationId: updateFormatHighlights
+      summary: Change the highlight rule of a draft version, for example RPN above 100 or severity 8 (A-2, R-TPL-11)
+      description: Highlights mark rows; they never block saving. 0 switches a rule off, and a field that is not sent stays as it is.
+      parameters:
+        - $ref: '#/components/parameters/FormatVersionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FormatHighlights'
+      responses:
+        '200':
+          description: The version after the change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormatVersion'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/format-template-versions/{formatVersionId}/fields:
+    post:
+      operationId: addFormatField
+      summary: Add a header field or a column at the end of its area in a draft version (A-2, R-TPL-02)
+      parameters:
+        - $ref: '#/components/parameters/FormatVersionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewFormatField'
+      responses:
+        '201':
+          description: The version with the new field.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormatVersion'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/format-template-versions/{formatVersionId}/fields/{formatFieldId}:
+    put:
+      operationId: updateFormatField
+      summary: Change the label, required flag, hidden flag, position, or options of a field in a draft version (A-2, R-TPL-02)
+      description: |
+        The field ID, area, and kind never change, so row content that uses
+        the ID stays valid. Fields are hidden, never deleted. A field that is
+        not sent stays as it is. Options cannot be removed; options without a
+        key are new and get a key from their label.
+      parameters:
+        - $ref: '#/components/parameters/FormatVersionId'
+        - $ref: '#/components/parameters/FormatFieldId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FormatFieldUpdate'
+      responses:
+        '200':
+          description: The version after the change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormatVersion'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/format-template-versions/{formatVersionId}/rating-criteria:
+    put:
+      operationId: setFormatRatingCriteria
+      summary: Change the criteria text of rating values in a draft version (A-2, R-TPL-01)
+      parameters:
+        - $ref: '#/components/parameters/FormatVersionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RatingCriteriaUpdate'
+      responses:
+        '200':
+          description: The version after the change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormatVersion'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/format-template-versions/{formatVersionId}/symbols:
+    put:
+      operationId: saveFormatSymbols
+      summary: Rename symbols and add new ones in a draft version (A-2, R-TPL-11)
+      description: Symbols cannot be removed, because rows may use their keys. Symbols without a key are new.
+      parameters:
+        - $ref: '#/components/parameters/FormatVersionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FormatSymbolList'
+      responses:
+        '200':
+          description: The version after the change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormatVersion'
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/system-settings:
     get:
       operationId: getSystemSettings
@@ -1422,6 +1605,24 @@ components:
         type: string
     ApprovalRouteId:
       name: approvalRouteId
+      in: path
+      required: true
+      schema:
+        type: string
+    FormatTemplateId:
+      name: formatTemplateId
+      in: path
+      required: true
+      schema:
+        type: string
+    FormatVersionId:
+      name: formatVersionId
+      in: path
+      required: true
+      schema:
+        type: string
+    FormatFieldId:
+      name: formatFieldId
       in: path
       required: true
       schema:
@@ -2639,6 +2840,254 @@ components:
         route_id:
           type: string
           description: Leave it out to use the default route of each customer.
+    FormatTemplateList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/FormatTemplate'
+    FormatTemplate:
+      type: object
+      required: [id, name, document_type, versions, created_at]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        document_type:
+          $ref: '#/components/schemas/DocumentTypeRef'
+        methodology:
+          type: string
+          enum: [aiag_4th, aiag_vda, sqam]
+          description: Missing for the forms in use today (PFD, CP).
+        customer_id:
+          type: string
+          description: Missing for a general format template; set for a customer SQAM format.
+        customer_code:
+          type: string
+        versions:
+          type: array
+          items:
+            $ref: '#/components/schemas/FormatVersionSummary'
+        created_at:
+          type: string
+          format: date-time
+    FormatVersionSummary:
+      type: object
+      required: [id, version, status, risk_method]
+      properties:
+        id:
+          type: string
+        version:
+          type: integer
+        status:
+          type: string
+          enum: [draft, published]
+        risk_method:
+          type: string
+          enum: [rpn, ap, none]
+    NewFormatTemplate:
+      type: object
+      required: [name, document_type_id]
+      properties:
+        name:
+          type: string
+        document_type_id:
+          type: string
+        methodology:
+          type: string
+          enum: [aiag_4th, aiag_vda, sqam]
+        customer_id:
+          type: string
+        risk_method:
+          type: string
+          enum: [rpn, ap, none]
+          description: Required without copy_from_version_id; a copy takes the risk method of its source.
+        copy_from_version_id:
+          type: string
+    FormatTemplateRename:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+    FormatVersion:
+      type: object
+      required: [id, template_id, version, status, risk_method, highlight_rpn_above, highlight_severity_at_least, fields, ratings, symbols, created_at]
+      properties:
+        id:
+          type: string
+        template_id:
+          type: string
+        version:
+          type: integer
+        status:
+          type: string
+          enum: [draft, published]
+        risk_method:
+          type: string
+          enum: [rpn, ap, none]
+        highlight_rpn_above:
+          type: integer
+          description: Highlight an RPN above this value; 0 means off.
+        highlight_severity_at_least:
+          type: integer
+          description: Highlight a severity of at least this value; 0 means off.
+        fields:
+          type: array
+          description: Header fields first, then columns, each by position.
+          items:
+            $ref: '#/components/schemas/FormatField'
+        ratings:
+          type: array
+          description: Severity, occurrence, then detection, values 1 to 10. Empty without a risk method.
+          items:
+            $ref: '#/components/schemas/RatingCriterion'
+        symbols:
+          type: array
+          items:
+            $ref: '#/components/schemas/FormatSymbol'
+        created_at:
+          type: string
+          format: date-time
+    FormatField:
+      type: object
+      required: [id, area, kind, label, position, required, hidden]
+      properties:
+        id:
+          type: string
+          description: Fixed across versions; row content uses this ID.
+        area:
+          type: string
+          enum: [header, row]
+        kind:
+          type: string
+          enum: [text, date, select, symbol, rating, rpn]
+        rating_scale:
+          type: string
+          enum: [severity, occurrence, detection]
+        rating_set:
+          type: integer
+          description: For rating and rpn, 1 for the current values and 2 for the action results.
+        label:
+          type: string
+        position:
+          type: integer
+          description: Position within the area, from 1.
+        required:
+          type: boolean
+        hidden:
+          type: boolean
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldOption'
+    FieldOption:
+      type: object
+      required: [label]
+      properties:
+        key:
+          type: string
+          description: Fixed key used by row content. Missing for a new option.
+        label:
+          type: string
+    NewFormatField:
+      type: object
+      required: [area, kind, label]
+      properties:
+        area:
+          type: string
+          enum: [header, row]
+        kind:
+          type: string
+          enum: [text, date, select, symbol, rating, rpn]
+        label:
+          type: string
+        required:
+          type: boolean
+        rating_scale:
+          type: string
+          enum: [severity, occurrence, detection]
+        rating_set:
+          type: integer
+        options:
+          type: array
+          description: The options of a select field, by label.
+          items:
+            $ref: '#/components/schemas/FieldOption'
+    FormatFieldUpdate:
+      type: object
+      required: [label]
+      properties:
+        label:
+          type: string
+        required:
+          type: boolean
+        hidden:
+          type: boolean
+        position:
+          type: integer
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldOption'
+    FormatHighlights:
+      type: object
+      properties:
+        highlight_rpn_above:
+          type: integer
+        highlight_severity_at_least:
+          type: integer
+    RatingCriterion:
+      type: object
+      required: [scale, value, criteria]
+      properties:
+        scale:
+          type: string
+          enum: [severity, occurrence, detection]
+        value:
+          type: integer
+        criteria:
+          type: string
+    RatingCriteriaUpdate:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RatingCriterionInput'
+    RatingCriterionInput:
+      type: object
+      required: [scale, value]
+      properties:
+        scale:
+          type: string
+          enum: [severity, occurrence, detection]
+        value:
+          type: integer
+        criteria:
+          type: string
+          description: The new criteria text. An item without criteria changes nothing.
+    FormatSymbolList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/FormatSymbol'
+    FormatSymbol:
+      type: object
+      required: [name]
+      properties:
+        key:
+          type: string
+          description: Fixed key used by row content. Missing for a new symbol.
+        name:
+          type: string
     SystemSettings:
       type: object
       required: [sign_dates_enabled]

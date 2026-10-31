@@ -66,6 +66,7 @@
 				<a href="/customers">{t('navCustomers')}</a>
 				<a href="/models">{t('navModels')}</a>
 				<a href="/processes">{t('navProcesses')}</a>
+				<a href="/format-templates">{t('navFormatTemplates')}</a>
 				<a href="/document-types">{t('navDocumentTypes')}</a>
 				<a href="/change-types">{t('navChangeTypes')}</a>
 				<a href="/positions">{t('navPositions')}</a>

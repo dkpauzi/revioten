@@ -1,5 +1,5 @@
-' U8 · ERD fisik (draft 0.9, 30 Oktober 2026, sumber migrasi 00001 sampai 00010 di sql/migrations)
-' Menggambarkan tabel PostgreSQL 18 yang sudah dibangun di Tahap 0 sampai 2 (R-UML-03: diagram
+' U8 · ERD fisik (draft 0.10, 31 Oktober 2026, sumber migrasi 00001 sampai 00011 di sql/migrations)
+' Menggambarkan tabel PostgreSQL 18 yang sudah dibangun sampai M3.1 (R-UML-03: diagram
 ' fisik mengikuti kode per milestone). Tim IT boleh memakai stack lain (R-UML-02); aturan yang
 ' wajib dipertahankan ditulis di catatan setiap diagram.
 '
@@ -592,5 +592,147 @@ note left of document_numbers
   Hak role aplikasi: SELECT, INSERT, dan UPDATE hanya
   kolom status, status_reason, status_changed_at;
   tanpa DELETE (R-NUM-04).
+end note
+@enduml
+
+' ---------------------------------------------------------------------------
+@startuml U8-E-format-template
+hide circle
+hide empty members
+skinparam linetype ortho
+skinparam shadowing false
+skinparam ArrowColor #444444
+skinparam ClassBorderColor #1F4E79
+skinparam ClassBackgroundColor #FFFFFF
+
+title U8-E · Format template (migrasi 00011, M3.1)
+
+entity "format_templates" as format_templates {
+  * id : uuid <<PK>>
+  --
+  * name : text
+  * document_type_id : uuid <<FK>>
+  methodology : text
+  customer_id : uuid <<FK>>
+  * created_at : timestamptz
+}
+
+entity "format_template_versions" as format_template_versions {
+  * id : uuid <<PK>>
+  --
+  * template_id : uuid <<FK>>
+  * version : integer
+  * status : text = 'draft'
+  * risk_method : text
+  highlight_rpn_above : smallint
+  highlight_severity_at_least : smallint
+  * created_at : timestamptz
+}
+
+entity "format_fields" as format_fields {
+  * id : uuid <<PK>>
+  --
+  * template_id : uuid <<FK>>
+  * area : text
+  * kind : text
+  rating_scale : text
+  rating_set : smallint
+  * created_at : timestamptz
+}
+
+entity "format_version_fields" as format_version_fields {
+  * version_id : uuid <<PK, FK>>
+  * field_id : uuid <<PK, FK>>
+  --
+  * template_id : uuid <<FK>>
+  * area : text <<FK>>
+  * label : text
+  * position : smallint
+  * required : boolean = false
+  * hidden : boolean = false
+  options : jsonb
+}
+
+entity "format_rating_criteria" as format_rating_criteria {
+  * version_id : uuid <<PK, FK>>
+  * scale : text <<PK>>
+  * value : smallint <<PK>>
+  --
+  * criteria : text = ''
+}
+
+entity "format_symbols" as format_symbols {
+  * version_id : uuid <<PK, FK>>
+  * key : text <<PK>>
+  --
+  * name : text
+  * position : smallint
+}
+
+entity "document_types" as document_types_e {
+  * id : uuid <<PK>>
+}
+
+entity "customers" as customers_e {
+  * id : uuid <<PK>>
+}
+
+document_types_e ||--o{ format_templates
+customers_e |o--o{ format_templates
+format_templates ||--|{ format_template_versions
+format_templates ||--o{ format_fields
+format_template_versions ||--o{ format_version_fields
+format_fields ||--|{ format_version_fields
+format_template_versions ||--o{ format_rating_criteria
+format_template_versions ||--o{ format_symbols
+
+note right of format_templates
+  methodology: aiag_4th, aiag_vda, sqam, atau kosong
+  (form PFD dan CP yang dipakai). customer_id diisi
+  untuk format SQAM satu customer. Nama unik tanpa
+  membedakan huruf besar kecil. Jenis dokumen hanya
+  PFD, PFMEA, atau CP (dijaga layanan).
+end note
+
+note right of format_template_versions
+  UNIQUE (template_id, version).
+  status: draft atau published (M3.4).
+  risk_method: rpn, ap, atau none.
+  CHECK: aturan RPN hanya untuk rpn (1 sampai
+  999); aturan severity untuk rpn dan ap (1 sampai
+  10). Hak role aplikasi: UPDATE hanya kolom
+  highlight_*.
+end note
+
+note right of format_fields
+  Identitas field yang tetap lintas versi.
+  kind: text, date, select, symbol, rating, rpn.
+  CHECK: rating wajib rating_scale; rating dan rpn
+  wajib rating_set (1 atau 2) dan hanya di area row.
+  Hak role aplikasi: SELECT dan INSERT saja, jadi
+  area dan jenis tidak pernah berubah.
+end note
+
+note left of format_version_fields
+  FK (version_id, template_id) -> versi, dan
+  FK (field_id, template_id, area) -> format_fields:
+  versi dan field milik template yang sama.
+  UNIQUE (version_id, area, position) DEFERRABLE
+  INITIALLY DEFERRED, supaya field bisa digeser.
+  UNIQUE (version_id, area, lower(label)).
+  CHECK: tersembunyi tidak bisa wajib.
+  Tanpa DELETE: field disembunyikan, tidak dihapus
+  (R-TPL-02).
+end note
+
+note bottom of format_rating_criteria
+  scale: severity, occurrence, detection;
+  value 1 sampai 10; criteria paling banyak 500
+  karakter. Isi awal kosong (ASUMSI E-70).
+end note
+
+note bottom of format_symbols
+  key ^[a-z][a-z0-9_]{0,49}$, tetap; nama unik
+  per versi. Tanpa DELETE (ASUMSI E-70).
 end note
 @enduml

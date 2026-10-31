@@ -106,6 +106,62 @@ type DocumentType struct {
 	Position int16
 }
 
+type FormatField struct {
+	ID          string
+	TemplateID  string
+	Area        string
+	Kind        string
+	RatingScale *string
+	RatingSet   *int16
+	CreatedAt   time.Time
+}
+
+type FormatRatingCriterium struct {
+	VersionID string
+	Scale     string
+	Value     int16
+	Criteria  string
+}
+
+type FormatSymbol struct {
+	VersionID string
+	Key       string
+	Name      string
+	Position  int16
+}
+
+type FormatTemplate struct {
+	ID             string
+	Name           string
+	DocumentTypeID string
+	Methodology    *string
+	CustomerID     *string
+	CreatedAt      time.Time
+}
+
+type FormatTemplateVersion struct {
+	ID                       string
+	TemplateID               string
+	Version                  int32
+	Status                   string
+	RiskMethod               string
+	HighlightRpnAbove        *int16
+	HighlightSeverityAtLeast *int16
+	CreatedAt                time.Time
+}
+
+type FormatVersionField struct {
+	VersionID  string
+	FieldID    string
+	TemplateID string
+	Area       string
+	Label      string
+	Position   int16
+	Required   bool
+	Hidden     bool
+	Options    []byte
+}
+
 type FourMCategory struct {
 	ID       string
 	Key      string

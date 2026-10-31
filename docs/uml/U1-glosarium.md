@@ -1,6 +1,6 @@
 # U1 · Glosarium
 
-- Paket UML: draft 0.9, 30 Oktober 2026 (draft 0.8 dan 0.7: 30 dan 27 Oktober 2026)
+- Paket UML: draft 0.10, 31 Oktober 2026 (draft 0.9, 0.8, dan 0.7: 30, 30, dan 27 Oktober 2026)
 - Sumber: brief desain v1.17, termasuk temuan dari dokumen TR-020 (brief bagian 21). Nama jabatan mengikuti bagan organisasi NPI (update 22 Januari 2026). Nama orang tidak dicantumkan. Setiap istilah merujuk ke ID di brief (R-UML-01).
 - Bahasa: penjelasan dalam bahasa Indonesia. Nama jabatan, nama standar, dan tahap tanda tangan memakai istilah yang sama dengan brief (R-UML-05, usulan).
 - Kolom **Istilah layar (Inggris)** (E-19, D-98): istilah yang dipakai di layar dan di katalog teks `web/src/lib/i18n/en.ts`, karena layar berbahasa Inggris untuk saat ini (D-96). Istilah baru di layar ditambahkan ke sini lebih dulu.
@@ -46,6 +46,13 @@
 | Group model | Model group | Kumpulan model dalam satu customer yang berbagi isi template. Satu model paling banyak masuk satu group. Bisa dipilih sebagai target yokoten. | Model group | D-39, D-40, D-42, D-87 | Belum |
 | Model | Model | Produk customer, misalnya nama di kolom Model pada PFMEA. Milik satu customer dan paling banyak satu group model. | | R-DOC-08, D-42 | Belum |
 | Part number | Part number | Nomor part customer, milik satu model. | | R-DOC-08 | Belum |
+| Kolom | Column | Satu kolom baris dokumen di format template. ID-nya tetap; labelnya hanya tampilan, jadi bisa diganti tanpa merusak data. | Column | R-TPL-02 | Tidak perlu |
+| Field header | Header field | Isian di bagian header dokumen yang diketik tangan, misalnya Core Team atau Key Date. ID-nya tetap, seperti kolom. | | R-TPL-01, R-CMP-01 | Tidak perlu |
+| Kolom tersembunyi | Hidden | Kolom atau field header yang tidak dipakai lagi. Tidak dihapus: datanya tetap tersimpan dan tetap sah. | | R-TPL-02 | Tidak perlu |
+| Metode risiko | Risk method | RPN (AIAG 4th), AP (AIAG-VDA), atau tanpa metode risiko (PFD dan CP). Tetap sejak versi format template dibuat (ASUMSI E-70). | | R-TPL-02 | Tidak perlu |
+| Tabel skala | Rating tables | Kriteria nilai 1 sampai 10 untuk severity, occurrence, dan detection di satu versi format template. Teksnya diisi dari form yang dipakai. | | R-TPL-01 | Belum |
+| Nilai sekarang dan hasil tindakan | Current, action results | Dua set rating dan RPN di PFMEA AIAG 4th: nilai sekarang, dan nilai sesudah tindakan (kolom Action Results). | Action Results | F-10 | Belum |
+| Aturan sorot | Highlight rule | Tanda untuk RPN di atas ambang atau severity paling sedikit ambang, misalnya RPN di atas 100 atau severity 8 (ASUMSI E-71). Hanya menandai, tidak memblokir. (usulan) | Aturan aksi | R-TPL-11, R-DOC-06 | Belum |
 | Perakitan | Composition | Menyusun dokumen dari process template dengan kotak centang dan drag and drop. | Composition | R-CMP-01 | Tidak perlu |
 | Poin dikecualikan | Excluded point | Poin template yang sengaja tidak dipakai satu model. Tetap tercatat, tidak dihapus diam-diam. (usulan) | Excluded point | R-CMP-03 | Tidak perlu |
 | Perbedaan lokal | Local override | Baris yang diubah hanya untuk satu dokumen dan ditandai berbeda dari template. (usulan) | Local override | R-CMP-04 | Tidak perlu |

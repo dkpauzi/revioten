@@ -62,7 +62,22 @@ const problemKeys: Record<string, MessageKey> = {
 	'status:invalid_format': 'numberImportStatusInvalid',
 	'text:required': 'numberImportTextRequired',
 	'text:too_long': 'numberImportTextTooLong',
-	'text:taken': 'numberImportRetry'
+	'text:taken': 'numberImportRetry',
+	'risk_method:required': 'formatRiskRequired',
+	'copy_from_version_id:not_allowed': 'formatCopyNotAllowed',
+	'label:required': 'formatLabelRequired',
+	'label:too_long': 'formatLabelTooLong',
+	'label:taken': 'formatLabelTaken',
+	'kind:not_allowed': 'formatKindNotAllowed',
+	'rating_scale:required': 'formatScaleRequired',
+	'rating_scale:taken': 'formatScaleTaken',
+	'rating_set:taken': 'formatSetTaken',
+	'options:required': 'formatOptionsRequired',
+	'options:taken': 'formatOptionsTaken',
+	'options:not_allowed': 'formatOptionsNotAllowed',
+	'required:not_allowed': 'formatHiddenRequired',
+	'symbols:taken': 'formatSymbolsTaken',
+	'symbols:not_allowed': 'formatSymbolsNotAllowed'
 };
 
 // ProblemScope adalah formulir tempat masalah ditampilkan. Field yang sama bisa
@@ -79,7 +94,8 @@ export type ProblemScope =
 	| 'changeList'
 	| 'position'
 	| 'holder'
-	| 'route';
+	| 'route'
+	| 'formatTemplate';
 
 // scopedKeys memetakan "formulir.field:kode masalah" ke kunci teks layar.
 const scopedKeys: Record<string, MessageKey> = {
@@ -105,7 +121,10 @@ const scopedKeys: Record<string, MessageKey> = {
 	'holder.project_group_id:taken': 'holderGroupTaken',
 	'holder.project_group_id:not_allowed': 'holderGroupNotAllowed',
 	'holder.position_id:taken': 'holderPositionTaken',
-	'route.name:taken': 'routeNameTaken'
+	'route.name:taken': 'routeNameTaken',
+	'formatTemplate.name:required': 'formatNameRequired',
+	'formatTemplate.name:taken': 'formatNameTaken',
+	'formatTemplate.document_type_id:not_allowed': 'formatTypeNotAllowed'
 };
 
 // problemText memberi teks layar untuk satu masalah input: teks khusus

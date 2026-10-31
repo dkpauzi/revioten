@@ -3,7 +3,7 @@
 - **Tanggal:** 30 dan 31 Oktober 2026
 - **Dasar:** instruksi pemilik "jika tidak ada kendala untuk lanjut ke M2, silahkan selesaikan hingga M2" (30 Oktober 2026), dan D-77 (kode dipakai untuk menguji desain).
 - **Isi:** bahan keputusan untuk pemilik. Claude Code tidak memutuskan apa pun di sini. Rincian setiap temuan (opsi, dampak, dan asumsi) ada di `docs/evaluasi-desain.md`.
-- **Status:** menunggu keputusan pemilik dan Gerbang 2. Tahap 3 belum dimulai.
+- **Status:** menunggu keputusan pemilik dan Gerbang 2. Tahap 3 dimulai 31 Oktober 2026 atas permintaan pemilik sebelum Gerbang 2, sebagai pengecualian D-37; Gerbang 2 tetap terbuka.
 
 ## 1. Yang sudah dibangun
 

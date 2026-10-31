@@ -19,6 +19,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/process"
 	"github.com/dkpauzi/revioten/internal/product"
 	"github.com/dkpauzi/revioten/internal/settings"
+	"github.com/dkpauzi/revioten/internal/template"
 )
 
 // Pinger adalah bagian database yang dipakai /health. *pgxpool.Pool memenuhinya.
@@ -113,6 +114,20 @@ type ApprovalService interface {
 	UpdateRoute(ctx context.Context, actor access.Actor, id string, in approval.RouteInput) (approval.Route, error)
 }
 
+// TemplateService adalah operasi format template yang dipakai API (M3.1).
+// *template.Service memenuhinya; test memakai versi palsu.
+type TemplateService interface {
+	ListFormatTemplates(ctx context.Context, actor access.Actor) ([]template.FormatTemplate, error)
+	GetFormatVersion(ctx context.Context, actor access.Actor, id string) (template.FormatVersion, error)
+	CreateFormatTemplate(ctx context.Context, actor access.Actor, in template.NewTemplate) (template.FormatTemplate, error)
+	RenameFormatTemplate(ctx context.Context, actor access.Actor, id, name string) (template.FormatTemplate, error)
+	AddField(ctx context.Context, actor access.Actor, versionID string, in template.NewField) (template.FormatVersion, error)
+	UpdateField(ctx context.Context, actor access.Actor, versionID, fieldID string, in template.FieldUpdate) (template.FormatVersion, error)
+	SetRatingCriteria(ctx context.Context, actor access.Actor, versionID string, ratings []template.Rating) (template.FormatVersion, error)
+	SaveSymbols(ctx context.Context, actor access.Actor, versionID string, symbols []template.Symbol) (template.FormatVersion, error)
+	SetHighlights(ctx context.Context, actor access.Actor, versionID string, in template.HighlightSettings) (template.FormatVersion, error)
+}
+
 // SettingsService adalah operasi pengaturan sistem yang dipakai API (M1.8).
 // *settings.Service memenuhinya; test memakai versi palsu.
 type SettingsService interface {
@@ -163,6 +178,7 @@ type Deps struct {
 	Changes   ChangeMasterService
 	Approval  ApprovalService
 	Settings  SettingsService
+	Templates TemplateService
 	// Logger untuk log server. Bila nil, dipakai slog.Default().
 	Logger *slog.Logger
 }
@@ -181,7 +197,8 @@ func NewHandler(ui fs.FS, deps Deps) http.Handler {
 	a := &apiServer{
 		db: deps.DB, customers: deps.Customers, auth: deps.Auth, access: deps.Access,
 		audit: deps.Audit, products: deps.Products, processes: deps.Processes,
-		numbering: deps.Numbering, changes: deps.Changes, approval: deps.Approval, settings: deps.Settings, log: log,
+		numbering: deps.Numbering, changes: deps.Changes, approval: deps.Approval, settings: deps.Settings,
+		templates: deps.Templates, log: log,
 	}
 
 	// Route dari kontrak didaftarkan oleh kode hasil generate ke mux khusus API.
@@ -234,5 +251,6 @@ type apiServer struct {
 	changes   ChangeMasterService
 	approval  ApprovalService
 	settings  SettingsService
+	templates TemplateService
 	log       *slog.Logger
 }

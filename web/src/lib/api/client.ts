@@ -34,6 +34,15 @@ import type {
 	NewDocumentNumber,
 	NewDocumentNumberSet,
 	NextDocumentNumber,
+	FormatFieldUpdate,
+	FormatHighlights,
+	FormatSymbol,
+	FormatTemplate,
+	FormatTemplateList,
+	FormatVersion,
+	NewFormatField,
+	NewFormatTemplate,
+	RatingCriterionInput,
 	NumberImportReport,
 	NumberImportRequest,
 	NumberRegistration,
@@ -468,6 +477,81 @@ export function removePositionHolder(
 ): Promise<ApiResult<undefined>> {
 	const url = `${itemPath('positions', positionId)}/holders/${encodeURIComponent(holderId)}`;
 	return call<undefined>(fetchFn, url, { method: 'DELETE' });
+}
+
+// listFormatTemplates memanggil GET /api/v1/format-templates (M3.1).
+export function listFormatTemplates(fetchFn: typeof fetch = fetch): Promise<ApiResult<FormatTemplateList>> {
+	return call<FormatTemplateList>(fetchFn, '/api/v1/format-templates', { method: 'GET' });
+}
+
+// createFormatTemplate memanggil POST /api/v1/format-templates (A-2).
+export function createFormatTemplate(
+	input: NewFormatTemplate,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<FormatTemplate>> {
+	return call<FormatTemplate>(fetchFn, '/api/v1/format-templates', jsonRequest('POST', input));
+}
+
+// renameFormatTemplate memanggil PUT /api/v1/format-templates/{id} (A-2).
+export function renameFormatTemplate(
+	id: string,
+	name: string,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<FormatTemplate>> {
+	return call<FormatTemplate>(fetchFn, itemPath('format-templates', id), jsonRequest('PUT', { name }));
+}
+
+// getFormatVersion memanggil GET /api/v1/format-template-versions/{id}.
+export function getFormatVersion(id: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<FormatVersion>> {
+	return call<FormatVersion>(fetchFn, itemPath('format-template-versions', id), { method: 'GET' });
+}
+
+// updateFormatHighlights memanggil PUT /api/v1/format-template-versions/{id} (A-2).
+export function updateFormatHighlights(
+	id: string,
+	input: FormatHighlights,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<FormatVersion>> {
+	return call<FormatVersion>(fetchFn, itemPath('format-template-versions', id), jsonRequest('PUT', input));
+}
+
+// addFormatField memanggil POST /api/v1/format-template-versions/{id}/fields (A-2).
+export function addFormatField(
+	versionId: string,
+	input: NewFormatField,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<FormatVersion>> {
+	return call<FormatVersion>(fetchFn, itemPath('format-template-versions', versionId) + '/fields', jsonRequest('POST', input));
+}
+
+// updateFormatField memanggil PUT /api/v1/format-template-versions/{id}/fields/{fieldId} (A-2).
+export function updateFormatField(
+	versionId: string,
+	fieldId: string,
+	input: FormatFieldUpdate,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<FormatVersion>> {
+	const path = itemPath('format-template-versions', versionId) + '/fields/' + encodeURIComponent(fieldId);
+	return call<FormatVersion>(fetchFn, path, jsonRequest('PUT', input));
+}
+
+// setFormatRatingCriteria memanggil PUT /api/v1/format-template-versions/{id}/rating-criteria (A-2).
+export function setFormatRatingCriteria(
+	versionId: string,
+	items: RatingCriterionInput[],
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<FormatVersion>> {
+	const path = itemPath('format-template-versions', versionId) + '/rating-criteria';
+	return call<FormatVersion>(fetchFn, path, jsonRequest('PUT', { items }));
+}
+
+// saveFormatSymbols memanggil PUT /api/v1/format-template-versions/{id}/symbols (A-2).
+export function saveFormatSymbols(
+	versionId: string,
+	items: FormatSymbol[],
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<FormatVersion>> {
+	return call<FormatVersion>(fetchFn, itemPath('format-template-versions', versionId) + '/symbols', jsonRequest('PUT', { items }));
 }
 
 // listApprovalRoutes memanggil GET /api/v1/approval-routes.

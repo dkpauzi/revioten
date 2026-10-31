@@ -311,6 +311,174 @@ func (e ErrorDetailCode) Valid() bool {
 	}
 }
 
+// Defines values for FormatFieldArea.
+const (
+	FormatFieldAreaHeader FormatFieldArea = "header"
+	FormatFieldAreaRow    FormatFieldArea = "row"
+)
+
+// Valid indicates whether the value is a known member of the FormatFieldArea enum.
+func (e FormatFieldArea) Valid() bool {
+	switch e {
+	case FormatFieldAreaHeader:
+		return true
+	case FormatFieldAreaRow:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for FormatFieldKind.
+const (
+	FormatFieldKindDate   FormatFieldKind = "date"
+	FormatFieldKindRating FormatFieldKind = "rating"
+	FormatFieldKindRpn    FormatFieldKind = "rpn"
+	FormatFieldKindSelect FormatFieldKind = "select"
+	FormatFieldKindSymbol FormatFieldKind = "symbol"
+	FormatFieldKindText   FormatFieldKind = "text"
+)
+
+// Valid indicates whether the value is a known member of the FormatFieldKind enum.
+func (e FormatFieldKind) Valid() bool {
+	switch e {
+	case FormatFieldKindDate:
+		return true
+	case FormatFieldKindRating:
+		return true
+	case FormatFieldKindRpn:
+		return true
+	case FormatFieldKindSelect:
+		return true
+	case FormatFieldKindSymbol:
+		return true
+	case FormatFieldKindText:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for FormatFieldRatingScale.
+const (
+	FormatFieldRatingScaleDetection  FormatFieldRatingScale = "detection"
+	FormatFieldRatingScaleOccurrence FormatFieldRatingScale = "occurrence"
+	FormatFieldRatingScaleSeverity   FormatFieldRatingScale = "severity"
+)
+
+// Valid indicates whether the value is a known member of the FormatFieldRatingScale enum.
+func (e FormatFieldRatingScale) Valid() bool {
+	switch e {
+	case FormatFieldRatingScaleDetection:
+		return true
+	case FormatFieldRatingScaleOccurrence:
+		return true
+	case FormatFieldRatingScaleSeverity:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for FormatTemplateMethodology.
+const (
+	FormatTemplateMethodologyAiag4th FormatTemplateMethodology = "aiag_4th"
+	FormatTemplateMethodologyAiagVda FormatTemplateMethodology = "aiag_vda"
+	FormatTemplateMethodologySqam    FormatTemplateMethodology = "sqam"
+)
+
+// Valid indicates whether the value is a known member of the FormatTemplateMethodology enum.
+func (e FormatTemplateMethodology) Valid() bool {
+	switch e {
+	case FormatTemplateMethodologyAiag4th:
+		return true
+	case FormatTemplateMethodologyAiagVda:
+		return true
+	case FormatTemplateMethodologySqam:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for FormatVersionRiskMethod.
+const (
+	FormatVersionRiskMethodAp   FormatVersionRiskMethod = "ap"
+	FormatVersionRiskMethodNone FormatVersionRiskMethod = "none"
+	FormatVersionRiskMethodRpn  FormatVersionRiskMethod = "rpn"
+)
+
+// Valid indicates whether the value is a known member of the FormatVersionRiskMethod enum.
+func (e FormatVersionRiskMethod) Valid() bool {
+	switch e {
+	case FormatVersionRiskMethodAp:
+		return true
+	case FormatVersionRiskMethodNone:
+		return true
+	case FormatVersionRiskMethodRpn:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for FormatVersionStatus.
+const (
+	FormatVersionStatusDraft     FormatVersionStatus = "draft"
+	FormatVersionStatusPublished FormatVersionStatus = "published"
+)
+
+// Valid indicates whether the value is a known member of the FormatVersionStatus enum.
+func (e FormatVersionStatus) Valid() bool {
+	switch e {
+	case FormatVersionStatusDraft:
+		return true
+	case FormatVersionStatusPublished:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for FormatVersionSummaryRiskMethod.
+const (
+	FormatVersionSummaryRiskMethodAp   FormatVersionSummaryRiskMethod = "ap"
+	FormatVersionSummaryRiskMethodNone FormatVersionSummaryRiskMethod = "none"
+	FormatVersionSummaryRiskMethodRpn  FormatVersionSummaryRiskMethod = "rpn"
+)
+
+// Valid indicates whether the value is a known member of the FormatVersionSummaryRiskMethod enum.
+func (e FormatVersionSummaryRiskMethod) Valid() bool {
+	switch e {
+	case FormatVersionSummaryRiskMethodAp:
+		return true
+	case FormatVersionSummaryRiskMethodNone:
+		return true
+	case FormatVersionSummaryRiskMethodRpn:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for FormatVersionSummaryStatus.
+const (
+	FormatVersionSummaryStatusDraft     FormatVersionSummaryStatus = "draft"
+	FormatVersionSummaryStatusPublished FormatVersionSummaryStatus = "published"
+)
+
+// Valid indicates whether the value is a known member of the FormatVersionSummaryStatus enum.
+func (e FormatVersionSummaryStatus) Valid() bool {
+	switch e {
+	case FormatVersionSummaryStatusDraft:
+		return true
+	case FormatVersionSummaryStatusPublished:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for FourMCategoryKey.
 const (
 	FourMCategoryKeyMachine  FourMCategoryKey = "machine"
@@ -383,6 +551,117 @@ func (e NewAccountKind) Valid() bool {
 	case NewAccountKindAdmin:
 		return true
 	case NewAccountKindWork:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for NewFormatFieldArea.
+const (
+	NewFormatFieldAreaHeader NewFormatFieldArea = "header"
+	NewFormatFieldAreaRow    NewFormatFieldArea = "row"
+)
+
+// Valid indicates whether the value is a known member of the NewFormatFieldArea enum.
+func (e NewFormatFieldArea) Valid() bool {
+	switch e {
+	case NewFormatFieldAreaHeader:
+		return true
+	case NewFormatFieldAreaRow:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for NewFormatFieldKind.
+const (
+	NewFormatFieldKindDate   NewFormatFieldKind = "date"
+	NewFormatFieldKindRating NewFormatFieldKind = "rating"
+	NewFormatFieldKindRpn    NewFormatFieldKind = "rpn"
+	NewFormatFieldKindSelect NewFormatFieldKind = "select"
+	NewFormatFieldKindSymbol NewFormatFieldKind = "symbol"
+	NewFormatFieldKindText   NewFormatFieldKind = "text"
+)
+
+// Valid indicates whether the value is a known member of the NewFormatFieldKind enum.
+func (e NewFormatFieldKind) Valid() bool {
+	switch e {
+	case NewFormatFieldKindDate:
+		return true
+	case NewFormatFieldKindRating:
+		return true
+	case NewFormatFieldKindRpn:
+		return true
+	case NewFormatFieldKindSelect:
+		return true
+	case NewFormatFieldKindSymbol:
+		return true
+	case NewFormatFieldKindText:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for NewFormatFieldRatingScale.
+const (
+	NewFormatFieldRatingScaleDetection  NewFormatFieldRatingScale = "detection"
+	NewFormatFieldRatingScaleOccurrence NewFormatFieldRatingScale = "occurrence"
+	NewFormatFieldRatingScaleSeverity   NewFormatFieldRatingScale = "severity"
+)
+
+// Valid indicates whether the value is a known member of the NewFormatFieldRatingScale enum.
+func (e NewFormatFieldRatingScale) Valid() bool {
+	switch e {
+	case NewFormatFieldRatingScaleDetection:
+		return true
+	case NewFormatFieldRatingScaleOccurrence:
+		return true
+	case NewFormatFieldRatingScaleSeverity:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for NewFormatTemplateMethodology.
+const (
+	NewFormatTemplateMethodologyAiag4th NewFormatTemplateMethodology = "aiag_4th"
+	NewFormatTemplateMethodologyAiagVda NewFormatTemplateMethodology = "aiag_vda"
+	NewFormatTemplateMethodologySqam    NewFormatTemplateMethodology = "sqam"
+)
+
+// Valid indicates whether the value is a known member of the NewFormatTemplateMethodology enum.
+func (e NewFormatTemplateMethodology) Valid() bool {
+	switch e {
+	case NewFormatTemplateMethodologyAiag4th:
+		return true
+	case NewFormatTemplateMethodologyAiagVda:
+		return true
+	case NewFormatTemplateMethodologySqam:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for NewFormatTemplateRiskMethod.
+const (
+	NewFormatTemplateRiskMethodAp   NewFormatTemplateRiskMethod = "ap"
+	NewFormatTemplateRiskMethodNone NewFormatTemplateRiskMethod = "none"
+	NewFormatTemplateRiskMethodRpn  NewFormatTemplateRiskMethod = "rpn"
+)
+
+// Valid indicates whether the value is a known member of the NewFormatTemplateRiskMethod enum.
+func (e NewFormatTemplateRiskMethod) Valid() bool {
+	switch e {
+	case NewFormatTemplateRiskMethodAp:
+		return true
+	case NewFormatTemplateRiskMethodNone:
+		return true
+	case NewFormatTemplateRiskMethodRpn:
 		return true
 	default:
 		return false
@@ -518,6 +797,48 @@ func (e PositionKey) Valid() bool {
 	case PositionKeyProjectLeader:
 		return true
 	case PositionKeyQaQcManager:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RatingCriterionScale.
+const (
+	RatingCriterionScaleDetection  RatingCriterionScale = "detection"
+	RatingCriterionScaleOccurrence RatingCriterionScale = "occurrence"
+	RatingCriterionScaleSeverity   RatingCriterionScale = "severity"
+)
+
+// Valid indicates whether the value is a known member of the RatingCriterionScale enum.
+func (e RatingCriterionScale) Valid() bool {
+	switch e {
+	case RatingCriterionScaleDetection:
+		return true
+	case RatingCriterionScaleOccurrence:
+		return true
+	case RatingCriterionScaleSeverity:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RatingCriterionInputScale.
+const (
+	RatingCriterionInputScaleDetection  RatingCriterionInputScale = "detection"
+	RatingCriterionInputScaleOccurrence RatingCriterionInputScale = "occurrence"
+	RatingCriterionInputScaleSeverity   RatingCriterionInputScale = "severity"
+)
+
+// Valid indicates whether the value is a known member of the RatingCriterionInputScale enum.
+func (e RatingCriterionInputScale) Valid() bool {
+	switch e {
+	case RatingCriterionInputScaleDetection:
+		return true
+	case RatingCriterionInputScaleOccurrence:
+		return true
+	case RatingCriterionInputScaleSeverity:
 		return true
 	default:
 		return false
@@ -1032,6 +1353,141 @@ type ErrorDetail struct {
 // ErrorDetailCode defines model for ErrorDetail.Code.
 type ErrorDetailCode string
 
+// FieldOption defines model for FieldOption.
+type FieldOption struct {
+	// Key Fixed key used by row content. Missing for a new option.
+	Key   *string `json:"key,omitempty"`
+	Label string  `json:"label"`
+}
+
+// FormatField defines model for FormatField.
+type FormatField struct {
+	Area   FormatFieldArea `json:"area"`
+	Hidden bool            `json:"hidden"`
+
+	// Id Fixed across versions; row content uses this ID.
+	Id      string          `json:"id"`
+	Kind    FormatFieldKind `json:"kind"`
+	Label   string          `json:"label"`
+	Options *[]FieldOption  `json:"options,omitempty"`
+
+	// Position Position within the area, from 1.
+	Position    int                     `json:"position"`
+	RatingScale *FormatFieldRatingScale `json:"rating_scale,omitempty"`
+
+	// RatingSet For rating and rpn, 1 for the current values and 2 for the action results.
+	RatingSet *int `json:"rating_set,omitempty"`
+	Required  bool `json:"required"`
+}
+
+// FormatFieldArea defines model for FormatField.Area.
+type FormatFieldArea string
+
+// FormatFieldKind defines model for FormatField.Kind.
+type FormatFieldKind string
+
+// FormatFieldRatingScale defines model for FormatField.RatingScale.
+type FormatFieldRatingScale string
+
+// FormatFieldUpdate defines model for FormatFieldUpdate.
+type FormatFieldUpdate struct {
+	Hidden   *bool          `json:"hidden,omitempty"`
+	Label    string         `json:"label"`
+	Options  *[]FieldOption `json:"options,omitempty"`
+	Position *int           `json:"position,omitempty"`
+	Required *bool          `json:"required,omitempty"`
+}
+
+// FormatHighlights defines model for FormatHighlights.
+type FormatHighlights struct {
+	HighlightRpnAbove        *int `json:"highlight_rpn_above,omitempty"`
+	HighlightSeverityAtLeast *int `json:"highlight_severity_at_least,omitempty"`
+}
+
+// FormatSymbol defines model for FormatSymbol.
+type FormatSymbol struct {
+	// Key Fixed key used by row content. Missing for a new symbol.
+	Key  *string `json:"key,omitempty"`
+	Name string  `json:"name"`
+}
+
+// FormatSymbolList defines model for FormatSymbolList.
+type FormatSymbolList struct {
+	Items []FormatSymbol `json:"items"`
+}
+
+// FormatTemplate defines model for FormatTemplate.
+type FormatTemplate struct {
+	CreatedAt    time.Time `json:"created_at"`
+	CustomerCode *string   `json:"customer_code,omitempty"`
+
+	// CustomerId Missing for a general format template; set for a customer SQAM format.
+	CustomerId   *string         `json:"customer_id,omitempty"`
+	DocumentType DocumentTypeRef `json:"document_type"`
+	Id           string          `json:"id"`
+
+	// Methodology Missing for the forms in use today (PFD, CP).
+	Methodology *FormatTemplateMethodology `json:"methodology,omitempty"`
+	Name        string                     `json:"name"`
+	Versions    []FormatVersionSummary     `json:"versions"`
+}
+
+// FormatTemplateMethodology Missing for the forms in use today (PFD, CP).
+type FormatTemplateMethodology string
+
+// FormatTemplateList defines model for FormatTemplateList.
+type FormatTemplateList struct {
+	Items []FormatTemplate `json:"items"`
+}
+
+// FormatTemplateRename defines model for FormatTemplateRename.
+type FormatTemplateRename struct {
+	Name string `json:"name"`
+}
+
+// FormatVersion defines model for FormatVersion.
+type FormatVersion struct {
+	CreatedAt time.Time `json:"created_at"`
+
+	// Fields Header fields first, then columns, each by position.
+	Fields []FormatField `json:"fields"`
+
+	// HighlightRpnAbove Highlight an RPN above this value; 0 means off.
+	HighlightRpnAbove int `json:"highlight_rpn_above"`
+
+	// HighlightSeverityAtLeast Highlight a severity of at least this value; 0 means off.
+	HighlightSeverityAtLeast int    `json:"highlight_severity_at_least"`
+	Id                       string `json:"id"`
+
+	// Ratings Severity, occurrence, then detection, values 1 to 10. Empty without a risk method.
+	Ratings    []RatingCriterion       `json:"ratings"`
+	RiskMethod FormatVersionRiskMethod `json:"risk_method"`
+	Status     FormatVersionStatus     `json:"status"`
+	Symbols    []FormatSymbol          `json:"symbols"`
+	TemplateId string                  `json:"template_id"`
+	Version    int                     `json:"version"`
+}
+
+// FormatVersionRiskMethod defines model for FormatVersion.RiskMethod.
+type FormatVersionRiskMethod string
+
+// FormatVersionStatus defines model for FormatVersion.Status.
+type FormatVersionStatus string
+
+// FormatVersionSummary defines model for FormatVersionSummary.
+type FormatVersionSummary struct {
+	Id         string                         `json:"id"`
+	RiskMethod FormatVersionSummaryRiskMethod `json:"risk_method"`
+	Status     FormatVersionSummaryStatus     `json:"status"`
+	Version    int                            `json:"version"`
+}
+
+// FormatVersionSummaryRiskMethod defines model for FormatVersionSummary.RiskMethod.
+type FormatVersionSummaryRiskMethod string
+
+// FormatVersionSummaryStatus defines model for FormatVersionSummary.Status.
+type FormatVersionSummaryStatus string
+
 // FourMCategory defines model for FourMCategory.
 type FourMCategory struct {
 	Id   string           `json:"id"`
@@ -1171,6 +1627,46 @@ type NewDocumentNumberSet struct {
 	// InitialRevision First revision of the three documents, for example 4 for -04. Default 0.
 	InitialRevision *int `json:"initial_revision,omitempty"`
 }
+
+// NewFormatField defines model for NewFormatField.
+type NewFormatField struct {
+	Area  NewFormatFieldArea `json:"area"`
+	Kind  NewFormatFieldKind `json:"kind"`
+	Label string             `json:"label"`
+
+	// Options The options of a select field, by label.
+	Options     *[]FieldOption             `json:"options,omitempty"`
+	RatingScale *NewFormatFieldRatingScale `json:"rating_scale,omitempty"`
+	RatingSet   *int                       `json:"rating_set,omitempty"`
+	Required    *bool                      `json:"required,omitempty"`
+}
+
+// NewFormatFieldArea defines model for NewFormatField.Area.
+type NewFormatFieldArea string
+
+// NewFormatFieldKind defines model for NewFormatField.Kind.
+type NewFormatFieldKind string
+
+// NewFormatFieldRatingScale defines model for NewFormatField.RatingScale.
+type NewFormatFieldRatingScale string
+
+// NewFormatTemplate defines model for NewFormatTemplate.
+type NewFormatTemplate struct {
+	CopyFromVersionId *string                       `json:"copy_from_version_id,omitempty"`
+	CustomerId        *string                       `json:"customer_id,omitempty"`
+	DocumentTypeId    string                        `json:"document_type_id"`
+	Methodology       *NewFormatTemplateMethodology `json:"methodology,omitempty"`
+	Name              string                        `json:"name"`
+
+	// RiskMethod Required without copy_from_version_id; a copy takes the risk method of its source.
+	RiskMethod *NewFormatTemplateRiskMethod `json:"risk_method,omitempty"`
+}
+
+// NewFormatTemplateMethodology defines model for NewFormatTemplate.Methodology.
+type NewFormatTemplateMethodology string
+
+// NewFormatTemplateRiskMethod Required without copy_from_version_id; a copy takes the risk method of its source.
+type NewFormatTemplateRiskMethod string
 
 // NewModel defines model for NewModel.
 type NewModel struct {
@@ -1493,6 +1989,32 @@ type ProjectGroupRef struct {
 	Id   string `json:"id"`
 }
 
+// RatingCriteriaUpdate defines model for RatingCriteriaUpdate.
+type RatingCriteriaUpdate struct {
+	Items []RatingCriterionInput `json:"items"`
+}
+
+// RatingCriterion defines model for RatingCriterion.
+type RatingCriterion struct {
+	Criteria string               `json:"criteria"`
+	Scale    RatingCriterionScale `json:"scale"`
+	Value    int                  `json:"value"`
+}
+
+// RatingCriterionScale defines model for RatingCriterion.Scale.
+type RatingCriterionScale string
+
+// RatingCriterionInput defines model for RatingCriterionInput.
+type RatingCriterionInput struct {
+	// Criteria The new criteria text. An item without criteria changes nothing.
+	Criteria *string                   `json:"criteria,omitempty"`
+	Scale    RatingCriterionInputScale `json:"scale"`
+	Value    int                       `json:"value"`
+}
+
+// RatingCriterionInputScale defines model for RatingCriterionInput.Scale.
+type RatingCriterionInputScale string
+
 // Role defines model for Role.
 type Role struct {
 	Id          string    `json:"id"`
@@ -1649,6 +2171,15 @@ type DocumentTypeId = string
 
 // DocumentTypeIdQuery defines model for DocumentTypeIdQuery.
 type DocumentTypeIdQuery = string
+
+// FormatFieldId defines model for FormatFieldId.
+type FormatFieldId = string
+
+// FormatTemplateId defines model for FormatTemplateId.
+type FormatTemplateId = string
+
+// FormatVersionId defines model for FormatVersionId.
+type FormatVersionId = string
 
 // FourMCategoryId defines model for FourMCategoryId.
 type FourMCategoryId = string
@@ -1811,6 +2342,27 @@ type CreateDocumentTypeJSONRequestBody = DocumentTypeInput
 // UpdateDocumentTypeJSONRequestBody defines body for UpdateDocumentType for application/json ContentType.
 type UpdateDocumentTypeJSONRequestBody = DocumentTypeInput
 
+// UpdateFormatHighlightsJSONRequestBody defines body for UpdateFormatHighlights for application/json ContentType.
+type UpdateFormatHighlightsJSONRequestBody = FormatHighlights
+
+// AddFormatFieldJSONRequestBody defines body for AddFormatField for application/json ContentType.
+type AddFormatFieldJSONRequestBody = NewFormatField
+
+// UpdateFormatFieldJSONRequestBody defines body for UpdateFormatField for application/json ContentType.
+type UpdateFormatFieldJSONRequestBody = FormatFieldUpdate
+
+// SetFormatRatingCriteriaJSONRequestBody defines body for SetFormatRatingCriteria for application/json ContentType.
+type SetFormatRatingCriteriaJSONRequestBody = RatingCriteriaUpdate
+
+// SaveFormatSymbolsJSONRequestBody defines body for SaveFormatSymbols for application/json ContentType.
+type SaveFormatSymbolsJSONRequestBody = FormatSymbolList
+
+// CreateFormatTemplateJSONRequestBody defines body for CreateFormatTemplate for application/json ContentType.
+type CreateFormatTemplateJSONRequestBody = NewFormatTemplate
+
+// RenameFormatTemplateJSONRequestBody defines body for RenameFormatTemplate for application/json ContentType.
+type RenameFormatTemplateJSONRequestBody = FormatTemplateRename
+
 // UpdateFourMCategoryJSONRequestBody defines body for UpdateFourMCategory for application/json ContentType.
 type UpdateFourMCategoryJSONRequestBody = NameUpdate
 
@@ -1966,6 +2518,33 @@ type ServerInterface interface {
 	// UpdateDocumentType Change the name and letter of a document type (A-2)
 	// (PUT /api/v1/document-types/{documentTypeId})
 	UpdateDocumentType(w http.ResponseWriter, r *http.Request, documentTypeId DocumentTypeId)
+	// GetFormatVersion One format template version with its fields, rating criteria, and symbols (L-2)
+	// (GET /api/v1/format-template-versions/{formatVersionId})
+	GetFormatVersion(w http.ResponseWriter, r *http.Request, formatVersionId FormatVersionId)
+	// UpdateFormatHighlights Change the highlight rule of a draft version, for example RPN above 100 or severity 8 (A-2, R-TPL-11)
+	// (PUT /api/v1/format-template-versions/{formatVersionId})
+	UpdateFormatHighlights(w http.ResponseWriter, r *http.Request, formatVersionId FormatVersionId)
+	// AddFormatField Add a header field or a column at the end of its area in a draft version (A-2, R-TPL-02)
+	// (POST /api/v1/format-template-versions/{formatVersionId}/fields)
+	AddFormatField(w http.ResponseWriter, r *http.Request, formatVersionId FormatVersionId)
+	// UpdateFormatField Change the label, required flag, hidden flag, position, or options of a field in a draft version (A-2, R-TPL-02)
+	// (PUT /api/v1/format-template-versions/{formatVersionId}/fields/{formatFieldId})
+	UpdateFormatField(w http.ResponseWriter, r *http.Request, formatVersionId FormatVersionId, formatFieldId FormatFieldId)
+	// SetFormatRatingCriteria Change the criteria text of rating values in a draft version (A-2, R-TPL-01)
+	// (PUT /api/v1/format-template-versions/{formatVersionId}/rating-criteria)
+	SetFormatRatingCriteria(w http.ResponseWriter, r *http.Request, formatVersionId FormatVersionId)
+	// SaveFormatSymbols Rename symbols and add new ones in a draft version (A-2, R-TPL-11)
+	// (PUT /api/v1/format-template-versions/{formatVersionId}/symbols)
+	SaveFormatSymbols(w http.ResponseWriter, r *http.Request, formatVersionId FormatVersionId)
+	// ListFormatTemplates Format templates with a summary of their versions (L-2, UC-20, R-TPL-01)
+	// (GET /api/v1/format-templates)
+	ListFormatTemplates(w http.ResponseWriter, r *http.Request)
+	// CreateFormatTemplate Add a format template with a draft version 1, empty or copied from another version (A-2, UC-20)
+	// (POST /api/v1/format-templates)
+	CreateFormatTemplate(w http.ResponseWriter, r *http.Request)
+	// RenameFormatTemplate Rename a format template (A-2)
+	// (PUT /api/v1/format-templates/{formatTemplateId})
+	RenameFormatTemplate(w http.ResponseWriter, r *http.Request, formatTemplateId FormatTemplateId)
 	// ListFourMCategories The 4M categories Man, Machine, Material, and Method
 	// (GET /api/v1/four-m-categories)
 	ListFourMCategories(w http.ResponseWriter, r *http.Request)
@@ -2911,6 +3490,225 @@ func (siw *ServerInterfaceWrapper) UpdateDocumentType(w http.ResponseWriter, r *
 	handler.ServeHTTP(w, r)
 }
 
+// GetFormatVersion operation middleware
+func (siw *ServerInterfaceWrapper) GetFormatVersion(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "formatVersionId" -------------
+	var formatVersionId FormatVersionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "formatVersionId", r.PathValue("formatVersionId"), &formatVersionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "formatVersionId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetFormatVersion(w, r, formatVersionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateFormatHighlights operation middleware
+func (siw *ServerInterfaceWrapper) UpdateFormatHighlights(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "formatVersionId" -------------
+	var formatVersionId FormatVersionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "formatVersionId", r.PathValue("formatVersionId"), &formatVersionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "formatVersionId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateFormatHighlights(w, r, formatVersionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AddFormatField operation middleware
+func (siw *ServerInterfaceWrapper) AddFormatField(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "formatVersionId" -------------
+	var formatVersionId FormatVersionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "formatVersionId", r.PathValue("formatVersionId"), &formatVersionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "formatVersionId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AddFormatField(w, r, formatVersionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateFormatField operation middleware
+func (siw *ServerInterfaceWrapper) UpdateFormatField(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "formatVersionId" -------------
+	var formatVersionId FormatVersionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "formatVersionId", r.PathValue("formatVersionId"), &formatVersionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "formatVersionId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "formatFieldId" -------------
+	var formatFieldId FormatFieldId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "formatFieldId", r.PathValue("formatFieldId"), &formatFieldId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "formatFieldId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateFormatField(w, r, formatVersionId, formatFieldId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetFormatRatingCriteria operation middleware
+func (siw *ServerInterfaceWrapper) SetFormatRatingCriteria(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "formatVersionId" -------------
+	var formatVersionId FormatVersionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "formatVersionId", r.PathValue("formatVersionId"), &formatVersionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "formatVersionId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetFormatRatingCriteria(w, r, formatVersionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SaveFormatSymbols operation middleware
+func (siw *ServerInterfaceWrapper) SaveFormatSymbols(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "formatVersionId" -------------
+	var formatVersionId FormatVersionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "formatVersionId", r.PathValue("formatVersionId"), &formatVersionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "formatVersionId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SaveFormatSymbols(w, r, formatVersionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListFormatTemplates operation middleware
+func (siw *ServerInterfaceWrapper) ListFormatTemplates(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListFormatTemplates(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateFormatTemplate operation middleware
+func (siw *ServerInterfaceWrapper) CreateFormatTemplate(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateFormatTemplate(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RenameFormatTemplate operation middleware
+func (siw *ServerInterfaceWrapper) RenameFormatTemplate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "formatTemplateId" -------------
+	var formatTemplateId FormatTemplateId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "formatTemplateId", r.PathValue("formatTemplateId"), &formatTemplateId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "formatTemplateId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RenameFormatTemplate(w, r, formatTemplateId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListFourMCategories operation middleware
 func (siw *ServerInterfaceWrapper) ListFourMCategories(w http.ResponseWriter, r *http.Request) {
 
@@ -3768,6 +4566,15 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/approval-routes/{approvalRouteId}", wrapper.UpdateApprovalRoute)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/customers/{customerId}/default-route", wrapper.SetCustomerDefaultRoute)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/change-types/{changeTypeId}/approval-route", wrapper.SetChangeTypeRoute)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/format-templates", wrapper.ListFormatTemplates)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/format-templates", wrapper.CreateFormatTemplate)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/format-templates/{formatTemplateId}", wrapper.RenameFormatTemplate)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/format-template-versions/{formatVersionId}", wrapper.GetFormatVersion)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/format-template-versions/{formatVersionId}", wrapper.UpdateFormatHighlights)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/format-template-versions/{formatVersionId}/fields", wrapper.AddFormatField)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/format-template-versions/{formatVersionId}/fields/{formatFieldId}", wrapper.UpdateFormatField)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/format-template-versions/{formatVersionId}/rating-criteria", wrapper.SetFormatRatingCriteria)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/format-template-versions/{formatVersionId}/symbols", wrapper.SaveFormatSymbols)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/system-settings", wrapper.GetSystemSettings)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/system-settings", wrapper.UpdateSystemSettings)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/audit-log", wrapper.ListAuditLog)
@@ -5160,6 +5967,363 @@ type UpdateDocumentTypedefaultJSONResponse struct {
 }
 
 func (response UpdateDocumentTypedefaultJSONResponse) VisitUpdateDocumentTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetFormatVersionRequestObject struct {
+	FormatVersionId FormatVersionId `json:"formatVersionId"`
+}
+
+type GetFormatVersionResponseObject interface {
+	VisitGetFormatVersionResponse(w http.ResponseWriter) error
+}
+
+type GetFormatVersion200JSONResponse FormatVersion
+
+func (response GetFormatVersion200JSONResponse) VisitGetFormatVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetFormatVersiondefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response GetFormatVersiondefaultJSONResponse) VisitGetFormatVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateFormatHighlightsRequestObject struct {
+	FormatVersionId FormatVersionId `json:"formatVersionId"`
+	Body            *UpdateFormatHighlightsJSONRequestBody
+}
+
+type UpdateFormatHighlightsResponseObject interface {
+	VisitUpdateFormatHighlightsResponse(w http.ResponseWriter) error
+}
+
+type UpdateFormatHighlights200JSONResponse FormatVersion
+
+func (response UpdateFormatHighlights200JSONResponse) VisitUpdateFormatHighlightsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateFormatHighlightsdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response UpdateFormatHighlightsdefaultJSONResponse) VisitUpdateFormatHighlightsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddFormatFieldRequestObject struct {
+	FormatVersionId FormatVersionId `json:"formatVersionId"`
+	Body            *AddFormatFieldJSONRequestBody
+}
+
+type AddFormatFieldResponseObject interface {
+	VisitAddFormatFieldResponse(w http.ResponseWriter) error
+}
+
+type AddFormatField201JSONResponse FormatVersion
+
+func (response AddFormatField201JSONResponse) VisitAddFormatFieldResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddFormatFielddefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response AddFormatFielddefaultJSONResponse) VisitAddFormatFieldResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateFormatFieldRequestObject struct {
+	FormatVersionId FormatVersionId `json:"formatVersionId"`
+	FormatFieldId   FormatFieldId   `json:"formatFieldId"`
+	Body            *UpdateFormatFieldJSONRequestBody
+}
+
+type UpdateFormatFieldResponseObject interface {
+	VisitUpdateFormatFieldResponse(w http.ResponseWriter) error
+}
+
+type UpdateFormatField200JSONResponse FormatVersion
+
+func (response UpdateFormatField200JSONResponse) VisitUpdateFormatFieldResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateFormatFielddefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response UpdateFormatFielddefaultJSONResponse) VisitUpdateFormatFieldResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetFormatRatingCriteriaRequestObject struct {
+	FormatVersionId FormatVersionId `json:"formatVersionId"`
+	Body            *SetFormatRatingCriteriaJSONRequestBody
+}
+
+type SetFormatRatingCriteriaResponseObject interface {
+	VisitSetFormatRatingCriteriaResponse(w http.ResponseWriter) error
+}
+
+type SetFormatRatingCriteria200JSONResponse FormatVersion
+
+func (response SetFormatRatingCriteria200JSONResponse) VisitSetFormatRatingCriteriaResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetFormatRatingCriteriadefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response SetFormatRatingCriteriadefaultJSONResponse) VisitSetFormatRatingCriteriaResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SaveFormatSymbolsRequestObject struct {
+	FormatVersionId FormatVersionId `json:"formatVersionId"`
+	Body            *SaveFormatSymbolsJSONRequestBody
+}
+
+type SaveFormatSymbolsResponseObject interface {
+	VisitSaveFormatSymbolsResponse(w http.ResponseWriter) error
+}
+
+type SaveFormatSymbols200JSONResponse FormatVersion
+
+func (response SaveFormatSymbols200JSONResponse) VisitSaveFormatSymbolsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SaveFormatSymbolsdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response SaveFormatSymbolsdefaultJSONResponse) VisitSaveFormatSymbolsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListFormatTemplatesRequestObject struct {
+}
+
+type ListFormatTemplatesResponseObject interface {
+	VisitListFormatTemplatesResponse(w http.ResponseWriter) error
+}
+
+type ListFormatTemplates200JSONResponse FormatTemplateList
+
+func (response ListFormatTemplates200JSONResponse) VisitListFormatTemplatesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListFormatTemplatesdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ListFormatTemplatesdefaultJSONResponse) VisitListFormatTemplatesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateFormatTemplateRequestObject struct {
+	Body *CreateFormatTemplateJSONRequestBody
+}
+
+type CreateFormatTemplateResponseObject interface {
+	VisitCreateFormatTemplateResponse(w http.ResponseWriter) error
+}
+
+type CreateFormatTemplate201JSONResponse FormatTemplate
+
+func (response CreateFormatTemplate201JSONResponse) VisitCreateFormatTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateFormatTemplatedefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response CreateFormatTemplatedefaultJSONResponse) VisitCreateFormatTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RenameFormatTemplateRequestObject struct {
+	FormatTemplateId FormatTemplateId `json:"formatTemplateId"`
+	Body             *RenameFormatTemplateJSONRequestBody
+}
+
+type RenameFormatTemplateResponseObject interface {
+	VisitRenameFormatTemplateResponse(w http.ResponseWriter) error
+}
+
+type RenameFormatTemplate200JSONResponse FormatTemplate
+
+func (response RenameFormatTemplate200JSONResponse) VisitRenameFormatTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RenameFormatTemplatedefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response RenameFormatTemplatedefaultJSONResponse) VisitRenameFormatTemplateResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -6628,6 +7792,33 @@ type StrictServerInterface interface {
 	// UpdateDocumentType Change the name and letter of a document type (A-2)
 	// (PUT /api/v1/document-types/{documentTypeId})
 	UpdateDocumentType(ctx context.Context, request UpdateDocumentTypeRequestObject) (UpdateDocumentTypeResponseObject, error)
+	// GetFormatVersion One format template version with its fields, rating criteria, and symbols (L-2)
+	// (GET /api/v1/format-template-versions/{formatVersionId})
+	GetFormatVersion(ctx context.Context, request GetFormatVersionRequestObject) (GetFormatVersionResponseObject, error)
+	// UpdateFormatHighlights Change the highlight rule of a draft version, for example RPN above 100 or severity 8 (A-2, R-TPL-11)
+	// (PUT /api/v1/format-template-versions/{formatVersionId})
+	UpdateFormatHighlights(ctx context.Context, request UpdateFormatHighlightsRequestObject) (UpdateFormatHighlightsResponseObject, error)
+	// AddFormatField Add a header field or a column at the end of its area in a draft version (A-2, R-TPL-02)
+	// (POST /api/v1/format-template-versions/{formatVersionId}/fields)
+	AddFormatField(ctx context.Context, request AddFormatFieldRequestObject) (AddFormatFieldResponseObject, error)
+	// UpdateFormatField Change the label, required flag, hidden flag, position, or options of a field in a draft version (A-2, R-TPL-02)
+	// (PUT /api/v1/format-template-versions/{formatVersionId}/fields/{formatFieldId})
+	UpdateFormatField(ctx context.Context, request UpdateFormatFieldRequestObject) (UpdateFormatFieldResponseObject, error)
+	// SetFormatRatingCriteria Change the criteria text of rating values in a draft version (A-2, R-TPL-01)
+	// (PUT /api/v1/format-template-versions/{formatVersionId}/rating-criteria)
+	SetFormatRatingCriteria(ctx context.Context, request SetFormatRatingCriteriaRequestObject) (SetFormatRatingCriteriaResponseObject, error)
+	// SaveFormatSymbols Rename symbols and add new ones in a draft version (A-2, R-TPL-11)
+	// (PUT /api/v1/format-template-versions/{formatVersionId}/symbols)
+	SaveFormatSymbols(ctx context.Context, request SaveFormatSymbolsRequestObject) (SaveFormatSymbolsResponseObject, error)
+	// ListFormatTemplates Format templates with a summary of their versions (L-2, UC-20, R-TPL-01)
+	// (GET /api/v1/format-templates)
+	ListFormatTemplates(ctx context.Context, request ListFormatTemplatesRequestObject) (ListFormatTemplatesResponseObject, error)
+	// CreateFormatTemplate Add a format template with a draft version 1, empty or copied from another version (A-2, UC-20)
+	// (POST /api/v1/format-templates)
+	CreateFormatTemplate(ctx context.Context, request CreateFormatTemplateRequestObject) (CreateFormatTemplateResponseObject, error)
+	// RenameFormatTemplate Rename a format template (A-2)
+	// (PUT /api/v1/format-templates/{formatTemplateId})
+	RenameFormatTemplate(ctx context.Context, request RenameFormatTemplateRequestObject) (RenameFormatTemplateResponseObject, error)
 	// ListFourMCategories The 4M categories Man, Machine, Material, and Method
 	// (GET /api/v1/four-m-categories)
 	ListFourMCategories(ctx context.Context, request ListFourMCategoriesRequestObject) (ListFourMCategoriesResponseObject, error)
@@ -7734,6 +8925,286 @@ func (sh *strictHandler) UpdateDocumentType(w http.ResponseWriter, r *http.Reque
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UpdateDocumentTypeResponseObject); ok {
 		if err := validResponse.VisitUpdateDocumentTypeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetFormatVersion operation middleware
+func (sh *strictHandler) GetFormatVersion(w http.ResponseWriter, r *http.Request, formatVersionId FormatVersionId) {
+	var request GetFormatVersionRequestObject
+
+	request.FormatVersionId = formatVersionId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetFormatVersion(ctx, request.(GetFormatVersionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetFormatVersion")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetFormatVersionResponseObject); ok {
+		if err := validResponse.VisitGetFormatVersionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateFormatHighlights operation middleware
+func (sh *strictHandler) UpdateFormatHighlights(w http.ResponseWriter, r *http.Request, formatVersionId FormatVersionId) {
+	var request UpdateFormatHighlightsRequestObject
+
+	request.FormatVersionId = formatVersionId
+
+	var body UpdateFormatHighlightsJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateFormatHighlights(ctx, request.(UpdateFormatHighlightsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateFormatHighlights")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateFormatHighlightsResponseObject); ok {
+		if err := validResponse.VisitUpdateFormatHighlightsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AddFormatField operation middleware
+func (sh *strictHandler) AddFormatField(w http.ResponseWriter, r *http.Request, formatVersionId FormatVersionId) {
+	var request AddFormatFieldRequestObject
+
+	request.FormatVersionId = formatVersionId
+
+	var body AddFormatFieldJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.AddFormatField(ctx, request.(AddFormatFieldRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AddFormatField")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AddFormatFieldResponseObject); ok {
+		if err := validResponse.VisitAddFormatFieldResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateFormatField operation middleware
+func (sh *strictHandler) UpdateFormatField(w http.ResponseWriter, r *http.Request, formatVersionId FormatVersionId, formatFieldId FormatFieldId) {
+	var request UpdateFormatFieldRequestObject
+
+	request.FormatVersionId = formatVersionId
+	request.FormatFieldId = formatFieldId
+
+	var body UpdateFormatFieldJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateFormatField(ctx, request.(UpdateFormatFieldRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateFormatField")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateFormatFieldResponseObject); ok {
+		if err := validResponse.VisitUpdateFormatFieldResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SetFormatRatingCriteria operation middleware
+func (sh *strictHandler) SetFormatRatingCriteria(w http.ResponseWriter, r *http.Request, formatVersionId FormatVersionId) {
+	var request SetFormatRatingCriteriaRequestObject
+
+	request.FormatVersionId = formatVersionId
+
+	var body SetFormatRatingCriteriaJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetFormatRatingCriteria(ctx, request.(SetFormatRatingCriteriaRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetFormatRatingCriteria")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetFormatRatingCriteriaResponseObject); ok {
+		if err := validResponse.VisitSetFormatRatingCriteriaResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SaveFormatSymbols operation middleware
+func (sh *strictHandler) SaveFormatSymbols(w http.ResponseWriter, r *http.Request, formatVersionId FormatVersionId) {
+	var request SaveFormatSymbolsRequestObject
+
+	request.FormatVersionId = formatVersionId
+
+	var body SaveFormatSymbolsJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SaveFormatSymbols(ctx, request.(SaveFormatSymbolsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SaveFormatSymbols")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SaveFormatSymbolsResponseObject); ok {
+		if err := validResponse.VisitSaveFormatSymbolsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListFormatTemplates operation middleware
+func (sh *strictHandler) ListFormatTemplates(w http.ResponseWriter, r *http.Request) {
+	var request ListFormatTemplatesRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListFormatTemplates(ctx, request.(ListFormatTemplatesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListFormatTemplates")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListFormatTemplatesResponseObject); ok {
+		if err := validResponse.VisitListFormatTemplatesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateFormatTemplate operation middleware
+func (sh *strictHandler) CreateFormatTemplate(w http.ResponseWriter, r *http.Request) {
+	var request CreateFormatTemplateRequestObject
+
+	var body CreateFormatTemplateJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateFormatTemplate(ctx, request.(CreateFormatTemplateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateFormatTemplate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateFormatTemplateResponseObject); ok {
+		if err := validResponse.VisitCreateFormatTemplateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RenameFormatTemplate operation middleware
+func (sh *strictHandler) RenameFormatTemplate(w http.ResponseWriter, r *http.Request, formatTemplateId FormatTemplateId) {
+	var request RenameFormatTemplateRequestObject
+
+	request.FormatTemplateId = formatTemplateId
+
+	var body RenameFormatTemplateJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RenameFormatTemplate(ctx, request.(RenameFormatTemplateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RenameFormatTemplate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RenameFormatTemplateResponseObject); ok {
+		if err := validResponse.VisitRenameFormatTemplateResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

@@ -76,6 +76,14 @@ const (
 	ActionDocumentNumberImported   = "document_number.imported"
 	ActionDocumentNumberVoided     = "document_number.voided"
 	ActionDocumentNumberObsoleted  = "document_number.obsoleted"
+	// Format template (Tahap 3). Sasarannya selalu template; versinya ada di rincian.
+	ActionFormatTemplateCreated = "format_template.created"
+	ActionFormatTemplateRenamed = "format_template.renamed"
+	ActionFormatSettingsChanged = "format_template.settings_changed"
+	ActionFormatFieldAdded      = "format_template.field_added"
+	ActionFormatFieldChanged    = "format_template.field_changed"
+	ActionFormatRatingsChanged  = "format_template.ratings_changed"
+	ActionFormatSymbolsChanged  = "format_template.symbols_changed"
 )
 
 // Jenis sasaran entri.
@@ -97,6 +105,7 @@ const (
 	TargetApprovalRoute  = "approval_route"
 	TargetSystemSettings = "system_settings"
 	TargetDocumentNumber = "document_number"
+	TargetFormatTemplate = "format_template"
 )
 
 // Change menulis perubahan satu field untuk rincian entri: "lama → baru".
