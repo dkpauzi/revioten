@@ -13,6 +13,7 @@ Ini proyek belajar pribadi pemilik. Aplikasi berjalan di localhost sebagai demo 
 - `docs/catatan/`: catatan setiap milestone, termasuk cara mengulang dari nol dan latihan tulis tangan.
 - `docs/evaluasi-desain.md`: temuan desain dari kode (E-nn) dan keputusan pemilik.
 - `docs/versions.md`: versi setiap komponen beserta tanggal dan sumbernya.
+- `docs/ringkasan-untuk-desain-ui.md`: ringkasan konsep, halaman yang sudah dibangun, dan semua keputusan, untuk sesi desain UI/UX di Claude chat (tanpa data asli).
 - `api/openapi.yaml`: kontrak API untuk layar web.
 
 Data asli perusahaan dan customer tidak pernah di-commit (CLAUDE.md bagian 7).

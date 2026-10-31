@@ -130,7 +130,7 @@ Kode sekarang punya dua tujuan: belajar, dan menguji apakah desain (brief, UML, 
 | Root | `go.mod`, `compose.yaml`, `.env.example`, `.gitignore`, `.gitattributes`, `sqlc.yaml` (M0.5) | M0.1, M0.2 |
 - **Perintah:** hanya perintah yang sudah terbukti jalan (menjalankan database, test, build). Lihat bagian "Perintah yang sudah terbukti" di bawah.
 - **Commit:** kecil, jelas, dengan ID di pesannya, misalnya `M0.2: endpoint /health beserta test`.
-- **Branch:** commit langsung di `main` lalu push ke `main` (pernyataan pemilik, 27 Oktober 2026). Ini menggantikan usulan satu branch per milestone. Jangan force-push.
+- **Branch:** selalu commit dan push ke `main` (pernyataan pemilik 27 Oktober 2026, ditegaskan 31 Oktober 2026: "untuk push, selalu push ke main"). Aturan ini juga berlaku di sesi cloud yang menyiapkan branch kerja sendiri: hasilnya tetap di-push ke `main`. Ini menggantikan usulan satu branch per milestone. Jangan force-push; bila `main` di remote sudah maju, tarik dulu lalu gabungkan.
 
 ### Perintah yang sudah terbukti
 

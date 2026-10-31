@@ -80,7 +80,7 @@ Untuk temuan di bawah, kode sudah memakai rekomendasi Claude Code. Jawab "setuju
 
 ## 5. Hal lain yang perlu Anda ketahui
 
-1. **Branch.** CLAUDE.md meminta commit langsung ke `main`, tetapi lingkungan sesi ini mewajibkan branch `claude/repo-docs-review-f5utv9`. Semua commit sesi ini ada di branch itu dan belum masuk `main`. Untuk memasukkannya, gabungkan branch itu ke `main` (lewat pull request, atau `git merge` di komputer Anda). Saya tidak push ke `main` tanpa izin.
+1. **Branch.** Sesi ini sempat bekerja di branch `claude/repo-docs-review-f5utv9`, karena lingkungan sesi cloud mewajibkannya. Atas permintaan pemilik (31 Oktober 2026), semua commit sudah di-push ke `main`, dan CLAUDE.md kini menegaskan: selalu push ke `main`, juga di sesi cloud.
 2. **Satu commit dengan test gagal.** Commit `5508b51` (perbaikan E-22) membuat `TestAuditLockAndDisable` gagal, karena test itu masih mengharapkan akun admin dinonaktifkan. Test itu dibetulkan di commit berikutnya, `664df85`. Commit lain lulus semua test.
 3. **U5 dan U8 belum dirender.** Container cloud tidak punya PlantUML dan Graphviz, dan permintaan mengunduhnya ditolak sistem izin lingkungan. File sumber `.puml` sudah ada. Perintah render ada di `docs/uml/README.md`.
 4. **Bug deadlock sudah diperbaiki (E-69).** Kode M2.1 sampai M2.4 punya bug ini sejak dibuat, tetapi test lama tidak menangkapnya karena tidak menjalankan ganti kode bersamaan dengan pendaftaran. Perbaikan dan test-nya ada di commit penutup Tahap 2. Catatan M2.2 bagian 10 menjelaskannya untuk latihan.
