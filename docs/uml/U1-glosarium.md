@@ -1,7 +1,7 @@
 # U1 · Glosarium
 
-- Paket UML: draft 0.8, 30 Oktober 2026 (draft 0.7: 27 Oktober 2026)
-- Sumber: brief desain v1.16, termasuk temuan dari dokumen TR-020 (brief bagian 21). Nama jabatan mengikuti bagan organisasi NPI (update 22 Januari 2026). Nama orang tidak dicantumkan. Setiap istilah merujuk ke ID di brief (R-UML-01).
+- Paket UML: draft 0.9, 30 Oktober 2026 (draft 0.8 dan 0.7: 30 dan 27 Oktober 2026)
+- Sumber: brief desain v1.17, termasuk temuan dari dokumen TR-020 (brief bagian 21). Nama jabatan mengikuti bagan organisasi NPI (update 22 Januari 2026). Nama orang tidak dicantumkan. Setiap istilah merujuk ke ID di brief (R-UML-01).
 - Bahasa: penjelasan dalam bahasa Indonesia. Nama jabatan, nama standar, dan tahap tanda tangan memakai istilah yang sama dengan brief (R-UML-05, usulan).
 - Kolom **Istilah layar (Inggris)** (E-19, D-98): istilah yang dipakai di layar dan di katalog teks `web/src/lib/i18n/en.ts`, karena layar berbahasa Inggris untuk saat ini (D-96). Istilah baru di layar ditambahkan ke sini lebih dulu.
 - Kolom **Cek WI**:
@@ -92,10 +92,20 @@
 |---|---|---|---|---|---|
 | Nomor dokumen | Document number | Nomor terdaftar untuk PFD, PFMEA, atau CP per customer dan jenis dokumen, misalnya SC-KT-001. Disimpan sebagai teks dan tidak pernah dipakai ulang. | | R-NUM-01, R-NUM-02 | Belum |
 | Awalan | Prefix | SH untuk PFD, SF untuk PFMEA, dan SC untuk CP (dokumen TR-020), sebagai master data yang bisa diedit. | Prefix | R-NUM-01, R-NUM-02 | Belum |
-| Kode customer | Customer code | Kode singkat customer di nomor, misalnya KT. Harus sama dengan kode di master customer. (usulan) | | R-POR-01 | Belum |
+| Kode customer | Customer code | Kode singkat customer di nomor, misalnya KT. Harus kode customer itu, sekarang atau dulu: nomor lama tetap memakai kode lamanya. (usulan) | | R-POR-01, D-88, E-11 | Belum |
 | Register nomor | Number register | Daftar semua nomor beserta statusnya. Bisa diekspor sebagai master document list. (usulan) | Master document list | R-NUM-04 | Belum |
-| Status nomor | Number status | Reserved, In use, Released, Obsolete, Void. (usulan) | | R-NUM-04 | Belum |
-| Daftarkan sebagai set | Register as set | Mengambil nomor bebas berikutnya di ketiga jenis dokumen supaya nomornya sejajar. (usulan) | Register as set | R-NUM-05 | Tidak perlu |
+| Status nomor | Number status | Reserved, In use, Released, Obsolete, Void, ditambah Skipped untuk nomor yang dilewati saat daftar sebagai set (ASUMSI E-64). Nomor tidak pernah dihapus; yang berubah hanya statusnya. (usulan) | | R-NUM-04 | Belum |
+| Daftarkan sebagai set | Register as a set | Mengambil nomor bebas berikutnya di ketiga jenis dokumen supaya nomornya sejajar. Nomor yang dilewati penghitung yang tertinggal dicatat Skipped. (usulan) | | R-NUM-05 | Tidak perlu |
+| Nomor dilewati | Skipped | Nomor yang dilewati saat daftar sebagai set. Tetap di register dan tidak pernah diberikan lagi, supaya register tanpa lubang. (ASUMSI E-64) | | R-NUM-03, R-NUM-05 | Tidak perlu |
+| Pola nomor | Number pattern | Susunan nomor dari {prefix}, {customer}, dan {seq} dengan pemisah, misalnya {prefix}-{customer}-{seq} untuk SC-KT-001. Satu pola untuk semua jenis dokumen dan customer (ASUMSI E-61), dan hanya berlaku untuk nomor baru. | | R-NUM-02, D-89 | Tidak perlu |
+| Nomor berjalan | Running number | Bagian urut di nomor: 001 sampai 999, lalu A001 sampai Z999. | DDD (WI SW-ZZ-000) | D-89, E-12 | Belum |
+| Revisi awal | Initial revision | Revisi pertama dokumen yang memakai nomor itu, misalnya 4 (-04) untuk dokumen lama yang masuk di revisi saat ini. | | R-REV-01 | Tidak perlu |
+| Digit revisi | Revision digits | Jumlah digit label revisi, saat ini 2 (-04). Diatur di master data. | | D-89 | Belum |
+| Kunci idempoten | (tidak tampil di layar) | Kunci acak yang dikirim bersama permintaan pendaftaran. Permintaan yang diulang dengan kunci yang sama mendapat nomor yang sama, bukan nomor baru. Berlaku per akun (ASUMSI E-63). | Idempotency-Key | R-NUM-03 | Tidak perlu |
+| Impor nomor lama | Import legacy numbers | Memasukkan nomor dari register Excel lama dengan teks aslinya. Penghitung naik ke nomor tertinggi; lubang, nomor ganda, dan set tidak sejajar hanya dilaporkan. (usulan) | | R-NUM-06, UC-14 | Tidak perlu |
+| Pratinjau impor | Preview | Laporan impor tanpa menyimpan apa pun. | Dry run | R-NUM-06 | Tidak perlu |
+| Lubang | Gaps | Nomor berjalan yang tidak ada di register, di antara 001 dan nomor tertinggi. Dilaporkan, tidak pernah diisi. | | R-NUM-06 | Tidak perlu |
+| Set tidak sejajar | Sets not aligned | Nomor berjalan yang hanya dimiliki sebagian dari PFD, PFMEA, dan CP. Nomor Skipped dianggap tidak ada (ASUMSI E-65). | | R-NUM-06, RK-24 | Tidak perlu |
 | Penghitung | Counter | Nomor terakhir per kode customer dan jenis dokumen, dinaikkan di dalam transaksi. | Counter | R-NUM-03, D-93 | Tidak perlu |
 | Kode pabrik | Factory code | Huruf pertama awalan nomor, saat ini S (WI SW-ZZ-000). | Factory code | D-89 | Belum |
 | Jenis dokumen | Document type | Huruf kedua awalan nomor: H untuk PFD, F untuk PFMEA, C untuk CP, ditambah jenis lain dari WI seperti W. Hanya PFD, PFMEA, dan CP yang dinomori sistem. | Document type | D-89 | Belum |

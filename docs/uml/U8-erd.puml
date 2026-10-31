@@ -1,0 +1,596 @@
+' U8 · ERD fisik (draft 0.9, 30 Oktober 2026, sumber migrasi 00001 sampai 00010 di sql/migrations)
+' Menggambarkan tabel PostgreSQL 18 yang sudah dibangun di Tahap 0 sampai 2 (R-UML-03: diagram
+' fisik mengikuti kode per milestone). Tim IT boleh memakai stack lain (R-UML-02); aturan yang
+' wajib dipertahankan ditulis di catatan setiap diagram.
+'
+' Konvensi:
+'   * di depan kolom   = NOT NULL
+'   <<PK>> <<FK>> <<UK>> = primary key, foreign key, unique
+'   kolom tanpa *       = boleh kosong
+'   uuid diisi uuidv7() bila tidak disebut lain (urut menurut waktu dibuat)
+'   |o pada ujung induk = foreign key boleh kosong; semua garis utuh, karena garis
+'   putus-putus di paket ini berarti tindakan di atas kertas (README, Konvensi)
+'
+' Render dari folder docs/uml (belum dirender di draft ini, lihat README):
+'   java -jar plantuml-1.2026.9.jar -tsvg -o export U8-erd.puml
+
+' ---------------------------------------------------------------------------
+@startuml U8-A-master-data
+hide circle
+hide empty members
+skinparam linetype ortho
+skinparam shadowing false
+skinparam ArrowColor #444444
+skinparam ClassBorderColor #1F4E79
+skinparam ClassBackgroundColor #FFFFFF
+
+title U8-A · Master data customer, model, dan proses (migrasi 00001, 00005, 00006)
+
+entity "project_groups" as project_groups {
+  * id : uuid <<PK>>
+  --
+  * code : text <<UK>>
+  * name : text
+  * created_at : timestamptz
+}
+
+entity "customers" as customers {
+  * id : uuid <<PK>>
+  --
+  * code : text <<UK>>
+  * name : text
+  project_group_id : uuid <<FK>>
+  * active : boolean = true
+  default_route_id : uuid <<FK>>
+  * created_at : timestamptz
+}
+
+entity "customer_codes" as customer_codes {
+  * code : text <<PK>>
+  --
+  * customer_id : uuid <<FK>>
+  * valid_from : timestamptz
+  valid_until : timestamptz
+}
+
+entity "model_groups" as model_groups {
+  * id : uuid <<PK>>
+  --
+  * customer_id : uuid <<FK>>
+  * name : text
+  * created_at : timestamptz
+}
+
+entity "models" as models {
+  * id : uuid <<PK>>
+  --
+  * customer_id : uuid <<FK>>
+  model_group_id : uuid <<FK>>
+  * name : text
+  * created_at : timestamptz
+}
+
+entity "part_numbers" as part_numbers {
+  * id : uuid <<PK>>
+  --
+  * customer_id : uuid <<FK>>
+  * model_id : uuid <<FK>>
+  * number : text
+  name : text
+  * created_at : timestamptz
+}
+
+entity "processes" as processes {
+  * id : uuid <<PK>>
+  --
+  * created_at : timestamptz
+}
+
+entity "process_names" as process_names {
+  * name_key : text <<PK>> = lower(name)
+  --
+  * process_id : uuid <<FK>>
+  * kind : text
+  * name : text
+}
+
+entity "approval_routes" as approval_routes_a {
+  * id : uuid <<PK>>
+}
+
+project_groups |o--o{ customers
+customers ||--o{ customer_codes
+customers ||--o{ model_groups
+customers ||--o{ models
+model_groups |o--o{ models
+models ||--o{ part_numbers
+processes ||--|{ process_names
+approval_routes_a |o--o{ customers
+
+note right of customers
+  code: ^[A-Z]{2}$, bukan ZZ (D-89), sama dengan
+  kode berlaku di customer_codes (E-11, D-88).
+  name: 1 sampai 200 karakter tanpa spasi di tepi (E-21).
+  Tidak pernah dihapus, hanya active = false (D-86).
+  project_group_id wajib di layanan; kolomnya boleh
+  kosong untuk data sebelum M1.4.
+end note
+
+note bottom of customer_codes
+  Riwayat kode (D-88). Satu kode hanya pernah milik
+  satu customer (PK code, D-109).
+  UNIQUE (customer_id) WHERE valid_until IS NULL:
+  tepat satu kode berlaku per customer.
+  UNIQUE (code, customer_id): sasaran foreign key
+  gabungan dari document_numbers (00010).
+end note
+
+note bottom of models
+  UNIQUE (customer_id, name).
+  FK (model_group_id, customer_id) -> model_groups (id, customer_id):
+  group model harus milik customer yang sama (D-42).
+end note
+
+note bottom of part_numbers
+  UNIQUE (customer_id, number).
+  FK (model_id, customer_id) -> models (id, customer_id).
+end note
+
+note bottom of process_names
+  kind: display (tepat satu per proses) atau alias.
+  name_key = lower(name) adalah PK: nama dan alias semua
+  proses berbagi satu ruang nama tanpa membedakan
+  huruf besar kecil (D-110). Proses tidak pernah dihapus.
+end note
+@enduml
+
+' ---------------------------------------------------------------------------
+@startuml U8-B-akses-dan-audit
+hide circle
+hide empty members
+skinparam linetype ortho
+skinparam shadowing false
+skinparam ArrowColor #444444
+skinparam ClassBorderColor #1F4E79
+skinparam ClassBackgroundColor #FFFFFF
+
+title U8-B · Orang, akun, hak akses, dan audit log (migrasi 00002 sampai 00004)
+
+entity "people" as people {
+  * id : uuid <<PK>>
+  --
+  * name : text
+  employee_number : text <<UK>>
+  * created_at : timestamptz
+}
+
+entity "accounts" as accounts {
+  * id : uuid <<PK>>
+  --
+  * person_id : uuid <<FK>>
+  * kind : text
+  * login : text <<UK>>
+  * password_hash : text
+  * must_change_password : boolean = false
+  * failed_logins : integer = 0
+  locked_until : timestamptz
+  disabled_at : timestamptz
+  external_id : text <<UK>>
+  * created_at : timestamptz
+}
+
+entity "sessions" as sessions {
+  * token_hash : bytea <<PK>>
+  --
+  * account_id : uuid <<FK>>
+  * created_at : timestamptz
+  * last_seen_at : timestamptz
+  * expires_at : timestamptz
+}
+
+entity "permissions" as permissions {
+  * code : text <<PK>>
+  --
+  * level : text
+  * sort_order : integer
+}
+
+entity "roles" as roles {
+  * id : text <<PK>>
+  --
+  * level : text
+  * sort_order : integer
+}
+
+entity "role_permissions" as role_permissions {
+  * role_id : text <<PK, FK>>
+  * permission_code : text <<PK, FK>>
+}
+
+entity "account_roles" as account_roles {
+  * account_id : uuid <<PK, FK>>
+  * role_id : text <<PK, FK>>
+  --
+  * scope : text = 'all'
+}
+
+entity "audit_log" as audit_log {
+  * seq : bigint <<PK>>
+  --
+  * occurred_at : timestamptz
+  * actor_type : text
+  actor_account_id : uuid <<FK>>
+  actor_person_id : uuid <<FK>>
+  request_id : text
+  source_ip : text
+  * action : text
+  target_type : text
+  target_id : uuid
+  * details : text
+  * prev_hash : text
+  * hash : text <<UK>>
+}
+
+people ||--o{ accounts
+accounts ||--o{ sessions
+roles ||--o{ role_permissions
+permissions ||--o{ role_permissions
+accounts ||--o{ account_roles
+roles ||--o{ account_roles
+accounts |o--o{ audit_log
+people |o--o{ audit_log
+
+note right of accounts
+  kind: work atau admin (D-72). UNIQUE (person_id, kind):
+  satu orang paling banyak satu akun kerja dan satu akun
+  admin (D-79). login: ^[a-z0-9._-]{3,64}$ (D-85).
+  password_hash: argon2id format PHC; password asli
+  tidak pernah disimpan (R-SEC-14).
+  Tidak pernah dihapus, hanya disabled_at (D-105).
+end note
+
+note bottom of sessions
+  Hanya hash SHA-256 token; token asli di cookie.
+  Batas diam dan batas mutlak sesi (D-85).
+  Satu-satunya tabel yang boleh DELETE (logout).
+end note
+
+note bottom of account_roles
+  scope: all atau own_project_group (D-71, D-82).
+  Katalog hak (permissions) tetap; isi peran
+  (role_permissions) diatur admin (D-66).
+end note
+
+note right of audit_log
+  Append-only (R-SEC-03):
+  - role aplikasi hanya SELECT dan INSERT;
+  - trigger menolak UPDATE, DELETE, TRUNCATE;
+  - seq tanpa lubang, dibagikan aplikasi di bawah
+    advisory lock rantai, bukan sequence (E-06);
+  - hash = SHA-256(prev_hash + isi), satu rantai
+    untuk seluruh sistem (D-83).
+  actor_type: human, system, anonymous (D-106);
+  human selalu punya akun dan orang.
+  details: teks JSON, bukan jsonb, supaya byte yang
+  di-hash sama dengan yang disimpan.
+end note
+@enduml
+
+' ---------------------------------------------------------------------------
+@startuml U8-C-dokumen-perubahan-rute
+hide circle
+hide empty members
+skinparam linetype ortho
+skinparam shadowing false
+skinparam ArrowColor #444444
+skinparam ClassBorderColor #1F4E79
+skinparam ClassBackgroundColor #FFFFFF
+
+title U8-C · Jenis dokumen, master perubahan, jabatan, dan rute approval (migrasi 00007 sampai 00009)
+
+entity "document_types" as document_types {
+  * id : uuid <<PK>>
+  --
+  key : text <<UK>>
+  * name : text
+  * letter : text <<UK>>
+  * position : smallint
+}
+
+entity "special_codes" as special_codes {
+  * id : uuid <<PK>>
+  --
+  * code : text <<UK>>
+  * name : text
+  * created_at : timestamptz
+}
+
+entity "change_types" as change_types {
+  * id : uuid <<PK>>
+  --
+  * key : text <<UK>>
+  * name : text
+  * position : smallint
+  approval_route_id : uuid <<FK>>
+}
+
+entity "change_sources" as change_sources {
+  * id : uuid <<PK>>
+  --
+  * name : text
+  mechanism : text <<UK>>
+  * active : boolean = true
+  * created_at : timestamptz
+}
+
+entity "four_m_categories" as four_m_categories {
+  * id : uuid <<PK>>
+  --
+  * key : text <<UK>>
+  * name : text
+  * position : smallint
+}
+
+entity "positions" as positions {
+  * id : uuid <<PK>>
+  --
+  * key : text <<UK>>
+  * name : text
+  * per_project_group : boolean
+  * single_holder : boolean = false
+  * sort_order : smallint
+}
+
+entity "position_holders" as position_holders {
+  * id : uuid <<PK>>
+  --
+  * position_id : uuid <<FK>>
+  * per_project_group : boolean <<FK>>
+  * person_id : uuid <<FK>>
+  project_group_id : uuid <<FK>>
+  * created_at : timestamptz
+}
+
+entity "approval_routes" as approval_routes {
+  * id : uuid <<PK>>
+  --
+  * name : text
+  * created_at : timestamptz
+}
+
+entity "route_slots" as route_slots {
+  * id : uuid <<PK>>
+  --
+  * route_id : uuid <<FK>>
+  * slot_order : smallint
+  * stage : text
+  * print_title : text
+}
+
+entity "route_slot_positions" as route_slot_positions {
+  * slot_id : uuid <<PK, FK>>
+  * position_id : uuid <<PK, FK>>
+}
+
+entity "system_settings" as system_settings {
+  * id : uuid <<PK>>
+  --
+  * sign_dates_enabled : boolean = false
+}
+
+entity "people" as people_c {
+  * id : uuid <<PK>>
+}
+
+entity "project_groups" as project_groups_c {
+  * id : uuid <<PK>>
+}
+
+entity "customers" as customers_c {
+  * id : uuid <<PK>>
+}
+
+positions ||--o{ position_holders
+people_c ||--o{ position_holders
+project_groups_c |o--o{ position_holders
+approval_routes ||--|{ route_slots
+route_slots ||--|{ route_slot_positions
+positions ||--o{ route_slot_positions
+approval_routes |o--o{ change_types
+approval_routes |o--o{ customers_c
+
+note right of document_types
+  key: pfd, pfmea, cp, atau kosong untuk jenis lain dari WI.
+  Hanya jenis ber-key yang dinomori sistem (R-NUM-01).
+  Awalan nomor = kode pabrik (number_settings) + letter,
+  misalnya S + C = SC (D-89). Nama unik tanpa membedakan
+  huruf besar kecil.
+end note
+
+note bottom of special_codes
+  code: ^[A-Z]{2,3}$; berdiri di posisi kode customer,
+  misalnya ZZ untuk General/Common (D-114).
+end note
+
+note bottom of change_sources
+  mechanism: yokoten, template, atau sqam untuk sumber
+  milik mekanisme sistem; CHECK: selalu aktif (D-113).
+end note
+
+note right of positions
+  key tetap, name hanya tampilan (D-58).
+  per_project_group: satu pemegang per Project Group
+  (Project Leader, Project Engineer, D-54).
+  single_holder: satu pemegang untuk seluruh pabrik,
+  dijaga layanan (approver, D-115, migrasi 00009).
+  CHECK: tidak keduanya.
+end note
+
+note bottom of position_holders
+  FK (position_id, per_project_group) -> positions:
+  project_group_id wajib tepat bila jabatannya per
+  Project Group (CHECK).
+  UNIQUE NULLS NOT DISTINCT (position_id, person_id,
+  project_group_id); UNIQUE (position_id, project_group_id)
+  WHERE per_project_group.
+end note
+
+note bottom of route_slots
+  stage: prepared, checked, approved. Satu Prepared,
+  satu Checked, lalu satu atau lebih Approved, paling
+  banyak 10 slot (D-117, dijaga layanan).
+  UNIQUE (route_id, slot_order).
+end note
+
+note bottom of system_settings
+  Satu baris (unique index pada true). Juga
+  number_settings di U8-D.
+end note
+@enduml
+
+' ---------------------------------------------------------------------------
+@startuml U8-D-register-nomor
+hide circle
+hide empty members
+skinparam linetype ortho
+skinparam shadowing false
+skinparam ArrowColor #444444
+skinparam ClassBorderColor #1F4E79
+skinparam ClassBackgroundColor #FFFFFF
+
+title U8-D · Register nomor dokumen (migrasi 00007 dan 00010, Tahap 2)
+
+entity "number_settings" as number_settings {
+  * id : uuid <<PK>>
+  --
+  * factory_code : text
+  * pattern : text = '{prefix}-{customer}-{seq}'
+  * sequence_format : text = 'letter_block'
+  * revision_digits : smallint = 2
+}
+
+entity "number_counters" as number_counters {
+  * customer_code : text <<PK, FK>>
+  * document_type_id : uuid <<PK, FK>>
+  --
+  * last_value : integer
+}
+
+entity "number_batches" as number_batches {
+  * id : uuid <<PK>>
+  --
+  * kind : text
+  * customer_id : uuid <<FK>>
+  * account_id : uuid <<FK>>
+  * person_id : uuid <<FK>>
+  idempotency_key : text
+  request_hash : text
+  * created_at : timestamptz
+}
+
+entity "document_numbers" as document_numbers {
+  * id : uuid <<PK>>
+  --
+  * number : text <<UK>>
+  * customer_id : uuid <<FK>>
+  * customer_code : text <<FK>>
+  * document_type_id : uuid <<FK>>
+  * sequence : integer
+  * status : text
+  * initial_revision : smallint = 0
+  * batch_id : uuid <<FK>>
+  status_reason : text
+  status_changed_at : timestamptz
+  * created_at : timestamptz
+}
+
+entity "customer_codes" as customer_codes_d {
+  * code : text <<PK>>
+  --
+  * customer_id : uuid <<FK>>
+}
+
+entity "customers" as customers_d {
+  * id : uuid <<PK>>
+}
+
+entity "document_types" as document_types_d {
+  * id : uuid <<PK>>
+  --
+  key : text <<UK>>
+}
+
+entity "accounts" as accounts_d {
+  * id : uuid <<PK>>
+}
+
+entity "people" as people_d {
+  * id : uuid <<PK>>
+}
+
+customers_d ||--|{ customer_codes_d
+customer_codes_d ||--o{ number_counters
+document_types_d ||--o{ number_counters
+customer_codes_d ||--o{ document_numbers
+document_types_d ||--o{ document_numbers
+number_batches ||--|{ document_numbers
+customers_d ||--o{ number_batches
+accounts_d ||--o{ number_batches
+people_d ||--o{ number_batches
+
+note right of number_settings
+  Satu baris. Satu pola untuk semua jenis dokumen dan
+  customer (ASUMSI E-61). Pola wajib memuat {prefix},
+  {customer}, {seq} tepat sekali dengan pemisah, supaya
+  nomor bisa dibaca kembali (impor, M2.5).
+  sequence_format letter_block: 001 sampai 999, lalu
+  A001 sampai Z999 (D-89). revision_digits 1 sampai 3.
+end note
+
+note right of number_counters
+  Penghitung per teks kode customer dan jenis dokumen
+  (R-NUM-03, D-93), bukan sequence PostgreSQL.
+  Dinaikkan di dalam transaksi pendaftaran; transaksi
+  yang batal tidak meninggalkan lubang.
+  Tidak pernah turun: greatest(last_value, nilai baru).
+  Beberapa penghitung selalu dikunci menurut urutan
+  kode lalu document_type_id (set dan impor), supaya
+  tidak deadlock.
+end note
+
+note as urutan_kunci
+  <b>Urutan kunci setiap transaksi penomoran</b> (E-69)
+  1. customers FOR SHARE, sebelum INSERT apa pun yang
+     merujuk customer itu. Foreign key memasang kunci
+     KEY SHARE; menaikkannya ke FOR SHARE di tengah
+     transaksi bisa deadlock dengan ganti kode, yang
+     mengubah kolom code yang unik.
+  2. number_counters, menurut customer_code lalu
+     document_type_id.
+  3. Kunci rantai audit_log, paling akhir.
+end note
+
+note bottom of number_batches
+  kind: single, set (M2.4), import (M2.5).
+  UNIQUE (account_id, idempotency_key) (ASUMSI E-63).
+  CHECK: kunci kosong tepat untuk import;
+  kunci 1 sampai 100 karakter dengan request_hash.
+  Pendaftar = person_id; asal nomor = kind.
+end note
+
+note left of document_numbers
+  number: teks tersimpan, tidak pernah dihitung ulang
+  (R-NUM-02); nomor impor memakai teks aslinya (R-NUM-06).
+  UNIQUE (customer_code, document_type_id, sequence):
+  satu nomor berjalan sekali, juga bila pola berubah.
+  FK (customer_code, customer_id) -> customer_codes
+  (code, customer_id): kode di nomor adalah kode
+  customer itu, sekarang atau dulu (R-POR-01, E-11).
+  status: reserved, in_use, released, obsolete, void,
+  skipped (ASUMSI E-64). sequence >= 0 (000 hanya dari
+  impor). status_reason 1 sampai 500 karakter.
+  Hak role aplikasi: SELECT, INSERT, dan UPDATE hanya
+  kolom status, status_reason, status_changed_at;
+  tanpa DELETE (R-NUM-04).
+end note
+@enduml

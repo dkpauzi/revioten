@@ -1,6 +1,6 @@
 # PFMEA / Control Plan / PFD Web System: Design Brief for AI Collaborators
 
-- Version: 1.16
+- Version: 1.17
 - Date: 2026-10-30
 - Status: living document. Update it whenever a decision changes, and mark replaced items [SUPERSEDED].
 - Owner language: Indonesian. This brief is in English for precision and to match the earlier spec package. Domain terms stay in Indonesian where they matter (section 3).
@@ -142,8 +142,8 @@ All entities below are conceptual. Table and column names are decided during the
 | person, account, session | A person holds at most one work account and one admin account (D-79). Accounts are never deleted, only disabled (D-105). Sessions follow the login rules of D-85. |
 | process | Process master with a fixed ID. The name is only a display value. Aliases allowed. |
 | doc_type, number_settings, special_code | Document types with a letter (H for PFD, F for PFMEA, C for CP, plus other WI types such as W); the prefix is the factory code plus the letter (D-89). Only PFD, PFMEA, and CP are numbered by the system. number_settings holds the factory code. Special codes stand in the customer code position (D-114). |
-| numbering_pattern, number_counter | Pattern per document type, optionally overridden per customer. One counter per customer and document type. |
-| document_number | Registered number text (unique), status, owner, linked document. |
+| number_settings (pattern), number_counter, number_batch | One number pattern for every document type and customer, held in number_settings with the running-number format and the revision digits (working assumption E-61; patterns per customer wait for Q-05). One counter per customer code text and document type (D-93). A number batch is one request that produced numbers: a single registration, a set (M2.4), or an import (M2.5), with the person who made it and, for registrations, the idempotency key (working assumption E-63). |
+| document_number | Registered number text (unique, never recomputed), customer, the customer code inside the number (current or old, R-POR-01), document type, running number, status (R-NUM-04, plus Skipped under working assumption E-64), initial revision, batch, and the reason of a manual status change. The linked document comes with M4.1. |
 | format_template, format_template_version | Methodology (AIAG 4th, AIAG-VDA, customer SQAM), columns with immutable IDs, header fields, risk method and rating tables, export layout reference. Versioned. |
 | process_template, process_template_version, template_point | Process, sub-process, and point library with scope general, customer, model group, or model (D-39). Points have immutable IDs and an optional linked counterpart. Versioned. |
 | document | PFD, PFMEA, or CP of a model. Points to a number, a format template version, origin (new or migrated), and current revision. |
@@ -189,6 +189,10 @@ erDiagram
   CHANGE_TYPE }o--o| APPROVAL_ROUTE : "route policy"
   CUSTOMER ||--o{ DOCUMENT_NUMBER : owns
   DOC_TYPE ||--o{ DOCUMENT_NUMBER : classifies
+  CUSTOMER_CODE ||--o{ DOCUMENT_NUMBER : "code in number"
+  CUSTOMER_CODE ||--o{ NUMBER_COUNTER : counts
+  DOC_TYPE ||--o{ NUMBER_COUNTER : counts
+  NUMBER_BATCH ||--|{ DOCUMENT_NUMBER : produces
   DOCUMENT_NUMBER ||--o| DOCUMENT : identifies
   DOCUMENT ||--o{ REVISION : has
   REVISION ||--o{ DOCUMENT_ROW : contains
@@ -218,7 +222,10 @@ stateDiagram-v2
   Released --> Obsolete: withdrawn
   Reserved --> Void: cancelled with reason
   InUse --> Void: cancelled with reason
+  [*] --> Skipped: passed over by a set (E-64)
 ```
+
+Legacy numbers enter the register at the status chosen for the import (Reserved, In use, Released, Obsolete, or Void; working assumption E-65). Skipped numbers never change status. In stage 2 only Void and Obsolete are set by hand (working assumption E-68); In use and Released follow M4.1 and M6.7.
 
 State of a change [PROPOSED]
 
@@ -306,10 +313,10 @@ stateDiagram-v2
 |---|---|---|
 | R-NUM-01 | Register and track numbers for PFD, PFMEA, and CP, separated per customer and document type (example: SC-KT-000, SF-KT-000, SH-KT-000). The TR-020 documents show SH for PFD, SF for PFMEA, and SC for CP. | [DECIDED] |
 | R-NUM-02 | Prefix and pattern are master data and editable. A change affects only new numbers. Issued numbers are stored as text and never recomputed. The parts follow WI SW-ZZ-000 (D-89): factory code and document type letter (prefix), customer code or special code, running number, and a two-digit revision that is not part of the registered number. | [DECIDED] |
-| R-NUM-03 | No collisions: allocation happens on the server at submit time with a transactional counter row (not a PostgreSQL sequence), a unique constraint on the full number, and an idempotency key. 50 parallel registrations must give 50 distinct numbers with no gaps. Counters are kept per customer code text and document type, so a new customer code starts again at the first number (D-93). | [DECIDED] |
-| R-NUM-04 | Statuses Reserved, In use, Released, Obsolete, Void. Numbers are never reused or deleted. Stale Reserved numbers raise reminders. Search, filter, and export the register as a master document list. | [PROPOSED] |
-| R-NUM-05 | Most documents of a model share one number across the set, some do not (legacy Excel registration). Counters are per document type, and a "register as set" action takes the next number free in all three types so they align. The lagging counters then skip numbers, which R-NUM-03 (no gaps) does not allow, so skipped numbers need a rule: a status Skipped, or one counter per customer for sets. | [PROPOSED] (see Q-05) |
-| R-NUM-06 | Legacy numbers are imported with their original text. Counters start at the highest existing number. Gaps, duplicates, and misaligned sets are reported and never fixed or renumbered automatically, because numbers may already be with customers. | [PROPOSED] |
+| R-NUM-03 | No collisions: allocation happens on the server at submit time with a transactional counter row (not a PostgreSQL sequence), a unique constraint on the full number, and an idempotency key. 50 parallel registrations must give 50 distinct numbers with no gaps. Counters are kept per customer code text and document type, so a new customer code starts again at the first number (D-93). As built in M2.2 (finding E-69, open): every numbering transaction locks the customer row first, before inserting anything that references it, then the counters in the order customer code, document type, and the audit chain last; otherwise a registration and a customer code change can deadlock. | [DECIDED] |
+| R-NUM-04 | Statuses Reserved, In use, Released, Obsolete, Void. Numbers are never reused or deleted. Stale Reserved numbers raise reminders. Search, filter, and export the register as a master document list. As built in M2.3: the application role has no DELETE on the register and may update only the status columns; Void needs a reason and Obsolete takes an optional one (working assumption E-68); the register shows how long a number has been Reserved, without reminders or export yet (working assumption E-62). | [PROPOSED] |
+| R-NUM-05 | Most documents of a model share one number across the set, some do not (legacy Excel registration). Counters are per document type, and a "register as set" action takes the next number free in all three types so they align. The lagging counters then skip numbers, which R-NUM-03 (no gaps) does not allow, so skipped numbers need a rule: a status Skipped, or one counter per customer for sets. As built in M2.4: skipped numbers are recorded with status Skipped and never given again (working assumption E-64). | [PROPOSED] (see Q-05) |
+| R-NUM-06 | Legacy numbers are imported with their original text. Counters start at the highest existing number. Gaps, duplicates, and misaligned sets are reported and never fixed or renumbered automatically, because numbers may already be with customers. As built in M2.5 (working assumptions E-65 and E-66): the number column of one customer is pasted, one status per import, and the current pattern reads each number; lines outside the pattern and numbers with another customer's code (R-POR-01) are reported and not imported; a duplicate is imported once; a dry run gives the same report without saving. | [PROPOSED] |
 
 ### APR: approval and release
 | ID | Rule | Status |
@@ -1042,3 +1049,4 @@ Findings from the TR-020 documents
 - 1.14 (2026-10-27): recorded D-71 (Project Leader and Project Engineer prepare only for their own project group) and D-72 (separate admin account, held by the PPAP Staff, audit log through it). Confirmed D-66: the admin manages the access rules, and the user map U3-peta-pengguna is the baseline. Added R-SEC-13. Resolved Q-59. Updated the role summary, domain model, R-SEC-10 to R-SEC-12, D-69, and RK-63.
 - 1.15 (2026-10-27): recorded D-73 (the last admin account cannot be removed), D-74 (each admin account linked to its holder), D-75 (no access-change log review by the NPI Manager, rejected suggestion), D-76 (print titles as on the TR-020 covers, answer to Q-52), and D-77 (coding starts in parallel with the UML and is used to evaluate the design; amends D-11). Resolved Q-52. Added RK-64 and working agreements 11 and 12. Updated the role summary, R-SEC-11, R-SEC-13, R-APR-17, R-PRT-03, R-PRT-07, D-11, D-43, RK-55, RK-59, RK-63, section 13, and the stage S row.
 - 1.16 (2026-10-30): recorded the owner's decisions on the code findings of `docs/evaluasi-desain.md` as D-78 to D-120: E-01 to E-18 (decided 2026-10-27 and 2026-10-28), Q-14 (D-96), Q-47 (D-97), and E-19 to E-42 together with the stage 1 evaluation, approved on 2026-10-30 through the owner's general approval of Claude Code's recommendations, each checked against the main goal of easier yokoten revisions. E-30 and E-33 wait for real documents; the precedence question of D-112 and numbering with special codes (D-114) stay open. As the owner allowed ("anda juga saya izinkan untuk merubah brief sesuai dengan aktual code"), the text now follows the code of stages 0 and 1: the role list in section 1; the glossary (PPAP Staff, person and account, position holder, factory code, special code, running number); the domain model and ER diagram of section 4; R-DOC-04, R-TPL-10, R-CHG-06, R-NUM-02, R-NUM-03, R-APR-08, R-APR-09, R-APR-15, R-SEC-02, R-SEC-03, R-SEC-09, R-SEC-11, R-SEC-12, R-SEC-13, the new R-SEC-14 and R-SEC-15, R-VER-04, R-VER-05, R-API-03, R-API-06, and R-API-13; D-19 and D-73; section 7 (lines only, exact versions in `docs/versions.md`); sections 8, 9, 13, 14, and 16; RK-49 and RK-64; and Q-14, Q-15, Q-17, Q-21, Q-46, Q-47, and Q-50.
+- 1.17 (2026-10-30): updated the brief to the stage 2 code (M2.1 to M2.5), as the owner allowed ("anda juga saya izinkan untuk merubah brief sesuai dengan aktual code", 2026-10-30): the numbering entities in section 4 (one pattern in number_settings, counters per customer code text, number batches, document numbers with the code inside the number and the initial revision), the relationship diagram, the Skipped state, and the as-built notes of R-NUM-04 to R-NUM-06. Added the as-built lock order to R-NUM-03 after a deadlock between registration and a customer code change was found and fixed (E-69). No new decisions: the stage 2 findings E-60 to E-69 stay open in `docs/evaluasi-desain.md`, and the code marks each working assumption with `ASUMSI E-nn`.

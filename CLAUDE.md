@@ -2,7 +2,7 @@
 
 File ini dibaca Claude Code di awal setiap sesi. Isinya aturan kerja untuk menulis kode, diringkas dari brief desain. Bila file ini berbeda dengan brief, brief yang berlaku (brief bagian 0 dan bagian 15, butir 12).
 
-- Dibuat 27 Oktober 2026 dari brief desain v1.15 (D-77), diperbarui 30 Oktober 2026 mengikuti brief desain v1.16 (D-78 sampai D-120).
+- Dibuat 27 Oktober 2026 dari brief desain v1.15 (D-77), diperbarui 30 Oktober 2026 mengikuti brief desain v1.16 (D-78 sampai D-120) dan v1.17 (kode Tahap 2).
 - Baris bertanda **(usulan)** adalah usulan Claude yang belum diputuskan pemilik. Ikuti sebagai rencana kerja, tapi bisa berubah.
 
 ## 1. Proyek ini
@@ -134,7 +134,7 @@ Kode sekarang punya dua tujuan: belajar, dan menguji apakah desain (brief, UML, 
 
 ### Perintah yang sudah terbukti
 
-Dijalankan dari root repo. Terbukti di container cloud Linux (bash) pada M0.1 (27 Oktober 2026), M0.2, M0.3, M0.4, M0.5, M1.1, M1.2, M1.3, M1.4, M1.5, M1.6, dan M1.8 (28 Oktober 2026), serta perbaikan Tahap 1 dan M1.7 (30 Oktober 2026). Docker Compose membaca `.env` sendiri, dan perintah `go` sama di PowerShell Windows. Catatan dalam kurung untuk Windows belum dicoba di komputer pemilik.
+Dijalankan dari root repo. Terbukti di container cloud Linux (bash) pada M0.1 (27 Oktober 2026), M0.2, M0.3, M0.4, M0.5, M1.1, M1.2, M1.3, M1.4, M1.5, M1.6, dan M1.8 (28 Oktober 2026), serta perbaikan Tahap 1, M1.7, dan M2.1 sampai M2.5 (30 Oktober 2026). Docker Compose membaca `.env` sendiri, dan perintah `go` sama di PowerShell Windows. Catatan dalam kurung untuk Windows belum dicoba di komputer pemilik.
 
 | Tujuan | Perintah |
 |---|---|
@@ -162,6 +162,9 @@ Dijalankan dari root repo. Terbukti di container cloud Linux (bash) pada M0.1 (2
 | Kelola master proses (sejak M1.5) | Dengan akun admin, buat akun kerja PPAP Engineer berperan "Template maintainer" (menu Accounts). Login dengan akun itu, lalu buka Processes (http://127.0.0.1:8080/processes): tambah proses dengan alias satu per baris, atau ganti namanya. Akun admin dan akun lain hanya melihat (D-64) |
 | Kelola jenis dokumen dan perubahan (sejak M1.6) | Login dengan akun admin. Document types (http://127.0.0.1:8080/document-types): kode pabrik, jenis dokumen dengan awalannya, dan kode khusus. Change types (http://127.0.0.1:8080/change-types): jenis perubahan, sumber perubahan, dan kategori 4M. Akun kerja hanya melihat |
 | Kelola jabatan dan rute approval (sejak M1.8) | Login dengan akun admin. Positions (http://127.0.0.1:8080/positions): ganti nama jabatan, catat dan lepas pemegang (Project Leader dan Project Engineer per Project Group). Approval routes (http://127.0.0.1:8080/approval-routes): ubah atau tambah rute, rute default per customer, dan rute per jenis perubahan. Settings (http://127.0.0.1:8080/admin/settings): saklar tanggal tanda tangan. Akun kerja hanya melihat jabatan dan rute |
+| Daftarkan nomor dokumen (sejak M2.1 dan M2.4) | Dengan akun admin, buat akun kerja berperan "Author" (menu Accounts). Login dengan akun itu, lalu buka Numbers (http://127.0.0.1:8080/numbers). "Register as a set" sudah dicentang: PFD, PFMEA, dan CP mendapat satu nomor berjalan, dan nomor yang dilewati tercatat Skipped. Hilangkan centangnya untuk mendaftarkan satu nomor. Pola nomor dan digit revisi diatur admin di Document types |
+| Register, Void, dan Obsolete (sejak M2.3) | Semua akun melihat register di halaman Numbers dan bisa menyaring customer, jenis, status, atau potongan nomor. Akun berperan "Document control" mendapat tombol Void (alasan wajib) dan Make obsolete. Nomor tidak pernah dihapus, karena role aplikasi tidak punya DELETE |
+| Impor nomor lama (sejak M2.5) | Login dengan akun berperan "Document control", buka Numbers, lalu Import legacy numbers (http://127.0.0.1:8080/numbers/import). Pilih customer dan status, tempel kolom nomor dari register Excel, tekan Preview, periksa laporannya, lalu Import |
 | Backup terenkripsi (sejak M1.7, D-119) | Isi `BACKUP_DIR` (folder di disk lain yang sudah ada) dan `BACKUP_PASSPHRASE` (minimal 15 karakter, simpan salinannya di tempat lain) di `.env`, lalu `go run ./cmd/revioten backup` dari root repo saat PostgreSQL menyala. Hasilnya `revioten-<waktu>.dump.age` dan `revioten-<waktu>.manifest.json`. Jadwal harian lewat Task Scheduler: catatan M1.7 (belum dicoba di komputer pemilik) |
 | Uji restore ke database baru (sejak M1.7) | `go run ./cmd/revioten restore -file <BACKUP_DIR>/revioten-<waktu>.dump.age`. Hasilnya database baru `revioten_restore` (nama lain dengan `-db`); database yang sudah ada tidak pernah ditimpa. Periksa isinya dengan `docker compose exec db psql -U revioten -d revioten_restore`, lalu buang dengan `docker compose exec db dropdb -U revioten revioten_restore` |
 | Jalankan server dengan database hasil restore | `POSTGRES_DB=revioten_restore go run ./cmd/revioten` (bash; nilai di environment menang atas `.env`). PowerShell: `$env:POSTGRES_DB="revioten_restore"; go run ./cmd/revioten` (belum dicoba di komputer pemilik) |
