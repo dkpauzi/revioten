@@ -58,7 +58,7 @@ func TestPermissionsPerOperation(t *testing.T) {
 		DB: pool, Customers: customers, Auth: authSvc, Access: checker,
 		Audit: audit.NewService(pool, checker), Products: products, Processes: processes,
 		Numbering: numbers, Changes: changes, Approval: approvals, Settings: settings.NewService(pool, checker),
-		Templates: template.NewService(pool, checker),
+		Templates: template.NewService(pool, checker), ProcessTemplates: template.NewProcessService(pool, checker),
 	})
 
 	// Admin pertama, satu akun kerja tanpa peran (hanya hak dasar Viewer), dan
@@ -193,6 +193,28 @@ func TestPermissionsPerOperation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// Process template IQC (M3.2) dengan satu sub-proses dan satu poin CP,
+	// dibuat PPAP Engineer. Proses Reflow belum punya template, untuk operasi
+	// membuat template.
+	processTemplates := template.NewProcessService(pool, checker)
+	iqcTemplate, err := processTemplates.CreateProcessTemplate(ctx, engineer, proc.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	iqcVersion, err := processTemplates.AddSubprocess(ctx, engineer, iqcTemplate.Versions[0].ID, "IQC MSD")
+	if err != nil {
+		t.Fatal(err)
+	}
+	iqcVersion, err = processTemplates.AddPoint(ctx, engineer, iqcVersion.ID, template.NewPoint{
+		SubprocessID: iqcVersion.Subprocesses[0].ID, DocumentTypeID: docTypes[2].ID, Text: "Check MSL label",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	reflow, err := processes.Create(ctx, engineer, process.Input{Name: "Reflow"})
+	if err != nil {
+		t.Fatal(err)
+	}
 	// params mengisi {nama} di alamat dan isi permintaan dengan ID sungguhan.
 	params := map[string]string{
 		"positionId": ppapEngineer.ID, "holderId": holder.ID, "approvalRouteId": routes[0].ID, "routeId": routes[1].ID,
@@ -202,6 +224,8 @@ func TestPermissionsPerOperation(t *testing.T) {
 		"processId": proc.ID, "documentTypeId": docTypes[0].ID, "cpTypeId": docTypes[2].ID, "documentNumberId": reg.Numbers[0].ID, "specialCodeId": specialCodes[0].ID,
 		"changeTypeId": changeTypes[0].ID, "changeSourceId": sources[0].ID, "fourMCategoryId": categories[0].ID,
 		"formatTemplateId": pfmeaFormat.ID, "formatVersionId": pfmeaVersion.ID, "formatFieldId": pfmeaVersion.Fields[0].ID,
+		"freeProcessId": reflow.ID, "processVersionId": iqcVersion.ID, "subprocessId": iqcVersion.Subprocesses[0].ID,
+		"pointId": iqcVersion.Subprocesses[0].Points[0].ID,
 	}
 
 	// Alamat ditulis seperti di kontrak. Urutan penting: operasi yang
@@ -240,6 +264,14 @@ func TestPermissionsPerOperation(t *testing.T) {
 		{http.MethodPost, "/api/v1/processes", `{"name":"SMT","aliases":["Surface Mount"]}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/processes/{processId}", "", http.StatusOK, http.StatusOK, http.StatusOK},
 		{http.MethodPut, "/api/v1/processes/{processId}", `{"name":"Incoming QC","aliases":["IQC"]}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		// Process template (M3.2): semua akun melihat (L-2), Pengelola template mengubah (E-6, D-64).
+		{http.MethodGet, "/api/v1/process-templates", "", http.StatusOK, http.StatusOK, http.StatusOK},
+		{http.MethodPost, "/api/v1/process-templates", `{"process_id":"{freeProcessId}"}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
+		{http.MethodGet, "/api/v1/process-template-versions/{processVersionId}", "", http.StatusOK, http.StatusOK, http.StatusOK},
+		{http.MethodPost, "/api/v1/process-template-versions/{processVersionId}/subprocesses", `{"name":"IQC PCB"}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
+		{http.MethodPut, "/api/v1/process-template-versions/{processVersionId}/subprocesses/{subprocessId}", `{"name":"IQC MSD"}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		{http.MethodPost, "/api/v1/process-template-versions/{processVersionId}/points", `{"subprocess_id":"{subprocessId}","document_type_id":"{cpTypeId}","text":"Check HIC"}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
+		{http.MethodPut, "/api/v1/process-template-versions/{processVersionId}/points/{pointId}", `{"text":"Check MSL label"}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		// Jenis dokumen dan perubahan diubah Admin (A-2, UC-05).
 		{http.MethodGet, "/api/v1/number-settings", "", http.StatusOK, http.StatusOK, http.StatusOK},
 		{http.MethodPut, "/api/v1/number-settings", `{"factory_code":"T"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},

@@ -95,7 +95,8 @@ export type ProblemScope =
 	| 'position'
 	| 'holder'
 	| 'route'
-	| 'formatTemplate';
+	| 'formatTemplate'
+	| 'processTemplate';
 
 // scopedKeys memetakan "formulir.field:kode masalah" ke kunci teks layar.
 const scopedKeys: Record<string, MessageKey> = {
@@ -124,7 +125,17 @@ const scopedKeys: Record<string, MessageKey> = {
 	'route.name:taken': 'routeNameTaken',
 	'formatTemplate.name:required': 'formatNameRequired',
 	'formatTemplate.name:taken': 'formatNameTaken',
-	'formatTemplate.document_type_id:not_allowed': 'formatTypeNotAllowed'
+	'formatTemplate.document_type_id:not_allowed': 'formatTypeNotAllowed',
+	'processTemplate.process_id:required': 'processTemplateProcessRequired',
+	'processTemplate.process_id:taken': 'processTemplateTaken',
+	'processTemplate.name:required': 'subprocessNameRequired',
+	'processTemplate.name:taken': 'subprocessNameTaken',
+	'processTemplate.name:not_allowed': 'subprocessLimit',
+	'processTemplate.text:required': 'pointTextRequired',
+	'processTemplate.subprocess_id:invalid_format': 'pointSubprocessInvalid',
+	'processTemplate.subprocess_id:not_allowed': 'pointLimit',
+	'processTemplate.document_type_id:required': 'pointTypeRequired',
+	'processTemplate.document_type_id:not_allowed': 'pointTypeNotAllowed'
 };
 
 // problemText memberi teks layar untuk satu masalah input: teks khusus

@@ -128,6 +128,18 @@ type TemplateService interface {
 	SetHighlights(ctx context.Context, actor access.Actor, versionID string, in template.HighlightSettings) (template.FormatVersion, error)
 }
 
+// ProcessTemplateService adalah operasi process template yang dipakai API
+// (M3.2). *template.ProcessService memenuhinya; test memakai versi palsu.
+type ProcessTemplateService interface {
+	ListProcessTemplates(ctx context.Context, actor access.Actor) ([]template.ProcessTemplate, error)
+	GetProcessVersion(ctx context.Context, actor access.Actor, id string) (template.ProcessVersion, error)
+	CreateProcessTemplate(ctx context.Context, actor access.Actor, processID string) (template.ProcessTemplate, error)
+	AddSubprocess(ctx context.Context, actor access.Actor, versionID, name string) (template.ProcessVersion, error)
+	UpdateSubprocess(ctx context.Context, actor access.Actor, versionID, subprocessID string, in template.SubprocessUpdate) (template.ProcessVersion, error)
+	AddPoint(ctx context.Context, actor access.Actor, versionID string, in template.NewPoint) (template.ProcessVersion, error)
+	UpdatePoint(ctx context.Context, actor access.Actor, versionID, pointID string, in template.PointUpdate) (template.ProcessVersion, error)
+}
+
 // SettingsService adalah operasi pengaturan sistem yang dipakai API (M1.8).
 // *settings.Service memenuhinya; test memakai versi palsu.
 type SettingsService interface {
@@ -179,6 +191,8 @@ type Deps struct {
 	Approval  ApprovalService
 	Settings  SettingsService
 	Templates TemplateService
+	// ProcessTemplates adalah pustaka proses (M3.2).
+	ProcessTemplates ProcessTemplateService
 	// Logger untuk log server. Bila nil, dipakai slog.Default().
 	Logger *slog.Logger
 }
@@ -198,7 +212,7 @@ func NewHandler(ui fs.FS, deps Deps) http.Handler {
 		db: deps.DB, customers: deps.Customers, auth: deps.Auth, access: deps.Access,
 		audit: deps.Audit, products: deps.Products, processes: deps.Processes,
 		numbering: deps.Numbering, changes: deps.Changes, approval: deps.Approval, settings: deps.Settings,
-		templates: deps.Templates, log: log,
+		templates: deps.Templates, processTemplates: deps.ProcessTemplates, log: log,
 	}
 
 	// Route dari kontrak didaftarkan oleh kode hasil generate ke mux khusus API.
@@ -252,5 +266,7 @@ type apiServer struct {
 	approval  ApprovalService
 	settings  SettingsService
 	templates TemplateService
-	log       *slog.Logger
+	// processTemplates adalah pustaka proses (M3.2).
+	processTemplates ProcessTemplateService
+	log              *slog.Logger
 }

@@ -192,12 +192,8 @@ func (s *Service) UpdateField(ctx context.Context, actor access.Actor, versionID
 		}
 		if change.Position != f.Position {
 			// Field di antaranya bergeser satu tempat ke arah posisi lama.
-			shift := db.ShiftFieldPositionsParams{VersionID: v.ID, Area: f.Area,
-				Delta: 1, FirstPosition: int16(change.Position), LastPosition: int16(f.Position - 1)}
-			if change.Position > f.Position {
-				shift = db.ShiftFieldPositionsParams{VersionID: v.ID, Area: f.Area,
-					Delta: -1, FirstPosition: int16(f.Position + 1), LastPosition: int16(change.Position)}
-			}
+			first, last, delta := moveRange(f.Position, change.Position)
+			shift := db.ShiftFieldPositionsParams{VersionID: v.ID, Area: f.Area, Delta: delta, FirstPosition: first, LastPosition: last}
 			if err := q.ShiftFieldPositions(ctx, shift); err != nil {
 				return nil, err
 			}
@@ -358,7 +354,7 @@ func (s *Service) cleanNewTemplate(ctx context.Context, in NewTemplate) (NewTemp
 	out := NewTemplate{Name: name, DocumentTypeID: in.DocumentTypeID, Methodology: in.Methodology,
 		CustomerID: in.CustomerID, RiskMethod: in.RiskMethod, CopyFromVersionID: in.CopyFromVersionID}
 
-	typeProblem, err := s.checkDocumentType(ctx, in.DocumentTypeID)
+	typeProblem, err := checkDocumentType(ctx, s.q, in.DocumentTypeID, "Only PFD, PFMEA, and CP have format templates.")
 	if err != nil {
 		return NewTemplate{}, nil, err
 	}
@@ -395,22 +391,23 @@ func (s *Service) cleanNewTemplate(ctx context.Context, in NewTemplate) (NewTemp
 }
 
 // checkDocumentType memeriksa jenis dokumen: hanya PFD, PFMEA, dan CP yang
-// punya format template (R-TPL-01).
-func (s *Service) checkDocumentType(ctx context.Context, id string) (*problem.Problem, error) {
+// punya format template dan poin process template (R-TPL-01). notAllowed
+// adalah pesan untuk jenis dokumen lain.
+func checkDocumentType(ctx context.Context, q *db.Queries, id, notAllowed string) (*problem.Problem, error) {
 	if id == "" {
 		return &problem.Problem{Field: "document_type_id", Code: problem.Required, Message: "Choose the document type."}, nil
 	}
 	if !db.IsUUID(id) {
 		return &problem.Problem{Field: "document_type_id", Code: problem.InvalidFormat, Message: "Choose an existing document type."}, nil
 	}
-	d, err := s.q.GetDocumentType(ctx, id)
+	d, err := q.GetDocumentType(ctx, id)
 	switch {
 	case errors.Is(err, pgx.ErrNoRows):
 		return &problem.Problem{Field: "document_type_id", Code: problem.InvalidFormat, Message: "Choose an existing document type."}, nil
 	case err != nil:
 		return nil, fmt.Errorf("membaca jenis dokumen: %w", err)
 	case d.Key == nil:
-		return &problem.Problem{Field: "document_type_id", Code: problem.NotAllowed, Message: "Only PFD, PFMEA, and CP have format templates."}, nil
+		return &problem.Problem{Field: "document_type_id", Code: problem.NotAllowed, Message: notAllowed}, nil
 	}
 	return nil, nil
 }
@@ -702,8 +699,9 @@ func problems(ps ...*problem.Problem) error {
 	return &problem.ValidationError{Problems: list}
 }
 
-// result menerjemahkan error transaksi: nama atau label yang sudah dipakai
-// menjadi ConflictError, error input dan "tidak ada" diteruskan apa adanya.
+// result menerjemahkan error transaksi format template dan process template:
+// nama atau label yang sudah dipakai menjadi ConflictError, error input dan
+// "tidak ada" diteruskan apa adanya.
 func result(err error, doing string) error {
 	taken := func(field, message string) error {
 		return &problem.ConflictError{Problems: []problem.Problem{{Field: field, Code: problem.Taken, Message: message}}}
@@ -719,6 +717,10 @@ func result(err error, doing string) error {
 		return taken("label", "This label is already used by another field in this area.")
 	case db.IsUniqueViolation(err, "format_symbols_name_key"):
 		return taken("symbols", "Two symbols have the same name.")
+	case db.IsUniqueViolation(err, "process_templates_process_key"):
+		return taken("process_id", "This process already has a process template.")
+	case db.IsUniqueViolation(err, "process_template_subprocesses_name_key"):
+		return taken("name", "This name is already used by another sub-process in this version.")
 	case errors.As(err, &invalid), errors.As(err, &conflict), errors.Is(err, problem.ErrNotFound):
 		return err
 	}

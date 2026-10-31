@@ -803,6 +803,42 @@ func (e PositionKey) Valid() bool {
 	}
 }
 
+// Defines values for ProcessTemplateVersionStatus.
+const (
+	ProcessTemplateVersionStatusDraft     ProcessTemplateVersionStatus = "draft"
+	ProcessTemplateVersionStatusPublished ProcessTemplateVersionStatus = "published"
+)
+
+// Valid indicates whether the value is a known member of the ProcessTemplateVersionStatus enum.
+func (e ProcessTemplateVersionStatus) Valid() bool {
+	switch e {
+	case ProcessTemplateVersionStatusDraft:
+		return true
+	case ProcessTemplateVersionStatusPublished:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ProcessVersionSummaryStatus.
+const (
+	ProcessVersionSummaryStatusDraft     ProcessVersionSummaryStatus = "draft"
+	ProcessVersionSummaryStatusPublished ProcessVersionSummaryStatus = "published"
+)
+
+// Valid indicates whether the value is a known member of the ProcessVersionSummaryStatus enum.
+func (e ProcessVersionSummaryStatus) Valid() bool {
+	switch e {
+	case ProcessVersionSummaryStatusDraft:
+		return true
+	case ProcessVersionSummaryStatusPublished:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for RatingCriterionScale.
 const (
 	RatingCriterionScaleDetection  RatingCriterionScale = "detection"
@@ -1715,10 +1751,27 @@ type NewProcess struct {
 	Name string `json:"name"`
 }
 
+// NewProcessTemplate defines model for NewProcessTemplate.
+type NewProcessTemplate struct {
+	ProcessId string `json:"process_id"`
+}
+
 // NewSpecialCode defines model for NewSpecialCode.
 type NewSpecialCode struct {
 	Code string `json:"code"`
 	Name string `json:"name"`
+}
+
+// NewSubprocess defines model for NewSubprocess.
+type NewSubprocess struct {
+	Name string `json:"name"`
+}
+
+// NewTemplatePoint defines model for NewTemplatePoint.
+type NewTemplatePoint struct {
+	DocumentTypeId string `json:"document_type_id"`
+	SubprocessId   string `json:"subprocess_id"`
+	Text           string `json:"text"`
 }
 
 // NextDocumentNumber defines model for NextDocumentNumber.
@@ -1954,12 +2007,59 @@ type ProcessList struct {
 	Items []Process `json:"items"`
 }
 
+// ProcessRef defines model for ProcessRef.
+type ProcessRef struct {
+	Id string `json:"id"`
+
+	// Name The current display name of the process (D-06).
+	Name string `json:"name"`
+}
+
+// ProcessTemplate defines model for ProcessTemplate.
+type ProcessTemplate struct {
+	CreatedAt time.Time               `json:"created_at"`
+	Id        string                  `json:"id"`
+	Process   ProcessRef              `json:"process"`
+	Versions  []ProcessVersionSummary `json:"versions"`
+}
+
+// ProcessTemplateList defines model for ProcessTemplateList.
+type ProcessTemplateList struct {
+	Items []ProcessTemplate `json:"items"`
+}
+
+// ProcessTemplateVersion defines model for ProcessTemplateVersion.
+type ProcessTemplateVersion struct {
+	CreatedAt time.Time                    `json:"created_at"`
+	Id        string                       `json:"id"`
+	Process   ProcessRef                   `json:"process"`
+	Status    ProcessTemplateVersionStatus `json:"status"`
+
+	// Subprocesses In order, hidden ones included.
+	Subprocesses []Subprocess `json:"subprocesses"`
+	TemplateId   string       `json:"template_id"`
+	Version      int          `json:"version"`
+}
+
+// ProcessTemplateVersionStatus defines model for ProcessTemplateVersion.Status.
+type ProcessTemplateVersionStatus string
+
 // ProcessUpdate defines model for ProcessUpdate.
 type ProcessUpdate struct {
 	// Aliases Replaces all aliases of the process. Send an empty list to remove them.
 	Aliases []string `json:"aliases"`
 	Name    string   `json:"name"`
 }
+
+// ProcessVersionSummary defines model for ProcessVersionSummary.
+type ProcessVersionSummary struct {
+	Id      string                      `json:"id"`
+	Status  ProcessVersionSummaryStatus `json:"status"`
+	Version int                         `json:"version"`
+}
+
+// ProcessVersionSummaryStatus defines model for ProcessVersionSummary.Status.
+type ProcessVersionSummaryStatus string
 
 // ProjectGroup defines model for ProjectGroup.
 type ProjectGroup struct {
@@ -2127,6 +2227,26 @@ type StatusReason struct {
 	Reason *string `json:"reason,omitempty"`
 }
 
+// Subprocess defines model for Subprocess.
+type Subprocess struct {
+	Hidden bool `json:"hidden"`
+
+	// Id Fixed across versions (working assumption E-33).
+	Id   string `json:"id"`
+	Name string `json:"name"`
+
+	// Points By document type (PFD, PFMEA, CP), then in order, hidden ones included.
+	Points   []TemplatePoint `json:"points"`
+	Position int             `json:"position"`
+}
+
+// SubprocessUpdate defines model for SubprocessUpdate.
+type SubprocessUpdate struct {
+	Hidden   *bool  `json:"hidden,omitempty"`
+	Name     string `json:"name"`
+	Position *int   `json:"position,omitempty"`
+}
+
 // SystemSettings defines model for SystemSettings.
 type SystemSettings struct {
 	// SignDatesEnabled When false, signature slots have no sign date and the field is hidden (D-52).
@@ -2137,6 +2257,26 @@ type SystemSettings struct {
 type SystemSettingsUpdate struct {
 	// SignDatesEnabled Leave it out to keep the current value.
 	SignDatesEnabled *bool `json:"sign_dates_enabled,omitempty"`
+}
+
+// TemplatePoint defines model for TemplatePoint.
+type TemplatePoint struct {
+	DocumentType DocumentTypeRef `json:"document_type"`
+	Hidden       bool            `json:"hidden"`
+
+	// Id Fixed across versions; document rows will point to this ID.
+	Id string `json:"id"`
+
+	// Position Order within the sub-process for the same document type, from 1.
+	Position int    `json:"position"`
+	Text     string `json:"text"`
+}
+
+// TemplatePointUpdate defines model for TemplatePointUpdate.
+type TemplatePointUpdate struct {
+	Hidden   *bool  `json:"hidden,omitempty"`
+	Position *int   `json:"position,omitempty"`
+	Text     string `json:"text"`
 }
 
 // TemporaryPassword defines model for TemporaryPassword.
@@ -2199,17 +2339,26 @@ type ModelId = string
 // PartNumberId defines model for PartNumberId.
 type PartNumberId = string
 
+// PointId defines model for PointId.
+type PointId = string
+
 // PositionId defines model for PositionId.
 type PositionId = string
 
 // ProcessId defines model for ProcessId.
 type ProcessId = string
 
+// ProcessVersionId defines model for ProcessVersionId.
+type ProcessVersionId = string
+
 // ProjectGroupId defines model for ProjectGroupId.
 type ProjectGroupId = string
 
 // SpecialCodeId defines model for SpecialCodeId.
 type SpecialCodeId = string
+
+// SubprocessId defines model for SubprocessId.
+type SubprocessId = string
 
 // ListAuditLogParams defines parameters for ListAuditLog.
 type ListAuditLogParams struct {
@@ -2392,6 +2541,21 @@ type UpdatePositionJSONRequestBody = NameUpdate
 
 // AddPositionHolderJSONRequestBody defines body for AddPositionHolder for application/json ContentType.
 type AddPositionHolderJSONRequestBody = NewPositionHolder
+
+// AddTemplatePointJSONRequestBody defines body for AddTemplatePoint for application/json ContentType.
+type AddTemplatePointJSONRequestBody = NewTemplatePoint
+
+// UpdateTemplatePointJSONRequestBody defines body for UpdateTemplatePoint for application/json ContentType.
+type UpdateTemplatePointJSONRequestBody = TemplatePointUpdate
+
+// AddSubprocessJSONRequestBody defines body for AddSubprocess for application/json ContentType.
+type AddSubprocessJSONRequestBody = NewSubprocess
+
+// UpdateSubprocessJSONRequestBody defines body for UpdateSubprocess for application/json ContentType.
+type UpdateSubprocessJSONRequestBody = SubprocessUpdate
+
+// CreateProcessTemplateJSONRequestBody defines body for CreateProcessTemplate for application/json ContentType.
+type CreateProcessTemplateJSONRequestBody = NewProcessTemplate
 
 // CreateProcessJSONRequestBody defines body for CreateProcess for application/json ContentType.
 type CreateProcessJSONRequestBody = NewProcess
@@ -2596,6 +2760,27 @@ type ServerInterface interface {
 	// RemovePositionHolder Remove a holder from a position (A-1)
 	// (DELETE /api/v1/positions/{positionId}/holders/{holderId})
 	RemovePositionHolder(w http.ResponseWriter, r *http.Request, positionId PositionId, holderId HolderId)
+	// GetProcessTemplateVersion One process template version with its sub-processes and points (L-2)
+	// (GET /api/v1/process-template-versions/{processVersionId})
+	GetProcessTemplateVersion(w http.ResponseWriter, r *http.Request, processVersionId ProcessVersionId)
+	// AddTemplatePoint Add a point for PFD, PFMEA, or CP at the end of a sub-process in a draft version (E-6, R-TPL-04)
+	// (POST /api/v1/process-template-versions/{processVersionId}/points)
+	AddTemplatePoint(w http.ResponseWriter, r *http.Request, processVersionId ProcessVersionId)
+	// UpdateTemplatePoint Change the text of a point, move, hide, or show it in a draft version (E-6, R-TPL-04)
+	// (PUT /api/v1/process-template-versions/{processVersionId}/points/{pointId})
+	UpdateTemplatePoint(w http.ResponseWriter, r *http.Request, processVersionId ProcessVersionId, pointId PointId)
+	// AddSubprocess Add a sub-process at the end of a draft version (E-6)
+	// (POST /api/v1/process-template-versions/{processVersionId}/subprocesses)
+	AddSubprocess(w http.ResponseWriter, r *http.Request, processVersionId ProcessVersionId)
+	// UpdateSubprocess Rename, move, hide, or show a sub-process in a draft version (E-6)
+	// (PUT /api/v1/process-template-versions/{processVersionId}/subprocesses/{subprocessId})
+	UpdateSubprocess(w http.ResponseWriter, r *http.Request, processVersionId ProcessVersionId, subprocessId SubprocessId)
+	// ListProcessTemplates Process templates with a summary of their versions (L-2, UC-21, R-TPL-01)
+	// (GET /api/v1/process-templates)
+	ListProcessTemplates(w http.ResponseWriter, r *http.Request)
+	// CreateProcessTemplate Add the process template of a process, with an empty draft version 1 (E-6, UC-21, D-64)
+	// (POST /api/v1/process-templates)
+	CreateProcessTemplate(w http.ResponseWriter, r *http.Request)
 	// ListProcesses All processes with their aliases, ordered by name (UC-04)
 	// (GET /api/v1/processes)
 	ListProcesses(w http.ResponseWriter, r *http.Request)
@@ -4097,6 +4282,182 @@ func (siw *ServerInterfaceWrapper) RemovePositionHolder(w http.ResponseWriter, r
 	handler.ServeHTTP(w, r)
 }
 
+// GetProcessTemplateVersion operation middleware
+func (siw *ServerInterfaceWrapper) GetProcessTemplateVersion(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "processVersionId" -------------
+	var processVersionId ProcessVersionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "processVersionId", r.PathValue("processVersionId"), &processVersionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "processVersionId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetProcessTemplateVersion(w, r, processVersionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AddTemplatePoint operation middleware
+func (siw *ServerInterfaceWrapper) AddTemplatePoint(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "processVersionId" -------------
+	var processVersionId ProcessVersionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "processVersionId", r.PathValue("processVersionId"), &processVersionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "processVersionId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AddTemplatePoint(w, r, processVersionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateTemplatePoint operation middleware
+func (siw *ServerInterfaceWrapper) UpdateTemplatePoint(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "processVersionId" -------------
+	var processVersionId ProcessVersionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "processVersionId", r.PathValue("processVersionId"), &processVersionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "processVersionId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "pointId" -------------
+	var pointId PointId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "pointId", r.PathValue("pointId"), &pointId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "pointId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateTemplatePoint(w, r, processVersionId, pointId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AddSubprocess operation middleware
+func (siw *ServerInterfaceWrapper) AddSubprocess(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "processVersionId" -------------
+	var processVersionId ProcessVersionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "processVersionId", r.PathValue("processVersionId"), &processVersionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "processVersionId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AddSubprocess(w, r, processVersionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateSubprocess operation middleware
+func (siw *ServerInterfaceWrapper) UpdateSubprocess(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "processVersionId" -------------
+	var processVersionId ProcessVersionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "processVersionId", r.PathValue("processVersionId"), &processVersionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "processVersionId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "subprocessId" -------------
+	var subprocessId SubprocessId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "subprocessId", r.PathValue("subprocessId"), &subprocessId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "subprocessId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateSubprocess(w, r, processVersionId, subprocessId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListProcessTemplates operation middleware
+func (siw *ServerInterfaceWrapper) ListProcessTemplates(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListProcessTemplates(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateProcessTemplate operation middleware
+func (siw *ServerInterfaceWrapper) CreateProcessTemplate(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateProcessTemplate(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListProcesses operation middleware
 func (siw *ServerInterfaceWrapper) ListProcesses(w http.ResponseWriter, r *http.Request) {
 
@@ -4575,6 +4936,13 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/format-template-versions/{formatVersionId}/fields/{formatFieldId}", wrapper.UpdateFormatField)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/format-template-versions/{formatVersionId}/rating-criteria", wrapper.SetFormatRatingCriteria)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/format-template-versions/{formatVersionId}/symbols", wrapper.SaveFormatSymbols)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/process-templates", wrapper.ListProcessTemplates)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/process-templates", wrapper.CreateProcessTemplate)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/process-template-versions/{processVersionId}", wrapper.GetProcessTemplateVersion)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/process-template-versions/{processVersionId}/subprocesses", wrapper.AddSubprocess)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/process-template-versions/{processVersionId}/subprocesses/{subprocessId}", wrapper.UpdateSubprocess)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/process-template-versions/{processVersionId}/points", wrapper.AddTemplatePoint)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/process-template-versions/{processVersionId}/points/{pointId}", wrapper.UpdateTemplatePoint)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/system-settings", wrapper.GetSystemSettings)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/system-settings", wrapper.UpdateSystemSettings)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/audit-log", wrapper.ListAuditLog)
@@ -6996,6 +7364,284 @@ func (response RemovePositionHolderdefaultJSONResponse) VisitRemovePositionHolde
 	return err
 }
 
+type GetProcessTemplateVersionRequestObject struct {
+	ProcessVersionId ProcessVersionId `json:"processVersionId"`
+}
+
+type GetProcessTemplateVersionResponseObject interface {
+	VisitGetProcessTemplateVersionResponse(w http.ResponseWriter) error
+}
+
+type GetProcessTemplateVersion200JSONResponse ProcessTemplateVersion
+
+func (response GetProcessTemplateVersion200JSONResponse) VisitGetProcessTemplateVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProcessTemplateVersiondefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response GetProcessTemplateVersiondefaultJSONResponse) VisitGetProcessTemplateVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddTemplatePointRequestObject struct {
+	ProcessVersionId ProcessVersionId `json:"processVersionId"`
+	Body             *AddTemplatePointJSONRequestBody
+}
+
+type AddTemplatePointResponseObject interface {
+	VisitAddTemplatePointResponse(w http.ResponseWriter) error
+}
+
+type AddTemplatePoint201JSONResponse ProcessTemplateVersion
+
+func (response AddTemplatePoint201JSONResponse) VisitAddTemplatePointResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddTemplatePointdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response AddTemplatePointdefaultJSONResponse) VisitAddTemplatePointResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateTemplatePointRequestObject struct {
+	ProcessVersionId ProcessVersionId `json:"processVersionId"`
+	PointId          PointId          `json:"pointId"`
+	Body             *UpdateTemplatePointJSONRequestBody
+}
+
+type UpdateTemplatePointResponseObject interface {
+	VisitUpdateTemplatePointResponse(w http.ResponseWriter) error
+}
+
+type UpdateTemplatePoint200JSONResponse ProcessTemplateVersion
+
+func (response UpdateTemplatePoint200JSONResponse) VisitUpdateTemplatePointResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateTemplatePointdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response UpdateTemplatePointdefaultJSONResponse) VisitUpdateTemplatePointResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddSubprocessRequestObject struct {
+	ProcessVersionId ProcessVersionId `json:"processVersionId"`
+	Body             *AddSubprocessJSONRequestBody
+}
+
+type AddSubprocessResponseObject interface {
+	VisitAddSubprocessResponse(w http.ResponseWriter) error
+}
+
+type AddSubprocess201JSONResponse ProcessTemplateVersion
+
+func (response AddSubprocess201JSONResponse) VisitAddSubprocessResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddSubprocessdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response AddSubprocessdefaultJSONResponse) VisitAddSubprocessResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateSubprocessRequestObject struct {
+	ProcessVersionId ProcessVersionId `json:"processVersionId"`
+	SubprocessId     SubprocessId     `json:"subprocessId"`
+	Body             *UpdateSubprocessJSONRequestBody
+}
+
+type UpdateSubprocessResponseObject interface {
+	VisitUpdateSubprocessResponse(w http.ResponseWriter) error
+}
+
+type UpdateSubprocess200JSONResponse ProcessTemplateVersion
+
+func (response UpdateSubprocess200JSONResponse) VisitUpdateSubprocessResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateSubprocessdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response UpdateSubprocessdefaultJSONResponse) VisitUpdateSubprocessResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListProcessTemplatesRequestObject struct {
+}
+
+type ListProcessTemplatesResponseObject interface {
+	VisitListProcessTemplatesResponse(w http.ResponseWriter) error
+}
+
+type ListProcessTemplates200JSONResponse ProcessTemplateList
+
+func (response ListProcessTemplates200JSONResponse) VisitListProcessTemplatesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListProcessTemplatesdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ListProcessTemplatesdefaultJSONResponse) VisitListProcessTemplatesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateProcessTemplateRequestObject struct {
+	Body *CreateProcessTemplateJSONRequestBody
+}
+
+type CreateProcessTemplateResponseObject interface {
+	VisitCreateProcessTemplateResponse(w http.ResponseWriter) error
+}
+
+type CreateProcessTemplate201JSONResponse ProcessTemplate
+
+func (response CreateProcessTemplate201JSONResponse) VisitCreateProcessTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateProcessTemplatedefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response CreateProcessTemplatedefaultJSONResponse) VisitCreateProcessTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListProcessesRequestObject struct {
 }
 
@@ -7870,6 +8516,27 @@ type StrictServerInterface interface {
 	// RemovePositionHolder Remove a holder from a position (A-1)
 	// (DELETE /api/v1/positions/{positionId}/holders/{holderId})
 	RemovePositionHolder(ctx context.Context, request RemovePositionHolderRequestObject) (RemovePositionHolderResponseObject, error)
+	// GetProcessTemplateVersion One process template version with its sub-processes and points (L-2)
+	// (GET /api/v1/process-template-versions/{processVersionId})
+	GetProcessTemplateVersion(ctx context.Context, request GetProcessTemplateVersionRequestObject) (GetProcessTemplateVersionResponseObject, error)
+	// AddTemplatePoint Add a point for PFD, PFMEA, or CP at the end of a sub-process in a draft version (E-6, R-TPL-04)
+	// (POST /api/v1/process-template-versions/{processVersionId}/points)
+	AddTemplatePoint(ctx context.Context, request AddTemplatePointRequestObject) (AddTemplatePointResponseObject, error)
+	// UpdateTemplatePoint Change the text of a point, move, hide, or show it in a draft version (E-6, R-TPL-04)
+	// (PUT /api/v1/process-template-versions/{processVersionId}/points/{pointId})
+	UpdateTemplatePoint(ctx context.Context, request UpdateTemplatePointRequestObject) (UpdateTemplatePointResponseObject, error)
+	// AddSubprocess Add a sub-process at the end of a draft version (E-6)
+	// (POST /api/v1/process-template-versions/{processVersionId}/subprocesses)
+	AddSubprocess(ctx context.Context, request AddSubprocessRequestObject) (AddSubprocessResponseObject, error)
+	// UpdateSubprocess Rename, move, hide, or show a sub-process in a draft version (E-6)
+	// (PUT /api/v1/process-template-versions/{processVersionId}/subprocesses/{subprocessId})
+	UpdateSubprocess(ctx context.Context, request UpdateSubprocessRequestObject) (UpdateSubprocessResponseObject, error)
+	// ListProcessTemplates Process templates with a summary of their versions (L-2, UC-21, R-TPL-01)
+	// (GET /api/v1/process-templates)
+	ListProcessTemplates(ctx context.Context, request ListProcessTemplatesRequestObject) (ListProcessTemplatesResponseObject, error)
+	// CreateProcessTemplate Add the process template of a process, with an empty draft version 1 (E-6, UC-21, D-64)
+	// (POST /api/v1/process-templates)
+	CreateProcessTemplate(ctx context.Context, request CreateProcessTemplateRequestObject) (CreateProcessTemplateResponseObject, error)
 	// ListProcesses All processes with their aliases, ordered by name (UC-04)
 	// (GET /api/v1/processes)
 	ListProcesses(ctx context.Context, request ListProcessesRequestObject) (ListProcessesResponseObject, error)
@@ -9704,6 +10371,221 @@ func (sh *strictHandler) RemovePositionHolder(w http.ResponseWriter, r *http.Req
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(RemovePositionHolderResponseObject); ok {
 		if err := validResponse.VisitRemovePositionHolderResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetProcessTemplateVersion operation middleware
+func (sh *strictHandler) GetProcessTemplateVersion(w http.ResponseWriter, r *http.Request, processVersionId ProcessVersionId) {
+	var request GetProcessTemplateVersionRequestObject
+
+	request.ProcessVersionId = processVersionId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetProcessTemplateVersion(ctx, request.(GetProcessTemplateVersionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetProcessTemplateVersion")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetProcessTemplateVersionResponseObject); ok {
+		if err := validResponse.VisitGetProcessTemplateVersionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AddTemplatePoint operation middleware
+func (sh *strictHandler) AddTemplatePoint(w http.ResponseWriter, r *http.Request, processVersionId ProcessVersionId) {
+	var request AddTemplatePointRequestObject
+
+	request.ProcessVersionId = processVersionId
+
+	var body AddTemplatePointJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.AddTemplatePoint(ctx, request.(AddTemplatePointRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AddTemplatePoint")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AddTemplatePointResponseObject); ok {
+		if err := validResponse.VisitAddTemplatePointResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateTemplatePoint operation middleware
+func (sh *strictHandler) UpdateTemplatePoint(w http.ResponseWriter, r *http.Request, processVersionId ProcessVersionId, pointId PointId) {
+	var request UpdateTemplatePointRequestObject
+
+	request.ProcessVersionId = processVersionId
+	request.PointId = pointId
+
+	var body UpdateTemplatePointJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateTemplatePoint(ctx, request.(UpdateTemplatePointRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateTemplatePoint")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateTemplatePointResponseObject); ok {
+		if err := validResponse.VisitUpdateTemplatePointResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AddSubprocess operation middleware
+func (sh *strictHandler) AddSubprocess(w http.ResponseWriter, r *http.Request, processVersionId ProcessVersionId) {
+	var request AddSubprocessRequestObject
+
+	request.ProcessVersionId = processVersionId
+
+	var body AddSubprocessJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.AddSubprocess(ctx, request.(AddSubprocessRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AddSubprocess")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AddSubprocessResponseObject); ok {
+		if err := validResponse.VisitAddSubprocessResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateSubprocess operation middleware
+func (sh *strictHandler) UpdateSubprocess(w http.ResponseWriter, r *http.Request, processVersionId ProcessVersionId, subprocessId SubprocessId) {
+	var request UpdateSubprocessRequestObject
+
+	request.ProcessVersionId = processVersionId
+	request.SubprocessId = subprocessId
+
+	var body UpdateSubprocessJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateSubprocess(ctx, request.(UpdateSubprocessRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateSubprocess")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateSubprocessResponseObject); ok {
+		if err := validResponse.VisitUpdateSubprocessResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListProcessTemplates operation middleware
+func (sh *strictHandler) ListProcessTemplates(w http.ResponseWriter, r *http.Request) {
+	var request ListProcessTemplatesRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListProcessTemplates(ctx, request.(ListProcessTemplatesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListProcessTemplates")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListProcessTemplatesResponseObject); ok {
+		if err := validResponse.VisitListProcessTemplatesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateProcessTemplate operation middleware
+func (sh *strictHandler) CreateProcessTemplate(w http.ResponseWriter, r *http.Request) {
+	var request CreateProcessTemplateRequestObject
+
+	var body CreateProcessTemplateJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateProcessTemplate(ctx, request.(CreateProcessTemplateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateProcessTemplate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateProcessTemplateResponseObject); ok {
+		if err := validResponse.VisitCreateProcessTemplateResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

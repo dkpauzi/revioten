@@ -1,7 +1,7 @@
 # U1 · Glosarium
 
-- Paket UML: draft 0.10, 31 Oktober 2026 (draft 0.9, 0.8, dan 0.7: 30, 30, dan 27 Oktober 2026)
-- Sumber: brief desain v1.17, termasuk temuan dari dokumen TR-020 (brief bagian 21). Nama jabatan mengikuti bagan organisasi NPI (update 22 Januari 2026). Nama orang tidak dicantumkan. Setiap istilah merujuk ke ID di brief (R-UML-01).
+- Paket UML: draft 0.11, 31 Oktober 2026 (draft 0.10, 0.9, 0.8, dan 0.7: 31, 30, 30, dan 27 Oktober 2026)
+- Sumber: brief desain v1.19, termasuk temuan dari dokumen TR-020 (brief bagian 21). Nama jabatan mengikuti bagan organisasi NPI (update 22 Januari 2026). Nama orang tidak dicantumkan. Setiap istilah merujuk ke ID di brief (R-UML-01).
 - Bahasa: penjelasan dalam bahasa Indonesia. Nama jabatan, nama standar, dan tahap tanda tangan memakai istilah yang sama dengan brief (R-UML-05, usulan).
 - Kolom **Istilah layar (Inggris)** (E-19, D-98): istilah yang dipakai di layar dan di katalog teks `web/src/lib/i18n/en.ts`, karena layar berbahasa Inggris untuk saat ini (D-96). Istilah baru di layar ditambahkan ke sini lebih dulu.
 - Kolom **Cek WI**:
@@ -34,13 +34,14 @@
 | Istilah | Istilah layar (Inggris) | Arti | Sebutan lain | Rujukan | Cek WI |
 |---|---|---|---|---|---|
 | Proses | Process | Langkah produksi, misalnya IQC. Punya ID tetap; namanya hanya tampilan dan boleh punya alias. | | R-DOC-04 | Belum |
-| Sub-proses | Sub-process | Varian dari satu proses, misalnya IQC General, IQC MSD, IQC PCB, IQC Wireharness, IQC Connector. | | Brief bagian 3 | Belum |
-| Poin | Point | Satu butir setingkat baris di dalam sub-proses, dengan ID tetap. | | R-TPL-04 | Belum |
+| Sub-proses | Sub-process | Varian dari satu proses, misalnya IQC General, IQC MSD, IQC PCB, IQC Wireharness, IQC Connector. ID-nya tetap dan milik satu proses master; namanya disimpan per versi process template (ASUMSI E-33). | | Brief bagian 3, E-33 | Belum |
+| Poin | Point | Satu butir setingkat baris di dalam sub-proses, untuk PFD, PFMEA, atau CP, dengan ID tetap. Untuk sementara berisi satu baris teks (ASUMSI E-73). | | R-TPL-04 | Belum |
 | IQC | IQC | Incoming Quality Control. | | Brief bagian 3 | Belum |
 | Nomor operasi | Operation number | Nomor urut proses di dokumen. Dibuat otomatis dan bisa diubah. | | R-CMP-01 | Belum |
 | Baris dokumen | Row | Satu baris lembar kerja PFD, PFMEA, atau CP. ID-nya tetap lintas revisi. | Row | R-DOC-01, R-DOC-02 | Tidak perlu |
 | Format template | Format template | Template metodologi: kolom, metode risiko, tabel skala, field header, dan layout ekspor. Berversi. | | R-TPL-01, R-TPL-02 | Tidak perlu |
-| Process template | Process template | Pustaka proses, sub-proses, dan poin. Berversi. | Template proses | R-TPL-01 | Tidak perlu |
+| Process template | Process template | Pustaka proses, sub-proses, dan poin. Satu template per proses (ASUMSI E-72). Berversi. | Template proses, pustaka proses | R-TPL-01 | Tidak perlu |
+| Sub-proses dan poin tersembunyi | Hidden | Sub-proses atau poin yang tidak dipakai lagi. Tidak dihapus: ID-nya tetap, jadi rujukan dari dokumen tetap utuh. | | R-TPL-04 | Tidak perlu |
 | Cakupan template | Template scope | Tingkat berlakunya process template: umum, customer, group model, dan model. Yang paling spesifik menang: model, lalu group model, lalu customer, lalu umum. | Scope | R-TPL-03, D-39 | Tidak perlu |
 | Template General | Template General | Process template umum yang tidak terikat customer atau model. | Template umum | R-TPL-03 | Belum |
 | Group model | Model group | Kumpulan model dalam satu customer yang berbagi isi template. Satu model paling banyak masuk satu group. Bisa dipilih sebagai target yokoten. | Model group | D-39, D-40, D-42, D-87 | Belum |

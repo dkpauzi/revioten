@@ -428,6 +428,54 @@ func highlightText(in template.HighlightSettings) string {
 	return text(in.RPNAbove) + "/" + text(in.SeverityAtLeast)
 }
 
+// fakeProcessTemplates meniru template.ProcessService. gotSub dan gotPoint
+// menyimpan isian perubahan terakhir, dan gotNew isian poin baru.
+type fakeProcessTemplates struct {
+	templates []template.ProcessTemplate
+	template  template.ProcessTemplate
+	version   template.ProcessVersion
+	err       error
+	got       called
+	gotSub    template.SubprocessUpdate
+	gotNew    template.NewPoint
+	gotPoint  template.PointUpdate
+}
+
+func (f *fakeProcessTemplates) ListProcessTemplates(context.Context, access.Actor) ([]template.ProcessTemplate, error) {
+	f.got = called{method: "ListProcessTemplates"}
+	return f.templates, f.err
+}
+
+func (f *fakeProcessTemplates) GetProcessVersion(_ context.Context, _ access.Actor, id string) (template.ProcessVersion, error) {
+	f.got = called{method: "GetProcessVersion", id: id}
+	return f.version, f.err
+}
+
+func (f *fakeProcessTemplates) CreateProcessTemplate(_ context.Context, _ access.Actor, processID string) (template.ProcessTemplate, error) {
+	f.got = called{method: "CreateProcessTemplate", input: processID}
+	return f.template, f.err
+}
+
+func (f *fakeProcessTemplates) AddSubprocess(_ context.Context, _ access.Actor, versionID, name string) (template.ProcessVersion, error) {
+	f.got = called{method: "AddSubprocess", id: versionID, input: name}
+	return f.version, f.err
+}
+
+func (f *fakeProcessTemplates) UpdateSubprocess(_ context.Context, _ access.Actor, versionID, subprocessID string, in template.SubprocessUpdate) (template.ProcessVersion, error) {
+	f.got, f.gotSub = called{method: "UpdateSubprocess", id: versionID, input: subprocessID}, in
+	return f.version, f.err
+}
+
+func (f *fakeProcessTemplates) AddPoint(_ context.Context, _ access.Actor, versionID string, in template.NewPoint) (template.ProcessVersion, error) {
+	f.got, f.gotNew = called{method: "AddPoint", id: versionID}, in
+	return f.version, f.err
+}
+
+func (f *fakeProcessTemplates) UpdatePoint(_ context.Context, _ access.Actor, versionID, pointID string, in template.PointUpdate) (template.ProcessVersion, error) {
+	f.got, f.gotPoint = called{method: "UpdatePoint", id: versionID, input: pointID}, in
+	return f.version, f.err
+}
+
 // fakeApproval meniru approval.Service.
 type fakeApproval struct {
 	positions []approval.Position
@@ -678,6 +726,9 @@ func newTestServer(t *testing.T, ui fs.FS, deps Deps) testServer {
 	}
 	if deps.Templates == nil {
 		deps.Templates = &fakeTemplates{}
+	}
+	if deps.ProcessTemplates == nil {
+		deps.ProcessTemplates = &fakeProcessTemplates{}
 	}
 	var log bytes.Buffer
 	deps.Logger = slog.New(slog.NewTextHandler(&log, nil))

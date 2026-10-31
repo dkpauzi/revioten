@@ -42,6 +42,13 @@ import type {
 	FormatVersion,
 	NewFormatField,
 	NewFormatTemplate,
+	NewSubprocess,
+	NewTemplatePoint,
+	ProcessTemplate,
+	ProcessTemplateList,
+	ProcessTemplateVersion,
+	SubprocessUpdate,
+	TemplatePointUpdate,
 	RatingCriterionInput,
 	NumberImportReport,
 	NumberImportRequest,
@@ -552,6 +559,68 @@ export function saveFormatSymbols(
 	fetchFn: typeof fetch = fetch
 ): Promise<ApiResult<FormatVersion>> {
 	return call<FormatVersion>(fetchFn, itemPath('format-template-versions', versionId) + '/symbols', jsonRequest('PUT', { items }));
+}
+
+// listProcessTemplates memanggil GET /api/v1/process-templates (M3.2).
+export function listProcessTemplates(fetchFn: typeof fetch = fetch): Promise<ApiResult<ProcessTemplateList>> {
+	return call<ProcessTemplateList>(fetchFn, '/api/v1/process-templates', { method: 'GET' });
+}
+
+// createProcessTemplate memanggil POST /api/v1/process-templates (E-6).
+export function createProcessTemplate(processId: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<ProcessTemplate>> {
+	return call<ProcessTemplate>(fetchFn, '/api/v1/process-templates', jsonRequest('POST', { process_id: processId }));
+}
+
+// getProcessTemplateVersion memanggil GET /api/v1/process-template-versions/{id}.
+export function getProcessTemplateVersion(
+	id: string,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<ProcessTemplateVersion>> {
+	return call<ProcessTemplateVersion>(fetchFn, itemPath('process-template-versions', id), { method: 'GET' });
+}
+
+// addSubprocess memanggil POST /api/v1/process-template-versions/{id}/subprocesses (E-6).
+export function addSubprocess(
+	versionId: string,
+	input: NewSubprocess,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<ProcessTemplateVersion>> {
+	const path = itemPath('process-template-versions', versionId) + '/subprocesses';
+	return call<ProcessTemplateVersion>(fetchFn, path, jsonRequest('POST', input));
+}
+
+// updateSubprocess memanggil PUT /api/v1/process-template-versions/{id}/subprocesses/{subprocessId} (E-6).
+// Isian yang tidak dikirim tetap (D-111).
+export function updateSubprocess(
+	versionId: string,
+	subprocessId: string,
+	input: SubprocessUpdate,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<ProcessTemplateVersion>> {
+	const path = itemPath('process-template-versions', versionId) + '/subprocesses/' + encodeURIComponent(subprocessId);
+	return call<ProcessTemplateVersion>(fetchFn, path, jsonRequest('PUT', input));
+}
+
+// addTemplatePoint memanggil POST /api/v1/process-template-versions/{id}/points (E-6).
+export function addTemplatePoint(
+	versionId: string,
+	input: NewTemplatePoint,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<ProcessTemplateVersion>> {
+	const path = itemPath('process-template-versions', versionId) + '/points';
+	return call<ProcessTemplateVersion>(fetchFn, path, jsonRequest('POST', input));
+}
+
+// updateTemplatePoint memanggil PUT /api/v1/process-template-versions/{id}/points/{pointId} (E-6).
+// Isian yang tidak dikirim tetap (D-111).
+export function updateTemplatePoint(
+	versionId: string,
+	pointId: string,
+	input: TemplatePointUpdate,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<ProcessTemplateVersion>> {
+	const path = itemPath('process-template-versions', versionId) + '/points/' + encodeURIComponent(pointId);
+	return call<ProcessTemplateVersion>(fetchFn, path, jsonRequest('PUT', input));
 }
 
 // listApprovalRoutes memanggil GET /api/v1/approval-routes.

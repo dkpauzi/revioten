@@ -261,6 +261,40 @@ type ProcessName struct {
 	NameKey   string
 }
 
+type ProcessTemplate struct {
+	ID        string
+	ProcessID string
+	CreatedAt time.Time
+}
+
+type ProcessTemplatePoint struct {
+	VersionID      string
+	SubprocessID   string
+	DocumentTypeID string
+	PointID        string
+	Text           string
+	Position       int16
+	Hidden         bool
+}
+
+type ProcessTemplateSubprocess struct {
+	VersionID    string
+	ProcessID    string
+	SubprocessID string
+	Name         string
+	Position     int16
+	Hidden       bool
+}
+
+type ProcessTemplateVersion struct {
+	ID         string
+	TemplateID string
+	ProcessID  string
+	Version    int32
+	Status     string
+	CreatedAt  time.Time
+}
+
 type ProjectGroup struct {
 	ID        string
 	Code      string
@@ -307,7 +341,20 @@ type SpecialCode struct {
 	CreatedAt time.Time
 }
 
+type Subprocess struct {
+	ID        string
+	ProcessID string
+	CreatedAt time.Time
+}
+
 type SystemSetting struct {
 	ID               string
 	SignDatesEnabled bool
+}
+
+type TemplatePoint struct {
+	ID             string
+	SubprocessID   string
+	DocumentTypeID string
+	CreatedAt      time.Time
 }

@@ -1,0 +1,91 @@
+package server
+
+import (
+	"net/http"
+	"reflect"
+	"testing"
+	"time"
+
+	"github.com/dkpauzi/revioten/internal/problem"
+	"github.com/dkpauzi/revioten/internal/template"
+)
+
+// TestProcessTemplateEndpoints: handler process template (M3.2) meneruskan
+// isian ke layanan dan menulis jawaban sesuai kontrak. Isian yang tidak
+// dikirim tetap nil, supaya layanan membiarkan nilainya (D-111).
+func TestProcessTemplateEndpoints(t *testing.T) {
+	created := time.Date(2026, 10, 31, 8, 0, 0, 0, time.UTC)
+	iqc := template.ProcessRef{ID: "p-1", Name: "IQC"}
+	fake := &fakeProcessTemplates{
+		templates: []template.ProcessTemplate{{
+			ID: "pt-1", Process: iqc, CreatedAt: created,
+			Versions: []template.ProcessVersionSummary{{ID: "v-1", Version: 1, Status: template.StatusDraft}},
+		}},
+		version: template.ProcessVersion{
+			ID: "v-1", TemplateID: "pt-1", Process: iqc, Version: 1, Status: template.StatusDraft, CreatedAt: created,
+			Subprocesses: []template.Subprocess{
+				{ID: "s-1", Name: "IQC MSD", Position: 1, Points: []template.Point{{
+					ID: "pp-1", DocumentType: template.DocumentTypeRef{ID: "dt-3", Key: "cp", Name: "CP"},
+					Text: "Check MSL label", Position: 1,
+				}}},
+				{ID: "s-2", Name: "IQC PCB", Position: 2, Hidden: true, Points: []template.Point{}},
+			},
+		},
+	}
+	srv := newTestServer(t, nil, Deps{ProcessTemplates: fake})
+
+	rec := srv.do(http.MethodGet, "/api/v1/process-templates", "")
+	want := `{"items":[{"created_at":"2026-10-31T08:00:00Z","id":"pt-1","process":{"id":"p-1","name":"IQC"},` +
+		`"versions":[{"id":"v-1","status":"draft","version":1}]}]}`
+	if rec.Code != http.StatusOK || !sameJSON(t, rec.Body.String(), want) {
+		t.Errorf("daftar: status %d\n%s\ningin\n%s", rec.Code, rec.Body.String(), want)
+	}
+
+	rec = srv.do(http.MethodGet, "/api/v1/process-template-versions/v-1", "")
+	want = `{"created_at":"2026-10-31T08:00:00Z","id":"v-1","process":{"id":"p-1","name":"IQC"},"status":"draft",` +
+		`"subprocesses":[{"hidden":false,"id":"s-1","name":"IQC MSD","position":1,"points":[{"document_type":{"id":"dt-3","key":"cp","name":"CP"},` +
+		`"hidden":false,"id":"pp-1","position":1,"text":"Check MSL label"}]},` +
+		`{"hidden":true,"id":"s-2","name":"IQC PCB","position":2,"points":[]}],"template_id":"pt-1","version":1}`
+	if rec.Code != http.StatusOK || fake.got != (called{method: "GetProcessVersion", id: "v-1"}) || !sameJSON(t, rec.Body.String(), want) {
+		t.Errorf("versi: status %d, %+v\n%s\ningin\n%s", rec.Code, fake.got, rec.Body.String(), want)
+	}
+
+	rec = srv.do(http.MethodPost, "/api/v1/process-templates", `{"process_id":"p-1"}`)
+	if rec.Code != http.StatusCreated || fake.got != (called{method: "CreateProcessTemplate", input: "p-1"}) {
+		t.Errorf("buat: status %d, %+v", rec.Code, fake.got)
+	}
+	rec = srv.do(http.MethodPost, "/api/v1/process-template-versions/v-1/subprocesses", `{"name":"IQC Connector"}`)
+	if rec.Code != http.StatusCreated || fake.got != (called{method: "AddSubprocess", id: "v-1", input: "IQC Connector"}) {
+		t.Errorf("tambah sub-proses: status %d, %+v", rec.Code, fake.got)
+	}
+
+	// Hanya nama yang dikirim: position dan hidden tetap nil.
+	rec = srv.do(http.MethodPut, "/api/v1/process-template-versions/v-1/subprocesses/s-2", `{"name":"IQC Board"}`)
+	if rec.Code != http.StatusOK || fake.got != (called{method: "UpdateSubprocess", id: "v-1", input: "s-2"}) ||
+		!reflect.DeepEqual(fake.gotSub, template.SubprocessUpdate{Name: "IQC Board"}) {
+		t.Errorf("ubah sub-proses tanpa isian lain: status %d, %+v", rec.Code, fake.gotSub)
+	}
+	rec = srv.do(http.MethodPut, "/api/v1/process-template-versions/v-1/subprocesses/s-2", `{"name":"IQC Board","hidden":false,"position":1}`)
+	if g := fake.gotSub; rec.Code != http.StatusOK || g.Hidden == nil || *g.Hidden || g.Position == nil || *g.Position != 1 {
+		t.Errorf("ubah sub-proses: status %d, %+v", rec.Code, g)
+	}
+
+	rec = srv.do(http.MethodPost, "/api/v1/process-template-versions/v-1/points",
+		`{"subprocess_id":"s-1","document_type_id":"dt-2","text":"Floor life exceeded"}`)
+	wantPoint := template.NewPoint{SubprocessID: "s-1", DocumentTypeID: "dt-2", Text: "Floor life exceeded"}
+	if rec.Code != http.StatusCreated || fake.got.method != "AddPoint" || fake.gotNew != wantPoint {
+		t.Errorf("tambah poin: status %d, %+v", rec.Code, fake.gotNew)
+	}
+	rec = srv.do(http.MethodPut, "/api/v1/process-template-versions/v-1/points/pp-1", `{"text":"Check MSL label","hidden":true}`)
+	if g := fake.gotPoint; rec.Code != http.StatusOK || fake.got != (called{method: "UpdatePoint", id: "v-1", input: "pp-1"}) ||
+		g.Text != "Check MSL label" || g.Hidden == nil || !*g.Hidden || g.Position != nil {
+		t.Errorf("ubah poin: status %d, %+v", rec.Code, g)
+	}
+
+	// Penolakan layanan diteruskan dalam format error API (R-API-13).
+	fake.err = &problem.ConflictError{Problems: []problem.Problem{{Field: "name", Code: problem.Taken, Message: "Taken."}}}
+	rec = srv.do(http.MethodPost, "/api/v1/process-template-versions/v-1/subprocesses", `{"name":"IQC MSD"}`)
+	if rec.Code != http.StatusConflict {
+		t.Errorf("nama kembar: status %d, %s", rec.Code, rec.Body.String())
+	}
+}

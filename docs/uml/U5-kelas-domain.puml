@@ -1,7 +1,7 @@
-' U5 · Diagram kelas domain (draft 0.10, 31 Oktober 2026, sumber brief v1.18 bagian 4 dan kode sampai M3.1)
+' U5 · Diagram kelas domain (draft 0.11, 31 Oktober 2026, sumber brief v1.19 bagian 4 dan kode sampai M3.2)
 ' Diagram konseptual: entitas, atribut penting, dan hubungannya, tanpa tipe database (R-UML-02).
 ' Menurut D-80, UML diperbarui mengikuti kode: draft ini hanya memuat entitas yang sudah dibangun
-' sampai M3.1. Entitas brief bagian 4 yang lain (dokumen, revisi, baris, template, perubahan, dan
+' sampai M3.2. Entitas brief bagian 4 yang lain (dokumen, revisi, baris, template, perubahan, dan
 ' seterusnya) ditambah saat tahapnya dibangun; Document digambar abu-abu sebagai titik sambung.
 ' Tabel fisiknya ada di U8-erd.puml.
 '
@@ -479,5 +479,88 @@ note bottom of VersionField
   key dipakai isi baris, label bisa diganti.
   Pilihan dan simbol tidak bisa dihapus
   (ASUMSI E-70).
+end note
+@enduml
+
+' ---------------------------------------------------------------------------
+@startuml U5-D-process-template
+hide circle
+hide empty methods
+skinparam shadowing false
+skinparam ArrowColor #444444
+skinparam class {
+  BorderColor #1F4E79
+  BackgroundColor #FFFFFF
+  BackgroundColor<<lihat U5-A>> #F4F4F4
+}
+
+title U5-D · Process template atau pustaka proses (Tahap 3, M3.2)
+
+class ProcessTemplate {
+}
+
+class ProcessVersion {
+  version : Bilangan
+  status : draft | published
+}
+
+class Subprocess {
+}
+
+class VersionSubprocess {
+  name : Teks tampilan
+  position : Bilangan
+  hidden : Ya/Tidak
+}
+
+class Point {
+}
+
+class VersionPoint {
+  text : Teks satu baris
+  position : Bilangan
+  hidden : Ya/Tidak
+}
+
+class Process <<lihat U5-A>>
+class DocumentType <<lihat U5-A>>
+
+Process "1" -- "0..1" ProcessTemplate : ASUMSI E-72 >
+ProcessTemplate "1" *-- "1..*" ProcessVersion
+Process "1" -- "0..*" Subprocess : identitas tetap >
+ProcessVersion "1" *-- "0..50" VersionSubprocess
+Subprocess "1" -- "1..*" VersionSubprocess : satu per versi >
+Subprocess "1" -- "0..*" Point : identitas tetap >
+DocumentType "1" -- "0..*" Point : PFD, PFMEA, atau CP >
+VersionSubprocess "1" *-- "0..*" VersionPoint
+Point "1" -- "1..*" VersionPoint : satu per versi >
+
+note right of ProcessTemplate
+  Satu template per proses, dengan cakupan umum
+  (ASUMSI E-72). M3.3 menambah cakupan customer,
+  group model, dan model (D-39); M3.4 menambah
+  penerbitan dan versi berikutnya.
+end note
+
+note right of Subprocess
+  ID tetap, milik satu proses master. Nama disimpan
+  per versi, jadi pencocokan PFD, PFMEA, dan CP
+  tetap di tingkat proses (ASUMSI E-33, opsi a).
+  Bila opsi (b) dipilih, nama dan alias pindah ke
+  master dengan ID yang sama.
+end note
+
+note right of Point
+  ID tetap (R-TPL-04); baris dokumen nanti menunjuk
+  ID ini. Sub-proses dan jenis dokumennya tidak
+  berubah. Di M3.2 poin hanya berisi satu baris teks;
+  isi baris menurut format template diputuskan
+  sebelum M4.5 (ASUMSI E-73).
+end note
+
+note bottom of VersionPoint
+  Sub-proses dan poin tidak dihapus, hanya
+  disembunyikan. Urutan poin dihitung per
+  sub-proses dan jenis dokumen.
 end note
 @enduml

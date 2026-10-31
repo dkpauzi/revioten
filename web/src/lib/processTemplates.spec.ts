@@ -1,0 +1,55 @@
+import { describe, expect, it } from 'vitest';
+import type { DocumentType, ProcessTemplate, Subprocess, TemplatePoint } from './api/gen/index.ts';
+import { en } from './i18n/en.ts';
+import { pointSummary, pointTypes, pointsOf, templateOf, versionText } from './processTemplates.ts';
+
+const types: DocumentType[] = [
+	{ id: 'd-pfd', key: 'pfd', name: 'PFD', letter: 'H', prefix: 'SH' },
+	{ id: 'd-pfmea', key: 'pfmea', name: 'PFMEA', letter: 'F', prefix: 'SF' },
+	{ id: 'd-cp', key: 'cp', name: 'CP', letter: 'C', prefix: 'SC' },
+	{ id: 'd-wi', name: 'Work Instruction', letter: 'W', prefix: 'SW' }
+];
+
+// point membuat satu poin contoh untuk satu jenis dokumen.
+function point(id: string, type: DocumentType, position: number): TemplatePoint {
+	return {
+		id,
+		document_type: { id: type.id, key: type.key ?? 'pfd', name: type.name },
+		text: `Point ${id}`,
+		position,
+		hidden: false
+	};
+}
+
+describe('process template di layar', () => {
+	it('mencari template milik satu proses', () => {
+		const templates: ProcessTemplate[] = [
+			{ id: 'pt-1', process: { id: 'p-iqc', name: 'IQC' }, versions: [], created_at: '2026-10-31T00:00:00Z' }
+		];
+		expect(templateOf(templates, 'p-iqc')?.id).toBe('pt-1');
+		expect(templateOf(templates, 'p-smt')).toBeNull();
+	});
+
+	it('hanya PFD, PFMEA, dan CP yang punya poin', () => {
+		expect(pointTypes(types).map((d) => d.name)).toEqual(['PFD', 'PFMEA', 'CP']);
+	});
+
+	it('memilah poin per jenis dokumen dan meringkas jumlahnya', () => {
+		const msd: Subprocess = {
+			id: 's-1',
+			name: 'IQC MSD',
+			position: 1,
+			hidden: false,
+			points: [point('a', types[0], 1), point('b', types[1], 1), point('c', types[1], 2)]
+		};
+		expect(pointsOf(msd, 'd-pfmea').map((p) => p.id)).toEqual(['b', 'c']);
+		expect(pointSummary(msd, pointTypes(types))).toBe('PFD 1 · PFMEA 2');
+		expect(pointSummary({ ...msd, points: [] }, pointTypes(types))).toBe('');
+	});
+
+	it('menulis nomor dan status versi', () => {
+		expect(versionText({ version: 1, status: 'draft' })).toBe(
+			en.processTemplateVersion.replace('{version}', '1').replace('{status}', en.processTemplateDraft)
+		);
+	});
+});

@@ -54,7 +54,7 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-30 | Field dan aturan Project Group, group model, model, dan part number belum ditetapkan | Celah | M1.4, M4.1 | Tidak | Ditunda (menunggu bahan) |
 | E-31 | Kode customer lama: boleh dipakai customer lain, dan tanggal berlaku penggantian | Ambigu | M1.4, M2.1 | Tidak | Diputuskan (D-109) |
 | E-32 | Aturan nama dan alias master proses belum ditetapkan | Celah | M1.5, M3.2, Tahap 7 | Tidak | Diputuskan (D-110) |
-| E-33 | Pencocokan PFD, PFMEA, dan CP: di tingkat proses atau sub-proses | Ambigu | M1.5, M3.2, Tahap 3 | Tidak (perlu sebelum M3.2) | Ditunda (menunggu bahan) |
+| E-33 | Pencocokan PFD, PFMEA, dan CP: di tingkat proses atau sub-proses | Ambigu | M1.5, M3.2, Tahap 3, M4.1 | Tidak (M3.2 memakai asumsi; perlu sebelum M4.1) | Ditunda (menunggu bahan) |
 | E-34 | Field wajib di kontrak tidak diperiksa oleh server hasil generate | Celah | M1.5, M8.1, M9.3 | Tidak | Diputuskan (D-111) |
 | E-35 | Bentuk kebijakan approval per jenis perubahan belum ditentukan (Q-15) | Celah | M1.6, M1.8, Tahap 5 dan 6 | Tidak (perlu sebelum Tahap 5) | Diputuskan sebagian (D-112) |
 | E-36 | Sumber perubahan mencampur mekanisme sistem (R-CHG-01) dan pemicu (R-CHG-06) | Ambigu | M1.6, Tahap 5 | Tidak (perlu sebelum Tahap 5) | Diputuskan (D-113) |
@@ -93,6 +93,8 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-69 | Urutan kunci transaksi penomoran: deadlock dengan ganti kode customer | Sulit dibangun | M2.1, M2.2, M2.4 | Tidak (sudah diperbaiki di kode) | Terbuka |
 | E-70 | Isi awal format template dan aturan field yang belum ditetapkan | Celah | M3.1, M4.1 | Tidak (perlu sebelum M4.1) | Terbuka |
 | E-71 | Aturan sorot PFMEA: arti "severity 8" dan nilai mana yang disorot | Ambigu | M3.1 | Tidak | Terbuka |
+| E-72 | Satuan process template: satu per proses, atau satu pustaka untuk semua proses | Ambigu | M3.2, M3.3, M3.4, M5.8 | Tidak (perlu sebelum M3.3) | Terbuka |
+| E-73 | Isi poin process template dan format template yang diikutinya | Celah | M3.2, M4.5, M5.8, M7.4 | Tidak (perlu sebelum M4.5) | Terbuka |
 
 ## Keputusan 30 Oktober 2026
 
@@ -665,9 +667,10 @@ Salin blok ini untuk setiap temuan baru.
 - **Dampak bila dibiarkan:** bila pencocokan perlu sampai sub-proses, sub-proses juga butuh ID tetap dan alias, dan master proses M1.5 harus diperluas sebelum M3.2.
 - **Opsi:** (a) Pencocokan di tingkat proses. Sub-proses tetap varian di process template, dengan ID tetap dari template. (b) Sub-proses juga masuk master proses, masing-masing dengan ID tetap, alias, dan induk (proses). (c) Diputuskan setelah membandingkan satu set PFD, PFMEA, dan CP asli baris per baris.
 - **Rekomendasi Claude Code (usulan):** (c) sebelum M3.2, karena jawabannya bergantung pada cara dokumen sekarang ditulis. Skema M1.5 bisa diperluas ke (b) dengan kolom induk tanpa mengubah ID proses yang sudah ada.
-- **Asumsi sementara di kode:** master proses M1.5 hanya berisi proses. Sub-proses belum dibuat.
-- **Menghambat milestone?** Tidak (perlu sebelum M3.2)
-- **Status:** Ditunda, menunggu bahan pemilik (paling lambat sebelum M3.2). Cara (c) disetujui pemilik 30 Oktober 2026 lewat persetujuan umum: satu set PFD, PFMEA, dan CP asli dibandingkan baris per baris, lalu dipilih (a) atau (b).
+- **Asumsi sementara di kode:** master proses M1.5 hanya berisi proses.
+- **Asumsi sementara di kode sejak M3.2 (ASUMSI E-33):** opsi (a). Pencocokan tetap di tingkat proses. Sub-proses punya identitas sendiri (`subprocesses`) dengan ID tetap, milik satu proses master, dan namanya disimpan per versi process template. Bila pemilik memilih (b), nama dan alias sub-proses pindah ke master dengan ID yang sama, jadi rujukan dari template dan dokumen tidak berubah. Ditandai di `sql/migrations/00012_create_process_templates.sql` dan `internal/template/process.go`.
+- **Menghambat milestone?** Tidak. M3.2 dibangun dengan asumsi di atas; keputusan dibutuhkan sebelum M4.1, karena baris dokumen menunjuk proses (R-DOC-04).
+- **Status:** Ditunda, menunggu bahan pemilik. Cara (c) disetujui pemilik 30 Oktober 2026 lewat persetujuan umum: satu set PFD, PFMEA, dan CP asli dibandingkan baris per baris, lalu dipilih (a) atau (b). Pada 31 Oktober 2026 pemilik meminta proyek dilanjutkan dulu ("lanjutkan proyek untuk saat ini"), karena dokumen asli hanya ada di komputer pemilik dan sesi cloud tidak bisa mengaksesnya; M3.2 dibangun dengan ASUMSI E-33.
 - **Keputusan pemilik:** belum, menunggu bahan.
 
 ### E-34 · Field wajib di kontrak tidak diperiksa oleh server hasil generate
@@ -1250,6 +1253,52 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (a). Sorotan pada hasil tindakan menunjukkan risiko yang masih tinggi sesudah tindakan. Ambangnya bisa diubah di layar, dan sorotan tidak pernah memblokir.
 - **Asumsi sementara di kode (ASUMSI E-71):** (a), di `Highlights` (`internal/template/template.go`).
 - **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-72 · Satuan process template: satu per proses, atau satu pustaka untuk semua proses
+
+- **Tanggal dan milestone:** 31 Oktober 2026, M3.2. Berdampak ke M3.3 (cakupan), M3.4 (versi), M5.8 (propagasi template), dan template_link (brief bagian 4).
+- **Jenis:** Ambigu
+- **Rujukan:** R-TPL-01, R-TPL-03, R-TPL-05, R-TPL-08, brief bagian 4 (process_template, template_link), U1 (Process template), M3.2.
+- **Temuan:** brief menyebut process template sebagai pustaka proses, sub-proses, dan poin yang berversi, dengan cakupan umum, customer, group model, dan model. Satuannya belum jelas:
+  1. satu template untuk satu proses (template IQC, template SMT, dan seterusnya); atau
+  2. satu pustaka berisi semua proses untuk setiap cakupan.
+
+  Satuan ini menentukan apa yang berversi dan diterbitkan (M3.4), apa yang ditautkan dokumen (template_link), dan seberapa luas satu propagasi (M5.8).
+- **Dampak bila dibiarkan:** dengan satu pustaka untuk semua proses, perubahan kecil di IQC menerbitkan versi baru seluruh pustaka, dan semua dokumen yang mengikuti pustaka itu ikut diperiksa saat propagasi.
+- **Opsi:**
+  - (a) Satu template per proses per cakupan. Versi dan penerbitan per proses, dan dokumen menautkan template setiap proses yang dipakainya.
+  - (b) Satu pustaka per cakupan berisi semua proses. Versi dan penerbitan untuk seluruh pustaka.
+- **Rekomendasi Claude Code (usulan):** (a). Perubahan dan propagasi hanya menyentuh dokumen yang memakai proses itu, sehingga revisi yokoten lebih sempit. Opsi ini juga cocok dengan kriteria M3.2 (contoh IQC dengan lima sub-proses).
+- **Asumsi sementara di kode (ASUMSI E-72):** (a), dengan cakupan umum saja di M3.2: `process_templates` punya kunci unik `process_id`. M3.3 mengganti kunci itu dengan kunci per proses dan cakupan. Ditandai di `sql/migrations/00012_create_process_templates.sql` dan `internal/template/process.go`.
+- **Menghambat milestone?** Tidak (perlu sebelum M3.3)
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-73 · Isi poin process template dan format template yang diikutinya
+
+- **Tanggal dan milestone:** 31 Oktober 2026, M3.2. Berdampak ke M4.5 (perakitan), M5.8 (propagasi), dan M7.4 (penautan baris).
+- **Jenis:** Celah
+- **Rujukan:** R-TPL-01, R-TPL-02, R-TPL-04, R-DOC-01, R-DOC-05, R-CMP-02, R-MIG-05, M4.5, M7.4, keputusan 4 di catatan M3.1 (salinan format template mendapat ID field baru).
+- **Temuan:** brief menyebut poin sebagai satu butir setingkat baris dengan ID tetap (R-TPL-04), dan perakitan membuat baris dokumen dari poin (M4.5). Yang belum ditetapkan:
+  1. Isi poin: hanya teks, atau isi baris lengkap (kolom PFD, PFMEA, atau CP) yang disalin ke dokumen saat dirakit.
+  2. Bila isi baris lengkap: format template mana yang diikutinya. Isi baris disimpan per ID field (R-DOC-01), tetapi salinan format template mendapat ID field baru. Akibatnya isi yang ditulis untuk PFMEA AIAG 4th tidak otomatis cocok dengan format SQAM salinannya.
+  3. Batas: panjang teks, banyak sub-proses per versi, dan banyak poin per sub-proses.
+  4. Kapan tautan pasangan poin (misalnya PFMEA ke CP, R-TPL-04) dibuat di template.
+- **Dampak bila dibiarkan:** M4.5 tidak bisa membuat baris yang terisi, dan propagasi (M5.8) tidak tahu kolom mana yang berubah.
+- **Opsi:**
+  - (a) Setiap versi process template menunjuk satu versi format template per jenis dokumen. Isi poin disimpan per ID field-nya dan diperiksa dengan `CheckContent` (M3.1).
+  - (b) Seperti (a), ditambah asal field (ID field sumber) di salinan format template, supaya isi untuk AIAG 4th bisa dipetakan ke format SQAM salinannya.
+  - (c) Poin hanya berisi teks; isi baris diketik di dokumen.
+- **Rekomendasi Claude Code (usulan):** (b) sebelum M4.5. Opsi (a) memakai pemeriksa M3.1 yang sudah ada, dan asal field mencegah isi ditulis ulang untuk setiap format customer. Opsi (c) menghilangkan manfaat propagasi template untuk revisi yokoten.
+- **Asumsi sementara di kode (ASUMSI E-73):**
+  - Poin berisi jenis dokumen (PFD, PFMEA, atau CP) dan teks satu baris paling banyak 500 karakter.
+  - Paling banyak 50 sub-proses per versi, dan 100 poin per sub-proses untuk satu jenis dokumen.
+  - Tautan pasangan poin belum dibuat.
+
+  Ditandai di `sql/migrations/00012_create_process_templates.sql` dan `internal/template/process.go`.
+- **Menghambat milestone?** Tidak (perlu sebelum M4.5)
 - **Status:** Terbuka
 - **Keputusan pemilik:**
 

@@ -1409,6 +1409,147 @@ paths:
                 $ref: '#/components/schemas/FormatVersion'
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/process-templates:
+    get:
+      operationId: listProcessTemplates
+      summary: Process templates with a summary of their versions (L-2, UC-21, R-TPL-01)
+      responses:
+        '200':
+          description: The process templates, by process name.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessTemplateList'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: createProcessTemplate
+      summary: Add the process template of a process, with an empty draft version 1 (E-6, UC-21, D-64)
+      description: A process has at most one process template for now (working assumption E-72).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewProcessTemplate'
+      responses:
+        '201':
+          description: The process template was added.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessTemplate'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/process-template-versions/{processVersionId}:
+    get:
+      operationId: getProcessTemplateVersion
+      summary: One process template version with its sub-processes and points (L-2)
+      parameters:
+        - $ref: '#/components/parameters/ProcessVersionId'
+      responses:
+        '200':
+          description: The version.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessTemplateVersion'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/process-template-versions/{processVersionId}/subprocesses:
+    post:
+      operationId: addSubprocess
+      summary: Add a sub-process at the end of a draft version (E-6)
+      parameters:
+        - $ref: '#/components/parameters/ProcessVersionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewSubprocess'
+      responses:
+        '201':
+          description: The version after the change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessTemplateVersion'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/process-template-versions/{processVersionId}/subprocesses/{subprocessId}:
+    put:
+      operationId: updateSubprocess
+      summary: Rename, move, hide, or show a sub-process in a draft version (E-6)
+      description: |
+        The sub-process ID never changes, so its points and every reference
+        stay intact. Sub-processes are hidden, never deleted. A field that is
+        not sent stays as it is.
+      parameters:
+        - $ref: '#/components/parameters/ProcessVersionId'
+        - $ref: '#/components/parameters/SubprocessId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubprocessUpdate'
+      responses:
+        '200':
+          description: The version after the change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessTemplateVersion'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/process-template-versions/{processVersionId}/points:
+    post:
+      operationId: addTemplatePoint
+      summary: Add a point for PFD, PFMEA, or CP at the end of a sub-process in a draft version (E-6, R-TPL-04)
+      parameters:
+        - $ref: '#/components/parameters/ProcessVersionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewTemplatePoint'
+      responses:
+        '201':
+          description: The version after the change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessTemplateVersion'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/process-template-versions/{processVersionId}/points/{pointId}:
+    put:
+      operationId: updateTemplatePoint
+      summary: Change the text of a point, move, hide, or show it in a draft version (E-6, R-TPL-04)
+      description: |
+        The point ID, its sub-process, and its document type never change.
+        Points are hidden, never deleted. A field that is not sent stays as
+        it is.
+      parameters:
+        - $ref: '#/components/parameters/ProcessVersionId'
+        - $ref: '#/components/parameters/PointId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TemplatePointUpdate'
+      responses:
+        '200':
+          description: The version after the change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessTemplateVersion'
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/system-settings:
     get:
       operationId: getSystemSettings
@@ -1623,6 +1764,24 @@ components:
         type: string
     FormatFieldId:
       name: formatFieldId
+      in: path
+      required: true
+      schema:
+        type: string
+    ProcessVersionId:
+      name: processVersionId
+      in: path
+      required: true
+      schema:
+        type: string
+    SubprocessId:
+      name: subprocessId
+      in: path
+      required: true
+      schema:
+        type: string
+    PointId:
+      name: pointId
       in: path
       required: true
       schema:
@@ -3088,6 +3247,148 @@ components:
           description: Fixed key used by row content. Missing for a new symbol.
         name:
           type: string
+    ProcessTemplateList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProcessTemplate'
+    ProcessRef:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+          description: The current display name of the process (D-06).
+    ProcessTemplate:
+      type: object
+      required: [id, process, versions, created_at]
+      properties:
+        id:
+          type: string
+        process:
+          $ref: '#/components/schemas/ProcessRef'
+        versions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProcessVersionSummary'
+        created_at:
+          type: string
+          format: date-time
+    ProcessVersionSummary:
+      type: object
+      required: [id, version, status]
+      properties:
+        id:
+          type: string
+        version:
+          type: integer
+        status:
+          type: string
+          enum: [draft, published]
+    NewProcessTemplate:
+      type: object
+      required: [process_id]
+      properties:
+        process_id:
+          type: string
+    ProcessTemplateVersion:
+      type: object
+      required: [id, template_id, process, version, status, subprocesses, created_at]
+      properties:
+        id:
+          type: string
+        template_id:
+          type: string
+        process:
+          $ref: '#/components/schemas/ProcessRef'
+        version:
+          type: integer
+        status:
+          type: string
+          enum: [draft, published]
+        subprocesses:
+          type: array
+          description: In order, hidden ones included.
+          items:
+            $ref: '#/components/schemas/Subprocess'
+        created_at:
+          type: string
+          format: date-time
+    Subprocess:
+      type: object
+      required: [id, name, position, hidden, points]
+      properties:
+        id:
+          type: string
+          description: Fixed across versions (working assumption E-33).
+        name:
+          type: string
+        position:
+          type: integer
+        hidden:
+          type: boolean
+        points:
+          type: array
+          description: By document type (PFD, PFMEA, CP), then in order, hidden ones included.
+          items:
+            $ref: '#/components/schemas/TemplatePoint'
+    TemplatePoint:
+      type: object
+      required: [id, document_type, text, position, hidden]
+      properties:
+        id:
+          type: string
+          description: Fixed across versions; document rows will point to this ID.
+        document_type:
+          $ref: '#/components/schemas/DocumentTypeRef'
+        text:
+          type: string
+        position:
+          type: integer
+          description: Order within the sub-process for the same document type, from 1.
+        hidden:
+          type: boolean
+    NewSubprocess:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+    SubprocessUpdate:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        position:
+          type: integer
+        hidden:
+          type: boolean
+    NewTemplatePoint:
+      type: object
+      required: [subprocess_id, document_type_id, text]
+      properties:
+        subprocess_id:
+          type: string
+        document_type_id:
+          type: string
+        text:
+          type: string
+    TemplatePointUpdate:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+        position:
+          type: integer
+        hidden:
+          type: boolean
     SystemSettings:
       type: object
       required: [sign_dates_enabled]

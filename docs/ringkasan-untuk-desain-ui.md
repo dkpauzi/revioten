@@ -1,6 +1,6 @@
 # Sistem PFD, PFMEA, dan CP · ringkasan untuk desain UI/UX
 
-- **Dibuat:** 31 Oktober 2026, sesudah Tahap 2 (penomoran dokumen) selesai; diperbarui 31 Oktober 2026 sesudah M3.1 (format template).
+- **Dibuat:** 31 Oktober 2026, sesudah Tahap 2 (penomoran dokumen) selesai; diperbarui 31 Oktober 2026 sesudah M3.1 (format template) dan M3.2 (pustaka proses).
 - **Untuk:** Claude chat, atau siapa pun yang mendesain tampilan web ini, supaya konsepnya bisa dipahami tanpa membaca kode.
 - **Sumber:**
   - brief desain v1.17 (`docs/brief/pfmea-system-design-brief.md`);
@@ -139,7 +139,7 @@
 - **Kode customer bisa berganti.** Nomor lama tetap memakai kode lama dan tetap milik customer itu; kode baru mulai lagi dari 001.
 - **Impor nomor lama.** Register Excel lama ditempel dan nomornya masuk dengan teks aslinya. Penghitung naik ke nomor tertinggi. Lubang, nomor ganda, dan set yang tidak sejajar hanya dilaporkan.
 
-### 3.3 Template (Tahap 3; format template sudah dibangun di M3.1)
+### 3.3 Template (Tahap 3; format template dibangun di M3.1, pustaka proses di M3.2)
 
 - **Format template:**
   - metodologi: AIAG 4th, AIAG-VDA, atau format SQAM customer;
@@ -148,6 +148,8 @@
 
   Format template berversi: draft lalu terbit, dan versi terbit tidak bisa diubah.
 - **Process template:** pustaka proses, sub-proses, dan poin dengan ID tetap. Ada empat tingkat cakupan: umum, customer, group model, dan model. Yang paling spesifik menang (model, lalu group model, lalu customer, lalu umum).
+
+  Yang sudah dibangun di M3.2: satu template per proses dengan cakupan umum saja (ASUMSI E-72). Sub-proses dan poin punya ID tetap; nama dan teksnya bisa diganti, urutannya bisa diubah, dan yang tidak dipakai disembunyikan, tidak dihapus. Poin dibuat untuk PFD, PFMEA, atau CP, dan untuk sementara berisi satu baris teks (ASUMSI E-73). Pencocokan PFD, PFMEA, dan CP tetap di tingkat proses (ASUMSI E-33).
 - **Perubahan template tidak pernah mengubah dokumen langsung.** Perubahan selalu lewat draft revisi yang disetujui, dengan pratinjau dampak sebelum diterapkan.
 
 ### 3.4 Dokumen dan perakitan (Tahap 4, belum dibangun)
@@ -323,11 +325,11 @@ Pengguna lain mendapat akun Viewer: QA, QC, internal audit, DCC (Dept Document C
 - **Pustaka yang direncanakan:** tabulator-tables untuk grid, serta @xyflow/svelte dengan elkjs untuk diagram PFD. Belum ada pustaka komponen atau CSS framework. Pustaka baru harus versi stabil terbaru, tanpa konflik peer dependency.
 - **Tampilan sekarang sengaja polos:** HTML semantik dengan sedikit CSS per halaman, yaitu bar header dengan tautan, tabel bergaris bawah, teks error merah, dan teks petunjuk abu-abu. Belum ada design system, ikon, tema, atau tata letak khusus layar kecil.
 
-## 6. Halaman yang sudah dibangun (Tahap 0 sampai 2)
+## 6. Halaman yang sudah dibangun (Tahap 0 sampai M3.2)
 
 **Header di setiap halaman setelah login:**
 - judul aplikasi "PFD, PFMEA, and CP System";
-- menu Home, Customers, Models, Processes, Format templates, Document types, Change types, Positions, Approval routes, Numbers, lalu Accounts (A-1), Audit log (A-4), Settings (A-3), dan About;
+- menu Home, Customers, Models, Processes, Format templates, Process templates, Document types, Change types, Positions, Approval routes, Numbers, lalu Accounts (A-1), Audit log (A-4), Settings (A-3), dan About;
 - di kanan: "Logged in as {nama} ({login})", label "Admin account" bila akun admin, tautan "Change password", dan tombol "Log out".
 
 Menu disembunyikan selama password wajib diganti.
@@ -345,6 +347,7 @@ Menu disembunyikan selama password wajib diganti.
 | Models and part numbers (`/models`) | Semua melihat; Admin mengubah | Pilih customer, lalu kelola Model groups (tambah, ganti nama), Models (tambah, ubah nama dan group), dan Part numbers (tambah, ubah; nama part opsional). |
 | Format templates (`/format-templates`) | Semua melihat; Admin (A-2) mengubah | Pilih template (PFD, PFMEA AIAG 4th, CP, atau buatan sendiri). Terlihat jenis dokumen, metodologi, customer, metode risiko, dan versi (Version 1 · Draft). Tabel Header fields dan Columns: No., Label, Kind, Required, Hidden, Options, dengan aksi Edit, naik, dan turun. Bagian lain: Add a header field or column, Highlight rule (RPN di atas, severity paling sedikit), Rating tables (Severity, Occurrence, Detection nilai 1 sampai 10 dengan teks kriteria), Symbols (satu per baris), dan Add a format template (kosong atau salinan). Kolom disembunyikan, tidak pernah dihapus. |
 | Processes (`/processes`) | Semua melihat; Template maintainer (E-6) mengubah | Daftar proses beserta aliasnya, tambah proses (nama, dan alias satu per baris), dan ubah. Nama dan alias berbagi satu ruang nama tanpa membedakan huruf besar kecil. |
+| Process templates (`/process-templates`) | Semua melihat; Template maintainer (E-6) mengubah | Pilih proses. Bila belum ada template: teks "This process has no process template yet." dan tombol Add process template. Terlihat versi (Version 1 · Draft). Tabel Sub-processes: No., Sub-process, Points (jumlah per jenis dokumen, misalnya "PFD 1 · PFMEA 2 · CP 1"), Hidden, dengan aksi Points, Edit, naik, dan turun; formulir Add a sub-process. Setelah Points ditekan: judul "Points of {sub-proses}", satu tabel per PFD, PFMEA, dan CP (No., Text, Hidden, aksi Edit, naik, dan turun), dan formulir Add a point (Document type, Text). Tidak ada tombol hapus; yang tidak dipakai disembunyikan. |
 | Document types and number codes (`/document-types`) | Semua melihat; Admin mengubah | Number settings: kode pabrik, pola nomor (`{prefix}-{customer}-{seq}`), digit revisi, dan keterangan format nomor berjalan. Document types: nama, huruf, awalan, dan tanda "Built in this system" untuk PFD, PFMEA, CP; bisa menambah jenis lain dari WI. Special codes: kode dan artinya (ZZ, HSE). |
 | Change types, sources, and 4M (`/change-types`) | Semua melihat; Admin mengubah | Change types (ganti nama). Change sources (tambah, ganti nama, aktif atau nonaktif; sumber milik sistem selalu aktif). 4M categories (ganti nama). |
 | Positions (`/positions`) | Semua melihat; Admin (A-1) mengubah | Jabatan beserta pemegangnya. Aksinya: ganti nama, tambah pemegang (orang, dan Project Group untuk jabatan per group), dan lepas pemegang. Label "One holder" atau "One holder per project group". |
@@ -368,8 +371,10 @@ Menu disembunyikan selama password wajib diganti.
 - **Jabatan dan rute:** jabatan, pemegang jabatan (per Project Group bila perlu), rute approval, slot, dan jabatan per slot. Rute default disimpan per customer, dan rute per jenis perubahan disimpan di jenis perubahan.
 - **Master dokumen dan perubahan:** jenis dokumen, kode khusus, pengaturan nomor, jenis perubahan, sumber perubahan, kategori 4M, dan pengaturan sistem.
 - **Register nomor:** penghitung, batch permintaan (satu nomor, set, atau impor), dan nomor dokumen.
+- **Format template (M3.1):** template, versi, identitas field, field per versi, tabel skala, dan simbol.
+- **Process template (M3.2):** satu template per proses, versi, identitas sub-proses dan poin, serta nama, teks, urutan, dan tanda tersembunyi per versi.
 - **Audit log:** append-only dengan hash chain.
-- **Belum ada:** dokumen, baris, revisi, template, perubahan, lampiran, dan cetakan.
+- **Belum ada:** dokumen, baris, revisi, cakupan dan penerbitan template, perubahan, lampiran, dan cetakan.
 
 Diagram kelas domain (U5) dan ERD (U8) ada di `docs/uml/` sebagai sumber PlantUML.
 
@@ -506,6 +511,8 @@ Disalin dari `docs/evaluasi-desain.md`. Kode memakai asumsi paling aman untuk se
 | E-69 | Urutan kunci transaksi penomoran: deadlock dengan ganti kode customer | Sulit dibangun | Terbuka |
 | E-70 | Isi awal format template dan aturan field yang belum ditetapkan | Celah | Terbuka |
 | E-71 | Aturan sorot PFMEA: arti "severity 8" dan nilai mana yang disorot | Ambigu | Terbuka |
+| E-72 | Satuan process template: satu per proses, atau satu pustaka untuk semua proses | Ambigu | Terbuka |
+| E-73 | Isi poin process template dan format template yang diikutinya | Celah | Terbuka |
 
 ### 10.3 Pertanyaan terbuka di brief
 
@@ -555,7 +562,7 @@ Pertanyaan yang belum selesai, beserta asumsi kerjanya (bahasa Inggris, dari bri
 | 0 | Persiapan: alat, server Go pertama, PostgreSQL, SvelteKit, irisan customer | Selesai |
 | 1 | Fondasi: login, titik pemeriksaan izin, audit log, master data, jabatan dan rute approval, backup terenkripsi | Selesai |
 | 2 | Penomoran: pola, penghitung atomik, register, set, impor nomor lama | Selesai (Gerbang 2 menunggu pemilik) |
-| 3 | Template: format template, pustaka proses, empat tingkat cakupan, versi template | Berjalan: M3.1 selesai; M3.2 menunggu keputusan E-33 |
+| 3 | Template: format template, pustaka proses, empat tingkat cakupan, versi template | Berjalan: M3.1 dan M3.2 selesai (M3.2 dengan ASUMSI E-33); berikutnya M3.3 |
 | 4 | Dokumen dan perakitan: baris, editor grid, penguncian, tempel Excel, perakitan dua panel, urutan, perbedaan lokal, cek berdampingan | Belum |
 | 5 | Perubahan, revisi, dan riwayat: entitas perubahan, lampiran, verifikasi, draft revisi, snapshot, diff, daftar periksa dampak, propagasi, yokoten, SQAM | Belum |
 | 6 | Cetak dan rilis manual: layout sebagai data, Excel, PDF, watermark, QR dan hash, catatan cetak, catat rilis, tabel riwayat revisi | Belum |
@@ -747,7 +754,7 @@ Disalin dari `docs/uml/U3-daftar-use-case.md`, ditambah kolom status kode per 31
 | UC-14 | Impor nomor lama | Dokumen kontrol | Nomor lama masuk apa adanya, beserta laporan lubang, ganda, dan set tidak sejajar. | M2.5 | Usulan | Sudah |
 | UC-15 | Ingatkan nomor Reserved yang terlalu lama | Penjadwal | Pengingat untuk nomor yang dipesan tetapi tidak dipakai. | M2.3 | Usulan | Belum; umur nomor Reserved sudah tampil |
 | UC-20 | Kelola format template | Admin | Kolom ber-ID tetap, metode risiko, tabel skala, simbol, dan layout ekspor. | M3.1 | MVP | Sebagian: M3.1 sudah; layout ekspor menyusul di M6.1 |
-| UC-21 | Kelola process template | PPAP Engineer | Proses, sub-proses, dan poin di empat tingkat: umum, customer, group model, model. | M3.2, M3.3, D-64 | MVP | Belum |
+| UC-21 | Kelola process template | PPAP Engineer | Proses, sub-proses, dan poin di empat tingkat: umum, customer, group model, model. | M3.2, M3.3, D-64 | MVP | Sebagian: cakupan umum sudah (M3.2); empat tingkat cakupan di M3.3 |
 | UC-22 | Terbitkan versi template | PPAP Engineer | Versi draft menjadi terbit, dan tidak bisa diubah lagi. | M3.4, D-64 | Usulan | Belum |
 | UC-23 | Propagasikan versi template | PPAP Engineer | Pratinjau dampak, pilih cakupan, tangani konflik lokal. Hasilnya sebuah perubahan, bukan edit langsung. | M5.8, D-64 | MVP | Belum |
 
@@ -839,13 +846,14 @@ Disalin dari `docs/uml/U1-glosarium.md`. Kolom Istilah layar adalah teks yang di
 | Istilah | Istilah layar | Arti |
 |---|---|---|
 | Proses | Process | Langkah produksi, misalnya IQC. Punya ID tetap; namanya hanya tampilan dan boleh punya alias. |
-| Sub-proses | Sub-process | Varian dari satu proses, misalnya IQC General, IQC MSD, IQC PCB, IQC Wireharness, IQC Connector. |
-| Poin | Point | Satu butir setingkat baris di dalam sub-proses, dengan ID tetap. |
+| Sub-proses | Sub-process | Varian dari satu proses, misalnya IQC General, IQC MSD, IQC PCB, IQC Wireharness, IQC Connector. ID-nya tetap dan milik satu proses master; namanya disimpan per versi process template (ASUMSI E-33). |
+| Poin | Point | Satu butir setingkat baris di dalam sub-proses, untuk PFD, PFMEA, atau CP, dengan ID tetap. Untuk sementara berisi satu baris teks (ASUMSI E-73). |
 | IQC | IQC | Incoming Quality Control. |
 | Nomor operasi | Operation number | Nomor urut proses di dokumen. Dibuat otomatis dan bisa diubah. |
 | Baris dokumen | Row | Satu baris lembar kerja PFD, PFMEA, atau CP. ID-nya tetap lintas revisi. |
 | Format template | Format template | Template metodologi: kolom, metode risiko, tabel skala, field header, dan layout ekspor. Berversi. |
-| Process template | Process template | Pustaka proses, sub-proses, dan poin. Berversi. |
+| Process template | Process template | Pustaka proses, sub-proses, dan poin. Satu template per proses (ASUMSI E-72). Berversi. |
+| Sub-proses dan poin tersembunyi | Hidden | Sub-proses atau poin yang tidak dipakai lagi. Tidak dihapus: ID-nya tetap, jadi rujukan dari dokumen tetap utuh. |
 | Cakupan template | Template scope | Tingkat berlakunya process template: umum, customer, group model, dan model. Yang paling spesifik menang: model, lalu group model, lalu customer, lalu umum. |
 | Template General | Template General | Process template umum yang tidak terikat customer atau model. |
 | Group model | Model group | Kumpulan model dalam satu customer yang berbagi isi template. Satu model paling banyak masuk satu group. Bisa dipilih sebagai target yokoten. |
@@ -1010,7 +1018,7 @@ Disalin dari `docs/uml/U1-glosarium.md`. Kolom Istilah layar adalah teks yang di
 
 ## Lampiran D. Operasi API yang sudah ada
 
-Disalin dari kontrak `api/openapi.yaml` (75 operasi). Semua butuh login kecuali `/health` dan login. Kode hak di ringkasan menunjukkan hak yang diperiksa server.
+Disalin dari kontrak `api/openapi.yaml` (82 operasi). Semua butuh login kecuali `/health` dan login. Kode hak di ringkasan menunjukkan hak yang diperiksa server.
 
 | Method | Path | Ringkasan |
 |---|---|---|
@@ -1086,6 +1094,13 @@ Disalin dari kontrak `api/openapi.yaml` (75 operasi). Semua butuh login kecuali 
 | PUT | `/api/v1/format-template-versions/{formatVersionId}/fields/{formatFieldId}` | Change the label, required flag, hidden flag, position, or options of a field in a draft version (A-2, R-TPL-02) |
 | PUT | `/api/v1/format-template-versions/{formatVersionId}/rating-criteria` | Change the criteria text of rating values in a draft version (A-2, R-TPL-01) |
 | PUT | `/api/v1/format-template-versions/{formatVersionId}/symbols` | Rename symbols and add new ones in a draft version (A-2, R-TPL-11) |
+| GET | `/api/v1/process-templates` | Process templates with a summary of their versions (L-2, UC-21, R-TPL-01) |
+| POST | `/api/v1/process-templates` | Add the process template of a process, with an empty draft version 1 (E-6, UC-21, D-64) |
+| GET | `/api/v1/process-template-versions/{processVersionId}` | One process template version with its sub-processes and points (L-2) |
+| POST | `/api/v1/process-template-versions/{processVersionId}/subprocesses` | Add a sub-process at the end of a draft version (E-6) |
+| PUT | `/api/v1/process-template-versions/{processVersionId}/subprocesses/{subprocessId}` | Rename, move, hide, or show a sub-process in a draft version (E-6) |
+| POST | `/api/v1/process-template-versions/{processVersionId}/points` | Add a point for PFD, PFMEA, or CP at the end of a sub-process in a draft version (E-6, R-TPL-04) |
+| PUT | `/api/v1/process-template-versions/{processVersionId}/points/{pointId}` | Change the text of a point, move, hide, or show it in a draft version (E-6, R-TPL-04) |
 | GET | `/api/v1/system-settings` | System settings, today the sign date switch (D-52) |
 | PUT | `/api/v1/system-settings` | Change the system settings (A-3, UC-07) |
 | GET | `/api/v1/audit-log` | Audit log entries, newest first (A-4, admin account only) |

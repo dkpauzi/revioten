@@ -1067,6 +1067,98 @@ export type FormatSymbol = {
     name: string;
 };
 
+export type ProcessTemplateList = {
+    items: Array<ProcessTemplate>;
+};
+
+export type ProcessRef = {
+    id: string;
+    /**
+     * The current display name of the process (D-06).
+     */
+    name: string;
+};
+
+export type ProcessTemplate = {
+    id: string;
+    process: ProcessRef;
+    versions: Array<ProcessVersionSummary>;
+    created_at: string;
+};
+
+export type ProcessVersionSummary = {
+    id: string;
+    version: number;
+    status: 'draft' | 'published';
+};
+
+export type NewProcessTemplate = {
+    process_id: string;
+};
+
+export type ProcessTemplateVersion = {
+    id: string;
+    template_id: string;
+    process: ProcessRef;
+    version: number;
+    status: 'draft' | 'published';
+    /**
+     * In order, hidden ones included.
+     */
+    subprocesses: Array<Subprocess>;
+    created_at: string;
+};
+
+export type Subprocess = {
+    /**
+     * Fixed across versions (working assumption E-33).
+     */
+    id: string;
+    name: string;
+    position: number;
+    hidden: boolean;
+    /**
+     * By document type (PFD, PFMEA, CP), then in order, hidden ones included.
+     */
+    points: Array<TemplatePoint>;
+};
+
+export type TemplatePoint = {
+    /**
+     * Fixed across versions; document rows will point to this ID.
+     */
+    id: string;
+    document_type: DocumentTypeRef;
+    text: string;
+    /**
+     * Order within the sub-process for the same document type, from 1.
+     */
+    position: number;
+    hidden: boolean;
+};
+
+export type NewSubprocess = {
+    name: string;
+};
+
+export type SubprocessUpdate = {
+    name: string;
+    position?: number;
+    hidden?: boolean;
+};
+
+export type NewTemplatePoint = {
+    subprocess_id: string;
+    document_type_id: string;
+    text: string;
+};
+
+export type TemplatePointUpdate = {
+    text: string;
+    position?: number;
+    hidden?: boolean;
+};
+
 export type SystemSettings = {
     /**
      * When false, signature slots have no sign date and the field is hidden (D-52).
@@ -1162,6 +1254,12 @@ export type FormatTemplateId = string;
 export type FormatVersionId = string;
 
 export type FormatFieldId = string;
+
+export type ProcessVersionId = string;
+
+export type SubprocessId = string;
+
+export type PointId = string;
 
 export type GetHealthData = {
     body?: never;
@@ -3746,6 +3844,249 @@ export type SaveFormatSymbolsResponses = {
 };
 
 export type SaveFormatSymbolsResponse = SaveFormatSymbolsResponses[keyof SaveFormatSymbolsResponses];
+
+export type ListProcessTemplatesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/process-templates';
+};
+
+export type ListProcessTemplatesErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ListProcessTemplatesError = ListProcessTemplatesErrors[keyof ListProcessTemplatesErrors];
+
+export type ListProcessTemplatesResponses = {
+    /**
+     * The process templates, by process name.
+     */
+    200: ProcessTemplateList;
+};
+
+export type ListProcessTemplatesResponse = ListProcessTemplatesResponses[keyof ListProcessTemplatesResponses];
+
+export type CreateProcessTemplateData = {
+    body: NewProcessTemplate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/process-templates';
+};
+
+export type CreateProcessTemplateErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type CreateProcessTemplateError = CreateProcessTemplateErrors[keyof CreateProcessTemplateErrors];
+
+export type CreateProcessTemplateResponses = {
+    /**
+     * The process template was added.
+     */
+    201: ProcessTemplate;
+};
+
+export type CreateProcessTemplateResponse = CreateProcessTemplateResponses[keyof CreateProcessTemplateResponses];
+
+export type GetProcessTemplateVersionData = {
+    body?: never;
+    path: {
+        processVersionId: string;
+    };
+    query?: never;
+    url: '/api/v1/process-template-versions/{processVersionId}';
+};
+
+export type GetProcessTemplateVersionErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type GetProcessTemplateVersionError = GetProcessTemplateVersionErrors[keyof GetProcessTemplateVersionErrors];
+
+export type GetProcessTemplateVersionResponses = {
+    /**
+     * The version.
+     */
+    200: ProcessTemplateVersion;
+};
+
+export type GetProcessTemplateVersionResponse = GetProcessTemplateVersionResponses[keyof GetProcessTemplateVersionResponses];
+
+export type AddSubprocessData = {
+    body: NewSubprocess;
+    path: {
+        processVersionId: string;
+    };
+    query?: never;
+    url: '/api/v1/process-template-versions/{processVersionId}/subprocesses';
+};
+
+export type AddSubprocessErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type AddSubprocessError = AddSubprocessErrors[keyof AddSubprocessErrors];
+
+export type AddSubprocessResponses = {
+    /**
+     * The version after the change.
+     */
+    201: ProcessTemplateVersion;
+};
+
+export type AddSubprocessResponse = AddSubprocessResponses[keyof AddSubprocessResponses];
+
+export type UpdateSubprocessData = {
+    body: SubprocessUpdate;
+    path: {
+        processVersionId: string;
+        subprocessId: string;
+    };
+    query?: never;
+    url: '/api/v1/process-template-versions/{processVersionId}/subprocesses/{subprocessId}';
+};
+
+export type UpdateSubprocessErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type UpdateSubprocessError = UpdateSubprocessErrors[keyof UpdateSubprocessErrors];
+
+export type UpdateSubprocessResponses = {
+    /**
+     * The version after the change.
+     */
+    200: ProcessTemplateVersion;
+};
+
+export type UpdateSubprocessResponse = UpdateSubprocessResponses[keyof UpdateSubprocessResponses];
+
+export type AddTemplatePointData = {
+    body: NewTemplatePoint;
+    path: {
+        processVersionId: string;
+    };
+    query?: never;
+    url: '/api/v1/process-template-versions/{processVersionId}/points';
+};
+
+export type AddTemplatePointErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type AddTemplatePointError = AddTemplatePointErrors[keyof AddTemplatePointErrors];
+
+export type AddTemplatePointResponses = {
+    /**
+     * The version after the change.
+     */
+    201: ProcessTemplateVersion;
+};
+
+export type AddTemplatePointResponse = AddTemplatePointResponses[keyof AddTemplatePointResponses];
+
+export type UpdateTemplatePointData = {
+    body: TemplatePointUpdate;
+    path: {
+        processVersionId: string;
+        pointId: string;
+    };
+    query?: never;
+    url: '/api/v1/process-template-versions/{processVersionId}/points/{pointId}';
+};
+
+export type UpdateTemplatePointErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type UpdateTemplatePointError = UpdateTemplatePointErrors[keyof UpdateTemplatePointErrors];
+
+export type UpdateTemplatePointResponses = {
+    /**
+     * The version after the change.
+     */
+    200: ProcessTemplateVersion;
+};
+
+export type UpdateTemplatePointResponse = UpdateTemplatePointResponses[keyof UpdateTemplatePointResponses];
 
 export type GetSystemSettingsData = {
     body?: never;

@@ -47,7 +47,19 @@ const actionKeys: Record<string, MessageKey> = {
 	'document_number.registered': 'auditActionDocumentNumberRegistered',
 	'document_number.imported': 'auditActionDocumentNumberImported',
 	'document_number.voided': 'auditActionDocumentNumberVoided',
-	'document_number.obsoleted': 'auditActionDocumentNumberObsoleted'
+	'document_number.obsoleted': 'auditActionDocumentNumberObsoleted',
+	'format_template.created': 'auditActionFormatTemplateCreated',
+	'format_template.renamed': 'auditActionFormatTemplateRenamed',
+	'format_template.settings_changed': 'auditActionFormatSettingsChanged',
+	'format_template.field_added': 'auditActionFormatFieldAdded',
+	'format_template.field_changed': 'auditActionFormatFieldChanged',
+	'format_template.ratings_changed': 'auditActionFormatRatingsChanged',
+	'format_template.symbols_changed': 'auditActionFormatSymbolsChanged',
+	'process_template.created': 'auditActionProcessTemplateCreated',
+	'process_template.subprocess_added': 'auditActionSubprocessAdded',
+	'process_template.subprocess_changed': 'auditActionSubprocessChanged',
+	'process_template.point_added': 'auditActionTemplatePointAdded',
+	'process_template.point_changed': 'auditActionTemplatePointChanged'
 };
 
 const detailKeys: Record<string, MessageKey> = {
@@ -80,7 +92,15 @@ const detailKeys: Record<string, MessageKey> = {
 	revision_digits: 'auditDetailRevisionDigits',
 	status: 'auditDetailStatus',
 	initial_revision: 'auditDetailInitialRevision',
-	reason: 'auditDetailReason'
+	reason: 'auditDetailReason',
+	version: 'auditDetailVersion',
+	process: 'auditDetailProcess',
+	subprocess: 'auditDetailSubprocess',
+	document_type: 'auditDetailDocumentType',
+	point: 'auditDetailPoint',
+	text: 'auditDetailText',
+	position: 'auditDetailOrder',
+	hidden: 'auditDetailHidden'
 };
 
 const reasonKeys: Record<string, MessageKey> = {

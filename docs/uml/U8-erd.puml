@@ -1,5 +1,5 @@
-' U8 · ERD fisik (draft 0.10, 31 Oktober 2026, sumber migrasi 00001 sampai 00011 di sql/migrations)
-' Menggambarkan tabel PostgreSQL 18 yang sudah dibangun sampai M3.1 (R-UML-03: diagram
+' U8 · ERD fisik (draft 0.11, 31 Oktober 2026, sumber migrasi 00001 sampai 00012 di sql/migrations)
+' Menggambarkan tabel PostgreSQL 18 yang sudah dibangun sampai M3.2 (R-UML-03: diagram
 ' fisik mengikuti kode per milestone). Tim IT boleh memakai stack lain (R-UML-02); aturan yang
 ' wajib dipertahankan ditulis di catatan setiap diagram.
 '
@@ -734,5 +734,131 @@ end note
 note bottom of format_symbols
   key ^[a-z][a-z0-9_]{0,49}$, tetap; nama unik
   per versi. Tanpa DELETE (ASUMSI E-70).
+end note
+@enduml
+
+' ---------------------------------------------------------------------------
+@startuml U8-F-process-template
+hide circle
+hide empty members
+skinparam linetype ortho
+skinparam shadowing false
+skinparam ArrowColor #444444
+skinparam ClassBorderColor #1F4E79
+skinparam ClassBackgroundColor #FFFFFF
+
+title U8-F · Process template (migrasi 00012, M3.2)
+
+entity "process_templates" as process_templates {
+  * id : uuid <<PK>>
+  --
+  * process_id : uuid <<FK>>
+  * created_at : timestamptz
+}
+
+entity "process_template_versions" as process_template_versions {
+  * id : uuid <<PK>>
+  --
+  * template_id : uuid <<FK>>
+  * process_id : uuid <<FK>>
+  * version : integer
+  * status : text = 'draft'
+  * created_at : timestamptz
+}
+
+entity "subprocesses" as subprocesses {
+  * id : uuid <<PK>>
+  --
+  * process_id : uuid <<FK>>
+  * created_at : timestamptz
+}
+
+entity "process_template_subprocesses" as process_template_subprocesses {
+  * version_id : uuid <<PK, FK>>
+  * subprocess_id : uuid <<PK, FK>>
+  --
+  * process_id : uuid <<FK>>
+  * name : text
+  * position : smallint
+  * hidden : boolean = false
+}
+
+entity "template_points" as template_points {
+  * id : uuid <<PK>>
+  --
+  * subprocess_id : uuid <<FK>>
+  * document_type_id : uuid <<FK>>
+  * created_at : timestamptz
+}
+
+entity "process_template_points" as process_template_points {
+  * version_id : uuid <<PK, FK>>
+  * point_id : uuid <<PK, FK>>
+  --
+  * subprocess_id : uuid <<FK>>
+  * document_type_id : uuid <<FK>>
+  * text : text
+  * position : smallint
+  * hidden : boolean = false
+}
+
+entity "processes" as processes_f {
+  * id : uuid <<PK>>
+}
+
+entity "document_types" as document_types_f {
+  * id : uuid <<PK>>
+}
+
+processes_f ||--o| process_templates
+process_templates ||--|{ process_template_versions
+processes_f ||--o{ subprocesses
+process_template_versions ||--o{ process_template_subprocesses
+subprocesses ||--|{ process_template_subprocesses
+subprocesses ||--o{ template_points
+document_types_f ||--o{ template_points
+process_template_subprocesses ||--o{ process_template_points
+template_points ||--|{ process_template_points
+
+note right of process_templates
+  UNIQUE (process_id): satu template umum per
+  proses (ASUMSI E-72). M3.3 mengganti kunci ini
+  dengan kunci per proses dan cakupan.
+  Hak role aplikasi: SELECT dan INSERT.
+end note
+
+note right of process_template_versions
+  FK (template_id, process_id) -> process_templates.
+  UNIQUE (template_id, version).
+  status: draft atau published (M3.4). Hak UPDATE
+  hanya kolom status, dibutuhkan untuk mengunci baris
+  versi (SELECT ... FOR NO KEY UPDATE).
+end note
+
+note right of subprocesses
+  Identitas sub-proses yang tetap, milik satu proses
+  master (ASUMSI E-33). Hak role aplikasi: SELECT dan
+  INSERT saja, jadi prosesnya tidak pernah berubah.
+end note
+
+note left of process_template_subprocesses
+  FK (version_id, process_id) -> versi, dan
+  FK (subprocess_id, process_id) -> subprocesses:
+  sub-proses dari proses lain ditolak database.
+  UNIQUE (version_id, position) DEFERRABLE
+  INITIALLY DEFERRED. UNIQUE (version_id,
+  lower(name)). UPDATE hanya name, position,
+  hidden. Tanpa DELETE.
+end note
+
+note bottom of process_template_points
+  FK (version_id, subprocess_id) -> sub-proses di
+  versi yang sama, dan FK (point_id, subprocess_id,
+  document_type_id) -> template_points.
+  UNIQUE (version_id, subprocess_id,
+  document_type_id, position) DEFERRABLE INITIALLY
+  DEFERRED. text satu baris, paling banyak 500
+  karakter (ASUMSI E-73). UPDATE hanya text,
+  position, hidden. Tanpa DELETE.
 end note
 @enduml
