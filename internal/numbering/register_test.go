@@ -219,6 +219,77 @@ func TestRegisterConcurrent(t *testing.T) {
 	}
 }
 
+// TestRegisterDuringCodeChange: pendaftaran satu nomor dan pendaftaran set yang
+// berjalan bersamaan dengan penggantian kode customer tidak saling mengunci
+// (deadlock), dan setiap kode tetap punya nomor berjalan tanpa lubang
+// (R-POR-01, R-NUM-03). Ditemukan saat menyiapkan Gerbang 2: pendaftaran dulu
+// menyimpan batch (foreign key ke customer) sebelum mengunci customer.
+func TestRegisterDuringCodeChange(t *testing.T) {
+	f := newNumberFixture(t)
+	ctx := t.Context()
+	// Bentrok hanya terjadi bila penggantian kode mendapat kunci tepat di antara
+	// dua perintah satu pendaftaran, jadi dicoba sepuluh putaran. Setiap putaran
+	// menjalankan empat nomor CP, satu set, dan satu penggantian kode bersamaan.
+	codes := []string{"KT"}
+	for round := range 10 {
+		code := fmt.Sprintf("L%c", 'A'+round)
+		var wg sync.WaitGroup
+		errs := make(chan error, 6)
+		for i := range 4 {
+			wg.Go(func() {
+				_, err := f.s.Register(ctx, f.author, NewNumber{CustomerID: f.kt.ID, DocumentTypeID: f.types[KeyCP].ID, IdempotencyKey: fmt.Sprintf("cp-%d-%d", round, i)})
+				errs <- err
+			})
+		}
+		wg.Go(func() {
+			_, err := f.s.RegisterSet(ctx, f.author, NewSet{CustomerID: f.kt.ID, IdempotencyKey: fmt.Sprintf("set-%d", round)})
+			errs <- err
+		})
+		wg.Go(func() {
+			_, err := f.customers.ChangeCode(ctx, f.admin, f.kt.ID, code)
+			errs <- err
+		})
+		wg.Wait()
+		close(errs)
+		for err := range errs {
+			if err != nil {
+				t.Fatalf("putaran %d: %v", round, err)
+			}
+		}
+		codes = append(codes, code)
+	}
+
+	// Per kode dan jenis dokumen, nomor berjalan urut dari 001 tanpa lubang.
+	for _, code := range codes {
+		for _, key := range []string{KeyPFD, KeyPFMEA, KeyCP} {
+			rows, err := f.pool.Query(ctx, "SELECT sequence FROM document_numbers WHERE customer_code = $1 AND document_type_id = $2 ORDER BY sequence", code, f.types[key].ID)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var sequences []int
+			for rows.Next() {
+				var v int
+				if err := rows.Scan(&v); err != nil {
+					t.Fatal(err)
+				}
+				sequences = append(sequences, v)
+			}
+			for i, v := range sequences {
+				if v != i+1 {
+					t.Fatalf("%s %s: nomor berjalan %v berlubang atau ganda", code, key, sequences)
+				}
+			}
+		}
+	}
+	// 40 CP tunggal dan 10 set, semuanya dengan kode customer itu.
+	var reserved, other int
+	err := f.pool.QueryRow(ctx, "SELECT count(*) FILTER (WHERE document_type_id = $1 AND status = 'reserved'), count(*) FILTER (WHERE customer_code <> ALL($2)) FROM document_numbers",
+		f.types[KeyCP].ID, codes).Scan(&reserved, &other)
+	if err != nil || reserved != 50 || other != 0 {
+		t.Errorf("CP Reserved %d (ingin 50), kode lain %d, %v", reserved, other, err)
+	}
+}
+
 // TestRegisterAfterCodeChange: setelah kode customer diganti, nomor baru
 // memakai kode baru dan mulai lagi dari nomor pertama; nomor lama tetap
 // memakai kode lama (E-11, D-88, D-93).

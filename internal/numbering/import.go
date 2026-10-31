@@ -255,9 +255,10 @@ func parseImportLines(rows []importRow, pattern Pattern, types []DocumentType) {
 	}
 }
 
-// lockCustomerCodes mengunci customer seperti pendaftaran (kode tidak bisa
-// diganti selama impor, R-POR-01), lalu mengembalikan semua kodenya, dari
-// yang lama ke yang berlaku (E-11).
+// lockCustomerCodes mengunci customer seperti pendaftaran, sebagai langkah
+// pertama transaksi (kode tidak bisa diganti selama impor, R-POR-01; urutan
+// kunci di customerCodeForNumber), lalu mengembalikan semua kodenya, dari yang
+// lama ke yang berlaku (E-11).
 func lockCustomerCodes(ctx context.Context, q *db.Queries, customerID string) ([]string, error) {
 	if _, err := customerCodeForNumber(ctx, q, customerID); err != nil {
 		return nil, err

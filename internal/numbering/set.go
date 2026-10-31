@@ -55,12 +55,11 @@ func (s *Service) RegisterSet(ctx context.Context, actor access.Actor, in NewSet
 	var batchID string
 	err = db.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
 		q := s.q.WithTx(tx)
-		var err error
-		batchID, err = startBatch(ctx, q, actor, OriginSet, in.CustomerID, in.IdempotencyKey, hash)
+		code, err := customerCodeForNumber(ctx, q, in.CustomerID)
 		if err != nil {
 			return err
 		}
-		code, err := customerCodeForNumber(ctx, q, in.CustomerID)
+		batchID, err = startBatch(ctx, q, actor, OriginSet, in.CustomerID, in.IdempotencyKey, hash)
 		if err != nil {
 			return err
 		}

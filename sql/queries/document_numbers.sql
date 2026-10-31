@@ -3,7 +3,10 @@
 -- menguncinya FOR SHARE sampai transaksi selesai. Pendaftaran nomor untuk
 -- customer yang sama tidak saling menunggu, tapi ganti kode customer (FOR NO
 -- KEY UPDATE) menunggu pendaftaran selesai, jadi kode di nomor selalu kode
--- yang berlaku saat nomor dibuat (R-POR-01).
+-- yang berlaku saat nomor dibuat (R-POR-01). Harus menjadi perintah pertama
+-- transaksi penomoran, sebelum INSERT yang merujuk customer: kunci KEY SHARE
+-- dari foreign key yang dinaikkan menjadi FOR SHARE bisa deadlock dengan ganti
+-- kode (TestRegisterDuringCodeChange).
 SELECT id, code, active FROM customers WHERE id = $1 FOR SHARE;
 
 -- name: InsertNumberBatch :one

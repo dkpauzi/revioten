@@ -471,7 +471,10 @@ type LockCustomerForNumberRow struct {
 // menguncinya FOR SHARE sampai transaksi selesai. Pendaftaran nomor untuk
 // customer yang sama tidak saling menunggu, tapi ganti kode customer (FOR NO
 // KEY UPDATE) menunggu pendaftaran selesai, jadi kode di nomor selalu kode
-// yang berlaku saat nomor dibuat (R-POR-01).
+// yang berlaku saat nomor dibuat (R-POR-01). Harus menjadi perintah pertama
+// transaksi penomoran, sebelum INSERT yang merujuk customer: kunci KEY SHARE
+// dari foreign key yang dinaikkan menjadi FOR SHARE bisa deadlock dengan ganti
+// kode (TestRegisterDuringCodeChange).
 func (q *Queries) LockCustomerForNumber(ctx context.Context, id string) (LockCustomerForNumberRow, error) {
 	row := q.db.QueryRow(ctx, lockCustomerForNumber, id)
 	var i LockCustomerForNumberRow

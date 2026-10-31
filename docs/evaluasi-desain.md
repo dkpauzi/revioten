@@ -90,6 +90,7 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-66 | Nomor lama yang tidak bisa masuk apa adanya: bentuk lain dan nomor ganda | Celah | M2.5, M4.1, M7.1 | Tidak | Terbuka |
 | E-67 | Pendaftaran nomor untuk customer nonaktif | Celah | M2.1 | Tidak | Terbuka |
 | E-68 | Perubahan status nomor yang dikerjakan tangan di Tahap 2, dan alasannya | Ambigu | M2.3, M4.1, M6.7 | Tidak | Terbuka |
+| E-69 | Urutan kunci transaksi penomoran: deadlock dengan ganti kode customer | Sulit dibangun | M2.1, M2.2, M2.4 | Tidak (sudah diperbaiki di kode) | Terbuka |
 
 ## Keputusan 30 Oktober 2026
 
@@ -1168,6 +1169,29 @@ Salin blok ini untuk setiap temuan baru.
 - **Asumsi sementara di kode (ASUMSI E-68):** (a), di `internal/numbering/registry.go`.
 - **Menghambat milestone?** Tidak
 - **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-69 · Urutan kunci transaksi penomoran: deadlock dengan ganti kode customer
+
+- **Tanggal dan milestone:** 30 Oktober 2026, saat menyiapkan Gerbang 2 (kode M2.1, M2.2, dan M2.4).
+- **Jenis:** Sulit dibangun
+- **Rujukan:** R-POR-01 (kode di nomor adalah kode customer saat nomor dibuat), R-NUM-03, D-88, D-93, U8.
+- **Temuan:** test baru `TestRegisterDuringCodeChange` menemukan deadlock antara pendaftaran nomor (satu nomor dan set) dan ganti kode customer. Sebelum diperbaiki, test ini gagal 10 kali dari 10. Urutan kejadiannya:
+  1. Pendaftaran menyimpan batch lebih dulu. Foreign key `number_batches.customer_id` memasang kunci KEY SHARE pada baris customer.
+  2. Ganti kode masuk dan memegang FOR NO KEY UPDATE, yang tidak bentrok dengan KEY SHARE.
+  3. Pendaftaran meminta FOR SHARE, lalu menunggu ganti kode.
+  4. Ganti kode mengubah kolom `code` yang unik. Untuk itu ia butuh kunci penuh, jadi ia menunggu KEY SHARE milik pendaftaran.
+
+  Brief dan UML belum menyebut urutan kunci. Tim IT akan bertemu masalah yang sama dengan stack apa pun yang memakai foreign key dan penguncian baris.
+- **Dampak bila dibiarkan:** sesekali pendaftaran atau ganti kode gagal dengan error 500 bila keduanya berjalan bersamaan. Data tidak rusak, karena PostgreSQL membatalkan salah satu transaksi, tetapi pengguna harus mengulang.
+- **Opsi:**
+  - (a) Satu urutan kunci untuk semua transaksi penomoran, ditulis di brief (catatan R-NUM-03) dan U8. Urutannya: customer dikunci FOR SHARE paling awal, sebelum INSERT apa pun yang merujuk customer itu; lalu penghitung menurut kode customer dan ID jenis dokumen; lalu kunci rantai audit paling akhir.
+  - (b) Seperti (a), ditambah ganti kode mengunci customer dengan FOR UPDATE sejak awal, supaya pola serupa di operasi lain juga aman.
+  - (c) Pendaftaran diulang otomatis saat deadlock.
+- **Rekomendasi Claude Code (usulan):** (a), dan sudah dipasang di kode. Pilihan (b) layak dipertimbangkan bila operasi lain mulai mengunci customer. Pilihan (c) hanya menyembunyikan masalah, jadi tidak dipakai.
+- **Di kode sekarang:** (a), di `customerCodeForNumber` (`internal/numbering/register.go`). Fungsi itu kini langkah pertama `Register` dan `RegisterSet`; `Import` sudah begitu sejak M2.5. Bukti: `TestRegisterDuringCodeChange` lulus 30 kali berturut-turut (300 putaran).
+- **Menghambat milestone?** Tidak (sudah diperbaiki di kode)
+- **Status:** Terbuka (menunggu konfirmasi aturan urutan kunci di brief dan U8)
 - **Keputusan pemilik:**
 
 ## Keputusan pemilik atas pertanyaan terbuka brief (bagian 12)

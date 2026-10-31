@@ -123,12 +123,11 @@ func (s *Service) Register(ctx context.Context, actor access.Actor, in NewNumber
 	var batchID string
 	err = db.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
 		q := s.q.WithTx(tx)
-		var err error
-		batchID, err = startBatch(ctx, q, actor, OriginSingle, in.CustomerID, in.IdempotencyKey, hash)
+		code, err := customerCodeForNumber(ctx, q, in.CustomerID)
 		if err != nil {
 			return err
 		}
-		code, err := customerCodeForNumber(ctx, q, in.CustomerID)
+		batchID, err = startBatch(ctx, q, actor, OriginSingle, in.CustomerID, in.IdempotencyKey, hash)
 		if err != nil {
 			return err
 		}
@@ -292,9 +291,9 @@ func requestHash(parts ...string) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-// startBatch mencatat permintaan dengan kunci idempotennya, sebagai langkah
-// pertama transaksi. Bila akun itu sudah memakai kuncinya, hasilnya errReplay
-// dan transaksi dibatalkan tanpa mengubah apa pun.
+// startBatch mencatat permintaan dengan kunci idempotennya, tepat sesudah
+// customer dikunci (customerCodeForNumber). Bila akun itu sudah memakai
+// kuncinya, hasilnya errReplay dan transaksi dibatalkan tanpa mengubah apa pun.
 func startBatch(ctx context.Context, q *db.Queries, actor access.Actor, kind, customerID, key, hash string) (string, error) {
 	id, err := q.InsertNumberBatch(ctx, db.InsertNumberBatchParams{
 		Kind: kind, CustomerID: customerID, AccountID: actor.AccountID, PersonID: actor.PersonID,
@@ -327,6 +326,14 @@ func (s *Service) replay(ctx context.Context, actor access.Actor, key, hash stri
 // customerCodeForNumber membaca kode customer yang berlaku dan menguncinya
 // sampai transaksi selesai (R-POR-01). Customer yang dinonaktifkan sejak
 // pemeriksaan isian juga ditolak di sini.
+//
+// Urutan kunci: fungsi ini harus menjadi langkah pertama transaksi penomoran,
+// sebelum menyimpan apa pun yang merujuk customer itu. Foreign key ke customer
+// (misalnya number_batches.customer_id) memasang kunci KEY SHARE. Bila kunci
+// FOR SHARE baru diminta sesudahnya, penggantian kode yang masuk di antaranya
+// saling menunggu dengan pendaftaran ini (deadlock): ganti kode memegang FOR NO
+// KEY UPDATE dan menunggu KEY SHARE dilepas untuk mengubah kolom code yang
+// unik (TestRegisterDuringCodeChange).
 func customerCodeForNumber(ctx context.Context, q *db.Queries, customerID string) (string, error) {
 	c, err := q.LockCustomerForNumber(ctx, customerID)
 	if errors.Is(err, pgx.ErrNoRows) {
