@@ -152,10 +152,14 @@ type Rating struct {
 }
 
 // Symbol adalah simbol karakteristik, misalnya Critical Process. Key tetap
-// dan dipakai isi baris; nama bisa diganti.
+// dan dipakai isi baris; nama bisa diganti. Automatic menandai simbol yang
+// dipasang sistem, misalnya Revision pada baris yang berubah (R-REV-09):
+// simbol ini tercetak di legenda, tetapi tidak dipilih tangan di kolom
+// simbol. Tanda ini hanya diatur migrasi, tidak lewat layar.
 type Symbol struct {
-	Key  string
-	Name string
+	Key       string
+	Name      string
+	Automatic bool
 }
 
 // NewTemplate adalah isian format template baru. Bila CopyFromVersionID diisi,
@@ -221,10 +225,6 @@ func (c ContentCheck) Valid() bool {
 // datanya disimpan (R-TPL-02).
 func CheckContent(v FormatVersion, area string, content map[string]any) ContentCheck {
 	var c ContentCheck
-	symbols := make([]string, 0, len(v.Symbols))
-	for _, s := range v.Symbols {
-		symbols = append(symbols, s.Key)
-	}
 	known := map[string]bool{}
 	for _, f := range v.Fields {
 		if f.Area != area {
@@ -239,7 +239,7 @@ func CheckContent(v FormatVersion, area string, content map[string]any) ContentC
 			}
 			continue
 		}
-		if p := checkValue(f, value, symbols); p != nil {
+		if p := checkValue(f, value, v.Symbols); p != nil {
 			c.Problems = append(c.Problems, *p)
 		}
 	}
@@ -268,7 +268,7 @@ func blank(value any) bool {
 }
 
 // checkValue memeriksa satu nilai yang tidak kosong menurut jenis field.
-func checkValue(f Field, value any, symbols []string) *problem.Problem {
+func checkValue(f Field, value any, symbols []Symbol) *problem.Problem {
 	bad := func(code, message string) *problem.Problem {
 		return &problem.Problem{Field: f.ID, Code: code, Message: message}
 	}
@@ -300,8 +300,12 @@ func checkValue(f Field, value any, symbols []string) *problem.Problem {
 		}
 	case KindSymbol:
 		// ASUMSI E-70: satu sel berisi satu simbol.
-		if !slices.Contains(symbols, text) {
+		i := slices.IndexFunc(symbols, func(s Symbol) bool { return s.Key == text })
+		switch {
+		case i < 0:
 			return bad(problem.InvalidFormat, "Choose one of the symbols of this format template.")
+		case symbols[i].Automatic:
+			return bad(problem.NotAllowed, "This symbol is placed by the system on changed rows, not chosen by hand.")
 		}
 	}
 	return nil
@@ -601,11 +605,18 @@ func cleanSymbols(symbols, old []Symbol) ([]Symbol, *problem.Problem) {
 			return bad(problem.Taken, "Two symbols have the same name.")
 		}
 		names = append(names, strings.ToLower(name))
-		if s.Key != "" && !slices.ContainsFunc(old, func(prev Symbol) bool { return prev.Key == s.Key }) {
-			return bad(problem.InvalidFormat, "A symbol has an unknown key.")
+		// Tanda otomatis diambil dari simbol lama, bukan dari isian; simbol
+		// baru tidak pernah otomatis (R-REV-09).
+		automatic := false
+		if s.Key != "" {
+			i := slices.IndexFunc(old, func(prev Symbol) bool { return prev.Key == s.Key })
+			if i < 0 {
+				return bad(problem.InvalidFormat, "A symbol has an unknown key.")
+			}
+			automatic = old[i].Automatic
 		}
 		keys = append(keys, s.Key)
-		out = append(out, Symbol{Key: s.Key, Name: name})
+		out = append(out, Symbol{Key: s.Key, Name: name, Automatic: automatic})
 	}
 	for _, prev := range old {
 		if !slices.Contains(keys, prev.Key) {

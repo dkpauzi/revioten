@@ -106,10 +106,12 @@ INSERT INTO format_rating_criteria (version_id, scale, value, criteria) VALUES (
 UPDATE format_rating_criteria SET criteria = $4 WHERE version_id = $1 AND scale = $2 AND value = $3;
 
 -- name: ListFormatSymbols :many
-SELECT key, name, position FROM format_symbols WHERE version_id = $1 ORDER BY position;
+SELECT key, name, position, automatic FROM format_symbols WHERE version_id = $1 ORDER BY position;
 
 -- name: AddFormatSymbol :exec
-INSERT INTO format_symbols (version_id, key, name, position) VALUES ($1, $2, $3, $4);
+-- AddFormatSymbol menambah simbol. automatic hanya true saat menyalin simbol
+-- yang dipasang sistem (R-REV-09); simbol baru dari layar selalu false.
+INSERT INTO format_symbols (version_id, key, name, position, automatic) VALUES ($1, $2, $3, $4, $5);
 
 -- name: RenameFormatSymbol :exec
 UPDATE format_symbols SET name = $3 WHERE version_id = $1 AND key = $2;

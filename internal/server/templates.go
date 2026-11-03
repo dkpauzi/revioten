@@ -186,7 +186,7 @@ func toAPIFormatVersion(v template.FormatVersion) FormatVersion {
 		out.Ratings = append(out.Ratings, RatingCriterion{Scale: RatingCriterionScale(r.Scale), Value: r.Value, Criteria: r.Criteria})
 	}
 	for _, sym := range v.Symbols {
-		out.Symbols = append(out.Symbols, FormatSymbol{Key: &sym.Key, Name: sym.Name})
+		out.Symbols = append(out.Symbols, FormatSymbol{Key: &sym.Key, Name: sym.Name, Automatic: &sym.Automatic})
 	}
 	return out
 }

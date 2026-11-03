@@ -2,7 +2,7 @@
 
 File ini dibaca Claude Code di awal setiap sesi. Isinya aturan kerja untuk menulis kode, diringkas dari brief desain. Bila file ini berbeda dengan brief, brief yang berlaku (brief bagian 0 dan bagian 15, butir 12).
 
-- Dibuat 27 Oktober 2026 dari brief desain v1.15 (D-77), diperbarui 30 Oktober 2026 mengikuti brief desain v1.16 (D-78 sampai D-120) dan v1.17 (kode Tahap 2).
+- Dibuat 27 Oktober 2026 dari brief desain v1.15 (D-77), diperbarui 30 Oktober 2026 mengikuti brief desain v1.16 (D-78 sampai D-120) dan v1.17 (kode Tahap 2), dan 3 November 2026 mengikuti brief v1.20 (tinjauan desain UI dan UML draft 0.12).
 - Baris bertanda **(usulan)** adalah usulan Claude yang belum diputuskan pemilik. Ikuti sebagai rencana kerja, tapi bisa berubah.
 
 ## 1. Proyek ini
@@ -21,7 +21,7 @@ Urutan prioritas bila isinya berbeda (brief bagian 0):
 1. Pernyataan eksplisit terbaru dari pemilik.
 2. Brief desain: `docs/brief/pfmea-system-design-brief.md` (bahasa Inggris).
 3. Milestone: `docs/milestone/milestone.md`. File ini ekspor dari docx di folder yang sama, jadi jangan diedit.
-4. Paket UML: `docs/uml/` (README, U1 glosarium, U2 konteks C4, U3 use case dan peta pengguna).
+4. Paket UML: `docs/uml/` (README, U1 glosarium, U2 konteks C4, U3 use case dan peta pengguna, U5 kelas domain, U8 ERD, dan lampiran `usulan-desain-ui.md`). Usulan UX-01 sampai UX-07 di lampiran itu berstatus Terbuka: jangan dibangun sebelum pemilik memutuskannya, kecuali bagian yang sudah diwajibkan aturan brief (contoh: simbol Revision otomatis, R-REV-09).
 
 Membaca status di brief:
 - [DECIDED] mengikat.

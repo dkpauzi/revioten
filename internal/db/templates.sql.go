@@ -11,7 +11,7 @@ import (
 )
 
 const addFormatSymbol = `-- name: AddFormatSymbol :exec
-INSERT INTO format_symbols (version_id, key, name, position) VALUES ($1, $2, $3, $4)
+INSERT INTO format_symbols (version_id, key, name, position, automatic) VALUES ($1, $2, $3, $4, $5)
 `
 
 type AddFormatSymbolParams struct {
@@ -19,14 +19,18 @@ type AddFormatSymbolParams struct {
 	Key       string
 	Name      string
 	Position  int16
+	Automatic bool
 }
 
+// AddFormatSymbol menambah simbol. automatic hanya true saat menyalin simbol
+// yang dipasang sistem (R-REV-09); simbol baru dari layar selalu false.
 func (q *Queries) AddFormatSymbol(ctx context.Context, arg AddFormatSymbolParams) error {
 	_, err := q.db.Exec(ctx, addFormatSymbol,
 		arg.VersionID,
 		arg.Key,
 		arg.Name,
 		arg.Position,
+		arg.Automatic,
 	)
 	return err
 }
@@ -224,13 +228,14 @@ func (q *Queries) GetFormatVersion(ctx context.Context, id string) (FormatTempla
 }
 
 const listFormatSymbols = `-- name: ListFormatSymbols :many
-SELECT key, name, position FROM format_symbols WHERE version_id = $1 ORDER BY position
+SELECT key, name, position, automatic FROM format_symbols WHERE version_id = $1 ORDER BY position
 `
 
 type ListFormatSymbolsRow struct {
-	Key      string
-	Name     string
-	Position int16
+	Key       string
+	Name      string
+	Position  int16
+	Automatic bool
 }
 
 func (q *Queries) ListFormatSymbols(ctx context.Context, versionID string) ([]ListFormatSymbolsRow, error) {
@@ -242,7 +247,12 @@ func (q *Queries) ListFormatSymbols(ctx context.Context, versionID string) ([]Li
 	items := []ListFormatSymbolsRow{}
 	for rows.Next() {
 		var i ListFormatSymbolsRow
-		if err := rows.Scan(&i.Key, &i.Name, &i.Position); err != nil {
+		if err := rows.Scan(
+			&i.Key,
+			&i.Name,
+			&i.Position,
+			&i.Automatic,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

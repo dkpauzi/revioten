@@ -382,6 +382,7 @@ export const en = {
 	formatSymbolsTitle: 'Symbols',
 	formatSymbolsIntro: 'Characteristic symbols for symbol columns. Rename symbols in place and add new ones at the end. Symbols cannot be removed, because rows may use them.',
 	formatSymbols: 'Symbols, one per line',
+	formatSymbolsAutomatic: 'Placed by the system on changed rows, with the revision number. It prints in the legend but is not chosen in a symbol column: {names}.',
 	formatSymbolsSave: 'Save symbols',
 	formatSymbolsSaved: 'The symbols were saved.',
 	formatHighlightsTitle: 'Highlight rule',

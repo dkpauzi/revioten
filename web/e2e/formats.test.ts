@@ -47,6 +47,10 @@ test('Penyusun hanya melihat format template', async ({ page }) => {
 	await expect(page.getByText(en.formatReadOnly)).toBeVisible();
 	await page.getByLabel(en.formatChoose).selectOption({ label: 'CP · CP' });
 	await expect(page.getByRole('row', { name: /^6 Special Characteristic / })).toBeVisible();
+	// Tinjauan desain UI: Process Flow dibentuk dari PFD (R-DOC-09), jadi
+	// tersembunyi di isi awal, dan Revision dipasang sistem (R-REV-09).
+	await expect(page.getByRole('row', { name: /^1 Process Flow / })).toContainText(en.formatYes);
+	await expect(page.getByText(en.formatSymbolsAutomatic.replace('{names}', 'Revision'))).toBeVisible();
 	await expect(page.getByRole('button', { name: en.formatEdit })).toHaveCount(0);
 	await expect(page.getByRole('button', { name: en.formatCreate })).toHaveCount(0);
 });

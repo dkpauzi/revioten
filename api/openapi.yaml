@@ -3247,6 +3247,10 @@ components:
           description: Fixed key used by row content. Missing for a new symbol.
         name:
           type: string
+        automatic:
+          type: boolean
+          readOnly: true
+          description: Read only. True for a symbol the system places on changed rows, today Revision (R-REV-09); it prints in the legend but cannot be chosen in a symbol column. Ignored when saving symbols.
     ProcessTemplateList:
       type: object
       required: [items]

@@ -30,6 +30,7 @@
 	import { failureText, problemText, type ProblemScope } from '#lib/errors.ts';
 	import FieldTable from '#lib/formats/FieldTable.svelte';
 	import {
+		automaticSymbolNames,
 		kindName,
 		mergeSymbols,
 		methodologyText,
@@ -462,6 +463,9 @@
 		<section>
 			<h2>{t('formatSymbolsTitle')}</h2>
 			<p class="hint">{t('formatSymbolsIntro')}</p>
+			{#if automaticSymbolNames(version.symbols)}
+				<p class="hint">{t('formatSymbolsAutomatic', { names: automaticSymbolNames(version.symbols) })}</p>
+			{/if}
 			<form class="row" onsubmit={saveSymbols} novalidate>
 				<div class="field">
 					<label for="format-symbols">{t('formatSymbols')}</label>

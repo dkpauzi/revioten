@@ -1,7 +1,7 @@
 # U1 · Glosarium
 
-- Paket UML: draft 0.12, 3 November 2026 (draft 0.11, 0.10, 0.9, 0.8, dan 0.7: 31, 31, 30, 30, dan 27 Oktober 2026). Draft 0.12 menambah istilah dari desain UI 2 November 2026 dan temuan register nomor 3 November 2026, bertanda UX-xx (`usulan-desain-ui.md`).
-- Sumber: brief desain v1.19, termasuk temuan dari dokumen TR-020 (brief bagian 21). Nama jabatan mengikuti bagan organisasi NPI (update 22 Januari 2026). Nama orang tidak dicantumkan. Setiap istilah merujuk ke ID di brief (R-UML-01).
+- Paket UML: draft 0.13, 3 November 2026 (draft 0.12: 3 November 2026; draft 0.11, 0.10, 0.9, 0.8, dan 0.7: 31, 31, 30, 30, dan 27 Oktober 2026). Draft 0.12 menambah istilah dari desain UI 2 November 2026 dan temuan register nomor 3 November 2026, bertanda UX-xx (`usulan-desain-ui.md`). Draft 0.13 mencatat simbol Revision yang dipasang sistem (migrasi 00013).
+- Sumber: brief desain v1.20, termasuk temuan dari dokumen TR-020 (brief bagian 21). Nama jabatan mengikuti bagan organisasi NPI (update 22 Januari 2026). Nama orang tidak dicantumkan. Setiap istilah merujuk ke ID di brief (R-UML-01).
 - Bahasa: penjelasan dalam bahasa Indonesia. Nama jabatan, nama standar, dan tahap tanda tangan memakai istilah yang sama dengan brief (R-UML-05, usulan).
 - Kolom **Istilah layar (Inggris)** (E-19, D-98): istilah yang dipakai di layar dan di katalog teks `web/src/lib/i18n/en.ts`, karena layar berbahasa Inggris untuk saat ini (D-96). Istilah baru di layar ditambahkan ke sini lebih dulu.
 - Kolom **Cek WI**:
@@ -63,7 +63,7 @@
 | Simbol alur PFD | Flow symbol | Bentuk langkah di PFD: process, alternate process, decision, connector, merge, dan document. (usulan) | | R-DOC-09 | Belum |
 | Disposisi NG | NG disposition | Tujuan produk NG dari langkah decision: scrap, NCP, atau rework. (usulan) | | R-DOC-09 | Belum |
 | NCP | NCP | Nonconforming product, salah satu disposisi NG. | | R-DOC-09 | Belum |
-| Simbol karakteristik | Characteristic symbol | Simbol di PFMEA dan CP. Saat ini: Critical Process, Revision, Important Character (IC), dan Regulation. Disimpan di format template per customer. (usulan) | | R-TPL-11 | Belum |
+| Simbol karakteristik | Characteristic symbol | Simbol di PFMEA dan CP. Saat ini: Critical Process, Revision, Important Character (IC), dan Regulation. Disimpan di format template per customer. Revision dipasang sistem pada baris yang berubah dan tidak dipilih tangan di kolom simbol (R-REV-09, dibangun di migrasi 00013). (usulan) | | R-TPL-11, R-REV-09 | Belum |
 | Simbol internal | Internal symbol | Simbol milik pabrik yang berlaku untuk semua customer: Critical Process (default) dan Revision (dipasang otomatis pada baris yang berubah). (usulan) | | R-REV-09, UX-03 | Belum |
 | Simbol customer | Customer symbol | Simbol yang bentuk dan artinya ditentukan customer, misalnya Important Character dan Regulation. Dicatat sebagai nama teks dan gambar yang diunggah, berversi, dan tidak dihapus. (usulan) | | R-TPL-11, UX-03 | Belum |
 | Cakupan poin | Use point for | Pilihan saat menyusun dokumen: poin berlaku untuk model ini saja, group model, customer, atau umum. Selain model ini saja, pilihan menjadi usulan perubahan process template yang diputuskan Pengelola template. (usulan) | Point scope | R-TPL-03, D-39, UX-01 | Tidak perlu |

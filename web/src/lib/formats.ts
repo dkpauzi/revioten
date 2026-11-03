@@ -109,6 +109,15 @@ export function mergeOptions(existing: FieldOption[], text: string): FieldOption
 	return lines(text).map((label, i) => (i < existing.length ? { key: existing[i].key, label } : { label }));
 }
 
+// automaticSymbolNames menulis nama simbol yang dipasang sistem, misalnya
+// Revision pada baris yang berubah (R-REV-09), dipisah koma; kosong bila tidak ada.
+export function automaticSymbolNames(symbols: FormatSymbol[]): string {
+	return symbols
+		.filter((s) => s.automatic)
+		.map((s) => s.name)
+		.join(', ');
+}
+
 // symbolLines dan mergeSymbols bekerja seperti optionLines dan mergeOptions,
 // untuk simbol karakteristik (R-TPL-11).
 export function symbolLines(symbols: FormatSymbol[]): string {

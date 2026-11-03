@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { FormatField, FormatTemplate, FormatVersion } from './api/gen/index.ts';
 import { en } from './i18n/en.ts';
 import {
+	automaticSymbolNames,
 	fieldsOf,
 	kindText,
 	mergeOptions,
@@ -77,6 +78,15 @@ describe('pilihan dan simbol dari kotak isian', () => {
 			{ key: 'ncp', label: 'Nonconforming product' },
 			{ label: 'Rework' }
 		]);
+	});
+
+	it('menyebut simbol yang dipasang sistem', () => {
+		const symbols = [
+			{ key: 'critical_process', name: 'Critical Process', automatic: false },
+			{ key: 'revision', name: 'Revision', automatic: true }
+		];
+		expect(automaticSymbolNames(symbols)).toBe('Revision');
+		expect(automaticSymbolNames(symbols.slice(0, 1))).toBe('');
 	});
 
 	it('menyusun simbol dengan cara yang sama', () => {

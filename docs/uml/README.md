@@ -1,6 +1,6 @@
 # Paket UML · Sistem PFD, PFMEA, dan CP
 
-- **Versi:** draft 0.12, 3 November 2026. Sumbernya brief desain v1.19, kode Tahap 0 sampai M3.2 (D-80: UML diperbarui mengikuti kode), dan usulan dari desain UI serta register nomor yang dicatat di `usulan-desain-ui.md` (UX-01 sampai UX-07, status Terbuka). Nama jabatan mengikuti bagan organisasi NPI (D-54), tanpa nama orang.
+- **Versi:** draft 0.13, 3 November 2026. Sumbernya brief desain v1.20, kode Tahap 0 sampai M3.2 dan migrasi 00013 (D-80: UML diperbarui mengikuti kode), dan usulan dari desain UI serta register nomor yang dicatat di `usulan-desain-ui.md` (UX-01 sampai UX-07, status Terbuka). Draft 0.12 datang dari pemilik; draft 0.13 menambah hasil tinjauan Claude Code atas desain UI (`docs/catatan/Tinjauan-desain-UI-UML-0.12.md`). Nama jabatan mengikuti bagan organisasi NPI (D-54), tanpa nama orang.
 - **Tujuan:** bahan bagi tim IT untuk membangun versi mereka sendiri tanpa melihat kode (D-33, D-38). Paket ini dibekukan sebagai v1.0 di milestone M8.4 (R-UML-03).
 - **Kode berjalan sejajar:** mulai 27 Oktober 2026 kode dibangun sejajar dengan UML yang tersisa, dan dipakai untuk mengevaluasi desain (D-77). Temuan dari kode dicatat di `docs/evaluasi-desain.md` lalu diputuskan pemilik (usulan, brief bagian 15).
 
@@ -8,15 +8,15 @@
 
 | ID | Artefak | File | Status |
 |---|---|---|---|
-| U1 | Glosarium | `U1-glosarium.md` | Draft 0.12: menambah istilah usulan UX (simbol internal dan customer, cakupan poin, gambar di sel, tabel spesifikasi, cek sinkronisasi, workbook, cakupan yokoten, nomor lama). Draft 0.11: dengan kolom istilah layar Inggris (D-98), istilah penomoran Tahap 2, istilah format template M3.1, dan istilah process template M3.2. Kolom Cek WI diisi pemilik. |
+| U1 | Glosarium | `U1-glosarium.md` | Draft 0.13: simbol Revision yang dipasang sistem. Draft 0.12: menambah istilah usulan UX (simbol internal dan customer, cakupan poin, gambar di sel, tabel spesifikasi, cek sinkronisasi, workbook, cakupan yokoten, nomor lama). Draft 0.11: dengan kolom istilah layar Inggris (D-98), istilah penomoran Tahap 2, istilah format template M3.1, dan istilah process template M3.2. Kolom Cek WI diisi pemilik. |
 | U2 | Diagram konteks C4 | `U2-c4-konteks.puml`, `export/U2-c4-konteks.svg`, `export/U2-c4-konteks.png` | Draft 0.7 |
 | U3 | Diagram use case dan spesifikasi use case | `U3-daftar-use-case.md`, `U3-use-case.puml` (8 diagram), `U3-gaya.iuml`, `export/U3-*.svg` dan `.png` | Draft 0.9: menambah UC-24, UC-25, UC-39 (usulan), memperluas UC-36 ke PFD, dan merinci UC-14 serta UC-64. Spesifikasi lengkap (prasyarat, alur, hasil) masih langkah 5 urutan S2 di milestone. |
 | U3 (lampiran) | Peta pengguna dan hak akses | `U3-peta-pengguna.md`, `U3-peta-pengguna.puml`, `export/U3-H-peta-pengguna.svg` dan `.png` | Baseline, disetujui pemilik 27 Oktober 2026 (D-66); draft 0.8 menambah aturan tetap D-104 dan D-118; draft 0.9 memetakan UC usulan ke hak yang sudah ada tanpa hak baru |
 | U4 | Activity diagram dengan swimlane | | Belum |
-| U5 | Diagram kelas domain | `U5-kelas-domain.puml` (5 diagram) | Draft 0.12: U5-A sampai U5-D tetap (entitas yang dibangun sampai M3.2). U5-E baru berisi usulan UX-01 sampai UX-04 yang belum diputuskan dan belum dibangun, berwarna kuning `<<usulan>>`. |
+| U5 | Diagram kelas domain | `U5-kelas-domain.puml` (5 diagram) | Draft 0.13: tanda automatic pada Symbol di U5-C. Draft 0.12: U5-A sampai U5-D tetap (entitas yang dibangun sampai M3.2). U5-E baru berisi usulan UX-01 sampai UX-04 yang belum diputuskan dan belum dibangun, berwarna kuning `<<usulan>>`. |
 | U6 | State machine | | Belum |
 | U7 | Sequence diagram | | Belum |
-| U8 | ERD fisik | `U8-erd.puml` (6 diagram) | Tidak berubah di draft 0.12, karena ERD mengikuti migrasi kode. Draft 0.11: tabel migrasi 00001 sampai 00012, beserta kunci dan constraint penting. Hak role aplikasi ditulis untuk tabel yang dijaga ketat (audit log, register nomor, format template, process template). Diperbarui per milestone. Belum dirender |
+| U8 | ERD fisik | `U8-erd.puml` (6 diagram) | Draft 0.13: kolom `format_symbols.automatic` (migrasi 00013). Tidak berubah di draft 0.12, karena ERD mengikuti migrasi kode. Draft 0.11: tabel migrasi 00001 sampai 00012, beserta kunci dan constraint penting. Hak role aplikasi ditulis untuk tabel yang dijaga ketat (audit log, register nomor, format template, process template). Diperbarui per milestone. Belum dirender |
 | Lampiran | Usulan desain UI dan temuan register | `usulan-desain-ui.md` | Draft 0.12, status semua butir Terbuka |
 | U9 | Diagram komponen C4 dan deployment | | Belum (M8.4) |
 | U10 | File OpenAPI | `api/openapi.yaml` di root repo (UI API `/api/v1`) | Berjalan per milestone. Kontrak integrasi `/integration/v1` dibuat di Tahap 9 |

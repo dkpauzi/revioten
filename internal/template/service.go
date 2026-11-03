@@ -266,7 +266,7 @@ func (s *Service) SaveSymbols(ctx context.Context, actor access.Actor, versionID
 			switch {
 			case i < 0:
 				position++
-				err = q.AddFormatSymbol(ctx, db.AddFormatSymbolParams{VersionID: v.ID, Key: sym.Key, Name: sym.Name, Position: int16(position)})
+				err = q.AddFormatSymbol(ctx, db.AddFormatSymbolParams{VersionID: v.ID, Key: sym.Key, Name: sym.Name, Position: int16(position), Automatic: false})
 			case v.Symbols[i].Name != sym.Name:
 				err = q.RenameFormatSymbol(ctx, db.RenameFormatSymbolParams{VersionID: v.ID, Key: sym.Key, Name: sym.Name})
 			}
@@ -507,7 +507,10 @@ func copyVersion(ctx context.Context, q *db.Queries, templateID string, source F
 		}
 	}
 	for i, sym := range source.Symbols {
-		if err := q.AddFormatSymbol(ctx, db.AddFormatSymbolParams{VersionID: versionID, Key: sym.Key, Name: sym.Name, Position: int16(i + 1)}); err != nil {
+		err := q.AddFormatSymbol(ctx, db.AddFormatSymbolParams{
+			VersionID: versionID, Key: sym.Key, Name: sym.Name, Position: int16(i + 1), Automatic: sym.Automatic,
+		})
+		if err != nil {
 			return err
 		}
 	}
@@ -575,7 +578,7 @@ func getVersion(ctx context.Context, q *db.Queries, id string) (FormatVersion, e
 		return FormatVersion{}, fmt.Errorf("membaca simbol: %w", err)
 	}
 	for _, sym := range symbols {
-		v.Symbols = append(v.Symbols, Symbol{Key: sym.Key, Name: sym.Name})
+		v.Symbols = append(v.Symbols, Symbol{Key: sym.Key, Name: sym.Name, Automatic: sym.Automatic})
 	}
 	return v, nil
 }

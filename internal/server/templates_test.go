@@ -26,6 +26,7 @@ func TestFormatTemplateEndpoints(t *testing.T) {
 			ID: "v-1", TemplateID: "ft-1", Version: 1, Status: template.StatusDraft, RiskMethod: template.RiskNone, CreatedAt: created,
 			Fields: []template.Field{{ID: "f-1", Area: template.AreaRow, Kind: template.KindSelect, Label: "Flow Symbol", Position: 1,
 				Options: []template.Option{{Key: "process", Label: "Process"}}}},
+			Symbols: []template.Symbol{{Key: "revision", Name: "Revision", Automatic: true}, {Key: "regulation", Name: "Regulation"}},
 		},
 	}
 	srv := newTestServer(t, nil, Deps{Templates: fake})
@@ -41,7 +42,8 @@ func TestFormatTemplateEndpoints(t *testing.T) {
 	want = `{"created_at":"2026-10-31T08:00:00Z","fields":[{"hidden":false,"id":"f-1","kind":"select","label":"Flow Symbol",` +
 		`"options":[{"key":"process","label":"Process"}],"position":1,"required":false,"area":"row"}],` +
 		`"highlight_rpn_above":0,"highlight_severity_at_least":0,"id":"v-1","ratings":[],"risk_method":"none","status":"draft",` +
-		`"symbols":[],"template_id":"ft-1","version":1}` + "\n"
+		`"symbols":[{"automatic":true,"key":"revision","name":"Revision"},{"automatic":false,"key":"regulation","name":"Regulation"}],` +
+		`"template_id":"ft-1","version":1}` + "\n"
 	if rec.Code != http.StatusOK || fake.got != (called{method: "GetFormatVersion", id: "v-1"}) {
 		t.Errorf("versi: status %d, %+v", rec.Code, fake.got)
 	}
@@ -89,8 +91,9 @@ func TestFormatTemplateEndpoints(t *testing.T) {
 	if rec.Code != http.StatusOK || !slices.Equal(fake.gotRatings, []template.Rating{{Scale: "severity", Value: 10, Criteria: "Hazardous"}}) {
 		t.Errorf("tabel skala: status %d, %+v", rec.Code, fake.gotRatings)
 	}
+	// Tanda automatic dari klien diabaikan; layanan memakai tanda simbol lama.
 	rec = srv.do(http.MethodPut, "/api/v1/format-template-versions/v-1/symbols",
-		`{"items":[{"key":"revision","name":"Revision Mark"},{"name":"Safety"}]}`)
+		`{"items":[{"key":"revision","name":"Revision Mark"},{"name":"Safety","automatic":true}]}`)
 	if rec.Code != http.StatusOK || !slices.Equal(fake.gotSymbols, []template.Symbol{{Key: "revision", Name: "Revision Mark"}, {Name: "Safety"}}) {
 		t.Errorf("simbol: status %d, %+v", rec.Code, fake.gotSymbols)
 	}

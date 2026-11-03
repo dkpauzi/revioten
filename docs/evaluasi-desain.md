@@ -95,6 +95,9 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-71 | Aturan sorot PFMEA: arti "severity 8" dan nilai mana yang disorot | Ambigu | M3.1 | Tidak | Terbuka |
 | E-72 | Satuan process template: satu per proses, atau satu pustaka untuk semua proses | Ambigu | M3.2, M3.3, M3.4, M5.8 | Tidak (perlu sebelum M3.3) | Terbuka |
 | E-73 | Isi poin process template dan format template yang diikutinya | Celah | M3.2, M4.5, M5.8, M7.4 | Tidak (perlu sebelum M4.5) | Terbuka |
+| E-74 | Kode customer tiga huruf di register (AJI, AVI) bertentangan dengan D-100 | Kontradiksi | M1.4, M2.1, M2.5 | Tidak (perlu sebelum register asli diimpor) | Terbuka |
+| E-75 | Register terpisah PL1 dan PL3: plant, line, atau Project Leader (Q-19) | Ambigu | M2.1, M2.5 | Tidak (perlu sebelum register asli diimpor) | Terbuka |
+| E-76 | Proses baru diminta saat menyusun, dan urutan standar proses di pustaka | Celah | M1.5, M3.3, M4.5, M4.6 | Tidak | Terbuka |
 
 ## Keputusan 30 Oktober 2026
 
@@ -671,6 +674,14 @@ Salin blok ini untuk setiap temuan baru.
 - **Asumsi sementara di kode sejak M3.2 (ASUMSI E-33):** opsi (a). Pencocokan tetap di tingkat proses. Sub-proses punya identitas sendiri (`subprocesses`) dengan ID tetap, milik satu proses master, dan namanya disimpan per versi process template. Bila pemilik memilih (b), nama dan alias sub-proses pindah ke master dengan ID yang sama, jadi rujukan dari template dan dokumen tidak berubah. Ditandai di `sql/migrations/00012_create_process_templates.sql` dan `internal/template/process.go`.
 - **Menghambat milestone?** Tidak. M3.2 dibangun dengan asumsi di atas; keputusan dibutuhkan sebelum M4.1, karena baris dokumen menunjuk proses (R-DOC-04).
 - **Status:** Ditunda, menunggu bahan pemilik. Cara (c) disetujui pemilik 30 Oktober 2026 lewat persetujuan umum: satu set PFD, PFMEA, dan CP asli dibandingkan baris per baris, lalu dipilih (a) atau (b). Pada 31 Oktober 2026 pemilik meminta proyek dilanjutkan dulu ("lanjutkan proyek untuk saat ini"), karena dokumen asli hanya ada di komputer pemilik dan sesi cloud tidak bisa mengaksesnya; M3.2 dibangun dengan ASUMSI E-33.
+- **Bukti baru (tinjauan desain UI, 3 November 2026):** artboard kanvas "Desain UI Sistem PFD PFMEA CP" dibuat dari dokumen TR-020, dan memperlihatkan pola yang sama di tiga dokumen (UX-04):
+  - nomor operasi sama di PFD, PFMEA, dan CP, sedangkan namanya sering berbeda (F-05), jadi pencocokan memakai nomor operasi dan ID proses master;
+  - PFMEA bekerja di tingkat proses (IQC hanya satu kelompok baris);
+  - CP memecah satu proses menjadi sub-proses (IQC: General Material, Material MSD, PCB) dan punya item cek khusus CP seperti IPQC 1st Printing Inspection;
+  - di pustaka (artboard Compose), satu sub-proses membawa poin PFMEA dan poin CP sekaligus.
+
+  Pola ini cocok dengan opsi (a) dan dengan ASUMSI E-33 yang sudah dibangun di M3.2: sub-proses adalah varian di process template, PFMEA menampilkan barisnya di bawah proses, CP menampilkannya sebagai pecahan proses, dan item cek khusus CP adalah sub-proses yang hanya berisi poin CP.
+- **Rekomendasi Claude Code (usulan, diperbarui 3 November 2026):** (a), sesuai bukti di atas. Tidak perlu perubahan kode; ASUMSI E-33 cukup dinyatakan sebagai keputusan.
 - **Keputusan pemilik:** belum, menunggu bahan.
 
 ### E-34 · Field wajib di kontrak tidak diperiksa oleh server hasil generate
@@ -1235,6 +1246,15 @@ Salin blok ini untuk setiap temuan baru.
   Semua ini ada di `sql/migrations/00011_create_format_templates.sql` dan `internal/template/template.go`.
 - **Menghambat milestone?** Tidak (perlu sebelum M4.1)
 - **Status:** Terbuka
+- **Bukti baru (tinjauan desain UI, 3 November 2026):** artboard "PFD sheet", "PFMEA sheet", "Control Plan sheet", dan "Cover" di kanvas desain UI menggambar form yang dipakai sekarang ("current form layout"). Perbedaannya dengan isi awal M3.1:
+  1. CP, kolom Process Flow: dibentuk dari langkah PFD (R-DOC-09), bukan isian. **Sudah dibetulkan** (migrasi 00013: disembunyikan di isi awal).
+  2. PFMEA, kolom Process Step / Function: berisi nama proses baris itu, yang sudah menjadi atribut baris. **Sudah dibetulkan** (migrasi 00013: disembunyikan di isi awal).
+  3. CP, karakteristik: form punya dua kolom Specification / Tolerance, satu untuk Product Characteristics dan satu untuk Process Characteristics, masing-masing dengan kolom No. Isi awal M3.1 hanya punya satu kolom Specification. Belum diubah.
+  4. CP, kolom Machine, Equipment, Jigs, Fixture, Tools for Mfg: di form ditulis sekali per proses (bersama No dan Process Name), bukan per baris karakteristik. Isi awal M3.1 menaruhnya per baris dengan label "Machine and Tools". Belum diubah.
+  5. Label di form memakai bentuk jamak: Product Characteristics, Process Characteristics, Special Characteristics. Belum diubah.
+  6. PFMEA, Key Date tertulis "(at print)", jadi mungkin terisi saat dicetak, bukan diketik. Isi awal M3.1 menjadikannya field header tanggal. Belum diubah.
+  7. Header CP tidak memuat Process or Line, tetapi cover CP memuatnya (R-PRT-07), jadi field header Process or Line tetap benar.
+- **Rekomendasi Claude Code (usulan, diperbarui 3 November 2026):** butir 3 sampai 6 diputuskan pemilik dengan membandingkan artboard di atas dengan file Excel asli, lalu dibangun dalam satu migrasi sebelum M4.1. Saran untuk butir 4: kolom tingkat proses (Machine, Equipment, Jigs, Fixture, Tools for Mfg) disimpan sebagai field per baris yang dicetak sekali per proses, supaya baris tetap datar (R-DOC-01).
 - **Keputusan pemilik:**
 
 ### E-71 · Aturan sorot PFMEA: arti "severity 8" dan nilai mana yang disorot
@@ -1254,6 +1274,7 @@ Salin blok ini untuk setiap temuan baru.
 - **Asumsi sementara di kode (ASUMSI E-71):** (a), di `Highlights` (`internal/template/template.go`).
 - **Menghambat milestone?** Tidak
 - **Status:** Terbuka
+- **Bukti baru (tinjauan desain UI, 3 November 2026):** artboard PFMEA menulis "Highlight RPN over 100, SEV 8 or more", sesuai ASUMSI E-71 untuk nilai sekarang, dan menambah satu aturan: warna sorot hanya di layar, tidak ikut tercetak. Penerapan untuk hasil tindakan belum terlihat di desain.
 - **Keputusan pemilik:**
 
 ### E-72 · Satuan process template: satu per proses, atau satu pustaka untuk semua proses
@@ -1274,6 +1295,10 @@ Salin blok ini untuk setiap temuan baru.
 - **Asumsi sementara di kode (ASUMSI E-72):** (a), dengan cakupan umum saja di M3.2: `process_templates` punya kunci unik `process_id`. M3.3 mengganti kunci itu dengan kunci per proses dan cakupan. Ditandai di `sql/migrations/00012_create_process_templates.sql` dan `internal/template/process.go`.
 - **Menghambat milestone?** Tidak (perlu sebelum M3.3)
 - **Status:** Terbuka
+- **Bukti baru (tinjauan desain UI, 3 November 2026):** masukan pemilik di UX-01 (2 November 2026): "semua proses umum, poinnya bisa umum atau per customer, dan bisa diset saat membuat file". Artboard "Template library" (v2) juga menulis "Every process is general. The points inside a process can be general or belong to one customer, model group, or model." Artinya:
+  - satuan template adalah proses, dan setiap proses hanya punya satu template (opsi a);
+  - cakupan (umum, customer, group model, model) melekat pada poin, bukan pada template. Catatan di migrasi 00012 bahwa M3.3 mengganti kunci unik `process_id` dengan kunci per proses dan cakupan tidak berlaku lagi bila ini diputuskan: M3.3 menambah cakupan pada poin.
+- **Rekomendasi Claude Code (usulan, diperbarui 3 November 2026):** (a), dengan cakupan per poin sesuai UX-01. Tidak perlu perubahan kode M3.2.
 - **Keputusan pemilik:**
 
 ### E-73 · Isi poin process template dan format template yang diikutinya
@@ -1300,7 +1325,79 @@ Salin blok ini untuk setiap temuan baru.
   Ditandai di `sql/migrations/00012_create_process_templates.sql` dan `internal/template/process.go`.
 - **Menghambat milestone?** Tidak (perlu sebelum M4.5)
 - **Status:** Terbuka
+- **Bukti baru (tinjauan desain UI, 3 November 2026):**
+  - UX-02 (masukan pemilik): sel CP boleh berisi gambar atau tabel spesifikasi kecil, di kolom dan proses mana pun, dan ikut tercetak di dalam sel. Satu baris teks tidak cukup untuk isi poin.
+  - Artboard "Template items editor": poin PFMEA membawa kolom form sampai RPN, sedangkan "Recommended action and action results are filled per document". Poin juga punya tautan pasangan (kolom Linked CP dan Linked PFMEA).
+  - Artboard "Template library" (v2): poin CP menampilkan karakteristik, spesifikasi, cakupan, dan tambahan (gambar atau simbol).
+- **Rekomendasi Claude Code (usulan, diperbarui 3 November 2026):** (b), dengan isi poin memakai bentuk isi sel yang sama dengan baris dokumen (teks, gambar, atau tabel spesifikasi, UX-02). Kolom hasil tindakan tidak ikut di poin.
 - **Keputusan pemilik:**
+
+### E-74 · Kode customer tiga huruf di register (AJI, AVI) bertentangan dengan D-100
+
+- **Tanggal dan milestone:** 3 November 2026, tinjauan desain UI dan UML draft 0.12 (UX-06). Berdampak ke M1.4 (kode customer), M2.1 (pola nomor), dan M2.5 (impor nomor lama).
+- **Jenis:** Kontradiksi
+- **Rujukan:** D-100, D-88, D-109, D-114, R-NUM-06, R-POR-01, E-11, E-66, UX-06.
+- **Temuan:** UX-06 menemukan satu customer yang tercatat dengan dua kode di register Excel: AJ dan AJI, serta AV dan AVI (HL diganti MS adalah ganti kode biasa). D-100 membatasi kode customer dua huruf A sampai Z. Pola nomor membaca kode dua atau tiga huruf, karena kode khusus boleh tiga huruf (D-114). Akibatnya nomor SC-AJI-xxx terbaca dengan kode AJI. Saat impor untuk customer AJ (M2.5), nomor itu dilaporkan sebagai kode customer lain dan tidak diimpor, karena AJI tidak bisa dicatat sebagai kode lama AJ.
+- **Dampak bila dibiarkan:** nomor yang mungkin sudah dipegang customer tidak bisa masuk register, padahal R-NUM-06 meminta nomor lama masuk apa adanya.
+- **Opsi:**
+  - (a) Kode customer boleh dua atau tiga huruf (D-100 diubah). AJI bisa dicatat sebagai kode lama atau kode berlaku customer yang sama. D-114 tetap menjaga kode khusus tidak pernah sama dengan kode customer.
+  - (b) Kode customer tetap dua huruf. Nomor dengan kode tiga huruf masuk sebagai nomor lama (UX-06) yang ditautkan ke customer, tanpa penghitung.
+  - (c) AJI dicatat sebagai customer terpisah.
+- **Rekomendasi Claude Code (usulan):** (a), karena paling sedikit aturan baru: riwayat kode (D-88) dan foreign key kode di nomor (E-11) sudah menangani kode lama, dan nomor tetap masuk apa adanya. Sebelumnya perlu dipastikan bahwa AJ dan AJI memang customer yang sama, dan kode mana yang berlaku sekarang.
+- **Asumsi sementara di kode:** tidak ada perubahan; kode customer tetap dua huruf (D-100).
+- **Menghambat milestone?** Tidak (perlu sebelum register asli diimpor)
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-75 · Register terpisah PL1 dan PL3: plant, line, atau Project Leader (Q-19)
+
+- **Tanggal dan milestone:** 3 November 2026, tinjauan desain UI dan UML draft 0.12 (UX-06). Berdampak ke M2.1 (penghitung) dan M2.5 (impor).
+- **Jenis:** Ambigu
+- **Rujukan:** Q-19, D-54, D-89, D-93, UX-06.
+- **Temuan:** UX-06 membaca tiga register nomor: PL1, PL3, dan register IC/AVI/AJI/GW. Desain UI menulis "NPI · Plant 1" di bawah nama aplikasi. Q-19 masih terbuka (asumsi kerja: satu plant) dan bertanya apakah ada lebih dari satu plant atau line, serta apakah penomoran per plant. Belum jelas apakah PL1 dan PL3 berarti plant, line, atau Project Leader (Project Group GR1 dan GR3).
+- **Dampak bila dibiarkan:** bila PL berarti plant dengan penomoran sendiri, penghitung per kode customer dan jenis dokumen (D-93) tidak cukup, karena dua plant bisa memakai nomor yang sama.
+- **Opsi:**
+  - (a) PL adalah Project Leader atau Project Group. Tidak ada perubahan, dan register digabung saat impor.
+  - (b) PL adalah plant dengan penomoran sendiri. Penghitung ditambah kunci plant, dan kode pabrik (D-89) mungkin berbeda per plant.
+- **Rekomendasi Claude Code (usulan):** pemilik memastikan arti PL1 dan PL3 sebelum register asli diimpor. Bila (a), Q-19 bisa ditutup dengan asumsi kerjanya (satu plant).
+- **Asumsi sementara di kode:** satu plant (asumsi kerja Q-19).
+- **Menghambat milestone?** Tidak (perlu sebelum register asli diimpor)
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-76 · Proses baru diminta saat menyusun, dan urutan standar proses di pustaka
+
+- **Tanggal dan milestone:** 3 November 2026, tinjauan desain UI. Berdampak ke M1.5 (master proses), M3.3 (pustaka), M4.5 (perakitan), dan M4.6 (nomor operasi).
+- **Jenis:** Celah
+- **Rujukan:** R-DOC-04, R-CMP-01, R-CMP-05, D-64, D-110, artboard "New PFD" dan "Template library" di kanvas desain UI.
+- **Temuan:** desain UI menambah dua hal yang belum ada di brief:
+  1. Saat menyusun PFD, penyusun yang tidak menemukan proses bisa memilih "Request a new process". Proses baru lalu ditambahkan ke master oleh Pengelola template (D-64). Brief belum punya alur permintaan ini.
+  2. Pustaka menampilkan proses dengan nomor standar (1 Receiving, 2 IQC, 5.2 Solder Paste Printing), dan PFD baru bisa dimulai dari "Template General". Process template M3.2 berdiri per proses, tanpa urutan antar proses.
+- **Dampak bila dibiarkan:** tanpa alur permintaan, penyusun cenderung mengetik nama sendiri, dan nama proses kembali beragam (F-05). Tanpa urutan standar, setiap PFD baru disusun dari nol atau disalin dari model lain (R-CMP-05).
+- **Opsi:**
+  - Permintaan proses baru: (a) dicatat di sistem sebagai permintaan yang diputuskan Pengelola template, mirip UC-25; (b) penyusun memberi tahu Pengelola template di luar sistem.
+  - Urutan standar: (a) pustaka umum menyimpan urutan dan nomor operasi standar sebagai titik awal PFD baru; (b) tidak ada urutan standar, dan PFD baru dimulai dari model serupa (R-CMP-05).
+- **Rekomendasi Claude Code (usulan):** (a) untuk keduanya, dibangun bersama M4.5 dan M4.6. Master proses (M1.5) dan process template (M3.2) tidak perlu diubah sekarang.
+- **Asumsi sementara di kode:** tidak ada.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+## Usulan desain UI (UX-01 sampai UX-07): dampak ke M0 sampai M3 dan saran
+
+- **Sumber:** `docs/uml/usulan-desain-ui.md` (UML draft 0.12, 3 November 2026) dan kanvas desain UI "Desain UI Sistem PFD PFMEA CP" (18 artboard, baris v2 disarankan).
+- **Status usulan:** tetap Terbuka di file sumbernya sampai pemilik memutuskan. Tabel ini menambahkan dampaknya ke kode yang sudah dibangun, serta saran Claude Code.
+- **Catatan tinjauan:** `docs/catatan/Tinjauan-desain-UI-UML-0.12.md`.
+
+| Usulan | Dampak ke M0 sampai M3 | Perubahan kode sekarang | Saran Claude Code (usulan) |
+|---|---|---|---|
+| UX-01 Cakupan poin dipilih saat menyusun | M3.2 tetap. Menjawab E-72: satu template per proses, dan cakupan melekat pada poin. Rencana M3.3 berubah menjadi cakupan per poin. | Tidak | Terima. M3.3 menambah cakupan pada poin. Alur usulan ke Pengelola template (UC-25) dibangun di M4.5 dan M4.8. |
+| UX-02 Gambar dan tabel spesifikasi di sel | Pemeriksa isi M3.1 (`CheckContent`) dan isi poin M3.2 (E-73) baru menerima teks. Gambar butuh storage file, yang menurut milestone baru datang di M5.2. | Tidak | Terima untuk M4.2: kolom teks mana pun boleh berisi gambar atau tabel spesifikasi. Storage privat dengan SHA-256 dimajukan ke Tahap 4. |
+| UX-03 Master simbol karakteristik khusus | M3.1 menyimpan simbol per versi format template, tanpa gambar, dan semua simbol bisa dipilih di kolom simbol. | Sebagian: Revision ditandai otomatis dan ditolak di kolom simbol (migrasi 00013, R-REV-09). | Terima. Simbol customer pindah ke master per customer, dengan gambar dan versi (UC-24, hak A-2), lalu dirujuk format template. Critical Process menjadi tanda proses di dokumen, bukan simbol kolom karakteristik. Dibangun sebelum M4.1. |
+| UX-04 Cek sinkronisasi tiga dokumen | Tidak ada di M0 sampai M3. Mendukung E-33 opsi (a). | Tidak | Terima. UC-36 diperluas ke PFD di M4.9. |
+| UX-05 Layar workbook, menu berlabel, teks besar, EN/ID | Semua halaman M0 sampai M3: menu (sekarang 15 tautan datar), gaya, dan ukuran teks. Bahasa Indonesia mengubah D-96. | Tidak | Terima workbook untuk layar dokumen (Tahap 4). Menu berlabel dan design system (warna, huruf yang dibundel dengan aplikasi) diterapkan ke semua halaman M0 sampai M3 dalam satu langkah sebelum M4. Bahasa Indonesia ditambah sebagai katalog kedua dengan kunci yang sama, karena D-96 sudah menyiapkannya; perlu keputusan pemilik karena mengubah D-96. |
+| UX-06 Temuan register nomor | M2.5: kolom No. (Before) belum disimpan, kode tiga huruf ditolak (E-74), satu nomor untuk beberapa part belum dilaporkan, dan arti PL1 dan PL3 belum jelas (E-75). | Tidak | Terima: impor menerima kolom No. (Before) sebagai nomor lama yang bisa dicari, dan laporan menandai satu nomor yang dipakai beberapa part. Dibangun setelah E-74 dan E-75 diputuskan. |
+| UX-07 Cakupan yokoten | Tidak ada di M0 sampai M3. | Tidak | Terima untuk M5.9 dan M7.7. |
 
 ## Keputusan pemilik atas pertanyaan terbuka brief (bagian 12)
 

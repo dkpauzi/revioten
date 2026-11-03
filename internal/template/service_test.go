@@ -161,19 +161,36 @@ func TestSeededTemplates(t *testing.T) {
 	if got := labels(v, AreaRow); len(got) != 19 || got[0] != "Process Step / Function" || got[11] != "RPN" || got[18] != "Result RPN" {
 		t.Errorf("kolom PFMEA: %v", got)
 	}
+	// Migrasi 00013: kolom ini berisi proses baris, yang sudah menjadi atribut
+	// baris (ASUMSI E-70), jadi disembunyikan di isi awal.
+	if step := field(t, v, "Process Step / Function"); !step.Hidden {
+		t.Errorf("Process Step / Function harus tersembunyi: %+v", step)
+	}
 	if s := field(t, v, "Result Severity"); s.Kind != KindRating || s.RatingScale != ScaleSeverity || s.RatingSet != 2 {
 		t.Errorf("Result Severity: %+v", s)
 	}
 	if len(v.Ratings) != 30 || v.Ratings[0] != (Rating{Scale: ScaleSeverity, Value: 1}) || v.Ratings[29] != (Rating{Scale: ScaleDetection, Value: 10}) {
 		t.Errorf("tabel skala PFMEA: %d baris, %+v", len(v.Ratings), v.Ratings)
 	}
-	if len(v.Symbols) != 4 || v.Symbols[0] != (Symbol{Key: "critical_process", Name: "Critical Process"}) {
+	// Hanya Revision yang dipasang otomatis (R-REV-09, migrasi 00013).
+	if len(v.Symbols) != 4 || v.Symbols[0] != (Symbol{Key: "critical_process", Name: "Critical Process"}) ||
+		v.Symbols[1] != (Symbol{Key: "revision", Name: "Revision", Automatic: true}) || v.Symbols[2].Automatic || v.Symbols[3].Automatic {
 		t.Errorf("simbol PFMEA: %+v", v.Symbols)
 	}
 
 	cp := f.version(t, "CP")
 	if got := labels(cp, AreaRow); cp.RiskMethod != RiskNone || len(cp.Ratings) != 0 || len(got) != 13 || got[5] != "Special Characteristic" {
 		t.Errorf("CP: metode %s, %d tabel skala, kolom %v", cp.RiskMethod, len(cp.Ratings), got)
+	}
+	// Kolom Process Flow di CP dibentuk dari PFD (R-DOC-09), jadi
+	// disembunyikan di isi awal (migrasi 00013). Kolom lain tetap terlihat.
+	for _, fl := range cp.Fields {
+		if fl.Hidden != (fl.Label == "Process Flow") {
+			t.Errorf("CP %s: hidden %v", fl.Label, fl.Hidden)
+		}
+	}
+	if !cp.Symbols[1].Automatic {
+		t.Errorf("simbol Revision di CP harus otomatis: %+v", cp.Symbols)
 	}
 	pfd := f.version(t, "PFD")
 	if flow := field(t, pfd, "Flow Symbol"); flow.Kind != KindSelect || len(flow.Options) != 6 || flow.Options[1] != (Option{Key: "alternate_process", Label: "Alternate Process"}) {
@@ -384,6 +401,9 @@ func TestCreateTemplate(t *testing.T) {
 	if cv.Fields[0].ID == source.Fields[0].ID {
 		t.Errorf("salinan memakai ID field template sumber")
 	}
+	if !cv.Symbols[1].Automatic || cv.Symbols[0].Automatic {
+		t.Errorf("salinan harus membawa tanda simbol otomatis: %+v", cv.Symbols)
+	}
 
 	tests := []struct {
 		name string
@@ -442,8 +462,14 @@ func TestRatingsSymbolsAndHighlights(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(v.Symbols) != 5 || v.Symbols[1] != (Symbol{Key: "revision", Name: "Revision Mark"}) || v.Symbols[4] != (Symbol{Key: "safety", Name: "Safety"}) {
+	// Ganti nama tidak mengubah tanda otomatis, dan simbol baru tidak pernah otomatis.
+	if len(v.Symbols) != 5 || v.Symbols[1] != (Symbol{Key: "revision", Name: "Revision Mark", Automatic: true}) || v.Symbols[4] != (Symbol{Key: "safety", Name: "Safety"}) {
 		t.Errorf("simbol: %+v", v.Symbols)
+	}
+	symbols = slices.Clone(v.Symbols)
+	symbols[4].Automatic = true
+	if v, err = f.s.SaveSymbols(ctx, f.admin, v.ID, symbols); err != nil || v.Symbols[4].Automatic {
+		t.Errorf("tanda otomatis dari isian diabaikan: %+v, %v", v.Symbols, err)
 	}
 	if _, err := f.s.SaveSymbols(ctx, f.admin, v.ID, v.Symbols[1:]); !slices.Equal(problemCodes(t, err), []string{"symbols:not_allowed"}) {
 		t.Errorf("simbol dihapus: %v", err)
@@ -496,6 +522,8 @@ func TestDatabaseGuards(t *testing.T) {
 		"DELETE FROM format_fields WHERE false",
 		"UPDATE format_fields SET kind = kind WHERE false",
 		"UPDATE format_template_versions SET risk_method = risk_method WHERE false",
+		// Tanda simbol otomatis hanya diatur migrasi (R-REV-09).
+		"UPDATE format_symbols SET automatic = automatic WHERE false",
 		"DELETE FROM format_templates WHERE false",
 	} {
 		_, err := f.pool.Exec(ctx, stmt)

@@ -1065,6 +1065,10 @@ export type FormatSymbol = {
      */
     key?: string;
     name: string;
+    /**
+     * Read only. True for a symbol the system places on changed rows, today Revision (R-REV-09); it prints in the legend but cannot be chosen in a symbol column. Ignored when saving symbols.
+     */
+    readonly automatic?: boolean;
 };
 
 export type ProcessTemplateList = {
@@ -1197,6 +1201,44 @@ export type ErrorDetail = {
     field: string;
     code: 'required' | 'invalid_format' | 'too_short' | 'too_long' | 'too_common' | 'reserved' | 'taken' | 'incorrect' | 'not_allowed';
     message: string;
+};
+
+export type FormatVersionWritable = {
+    id: string;
+    template_id: string;
+    version: number;
+    status: 'draft' | 'published';
+    risk_method: 'rpn' | 'ap' | 'none';
+    /**
+     * Highlight an RPN above this value; 0 means off.
+     */
+    highlight_rpn_above: number;
+    /**
+     * Highlight a severity of at least this value; 0 means off.
+     */
+    highlight_severity_at_least: number;
+    /**
+     * Header fields first, then columns, each by position.
+     */
+    fields: Array<FormatField>;
+    /**
+     * Severity, occurrence, then detection, values 1 to 10. Empty without a risk method.
+     */
+    ratings: Array<RatingCriterion>;
+    symbols: Array<FormatSymbolWritable>;
+    created_at: string;
+};
+
+export type FormatSymbolListWritable = {
+    items: Array<FormatSymbolWritable>;
+};
+
+export type FormatSymbolWritable = {
+    /**
+     * Fixed key used by row content. Missing for a new symbol.
+     */
+    key?: string;
+    name: string;
 };
 
 export type AccountId = string;
@@ -3811,7 +3853,7 @@ export type SetFormatRatingCriteriaResponses = {
 export type SetFormatRatingCriteriaResponse = SetFormatRatingCriteriaResponses[keyof SetFormatRatingCriteriaResponses];
 
 export type SaveFormatSymbolsData = {
-    body: FormatSymbolList;
+    body: FormatSymbolListWritable;
     path: {
         formatVersionId: string;
     };

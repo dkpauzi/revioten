@@ -128,6 +128,7 @@ type FormatSymbol struct {
 	Key       string
 	Name      string
 	Position  int16
+	Automatic bool
 }
 
 type FormatTemplate struct {

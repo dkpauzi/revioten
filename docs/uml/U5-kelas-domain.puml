@@ -1,6 +1,6 @@
-' U5 · Diagram kelas domain (draft 0.12, 3 November 2026, sumber brief v1.19 bagian 4, kode sampai M3.2,
-' dan usulan-desain-ui.md). Draft 0.12 hanya menambah diagram U5-E berisi usulan yang belum dibangun;
-' U5-A sampai U5-D tidak berubah.
+' U5 · Diagram kelas domain (draft 0.13, 3 November 2026, sumber brief v1.20 bagian 4, kode sampai M3.2
+' dan migrasi 00013, serta usulan-desain-ui.md). Draft 0.12 menambah diagram U5-E berisi usulan yang
+' belum dibangun. Draft 0.13 menambah tanda automatic pada Symbol di U5-C (tinjauan desain UI).
 ' Diagram konseptual: entitas, atribut penting, dan hubungannya, tanpa tipe database (R-UML-02).
 ' Menurut D-80, UML diperbarui mengikuti kode: draft ini hanya memuat entitas yang sudah dibangun
 ' sampai M3.2. Entitas brief bagian 4 yang lain (dokumen, revisi, baris, template, perubahan, dan
@@ -445,6 +445,7 @@ class RatingCriterion {
 class Symbol {
   key : Teks tetap
   name : Teks tampilan
+  automatic : Ya/Tidak
 }
 
 class DocumentType <<lihat U5-A>>
@@ -481,6 +482,13 @@ note bottom of VersionField
   key dipakai isi baris, label bisa diganti.
   Pilihan dan simbol tidak bisa dihapus
   (ASUMSI E-70).
+end note
+
+note bottom of Symbol
+  automatic: simbol dipasang sistem pada baris
+  yang berubah, hari ini Revision (R-REV-09,
+  migrasi 00013). Tercetak di legenda, tetapi
+  tidak dipilih tangan di kolom simbol.
 end note
 @enduml
 

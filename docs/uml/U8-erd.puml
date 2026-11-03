@@ -1,5 +1,5 @@
-' U8 · ERD fisik (draft 0.11, 31 Oktober 2026, sumber migrasi 00001 sampai 00012 di sql/migrations)
-' Menggambarkan tabel PostgreSQL 18 yang sudah dibangun sampai M3.2 (R-UML-03: diagram
+' U8 · ERD fisik (draft 0.13, 3 November 2026, sumber migrasi 00001 sampai 00013 di sql/migrations)
+' Menggambarkan tabel PostgreSQL 18 yang sudah dibangun sampai M3.2 dan migrasi 00013 (R-UML-03: diagram
 ' fisik mengikuti kode per milestone). Tim IT boleh memakai stack lain (R-UML-02); aturan yang
 ' wajib dipertahankan ditulis di catatan setiap diagram.
 '
@@ -605,7 +605,7 @@ skinparam ArrowColor #444444
 skinparam ClassBorderColor #1F4E79
 skinparam ClassBackgroundColor #FFFFFF
 
-title U8-E · Format template (migrasi 00011, M3.1)
+title U8-E · Format template (migrasi 00011 dan 00013, M3.1)
 
 entity "format_templates" as format_templates {
   * id : uuid <<PK>>
@@ -667,6 +667,7 @@ entity "format_symbols" as format_symbols {
   --
   * name : text
   * position : smallint
+  * automatic : boolean = false
 }
 
 entity "document_types" as document_types_e {
@@ -734,6 +735,10 @@ end note
 note bottom of format_symbols
   key ^[a-z][a-z0-9_]{0,49}$, tetap; nama unik
   per versi. Tanpa DELETE (ASUMSI E-70).
+  automatic (migrasi 00013): true untuk Revision,
+  yang dipasang sistem (R-REV-09). Hak UPDATE
+  hanya kolom name, jadi aplikasi tidak bisa
+  mengubah tanda ini.
 end note
 @enduml
 

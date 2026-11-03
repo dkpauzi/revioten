@@ -1442,6 +1442,9 @@ type FormatHighlights struct {
 
 // FormatSymbol defines model for FormatSymbol.
 type FormatSymbol struct {
+	// Automatic Read only. True for a symbol the system places on changed rows, today Revision (R-REV-09); it prints in the legend but cannot be chosen in a symbol column. Ignored when saving symbols.
+	Automatic *bool `json:"automatic,omitempty"`
+
 	// Key Fixed key used by row content. Missing for a new symbol.
 	Key  *string `json:"key,omitempty"`
 	Name string  `json:"name"`

@@ -28,7 +28,11 @@ func pfmea() FormatVersion {
 				Options: []Option{{Key: "process", Label: "Process"}, {Key: "decision", Label: "Decision"}}},
 			{ID: "f-old", Area: AreaRow, Kind: KindText, Label: "Old column", Position: 12, Hidden: true},
 		},
-		Symbols: []Symbol{{Key: "critical_process", Name: "Critical Process"}, {Key: "regulation", Name: "Regulation"}},
+		Symbols: []Symbol{
+			{Key: "critical_process", Name: "Critical Process"},
+			{Key: "revision", Name: "Revision", Automatic: true},
+			{Key: "regulation", Name: "Regulation"},
+		},
 	}
 }
 
@@ -71,7 +75,9 @@ func TestCheckContent(t *testing.T) {
 		{"rating sebagai teks", `{"f-mode": "x", "f-s": "9"}`, []string{"f-s:invalid_format"}},
 		{"RPN dihitung, tidak diisi", `{"f-mode": "x", "f-rpn": 108}`, []string{"f-rpn:not_allowed"}},
 		{"pilihan tidak ada", `{"f-mode": "x", "f-flow": "merge"}`, []string{"f-flow:invalid_format"}},
-		{"simbol tidak ada", `{"f-mode": "x", "f-class": "revision"}`, []string{"f-class:invalid_format"}},
+		{"simbol tidak ada", `{"f-mode": "x", "f-class": "important_character"}`, []string{"f-class:invalid_format"}},
+		// R-REV-09: tanda revisi dipasang sistem dari diff, tidak dipilih tangan.
+		{"simbol otomatis", `{"f-mode": "x", "f-class": "revision"}`, []string{"f-class:not_allowed"}},
 		{"teks bukan string", `{"f-mode": 5}`, []string{"f-mode:invalid_format"}},
 		{"teks terlalu panjang", `{"f-mode": "` + strings.Repeat("a", MaxTextLength+1) + `"}`, []string{"f-mode:too_long"}},
 	}
