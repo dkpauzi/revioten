@@ -1,4 +1,5 @@
-' U3 · Diagram use case (draft 0.7, 27 Oktober 2026, sumber brief v1.15)
+' U3 · Diagram use case (draft 0.9, 3 November 2026, sumber brief v1.16 dan usulan-desain-ui.md)
+' Draft 0.9 menambah UC-24, UC-25, UC-39 (usulan) dan memperluas UC-36 ke PFD (UX-04).
 ' Satu file berisi delapan diagram. Rujukan ID brief untuk setiap use case ada di U3-daftar-use-case.md (R-UML-01).
 ' Render dari folder docs/uml:
 '   java -jar plantuml-1.2026.9.jar -tsvg -o export U3-use-case.puml
@@ -8,7 +9,7 @@
 @startuml U3-0-aktor
 !include U3-gaya.iuml
 top to bottom direction
-title U3 · Aktor dan generalisasi\n(draft 0.7, sumber brief v1.15)
+title U3 · Aktor dan generalisasi\n(draft 0.9, sumber brief v1.16)
 
 actor "Pengguna internal" as user
 actor "Penyusun\n(PPAP Engineer, PPAP Staff,\nProject Leader, atau Project Engineer)" as pen
@@ -110,6 +111,8 @@ rectangle "Sistem PFD, PFMEA, dan CP" {
   usecase "UC-21\nKelola process template\n(umum, customer, group model, model)" as UC21
   usecase "UC-22\nTerbitkan versi template" as UC22 <<usulan>>
   usecase "UC-23\nPropagasikan versi template" as UC23
+  usecase "UC-24\nKelola master simbol\nkarakteristik khusus" as UC24 <<usulan>>
+  usecase "UC-25\nUsulkan poin ke\ncakupan lebih luas" as UC25 <<usulan>>
 }
 
 pen --> UC10
@@ -122,7 +125,15 @@ dokkon --> UC13
 dokkon --> UC14
 timer --> UC15
 admin --> UC20
+admin --> UC24
+pen --> UC25
+UC25 --> ppap
 
+note right of UC25
+  Model ini saja, group model, customer,
+  atau umum. Selain model ini saja, usulan
+  diputuskan Pengelola template (UX-01).
+end note
 note bottom of UC23
   Hasilnya sebuah perubahan berisi draft revisi
   (R-TPL-06), dilanjutkan di U3-D.
@@ -145,9 +156,10 @@ rectangle "Sistem PFD, PFMEA, dan CP" {
   usecase "UC-33\nTempel blok sel dari Excel" as UC33
   usecase "UC-34\nAtur urutan proses\ndan nomor operasi" as UC34
   usecase "UC-35\nTandai perbedaan lokal\natau putus tautan" as UC35 <<usulan>>
-  usecase "UC-36\nCek PFMEA dan CP berdampingan" as UC36
+  usecase "UC-36\nCek PFD, PFMEA, dan CP\nberdampingan" as UC36
   usecase "UC-37\nLihat diagram PFD" as UC37 <<opsional>>
   usecase "UC-38\nTautkan dokumen yang\nsaling bergantung" as UC38 <<usulan>>
+  usecase "UC-39\nSisipkan gambar atau\ntabel spesifikasi di sel" as UC39 <<usulan>>
 }
 
 pen --> UC30
@@ -156,6 +168,8 @@ pen --> UC33
 pen --> UC34
 pen --> UC35
 pen --> UC38
+pen --> UC39
+UC39 --> excel
 ppap --> UC36
 user --> UC37
 UC31 .> UC30 : <<extend>>
@@ -163,7 +177,8 @@ UC33 --> excel
 
 note right of UC36
   Tanda dicek diberikan PPAP Engineer
-  untuk saat ini (D-65).
+  untuk saat ini (D-65). Bagian PFD
+  masih usulan (UX-04).
 end note
 @enduml
 

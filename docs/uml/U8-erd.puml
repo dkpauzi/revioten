@@ -11,7 +11,7 @@
 '   |o pada ujung induk = foreign key boleh kosong; semua garis utuh, karena garis
 '   putus-putus di paket ini berarti tindakan di atas kertas (README, Konvensi)
 '
-' Render dari folder docs/uml (belum dirender di draft ini, lihat README):
+' Render dari folder docs/uml (sintaks dicek dengan PlantUML 1.2022.12 pada 3 November 2026, lihat README):
 '   java -jar plantuml-1.2026.9.jar -tsvg -o export U8-erd.puml
 
 ' ---------------------------------------------------------------------------

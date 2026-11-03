@@ -1,6 +1,7 @@
 # U3 · Daftar use case
 
-- Paket UML: draft 0.8, 30 Oktober 2026. Sumber: brief desain v1.16.
+- Paket UML: draft 0.9, 3 November 2026 (draft 0.8: 30 Oktober 2026). Sumber: brief desain v1.16, ditambah usulan dari desain UI 2 November 2026 (`usulan-desain-ui.md`, UX-01 sampai UX-07).
+- Draft 0.9 menambah UC-24, UC-25, dan UC-39, memperluas UC-36 ke PFD, dan menambah rincian UC-14 serta UC-64. Semua tambahan berstatus Usulan sampai diputuskan pemilik.
 - Peta jabatan ke peran dan matriks hak akses ada di `U3-peta-pengguna.md`.
 - Isi: daftar use case tanpa detail (S2 langkah 2). Spesifikasi lengkap (prasyarat, alur utama, alur alternatif, hasil) dibuat di langkah 5.
 - Diagram: `U3-use-case.puml`, terdiri dari satu diagram ringkasan dan tujuh diagram per kelompok, diekspor ke `export/`.
@@ -55,12 +56,14 @@ Pengecek dan approver menandatangani cetakan di kertas, jadi tanda tangan itu ti
 | UC-11 | Daftarkan nomor sebagai set | Penyusun | | PFD, PFMEA, dan CP mendapat nomor urut yang sama. | R-NUM-05 | M2.4 | Usulan |
 | UC-12 | Cari dan ekspor register nomor | Pengguna internal | | Master document list dengan filter status. | R-NUM-04 | M2.3 | Usulan |
 | UC-13 | Ubah status nomor | Dokumen kontrol | | Void atau Obsolete. Nomor tidak pernah dihapus atau dipakai ulang. | R-NUM-04 | M2.3 | Usulan |
-| UC-14 | Impor nomor lama | Dokumen kontrol | Admin | Nomor lama masuk apa adanya, beserta laporan lubang, ganda, dan set tidak sejajar. | R-NUM-06 | M2.5 | Usulan |
+| UC-14 | Impor nomor lama | Dokumen kontrol | Admin | Nomor lama masuk apa adanya, beserta laporan lubang, ganda, dan set tidak sejajar. Usulan UX-06: kolom "No. (Before)" di register ikut tersimpan sebagai nomor lama yang bisa dicari, dan laporan juga menandai kode customer ganda serta satu nomor yang dipakai beberapa part. | R-NUM-06, UX-06 | M2.5 | Usulan |
 | UC-15 | Ingatkan nomor Reserved yang terlalu lama | Penjadwal | Penyusun | Pengingat untuk nomor yang dipesan tetapi tidak dipakai. | R-NUM-04 | M2.3 | Usulan |
 | UC-20 | Kelola format template | Admin | PPAP Engineer | Kolom ber-ID tetap, metode risiko, tabel skala, simbol, dan layout ekspor. | R-TPL-01, R-TPL-02, R-TPL-11 | M3.1 | MVP |
 | UC-21 | Kelola process template | PPAP Engineer | | Proses, sub-proses, dan poin di empat tingkat: umum, customer, group model, model. | R-TPL-03, D-39 | M3.2, M3.3, D-64 | MVP |
 | UC-22 | Terbitkan versi template | PPAP Engineer | | Versi draft menjadi terbit, dan tidak bisa diubah lagi. | R-TPL-05 | M3.4, D-64 | Usulan |
 | UC-23 | Propagasikan versi template | PPAP Engineer | | Pratinjau dampak, pilih cakupan, tangani konflik lokal. Hasilnya sebuah perubahan, bukan edit langsung. | R-TPL-06, R-TPL-08, R-TPL-09 | M5.8, D-64 | MVP |
+| UC-24 | Kelola master simbol karakteristik khusus | Admin | PPAP Engineer | Simbol internal (Critical Process sebagai default, Revision otomatis dari diff) dan simbol per customer (misalnya Important Character dan Regulation). Simbol baru berupa nama teks dan gambar yang diunggah. Berversi, tidak dihapus. | R-TPL-11, R-REV-09, UX-03 | M3.1 | Usulan |
+| UC-25 | Usulkan poin ke cakupan lebih luas | Penyusun | PPAP Engineer | Saat menyusun, poin di satu proses diset untuk model ini saja, group model, customer, atau umum. Pilihan selain model ini saja menjadi usulan perubahan process template, yang diterima atau ditolak Pengelola template. Sampai diterima, poin berlaku sebagai perbedaan lokal di dokumen ini. | R-TPL-03, R-CMP-04, D-39, UX-01 | M3.3, M4.8 | Usulan |
 
 ## C. Dokumen dan perakitan
 
@@ -72,9 +75,10 @@ Pengecek dan approver menandatangani cetakan di kertas, jadi tanda tangan itu ti
 | UC-33 | Tempel blok sel dari Excel | Penyusun | Microsoft Excel | Pratinjau dan pemetaan kolom; baris janggal ditandai. | R-MIG-02 | M4.4 | MVP |
 | UC-34 | Atur urutan proses dan nomor operasi | Penyusun | | Drag and drop, nomor otomatis yang bisa diubah. | R-CMP-01 | M4.6 | MVP |
 | UC-35 | Tandai perbedaan lokal atau putus tautan | Penyusun | | Putus tautan butuh alasan. | R-CMP-04 | M4.8 | Usulan |
-| UC-36 | Cek PFMEA dan CP berdampingan | PPAP Engineer |  | Tampilan per proses, beserta tanda dicek oleh siapa dan kapan. | R-DOC-06, D-65 | M4.9 | MVP |
+| UC-36 | Cek PFD, PFMEA, dan CP berdampingan | PPAP Engineer |  | Tampilan per proses, beserta tanda dicek oleh siapa dan kapan. Usulan UX-04: proses dari tiga dokumen dijajarkan menurut nomor operasi dan ID proses master; nama berbeda hanya info alias; sub-proses CP dan item cek khusus CP ditandai; pengecekan tetap manual. | R-DOC-06, D-65, UX-04 | M4.9 | MVP (PFMEA–CP), Usulan (PFD) |
 | UC-37 | Lihat diagram PFD | Pengguna internal | | Diagram dibentuk dari daftar proses, simbol, dan disposisi NG. | R-DOC-09 | M4.10 | Opsional |
 | UC-38 | Tautkan dokumen yang saling bergantung | Penyusun | | Misalnya ESD control plan SC-ESD-K001, dengan titik masuk dan keluar. | R-DOC-10 | M4.1 | Usulan |
+| UC-39 | Sisipkan gambar atau tabel spesifikasi di sel | Penyusun | Microsoft Excel | Gambar (misalnya drawing PCB untuk IQC PCB) atau tabel spesifikasi (misalnya ROM writing atau FCT) di sel mana pun, tidak terbatas pada proses tertentu. Tabel bisa ditempel dari Excel. Ikut tercetak di dalam sel pada ekspor Excel dan PDF. | R-DOC-01, R-PRT-01, UX-02 | M4.2 | Usulan |
 
 ## D. Perubahan dan revisi
 
@@ -110,7 +114,7 @@ Pengecek dan approver menandatangani cetakan di kertas, jadi tanda tangan itu ti
 | UC-61 | Bandingkan dengan Excel lama | Petugas migrasi | Microsoft Excel | Excel lama hanya untuk dibandingkan dengan hasil perakitan. | R-MIG-04 | M7.3 | Usulan |
 | UC-62 | Tautkan baris hasil tempel ke template | Petugas migrasi | | Sistem mengusulkan pasangan, manusia mengonfirmasi. | R-MIG-05 | M7.4 | MVP |
 | UC-63 | Verifikasi terhadap hardcopy bertanda tangan | Petugas migrasi | | Status Released (migrated). | R-MIG-06 | M7.5 | Usulan |
-| UC-64 | Lihat dasbor ukuran | Pengguna internal | | Persentase baris yang mengikuti template, status dokumen dan yokoten, dan waktu revisi. | Brief bagian 2 | M7.7 | MVP |
+| UC-64 | Lihat dasbor ukuran | Pengguna internal | | Persentase baris yang mengikuti template, status dokumen dan yokoten, dan waktu revisi. Usulan UX-07: cakupan yokoten, yaitu persentase dokumen target yang sudah rilis per yokoten, sebagai ukuran utama QCC. | Brief bagian 2, UX-07 | M7.7 | MVP |
 
 ## G. Masa depan (latihan tahap 9 dan 10)
 

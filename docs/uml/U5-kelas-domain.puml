@@ -1,11 +1,13 @@
-' U5 · Diagram kelas domain (draft 0.11, 31 Oktober 2026, sumber brief v1.19 bagian 4 dan kode sampai M3.2)
+' U5 · Diagram kelas domain (draft 0.12, 3 November 2026, sumber brief v1.19 bagian 4, kode sampai M3.2,
+' dan usulan-desain-ui.md). Draft 0.12 hanya menambah diagram U5-E berisi usulan yang belum dibangun;
+' U5-A sampai U5-D tidak berubah.
 ' Diagram konseptual: entitas, atribut penting, dan hubungannya, tanpa tipe database (R-UML-02).
 ' Menurut D-80, UML diperbarui mengikuti kode: draft ini hanya memuat entitas yang sudah dibangun
 ' sampai M3.2. Entitas brief bagian 4 yang lain (dokumen, revisi, baris, template, perubahan, dan
 ' seterusnya) ditambah saat tahapnya dibangun; Document digambar abu-abu sebagai titik sambung.
 ' Tabel fisiknya ada di U8-erd.puml.
 '
-' Render dari folder docs/uml (belum dirender di draft ini, lihat README):
+' Render dari folder docs/uml (sintaks dicek dengan PlantUML 1.2022.12 pada 3 November 2026, lihat README):
 '   java -jar plantuml-1.2026.9.jar -tsvg -o export U5-kelas-domain.puml
 
 ' ---------------------------------------------------------------------------
@@ -562,5 +564,147 @@ note bottom of VersionPoint
   Sub-proses dan poin tidak dihapus, hanya
   disembunyikan. Urutan poin dihitung per
   sub-proses dan jenis dokumen.
+end note
+@enduml
+
+' ---------------------------------------------------------------------------
+@startuml U5-E-usulan-desain-ui
+hide circle
+hide empty methods
+skinparam shadowing false
+skinparam ArrowColor #444444
+skinparam class {
+  BorderColor #1F4E79
+  BackgroundColor #FFFFFF
+  BackgroundColor<<usulan>> #FFF6BF
+  BorderColor<<usulan>> #B08900
+  BackgroundColor<<lihat U5-A>> #F4F4F4
+  BackgroundColor<<lihat U5-B>> #F4F4F4
+  BackgroundColor<<lihat U5-C>> #F4F4F4
+  BackgroundColor<<lihat U5-D>> #F4F4F4
+  BackgroundColor<<belum dibangun>> #EEEEEE
+  BorderColor<<belum dibangun>> #8C8C8C
+  FontColor<<belum dibangun>> #555555
+}
+
+title U5-E · Usulan dari desain UI (UX-01 sampai UX-04, belum diputuskan, belum dibangun)
+
+class CharacteristicSymbol <<usulan>> {
+  key : Teks tetap
+  name : Teks tampilan
+  kind : internal | customer
+  /isDefault : Critical Process
+  /isAutomatic : Revision
+}
+
+class SymbolVersion <<usulan>> {
+  version : Bilangan
+  image : Gambar (SVG atau PNG)
+  createdAt : Waktu
+}
+
+class PointScopeProposal <<usulan>> {
+  targetScope : TemplateScope
+  reason : Teks
+  status : diajukan | diterima | ditolak
+  decidedAt : Waktu [0..1]
+}
+
+class CellContent <<usulan>> {
+  kind : CellContentKind
+  text : Teks [0..1]
+}
+
+class CellPicture <<usulan>> {
+  image : Gambar
+  caption : Teks [0..1]
+  widthInCell : persen
+}
+
+class SpecTable <<usulan>> {
+  columns : judul kolom [1..6]
+  rows : baris [1..50]
+}
+
+class SyncCheckMark <<usulan>> {
+  result : SyncResult
+  note : Teks [0..1]
+  checkedAt : Waktu
+}
+
+enum TemplateScope {
+  model
+  model_group
+  customer
+  general
+}
+
+enum CellContentKind {
+  text
+  picture
+  spec_table
+}
+
+enum SyncResult {
+  sama
+  nama_berbeda
+  cp_dipecah
+  item_cek_cp
+  tidak_ada_di_satu_dokumen
+}
+
+class Customer <<lihat U5-A>>
+class Model <<lihat U5-A>>
+class Process <<lihat U5-A>>
+class Person <<lihat U5-B>>
+class FormatVersion <<lihat U5-C>>
+class Point <<lihat U5-D>>
+class Document <<belum dibangun>>
+class DocumentRow <<belum dibangun>>
+
+Customer "0..1" -- "0..*" CharacteristicSymbol : simbol customer >
+CharacteristicSymbol "1" *-- "1..*" SymbolVersion
+FormatVersion "0..*" -- "0..*" SymbolVersion : memakai >
+Point "1" -- "0..*" PointScopeProposal : diusulkan >
+Model "1" -- "0..*" PointScopeProposal : asal usulan >
+Person "1" -- "0..*" PointScopeProposal : pengusul, pemutus >
+DocumentRow "1" *-- "0..*" CellContent : satu per kolom >
+CellContent "1" *-- "0..1" CellPicture
+CellContent "1" *-- "0..1" SpecTable
+Document "1" -- "0..*" SyncCheckMark : satu per proses >
+Process "1" -- "0..*" SyncCheckMark
+Person "1" -- "0..*" SyncCheckMark : pemberi tanda >
+
+note right of CharacteristicSymbol
+  UX-03. Simbol internal berlaku untuk semua customer;
+  Revision dipasang otomatis dari diff (R-REV-09).
+  Simbol customer baru = nama teks + gambar unggahan.
+  Gambar berversi; revisi dokumen yang sudah rilis
+  tetap menunjuk versi gambar saat rilis (R-REV-02).
+  Melengkapi Symbol di U5-C (key dan nama).
+end note
+
+note right of PointScopeProposal
+  UX-01. Dipilih saat menyusun: model ini saja tidak
+  membuat usulan (perbedaan lokal, R-CMP-04).
+  Group model, customer, atau umum menjadi usulan
+  ke Pengelola template (UC-25). Bila diterima,
+  menjadi poin di versi process template berikutnya
+  dengan cakupan itu (M3.3, D-39).
+end note
+
+note bottom of CellContent
+  UX-02. Gambar dan tabel spesifikasi boleh di
+  kolom mana pun, tidak terbatas proses IQC PCB,
+  ROM writing, atau FCT. Ikut tercetak di dalam
+  sel pada ekspor Excel dan PDF (R-PRT-01).
+  Mengubah ASUMSI E-73 (poin satu baris teks).
+end note
+
+note bottom of SyncCheckMark
+  UX-04. Proses dijajarkan menurut nomor operasi
+  dan ID proses master; nama hanya tampilan (D-06).
+  Hasil hanya menandai; tanda dicek tetap manusia
+  (D-65, UC-36).
 end note
 @enduml

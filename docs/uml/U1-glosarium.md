@@ -1,6 +1,6 @@
 # U1 · Glosarium
 
-- Paket UML: draft 0.11, 31 Oktober 2026 (draft 0.10, 0.9, 0.8, dan 0.7: 31, 30, 30, dan 27 Oktober 2026)
+- Paket UML: draft 0.12, 3 November 2026 (draft 0.11, 0.10, 0.9, 0.8, dan 0.7: 31, 31, 30, 30, dan 27 Oktober 2026). Draft 0.12 menambah istilah dari desain UI 2 November 2026 dan temuan register nomor 3 November 2026, bertanda UX-xx (`usulan-desain-ui.md`).
 - Sumber: brief desain v1.19, termasuk temuan dari dokumen TR-020 (brief bagian 21). Nama jabatan mengikuti bagan organisasi NPI (update 22 Januari 2026). Nama orang tidak dicantumkan. Setiap istilah merujuk ke ID di brief (R-UML-01).
 - Bahasa: penjelasan dalam bahasa Indonesia. Nama jabatan, nama standar, dan tahap tanda tangan memakai istilah yang sama dengan brief (R-UML-05, usulan).
 - Kolom **Istilah layar (Inggris)** (E-19, D-98): istilah yang dipakai di layar dan di katalog teks `web/src/lib/i18n/en.ts`, karena layar berbahasa Inggris untuk saat ini (D-96). Istilah baru di layar ditambahkan ke sini lebih dulu.
@@ -64,6 +64,14 @@
 | Disposisi NG | NG disposition | Tujuan produk NG dari langkah decision: scrap, NCP, atau rework. (usulan) | | R-DOC-09 | Belum |
 | NCP | NCP | Nonconforming product, salah satu disposisi NG. | | R-DOC-09 | Belum |
 | Simbol karakteristik | Characteristic symbol | Simbol di PFMEA dan CP. Saat ini: Critical Process, Revision, Important Character (IC), dan Regulation. Disimpan di format template per customer. (usulan) | | R-TPL-11 | Belum |
+| Simbol internal | Internal symbol | Simbol milik pabrik yang berlaku untuk semua customer: Critical Process (default) dan Revision (dipasang otomatis pada baris yang berubah). (usulan) | | R-REV-09, UX-03 | Belum |
+| Simbol customer | Customer symbol | Simbol yang bentuk dan artinya ditentukan customer, misalnya Important Character dan Regulation. Dicatat sebagai nama teks dan gambar yang diunggah, berversi, dan tidak dihapus. (usulan) | | R-TPL-11, UX-03 | Belum |
+| Cakupan poin | Use point for | Pilihan saat menyusun dokumen: poin berlaku untuk model ini saja, group model, customer, atau umum. Selain model ini saja, pilihan menjadi usulan perubahan process template yang diputuskan Pengelola template. (usulan) | Point scope | R-TPL-03, D-39, UX-01 | Tidak perlu |
+| Gambar di sel | Picture | Gambar di dalam satu sel CP, misalnya drawing PCB untuk item cek IQC PCB. Ikut tercetak di dalam sel. (usulan) | | UX-02 | Belum |
+| Tabel spesifikasi | Spec table | Tabel kecil di dalam satu sel CP, misalnya parameter ROM writing (program, checksum) atau item uji FCT dengan spesifikasi dan satuannya. Bisa ditempel dari Excel. (usulan) | Spec table | UX-02 | Belum |
+| Item cek khusus CP | CP-only check item | Baris CP yang tidak punya pasangan proses di PFD atau PFMEA, misalnya IPQC 1st Printing Inspection. (usulan) | | UX-04 | Belum |
+| Cek sinkronisasi | Sync check | Tampilan yang menjajarkan proses PFD, PFMEA, dan CP menurut nomor operasi dan ID proses master, dengan hasil per proses: sama, nama berbeda, CP dipecah, item cek khusus CP, atau tidak ada di salah satu dokumen. Keputusan tetap di tangan manusia. (usulan) | Sync check | R-DOC-06, D-65, UX-04 | Tidak perlu |
+| Workbook | Workbook | Satu layar untuk satu set dokumen satu model, dengan tab sheet di bawah: Cover, PFD, PFMEA, Control Plan, dan Check, meniru file Excel yang dipakai sekarang. (usulan) | | UX-05 | Tidak perlu |
 | Core Team | Core team | Field header PFMEA dan CP yang berisi anggota tim beserta departemennya. | | Brief bagian 21, F-10, F-11 | Belum |
 | Dokumen terkait | Relevant document | Nomor dan judul WI, SOP, QEP, dan dokumen lain yang dirujuk di kolom Relevant Document CP. Diambil dari master supaya sama dengan sumbernya. (usulan) | Relevant document | R-DOC-11 | Belum |
 | Dokumen saling bergantung | Interdependent document | Dokumen terpisah yang dirujuk sebagai pengganti langkah yang diulang, misalnya ESD control plan SC-ESD-K001. (usulan) | Interdependent document | R-DOC-10 | Belum |
@@ -92,6 +100,7 @@
 | Snapshot | Snapshot | Isi revisi yang dibekukan saat rilis, beserta hash SHA-256. | | R-REV-02 | Tidak perlu |
 | Hash | Hash | Sidik jari isi. Ada tiga: snapshot_hash, customer_content_hash, dan file_hash. (usulan) | | R-REV-07 | Tidak perlu |
 | Diff | Diff | Perbandingan baris dan sel antar revisi. | | R-REV-03 | Tidak perlu |
+| Cakupan yokoten | Yokoten coverage | Persentase dokumen target satu yokoten yang revisinya sudah rilis. Dokumen yang diputuskan tidak berlaku dihitung selesai bila alasannya tercatat. Ukuran utama QCC. (usulan) | | R-CHG-04, UX-07 | Belum |
 | Riwayat revisi | Revision history | Tabel revisi otomatis di cetakan. Riwayat sebelum baseline migrasi disimpan sebagai teks dari tabel Excel lama. (usulan) | Revision history | R-REV-04, R-REV-05 | Belum |
 
 ## 4. Penomoran
@@ -110,6 +119,7 @@
 | Revisi awal | Initial revision | Revisi pertama dokumen yang memakai nomor itu, misalnya 4 (-04) untuk dokumen lama yang masuk di revisi saat ini. | | R-REV-01 | Tidak perlu |
 | Digit revisi | Revision digits | Jumlah digit label revisi, saat ini 2 (-04). Diatur di master data. | | D-89 | Belum |
 | Kunci idempoten | (tidak tampil di layar) | Kunci acak yang dikirim bersama permintaan pendaftaran. Permintaan yang diulang dengan kunci yang sama mendapat nomor yang sama, bukan nomor baru. Berlaku per akun (ASUMSI E-63). | Idempotency-Key | R-NUM-03 | Tidak perlu |
+| Nomor lama | Legacy number | Nomor dari sistem penomoran sebelumnya, misalnya CP-KT-14-K001 atau PFD-HL-18-K001, yang di register Excel tercatat di kolom No. (Before). Disimpan sebagai rujukan yang bisa dicari, tidak menjadi nomor aktif. (usulan) | No. (Before) | R-NUM-06, UX-06 | Belum |
 | Impor nomor lama | Import legacy numbers | Memasukkan nomor dari register Excel lama dengan teks aslinya. Penghitung naik ke nomor tertinggi; lubang, nomor ganda, dan set tidak sejajar hanya dilaporkan. (usulan) | | R-NUM-06, UC-14 | Tidak perlu |
 | Pratinjau impor | Preview | Laporan impor tanpa menyimpan apa pun. | Dry run | R-NUM-06 | Tidak perlu |
 | Lubang | Gaps | Nomor berjalan yang tidak ada di register, di antara 001 dan nomor tertinggi. Dilaporkan, tidak pernah diisi. | | R-NUM-06 | Tidak perlu |

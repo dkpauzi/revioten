@@ -1,6 +1,6 @@
 # U3 · Peta pengguna dan hak akses
 
-- Paket UML: draft 0.8, 30 Oktober 2026. Sumber: brief desain v1.16. Draft 0.8 menambah keputusan D-103, D-104, D-115, D-118, dan D-120 tanpa mengubah isi matriks hak.
+- Paket UML: draft 0.9, 3 November 2026. Sumber: brief desain v1.16. Draft 0.8 menambah keputusan D-103, D-104, D-115, D-118, dan D-120 tanpa mengubah isi matriks hak. Draft 0.9 hanya memetakan use case usulan UC-24, UC-25, dan UC-39 ke hak yang sudah ada (A-2, E-2, E-6), tanpa hak baru dan tanpa mengubah isi peran.
 - Status: **baseline hak akses, disetujui pemilik pada 27 Oktober 2026** (D-66, R-SEC-10). Admin mengubah hak akses mulai dari baseline ini, dan setiap perubahannya tercatat di audit log. Hal yang masih bertanda usulan di dalam peta ini tetap usulan.
 - Diagram: `U3-peta-pengguna.puml`, diekspor ke `export/U3-H-peta-pengguna.png` dan `.svg`.
 - Nama jabatan mengikuti bagan organisasi NPI (D-54). Nama orang tidak dicantumkan.
@@ -48,11 +48,11 @@ Semua pengguna yang login otomatis punya hak dasar level Lihat (L-1 sampai L-3),
 | **L-3** | Ekspor Excel dan PDF dokumen rilis | UC-54 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | **L-4** | Lihat draft dan permintaan perubahan yang sedang berjalan (usulan) | UC-47 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — | — |
 | **E-1** | Daftarkan nomor dokumen, termasuk sebagai set | UC-10, UC-11 | ✓ | — | — | — | — | — | — | — |
-| **E-2** | Buat, rakit, dan edit dokumen draft | UC-30 sampai UC-35, UC-38 | ✓ | — | — | — | — | — | — | — |
+| **E-2** | Buat, rakit, dan edit dokumen draft, termasuk gambar dan tabel spesifikasi di sel, serta mengusulkan cakupan poin (usulan) | UC-30 sampai UC-35, UC-38, UC-39, UC-25 (mengusulkan) | ✓ | — | — | — | — | — | — | — |
 | **E-3** | Ajukan perubahan dan isi daftar periksa dampak | UC-40, UC-42 | ✓ | — | — | — | — | — | — | — |
 | **E-4** | Kerjakan draft revisi, yokoten, dan perubahan surut SQAM | UC-43 sampai UC-46 | ✓ | — | — | — | — | — | — | — |
 | **E-5** | Cetak untuk tanda tangan dan catat dokumen dikembalikan | UC-50, UC-51 | ✓ | — | — | — | — | — | — | — |
-| **E-6** | Kelola master proses dan process template, terbitkan dan propagasikan versi | UC-04, UC-21 sampai UC-23 | — | ✓ | — | — | — | — | — | — |
+| **E-6** | Kelola master proses dan process template, terbitkan dan propagasikan versi, serta menerima atau menolak usulan cakupan poin (usulan) | UC-04, UC-21 sampai UC-23, UC-25 (memutuskan) | — | ✓ | — | — | — | — | — | — |
 | **E-7** | Catat rilis | UC-52 | — | — | — | — | ✓ | — | — | — |
 | **E-8** | Ubah status nomor dan impor nomor lama | UC-13, UC-14 | — | — | — | — | ✓ | — | — | — |
 | **E-9** | Cetak salinan terkendali dan lihat daftar salinan yang harus ditarik | UC-53, UC-55 | — | — | — | — | ✓ | — | — | — |
@@ -60,7 +60,7 @@ Semua pengguna yang login otomatis punya hak dasar level Lihat (L-1 sampai L-3),
 | **V-1** | Verifikasi permintaan perubahan | UC-41 | — | — | — | ✓ | — | — | — | — |
 | **V-2** | Beri tanda dicek di perbandingan PFMEA dan CP | UC-36 | — | — | ✓ | — | — | — | — | — |
 | **A-1** | Kelola pengguna dan hak akses | UC-02 | — | — | — | — | — | — | — | ✓ |
-| **A-2** | Kelola master data, jenis dokumen dan perubahan, rute approval, dokumen terkait, dan format template | UC-03, UC-05, UC-06, UC-09, UC-20 | — | — | — | — | — | — | — | ✓ |
+| **A-2** | Kelola master data, jenis dokumen dan perubahan, rute approval, dokumen terkait, format template, dan master simbol karakteristik (usulan) | UC-03, UC-05, UC-06, UC-09, UC-20, UC-24 | — | — | — | — | — | — | — | ✓ |
 | **A-3** | Kelola pengaturan sistem | UC-07 | — | — | — | — | — | — | — | ✓ |
 | **A-4** | Lihat audit log | UC-08 | — | — | — | — | — | — | — | ✓ |
 
