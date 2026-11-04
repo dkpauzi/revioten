@@ -35,6 +35,13 @@ const (
 	KindSymbol = "symbol" // satu simbol karakteristik milik versi (R-TPL-11)
 	KindRating = "rating" // nilai 1 sampai 10 pada satu skala (severity, occurrence, detection)
 	KindRPN    = "rpn"    // dihitung: severity x occurrence x detection dengan set yang sama
+
+	// Kolom terisi otomatis (D-122, D-123, migrasi 00014). Isinya tidak
+	// diketik, tetapi diambil dari baris dokumen, jadi kolomnya selalu tampil
+	// dan tercetak seperti di form Excel.
+	KindOperationNumber = "operation_number" // nomor operasi baris, misalnya 5.2 (R-CMP-01)
+	KindProcess         = "process"          // nama proses baris dari master proses (D-06, R-DOC-04)
+	KindProcessFlow     = "process_flow"     // simbol alur langkah itu, dibentuk dari PFD (R-DOC-09)
 )
 
 // Skala rating (R-TPL-01).
@@ -78,11 +85,14 @@ const (
 )
 
 var (
-	scales    = []string{ScaleSeverity, ScaleOccurrence, ScaleDetection}
-	kinds     = []string{KindText, KindDate, KindSelect, KindSymbol, KindRating, KindRPN}
-	methods   = []string{MethodAIAG4th, MethodAIAGVDA, MethodSQAM}
-	risks     = []string{RiskRPN, RiskAP, RiskNone}
-	areaOrder = map[string]int{AreaHeader: 0, AreaRow: 1}
+	scales = []string{ScaleSeverity, ScaleOccurrence, ScaleDetection}
+	kinds  = []string{KindText, KindDate, KindSelect, KindSymbol, KindRating, KindRPN, KindOperationNumber, KindProcess, KindProcessFlow}
+	// filledKinds adalah kolom terisi otomatis: tidak diketik, dan paling
+	// banyak satu kolom per jenis dalam satu versi.
+	filledKinds = []string{KindOperationNumber, KindProcess, KindProcessFlow}
+	methods     = []string{MethodAIAG4th, MethodAIAGVDA, MethodSQAM}
+	risks       = []string{RiskRPN, RiskAP, RiskNone}
+	areaOrder   = map[string]int{AreaHeader: 0, AreaRow: 1}
 )
 
 // FormatTemplate adalah satu format template beserta ringkasan versinya.
@@ -233,8 +243,9 @@ func CheckContent(v FormatVersion, area string, content map[string]any) ContentC
 		known[f.ID] = true
 		value := content[f.ID]
 		if blank(value) {
-			// RPN dihitung, jadi tidak pernah dianggap kosong.
-			if f.Required && !f.Hidden && f.Kind != KindRPN {
+			// RPN dihitung dan kolom terisi otomatis diambil dari baris, jadi
+			// keduanya tidak pernah dianggap kosong.
+			if f.Required && !f.Hidden && f.Kind != KindRPN && !slices.Contains(filledKinds, f.Kind) {
 				c.Missing = append(c.Missing, f.ID)
 			}
 			continue
@@ -275,6 +286,12 @@ func checkValue(f Field, value any, symbols []Symbol) *problem.Problem {
 	switch f.Kind {
 	case KindRPN:
 		return bad(problem.NotAllowed, "RPN is calculated from severity, occurrence, and detection.")
+	case KindOperationNumber:
+		return bad(problem.NotAllowed, "The operation number comes from the row, not typed.")
+	case KindProcess:
+		return bad(problem.NotAllowed, "The process comes from the process master through the row, not typed.")
+	case KindProcessFlow:
+		return bad(problem.NotAllowed, "The process flow comes from the PFD steps, not typed.")
 	case KindRating:
 		if n, ok := whole(value); !ok || n < 1 || n > maxRating {
 			return bad(problem.InvalidFormat, "Use a whole number from 1 to 10.")
@@ -430,9 +447,9 @@ func cleanNewField(v FormatVersion, in NewField) (NewField, []*problem.Problem) 
 	case in.Kind == "":
 		add("kind", problem.Required, "Choose the kind of field.")
 	case !slices.Contains(kinds, in.Kind):
-		add("kind", problem.InvalidFormat, "Choose text, date, select, symbol, rating, or RPN.")
-	case (in.Kind == KindRating || in.Kind == KindRPN || in.Kind == KindSymbol) && in.Area == AreaHeader:
-		add("kind", problem.NotAllowed, "Ratings, RPN, and symbols are columns, not header fields.")
+		add("kind", problem.InvalidFormat, "Choose a kind from the list.")
+	case (in.Kind == KindRating || in.Kind == KindRPN || in.Kind == KindSymbol || slices.Contains(filledKinds, in.Kind)) && in.Area == AreaHeader:
+		add("kind", problem.NotAllowed, "Ratings, RPN, symbols, and filled columns are columns, not header fields.")
 	case in.Kind == KindRating && v.RiskMethod == RiskNone,
 		in.Kind == KindRPN && v.RiskMethod != RiskRPN:
 		add("kind", problem.NotAllowed, "The risk method of this format template has no such column.")
@@ -470,6 +487,12 @@ func cleanNewField(v FormatVersion, in NewField) (NewField, []*problem.Problem) 
 				break
 			}
 		}
+	}
+
+	// Kolom terisi otomatis cukup satu per jenis: isinya sama untuk satu baris.
+	if kindAllowed && slices.Contains(filledKinds, in.Kind) &&
+		slices.ContainsFunc(v.Fields, func(f Field) bool { return f.Kind == in.Kind }) {
+		add("kind", problem.Taken, "This format template already has this column.")
 	}
 
 	options, optionProblem := cleanOptions(in.Kind, in.Options, nil)

@@ -91,13 +91,37 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-67 | Pendaftaran nomor untuk customer nonaktif | Celah | M2.1 | Tidak | Terbuka |
 | E-68 | Perubahan status nomor yang dikerjakan tangan di Tahap 2, dan alasannya | Ambigu | M2.3, M4.1, M6.7 | Tidak | Terbuka |
 | E-69 | Urutan kunci transaksi penomoran: deadlock dengan ganti kode customer | Sulit dibangun | M2.1, M2.2, M2.4 | Tidak (sudah diperbaiki di kode) | Terbuka |
-| E-70 | Isi awal format template dan aturan field yang belum ditetapkan | Celah | M3.1, M4.1 | Tidak (perlu sebelum M4.1) | Terbuka |
+| E-70 | Isi awal format template dan aturan field yang belum ditetapkan | Celah | M3.1, M4.1 | Tidak (perlu sebelum M4.1) | Diputuskan sebagian (D-124) |
 | E-71 | Aturan sorot PFMEA: arti "severity 8" dan nilai mana yang disorot | Ambigu | M3.1 | Tidak | Terbuka |
 | E-72 | Satuan process template: satu per proses, atau satu pustaka untuk semua proses | Ambigu | M3.2, M3.3, M3.4, M5.8 | Tidak (perlu sebelum M3.3) | Terbuka |
 | E-73 | Isi poin process template dan format template yang diikutinya | Celah | M3.2, M4.5, M5.8, M7.4 | Tidak (perlu sebelum M4.5) | Terbuka |
-| E-74 | Kode customer tiga huruf di register (AJI, AVI) bertentangan dengan D-100 | Kontradiksi | M1.4, M2.1, M2.5 | Tidak (perlu sebelum register asli diimpor) | Terbuka |
-| E-75 | Register terpisah PL1 dan PL3: plant, line, atau Project Leader (Q-19) | Ambigu | M2.1, M2.5 | Tidak (perlu sebelum register asli diimpor) | Terbuka |
+| E-74 | Kode customer tiga huruf di register (AJI, AVI) bertentangan dengan D-100 | Kontradiksi | M1.4, M2.1, M2.5 | Tidak (perlu sebelum register asli diimpor) | Diputuskan (D-125) |
+| E-75 | Register terpisah PL1 dan PL3: plant, line, atau Project Leader (Q-19) | Ambigu | M2.1, M2.5 | Tidak (perlu sebelum register asli diimpor) | Diputuskan (D-126) |
 | E-76 | Proses baru diminta saat menyusun, dan urutan standar proses di pustaka | Celah | M1.5, M3.3, M4.5, M4.6 | Tidak | Terbuka |
+
+## Keputusan 4 November 2026
+
+Pemilik menjawab tinjauan desain UI (`docs/catatan/Tinjauan-desain-UI-UML-0.12.md`). Kutipan:
+
+> "1. tambahan untuk simbol revision yang tercetak di control plan / PFD / PFMEA. jika revision naik dari revisi 1 ke revisi 2, maka simbol revisi 1 nya di hilangkan. namun apakah memungkinkan untuk tetap menyimpan version control nya? artinya kita tetap punya tempat untuk cek semua perubahan
+> 2. namun untuk di print tidak boleh di sembunyikan. untuk template yang saya kirimkan memang memuat flow process nya, dan hal itu yang membuat edit PCP jadi sangat lama dan menjadi tergate utama kita adalah mempermudah process penyesuaian flow process, terutama di simbol connector karna perpindahan page
+> 3. kenapa nama process di sembunyikan? dari mana user tau nama process nya ketika melihat / membaca dokumen PFMEA
+> E-74 untuk saat ini ikuti WI hanya mengizinkan dua huruf
+> E-75 PL = project leader
+> E-70 ya, itu sudah sesuai file excel asli"
+
+Yang dicatat di brief v1.21:
+
+| Keputusan | Isi | Dampak ke kode |
+|---|---|---|
+| D-121 | Hanya tanda revisi yang berlaku yang tercetak. Tanda revisi lama hilang dari cetakan, tetapi semua perubahan tetap bisa dilihat: revisi rilis dibekukan (R-REV-02), dan diff serta riwayat menunjukkan perubahan antara dua revisi mana pun (R-REV-03). R-REV-09 menjadi DECIDED. | Tidak ada sekarang. Tanda dihitung dari diff saat cetak (Tahap 5 dan 6) |
+| D-122 | Kolom Process Flow di CP selalu tercetak, terisi dari langkah PFD. Memudahkan penyesuaian alur, terutama konektor di perpindahan halaman, menjadi tujuan utama (G11). | Migrasi 00014: Process Flow tidak lagi disembunyikan, tetapi menjadi kolom terisi otomatis `process_flow` |
+| D-123 | Nama proses dan nomor operasi selalu tampil dan tercetak di PFD, PFMEA, dan CP, terisi dari baris, tidak diketik. | Migrasi 00014: jenis kolom `process` dan `operation_number`; Process Step / Function di PFMEA tampil lagi |
+| D-124 | Susunan kolom di artboard "current form layout" sama dengan file Excel asli; isi awal mengikutinya (E-70). | Migrasi 00014: kolom isi awal PFD, PFMEA, dan CP |
+| D-125 | Kode customer tetap dua huruf sesuai WI (E-74). | Tidak ada; D-100 tetap |
+| D-126 | Register PL1 dan PL3 adalah register Project Leader (E-75). | Tidak ada; penomoran tetap per kode customer dan jenis dokumen |
+
+Temuan lain dari tinjauan (E-33, E-72, E-73, E-76) dan usulan UX-01 sampai UX-07 belum dijawab, jadi tetap Terbuka.
 
 ## Keputusan 30 Oktober 2026
 
@@ -1245,7 +1269,7 @@ Salin blok ini untuk setiap temuan baru.
 
   Semua ini ada di `sql/migrations/00011_create_format_templates.sql` dan `internal/template/template.go`.
 - **Menghambat milestone?** Tidak (perlu sebelum M4.1)
-- **Status:** Terbuka
+- **Status:** Diputuskan sebagian pemilik 4 November 2026 (D-124)
 - **Bukti baru (tinjauan desain UI, 3 November 2026):** artboard "PFD sheet", "PFMEA sheet", "Control Plan sheet", dan "Cover" di kanvas desain UI menggambar form yang dipakai sekarang ("current form layout"). Perbedaannya dengan isi awal M3.1:
   1. CP, kolom Process Flow: dibentuk dari langkah PFD (R-DOC-09), bukan isian. **Sudah dibetulkan** (migrasi 00013: disembunyikan di isi awal).
   2. PFMEA, kolom Process Step / Function: berisi nama proses baris itu, yang sudah menjadi atribut baris. **Sudah dibetulkan** (migrasi 00013: disembunyikan di isi awal).
@@ -1255,7 +1279,12 @@ Salin blok ini untuk setiap temuan baru.
   6. PFMEA, Key Date tertulis "(at print)", jadi mungkin terisi saat dicetak, bukan diketik. Isi awal M3.1 menjadikannya field header tanggal. Belum diubah.
   7. Header CP tidak memuat Process or Line, tetapi cover CP memuatnya (R-PRT-07), jadi field header Process or Line tetap benar.
 - **Rekomendasi Claude Code (usulan, diperbarui 3 November 2026):** butir 3 sampai 6 diputuskan pemilik dengan membandingkan artboard di atas dengan file Excel asli, lalu dibangun dalam satu migrasi sebelum M4.1. Saran untuk butir 4: kolom tingkat proses (Machine, Equipment, Jigs, Fixture, Tools for Mfg) disimpan sebagai field per baris yang dicetak sekali per proses, supaya baris tetap datar (R-DOC-01).
-- **Keputusan pemilik:**
+- **Keputusan pemilik:** susunan kolom di artboard "current form layout" sama dengan file Excel asli (D-124). Isi awal PFD, PFMEA, dan CP mengikutinya lewat migrasi 00014:
+  - PFD: No, Process, Flow Symbol, NG Disposition;
+  - PFMEA: Process Item No. dan Process Step / Function di depan, lalu label mengikuti form (Requirement, Class, Potential Cause(s) / Mechanism(s) of Failure, Recommended Action);
+  - CP: Process Flow, No, Process Name / Operation Description, Machine, Equipment, Jigs, Fixture, Tools for Mfg, karakteristik produk dan proses masing-masing dengan Specification / Tolerance, lalu Special Characteristics sampai Reaction Plan.
+
+  Nomor operasi, proses, dan Process Flow menjadi kolom terisi otomatis (D-122, D-123), menggantikan perbaikan migrasi 00013 yang menyembunyikannya. Masih asumsi (ASUMSI E-70): kolom wajib, teks kriteria, batas panjang, satu simbol per sel, Key Date tetap diketik sampai layout cetak (M6.1), dan kolom No karakteristik CP yang dinomori layout cetak per proses.
 
 ### E-71 · Aturan sorot PFMEA: arti "severity 8" dan nilai mana yang disorot
 
@@ -1346,8 +1375,8 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (a), karena paling sedikit aturan baru: riwayat kode (D-88) dan foreign key kode di nomor (E-11) sudah menangani kode lama, dan nomor tetap masuk apa adanya. Sebelumnya perlu dipastikan bahwa AJ dan AJI memang customer yang sama, dan kode mana yang berlaku sekarang.
 - **Asumsi sementara di kode:** tidak ada perubahan; kode customer tetap dua huruf (D-100).
 - **Menghambat milestone?** Tidak (perlu sebelum register asli diimpor)
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan pemilik 4 November 2026 (D-125)
+- **Keputusan pemilik:** "untuk saat ini ikuti WI hanya mengizinkan dua huruf". Kode customer tetap dua huruf (D-100 tidak berubah). Nomor dengan kode tiga huruf di register lama tetap dilaporkan impor dan tidak diimpor, untuk saat ini. Cara menyimpannya sebagai rujukan ikut keputusan UX-06.
 
 ### E-75 · Register terpisah PL1 dan PL3: plant, line, atau Project Leader (Q-19)
 
@@ -1362,8 +1391,8 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** pemilik memastikan arti PL1 dan PL3 sebelum register asli diimpor. Bila (a), Q-19 bisa ditutup dengan asumsi kerjanya (satu plant).
 - **Asumsi sementara di kode:** satu plant (asumsi kerja Q-19).
 - **Menghambat milestone?** Tidak (perlu sebelum register asli diimpor)
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan pemilik 4 November 2026 (D-126)
+- **Keputusan pemilik:** "PL = project leader". Opsi (a): register PL1 dan PL3 adalah register Project Leader, jadi penomoran tetap per kode customer dan jenis dokumen (D-93), dan register digabung saat impor. Q-19 tetap memakai asumsi kerjanya (satu plant).
 
 ### E-76 · Proses baru diminta saat menyusun, dan urutan standar proses di pustaka
 
@@ -1396,7 +1425,7 @@ Salin blok ini untuk setiap temuan baru.
 | UX-03 Master simbol karakteristik khusus | M3.1 menyimpan simbol per versi format template, tanpa gambar, dan semua simbol bisa dipilih di kolom simbol. | Sebagian: Revision ditandai otomatis dan ditolak di kolom simbol (migrasi 00013, R-REV-09). | Terima. Simbol customer pindah ke master per customer, dengan gambar dan versi (UC-24, hak A-2), lalu dirujuk format template. Critical Process menjadi tanda proses di dokumen, bukan simbol kolom karakteristik. Dibangun sebelum M4.1. |
 | UX-04 Cek sinkronisasi tiga dokumen | Tidak ada di M0 sampai M3. Mendukung E-33 opsi (a). | Tidak | Terima. UC-36 diperluas ke PFD di M4.9. |
 | UX-05 Layar workbook, menu berlabel, teks besar, EN/ID | Semua halaman M0 sampai M3: menu (sekarang 15 tautan datar), gaya, dan ukuran teks. Bahasa Indonesia mengubah D-96. | Tidak | Terima workbook untuk layar dokumen (Tahap 4). Menu berlabel dan design system (warna, huruf yang dibundel dengan aplikasi) diterapkan ke semua halaman M0 sampai M3 dalam satu langkah sebelum M4. Bahasa Indonesia ditambah sebagai katalog kedua dengan kunci yang sama, karena D-96 sudah menyiapkannya; perlu keputusan pemilik karena mengubah D-96. |
-| UX-06 Temuan register nomor | M2.5: kolom No. (Before) belum disimpan, kode tiga huruf ditolak (E-74), satu nomor untuk beberapa part belum dilaporkan, dan arti PL1 dan PL3 belum jelas (E-75). | Tidak | Terima: impor menerima kolom No. (Before) sebagai nomor lama yang bisa dicari, dan laporan menandai satu nomor yang dipakai beberapa part. Dibangun setelah E-74 dan E-75 diputuskan. |
+| UX-06 Temuan register nomor | M2.5: kolom No. (Before) belum disimpan, dan satu nomor untuk beberapa part belum dilaporkan. Kode tiga huruf tetap ditolak (E-74, D-125); PL1 dan PL3 adalah register Project Leader (E-75, D-126). | Tidak | Terima: impor menerima kolom No. (Before) sebagai nomor lama yang bisa dicari, dan laporan menandai satu nomor yang dipakai beberapa part. |
 | UX-07 Cakupan yokoten | Tidak ada di M0 sampai M3. | Tidak | Terima untuk M5.9 dan M7.7. |
 
 ## Keputusan pemilik atas pertanyaan terbuka brief (bagian 12)

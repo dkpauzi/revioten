@@ -27,6 +27,11 @@ func pfmea() FormatVersion {
 			{ID: "f-flow", Area: AreaRow, Kind: KindSelect, Label: "Flow Symbol", Position: 11,
 				Options: []Option{{Key: "process", Label: "Process"}, {Key: "decision", Label: "Decision"}}},
 			{ID: "f-old", Area: AreaRow, Kind: KindText, Label: "Old column", Position: 12, Hidden: true},
+			// Kolom terisi otomatis (D-122, D-123): tidak diketik, jadi wajib pun
+			// tidak pernah dianggap kosong.
+			{ID: "f-no", Area: AreaRow, Kind: KindOperationNumber, Label: "Process Item No.", Position: 13},
+			{ID: "f-proc", Area: AreaRow, Kind: KindProcess, Label: "Process Step / Function", Position: 14, Required: true},
+			{ID: "f-pflow", Area: AreaRow, Kind: KindProcessFlow, Label: "Process Flow", Position: 15},
 		},
 		Symbols: []Symbol{
 			{Key: "critical_process", Name: "Critical Process"},
@@ -74,6 +79,9 @@ func TestCheckContent(t *testing.T) {
 		{"rating di luar 1 sampai 10", `{"f-mode": "x", "f-o": 11, "f-d": 0}`, []string{"f-o:invalid_format", "f-d:invalid_format"}},
 		{"rating sebagai teks", `{"f-mode": "x", "f-s": "9"}`, []string{"f-s:invalid_format"}},
 		{"RPN dihitung, tidak diisi", `{"f-mode": "x", "f-rpn": 108}`, []string{"f-rpn:not_allowed"}},
+		{"nomor operasi dari baris", `{"f-mode": "x", "f-no": "5.2"}`, []string{"f-no:not_allowed"}},
+		{"proses dari master proses", `{"f-mode": "x", "f-proc": "Solder Paste Printing"}`, []string{"f-proc:not_allowed"}},
+		{"process flow dari PFD", `{"f-mode": "x", "f-pflow": "decision"}`, []string{"f-pflow:not_allowed"}},
 		{"pilihan tidak ada", `{"f-mode": "x", "f-flow": "merge"}`, []string{"f-flow:invalid_format"}},
 		{"simbol tidak ada", `{"f-mode": "x", "f-class": "important_character"}`, []string{"f-class:invalid_format"}},
 		// R-REV-09: tanda revisi dipasang sistem dari diff, tidak dipilih tangan.

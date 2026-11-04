@@ -6,6 +6,7 @@
   - kanvas desain UI "Desain UI Sistem PFD PFMEA CP", 18 artboard, termasuk baris v2 yang disarankan (Home, Workbook, Template library) dan artboard "current form layout" untuk PFD, PFMEA, Control Plan, dan Cover;
   - paket UML draft 0.12 dari pemilik, termasuk `docs/uml/usulan-desain-ui.md` (UX-01 sampai UX-07, semuanya Terbuka).
 - **Dasar:** D-77 (kode dipakai mengevaluasi desain), D-80 (UML mengikuti kode), dan CLAUDE.md bagian 6 (temuan tidak diputuskan sendiri; usulan Terbuka menunggu pemilik).
+- **Pembaruan 4 November 2026:** pemilik menjawab tinjauan ini (bagian 9). Kolom Process Flow dan Process Step / Function tidak lagi disembunyikan; keduanya menjadi kolom terisi otomatis (migrasi 00014, D-122, D-123). Bagian 1 sampai 8 di bawah tetap ditulis seperti keadaan 3 November.
 
 ## 1. Ringkasan
 
@@ -70,10 +71,10 @@
 |---|---|---|
 | E-33 | Pencocokan PFD, PFMEA, dan CP di tingkat proses atau sub-proses | (a) tingkat proses. Pola TR-020 di desain menunjukkan nomor operasi yang sama, sub-proses sebagai pecahan CP, dan item cek khusus CP. Kode M3.2 sudah begitu |
 | E-72 | Satuan process template | (a) satu template per proses, dengan cakupan melekat pada poin (masukan pemilik di UX-01) |
-| E-70 | Sisa perbedaan kolom form (butir 3 sampai 6) | Bandingkan artboard "current form layout" dengan file Excel asli, lalu bangun dalam satu migrasi sebelum M4.1 |
+| E-70 | Sisa perbedaan kolom form (butir 3 sampai 6) | Bandingkan artboard "current form layout" dengan file Excel asli, lalu bangun dalam satu migrasi sebelum M4.1. **Diputuskan 4 November (D-124), dibangun di migrasi 00014** |
 | E-73 | Isi poin process template | (b) isi poin mengikuti format template, ditambah asal field di salinan format, dengan bentuk isi sel yang sama dengan baris dokumen (UX-02) |
-| E-74 | Kode customer tiga huruf | (a) kode customer boleh dua atau tiga huruf (D-100 diubah), setelah dipastikan AJ dan AJI customer yang sama |
-| E-75 | Arti register PL1 dan PL3 | Pemilik memastikan: plant, line, atau Project Leader |
+| E-74 | Kode customer tiga huruf | (a) kode customer boleh dua atau tiga huruf (D-100 diubah), setelah dipastikan AJ dan AJI customer yang sama. **Diputuskan 4 November: tetap dua huruf sesuai WI (D-125)** |
+| E-75 | Arti register PL1 dan PL3 | Pemilik memastikan: plant, line, atau Project Leader. **Diputuskan 4 November: Project Leader (D-126)** |
 | E-76 | Permintaan proses baru dan urutan standar proses | (a) untuk keduanya, dibangun di M4.5 dan M4.6 |
 | UX-01 sampai UX-07 | Usulan dari desain UI | Lihat tabel di `docs/evaluasi-desain.md` |
 
@@ -106,3 +107,50 @@
 Di psql, sebagai role aplikasi (`docker compose exec db psql -U revioten_app -d revioten`):
 1. Tulis query yang menampilkan semua simbol otomatis beserta nama format template dan nomor versinya. Hubungkan `format_symbols`, `format_template_versions`, dan `format_templates`.
 2. Coba `UPDATE format_symbols SET automatic = false WHERE key = 'revision';`. Jelaskan dengan kata-kata sendiri kenapa ditolak dengan kode 42501, dan migrasi mana yang mengatur hak itu.
+
+## 9. Tindak lanjut 4 November 2026
+
+Pemilik menjawab tinjauan ini. Kutipan lengkapnya ada di `docs/evaluasi-desain.md`, bagian "Keputusan 4 November 2026". Keputusannya dicatat di brief v1.21 sebagai D-121 sampai D-126.
+
+### 9.1 Jawaban atas tiga pertanyaan pemilik
+
+1. **Tanda revisi dan version control (D-121).** Yang tercetak hanya tanda revisi yang berlaku. Saat dokumen naik dari revisi 1 ke revisi 2, tanda revisi 1 hilang dari cetakan. Semua perubahan tetap bisa dicek di sistem:
+   - setiap revisi yang rilis dibekukan sebagai snapshot dengan SHA-256 dan tidak bisa diubah (R-REV-02, M5.5);
+   - diff per baris dan sel antara dua revisi mana pun, beserta riwayat per dokumen dan per proses (R-REV-03, M5.6);
+   - tabel riwayat revisi di cover (R-REV-04);
+   - audit log.
+
+   Tanda revisi dihitung dari diff saat dicetak, jadi tidak ada tanda yang disimpan atau dihapus tangan.
+2. **Process Flow di CP (D-122).** Kolom ini selalu tercetak. Migrasi 00013 menyembunyikannya karena isinya bukan ketikan, tetapi itu membuatnya tampak hilang. Migrasi 00014 memunculkannya lagi sebagai **kolom terisi otomatis**: simbolnya diambil dari langkah PFD (R-DOC-09). Tujuan utama yang dicatat (G11) adalah penyesuaian alur tanpa menggambar ulang. Mengubah alur cukup mengubah daftar langkah PFD, dan konektor di perpindahan halaman dipasang otomatis saat dicetak (Tahap 6).
+3. **Nama proses di PFMEA (D-123).** Nama proses tidak pernah dihapus dari dokumen. Yang disembunyikan migrasi 00013 adalah kolom ketikan yang isinya sama dengan proses baris. Sekarang kolom Process Item No. dan Process Step / Function tampil dan tercetak lagi, tetapi isinya diambil dari baris: nomor operasi, dan nama proses dari master proses lewat ID-nya. Pembaca selalu melihat nama proses, dan namanya tidak bisa berbeda antardokumen (F-05).
+
+### 9.2 Yang diubah
+
+- **Migrasi 00014** (`sql/migrations/00014_filled_columns_and_form_layout.sql`):
+  - jenis kolom baru `operation_number`, `process`, dan `process_flow`, hanya untuk kolom baris (constraint `format_fields_filled_check`);
+  - isi awal mengikuti form Excel asli (D-124):
+
+    | Template | Kolom |
+    |---|---|
+    | PFD | No, Process, Flow Symbol, NG Disposition |
+    | PFMEA | Process Item No., Process Step / Function, Requirement, Potential Failure Mode, ... Class, Potential Cause(s) / Mechanism(s) of Failure, ... Recommended Action, ... Result RPN (20 kolom) |
+    | CP | Process Flow, No, Process Name / Operation Description, Machine, Equipment, Jigs, Fixture, Tools for Mfg, Product Characteristics, Product Specification / Tolerance, Process Characteristics, Process Specification / Tolerance, Special Characteristics, Equipment, Method, Frequency, PIC, Relevant Document, Pokayoke, Reaction Plan (16 kolom) |
+
+  - bagian Down sudah dicoba di database percobaan: turun ke 00012 lalu naik lagi ke 00014.
+- **Kode:**
+  - jenis kolom baru di `internal/template`;
+  - kolom terisi otomatis ditolak bila diketik (`not_allowed`), tidak pernah dianggap kosong, hanya untuk baris, dan paling banyak satu per jenis;
+  - kontrak API dan layar Format templates menyebut "filled from the row", "filled from the process master", dan "filled from the PFD".
+- **Test:**
+  - Go: isi awal, aturan field, pemeriksa isi, dan urutan;
+  - Vitest: 84 test;
+  - E2E: 30 test, dengan label dan nomor kolom baru;
+  - tangkapan layar template CP sudah diperiksa.
+- **Dokumen:** brief v1.21 (D-121 sampai D-126, G11, R-REV-09 menjadi DECIDED), evaluasi desain (E-70 sebagian, E-74, dan E-75 diputuskan), UML draft 0.14, ringkasan desain UI, dan CLAUDE.md.
+
+### 9.3 Masih terbuka
+
+- E-33, E-72, E-73, dan E-76;
+- usulan UX-01 sampai UX-07;
+- sisa E-70: kolom wajib, teks kriteria, Key Date diketik atau terisi saat cetak, dan penomoran kolom No karakteristik CP oleh layout cetak.
+

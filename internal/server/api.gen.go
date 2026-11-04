@@ -331,18 +331,27 @@ func (e FormatFieldArea) Valid() bool {
 
 // Defines values for FormatFieldKind.
 const (
-	FormatFieldKindDate   FormatFieldKind = "date"
-	FormatFieldKindRating FormatFieldKind = "rating"
-	FormatFieldKindRpn    FormatFieldKind = "rpn"
-	FormatFieldKindSelect FormatFieldKind = "select"
-	FormatFieldKindSymbol FormatFieldKind = "symbol"
-	FormatFieldKindText   FormatFieldKind = "text"
+	FormatFieldKindDate            FormatFieldKind = "date"
+	FormatFieldKindOperationNumber FormatFieldKind = "operation_number"
+	FormatFieldKindProcess         FormatFieldKind = "process"
+	FormatFieldKindProcessFlow     FormatFieldKind = "process_flow"
+	FormatFieldKindRating          FormatFieldKind = "rating"
+	FormatFieldKindRpn             FormatFieldKind = "rpn"
+	FormatFieldKindSelect          FormatFieldKind = "select"
+	FormatFieldKindSymbol          FormatFieldKind = "symbol"
+	FormatFieldKindText            FormatFieldKind = "text"
 )
 
 // Valid indicates whether the value is a known member of the FormatFieldKind enum.
 func (e FormatFieldKind) Valid() bool {
 	switch e {
 	case FormatFieldKindDate:
+		return true
+	case FormatFieldKindOperationNumber:
+		return true
+	case FormatFieldKindProcess:
+		return true
+	case FormatFieldKindProcessFlow:
 		return true
 	case FormatFieldKindRating:
 		return true
@@ -577,18 +586,27 @@ func (e NewFormatFieldArea) Valid() bool {
 
 // Defines values for NewFormatFieldKind.
 const (
-	NewFormatFieldKindDate   NewFormatFieldKind = "date"
-	NewFormatFieldKindRating NewFormatFieldKind = "rating"
-	NewFormatFieldKindRpn    NewFormatFieldKind = "rpn"
-	NewFormatFieldKindSelect NewFormatFieldKind = "select"
-	NewFormatFieldKindSymbol NewFormatFieldKind = "symbol"
-	NewFormatFieldKindText   NewFormatFieldKind = "text"
+	NewFormatFieldKindDate            NewFormatFieldKind = "date"
+	NewFormatFieldKindOperationNumber NewFormatFieldKind = "operation_number"
+	NewFormatFieldKindProcess         NewFormatFieldKind = "process"
+	NewFormatFieldKindProcessFlow     NewFormatFieldKind = "process_flow"
+	NewFormatFieldKindRating          NewFormatFieldKind = "rating"
+	NewFormatFieldKindRpn             NewFormatFieldKind = "rpn"
+	NewFormatFieldKindSelect          NewFormatFieldKind = "select"
+	NewFormatFieldKindSymbol          NewFormatFieldKind = "symbol"
+	NewFormatFieldKindText            NewFormatFieldKind = "text"
 )
 
 // Valid indicates whether the value is a known member of the NewFormatFieldKind enum.
 func (e NewFormatFieldKind) Valid() bool {
 	switch e {
 	case NewFormatFieldKindDate:
+		return true
+	case NewFormatFieldKindOperationNumber:
+		return true
+	case NewFormatFieldKindProcess:
+		return true
+	case NewFormatFieldKindProcessFlow:
 		return true
 	case NewFormatFieldKindRating:
 		return true
@@ -1402,7 +1420,9 @@ type FormatField struct {
 	Hidden bool            `json:"hidden"`
 
 	// Id Fixed across versions; row content uses this ID.
-	Id      string          `json:"id"`
+	Id string `json:"id"`
+
+	// Kind operation_number, process, and process_flow are filled from the row (operation number, process master, PFD steps) and never typed, like rpn (D-122, D-123).
 	Kind    FormatFieldKind `json:"kind"`
 	Label   string          `json:"label"`
 	Options *[]FieldOption  `json:"options,omitempty"`
@@ -1419,7 +1439,7 @@ type FormatField struct {
 // FormatFieldArea defines model for FormatField.Area.
 type FormatFieldArea string
 
-// FormatFieldKind defines model for FormatField.Kind.
+// FormatFieldKind operation_number, process, and process_flow are filled from the row (operation number, process master, PFD steps) and never typed, like rpn (D-122, D-123).
 type FormatFieldKind string
 
 // FormatFieldRatingScale defines model for FormatField.RatingScale.
@@ -1669,7 +1689,9 @@ type NewDocumentNumberSet struct {
 
 // NewFormatField defines model for NewFormatField.
 type NewFormatField struct {
-	Area  NewFormatFieldArea `json:"area"`
+	Area NewFormatFieldArea `json:"area"`
+
+	// Kind operation_number, process, and process_flow are filled from the row (operation number, process master, PFD steps) and never typed, like rpn (D-122, D-123).
 	Kind  NewFormatFieldKind `json:"kind"`
 	Label string             `json:"label"`
 
@@ -1683,7 +1705,7 @@ type NewFormatField struct {
 // NewFormatFieldArea defines model for NewFormatField.Area.
 type NewFormatFieldArea string
 
-// NewFormatFieldKind defines model for NewFormatField.Kind.
+// NewFormatFieldKind operation_number, process, and process_flow are filled from the row (operation number, process master, PFD steps) and never typed, like rpn (D-122, D-123).
 type NewFormatFieldKind string
 
 // NewFormatFieldRatingScale defines model for NewFormatField.RatingScale.

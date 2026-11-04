@@ -1,5 +1,5 @@
-' U8 · ERD fisik (draft 0.13, 3 November 2026, sumber migrasi 00001 sampai 00013 di sql/migrations)
-' Menggambarkan tabel PostgreSQL 18 yang sudah dibangun sampai M3.2 dan migrasi 00013 (R-UML-03: diagram
+' U8 · ERD fisik (draft 0.14, 4 November 2026, sumber migrasi 00001 sampai 00014 di sql/migrations)
+' Menggambarkan tabel PostgreSQL 18 yang sudah dibangun sampai M3.2 dan migrasi 00014 (R-UML-03: diagram
 ' fisik mengikuti kode per milestone). Tim IT boleh memakai stack lain (R-UML-02); aturan yang
 ' wajib dipertahankan ditulis di catatan setiap diagram.
 '
@@ -605,7 +605,7 @@ skinparam ArrowColor #444444
 skinparam ClassBorderColor #1F4E79
 skinparam ClassBackgroundColor #FFFFFF
 
-title U8-E · Format template (migrasi 00011 dan 00013, M3.1)
+title U8-E · Format template (migrasi 00011, 00013, dan 00014, M3.1)
 
 entity "format_templates" as format_templates {
   * id : uuid <<PK>>
@@ -707,7 +707,10 @@ end note
 
 note right of format_fields
   Identitas field yang tetap lintas versi.
-  kind: text, date, select, symbol, rating, rpn.
+  kind: text, date, select, symbol, rating, rpn,
+  operation_number, process, process_flow
+  (kolom terisi otomatis, migrasi 00014; hanya
+  area row, D-122 dan D-123).
   CHECK: rating wajib rating_scale; rating dan rpn
   wajib rating_set (1 atau 2) dan hanya di area row.
   Hak role aplikasi: SELECT dan INSERT saja, jadi

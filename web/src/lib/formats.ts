@@ -15,7 +15,10 @@ const kindKeys: Record<FormatField['kind'], MessageKey> = {
 	select: 'formatKindSelect',
 	symbol: 'formatKindSymbol',
 	rating: 'formatKindRating',
-	rpn: 'formatKindRpn'
+	rpn: 'formatKindRpn',
+	operation_number: 'formatKindOperationNumber',
+	process: 'formatKindProcess',
+	process_flow: 'formatKindProcessFlow'
 };
 
 const scaleKeys: Record<RatingCriterion['scale'], MessageKey> = {

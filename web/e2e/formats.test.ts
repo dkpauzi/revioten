@@ -11,17 +11,17 @@ test('admin mengganti label kolom PFMEA, menyembunyikan kolom, dan mengisi krite
 	await page.getByLabel(en.formatChoose).selectOption({ label: 'PFMEA AIAG 4th · PFMEA' });
 
 	// Ganti label: kolom ke-3 tetap di tempatnya dengan nama baru.
-	await page.getByRole('row', { name: /^3 Potential Failure Mode / }).getByRole('button', { name: en.formatEdit }).click();
+	await page.getByRole('row', { name: /^4 Potential Failure Mode / }).getByRole('button', { name: en.formatEdit }).click();
 	await page.getByLabel(en.formatColumnLabel, { exact: true }).first().fill('Failure Mode');
 	await page.getByRole('button', { name: en.masterSave, exact: true }).click();
 	await expect(page.getByRole('status')).toHaveText(en.formatFieldSaved.replace('{label}', 'Failure Mode'));
-	await expect(page.getByRole('row', { name: /^3 Failure Mode / })).toBeVisible();
+	await expect(page.getByRole('row', { name: /^4 Failure Mode / })).toBeVisible();
 
 	// Sembunyikan kolom: tetap di daftar, ditandai tersembunyi.
-	await page.getByRole('row', { name: /^2 Requirements / }).getByRole('button', { name: en.formatEdit }).click();
+	await page.getByRole('row', { name: /^3 Requirement / }).getByRole('button', { name: en.formatEdit }).click();
 	await page.getByLabel(en.formatHidden, { exact: true }).check();
 	await page.getByRole('button', { name: en.masterSave, exact: true }).click();
-	await expect(page.getByRole('row', { name: /^2 Requirements / })).toContainText(en.formatYes);
+	await expect(page.getByRole('row', { name: /^3 Requirement / })).toContainText(en.formatYes);
 
 	// Kriteria skala diisi dari form yang dipakai.
 	await page.getByLabel(en.formatRatingCriteriaFor.replace('{scale}', en.formatScaleSeverity).replace('{value}', '10')).fill('Hazardous without warning');
@@ -31,7 +31,7 @@ test('admin mengganti label kolom PFMEA, menyembunyikan kolom, dan mengisi krite
 	// Setelah dimuat ulang, perubahan tetap ada.
 	await page.reload();
 	await page.getByLabel(en.formatChoose).selectOption({ label: 'PFMEA AIAG 4th · PFMEA' });
-	await expect(page.getByRole('row', { name: /^3 Failure Mode / })).toBeVisible();
+	await expect(page.getByRole('row', { name: /^4 Failure Mode / })).toBeVisible();
 	await expect(page.getByLabel(en.formatRatingCriteriaFor.replace('{scale}', en.formatScaleSeverity).replace('{value}', '10'))).toHaveValue(
 		'Hazardous without warning'
 	);
@@ -46,10 +46,11 @@ test('Penyusun hanya melihat format template', async ({ page }) => {
 	await page.getByRole('link', { name: en.navFormatTemplates }).click();
 	await expect(page.getByText(en.formatReadOnly)).toBeVisible();
 	await page.getByLabel(en.formatChoose).selectOption({ label: 'CP · CP' });
-	await expect(page.getByRole('row', { name: /^6 Special Characteristic / })).toBeVisible();
-	// Tinjauan desain UI: Process Flow dibentuk dari PFD (R-DOC-09), jadi
-	// tersembunyi di isi awal, dan Revision dipasang sistem (R-REV-09).
-	await expect(page.getByRole('row', { name: /^1 Process Flow / })).toContainText(en.formatYes);
+	await expect(page.getByRole('row', { name: /^9 Special Characteristics / })).toBeVisible();
+	// Process Flow tampil dan tercetak, terisi dari PFD (D-122); nama proses
+	// terisi dari master proses (D-123); Revision dipasang sistem (R-REV-09).
+	await expect(page.getByRole('row', { name: /^1 Process Flow / })).toContainText(en.formatKindProcessFlow);
+	await expect(page.getByRole('row', { name: /^3 Process Name \/ Operation Description / })).toContainText(en.formatKindProcess);
 	await expect(page.getByText(en.formatSymbolsAutomatic.replace('{names}', 'Revision'))).toBeVisible();
 	await expect(page.getByRole('button', { name: en.formatEdit })).toHaveCount(0);
 	await expect(page.getByRole('button', { name: en.formatCreate })).toHaveCount(0);
@@ -64,12 +65,12 @@ test('admin menyalin format template CP lalu menambah kolom pilihan', async ({ p
 	await page.getByRole('button', { name: en.formatCreate }).click();
 	await expect(page.getByRole('status')).toHaveText(en.formatCreated.replace('{name}', 'CP with phase'));
 	// Salinan langsung terbuka dengan kolom yang sama.
-	await expect(page.getByRole('row', { name: /^13 Reaction Plan / })).toBeVisible();
+	await expect(page.getByRole('row', { name: /^16 Reaction Plan / })).toBeVisible();
 
 	await page.getByLabel(en.formatKind).selectOption({ label: en.formatKindSelect });
 	await page.getByLabel(en.formatColumnLabel, { exact: true }).fill('Phase');
 	await page.getByLabel(en.formatOptions).fill('Prototype\nPre-Launch\nProduction');
 	await page.getByRole('button', { name: en.formatAddField }).click();
 	await expect(page.getByRole('status')).toHaveText(en.formatFieldAdded.replace('{label}', 'Phase'));
-	await expect(page.getByRole('row', { name: /^14 Phase / })).toContainText('Prototype, Pre-Launch, Production');
+	await expect(page.getByRole('row', { name: /^17 Phase / })).toContainText('Prototype, Pre-Launch, Production');
 });

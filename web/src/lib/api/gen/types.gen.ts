@@ -986,7 +986,10 @@ export type FormatField = {
      */
     id: string;
     area: 'header' | 'row';
-    kind: 'text' | 'date' | 'select' | 'symbol' | 'rating' | 'rpn';
+    /**
+     * operation_number, process, and process_flow are filled from the row (operation number, process master, PFD steps) and never typed, like rpn (D-122, D-123).
+     */
+    kind: 'text' | 'date' | 'select' | 'symbol' | 'rating' | 'rpn' | 'operation_number' | 'process' | 'process_flow';
     rating_scale?: 'severity' | 'occurrence' | 'detection';
     /**
      * For rating and rpn, 1 for the current values and 2 for the action results.
@@ -1012,7 +1015,10 @@ export type FieldOption = {
 
 export type NewFormatField = {
     area: 'header' | 'row';
-    kind: 'text' | 'date' | 'select' | 'symbol' | 'rating' | 'rpn';
+    /**
+     * operation_number, process, and process_flow are filled from the row (operation number, process master, PFD steps) and never typed, like rpn (D-122, D-123).
+     */
+    kind: 'text' | 'date' | 'select' | 'symbol' | 'rating' | 'rpn' | 'operation_number' | 'process' | 'process_flow';
     label: string;
     required?: boolean;
     rating_scale?: 'severity' | 'occurrence' | 'detection';

@@ -4,6 +4,7 @@
 - Sumber: desain UI 2 November 2026 (canvas "Desain UI Sistem PFD PFMEA CP", baris v2) dan tiga register nomor dokumen Excel yang dipakai sekarang (PL1, PL3, dan register IC/AVI/AJI/GW), dibaca 3 November 2026.
 - Status semua butir: **Terbuka**. Setiap butir menunggu keputusan pemilik sebelum masuk brief sebagai R- atau D-. Sampai diputuskan, elemen UML yang memakainya berstereotype `<<usulan>>`.
 - Isi register hanya diringkas sebagai jumlah. Nomor dokumen yang disebut di sini adalah contoh pola, bukan daftar.
+- Pembaruan 4 November 2026: dua temuan register sudah diputuskan pemilik. Kode customer tetap dua huruf sesuai WI (E-74, D-125), dan register PL1 dan PL3 adalah register Project Leader (E-75, D-126). Butir UX-01 sampai UX-07 sendiri tetap Terbuka.
 
 | ID | Usulan | Asal | Dampak ke UML | Aturan terkait |
 |---|---|---|---|---|

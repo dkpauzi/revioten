@@ -1,7 +1,7 @@
 # U1 · Glosarium
 
-- Paket UML: draft 0.13, 3 November 2026 (draft 0.12: 3 November 2026; draft 0.11, 0.10, 0.9, 0.8, dan 0.7: 31, 31, 30, 30, dan 27 Oktober 2026). Draft 0.12 menambah istilah dari desain UI 2 November 2026 dan temuan register nomor 3 November 2026, bertanda UX-xx (`usulan-desain-ui.md`). Draft 0.13 mencatat simbol Revision yang dipasang sistem (migrasi 00013).
-- Sumber: brief desain v1.20, termasuk temuan dari dokumen TR-020 (brief bagian 21). Nama jabatan mengikuti bagan organisasi NPI (update 22 Januari 2026). Nama orang tidak dicantumkan. Setiap istilah merujuk ke ID di brief (R-UML-01).
+- Paket UML: draft 0.14, 4 November 2026 (draft 0.13 dan 0.12: 3 November 2026; draft 0.11, 0.10, 0.9, 0.8, dan 0.7: 31, 31, 30, 30, dan 27 Oktober 2026). Draft 0.12 menambah istilah dari desain UI 2 November 2026 dan temuan register nomor 3 November 2026, bertanda UX-xx (`usulan-desain-ui.md`). Draft 0.13 mencatat simbol Revision yang dipasang sistem (migrasi 00013). Draft 0.14 menambah kolom terisi otomatis dan aturan cetak tanda revisi (D-121 sampai D-123).
+- Sumber: brief desain v1.21, termasuk temuan dari dokumen TR-020 (brief bagian 21). Nama jabatan mengikuti bagan organisasi NPI (update 22 Januari 2026). Nama orang tidak dicantumkan. Setiap istilah merujuk ke ID di brief (R-UML-01).
 - Bahasa: penjelasan dalam bahasa Indonesia. Nama jabatan, nama standar, dan tahap tanda tangan memakai istilah yang sama dengan brief (R-UML-05, usulan).
 - Kolom **Istilah layar (Inggris)** (E-19, D-98): istilah yang dipakai di layar dan di katalog teks `web/src/lib/i18n/en.ts`, karena layar berbahasa Inggris untuk saat ini (D-96). Istilah baru di layar ditambahkan ke sini lebih dulu.
 - Kolom **Cek WI**:
@@ -49,6 +49,7 @@
 | Part number | Part number | Nomor part customer, milik satu model. | | R-DOC-08 | Belum |
 | Kolom | Column | Satu kolom baris dokumen di format template. ID-nya tetap; labelnya hanya tampilan, jadi bisa diganti tanpa merusak data. | Column | R-TPL-02 | Tidak perlu |
 | Field header | Header field | Isian di bagian header dokumen yang diketik tangan, misalnya Core Team atau Key Date. ID-nya tetap, seperti kolom. | | R-TPL-01, R-CMP-01 | Tidak perlu |
+| Kolom terisi otomatis | Filled from the row | Kolom yang tampil dan tercetak seperti kolom lain, tetapi isinya tidak diketik: nomor operasi dan nama proses dari baris (D-123), Process Flow dari langkah PFD (D-122). RPN juga tidak diketik karena dihitung. | | D-122, D-123, R-TPL-02 | Tidak perlu |
 | Kolom tersembunyi | Hidden | Kolom atau field header yang tidak dipakai lagi. Tidak dihapus: datanya tetap tersimpan dan tetap sah. | | R-TPL-02 | Tidak perlu |
 | Metode risiko | Risk method | RPN (AIAG 4th), AP (AIAG-VDA), atau tanpa metode risiko (PFD dan CP). Tetap sejak versi format template dibuat (ASUMSI E-70). | | R-TPL-02 | Tidak perlu |
 | Tabel skala | Rating tables | Kriteria nilai 1 sampai 10 untuk severity, occurrence, dan detection di satu versi format template. Teksnya diisi dari form yang dipakai. | | R-TPL-01 | Belum |
@@ -151,7 +152,7 @@
 | Catatan cetak | Print log | Siapa mencetak, kapan, dan nomor salinannya. (usulan) | Print log | R-PRT-04 | Tidak perlu |
 | QR | QR | Kode di cetakan yang membuka halaman verifikasi. Opsional dengan saklar, dan saat ini mati karena belum dipakai. | | D-62, R-APR-16 | Tidak perlu |
 | Halaman verifikasi | Verification page | Halaman yang menampilkan status dokumen: berlaku, digantikan, atau dibatalkan. Bisa dibuka dari QR bila QR menyala, atau dari dalam sistem. (usulan) | | R-APR-03, R-APR-16 | Tidak perlu |
-| Tanda revisi | Revision mark | Segitiga berisi nomor revisi di samping baris yang berubah pada revisi itu, dibuat otomatis dari diff. (usulan) | Revision mark | R-REV-09 | Belum |
+| Tanda revisi | Revision mark | Segitiga berisi nomor revisi di samping baris yang berubah pada revisi itu, dibuat otomatis dari diff. Yang tercetak hanya tanda revisi yang berlaku; tanda revisi lama hilang dari cetakan, tetapi perubahannya tetap bisa dilihat di riwayat dan diff (D-121). | Revision mark | R-REV-09, D-121 | Belum |
 | Layout | Layout | Template Excel beserta pemetaan sel, terpisah dari data baris. | | R-PRT-02 | Tidak perlu |
 
 ## 6. Jabatan

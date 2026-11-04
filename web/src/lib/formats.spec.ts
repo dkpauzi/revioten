@@ -25,6 +25,7 @@ describe('teks format template', () => {
 			en.formatKindRatingDetail.replace('{scale}', en.formatScaleSeverity).replace('{set}', en.formatSetResult)
 		);
 		expect(kindText(field({ kind: 'rpn', rating_set: 1 }))).toBe(en.formatKindRpnDetail.replace('{set}', en.formatSetCurrent));
+		expect(kindText(field({ kind: 'process_flow' }))).toBe(en.formatKindProcessFlow);
 	});
 
 	it('menulis template dengan jenis dokumen dan kode customer bila ada', () => {

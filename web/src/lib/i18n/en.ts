@@ -308,7 +308,7 @@ export const en = {
 	numberImportAligned: 'All running numbers are aligned.',
 	formatTitle: 'Format templates',
 	formatIntro:
-		'A format template sets the header fields, columns, risk method, rating tables, and symbols of a PFD, PFMEA, or CP. A field keeps its ID when its label changes, so documents keep their data. Fields are hidden, never deleted.',
+		'A format template sets the header fields, columns, risk method, rating tables, and symbols of a PFD, PFMEA, or CP. A field keeps its ID when its label changes, so documents keep their data. Fields are hidden, never deleted. Some columns are never typed: the operation number, the process, and the process flow are filled from the row, and RPN is calculated.',
 	formatLoading: 'Loading…',
 	formatReadOnly: 'Only the admin changes format templates.',
 	formatChoose: 'Format template',
@@ -359,6 +359,9 @@ export const en = {
 	formatKindSymbol: 'Symbol',
 	formatKindRating: 'Rating',
 	formatKindRpn: 'RPN',
+	formatKindOperationNumber: 'Operation number, filled from the row',
+	formatKindProcess: 'Process, filled from the process master',
+	formatKindProcessFlow: 'Process flow, filled from the PFD',
 	formatKindRatingDetail: 'Rating: {scale}, {set}',
 	formatKindRpnDetail: 'RPN, {set}',
 	formatSetCurrent: 'current',

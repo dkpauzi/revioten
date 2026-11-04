@@ -1,6 +1,6 @@
 # Sistem PFD, PFMEA, dan CP · ringkasan untuk desain UI/UX
 
-- **Dibuat:** 31 Oktober 2026, sesudah Tahap 2 (penomoran dokumen) selesai; diperbarui 31 Oktober 2026 sesudah M3.1 (format template) dan M3.2 (pustaka proses), dan 3 November 2026 sesudah tinjauan desain UI dan UML draft 0.12.
+- **Dibuat:** 31 Oktober 2026, sesudah Tahap 2 (penomoran dokumen) selesai; diperbarui 31 Oktober 2026 sesudah M3.1 (format template) dan M3.2 (pustaka proses), dan 3 November 2026 sesudah tinjauan desain UI dan UML draft 0.12, serta 4 November 2026 sesudah keputusan pemilik D-121 sampai D-126.
 - **Hasil desain UI sejauh ini:** kanvas "Desain UI Sistem PFD PFMEA CP" (18 artboard, baris v2 disarankan). Usulannya dicatat sebagai UX-01 sampai UX-07 di `docs/uml/usulan-desain-ui.md`, semuanya masih menunggu keputusan pemilik. Hasil tinjauan Claude Code ada di `docs/catatan/Tinjauan-desain-UI-UML-0.12.md`.
 - **Untuk:** Claude chat, atau siapa pun yang mendesain tampilan web ini, supaya konsepnya bisa dipahami tanpa membaca kode.
 - **Sumber:**
@@ -26,7 +26,7 @@
 10. Keputusan, temuan, dan pertanyaan terbuka
 11. Rencana tahap dan statusnya
 12. Saran untuk sesi desain UI/UX (usulan)
-- Lampiran A. Semua keputusan (D-01 sampai D-120)
+- Lampiran A. Semua keputusan (D-01 sampai D-126)
 - Lampiran B. Daftar use case (U3)
 - Lampiran C. Glosarium dan istilah layar (U1)
 - Lampiran D. Operasi API yang sudah ada
@@ -346,7 +346,7 @@ Menu disembunyikan selama password wajib diganti.
 | System settings (`/admin/settings`) | Admin (A-3) | Saklar "Sign date in every signature slot" (sekarang mati). |
 | Customers (`/customers`) | Semua melihat; Admin (A-2) mengubah | Project groups (kode seperti GR1, nama). Customers: kode dua huruf, nama, Project Group, status Active atau Inactive, dan kode sebelumnya. Aksinya Edit dan Change code (kode lama tetap di riwayat). Ada juga formulir tambah customer. |
 | Models and part numbers (`/models`) | Semua melihat; Admin mengubah | Pilih customer, lalu kelola Model groups (tambah, ganti nama), Models (tambah, ubah nama dan group), dan Part numbers (tambah, ubah; nama part opsional). |
-| Format templates (`/format-templates`) | Semua melihat; Admin (A-2) mengubah | Pilih template (PFD, PFMEA AIAG 4th, CP, atau buatan sendiri). Terlihat jenis dokumen, metodologi, customer, metode risiko, dan versi (Version 1 · Draft). Tabel Header fields dan Columns: No., Label, Kind, Required, Hidden, Options, dengan aksi Edit, naik, dan turun. Bagian lain: Add a header field or column, Highlight rule (RPN di atas, severity paling sedikit), Rating tables (Severity, Occurrence, Detection nilai 1 sampai 10 dengan teks kriteria), Symbols (satu per baris), dan Add a format template (kosong atau salinan). Kolom disembunyikan, tidak pernah dihapus. | Sejak 3 November 2026 (migrasi 00013): bagian simbol menyebut simbol yang dipasang sistem (Revision), dan isi awal menyembunyikan kolom Process Flow di CP serta Process Step / Function di PFMEA.
+| Format templates (`/format-templates`) | Semua melihat; Admin (A-2) mengubah | Pilih template (PFD, PFMEA AIAG 4th, CP, atau buatan sendiri). Terlihat jenis dokumen, metodologi, customer, metode risiko, dan versi (Version 1 · Draft). Tabel Header fields dan Columns: No., Label, Kind, Required, Hidden, Options, dengan aksi Edit, naik, dan turun. Bagian lain: Add a header field or column, Highlight rule (RPN di atas, severity paling sedikit), Rating tables (Severity, Occurrence, Detection nilai 1 sampai 10 dengan teks kriteria), Symbols (satu per baris), dan Add a format template (kosong atau salinan). Kolom disembunyikan, tidak pernah dihapus. | Sejak 3 November 2026 (migrasi 00013): bagian simbol menyebut simbol yang dipasang sistem (Revision). Sejak 4 November 2026 (migrasi 00014): isi awal mengikuti form Excel asli, dan kolom nomor operasi, nama proses, serta Process Flow tampil dengan jenis "filled from the row", "filled from the process master", atau "filled from the PFD", karena isinya tidak diketik (D-122 sampai D-124).
 | Processes (`/processes`) | Semua melihat; Template maintainer (E-6) mengubah | Daftar proses beserta aliasnya, tambah proses (nama, dan alias satu per baris), dan ubah. Nama dan alias berbagi satu ruang nama tanpa membedakan huruf besar kecil. |
 | Process templates (`/process-templates`) | Semua melihat; Template maintainer (E-6) mengubah | Pilih proses. Bila belum ada template: teks "This process has no process template yet." dan tombol Add process template. Terlihat versi (Version 1 · Draft). Tabel Sub-processes: No., Sub-process, Points (jumlah per jenis dokumen, misalnya "PFD 1 · PFMEA 2 · CP 1"), Hidden, dengan aksi Points, Edit, naik, dan turun; formulir Add a sub-process. Setelah Points ditekan: judul "Points of {sub-proses}", satu tabel per PFD, PFMEA, dan CP (No., Text, Hidden, aksi Edit, naik, dan turun), dan formulir Add a point (Document type, Text). Tidak ada tombol hapus; yang tidak dipakai disembunyikan. |
 | Document types and number codes (`/document-types`) | Semua melihat; Admin mengubah | Number settings: kode pabrik, pola nomor (`{prefix}-{customer}-{seq}`), digit revisi, dan keterangan format nomor berjalan. Document types: nama, huruf, awalan, dan tanda "Built in this system" untuk PFD, PFMEA, CP; bisa menambah jenis lain dari WI. Special codes: kode dan artinya (ZZ, HSE). |
@@ -372,7 +372,7 @@ Menu disembunyikan selama password wajib diganti.
 - **Jabatan dan rute:** jabatan, pemegang jabatan (per Project Group bila perlu), rute approval, slot, dan jabatan per slot. Rute default disimpan per customer, dan rute per jenis perubahan disimpan di jenis perubahan.
 - **Master dokumen dan perubahan:** jenis dokumen, kode khusus, pengaturan nomor, jenis perubahan, sumber perubahan, kategori 4M, dan pengaturan sistem.
 - **Register nomor:** penghitung, batch permintaan (satu nomor, set, atau impor), dan nomor dokumen.
-- **Format template (M3.1):** template, versi, identitas field, field per versi, tabel skala, dan simbol. Simbol punya tanda otomatis sejak migrasi 00013: Revision dipasang sistem pada baris yang berubah, tidak dipilih tangan (R-REV-09).
+- **Format template (M3.1):** template, versi, identitas field, field per versi, tabel skala, dan simbol. Simbol punya tanda otomatis sejak migrasi 00013: Revision dipasang sistem pada baris yang berubah, tidak dipilih tangan (R-REV-09). Sejak migrasi 00014 ada kolom terisi otomatis: nomor operasi, proses, dan Process Flow.
 - **Process template (M3.2):** satu template per proses, versi, identitas sub-proses dan poin, serta nama, teks, urutan, dan tanda tersembunyi per versi.
 - **Audit log:** append-only dengan hash chain.
 - **Belum ada:** dokumen, baris, revisi, cakupan dan penerbitan template, perubahan, lampiran, dan cetakan.
@@ -510,12 +510,12 @@ Disalin dari `docs/evaluasi-desain.md`. Kode memakai asumsi paling aman untuk se
 | E-67 | Pendaftaran nomor untuk customer nonaktif | Celah | Terbuka |
 | E-68 | Perubahan status nomor yang dikerjakan tangan di Tahap 2, dan alasannya | Ambigu | Terbuka |
 | E-69 | Urutan kunci transaksi penomoran: deadlock dengan ganti kode customer | Sulit dibangun | Terbuka |
-| E-70 | Isi awal format template dan aturan field yang belum ditetapkan | Celah | Terbuka |
+| E-70 | Isi awal format template dan aturan field yang belum ditetapkan | Celah | Diputuskan sebagian (D-124) |
 | E-71 | Aturan sorot PFMEA: arti "severity 8" dan nilai mana yang disorot | Ambigu | Terbuka |
 | E-72 | Satuan process template: satu per proses, atau satu pustaka untuk semua proses | Ambigu | Terbuka |
 | E-73 | Isi poin process template dan format template yang diikutinya | Celah | Terbuka |
-| E-74 | Kode customer tiga huruf di register lama bertentangan dengan D-100 (kode dua huruf) | Kontradiksi | Terbuka |
-| E-75 | Register terpisah PL1 dan PL3: plant, line, atau Project Leader (Q-19) | Ambigu | Terbuka |
+| E-74 | Kode customer tiga huruf di register lama bertentangan dengan D-100 (kode dua huruf) | Kontradiksi | Diputuskan (D-125) |
+| E-75 | Register terpisah per Project Leader, bukan per plant (Q-19) | Ambigu | Diputuskan (D-126) |
 | E-76 | Proses baru diminta saat menyusun, dan urutan standar proses di pustaka | Celah | Terbuka |
 
 ### 10.3 Pertanyaan terbuka di brief
@@ -602,7 +602,7 @@ Bagian ini usulan Claude Code, bukan keputusan.
 6. **Aset dibundel bersama aplikasi** (font, ikon), bukan diambil dari CDN, karena aplikasi self-hosted di jaringan internal.
 7. **Simpan hasil desain** (user flow, wireframe, dan keputusan desain) di repo bersama paket UML (`docs/uml/`) atau di folder desain baru. Istilah baru yang muncul dari desain dicatat sebagai usulan untuk glosarium U1.
 
-## Lampiran A. Semua keputusan (D-01 sampai D-120)
+## Lampiran A. Semua keputusan (D-01 sampai D-126)
 
 Teks keputusan disalin dari brief bagian 6 (bahasa Inggris), tanpa kolom sumbernya. Nomor dokumen internal diganti keterangan umum.
 
@@ -728,6 +728,12 @@ Teks keputusan disalin dari brief bagian 6 (bahasa Inggris), tanpa kolom sumbern
 | D-118 | Project-group-scoped rights do not apply to operations without a customer. Lists across customers filter per customer. The yokoten target search (M5.9) gets the allowed customers from the permission function, so scoped users keep finding targets in their own project group. | [DECIDED] |
 | D-119 | Local backup (M1.7) is built before M2.1: encrypted backups to another disk, the audit chain tip copied into the backup manifest, and a tested restore into an empty database. Disk encryption of the laptop is the owner's step. | [DECIDED] |
 | D-120 | The admin account holds the admin rights (A-1 to A-4) plus the basic view rights every account has (L-1 to L-3), and never holds work roles. Amends R-SEC-13. | [DECIDED] |
+| D-121 | Only the revision marks of the current revision print. When a document goes from revision 1 to revision 2, the revision 1 marks disappear from the print, and every change stays viewable in the system: frozen released revisions and the diff and history between any two revisions. | [DECIDED] |
+| D-122 | The Process Flow column of the CP always prints, filled from the PFD steps. Making the process flow easy to adjust, especially the connector symbols at page breaks, is a main goal. | [DECIDED] |
+| D-123 | The process name and the operation number always show and print in the PFD, PFMEA, and CP, as columns filled from the row, never typed. | [DECIDED] |
+| D-124 | The column layout of the UI design artboards "current form layout" matches the original Excel forms, and the seeded format templates follow it. | [DECIDED] |
+| D-125 | Customer codes stay two letters, as the numbering work instruction allows. Numbers with three-letter codes in old registers are reported by the import and not imported, for now. | [DECIDED] |
+| D-126 | The separate number registers are kept per Project Leader, not per plant. Numbering stays per customer code and document type. | [DECIDED] |
 
 ## Lampiran B. Daftar use case (U3)
 
@@ -865,6 +871,7 @@ Disalin dari `docs/uml/U1-glosarium.md`. Kolom Istilah layar adalah teks yang di
 | Part number | Part number | Nomor part customer, milik satu model. |
 | Kolom | Column | Satu kolom baris dokumen di format template. ID-nya tetap; labelnya hanya tampilan, jadi bisa diganti tanpa merusak data. |
 | Field header | Header field | Isian di bagian header dokumen yang diketik tangan, misalnya Core Team atau Key Date. ID-nya tetap, seperti kolom. |
+| Kolom terisi otomatis | Filled from the row | Kolom yang tampil dan tercetak, tetapi isinya tidak diketik: nomor operasi dan nama proses dari baris (D-123), Process Flow dari langkah PFD (D-122). |
 | Kolom tersembunyi | Hidden | Kolom atau field header yang tidak dipakai lagi. Tidak dihapus: datanya tetap tersimpan dan tetap sah. |
 | Metode risiko | Risk method | RPN (AIAG 4th), AP (AIAG-VDA), atau tanpa metode risiko (PFD dan CP). Tetap sejak versi format template dibuat (ASUMSI E-70). |
 | Tabel skala | Rating tables | Kriteria nilai 1 sampai 10 untuk severity, occurrence, dan detection di satu versi format template. Teksnya diisi dari form yang dipakai. |
@@ -957,7 +964,7 @@ Disalin dari `docs/uml/U1-glosarium.md`. Kolom Istilah layar adalah teks yang di
 | Catatan cetak | Print log | Siapa mencetak, kapan, dan nomor salinannya. (usulan) |
 | QR | QR | Kode di cetakan yang membuka halaman verifikasi. Opsional dengan saklar, dan saat ini mati karena belum dipakai. |
 | Halaman verifikasi | Verification page | Halaman yang menampilkan status dokumen: berlaku, digantikan, atau dibatalkan. Bisa dibuka dari QR bila QR menyala, atau dari dalam sistem. (usulan) |
-| Tanda revisi | Revision mark | Segitiga berisi nomor revisi di samping baris yang berubah pada revisi itu, dibuat otomatis dari diff. (usulan) |
+| Tanda revisi | Revision mark | Segitiga berisi nomor revisi di samping baris yang berubah pada revisi itu, dibuat otomatis dari diff. Yang tercetak hanya tanda revisi yang berlaku; perubahan lama tetap bisa dilihat di riwayat dan diff (D-121). |
 | Layout | Layout | Template Excel beserta pemetaan sel, terpisah dari data baris. |
 
 ### 6. Jabatan

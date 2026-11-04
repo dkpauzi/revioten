@@ -158,13 +158,18 @@ func TestSeededTemplates(t *testing.T) {
 	if got := labels(v, AreaHeader); !slices.Equal(got, []string{"Process or Line", "Process Responsibility", "Key Date", "Core Team"}) {
 		t.Errorf("header PFMEA: %v", got)
 	}
-	if got := labels(v, AreaRow); len(got) != 19 || got[0] != "Process Step / Function" || got[11] != "RPN" || got[18] != "Result RPN" {
+	// Kolom mengikuti form Excel asli (D-124, migrasi 00014). Nomor operasi dan
+	// nama proses terisi otomatis dari baris dan tetap tampil (D-123).
+	wantPFMEA := []string{"Process Item No.", "Process Step / Function", "Requirement", "Potential Failure Mode",
+		"Potential Effect(s) of Failure", "Severity", "Class", "Potential Cause(s) / Mechanism(s) of Failure",
+		"Current Process Controls Prevention", "Occurrence", "Current Process Controls Detection", "Detection", "RPN",
+		"Recommended Action", "Responsibility & Target Completion Date", "Actions Taken & Completion Date",
+		"Result Severity", "Result Occurrence", "Result Detection", "Result RPN"}
+	if got := labels(v, AreaRow); !slices.Equal(got, wantPFMEA) {
 		t.Errorf("kolom PFMEA: %v", got)
 	}
-	// Migrasi 00013: kolom ini berisi proses baris, yang sudah menjadi atribut
-	// baris (ASUMSI E-70), jadi disembunyikan di isi awal.
-	if step := field(t, v, "Process Step / Function"); !step.Hidden {
-		t.Errorf("Process Step / Function harus tersembunyi: %+v", step)
+	if no, step := field(t, v, "Process Item No."), field(t, v, "Process Step / Function"); no.Kind != KindOperationNumber || step.Kind != KindProcess {
+		t.Errorf("kolom proses PFMEA: %+v dan %+v", no, step)
 	}
 	if s := field(t, v, "Result Severity"); s.Kind != KindRating || s.RatingScale != ScaleSeverity || s.RatingSet != 2 {
 		t.Errorf("Result Severity: %+v", s)
@@ -179,20 +184,35 @@ func TestSeededTemplates(t *testing.T) {
 	}
 
 	cp := f.version(t, "CP")
-	if got := labels(cp, AreaRow); cp.RiskMethod != RiskNone || len(cp.Ratings) != 0 || len(got) != 13 || got[5] != "Special Characteristic" {
+	wantCP := []string{"Process Flow", "No", "Process Name / Operation Description",
+		"Machine, Equipment, Jigs, Fixture, Tools for Mfg", "Product Characteristics", "Product Specification / Tolerance",
+		"Process Characteristics", "Process Specification / Tolerance", "Special Characteristics", "Equipment", "Method",
+		"Frequency", "PIC", "Relevant Document", "Pokayoke", "Reaction Plan"}
+	if got := labels(cp, AreaRow); cp.RiskMethod != RiskNone || len(cp.Ratings) != 0 || !slices.Equal(got, wantCP) {
 		t.Errorf("CP: metode %s, %d tabel skala, kolom %v", cp.RiskMethod, len(cp.Ratings), got)
 	}
-	// Kolom Process Flow di CP dibentuk dari PFD (R-DOC-09), jadi
-	// disembunyikan di isi awal (migrasi 00013). Kolom lain tetap terlihat.
-	for _, fl := range cp.Fields {
-		if fl.Hidden != (fl.Label == "Process Flow") {
-			t.Errorf("CP %s: hidden %v", fl.Label, fl.Hidden)
+	// Process Flow dibentuk dari PFD dan selalu tercetak (D-122, R-DOC-09).
+	if flow := field(t, cp, "Process Flow"); flow.Kind != KindProcessFlow {
+		t.Errorf("Process Flow CP: %+v", flow)
+	}
+	if special := field(t, cp, "Special Characteristics"); special.Kind != KindSymbol {
+		t.Errorf("Special Characteristics: %+v", special)
+	}
+	// Tidak ada kolom isi awal yang disembunyikan.
+	for _, version := range []FormatVersion{v, cp} {
+		for _, fl := range version.Fields {
+			if fl.Hidden {
+				t.Errorf("%s tersembunyi", fl.Label)
+			}
 		}
 	}
 	if !cp.Symbols[1].Automatic {
 		t.Errorf("simbol Revision di CP harus otomatis: %+v", cp.Symbols)
 	}
 	pfd := f.version(t, "PFD")
+	if got := labels(pfd, AreaRow); !slices.Equal(got, []string{"No", "Process", "Flow Symbol", "NG Disposition"}) {
+		t.Errorf("kolom PFD: %v", got)
+	}
 	if flow := field(t, pfd, "Flow Symbol"); flow.Kind != KindSelect || len(flow.Options) != 6 || flow.Options[1] != (Option{Key: "alternate_process", Label: "Alternate Process"}) {
 		t.Errorf("Flow Symbol: %+v", flow)
 	}
@@ -207,7 +227,7 @@ func TestRenameKeepsData(t *testing.T) {
 	ctx := t.Context()
 	v := f.version(t, "PFMEA AIAG 4th")
 	mode, sev, occ, det := field(t, v, "Potential Failure Mode"), field(t, v, "Severity"), field(t, v, "Occurrence"), field(t, v, "Detection")
-	req, class := field(t, v, "Requirements"), field(t, v, "Classification")
+	req, class := field(t, v, "Requirement"), field(t, v, "Class")
 	content := map[string]any{
 		mode.ID: "Solder bridge", sev.ID: 9.0, occ.ID: 3.0, det.ID: 4.0,
 		req.ID: "IPC-A-610 class 2", class.ID: "critical_process",
@@ -247,7 +267,7 @@ func TestRenameKeepsData(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if added.Position != 20 || !field(t, v, "Requirements (old)").Hidden {
+	if added.Position != 21 || !field(t, v, "Requirements (old)").Hidden {
 		t.Errorf("kolom baru di urutan %d; Requirements tersembunyi %v", added.Position, field(t, v, "Requirements (old)").Hidden)
 	}
 }
@@ -274,6 +294,10 @@ func TestFieldRules(t *testing.T) {
 		{"rating tanpa skala", pfmeaV, NewField{Area: AreaRow, Kind: KindRating, Label: "S baru", RatingSet: 1}, []string{"rating_scale:required"}},
 		{"rating ganda", pfmeaV, NewField{Area: AreaRow, Kind: KindRating, Label: "S baru", RatingScale: ScaleSeverity, RatingSet: 1}, []string{"rating_scale:taken"}},
 		{"RPN di CP", cp, NewField{Area: AreaRow, Kind: KindRPN, Label: "RPN", RatingSet: 1}, []string{"kind:not_allowed"}},
+		// Kolom terisi otomatis hanya kolom baris, satu per jenis (D-122, D-123).
+		{"proses di header", pfmeaV, NewField{Area: AreaHeader, Kind: KindProcess, Label: "Proses"}, []string{"kind:not_allowed"}},
+		{"kolom proses ganda", pfmeaV, NewField{Area: AreaRow, Kind: KindProcess, Label: "Process 2"}, []string{"kind:taken"}},
+		{"process flow ganda", cp, NewField{Area: AreaRow, Kind: KindProcessFlow, Label: "Flow 2"}, []string{"kind:taken"}},
 		{"pilihan kosong", pfmeaV, NewField{Area: AreaRow, Kind: KindSelect, Label: "Phase"}, []string{"options:required"}},
 		{"pilihan kembar", pfmeaV, NewField{Area: AreaRow, Kind: KindSelect, Label: "Phase", Options: []Option{{Label: "Production"}, {Label: "production"}}}, []string{"options:taken"}},
 	}
@@ -288,6 +312,16 @@ func TestFieldRules(t *testing.T) {
 	if _, err := f.s.AddField(ctx, f.admin, pfmeaV.ID, NewField{Area: AreaRow, Kind: KindText, Label: "potential failure mode"}); !slices.Equal(problemCodes(t, err), []string{"label:taken"}) {
 		t.Errorf("label kembar (beda huruf besar kecil): %v", err)
 	}
+	// Template kosong boleh menambah kolom terisi otomatis, misalnya format CP
+	// customer yang dibuat dari nol.
+	empty, err := f.s.CreateFormatTemplate(ctx, f.admin, NewTemplate{Name: "CP kosong", DocumentTypeID: f.template(t, "CP").DocumentTypeID, RiskMethod: RiskNone})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ev, err := f.s.AddField(ctx, f.admin, empty.Versions[0].ID, NewField{Area: AreaRow, Kind: KindProcessFlow, Label: "Process Flow"})
+	if err != nil || len(ev.Fields) != 1 || ev.Fields[0].Kind != KindProcessFlow {
+		t.Errorf("tambah Process Flow: %+v, %v", ev.Fields, err)
+	}
 
 	updates := []struct {
 		name  string
@@ -298,7 +332,7 @@ func TestFieldRules(t *testing.T) {
 	}{
 		{"label kosong", pfmeaV, mode, FieldUpdate{}, []string{"label:required"}},
 		{"tersembunyi dan wajib", pfmeaV, mode, FieldUpdate{Label: "Mode", Hidden: new(true), Required: new(true)}, []string{"required:not_allowed"}},
-		{"urutan di luar", pfmeaV, mode, FieldUpdate{Label: "Mode", Position: new(20)}, []string{"position:invalid_format"}},
+		{"urutan di luar", pfmeaV, mode, FieldUpdate{Label: "Mode", Position: new(21)}, []string{"position:invalid_format"}},
 		{"pilihan dihapus", pfd, flow, FieldUpdate{Label: "Flow Symbol", Options: flow.Options[:5]}, []string{"options:not_allowed"}},
 		{"pilihan untuk teks", pfmeaV, mode, FieldUpdate{Label: "Mode", Options: []Option{{Label: "A"}}}, []string{"options:not_allowed"}},
 	}
@@ -329,21 +363,22 @@ func TestFieldRules(t *testing.T) {
 func TestMoveField(t *testing.T) {
 	f := newFixture(t)
 	v := f.version(t, "CP")
-	spec := field(t, v, "Specification")
+	spec := field(t, v, "Product Specification / Tolerance")
 	v, err := f.s.UpdateField(t.Context(), f.admin, v.ID, spec.ID, FieldUpdate{Label: spec.Label, Position: new(2)})
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := []string{"Process Flow", "Specification", "Machine and Tools", "Product Characteristic", "Process Characteristic"}
+	want := []string{"Process Flow", "Product Specification / Tolerance", "No", "Process Name / Operation Description",
+		"Machine, Equipment, Jigs, Fixture, Tools for Mfg"}
 	if got := labels(v, AreaRow)[:5]; !slices.Equal(got, want) {
 		t.Errorf("urutan setelah dipindah ke 2: %v", got)
 	}
-	v, err = f.s.UpdateField(t.Context(), f.admin, v.ID, spec.ID, FieldUpdate{Label: spec.Label, Position: new(13)})
+	v, err = f.s.UpdateField(t.Context(), f.admin, v.ID, spec.ID, FieldUpdate{Label: spec.Label, Position: new(16)})
 	if err != nil {
 		t.Fatal(err)
 	}
 	got := labels(v, AreaRow)
-	if got[12] != "Specification" || got[1] != "Machine and Tools" {
+	if got[15] != "Product Specification / Tolerance" || got[1] != "No" {
 		t.Errorf("urutan setelah dipindah ke akhir: %v", got)
 	}
 	for i, fd := range v.Fields {

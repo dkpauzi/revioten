@@ -43,7 +43,7 @@
 	import { t } from '#lib/i18n/index.ts';
 	import { can } from '#lib/session.svelte.ts';
 
-	const kinds: FormatField['kind'][] = ['text', 'date', 'select', 'symbol', 'rating', 'rpn'];
+	const kinds: FormatField['kind'][] = ['text', 'date', 'select', 'symbol', 'rating', 'rpn', 'operation_number', 'process', 'process_flow'];
 	const scales = ['severity', 'occurrence', 'detection'] as const;
 
 	// Data dari server. null berarti belum selesai dimuat.

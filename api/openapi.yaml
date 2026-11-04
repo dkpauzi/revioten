@@ -3123,7 +3123,8 @@ components:
           enum: [header, row]
         kind:
           type: string
-          enum: [text, date, select, symbol, rating, rpn]
+          enum: [text, date, select, symbol, rating, rpn, operation_number, process, process_flow]
+          description: operation_number, process, and process_flow are filled from the row (operation number, process master, PFD steps) and never typed, like rpn (D-122, D-123).
         rating_scale:
           type: string
           enum: [severity, occurrence, detection]
@@ -3161,7 +3162,8 @@ components:
           enum: [header, row]
         kind:
           type: string
-          enum: [text, date, select, symbol, rating, rpn]
+          enum: [text, date, select, symbol, rating, rpn, operation_number, process, process_flow]
+          description: operation_number, process, and process_flow are filled from the row (operation number, process master, PFD steps) and never typed, like rpn (D-122, D-123).
         label:
           type: string
         required:
