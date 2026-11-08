@@ -2,6 +2,10 @@
 # dokumen asli hanya disimpan di folder data/ dan tidak pernah di-commit.
 /data/
 
+# Catatan belajar pribadi pemilik (panduan pemula, status, catatan sesi).
+# Hanya untuk komputer pemilik, tidak di-upload ke GitHub.
+/catatan-pribadi/
+
 # Rahasia lokal (password database dan sejenisnya). Contohnya ada di .env.example.
 .env
 .env.*
