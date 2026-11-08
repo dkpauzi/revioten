@@ -52,6 +52,9 @@
 	--radius: 8px;
 	--radius-lg: 14px;
 	--control-height: 40px;
+	/* Tinggi label field (20px) ditambah jaraknya ke kotak isian (6px). Tombol di
+	   baris formulir diturunkan sebanyak ini supaya sejajar dengan kotak isian. */
+	--label-space: 26px;
 }
 
 *,
@@ -165,6 +168,7 @@ legend {
 	color: var(--text-2);
 	font-size: 13px;
 	font-weight: 500;
+	line-height: 20px;
 }
 
 input:not([type='checkbox'], [type='radio']),

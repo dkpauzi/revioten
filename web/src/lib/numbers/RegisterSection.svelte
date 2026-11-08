@@ -215,7 +215,13 @@
 		display: flex;
 		flex-wrap: wrap;
 		gap: 1rem;
-		align-items: flex-end;
+		align-items: flex-start;
 		margin-bottom: 1rem;
+	}
+
+	/* Field dirapikan ke atas; tombol diturunkan setinggi label supaya sejajar
+	   dengan kotak isian, juga bila ada teks bantuan atau pesan masalah. */
+	.edit > button {
+		margin-top: var(--label-space);
 	}
 </style>

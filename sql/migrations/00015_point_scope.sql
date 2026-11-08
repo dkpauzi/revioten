@@ -13,8 +13,8 @@
 --                                 tersembunyi, mengikuti urutan poin asalnya
 --
 -- Cakupan bagian dari identitas poin, jadi tidak pernah diubah (role
--- aplikasi tidak punya UPDATE untuk kolom ini). ASUMSI E-78: cakupan poin
--- yang salah dibetulkan dengan menyembunyikan poin itu dan membuat poin baru.
+-- aplikasi tidak punya UPDATE untuk kolom ini). D-131 (keputusan E-78): cakupan
+-- poin yang salah dibetulkan dengan menyembunyikan poin itu dan membuat poin baru.
 
 -- +goose Up
 ALTER TABLE template_points

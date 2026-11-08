@@ -99,7 +99,7 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-75 | Register terpisah PL1 dan PL3: plant, line, atau Project Leader (Q-19) | Ambigu | M2.1, M2.5 | Tidak (perlu sebelum register asli diimpor) | Diputuskan (D-126) |
 | E-76 | Proses baru diminta saat menyusun, dan urutan standar proses di pustaka | Celah | M1.5, M3.3, M4.5, M4.6 | Tidak | Terbuka |
 | E-77 | Doc ref (Relevant Document) berbeda per model, padahal poinnya umum | Celah | M3.3, M4.1, M4.5, R-DOC-11 | Tidak (perlu sebelum M4.5) | Diputuskan (D-130) |
-| E-78 | Cakupan poin yang salah pilih: diubah, atau poin disembunyikan lalu dibuat ulang | Celah | M3.3, M3.4 | Tidak | Terbuka |
+| E-78 | Cakupan poin yang salah pilih: diubah, atau poin disembunyikan lalu dibuat ulang | Celah | M3.3, M3.4 | Tidak | Diputuskan (D-131) |
 
 ## Keputusan 4 November 2026
 
@@ -1445,10 +1445,10 @@ Salin blok ini untuk setiap temuan baru.
   - (a) Cakupan tetap. Salah pilih dibetulkan dengan menyembunyikan poin dan membuat poin baru dengan cakupan yang benar.
   - (b) Cakupan boleh diubah di versi draft saja, dan berlaku sejak versi itu diterbitkan (M3.4).
 - **Rekomendasi Claude Code (usulan):** (a) untuk sekarang, karena paling aman bagi tautan baris dokumen. Ditinjau lagi di M3.4 saat versi template punya status terbit.
-- **Asumsi sementara di kode (ASUMSI E-78):** (a). Role aplikasi tidak punya UPDATE untuk kolom cakupan di `template_points` (migrasi 00015).
+- **Asumsi sementara di kode (ASUMSI E-78):** (a). Role aplikasi tidak punya UPDATE untuk kolom cakupan di `template_points` (migrasi 00015). Sejak keputusan pemilik, asumsi ini menjadi D-131 dan tidak perlu diubah di kode.
 - **Menghambat milestone?** Tidak
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan
+- **Keputusan pemilik (8 November 2026, D-131):** (a). Kutipan: "E-78 a".
 
 ## Usulan desain UI (UX-01 sampai UX-07): dampak ke M0 sampai M3 dan saran
 

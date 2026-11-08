@@ -140,7 +140,13 @@
 		display: flex;
 		flex-wrap: wrap;
 		gap: 1rem;
-		align-items: flex-end;
+		align-items: flex-start;
+	}
+
+	/* Field dirapikan ke atas; tombol diturunkan setinggi label supaya sejajar
+	   dengan kotak isian, juga bila ada teks bantuan atau pesan masalah. */
+	.edit > button {
+		margin-top: var(--label-space);
 	}
 
 	.actions {
