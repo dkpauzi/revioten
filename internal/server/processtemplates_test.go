@@ -26,7 +26,11 @@ func TestProcessTemplateEndpoints(t *testing.T) {
 			Subprocesses: []template.Subprocess{
 				{ID: "s-1", Name: "IQC MSD", Position: 1, Points: []template.Point{{
 					ID: "pp-1", DocumentType: template.DocumentTypeRef{ID: "dt-3", Key: "cp", Name: "CP"},
-					Text: "Check MSL label", Position: 1,
+					Text: "Check MSL label", Position: 1, Scope: template.Scope{Level: template.ScopeGeneral},
+					Variants: []template.Variant{{
+						ID: "va-1", Text: "Check MSL label level 3", Hidden: false,
+						Scope: template.Scope{Level: template.ScopeModel, TargetID: "m-1", Label: "K-125"},
+					}},
 				}}},
 				{ID: "s-2", Name: "IQC PCB", Position: 2, Hidden: true, Points: []template.Point{}},
 			},
@@ -44,7 +48,8 @@ func TestProcessTemplateEndpoints(t *testing.T) {
 	rec = srv.do(http.MethodGet, "/api/v1/process-template-versions/v-1", "")
 	want = `{"created_at":"2026-10-31T08:00:00Z","id":"v-1","process":{"id":"p-1","name":"IQC"},"status":"draft",` +
 		`"subprocesses":[{"hidden":false,"id":"s-1","name":"IQC MSD","position":1,"points":[{"document_type":{"id":"dt-3","key":"cp","name":"CP"},` +
-		`"hidden":false,"id":"pp-1","position":1,"text":"Check MSL label"}]},` +
+		`"hidden":false,"id":"pp-1","position":1,"text":"Check MSL label","scope":{"level":"general"},` +
+		`"variants":[{"hidden":false,"id":"va-1","scope":{"label":"K-125","level":"model","target_id":"m-1"},"text":"Check MSL label level 3"}]}]},` +
 		`{"hidden":true,"id":"s-2","name":"IQC PCB","position":2,"points":[]}],"template_id":"pt-1","version":1}`
 	if rec.Code != http.StatusOK || fake.got != (called{method: "GetProcessVersion", id: "v-1"}) || !sameJSON(t, rec.Body.String(), want) {
 		t.Errorf("versi: status %d, %+v\n%s\ningin\n%s", rec.Code, fake.got, rec.Body.String(), want)
@@ -80,6 +85,44 @@ func TestProcessTemplateEndpoints(t *testing.T) {
 	if g := fake.gotPoint; rec.Code != http.StatusOK || fake.got != (called{method: "UpdatePoint", id: "v-1", input: "pp-1"}) ||
 		g.Text != "Check MSL label" || g.Hidden == nil || !*g.Hidden || g.Position != nil {
 		t.Errorf("ubah poin: status %d, %+v", rec.Code, g)
+	}
+
+	// Poin dengan cakupan (M3.3): tingkat dan sasaran diteruskan apa adanya.
+	rec = srv.do(http.MethodPost, "/api/v1/process-template-versions/v-1/points",
+		`{"subprocess_id":"s-1","document_type_id":"dt-2","text":"Cek khusus","scope_level":"customer","scope_target_id":"c-1"}`)
+	wantPoint.Text, wantPoint.Scope = "Cek khusus", template.ScopeInput{Level: "customer", TargetID: "c-1"}
+	if rec.Code != http.StatusCreated || fake.gotNew != wantPoint {
+		t.Errorf("tambah poin dengan cakupan: status %d, %+v", rec.Code, fake.gotNew)
+	}
+
+	// Varian (M3.3, D-129).
+	rec = srv.do(http.MethodPost, "/api/v1/process-template-versions/v-1/points/pp-1/variants",
+		`{"scope_level":"model","scope_target_id":"m-1","text":"Laser type: fiber 20 W"}`)
+	wantVariant := template.NewVariant{Scope: template.ScopeInput{Level: "model", TargetID: "m-1"}, Text: "Laser type: fiber 20 W"}
+	if rec.Code != http.StatusCreated || fake.got != (called{method: "AddVariant", id: "v-1", input: "pp-1"}) || fake.gotVariant != wantVariant {
+		t.Errorf("tambah varian: status %d, %+v, %+v", rec.Code, fake.got, fake.gotVariant)
+	}
+	rec = srv.do(http.MethodPut, "/api/v1/process-template-versions/v-1/variants/va-1", `{"text":"Laser type: fiber 30 W"}`)
+	if g := fake.gotVariantUpdate; rec.Code != http.StatusOK || fake.got != (called{method: "UpdateVariant", id: "v-1", input: "va-1"}) ||
+		g.Text != "Laser type: fiber 30 W" || g.Hidden != nil {
+		t.Errorf("ubah varian: status %d, %+v", rec.Code, g)
+	}
+
+	// Pratinjau poin untuk satu model: model tanpa group tidak mengirim isian group.
+	cp := template.DocumentTypeRef{ID: "dt-3", Key: "cp", Name: "CP"}
+	fake.resolved = template.Resolved{
+		Model: template.ResolvedModel{ID: "m-2", Name: "K-200", CustomerID: "c-1", CustomerCode: "AB"},
+		Subprocesses: []template.ResolvedSubprocess{{ID: "s-1", Name: "IQC MSD", Points: []template.ResolvedPoint{{
+			PointID: "va-2", OriginID: "pp-1", DocumentType: cp, Text: "Customer AB check",
+			Scope: template.Scope{Level: template.ScopeCustomer, TargetID: "c-1", Label: "AB"},
+		}}}},
+	}
+	rec = srv.do(http.MethodGet, "/api/v1/process-template-versions/v-1/resolved?model_id=m-2", "")
+	want = `{"model":{"customer_code":"AB","customer_id":"c-1","id":"m-2","name":"K-200"},` +
+		`"subprocesses":[{"id":"s-1","name":"IQC MSD","points":[{"document_type":{"id":"dt-3","key":"cp","name":"CP"},` +
+		`"origin_id":"pp-1","point_id":"va-2","scope":{"label":"AB","level":"customer","target_id":"c-1"},"text":"Customer AB check"}]}]}`
+	if rec.Code != http.StatusOK || fake.got != (called{method: "ResolvePoints", id: "v-1", input: "m-2"}) || !sameJSON(t, rec.Body.String(), want) {
+		t.Errorf("pratinjau: status %d, %+v\n%s\ningin\n%s", rec.Code, fake.got, rec.Body.String(), want)
 	}
 
 	// Penolakan layanan diteruskan dalam format error API (R-API-13).

@@ -73,7 +73,7 @@ func (s *ProcessService) GetProcessVersion(ctx context.Context, actor access.Act
 
 // CreateProcessTemplate membuat process template untuk satu proses master,
 // beserta versi 1 yang masih kosong dan berstatus draft. Satu proses hanya
-// punya satu template (ASUMSI E-72).
+// punya satu template (D-129, keputusan E-72).
 func (s *ProcessService) CreateProcessTemplate(ctx context.Context, actor access.Actor, processID string) (ProcessTemplate, error) {
 	if err := s.authz.Authorize(ctx, actor, access.ManageTemplates, access.Resource{}); err != nil {
 		return ProcessTemplate{}, err
@@ -191,14 +191,18 @@ func (s *ProcessService) AddPoint(ctx context.Context, actor access.Actor, versi
 			subProblem = &problem.Problem{Field: "subprocess_id", Code: problem.NotAllowed,
 				Message: fmt.Sprintf("A sub-process has at most %d points for one document type.", maxPointsPerList)}
 		}
-		if err := problems(textProblem, subProblem, typeProblem); err != nil {
+		target, scopeProblem, err := checkScope(ctx, q, in.Scope)
+		if err != nil {
+			return nil, err
+		}
+		if err := problems(textProblem, subProblem, typeProblem, scopeProblem); err != nil {
 			return nil, err
 		}
 		documentType, err := q.GetDocumentType(ctx, in.DocumentTypeID)
 		if err != nil {
 			return nil, err
 		}
-		pointID, err := q.CreateTemplatePoint(ctx, db.CreateTemplatePointParams{SubprocessID: sub.ID, DocumentTypeID: in.DocumentTypeID})
+		pointID, err := q.CreateTemplatePoint(ctx, target.params(sub.ID, in.DocumentTypeID, nil))
 		if err != nil {
 			return nil, err
 		}
@@ -207,9 +211,14 @@ func (s *ProcessService) AddPoint(ctx context.Context, actor access.Actor, versi
 			VersionID: v.ID, SubprocessID: sub.ID, DocumentTypeID: in.DocumentTypeID, PointID: pointID,
 			Text: text, Position: int16(position),
 		})
-		return map[string]string{
+		details := map[string]string{
 			"subprocess": sub.Name, "document_type": documentType.Name, "text": text, "position": strconv.Itoa(position),
-		}, err
+		}
+		// Cakupan hanya dicatat bila bukan umum, supaya rincian poin umum tetap seperti M3.2.
+		if target.Scope.Level != ScopeGeneral {
+			details["scope"] = target.describe()
+		}
+		return details, err
 	})
 }
 
@@ -255,6 +264,115 @@ func (s *ProcessService) UpdatePoint(ctx context.Context, actor access.Actor, ve
 		}
 		return details, nil
 	})
+}
+
+// AddVariant menambah varian satu poin untuk cakupan yang lebih sempit (M3.3,
+// D-129), misalnya laser type khusus model K-125 dari poin laser type yang
+// biasanya umum. Varian harus lebih sempit dari poin asalnya dan berada di
+// dalamnya, dan satu cakupan hanya punya satu varian.
+func (s *ProcessService) AddVariant(ctx context.Context, actor access.Actor, versionID, pointID string, in NewVariant) (ProcessVersion, error) {
+	return s.editVersion(ctx, actor, versionID, audit.ActionTemplateVariantAdded, func(q *db.Queries, v ProcessVersion) (map[string]string, error) {
+		sub, origin, ok := findPoint(v, pointID)
+		if !ok {
+			return nil, problem.ErrNotFound
+		}
+		text, textProblem := problem.Text("text", in.Text, true, maxPointText)
+		var target scopeTarget
+		var scopeProblem *problem.Problem
+		if in.Scope.Level == ScopeGeneral || in.Scope.Level == "" {
+			scopeProblem = &problem.Problem{Field: "scope_level", Code: problem.NotAllowed,
+				Message: "A variant is for a customer, a model group, or a model."}
+		} else {
+			var err error
+			if target, scopeProblem, err = checkScope(ctx, q, in.Scope); err != nil {
+				return nil, err
+			}
+			if scopeProblem == nil {
+				scopeProblem = withinOrigin(origin.Scope, target)
+			}
+		}
+		if err := problems(textProblem, scopeProblem); err != nil {
+			return nil, err
+		}
+		variantID, err := q.CreateTemplatePoint(ctx, target.params(sub.ID, origin.DocumentType.ID, &origin.ID))
+		if err != nil {
+			return nil, err
+		}
+		err = q.AddVersionVariant(ctx, db.AddVersionVariantParams{VersionID: v.ID, PointID: variantID, OriginPointID: origin.ID, Text: text})
+		return map[string]string{
+			"subprocess": sub.Name, "document_type": origin.DocumentType.Name, "point": origin.Text,
+			"scope": target.describe(), "text": text,
+		}, err
+	})
+}
+
+// UpdateVariant mengganti teks satu varian atau menyembunyikannya. Cakupan
+// dan poin asalnya tetap.
+func (s *ProcessService) UpdateVariant(ctx context.Context, actor access.Actor, versionID, variantID string, in VariantUpdate) (ProcessVersion, error) {
+	return s.editVersion(ctx, actor, versionID, audit.ActionTemplateVariantChanged, func(q *db.Queries, v ProcessVersion) (map[string]string, error) {
+		sub, origin, variant, ok := findVariant(v, variantID)
+		if !ok {
+			return nil, problem.ErrNotFound
+		}
+		text, textProblem := problem.Text("text", in.Text, true, maxPointText)
+		if err := problems(textProblem); err != nil {
+			return nil, err
+		}
+		hidden := variant.Hidden
+		if in.Hidden != nil {
+			hidden = *in.Hidden
+		}
+		if err := q.UpdateVersionVariant(ctx, db.UpdateVersionVariantParams{VersionID: v.ID, PointID: variant.ID, Text: text, Hidden: hidden}); err != nil {
+			return nil, err
+		}
+		details := changeDetails("text", itemChange{Text: variant.Text, Hidden: variant.Hidden}, itemChange{Text: text, Hidden: hidden})
+		if len(details) > 0 {
+			details["subprocess"] = sub.Name
+			details["point"] = origin.Text
+			details["scope"] = scopeTarget{Scope: variant.Scope}.describe()
+		}
+		return details, nil
+	})
+}
+
+// ResolvePoints menampilkan poin satu versi yang berlaku untuk satu model:
+// varian yang paling spesifik menang (R-TPL-03). Dipakai untuk pratinjau di
+// layar, dan nanti oleh perakitan dokumen (M4.5). Melihat memakai L-2 untuk
+// customer model itu, sama seperti daftar model.
+func (s *ProcessService) ResolvePoints(ctx context.Context, actor access.Actor, versionID, modelID string) (Resolved, error) {
+	if !db.IsUUID(versionID) {
+		return Resolved{}, problem.ErrNotFound
+	}
+	missing := &problem.ValidationError{Problems: []problem.Problem{{Field: "model_id", Code: problem.InvalidFormat, Message: "Choose an existing model."}}}
+	if !db.IsUUID(modelID) {
+		return Resolved{}, missing
+	}
+	m, err := s.q.GetModel(ctx, modelID)
+	switch {
+	case errors.Is(err, pgx.ErrNoRows):
+		return Resolved{}, missing
+	case err != nil:
+		return Resolved{}, fmt.Errorf("membaca model: %w", err)
+	}
+	if err := s.authz.Authorize(ctx, actor, access.ViewRegister, access.Resource{CustomerID: m.CustomerID}); err != nil {
+		return Resolved{}, err
+	}
+	customer, err := s.q.GetCustomer(ctx, m.CustomerID)
+	if err != nil {
+		return Resolved{}, fmt.Errorf("membaca customer model: %w", err)
+	}
+	v, err := getProcessVersion(ctx, s.q, versionID)
+	if err != nil {
+		return Resolved{}, err
+	}
+	model := ResolvedModel{
+		ID: m.ID, Name: m.Name, CustomerID: m.CustomerID, CustomerCode: customer.Code,
+		ModelGroupID: derefText(m.ModelGroupID), ModelGroupName: derefText(m.ModelGroupName),
+	}
+	return Resolved{
+		Model:        model,
+		Subprocesses: resolve(v, modelScope{ID: m.ID, CustomerID: m.CustomerID, GroupID: model.ModelGroupID}),
+	}, nil
 }
 
 // editVersion menjalankan satu perubahan pada versi draft di dalam
@@ -356,6 +474,18 @@ func getProcessVersion(ctx context.Context, q *db.Queries, id string) (ProcessVe
 	if err != nil {
 		return ProcessVersion{}, fmt.Errorf("membaca poin: %w", err)
 	}
+	variantRows, err := q.ListVersionVariants(ctx, id)
+	if err != nil {
+		return ProcessVersion{}, fmt.Errorf("membaca varian poin: %w", err)
+	}
+	// Varian sudah urut dari cakupan terluas ke tersempit (M3.3).
+	variants := make(map[string][]Variant)
+	for _, r := range variantRows {
+		variants[r.OriginPointID] = append(variants[r.OriginPointID], Variant{
+			ID: r.PointID, Text: r.Text, Hidden: r.Hidden,
+			Scope: scopeFromColumns(r.Scope, r.CustomerID, r.ModelGroupID, r.ModelID, r.CustomerCode, r.ModelGroupName, r.ModelName),
+		})
+	}
 	// Poin sudah urut menurut sub-proses, jenis dokumen, lalu urutan poin.
 	points := make(map[string][]Point)
 	for _, p := range pointRows {
@@ -363,6 +493,8 @@ func getProcessVersion(ctx context.Context, q *db.Queries, id string) (ProcessVe
 			ID:           p.PointID,
 			DocumentType: DocumentTypeRef{ID: p.DocumentTypeID, Key: derefText(p.DocumentTypeKey), Name: p.DocumentTypeName},
 			Text:         p.Text, Position: int(p.Position), Hidden: p.Hidden,
+			Scope:    scopeFromColumns(p.Scope, p.CustomerID, p.ModelGroupID, p.ModelID, p.CustomerCode, p.ModelGroupName, p.ModelName),
+			Variants: orNone(variants[p.PointID]),
 		})
 	}
 	subs := make([]Subprocess, 0, len(subRows))

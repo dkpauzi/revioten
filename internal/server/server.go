@@ -138,6 +138,10 @@ type ProcessTemplateService interface {
 	UpdateSubprocess(ctx context.Context, actor access.Actor, versionID, subprocessID string, in template.SubprocessUpdate) (template.ProcessVersion, error)
 	AddPoint(ctx context.Context, actor access.Actor, versionID string, in template.NewPoint) (template.ProcessVersion, error)
 	UpdatePoint(ctx context.Context, actor access.Actor, versionID, pointID string, in template.PointUpdate) (template.ProcessVersion, error)
+	// Cakupan poin dan varian (M3.3, D-129).
+	AddVariant(ctx context.Context, actor access.Actor, versionID, pointID string, in template.NewVariant) (template.ProcessVersion, error)
+	UpdateVariant(ctx context.Context, actor access.Actor, versionID, variantID string, in template.VariantUpdate) (template.ProcessVersion, error)
+	ResolvePoints(ctx context.Context, actor access.Actor, versionID, modelID string) (template.Resolved, error)
 }
 
 // SettingsService adalah operasi pengaturan sistem yang dipakai API (M1.8).

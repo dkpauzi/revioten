@@ -90,6 +90,9 @@ const (
 	ActionSubprocessChanged      = "process_template.subprocess_changed"
 	ActionTemplatePointAdded     = "process_template.point_added"
 	ActionTemplatePointChanged   = "process_template.point_changed"
+	// Varian poin untuk cakupan yang lebih sempit (M3.3, D-129).
+	ActionTemplateVariantAdded   = "process_template.variant_added"
+	ActionTemplateVariantChanged = "process_template.variant_changed"
 )
 
 // Jenis sasaran entri.

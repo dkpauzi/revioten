@@ -1550,6 +1550,84 @@ paths:
                 $ref: '#/components/schemas/ProcessTemplateVersion'
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/process-template-versions/{processVersionId}/points/{pointId}/variants:
+    post:
+      operationId: addPointVariant
+      summary: Add a variant of a point for a narrower scope in a draft version (E-6, M3.3, D-129)
+      description: |
+        A variant holds the text of the point for one customer, model group,
+        or model, for example the laser type of one model while the point is
+        usually general. The variant must be narrower than its point and inside
+        it, and one scope has at most one variant of the same point. The scope
+        never changes after the variant is made.
+      parameters:
+        - $ref: '#/components/parameters/ProcessVersionId'
+        - $ref: '#/components/parameters/PointId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewPointVariant'
+      responses:
+        '201':
+          description: The version after the change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessTemplateVersion'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/process-template-versions/{processVersionId}/variants/{variantId}:
+    put:
+      operationId: updatePointVariant
+      summary: Change the text of a variant, hide, or show it in a draft version (E-6, M3.3)
+      description: |
+        The variant ID, its point, and its scope never change. Variants are
+        hidden, never deleted. A hidden variant does not count, so its model
+        uses the next broader level.
+      parameters:
+        - $ref: '#/components/parameters/ProcessVersionId'
+        - $ref: '#/components/parameters/VariantId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PointVariantUpdate'
+      responses:
+        '200':
+          description: The version after the change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessTemplateVersion'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/process-template-versions/{processVersionId}/resolved:
+    get:
+      operationId: resolveProcessTemplatePoints
+      summary: The points of a version that apply to one model (L-2 for the customer of the model, M3.3, R-TPL-03)
+      description: |
+        For each visible point that applies to the model, the most specific
+        visible variant wins: model, then model group, then customer, then the
+        point itself. Hidden sub-processes and points are left out.
+      parameters:
+        - $ref: '#/components/parameters/ProcessVersionId'
+        - name: model_id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The points that apply.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResolvedPoints'
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/system-settings:
     get:
       operationId: getSystemSettings
@@ -1782,6 +1860,12 @@ components:
         type: string
     PointId:
       name: pointId
+      in: path
+      required: true
+      schema:
+        type: string
+    VariantId:
+      name: variantId
       in: path
       required: true
       schema:
@@ -3345,7 +3429,7 @@ components:
             $ref: '#/components/schemas/TemplatePoint'
     TemplatePoint:
       type: object
-      required: [id, document_type, text, position, hidden]
+      required: [id, document_type, text, position, hidden, scope, variants]
       properties:
         id:
           type: string
@@ -3359,6 +3443,115 @@ components:
           description: Order within the sub-process for the same document type, from 1.
         hidden:
           type: boolean
+        scope:
+          $ref: '#/components/schemas/PointScope'
+        variants:
+          type: array
+          description: From the broadest scope to the narrowest, hidden ones included (M3.3).
+          items:
+            $ref: '#/components/schemas/PointVariant'
+    PointScope:
+      type: object
+      description: What a point or variant is usually used for (M3.3, D-129). Fixed after it is made.
+      required: [level]
+      properties:
+        level:
+          type: string
+          enum: [general, customer, model_group, model]
+        target_id:
+          type: string
+          description: The customer, model group, or model. Left out for general.
+        label:
+          type: string
+          description: Customer code, model group name, or model name. Left out for general.
+    PointVariant:
+      type: object
+      required: [id, scope, text, hidden]
+      properties:
+        id:
+          type: string
+          description: Fixed across versions, like a point ID.
+        scope:
+          $ref: '#/components/schemas/PointScope'
+        text:
+          type: string
+        hidden:
+          type: boolean
+    NewPointVariant:
+      type: object
+      required: [scope_level, scope_target_id, text]
+      properties:
+        scope_level:
+          type: string
+          description: customer, model_group, or model.
+        scope_target_id:
+          type: string
+        text:
+          type: string
+    PointVariantUpdate:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+        hidden:
+          type: boolean
+    ResolvedPoints:
+      type: object
+      required: [model, subprocesses]
+      properties:
+        model:
+          $ref: '#/components/schemas/ResolvedModel'
+        subprocesses:
+          type: array
+          description: Visible sub-processes that have at least one point for the model, in order.
+          items:
+            $ref: '#/components/schemas/ResolvedSubprocess'
+    ResolvedModel:
+      type: object
+      required: [id, name, customer_id, customer_code]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        customer_id:
+          type: string
+        customer_code:
+          type: string
+        model_group_id:
+          type: string
+          description: Left out for a model without a group.
+        model_group_name:
+          type: string
+    ResolvedSubprocess:
+      type: object
+      required: [id, name, points]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        points:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResolvedPoint'
+    ResolvedPoint:
+      type: object
+      required: [point_id, origin_id, document_type, text, scope]
+      properties:
+        point_id:
+          type: string
+          description: The point or the variant that won.
+        origin_id:
+          type: string
+          description: The point the variant belongs to; the same as point_id when no variant won.
+        document_type:
+          $ref: '#/components/schemas/DocumentTypeRef'
+        text:
+          type: string
+        scope:
+          $ref: '#/components/schemas/PointScope'
     NewSubprocess:
       type: object
       required: [name]
@@ -3385,6 +3578,12 @@ components:
           type: string
         text:
           type: string
+        scope_level:
+          type: string
+          description: general (when left out), customer, model_group, or model (M3.3, D-129).
+        scope_target_id:
+          type: string
+          description: The customer, model group, or model. Left out for general.
     TemplatePointUpdate:
       type: object
       required: [text]

@@ -59,7 +59,9 @@ const actionKeys: Record<string, MessageKey> = {
 	'process_template.subprocess_added': 'auditActionSubprocessAdded',
 	'process_template.subprocess_changed': 'auditActionSubprocessChanged',
 	'process_template.point_added': 'auditActionTemplatePointAdded',
-	'process_template.point_changed': 'auditActionTemplatePointChanged'
+	'process_template.point_changed': 'auditActionTemplatePointChanged',
+	'process_template.variant_added': 'auditActionTemplateVariantAdded',
+	'process_template.variant_changed': 'auditActionTemplateVariantChanged'
 };
 
 const detailKeys: Record<string, MessageKey> = {
@@ -100,7 +102,8 @@ const detailKeys: Record<string, MessageKey> = {
 	point: 'auditDetailPoint',
 	text: 'auditDetailText',
 	position: 'auditDetailOrder',
-	hidden: 'auditDetailHidden'
+	hidden: 'auditDetailHidden',
+	scope: 'auditDetailScope'
 };
 
 const reasonKeys: Record<string, MessageKey> = {

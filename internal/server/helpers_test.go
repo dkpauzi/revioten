@@ -439,6 +439,25 @@ type fakeProcessTemplates struct {
 	gotSub    template.SubprocessUpdate
 	gotNew    template.NewPoint
 	gotPoint  template.PointUpdate
+	// Cakupan poin dan varian (M3.3).
+	gotVariant       template.NewVariant
+	gotVariantUpdate template.VariantUpdate
+	resolved         template.Resolved
+}
+
+func (f *fakeProcessTemplates) AddVariant(_ context.Context, _ access.Actor, versionID, pointID string, in template.NewVariant) (template.ProcessVersion, error) {
+	f.got, f.gotVariant = called{method: "AddVariant", id: versionID, input: pointID}, in
+	return f.version, f.err
+}
+
+func (f *fakeProcessTemplates) UpdateVariant(_ context.Context, _ access.Actor, versionID, variantID string, in template.VariantUpdate) (template.ProcessVersion, error) {
+	f.got, f.gotVariantUpdate = called{method: "UpdateVariant", id: versionID, input: variantID}, in
+	return f.version, f.err
+}
+
+func (f *fakeProcessTemplates) ResolvePoints(_ context.Context, _ access.Actor, versionID, modelID string) (template.Resolved, error) {
+	f.got = called{method: "ResolvePoints", id: versionID, input: modelID}
+	return f.resolved, f.err
 }
 
 func (f *fakeProcessTemplates) ListProcessTemplates(context.Context, access.Actor) ([]template.ProcessTemplate, error) {

@@ -60,6 +60,28 @@ func (q *Queries) AddVersionSubprocess(ctx context.Context, arg AddVersionSubpro
 	return err
 }
 
+const addVersionVariant = `-- name: AddVersionVariant :exec
+INSERT INTO process_template_variants (version_id, point_id, origin_point_id, text)
+VALUES ($1, $2, $3, $4)
+`
+
+type AddVersionVariantParams struct {
+	VersionID     string
+	PointID       string
+	OriginPointID string
+	Text          string
+}
+
+func (q *Queries) AddVersionVariant(ctx context.Context, arg AddVersionVariantParams) error {
+	_, err := q.db.Exec(ctx, addVersionVariant,
+		arg.VersionID,
+		arg.PointID,
+		arg.OriginPointID,
+		arg.Text,
+	)
+	return err
+}
+
 const createProcessTemplate = `-- name: CreateProcessTemplate :one
 INSERT INTO process_templates (process_id) VALUES ($1) RETURNING id
 `
@@ -102,16 +124,33 @@ func (q *Queries) CreateSubprocess(ctx context.Context, processID string) (strin
 }
 
 const createTemplatePoint = `-- name: CreateTemplatePoint :one
-INSERT INTO template_points (subprocess_id, document_type_id) VALUES ($1, $2) RETURNING id
+INSERT INTO template_points (subprocess_id, document_type_id, scope, customer_id, model_group_id, model_id, variant_of)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+RETURNING id
 `
 
 type CreateTemplatePointParams struct {
 	SubprocessID   string
 	DocumentTypeID string
+	Scope          string
+	CustomerID     *string
+	ModelGroupID   *string
+	ModelID        *string
+	VariantOf      *string
 }
 
+// CreateTemplatePoint membuat identitas poin beserta cakupannya (M3.3,
+// D-129). Untuk varian, variant_of berisi poin asalnya.
 func (q *Queries) CreateTemplatePoint(ctx context.Context, arg CreateTemplatePointParams) (string, error) {
-	row := q.db.QueryRow(ctx, createTemplatePoint, arg.SubprocessID, arg.DocumentTypeID)
+	row := q.db.QueryRow(ctx, createTemplatePoint,
+		arg.SubprocessID,
+		arg.DocumentTypeID,
+		arg.Scope,
+		arg.CustomerID,
+		arg.ModelGroupID,
+		arg.ModelID,
+		arg.VariantOf,
+	)
 	var id string
 	err := row.Scan(&id)
 	return id, err
@@ -298,11 +337,17 @@ func (q *Queries) ListProcessVersionsOfTemplate(ctx context.Context, templateID 
 
 const listVersionPoints = `-- name: ListVersionPoints :many
 SELECT vp.point_id, vp.subprocess_id, vp.document_type_id, d.key AS document_type_key,
-       d.name AS document_type_name, vp.text, vp.position, vp.hidden
+       d.name AS document_type_name, vp.text, vp.position, vp.hidden,
+       tp.scope, tp.customer_id, tp.model_group_id, tp.model_id,
+       c.code AS customer_code, g.name AS model_group_name, m.name AS model_name
 FROM process_template_points vp
 JOIN process_template_subprocesses vs
   ON vs.version_id = vp.version_id AND vs.subprocess_id = vp.subprocess_id
 JOIN document_types d ON d.id = vp.document_type_id
+JOIN template_points tp ON tp.id = vp.point_id
+LEFT JOIN customers c ON c.id = tp.customer_id
+LEFT JOIN model_groups g ON g.id = tp.model_group_id
+LEFT JOIN models m ON m.id = tp.model_id
 WHERE vp.version_id = $1
 ORDER BY vs.position, d.position, vp.position
 `
@@ -316,10 +361,20 @@ type ListVersionPointsRow struct {
 	Text             string
 	Position         int16
 	Hidden           bool
+	Scope            string
+	CustomerID       *string
+	ModelGroupID     *string
+	ModelID          *string
+	CustomerCode     *string
+	ModelGroupName   *string
+	ModelName        *string
 }
 
 // ListVersionPoints mengambil poin satu versi: menurut urutan sub-proses,
 // lalu urutan jenis dokumen (PFD, PFMEA, CP), lalu urutan poin.
+// Cakupan ikut dibaca: tingkat, sasaran, dan nama tampilan sasarannya (kode
+// customer, nama group model, atau nama model). Kolom sasaran dibiarkan
+// terpisah supaya sqlc tahu nilainya boleh NULL (cakupan umum).
 func (q *Queries) ListVersionPoints(ctx context.Context, versionID string) ([]ListVersionPointsRow, error) {
 	rows, err := q.db.Query(ctx, listVersionPoints, versionID)
 	if err != nil {
@@ -338,6 +393,13 @@ func (q *Queries) ListVersionPoints(ctx context.Context, versionID string) ([]Li
 			&i.Text,
 			&i.Position,
 			&i.Hidden,
+			&i.Scope,
+			&i.CustomerID,
+			&i.ModelGroupID,
+			&i.ModelID,
+			&i.CustomerCode,
+			&i.ModelGroupName,
+			&i.ModelName,
 		); err != nil {
 			return nil, err
 		}
@@ -378,6 +440,69 @@ func (q *Queries) ListVersionSubprocesses(ctx context.Context, versionID string)
 			&i.Name,
 			&i.Position,
 			&i.Hidden,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listVersionVariants = `-- name: ListVersionVariants :many
+SELECT pv.point_id, pv.origin_point_id, pv.text, pv.hidden,
+       tp.scope, tp.customer_id, tp.model_group_id, tp.model_id,
+       c.code AS customer_code, g.name AS model_group_name, m.name AS model_name
+FROM process_template_variants pv
+JOIN template_points tp ON tp.id = pv.point_id
+LEFT JOIN customers c ON c.id = tp.customer_id
+LEFT JOIN model_groups g ON g.id = tp.model_group_id
+LEFT JOIN models m ON m.id = tp.model_id
+WHERE pv.version_id = $1
+ORDER BY pv.origin_point_id,
+         CASE tp.scope WHEN 'customer' THEN 1 WHEN 'model_group' THEN 2 ELSE 3 END,
+         coalesce(c.code, g.name, m.name)
+`
+
+type ListVersionVariantsRow struct {
+	PointID        string
+	OriginPointID  string
+	Text           string
+	Hidden         bool
+	Scope          string
+	CustomerID     *string
+	ModelGroupID   *string
+	ModelID        *string
+	CustomerCode   *string
+	ModelGroupName *string
+	ModelName      *string
+}
+
+// ListVersionVariants mengambil varian satu versi beserta cakupannya: per
+// poin asal, dari cakupan terluas ke tersempit, lalu nama sasarannya.
+func (q *Queries) ListVersionVariants(ctx context.Context, versionID string) ([]ListVersionVariantsRow, error) {
+	rows, err := q.db.Query(ctx, listVersionVariants, versionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListVersionVariantsRow{}
+	for rows.Next() {
+		var i ListVersionVariantsRow
+		if err := rows.Scan(
+			&i.PointID,
+			&i.OriginPointID,
+			&i.Text,
+			&i.Hidden,
+			&i.Scope,
+			&i.CustomerID,
+			&i.ModelGroupID,
+			&i.ModelID,
+			&i.CustomerCode,
+			&i.ModelGroupName,
+			&i.ModelName,
 		); err != nil {
 			return nil, err
 		}
@@ -529,6 +654,29 @@ func (q *Queries) UpdateVersionSubprocess(ctx context.Context, arg UpdateVersion
 		arg.VersionID,
 		arg.SubprocessID,
 		arg.Name,
+		arg.Hidden,
+	)
+	return err
+}
+
+const updateVersionVariant = `-- name: UpdateVersionVariant :exec
+UPDATE process_template_variants
+SET text = $3, hidden = $4
+WHERE version_id = $1 AND point_id = $2
+`
+
+type UpdateVersionVariantParams struct {
+	VersionID string
+	PointID   string
+	Text      string
+	Hidden    bool
+}
+
+func (q *Queries) UpdateVersionVariant(ctx context.Context, arg UpdateVersionVariantParams) error {
+	_, err := q.db.Exec(ctx, updateVersionVariant,
+		arg.VersionID,
+		arg.PointID,
+		arg.Text,
 		arg.Hidden,
 	)
 	return err

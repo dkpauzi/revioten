@@ -135,7 +135,15 @@ const scopedKeys: Record<string, MessageKey> = {
 	'processTemplate.subprocess_id:invalid_format': 'pointSubprocessInvalid',
 	'processTemplate.subprocess_id:not_allowed': 'pointLimit',
 	'processTemplate.document_type_id:required': 'pointTypeRequired',
-	'processTemplate.document_type_id:not_allowed': 'pointTypeNotAllowed'
+	'processTemplate.document_type_id:not_allowed': 'pointTypeNotAllowed',
+	// Cakupan poin dan varian (M3.3, D-129).
+	'processTemplate.scope_level:invalid_format': 'scopeLevelInvalid',
+	'processTemplate.scope_level:not_allowed': 'variantNotNarrower',
+	'processTemplate.scope_target_id:required': 'scopeTargetRequired',
+	'processTemplate.scope_target_id:invalid_format': 'scopeTargetInvalid',
+	'processTemplate.scope_target_id:not_allowed': 'variantOutsidePoint',
+	'processTemplate.scope_target_id:taken': 'variantTaken',
+	'processTemplate.model_id:invalid_format': 'previewModelRequired'
 };
 
 // problemText memberi teks layar untuk satu masalah input: teks khusus

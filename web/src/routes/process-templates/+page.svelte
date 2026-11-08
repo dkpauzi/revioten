@@ -4,29 +4,45 @@
 	// dan CP, masing-masing dengan ID tetap. Semua akun bisa melihat (L-2);
 	// mengubah hanya untuk pemegang E-6 (Pengelola template, PPAP Engineer).
 	// Server tetap memeriksa setiap operasi.
+	//
+	// Sejak M3.3 (D-129) poin punya cakupan dan varian, dan bagian pratinjau
+	// menampilkan poin yang berlaku untuk satu model (R-TPL-03).
 	import { onMount } from 'svelte';
 	import {
 		addSubprocess,
 		addTemplatePoint,
 		createProcessTemplate,
 		getProcessTemplateVersion,
+		listCustomers,
 		listDocumentTypes,
+		listModels,
 		listProcessTemplates,
 		listProcesses,
+		resolveProcessTemplatePoints,
 		type ApiFailure
 	} from '#lib/api/client.ts';
-	import type { DocumentType, Process, ProcessTemplate, ProcessTemplateVersion } from '#lib/api/gen/index.ts';
+	import type {
+		Customer,
+		DocumentType,
+		Model,
+		Process,
+		ProcessTemplate,
+		ProcessTemplateVersion,
+		ResolvedPoints
+	} from '#lib/api/gen/index.ts';
 	import { failureText, problemText } from '#lib/errors.ts';
 	import { t } from '#lib/i18n/index.ts';
 	import PointTable from '#lib/processTemplates/PointTable.svelte';
+	import ScopePicker from '#lib/processTemplates/ScopePicker.svelte';
 	import SubprocessTable from '#lib/processTemplates/SubprocessTable.svelte';
-	import { pointTypes, pointsOf, templateOf, versionText } from '#lib/processTemplates.ts';
+	import { pointTypes, pointsOf, scopeLevels, scopeText, templateOf, versionText, type ScopeLevel } from '#lib/processTemplates.ts';
 	import { can } from '#lib/session.svelte.ts';
 
 	// Data dari server. null berarti belum selesai dimuat.
 	let processes = $state<Process[] | null>(null);
 	let templates = $state<ProcessTemplate[]>([]);
 	let types = $state<DocumentType[]>([]);
+	let customers = $state<Customer[]>([]);
 	let loadError = $state('');
 	let canEdit = $derived(can('E-6'));
 
@@ -44,14 +60,30 @@
 
 	// Isian formulir tambah.
 	let newSubprocess = $state('');
-	let newPoint = $state({ documentTypeId: '', text: '' });
+	let newPoint = $state<{ documentTypeId: string; text: string; scopeLevel: ScopeLevel; scopeTarget: string }>({
+		documentTypeId: '',
+		text: '',
+		scopeLevel: 'general',
+		scopeTarget: ''
+	});
+
+	// Pratinjau poin untuk satu model (M3.3).
+	let previewCustomerId = $state('');
+	let previewModels = $state<Model[]>([]);
+	let previewModelId = $state('');
+	let preview = $state<ResolvedPoints | null>(null);
+	let previewError = $state('');
 
 	async function load() {
-		const [processResult, templateResult, typeResult] = await Promise.all([
+		const [processResult, templateResult, typeResult, customerResult] = await Promise.all([
 			listProcesses(),
 			listProcessTemplates(),
-			listDocumentTypes()
+			listDocumentTypes(),
+			listCustomers()
 		]);
+		// Daftar customer hanya untuk memilih cakupan dan pratinjau; tanpa daftar
+		// ini halaman tetap bisa dipakai untuk poin umum.
+		customers = customerResult.ok ? customerResult.data.items : [];
 		if (!processResult.ok) {
 			loadError = failureText(processResult.error);
 			return;
@@ -92,6 +124,37 @@
 		message = text;
 		failure = '';
 		fieldErrors = {};
+		// Isi versi berubah, jadi pratinjau dimuat ulang bila sedang terbuka.
+		if (previewModelId !== '') {
+			showPreview();
+		}
+	}
+
+	async function choosePreviewCustomer() {
+		previewModelId = '';
+		previewModels = [];
+		preview = null;
+		previewError = '';
+		if (previewCustomerId === '') {
+			return;
+		}
+		const result = await listModels(previewCustomerId);
+		previewModels = result.ok ? result.data.items : [];
+	}
+
+	async function showPreview() {
+		preview = null;
+		previewError = '';
+		if (version === null || previewModelId === '') {
+			return;
+		}
+		const result = await resolveProcessTemplatePoints(version.id, previewModelId);
+		if (!result.ok) {
+			const details = result.error.body?.details ?? [];
+			previewError = details.length > 0 ? problemText(details[0], 'processTemplate') : failureText(result.error);
+			return;
+		}
+		preview = result.data;
 	}
 
 	// showErrors menampilkan masalah per field, atau pesan umum bila tidak ada.
@@ -149,15 +212,17 @@
 		const result = await addTemplatePoint(version.id, {
 			subprocess_id: subprocess.id,
 			document_type_id: newPoint.documentTypeId,
-			text: newPoint.text
+			text: newPoint.text,
+			scope_level: newPoint.scopeLevel,
+			scope_target_id: newPoint.scopeLevel === 'general' ? undefined : newPoint.scopeTarget
 		});
 		if (!result.ok) {
 			showErrors(result.error);
 			return;
 		}
 		saved(result.data, t('pointAdded'));
-		// Jenis dokumen tetap terpilih, supaya beberapa poin bisa ditambah berturut-turut.
-		newPoint = { documentTypeId: newPoint.documentTypeId, text: '' };
+		// Jenis dokumen dan cakupan tetap terpilih, supaya beberapa poin bisa ditambah berturut-turut.
+		newPoint = { ...newPoint, text: '' };
 	}
 
 	onMount(() => {
@@ -233,7 +298,7 @@
 				<p class="hint">{t('pointsIntro')}</p>
 				{#each types as d (d.id)}
 					<h3>{d.name}</h3>
-					<PointTable {version} points={pointsOf(subprocess, d.id)} {canEdit} onsaved={saved} />
+					<PointTable {version} points={pointsOf(subprocess, d.id)} {customers} {canEdit} onsaved={saved} />
 				{/each}
 				{#if canEdit}
 					<h3>{t('pointAddTitle', { name: subprocess.name })}</h3>
@@ -254,11 +319,75 @@
 							{#if fieldErrors.text}<p class="error">{fieldErrors.text}</p>{/if}
 							{#if fieldErrors.subprocess_id}<p class="error">{fieldErrors.subprocess_id}</p>{/if}
 						</div>
+						<ScopePicker
+							id="new-point-scope"
+							{customers}
+							levels={scopeLevels}
+							bind:level={newPoint.scopeLevel}
+							bind:targetId={newPoint.scopeTarget}
+							errors={fieldErrors}
+						/>
 						<button type="submit">{t('pointAdd')}</button>
 					</form>
 				{/if}
 			</section>
 		{/if}
+
+		<!-- Pratinjau: poin yang berlaku untuk satu model (M3.3, R-TPL-03). -->
+		<section>
+			<h2>{t('previewTitle')}</h2>
+			<p class="hint">{t('previewIntro')}</p>
+			<div class="row">
+				<div class="field">
+					<label for="preview-customer">{t('scopeLevelCustomer')}</label>
+					<select id="preview-customer" bind:value={previewCustomerId} onchange={choosePreviewCustomer}>
+						<option value="">{t('scopeCustomerChoose')}</option>
+						{#each customers as c (c.id)}
+							<option value={c.id}>{c.code} · {c.name}</option>
+						{/each}
+					</select>
+				</div>
+				<div class="field">
+					<label for="preview-model">{t('scopeLevelModel')}</label>
+					<select id="preview-model" bind:value={previewModelId} onchange={showPreview} disabled={previewCustomerId === ''}>
+						<option value="">{t('scopeModelChoose')}</option>
+						{#each previewModels as m (m.id)}
+							<option value={m.id}>{m.name}{m.model_group ? ` · ${m.model_group.name}` : ''}</option>
+						{/each}
+					</select>
+				</div>
+			</div>
+			{#if previewError}<p class="error" role="alert">{previewError}</p>{/if}
+			{#if preview}
+				{#if preview.subprocesses.length === 0}
+					<p>{t('previewEmpty')}</p>
+				{:else}
+					<table>
+						<caption>{preview.model.customer_code} · {preview.model.name}</caption>
+						<thead>
+							<tr>
+								<th>{t('subprocessColumnName')}</th>
+								<th>{t('pointDocumentType')}</th>
+								<th>{t('pointColumnText')}</th>
+								<th>{t('previewColumnFrom')}</th>
+							</tr>
+						</thead>
+						<tbody>
+							{#each preview.subprocesses as s (s.id)}
+								{#each s.points as p (p.point_id)}
+									<tr>
+										<td>{s.name}</td>
+										<td>{p.document_type.name}</td>
+										<td>{p.text}</td>
+										<td>{scopeText(p.scope)}</td>
+									</tr>
+								{/each}
+							{/each}
+						</tbody>
+					</table>
+				{/if}
+			{/if}
+		</section>
 	{/if}
 {/if}
 

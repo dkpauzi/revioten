@@ -782,6 +782,30 @@ func (e NumberSettingsSequenceFormat) Valid() bool {
 	}
 }
 
+// Defines values for PointScopeLevel.
+const (
+	PointScopeLevelCustomer   PointScopeLevel = "customer"
+	PointScopeLevelGeneral    PointScopeLevel = "general"
+	PointScopeLevelModel      PointScopeLevel = "model"
+	PointScopeLevelModelGroup PointScopeLevel = "model_group"
+)
+
+// Valid indicates whether the value is a known member of the PointScopeLevel enum.
+func (e PointScopeLevel) Valid() bool {
+	switch e {
+	case PointScopeLevelCustomer:
+		return true
+	case PointScopeLevelGeneral:
+		return true
+	case PointScopeLevelModel:
+		return true
+	case PointScopeLevelModelGroup:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PositionKey.
 const (
 	PositionKeyAdvisor            PositionKey = "advisor"
@@ -1757,6 +1781,14 @@ type NewPartNumber struct {
 	Number string `json:"number"`
 }
 
+// NewPointVariant defines model for NewPointVariant.
+type NewPointVariant struct {
+	// ScopeLevel customer, model_group, or model.
+	ScopeLevel    string `json:"scope_level"`
+	ScopeTargetId string `json:"scope_target_id"`
+	Text          string `json:"text"`
+}
+
 // NewPositionHolder defines model for NewPositionHolder.
 type NewPositionHolder struct {
 	PersonId string `json:"person_id"`
@@ -1795,8 +1827,14 @@ type NewSubprocess struct {
 // NewTemplatePoint defines model for NewTemplatePoint.
 type NewTemplatePoint struct {
 	DocumentTypeId string `json:"document_type_id"`
-	SubprocessId   string `json:"subprocess_id"`
-	Text           string `json:"text"`
+
+	// ScopeLevel general (when left out), customer, model_group, or model (M3.3, D-129).
+	ScopeLevel *string `json:"scope_level,omitempty"`
+
+	// ScopeTargetId The customer, model group, or model. Left out for general.
+	ScopeTargetId *string `json:"scope_target_id,omitempty"`
+	SubprocessId  string  `json:"subprocess_id"`
+	Text          string  `json:"text"`
 }
 
 // NextDocumentNumber defines model for NextDocumentNumber.
@@ -1975,6 +2013,37 @@ type PersonInfo struct {
 	Name string `json:"name"`
 }
 
+// PointScope What a point or variant is usually used for (M3.3, D-129). Fixed after it is made.
+type PointScope struct {
+	// Label Customer code, model group name, or model name. Left out for general.
+	Label *string         `json:"label,omitempty"`
+	Level PointScopeLevel `json:"level"`
+
+	// TargetId The customer, model group, or model. Left out for general.
+	TargetId *string `json:"target_id,omitempty"`
+}
+
+// PointScopeLevel defines model for PointScope.Level.
+type PointScopeLevel string
+
+// PointVariant defines model for PointVariant.
+type PointVariant struct {
+	Hidden bool `json:"hidden"`
+
+	// Id Fixed across versions, like a point ID.
+	Id string `json:"id"`
+
+	// Scope What a point or variant is usually used for (M3.3, D-129). Fixed after it is made.
+	Scope PointScope `json:"scope"`
+	Text  string     `json:"text"`
+}
+
+// PointVariantUpdate defines model for PointVariantUpdate.
+type PointVariantUpdate struct {
+	Hidden *bool  `json:"hidden,omitempty"`
+	Text   string `json:"text"`
+}
+
 // Position A job title in the approval workflow (D-54). The key never changes; the name may (D-58).
 type Position struct {
 	Holders []PositionHolder `json:"holders"`
@@ -2140,6 +2209,48 @@ type RatingCriterionInput struct {
 // RatingCriterionInputScale defines model for RatingCriterionInput.Scale.
 type RatingCriterionInputScale string
 
+// ResolvedModel defines model for ResolvedModel.
+type ResolvedModel struct {
+	CustomerCode string `json:"customer_code"`
+	CustomerId   string `json:"customer_id"`
+	Id           string `json:"id"`
+
+	// ModelGroupId Left out for a model without a group.
+	ModelGroupId   *string `json:"model_group_id,omitempty"`
+	ModelGroupName *string `json:"model_group_name,omitempty"`
+	Name           string  `json:"name"`
+}
+
+// ResolvedPoint defines model for ResolvedPoint.
+type ResolvedPoint struct {
+	DocumentType DocumentTypeRef `json:"document_type"`
+
+	// OriginId The point the variant belongs to; the same as point_id when no variant won.
+	OriginId string `json:"origin_id"`
+
+	// PointId The point or the variant that won.
+	PointId string `json:"point_id"`
+
+	// Scope What a point or variant is usually used for (M3.3, D-129). Fixed after it is made.
+	Scope PointScope `json:"scope"`
+	Text  string     `json:"text"`
+}
+
+// ResolvedPoints defines model for ResolvedPoints.
+type ResolvedPoints struct {
+	Model ResolvedModel `json:"model"`
+
+	// Subprocesses Visible sub-processes that have at least one point for the model, in order.
+	Subprocesses []ResolvedSubprocess `json:"subprocesses"`
+}
+
+// ResolvedSubprocess defines model for ResolvedSubprocess.
+type ResolvedSubprocess struct {
+	Id     string          `json:"id"`
+	Name   string          `json:"name"`
+	Points []ResolvedPoint `json:"points"`
+}
+
 // Role defines model for Role.
 type Role struct {
 	Id          string    `json:"id"`
@@ -2293,8 +2404,14 @@ type TemplatePoint struct {
 	Id string `json:"id"`
 
 	// Position Order within the sub-process for the same document type, from 1.
-	Position int    `json:"position"`
-	Text     string `json:"text"`
+	Position int `json:"position"`
+
+	// Scope What a point or variant is usually used for (M3.3, D-129). Fixed after it is made.
+	Scope PointScope `json:"scope"`
+	Text  string     `json:"text"`
+
+	// Variants From the broadest scope to the narrowest, hidden ones included (M3.3).
+	Variants []PointVariant `json:"variants"`
 }
 
 // TemplatePointUpdate defines model for TemplatePointUpdate.
@@ -2385,6 +2502,9 @@ type SpecialCodeId = string
 // SubprocessId defines model for SubprocessId.
 type SubprocessId = string
 
+// VariantId defines model for VariantId.
+type VariantId = string
+
 // ListAuditLogParams defines parameters for ListAuditLog.
 type ListAuditLogParams struct {
 	// Before Return entries with a lower number than this. Leave it out for the newest entries.
@@ -2454,6 +2574,11 @@ type ListModelsParams struct {
 type ListPartNumbersParams struct {
 	// CustomerId The customer whose master data is listed.
 	CustomerId CustomerIdQuery `form:"customer_id" json:"customer_id"`
+}
+
+// ResolveProcessTemplatePointsParams defines parameters for ResolveProcessTemplatePoints.
+type ResolveProcessTemplatePointsParams struct {
+	ModelId string `form:"model_id" json:"model_id"`
 }
 
 // ChangePasswordJSONRequestBody defines body for ChangePassword for application/json ContentType.
@@ -2573,11 +2698,17 @@ type AddTemplatePointJSONRequestBody = NewTemplatePoint
 // UpdateTemplatePointJSONRequestBody defines body for UpdateTemplatePoint for application/json ContentType.
 type UpdateTemplatePointJSONRequestBody = TemplatePointUpdate
 
+// AddPointVariantJSONRequestBody defines body for AddPointVariant for application/json ContentType.
+type AddPointVariantJSONRequestBody = NewPointVariant
+
 // AddSubprocessJSONRequestBody defines body for AddSubprocess for application/json ContentType.
 type AddSubprocessJSONRequestBody = NewSubprocess
 
 // UpdateSubprocessJSONRequestBody defines body for UpdateSubprocess for application/json ContentType.
 type UpdateSubprocessJSONRequestBody = SubprocessUpdate
+
+// UpdatePointVariantJSONRequestBody defines body for UpdatePointVariant for application/json ContentType.
+type UpdatePointVariantJSONRequestBody = PointVariantUpdate
 
 // CreateProcessTemplateJSONRequestBody defines body for CreateProcessTemplate for application/json ContentType.
 type CreateProcessTemplateJSONRequestBody = NewProcessTemplate
@@ -2794,12 +2925,21 @@ type ServerInterface interface {
 	// UpdateTemplatePoint Change the text of a point, move, hide, or show it in a draft version (E-6, R-TPL-04)
 	// (PUT /api/v1/process-template-versions/{processVersionId}/points/{pointId})
 	UpdateTemplatePoint(w http.ResponseWriter, r *http.Request, processVersionId ProcessVersionId, pointId PointId)
+	// AddPointVariant Add a variant of a point for a narrower scope in a draft version (E-6, M3.3, D-129)
+	// (POST /api/v1/process-template-versions/{processVersionId}/points/{pointId}/variants)
+	AddPointVariant(w http.ResponseWriter, r *http.Request, processVersionId ProcessVersionId, pointId PointId)
+	// ResolveProcessTemplatePoints The points of a version that apply to one model (L-2 for the customer of the model, M3.3, R-TPL-03)
+	// (GET /api/v1/process-template-versions/{processVersionId}/resolved)
+	ResolveProcessTemplatePoints(w http.ResponseWriter, r *http.Request, processVersionId ProcessVersionId, params ResolveProcessTemplatePointsParams)
 	// AddSubprocess Add a sub-process at the end of a draft version (E-6)
 	// (POST /api/v1/process-template-versions/{processVersionId}/subprocesses)
 	AddSubprocess(w http.ResponseWriter, r *http.Request, processVersionId ProcessVersionId)
 	// UpdateSubprocess Rename, move, hide, or show a sub-process in a draft version (E-6)
 	// (PUT /api/v1/process-template-versions/{processVersionId}/subprocesses/{subprocessId})
 	UpdateSubprocess(w http.ResponseWriter, r *http.Request, processVersionId ProcessVersionId, subprocessId SubprocessId)
+	// UpdatePointVariant Change the text of a variant, hide, or show it in a draft version (E-6, M3.3)
+	// (PUT /api/v1/process-template-versions/{processVersionId}/variants/{variantId})
+	UpdatePointVariant(w http.ResponseWriter, r *http.Request, processVersionId ProcessVersionId, variantId VariantId)
 	// ListProcessTemplates Process templates with a summary of their versions (L-2, UC-21, R-TPL-01)
 	// (GET /api/v1/process-templates)
 	ListProcessTemplates(w http.ResponseWriter, r *http.Request)
@@ -4394,6 +4534,83 @@ func (siw *ServerInterfaceWrapper) UpdateTemplatePoint(w http.ResponseWriter, r 
 	handler.ServeHTTP(w, r)
 }
 
+// AddPointVariant operation middleware
+func (siw *ServerInterfaceWrapper) AddPointVariant(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "processVersionId" -------------
+	var processVersionId ProcessVersionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "processVersionId", r.PathValue("processVersionId"), &processVersionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "processVersionId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "pointId" -------------
+	var pointId PointId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "pointId", r.PathValue("pointId"), &pointId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "pointId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AddPointVariant(w, r, processVersionId, pointId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ResolveProcessTemplatePoints operation middleware
+func (siw *ServerInterfaceWrapper) ResolveProcessTemplatePoints(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "processVersionId" -------------
+	var processVersionId ProcessVersionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "processVersionId", r.PathValue("processVersionId"), &processVersionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "processVersionId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ResolveProcessTemplatePointsParams
+
+	// ------------- Required query parameter "model_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "model_id", r.URL.Query(), &params.ModelId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "model_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "model_id", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ResolveProcessTemplatePoints(w, r, processVersionId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // AddSubprocess operation middleware
 func (siw *ServerInterfaceWrapper) AddSubprocess(w http.ResponseWriter, r *http.Request) {
 
@@ -4446,6 +4663,41 @@ func (siw *ServerInterfaceWrapper) UpdateSubprocess(w http.ResponseWriter, r *ht
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UpdateSubprocess(w, r, processVersionId, subprocessId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdatePointVariant operation middleware
+func (siw *ServerInterfaceWrapper) UpdatePointVariant(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "processVersionId" -------------
+	var processVersionId ProcessVersionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "processVersionId", r.PathValue("processVersionId"), &processVersionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "processVersionId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "variantId" -------------
+	var variantId VariantId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "variantId", r.PathValue("variantId"), &variantId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "variantId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdatePointVariant(w, r, processVersionId, variantId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -4968,6 +5220,9 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/process-template-versions/{processVersionId}/subprocesses/{subprocessId}", wrapper.UpdateSubprocess)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/process-template-versions/{processVersionId}/points", wrapper.AddTemplatePoint)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/process-template-versions/{processVersionId}/points/{pointId}", wrapper.UpdateTemplatePoint)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/process-template-versions/{processVersionId}/points/{pointId}/variants", wrapper.AddPointVariant)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/process-template-versions/{processVersionId}/variants/{variantId}", wrapper.UpdatePointVariant)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/process-template-versions/{processVersionId}/resolved", wrapper.ResolveProcessTemplatePoints)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/system-settings", wrapper.GetSystemSettings)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/system-settings", wrapper.UpdateSystemSettings)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/audit-log", wrapper.ListAuditLog)
@@ -7509,6 +7764,87 @@ func (response UpdateTemplatePointdefaultJSONResponse) VisitUpdateTemplatePointR
 	return err
 }
 
+type AddPointVariantRequestObject struct {
+	ProcessVersionId ProcessVersionId `json:"processVersionId"`
+	PointId          PointId          `json:"pointId"`
+	Body             *AddPointVariantJSONRequestBody
+}
+
+type AddPointVariantResponseObject interface {
+	VisitAddPointVariantResponse(w http.ResponseWriter) error
+}
+
+type AddPointVariant201JSONResponse ProcessTemplateVersion
+
+func (response AddPointVariant201JSONResponse) VisitAddPointVariantResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddPointVariantdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response AddPointVariantdefaultJSONResponse) VisitAddPointVariantResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResolveProcessTemplatePointsRequestObject struct {
+	ProcessVersionId ProcessVersionId `json:"processVersionId"`
+	Params           ResolveProcessTemplatePointsParams
+}
+
+type ResolveProcessTemplatePointsResponseObject interface {
+	VisitResolveProcessTemplatePointsResponse(w http.ResponseWriter) error
+}
+
+type ResolveProcessTemplatePoints200JSONResponse ResolvedPoints
+
+func (response ResolveProcessTemplatePoints200JSONResponse) VisitResolveProcessTemplatePointsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResolveProcessTemplatePointsdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ResolveProcessTemplatePointsdefaultJSONResponse) VisitResolveProcessTemplatePointsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type AddSubprocessRequestObject struct {
 	ProcessVersionId ProcessVersionId `json:"processVersionId"`
 	Body             *AddSubprocessJSONRequestBody
@@ -7579,6 +7915,47 @@ type UpdateSubprocessdefaultJSONResponse struct {
 }
 
 func (response UpdateSubprocessdefaultJSONResponse) VisitUpdateSubprocessResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdatePointVariantRequestObject struct {
+	ProcessVersionId ProcessVersionId `json:"processVersionId"`
+	VariantId        VariantId        `json:"variantId"`
+	Body             *UpdatePointVariantJSONRequestBody
+}
+
+type UpdatePointVariantResponseObject interface {
+	VisitUpdatePointVariantResponse(w http.ResponseWriter) error
+}
+
+type UpdatePointVariant200JSONResponse ProcessTemplateVersion
+
+func (response UpdatePointVariant200JSONResponse) VisitUpdatePointVariantResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdatePointVariantdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response UpdatePointVariantdefaultJSONResponse) VisitUpdatePointVariantResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -8550,12 +8927,21 @@ type StrictServerInterface interface {
 	// UpdateTemplatePoint Change the text of a point, move, hide, or show it in a draft version (E-6, R-TPL-04)
 	// (PUT /api/v1/process-template-versions/{processVersionId}/points/{pointId})
 	UpdateTemplatePoint(ctx context.Context, request UpdateTemplatePointRequestObject) (UpdateTemplatePointResponseObject, error)
+	// AddPointVariant Add a variant of a point for a narrower scope in a draft version (E-6, M3.3, D-129)
+	// (POST /api/v1/process-template-versions/{processVersionId}/points/{pointId}/variants)
+	AddPointVariant(ctx context.Context, request AddPointVariantRequestObject) (AddPointVariantResponseObject, error)
+	// ResolveProcessTemplatePoints The points of a version that apply to one model (L-2 for the customer of the model, M3.3, R-TPL-03)
+	// (GET /api/v1/process-template-versions/{processVersionId}/resolved)
+	ResolveProcessTemplatePoints(ctx context.Context, request ResolveProcessTemplatePointsRequestObject) (ResolveProcessTemplatePointsResponseObject, error)
 	// AddSubprocess Add a sub-process at the end of a draft version (E-6)
 	// (POST /api/v1/process-template-versions/{processVersionId}/subprocesses)
 	AddSubprocess(ctx context.Context, request AddSubprocessRequestObject) (AddSubprocessResponseObject, error)
 	// UpdateSubprocess Rename, move, hide, or show a sub-process in a draft version (E-6)
 	// (PUT /api/v1/process-template-versions/{processVersionId}/subprocesses/{subprocessId})
 	UpdateSubprocess(ctx context.Context, request UpdateSubprocessRequestObject) (UpdateSubprocessResponseObject, error)
+	// UpdatePointVariant Change the text of a variant, hide, or show it in a draft version (E-6, M3.3)
+	// (PUT /api/v1/process-template-versions/{processVersionId}/variants/{variantId})
+	UpdatePointVariant(ctx context.Context, request UpdatePointVariantRequestObject) (UpdatePointVariantResponseObject, error)
 	// ListProcessTemplates Process templates with a summary of their versions (L-2, UC-21, R-TPL-01)
 	// (GET /api/v1/process-templates)
 	ListProcessTemplates(ctx context.Context, request ListProcessTemplatesRequestObject) (ListProcessTemplatesResponseObject, error)
@@ -10496,6 +10882,67 @@ func (sh *strictHandler) UpdateTemplatePoint(w http.ResponseWriter, r *http.Requ
 	}
 }
 
+// AddPointVariant operation middleware
+func (sh *strictHandler) AddPointVariant(w http.ResponseWriter, r *http.Request, processVersionId ProcessVersionId, pointId PointId) {
+	var request AddPointVariantRequestObject
+
+	request.ProcessVersionId = processVersionId
+	request.PointId = pointId
+
+	var body AddPointVariantJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.AddPointVariant(ctx, request.(AddPointVariantRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AddPointVariant")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AddPointVariantResponseObject); ok {
+		if err := validResponse.VisitAddPointVariantResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ResolveProcessTemplatePoints operation middleware
+func (sh *strictHandler) ResolveProcessTemplatePoints(w http.ResponseWriter, r *http.Request, processVersionId ProcessVersionId, params ResolveProcessTemplatePointsParams) {
+	var request ResolveProcessTemplatePointsRequestObject
+
+	request.ProcessVersionId = processVersionId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ResolveProcessTemplatePoints(ctx, request.(ResolveProcessTemplatePointsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ResolveProcessTemplatePoints")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ResolveProcessTemplatePointsResponseObject); ok {
+		if err := validResponse.VisitResolveProcessTemplatePointsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // AddSubprocess operation middleware
 func (sh *strictHandler) AddSubprocess(w http.ResponseWriter, r *http.Request, processVersionId ProcessVersionId) {
 	var request AddSubprocessRequestObject
@@ -10556,6 +11003,40 @@ func (sh *strictHandler) UpdateSubprocess(w http.ResponseWriter, r *http.Request
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UpdateSubprocessResponseObject); ok {
 		if err := validResponse.VisitUpdateSubprocessResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdatePointVariant operation middleware
+func (sh *strictHandler) UpdatePointVariant(w http.ResponseWriter, r *http.Request, processVersionId ProcessVersionId, variantId VariantId) {
+	var request UpdatePointVariantRequestObject
+
+	request.ProcessVersionId = processVersionId
+	request.VariantId = variantId
+
+	var body UpdatePointVariantJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdatePointVariant(ctx, request.(UpdatePointVariantRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdatePointVariant")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdatePointVariantResponseObject); ok {
+		if err := validResponse.VisitUpdatePointVariantResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

@@ -1145,6 +1145,90 @@ export type TemplatePoint = {
      */
     position: number;
     hidden: boolean;
+    scope: PointScope;
+    /**
+     * From the broadest scope to the narrowest, hidden ones included (M3.3).
+     */
+    variants: Array<PointVariant>;
+};
+
+/**
+ * What a point or variant is usually used for (M3.3, D-129). Fixed after it is made.
+ */
+export type PointScope = {
+    level: 'general' | 'customer' | 'model_group' | 'model';
+    /**
+     * The customer, model group, or model. Left out for general.
+     */
+    target_id?: string;
+    /**
+     * Customer code, model group name, or model name. Left out for general.
+     */
+    label?: string;
+};
+
+export type PointVariant = {
+    /**
+     * Fixed across versions, like a point ID.
+     */
+    id: string;
+    scope: PointScope;
+    text: string;
+    hidden: boolean;
+};
+
+export type NewPointVariant = {
+    /**
+     * customer, model_group, or model.
+     */
+    scope_level: string;
+    scope_target_id: string;
+    text: string;
+};
+
+export type PointVariantUpdate = {
+    text: string;
+    hidden?: boolean;
+};
+
+export type ResolvedPoints = {
+    model: ResolvedModel;
+    /**
+     * Visible sub-processes that have at least one point for the model, in order.
+     */
+    subprocesses: Array<ResolvedSubprocess>;
+};
+
+export type ResolvedModel = {
+    id: string;
+    name: string;
+    customer_id: string;
+    customer_code: string;
+    /**
+     * Left out for a model without a group.
+     */
+    model_group_id?: string;
+    model_group_name?: string;
+};
+
+export type ResolvedSubprocess = {
+    id: string;
+    name: string;
+    points: Array<ResolvedPoint>;
+};
+
+export type ResolvedPoint = {
+    /**
+     * The point or the variant that won.
+     */
+    point_id: string;
+    /**
+     * The point the variant belongs to; the same as point_id when no variant won.
+     */
+    origin_id: string;
+    document_type: DocumentTypeRef;
+    text: string;
+    scope: PointScope;
 };
 
 export type NewSubprocess = {
@@ -1161,6 +1245,14 @@ export type NewTemplatePoint = {
     subprocess_id: string;
     document_type_id: string;
     text: string;
+    /**
+     * general (when left out), customer, model_group, or model (M3.3, D-129).
+     */
+    scope_level?: string;
+    /**
+     * The customer, model group, or model. Left out for general.
+     */
+    scope_target_id?: string;
 };
 
 export type TemplatePointUpdate = {
@@ -1308,6 +1400,8 @@ export type ProcessVersionId = string;
 export type SubprocessId = string;
 
 export type PointId = string;
+
+export type VariantId = string;
 
 export type GetHealthData = {
     body?: never;
@@ -4135,6 +4229,115 @@ export type UpdateTemplatePointResponses = {
 };
 
 export type UpdateTemplatePointResponse = UpdateTemplatePointResponses[keyof UpdateTemplatePointResponses];
+
+export type AddPointVariantData = {
+    body: NewPointVariant;
+    path: {
+        processVersionId: string;
+        pointId: string;
+    };
+    query?: never;
+    url: '/api/v1/process-template-versions/{processVersionId}/points/{pointId}/variants';
+};
+
+export type AddPointVariantErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type AddPointVariantError = AddPointVariantErrors[keyof AddPointVariantErrors];
+
+export type AddPointVariantResponses = {
+    /**
+     * The version after the change.
+     */
+    201: ProcessTemplateVersion;
+};
+
+export type AddPointVariantResponse = AddPointVariantResponses[keyof AddPointVariantResponses];
+
+export type UpdatePointVariantData = {
+    body: PointVariantUpdate;
+    path: {
+        processVersionId: string;
+        variantId: string;
+    };
+    query?: never;
+    url: '/api/v1/process-template-versions/{processVersionId}/variants/{variantId}';
+};
+
+export type UpdatePointVariantErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type UpdatePointVariantError = UpdatePointVariantErrors[keyof UpdatePointVariantErrors];
+
+export type UpdatePointVariantResponses = {
+    /**
+     * The version after the change.
+     */
+    200: ProcessTemplateVersion;
+};
+
+export type UpdatePointVariantResponse = UpdatePointVariantResponses[keyof UpdatePointVariantResponses];
+
+export type ResolveProcessTemplatePointsData = {
+    body?: never;
+    path: {
+        processVersionId: string;
+    };
+    query: {
+        model_id: string;
+    };
+    url: '/api/v1/process-template-versions/{processVersionId}/resolved';
+};
+
+export type ResolveProcessTemplatePointsErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ResolveProcessTemplatePointsError = ResolveProcessTemplatePointsErrors[keyof ResolveProcessTemplatePointsErrors];
+
+export type ResolveProcessTemplatePointsResponses = {
+    /**
+     * The points that apply.
+     */
+    200: ResolvedPoints;
+};
+
+export type ResolveProcessTemplatePointsResponse = ResolveProcessTemplatePointsResponses[keyof ResolveProcessTemplatePointsResponses];
 
 export type GetSystemSettingsData = {
     body?: never;

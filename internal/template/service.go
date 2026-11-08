@@ -724,6 +724,8 @@ func result(err error, doing string) error {
 		return taken("process_id", "This process already has a process template.")
 	case db.IsUniqueViolation(err, "process_template_subprocesses_name_key"):
 		return taken("name", "This name is already used by another sub-process in this version.")
+	case db.IsUniqueViolation(err, "template_points_variant_scope_key"):
+		return taken("scope_target_id", "This point already has a variant for this scope.")
 	case errors.As(err, &invalid), errors.As(err, &conflict), errors.Is(err, problem.ErrNotFound):
 		return err
 	}

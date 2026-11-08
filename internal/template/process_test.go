@@ -283,7 +283,7 @@ func TestProcessTemplateRules(t *testing.T) {
 	_, err = f.s.CreateProcessTemplate(ctx, f.maintainer, "01a180aa-a98b-7bf2-8e0d-b97a25ecc489")
 	check("proses tidak ada", err, "process_id:invalid_format")
 	_, err = f.s.CreateProcessTemplate(ctx, f.maintainer, v.Process.ID)
-	check("template kedua untuk proses yang sama (ASUMSI E-72)", err, "process_id:taken")
+	check("template kedua untuk proses yang sama (D-129)", err, "process_id:taken")
 
 	_, err = f.s.AddSubprocess(ctx, f.maintainer, v.ID, " ")
 	check("nama kosong", err, "name:required")

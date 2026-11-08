@@ -42,7 +42,8 @@ type DocumentTypeRef struct {
 }
 
 // ProcessTemplate adalah process template satu proses beserta ringkasan
-// versinya. ASUMSI E-72: satu template per proses, dengan cakupan umum.
+// versinya. Satu template per proses (D-129, keputusan E-72); cakupan ada di
+// setiap poin (M3.3).
 type ProcessTemplate struct {
 	ID        string
 	Process   ProcessRef
@@ -78,13 +79,15 @@ type Subprocess struct {
 }
 
 // Point adalah satu poin: satu butir setingkat baris untuk satu jenis
-// dokumen (R-TPL-04).
+// dokumen (R-TPL-04), beserta cakupan dan variannya (M3.3, D-129).
 type Point struct {
 	ID           string // tetap lintas versi; baris dokumen nanti menunjuk ID ini
 	DocumentType DocumentTypeRef
 	Text         string
 	Position     int // urutan dalam sub-proses untuk jenis dokumen yang sama, mulai 1
 	Hidden       bool
+	Scope        Scope     // biasanya dipakai untuk: umum, customer, group model, atau model
+	Variants     []Variant // dari cakupan terluas ke tersempit, tidak pernah nil
 }
 
 // SubprocessUpdate adalah isian perubahan sub-proses. Nama wajib dikirim;
@@ -95,12 +98,13 @@ type SubprocessUpdate struct {
 	Hidden   *bool
 }
 
-// NewPoint adalah isian poin baru. Sub-proses dan jenis dokumennya tetap
-// setelah poin dibuat.
+// NewPoint adalah isian poin baru. Sub-proses, jenis dokumen, dan cakupannya
+// tetap setelah poin dibuat. Cakupan kosong berarti umum.
 type NewPoint struct {
 	SubprocessID   string
 	DocumentTypeID string
 	Text           string
+	Scope          ScopeInput
 }
 
 // PointUpdate adalah isian perubahan poin. Teks wajib dikirim; isian nil
@@ -159,6 +163,21 @@ func findPoint(v ProcessVersion, id string) (Subprocess, Point, bool) {
 		}
 	}
 	return Subprocess{}, Point{}, false
+}
+
+// findVariant mencari varian dalam versi menurut ID-nya, beserta sub-proses
+// dan poin asalnya.
+func findVariant(v ProcessVersion, id string) (Subprocess, Point, Variant, bool) {
+	for _, s := range v.Subprocesses {
+		for _, p := range s.Points {
+			for _, variant := range p.Variants {
+				if variant.ID == id {
+					return s, p, variant, true
+				}
+			}
+		}
+	}
+	return Subprocess{}, Point{}, Variant{}, false
 }
 
 // countPoints menghitung poin satu sub-proses untuk satu jenis dokumen,

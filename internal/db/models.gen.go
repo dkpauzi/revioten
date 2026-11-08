@@ -287,6 +287,14 @@ type ProcessTemplateSubprocess struct {
 	Hidden       bool
 }
 
+type ProcessTemplateVariant struct {
+	VersionID     string
+	PointID       string
+	OriginPointID string
+	Text          string
+	Hidden        bool
+}
+
 type ProcessTemplateVersion struct {
 	ID         string
 	TemplateID string
@@ -358,4 +366,9 @@ type TemplatePoint struct {
 	SubprocessID   string
 	DocumentTypeID string
 	CreatedAt      time.Time
+	Scope          string
+	CustomerID     *string
+	ModelGroupID   *string
+	ModelID        *string
+	VariantOf      *string
 }

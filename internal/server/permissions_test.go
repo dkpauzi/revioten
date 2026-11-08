@@ -211,6 +211,13 @@ func TestPermissionsPerOperation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// Satu varian customer dari poin itu (M3.3), untuk operasi mengubah varian.
+	iqcVersion, err = processTemplates.AddVariant(ctx, engineer, iqcVersion.ID, iqcVersion.Subprocesses[0].Points[0].ID, template.NewVariant{
+		Scope: template.ScopeInput{Level: template.ScopeCustomer, TargetID: cust.ID}, Text: "Check MSL label customer",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	reflow, err := processes.Create(ctx, engineer, process.Input{Name: "Reflow"})
 	if err != nil {
 		t.Fatal(err)
@@ -225,7 +232,7 @@ func TestPermissionsPerOperation(t *testing.T) {
 		"changeTypeId": changeTypes[0].ID, "changeSourceId": sources[0].ID, "fourMCategoryId": categories[0].ID,
 		"formatTemplateId": pfmeaFormat.ID, "formatVersionId": pfmeaVersion.ID, "formatFieldId": pfmeaVersion.Fields[0].ID,
 		"freeProcessId": reflow.ID, "processVersionId": iqcVersion.ID, "subprocessId": iqcVersion.Subprocesses[0].ID,
-		"pointId": iqcVersion.Subprocesses[0].Points[0].ID,
+		"pointId": iqcVersion.Subprocesses[0].Points[0].ID, "variantId": iqcVersion.Subprocesses[0].Points[0].Variants[0].ID,
 	}
 
 	// Alamat ditulis seperti di kontrak. Urutan penting: operasi yang
@@ -272,6 +279,10 @@ func TestPermissionsPerOperation(t *testing.T) {
 		{http.MethodPut, "/api/v1/process-template-versions/{processVersionId}/subprocesses/{subprocessId}", `{"name":"IQC MSD"}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodPost, "/api/v1/process-template-versions/{processVersionId}/points", `{"subprocess_id":"{subprocessId}","document_type_id":"{cpTypeId}","text":"Check HIC"}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
 		{http.MethodPut, "/api/v1/process-template-versions/{processVersionId}/points/{pointId}", `{"text":"Check MSL label"}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		// Varian poin diubah Pengelola template (E-6, M3.3); pratinjau per model memakai L-2.
+		{http.MethodPost, "/api/v1/process-template-versions/{processVersionId}/points/{pointId}/variants", `{"scope_level":"model","scope_target_id":"{modelId}","text":"Check MSL label model"}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
+		{http.MethodPut, "/api/v1/process-template-versions/{processVersionId}/variants/{variantId}", `{"text":"Check MSL label customer"}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		{http.MethodGet, "/api/v1/process-template-versions/{processVersionId}/resolved?model_id={modelId}", "", http.StatusOK, http.StatusOK, http.StatusOK},
 		// Jenis dokumen dan perubahan diubah Admin (A-2, UC-05).
 		{http.MethodGet, "/api/v1/number-settings", "", http.StatusOK, http.StatusOK, http.StatusOK},
 		{http.MethodPut, "/api/v1/number-settings", `{"factory_code":"T"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},

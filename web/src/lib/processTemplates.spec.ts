@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { DocumentType, ProcessTemplate, Subprocess, TemplatePoint } from './api/gen/index.ts';
 import { en } from './i18n/en.ts';
-import { pointSummary, pointTypes, pointsOf, templateOf, versionText } from './processTemplates.ts';
+import { pointSummary, pointTypes, pointsOf, scopeText, templateOf, variantLevels, versionText } from './processTemplates.ts';
 
 const types: DocumentType[] = [
 	{ id: 'd-pfd', key: 'pfd', name: 'PFD', letter: 'H', prefix: 'SH' },
@@ -17,9 +17,29 @@ function point(id: string, type: DocumentType, position: number): TemplatePoint 
 		document_type: { id: type.id, key: type.key ?? 'pfd', name: type.name },
 		text: `Point ${id}`,
 		position,
-		hidden: false
+		hidden: false,
+		scope: { level: 'general' },
+		variants: []
 	};
 }
+
+// Cakupan poin dan varian (M3.3, D-129).
+describe('cakupan poin di layar', () => {
+	it('menulis cakupan dengan nama sasarannya', () => {
+		expect(scopeText({ level: 'general' })).toBe(en.scopeGeneral);
+		expect(scopeText({ level: 'customer', target_id: 'c', label: 'AB' })).toBe('Customer AB');
+		expect(scopeText({ level: 'model_group', target_id: 'g', label: 'Group Laser' })).toBe('Model group Group Laser');
+		expect(scopeText({ level: 'model', target_id: 'm', label: 'K-125' })).toBe('Model K-125');
+	});
+
+	// Varian selalu lebih sempit dari poin asalnya; poin khusus model tidak punya varian.
+	it('menawarkan tingkat varian yang lebih sempit dari poin asalnya', () => {
+		expect(variantLevels('general')).toEqual(['customer', 'model_group', 'model']);
+		expect(variantLevels('customer')).toEqual(['model_group', 'model']);
+		expect(variantLevels('model_group')).toEqual(['model']);
+		expect(variantLevels('model')).toEqual([]);
+	});
+});
 
 describe('process template di layar', () => {
 	it('mencari template milik satu proses', () => {

@@ -49,6 +49,9 @@ import type {
 	ProcessTemplateVersion,
 	SubprocessUpdate,
 	TemplatePointUpdate,
+	NewPointVariant,
+	PointVariantUpdate,
+	ResolvedPoints,
 	RatingCriterionInput,
 	NumberImportReport,
 	NumberImportRequest,
@@ -621,6 +624,40 @@ export function updateTemplatePoint(
 ): Promise<ApiResult<ProcessTemplateVersion>> {
 	const path = itemPath('process-template-versions', versionId) + '/points/' + encodeURIComponent(pointId);
 	return call<ProcessTemplateVersion>(fetchFn, path, jsonRequest('PUT', input));
+}
+
+// addPointVariant memanggil POST /api/v1/process-template-versions/{id}/points/{pointId}/variants (E-6, M3.3).
+export function addPointVariant(
+	versionId: string,
+	pointId: string,
+	input: NewPointVariant,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<ProcessTemplateVersion>> {
+	const path = itemPath('process-template-versions', versionId) + '/points/' + encodeURIComponent(pointId) + '/variants';
+	return call<ProcessTemplateVersion>(fetchFn, path, jsonRequest('POST', input));
+}
+
+// updatePointVariant memanggil PUT /api/v1/process-template-versions/{id}/variants/{variantId} (E-6, M3.3).
+// Isian yang tidak dikirim tetap (D-111).
+export function updatePointVariant(
+	versionId: string,
+	variantId: string,
+	input: PointVariantUpdate,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<ProcessTemplateVersion>> {
+	const path = itemPath('process-template-versions', versionId) + '/variants/' + encodeURIComponent(variantId);
+	return call<ProcessTemplateVersion>(fetchFn, path, jsonRequest('PUT', input));
+}
+
+// resolveProcessTemplatePoints memanggil GET /api/v1/process-template-versions/{id}/resolved?model_id=
+// untuk pratinjau poin yang berlaku bagi satu model (M3.3).
+export function resolveProcessTemplatePoints(
+	versionId: string,
+	modelId: string,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<ResolvedPoints>> {
+	const path = itemPath('process-template-versions', versionId) + '/resolved?model_id=' + encodeURIComponent(modelId);
+	return call<ResolvedPoints>(fetchFn, path, { method: 'GET' });
 }
 
 // listApprovalRoutes memanggil GET /api/v1/approval-routes.

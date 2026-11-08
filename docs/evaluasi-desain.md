@@ -93,11 +93,13 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-69 | Urutan kunci transaksi penomoran: deadlock dengan ganti kode customer | Sulit dibangun | M2.1, M2.2, M2.4 | Tidak (sudah diperbaiki di kode) | Terbuka |
 | E-70 | Isi awal format template dan aturan field yang belum ditetapkan | Celah | M3.1, M4.1 | Tidak (perlu sebelum M4.1) | Diputuskan sebagian (D-124) |
 | E-71 | Aturan sorot PFMEA: arti "severity 8" dan nilai mana yang disorot | Ambigu | M3.1 | Tidak | Terbuka |
-| E-72 | Satuan process template: satu per proses, atau satu pustaka untuk semua proses | Ambigu | M3.2, M3.3, M3.4, M5.8 | Tidak (perlu sebelum M3.3) | Terbuka |
+| E-72 | Satuan process template: satu per proses, atau satu pustaka untuk semua proses | Ambigu | M3.2, M3.3, M3.4, M5.8 | Tidak (perlu sebelum M3.3) | Diputuskan (D-129) |
 | E-73 | Isi poin process template dan format template yang diikutinya | Celah | M3.2, M4.5, M5.8, M7.4 | Tidak (perlu sebelum M4.5) | Terbuka |
 | E-74 | Kode customer tiga huruf di register (AJI, AVI) bertentangan dengan D-100 | Kontradiksi | M1.4, M2.1, M2.5 | Tidak (perlu sebelum register asli diimpor) | Diputuskan (D-125) |
 | E-75 | Register terpisah PL1 dan PL3: plant, line, atau Project Leader (Q-19) | Ambigu | M2.1, M2.5 | Tidak (perlu sebelum register asli diimpor) | Diputuskan (D-126) |
 | E-76 | Proses baru diminta saat menyusun, dan urutan standar proses di pustaka | Celah | M1.5, M3.3, M4.5, M4.6 | Tidak | Terbuka |
+| E-77 | Doc ref (Relevant Document) berbeda per model, padahal poinnya umum | Celah | M3.3, M4.1, M4.5, R-DOC-11 | Tidak (perlu sebelum M4.5) | Diputuskan (D-130) |
+| E-78 | Cakupan poin yang salah pilih: diubah, atau poin disembunyikan lalu dibuat ulang | Celah | M3.3, M3.4 | Tidak | Terbuka |
 
 ## Keputusan 4 November 2026
 
@@ -1328,7 +1330,7 @@ Salin blok ini untuk setiap temuan baru.
   - satuan template adalah proses, dan setiap proses hanya punya satu template (opsi a);
   - cakupan (umum, customer, group model, model) melekat pada poin, bukan pada template. Catatan di migrasi 00012 bahwa M3.3 mengganti kunci unik `process_id` dengan kunci per proses dan cakupan tidak berlaku lagi bila ini diputuskan: M3.3 menambah cakupan pada poin.
 - **Rekomendasi Claude Code (usulan, diperbarui 3 November 2026):** (a), dengan cakupan per poin sesuai UX-01. Tidak perlu perubahan kode M3.2.
-- **Keputusan pemilik:**
+- **Keputusan pemilik (8 November 2026, D-129):** (a). Kutipan: "template dibuatkan per process, kemudian setiap point dalam process bisa diputuskan sebagai general, customer, group model atau model. kemudian ada juga informasi bahwa point tersebut biasanya digunakan untuk general atau template tertentu. dan user bisa memilih, walaupun biasanya digunakan untuk general, namun dirubah ke model karena ada sedikit penyesuaian." Contoh pemilik: proses laser marking punya poin laser type, content, dan location. Normalnya poin ini umum, tetapi laser type berbeda per model, jadi pemakaian sebenarnya bisa per model.
 
 ### E-73 · Isi poin process template dan format template yang diikutinya
 
@@ -1408,6 +1410,42 @@ Salin blok ini untuk setiap temuan baru.
   - Urutan standar: (a) pustaka umum menyimpan urutan dan nomor operasi standar sebagai titik awal PFD baru; (b) tidak ada urutan standar, dan PFD baru dimulai dari model serupa (R-CMP-05).
 - **Rekomendasi Claude Code (usulan):** (a) untuk keduanya, dibangun bersama M4.5 dan M4.6. Master proses (M1.5) dan process template (M3.2) tidak perlu diubah sekarang.
 - **Asumsi sementara di kode:** tidak ada.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-77 · Doc ref (Relevant Document) berbeda per model, padahal poinnya umum
+
+- **Tanggal dan milestone:** 8 November 2026, saat keputusan E-72. Berdampak ke M3.3 (cakupan poin), M4.1 (baris dokumen), M4.5 (perakitan), dan R-DOC-11 (master dokumen terkait).
+- **Jenis:** Celah
+- **Rujukan:** R-DOC-11, R-TPL-03, R-CMP-04, D-129, E-73, kolom Relevant Document CP (D-124).
+- **Temuan:** masukan pemilik, 8 November 2026: "ada juga kolom Doc ref: disini ada beberapa process yang mencantumkan contoh SW-KT-001, ini adalah WI process model, dan tiap model tentu punya nomor WI yang berbeda. namun karna di doc reff tersebut mencantumkan semua doc untuk process tersebut di awal, ini akan menjadi tantangan karna aktual nya doc no nya akan berbeda, padahal point awal tiap process biasanya general seperti pengecekan Programe name, atau verifikasi part". Artinya:
+  1. Kolom Doc ref di baris pertama sebuah proses memuat semua dokumen untuk proses itu, termasuk WI proses milik model (misalnya SW-KT-001).
+  2. Poin di baris itu biasanya umum (cek nama program, verifikasi part), tetapi nomor dokumennya berbeda untuk setiap model.
+  3. Bila nomor itu disimpan di isi poin, setiap model butuh varian poin hanya karena nomor dokumen, dan varian akan menumpuk.
+- **Dampak bila dibiarkan:** perakitan (M4.5) menyalin nomor WI model lain ke dokumen baru, atau penyusun harus mengetik ulang Doc ref di setiap dokumen dan bisa salah ketik.
+- **Opsi:**
+  - (a) Doc ref tidak disimpan di poin. Kolom itu diisi dari master dokumen terkait (R-DOC-11) menurut model dan proses: setiap WI, SOP, atau QEP dicatat sekali beserta proses dan cakupannya (umum, customer, group model, atau model), lalu baris pertama setiap proses menampilkan semuanya saat dirakit. Poin umum tetap umum.
+  - (b) Doc ref menjadi kolom lokal: tidak pernah diambil dari template, selalu diketik di dokumen.
+  - (c) Doc ref tetap di isi poin, dan nomor yang berbeda dibuat sebagai varian poin per model (D-129).
+- **Rekomendasi Claude Code (usulan):** (a). Nomor dan judul tetap sama dengan sumbernya (tujuan R-DOC-11), poin umum tidak perlu varian, dan revisi WI cukup dicatat sekali di master. Pilihan (c) memperbanyak varian hanya karena nomor dokumen, dan (b) menghilangkan pemeriksaan bahwa nomornya benar-benar ada.
+- **Asumsi sementara di kode:** tidak ada. M3.3 tidak menyentuh kolom Doc ref, karena poin di M3.2 masih berisi satu baris teks (ASUMSI E-73).
+- **Menghambat milestone?** Tidak (perlu sebelum M4.5)
+- **Status:** Diputuskan
+- **Keputusan pemilik (8 November 2026, D-130):** (a). Kutipan: "E-77 a". Master dokumen terkait (R-DOC-11) dibangun sebelum M4.5.
+
+### E-78 · Cakupan poin yang salah pilih
+
+- **Tanggal dan milestone:** 8 November 2026, M3.3. Berdampak ke M3.4 (versi template) dan M4.5 (perakitan).
+- **Jenis:** Celah
+- **Rujukan:** D-129, R-TPL-03, R-TPL-04, R-CMP-04.
+- **Temuan:** D-129 menetapkan setiap poin punya cakupan, tetapi belum menyebut apakah cakupan itu boleh diubah setelah poin dibuat. Misalnya poin dibuat "General" padahal seharusnya khusus customer AB.
+- **Dampak bila dibiarkan:** bila cakupan bisa diubah, baris dokumen yang sudah tertaut ke poin itu (M4.5) bisa tiba-tiba tidak berlaku lagi untuk modelnya. Bila tidak bisa diubah, Pengelola template harus menyembunyikan poin lalu membuat poin baru, dan tautan baris lama tetap ke poin lama.
+- **Opsi:**
+  - (a) Cakupan tetap. Salah pilih dibetulkan dengan menyembunyikan poin dan membuat poin baru dengan cakupan yang benar.
+  - (b) Cakupan boleh diubah di versi draft saja, dan berlaku sejak versi itu diterbitkan (M3.4).
+- **Rekomendasi Claude Code (usulan):** (a) untuk sekarang, karena paling aman bagi tautan baris dokumen. Ditinjau lagi di M3.4 saat versi template punya status terbit.
+- **Asumsi sementara di kode (ASUMSI E-78):** (a). Role aplikasi tidak punya UPDATE untuk kolom cakupan di `template_points` (migrasi 00015).
 - **Menghambat milestone?** Tidak
 - **Status:** Terbuka
 - **Keputusan pemilik:**
