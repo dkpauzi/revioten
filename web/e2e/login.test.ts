@@ -2,7 +2,7 @@
 import { expect, test } from '@playwright/test';
 import { en } from '../src/lib/i18n/en.ts';
 import { admin } from './account.mjs';
-import { logIn } from './helpers.ts';
+import { logIn, logOut } from './helpers.ts';
 
 test('halaman tanpa login diarahkan ke login, lalu kembali setelah login', async ({ page }) => {
 	await page.goto('/customers');
@@ -37,8 +37,7 @@ test('password salah ditolak dengan pesan umum', async ({ page }) => {
 
 test('logout mengakhiri sesi', async ({ page }) => {
 	await logIn(page);
-	await page.getByRole('button', { name: en.logout }).click();
-	await expect(page).toHaveURL('/login');
+	await logOut(page);
 
 	// Sesi sudah dihapus di server: halaman lain kembali diarahkan ke login.
 	await page.goto('/customers');
@@ -67,7 +66,7 @@ test('ganti password, lalu login dengan password baru', async ({ page }) => {
 	await save.click();
 	await expect(page.getByRole('status')).toHaveText(en.passwordChanged);
 
-	await page.getByRole('button', { name: en.logout }).click();
+	await logOut(page);
 	await logIn(page, newPassword);
 
 	// Kembalikan password semula, supaya test lain tetap memakai password yang sama.

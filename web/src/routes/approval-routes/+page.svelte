@@ -268,22 +268,4 @@
 	section {
 		margin-bottom: 2rem;
 	}
-
-	.error {
-		color: #b00020;
-		margin: 0;
-	}
-
-	table {
-		border-collapse: collapse;
-		margin-bottom: 0.5rem;
-	}
-
-	th,
-	td {
-		border: 1px solid #ccc;
-		padding: 0.25rem 0.75rem;
-		text-align: left;
-		vertical-align: top;
-	}
 </style>

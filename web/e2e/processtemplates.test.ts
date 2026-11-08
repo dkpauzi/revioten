@@ -4,7 +4,7 @@
 // sub-proses dan poin dibuktikan test Go TestRenameKeepsIDs.
 import { expect, test, type Page } from '@playwright/test';
 import { en } from '../src/lib/i18n/en.ts';
-import { createWorkAccount, logIn, logInFirstTime } from './helpers.ts';
+import { createWorkAccount, logIn, logInFirstTime, logOut, openFromMenu } from './helpers.ts';
 
 const five = ['IQC General', 'IQC MSD', 'IQC PCB', 'IQC Wireharness', 'IQC Connector'];
 
@@ -26,11 +26,11 @@ async function ensureProcess(page: Page, name: string): Promise<void> {
 test('PPAP Engineer menyimpan contoh IQC dengan lima sub-proses beserta poinnya', async ({ page }) => {
 	await logIn(page);
 	const temporary = await createWorkAccount(page, 'PPAP Engineer template', 'ppap.template.e2e', ['template_maintainer']);
-	await page.getByRole('button', { name: en.logout }).click();
+	await logOut(page);
 	await logInFirstTime(page, 'ppap.template.e2e', temporary, 'pustaka proses dengan id tetap');
 	await ensureProcess(page, 'IQC');
 
-	await page.getByRole('link', { name: en.navProcessTemplates }).click();
+	await openFromMenu(page, en.navGroupTemplates, en.navProcessTemplates);
 	await page.getByLabel(en.processTemplateChoose).selectOption({ label: 'IQC' });
 	await expect(page.getByText(en.processTemplateNone)).toBeVisible();
 	await page.getByRole('button', { name: en.processTemplateCreate }).click();
@@ -85,7 +85,7 @@ test('PPAP Engineer menyimpan contoh IQC dengan lima sub-proses beserta poinnya'
 
 test('akun admin hanya melihat process template, dan audit log mencatat perubahannya', async ({ page }) => {
 	await logIn(page);
-	await page.getByRole('link', { name: en.navProcessTemplates }).click();
+	await openFromMenu(page, en.navGroupTemplates, en.navProcessTemplates);
 	await expect(page.getByText(en.processTemplateReadOnly)).toBeVisible();
 	await page.getByLabel(en.processTemplateChoose).selectOption({ label: 'IQC' });
 	await expect(page.getByRole('row', { name: /^5 IQC Connector / })).toBeVisible();
@@ -97,7 +97,7 @@ test('akun admin hanya melihat process template, dan audit log mencatat perubaha
 	await expect(page.getByRole('row', { name: /^1 Check MSL label and humidity indicator card/ })).toBeVisible();
 	await expect(page.getByRole('button', { name: en.pointAdd })).toHaveCount(0);
 
-	await page.getByRole('link', { name: en.navAuditLog }).click();
+	await openFromMenu(page, en.navGroupAdmin, en.navAuditLog);
 	for (const action of [en.auditActionProcessTemplateCreated, en.auditActionSubprocessAdded, en.auditActionTemplatePointChanged]) {
 		await expect(page.getByRole('row', { name: new RegExp(`${action} IQC`) }).first()).toBeVisible();
 	}

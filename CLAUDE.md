@@ -2,7 +2,7 @@
 
 File ini dibaca Claude Code di awal setiap sesi. Isinya aturan kerja untuk menulis kode, diringkas dari brief desain. Bila file ini berbeda dengan brief, brief yang berlaku (brief bagian 0 dan bagian 15, butir 12).
 
-- Dibuat 27 Oktober 2026 dari brief desain v1.15 (D-77), diperbarui 30 Oktober 2026 mengikuti brief desain v1.16 (D-78 sampai D-120) dan v1.17 (kode Tahap 2), 3 November 2026 mengikuti brief v1.20 (tinjauan desain UI dan UML draft 0.12), dan 4 November 2026 mengikuti brief v1.21 (keputusan D-121 sampai D-126).
+- Dibuat 27 Oktober 2026 dari brief desain v1.15 (D-77), diperbarui 30 Oktober 2026 mengikuti brief desain v1.16 (D-78 sampai D-120) dan v1.17 (kode Tahap 2), 3 November 2026 mengikuti brief v1.20 (tinjauan desain UI dan UML draft 0.12), 4 November 2026 mengikuti brief v1.21 (keputusan D-121 sampai D-126), dan 8 November 2026 mengikuti brief v1.22 (D-127, design system dan menu berkelompok).
 - Baris bertanda **(usulan)** adalah usulan Claude yang belum diputuskan pemilik. Ikuti sebagai rencana kerja, tapi bisa berubah.
 
 ## 1. Proyek ini
@@ -55,7 +55,7 @@ Versi di bawah dicek ulang di M0.1 (27 dan 28 Oktober 2026). Daftar lengkap bese
 
 - **Backend:** Go 1.27.3 dengan `net/http`, pgx v5.11.0, sqlc v1.31.1, goose v3.29.0, River v0.49.0 (job queue di PostgreSQL; paket 0.x, ikut masa tunggu 14 hari E-14), excelize v2.11.0, testcontainers-go v0.44.0, golang.org/x/crypto v0.58.0 (argon2id). Tanpa ORM dan tanpa Redis. Kode hasil generate tidak diedit dengan tangan.
 - **Database:** PostgreSQL 18.6 di Docker. PostgreSQL 19 masih RC, jadi tidak dipakai. Docker tetap dipakai. Bila Docker Desktop terkendala lisensi atau izin IT, pakai Docker Engine di dalam WSL 2 (keputusan pemilik, 28 Oktober 2026).
-- **Frontend:** Svelte 5.57.3 dan SvelteKit 3.1.0 sebagai SPA statis (`@sveltejs/adapter-static` 4.0.0) yang di-embed ke binary Go. Juga Vite 8.3.5, `@sveltejs/vite-plugin-svelte` 7.3.1, TypeScript 6.0.3 (bukan 7), svelte-check 4.7.7, Vitest 5.0.5, dan Playwright 1.64.1. Node 24.22.1 LTS dipakai hanya untuk build.
+- **Frontend:** Svelte 5.57.3 dan SvelteKit 3.1.0 sebagai SPA statis (`@sveltejs/adapter-static` 4.0.0) yang di-embed ke binary Go. Juga Vite 8.3.5, `@sveltejs/vite-plugin-svelte` 7.3.1, TypeScript 6.0.3 (bukan 7), svelte-check 4.7.7, Vitest 5.0.5, dan Playwright 1.64.1. Node 24.22.1 LTS dipakai hanya untuk build. Huruf Geist dan Geist Mono dibundel lewat `@fontsource-variable/geist` dan `@fontsource-variable/geist-mono` 5.3.0 (D-127).
 - **Nanti:** tabulator-tables (grid), @xyflow/svelte dengan elkjs (diagram PFD), ClamAV, Caddy, Docker Compose untuk deployment. Mesin PDF diputuskan lewat uji S5 (R-PRT-03), sebelum Tahap 6 **(usulan)**.
 - **Generator TypeScript untuk OpenAPI:** @hey-api/openapi-ts dengan plugin tipe saja; pemanggilan fetch ditulis tangan (D-97).
 
@@ -90,6 +90,7 @@ Ini ringkasan. Teks lengkap dan statusnya ada di brief bagian 5 dan 6.
 - **Baris dokumen:** baris datar dengan isi JSONB yang divalidasi terhadap versi format template (D-02, R-DOC-01).
 - **Revisi rilis:** tidak bisa diubah, dengan snapshot dan SHA-256 (R-REV-02).
 - **Error API:** satu format berisi kode, pesan, dan request ID (R-API-13).
+- **Tampilan (D-127):** warna, huruf, tombol, field, tabel, dan label status diatur sekali di `web/src/app.css`, mengikuti artboard "Design system" di kanvas desain UI. `<style>` di komponen hanya untuk susunan khusus halaman itu. Menu atas disusun `web/src/lib/menu.ts` (kelompok Home, Documents, Template library, Master data, Admin); halaman baru ditambahkan ke sana, dan test E2E membuka halaman lewat `openFromMenu` di `web/e2e/helpers.ts`.
 - **Integrasi:** tidak ada token integrasi sebelum M8.1 (D-19).
 
 ## 6. Mengevaluasi desain sambil membangun (D-77)

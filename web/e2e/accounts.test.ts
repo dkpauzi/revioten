@@ -3,7 +3,7 @@
 // juga bila layar dilewati.
 import { expect, test, type Page } from '@playwright/test';
 import { en } from '../src/lib/i18n/en.ts';
-import { logIn } from './helpers.ts';
+import { logIn, logOut, mainMenu, openFromMenu } from './helpers.ts';
 
 // createWorkAccount mengisi formulir akun kerja untuk orang baru, lalu
 // mengembalikan password sementara yang ditampilkan satu kali.
@@ -47,7 +47,7 @@ function acceptNextDialog(page: Page): Promise<string> {
 
 test('akun baru wajib ganti password, lalu hanya mendapat hak dari perannya', async ({ page }) => {
 	await logIn(page);
-	await page.getByRole('link', { name: en.navAccounts }).click();
+	await openFromMenu(page, en.navGroupAdmin, en.navAccounts);
 	await expect(page.getByRole('heading', { name: en.accountsTitle, exact: true })).toBeVisible();
 
 	// Penyusun yang dibatasi ke Project Group sendiri (D-71).
@@ -66,7 +66,9 @@ test('akun baru wajib ganti password, lalu hanya mendapat hak dari perannya', as
 	await expect(row).toContainText(en.accountStatusMustChange);
 
 	// Pemilik akun login dengan password sementara dan wajib menggantinya dulu.
-	await page.getByRole('button', { name: en.logout }).click();
+	// Tunggu halaman login dulu: halaman Accounts juga punya field "Login name",
+	// jadi tanpa ini isian bisa jatuh ke formulir akun yang belum hilang.
+	await logOut(page);
 	await page.getByLabel(en.loginName).fill('author.e2e');
 	await page.getByLabel(en.loginPassword).fill(temporary);
 	await page.getByRole('button', { name: en.loginSubmit }).click();
@@ -81,10 +83,10 @@ test('akun baru wajib ganti password, lalu hanya mendapat hak dari perannya', as
 	await expect(page.getByRole('status')).toHaveText(en.passwordChanged);
 
 	// Penyusun tidak memegang A-1 dan A-2: menu akun dan formulir customer tidak ditawarkan.
-	await expect(page.getByRole('link', { name: en.navCustomers })).toBeVisible();
-	await expect(page.getByRole('link', { name: en.navAccounts })).toHaveCount(0);
-	await expect(page.getByRole('link', { name: en.navAuditLog })).toHaveCount(0);
-	await page.getByRole('link', { name: en.navCustomers }).click();
+	// Kelompok menu Admin (D-127) tidak tampil sama sekali bila tidak ada hak admin.
+	await expect(mainMenu(page).getByRole('button', { name: en.navGroupMaster })).toBeVisible();
+	await expect(mainMenu(page).getByRole('button', { name: en.navGroupAdmin, exact: true })).toHaveCount(0);
+	await openFromMenu(page, en.navGroupMaster, en.navCustomers);
 	await expect(page.getByRole('heading', { name: en.customersListTitle })).toBeVisible();
 	await expect(page.getByRole('heading', { name: en.customerAddTitle })).toHaveCount(0);
 

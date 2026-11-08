@@ -1,7 +1,7 @@
 # U1 · Glosarium
 
-- Paket UML: draft 0.14, 4 November 2026 (draft 0.13 dan 0.12: 3 November 2026; draft 0.11, 0.10, 0.9, 0.8, dan 0.7: 31, 31, 30, 30, dan 27 Oktober 2026). Draft 0.12 menambah istilah dari desain UI 2 November 2026 dan temuan register nomor 3 November 2026, bertanda UX-xx (`usulan-desain-ui.md`). Draft 0.13 mencatat simbol Revision yang dipasang sistem (migrasi 00013). Draft 0.14 menambah kolom terisi otomatis dan aturan cetak tanda revisi (D-121 sampai D-123).
-- Sumber: brief desain v1.21, termasuk temuan dari dokumen TR-020 (brief bagian 21). Nama jabatan mengikuti bagan organisasi NPI (update 22 Januari 2026). Nama orang tidak dicantumkan. Setiap istilah merujuk ke ID di brief (R-UML-01).
+- Paket UML: draft 0.14, 4 November 2026 (draft 0.13 dan 0.12: 3 November 2026; draft 0.11, 0.10, 0.9, 0.8, dan 0.7: 31, 31, 30, 30, dan 27 Oktober 2026). Draft 0.12 menambah istilah dari desain UI 2 November 2026 dan temuan register nomor 3 November 2026, bertanda UX-xx (`usulan-desain-ui.md`). Draft 0.13 mencatat simbol Revision yang dipasang sistem (migrasi 00013). Draft 0.14 menambah kolom terisi otomatis dan aturan cetak tanda revisi (D-121 sampai D-123). Draft 0.15 (8 November 2026) menambah nama kelompok menu (D-127).
+- Sumber: brief desain v1.22, termasuk temuan dari dokumen TR-020 (brief bagian 21). Nama jabatan mengikuti bagan organisasi NPI (update 22 Januari 2026). Nama orang tidak dicantumkan. Setiap istilah merujuk ke ID di brief (R-UML-01).
 - Bahasa: penjelasan dalam bahasa Indonesia. Nama jabatan, nama standar, dan tahap tanda tangan memakai istilah yang sama dengan brief (R-UML-05, usulan).
 - Kolom **Istilah layar (Inggris)** (E-19, D-98): istilah yang dipakai di layar dan di katalog teks `web/src/lib/i18n/en.ts`, karena layar berbahasa Inggris untuk saat ini (D-96). Istilah baru di layar ditambahkan ke sini lebih dulu.
 - Kolom **Cek WI**:
@@ -194,6 +194,10 @@ Peran adalah hak akses di aplikasi, berbeda dari jabatan. Pemetaan jabatan ke pe
 | Approver (peran) | Approver | Belum dibuat. Disiapkan untuk approval di aplikasi nanti (R-APR-04); selama approval di kertas, approver memakai hak dasar Lihat. | Approver | R-APR-13, D-70, D-78 | Tidak perlu |
 | Orang | Person | Seseorang dengan nama dan nomor karyawan opsional. Jabatan dipegang orang, dan aturan pemisahan tugas membandingkan orang, bukan akun. | Person | D-79 | Tidak perlu |
 | Akun kerja / akun admin | Work account / Admin account | Login milik satu orang. Satu orang paling banyak punya satu akun kerja dan satu akun admin. Akun tidak pernah dihapus, hanya dinonaktifkan. | Work account / Admin account | D-72, D-79, D-105 | Tidak perlu |
+| Kelompok menu Dokumen | Documents | Kelompok menu atas untuk register nomor dan impor nomor lama. Dokumen PFD, PFMEA, dan CP masuk ke sini saat tahapnya dibangun. | | D-127, UX-05 | Tidak perlu |
+| Kelompok menu Pustaka template | Template library | Kelompok menu atas untuk format template, process template, dan master proses. | | D-127, UX-05 | Tidak perlu |
+| Kelompok menu Master data | Master data | Kelompok menu atas untuk customer, model, jenis dokumen, jenis perubahan, jabatan, dan rute approval. | | D-127, UX-05 | Tidak perlu |
+| Kelompok menu Admin | Admin | Kelompok menu atas untuk akun, audit log, dan pengaturan. Hanya tampil bagi pemegang hak admin; server tetap memeriksa setiap operasi. | | D-127, R-SEC-09 | Tidak perlu |
 | Audit log | Audit log | Catatan setiap perubahan data, termasuk login, yang tidak bisa diubah atau dihapus dan dilindungi satu hash chain. Hanya dilihat lewat akun admin. | | R-SEC-03, D-75, D-83, D-107 | Tidak perlu |
 | Cakupan customer | Customer scope | Batas data per customer. Cakupan Project Group untuk Project Leader dan Project Engineer diperiksa fungsi izin sejak M1.2; row-level security di M8.1. | Customer scope | R-SEC-02, D-81, D-118 | Tidak perlu |
 

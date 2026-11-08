@@ -192,27 +192,7 @@
 	}
 
 	.field {
-		display: flex;
-		flex-direction: column;
-		gap: 0.25rem;
 		max-width: 28rem;
-	}
-
-	.error {
-		color: #b00020;
-		margin: 0;
-	}
-
-	table {
-		border-collapse: collapse;
-	}
-
-	th,
-	td {
-		border: 1px solid #ccc;
-		padding: 0.25rem 0.75rem;
-		text-align: left;
-		vertical-align: top;
 	}
 
 	.aliases {

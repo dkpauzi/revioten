@@ -3,11 +3,11 @@
 import { expect, test } from '@playwright/test';
 import { en } from '../src/lib/i18n/en.ts';
 import { admin } from './account.mjs';
-import { logIn } from './helpers.ts';
+import { logIn, openFromMenu } from './helpers.ts';
 
 test('admin melihat audit log, dan rantainya utuh', async ({ page }) => {
 	await logIn(page);
-	await page.getByRole('link', { name: en.navAuditLog }).click();
+	await openFromMenu(page, en.navGroupAdmin, en.navAuditLog);
 	await expect(page.getByRole('heading', { name: en.auditTitle, exact: true })).toBeVisible();
 
 	// Akun admin pertama dibuat perintah create-admin, jadi pelakunya sistem (E-07).

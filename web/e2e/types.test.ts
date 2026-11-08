@@ -3,7 +3,7 @@
 // sumber perubahan, dan kategori 4M (UC-05).
 import { expect, test, type Page } from '@playwright/test';
 import { en } from '../src/lib/i18n/en.ts';
-import { ensureProjectGroup, logIn } from './helpers.ts';
+import { ensureProjectGroup, logIn, openFromMenu } from './helpers.ts';
 
 // exact: true, karena label seperti "Code" juga bagian dari "Factory code".
 function field(page: Page, label: string) {
@@ -12,7 +12,7 @@ function field(page: Page, label: string) {
 
 test('admin mengubah kode pabrik, jenis dokumen, dan kode khusus', async ({ page }) => {
 	await logIn(page);
-	await page.getByRole('link', { name: en.navDocumentTypes }).click();
+	await openFromMenu(page, en.navGroupMaster, en.navDocumentTypes);
 	await expect(page.getByRole('row', { name: /^PFD/ })).toContainText('SH');
 
 	// Kode pabrik diganti: semua awalan ikut berubah. Lalu dikembalikan ke S.
@@ -48,7 +48,7 @@ test('admin mengubah kode pabrik, jenis dokumen, dan kode khusus', async ({ page
 
 	// Customer tidak bisa memakai kode khusus, juga yang baru ditambah (E-37, D-114).
 	await ensureProjectGroup(page, 'GR1');
-	await page.getByRole('link', { name: en.navCustomers }).click();
+	await openFromMenu(page, en.navGroupMaster, en.navCustomers);
 	await field(page, en.customerCode).fill('qx');
 	await field(page, en.customerName).fill('Customer QX');
 	await field(page, en.customerProjectGroup).selectOption({ index: 1 });
@@ -58,7 +58,7 @@ test('admin mengubah kode pabrik, jenis dokumen, dan kode khusus', async ({ page
 
 test('admin mengubah jenis perubahan, sumber perubahan, dan kategori 4M', async ({ page }) => {
 	await logIn(page);
-	await page.getByRole('link', { name: en.navChangeTypes }).click();
+	await openFromMenu(page, en.navGroupMaster, en.navChangeTypes);
 
 	// Jenis perubahan diganti nama.
 	await page.getByRole('row', { name: /^Layout only/ }).getByRole('button', { name: en.changeListRename }).click();

@@ -82,14 +82,7 @@
 
 <style>
 	.field {
-		display: flex;
-		flex-direction: column;
-		gap: 0.25rem;
 		margin-bottom: 1rem;
 		max-width: 20rem;
-	}
-
-	.error {
-		color: #b00020;
 	}
 </style>

@@ -161,14 +161,15 @@
 			<tbody>
 				{#each items as n (n.id)}
 					<tr>
-						<td>
+						<td class="mono">
 							{n.number}
 							{#if n.initial_revision !== 0}<small>{n.revision_label}</small>{/if}
 						</td>
-						<td>{n.customer.code}</td>
+						<td class="mono">{n.customer.code}</td>
 						<td>{n.document_type.name}</td>
 						<td>
-							{statusLabel(n.status)}
+							<!-- Label status: warna selalu disertai kata (D-127). -->
+							<span class="badge" data-status={n.status}>{statusLabel(n.status)}</span>
 							{#if n.status === 'reserved'}
 								<br /><small>{t('numberReservedDays', { days: String(reservedDays(n.created_at, now)) })}</small>
 							{/if}
@@ -216,28 +217,5 @@
 		gap: 1rem;
 		align-items: flex-end;
 		margin-bottom: 1rem;
-	}
-
-	.field {
-		display: flex;
-		flex-direction: column;
-		gap: 0.25rem;
-	}
-
-	table {
-		border-collapse: collapse;
-	}
-
-	th,
-	td {
-		border-bottom: 1px solid #ddd;
-		padding: 0.25rem 0.5rem;
-		text-align: left;
-		vertical-align: top;
-	}
-
-	.error {
-		color: #b00020;
-		margin: 0;
 	}
 </style>

@@ -3,7 +3,7 @@
 // model, dan part number.
 import { expect, test, type Page } from '@playwright/test';
 import { en } from '../src/lib/i18n/en.ts';
-import { logIn } from './helpers.ts';
+import { logIn, openFromMenu } from './helpers.ts';
 
 // exact: true, karena label seperti "Model group" juga bagian dari "Model group name".
 function field(page: Page, label: string) {
@@ -12,7 +12,7 @@ function field(page: Page, label: string) {
 
 test('master customer sampai part number tersambung dan tersimpan', async ({ page }) => {
 	await logIn(page);
-	await page.getByRole('link', { name: en.navCustomers }).click();
+	await openFromMenu(page, en.navGroupMaster, en.navCustomers);
 
 	// Project Group lalu customer yang dialokasikan ke group itu (D-54).
 	await field(page, en.projectGroupCode).fill('gr7');
@@ -38,7 +38,7 @@ test('master customer sampai part number tersambung dan tersimpan', async ({ pag
 	await expect(customerRow.getByRole('cell', { name: 'MS', exact: true })).toBeVisible();
 
 	// Group model, model di dalam group, model tanpa group, dan part number.
-	await page.getByRole('link', { name: en.navModels }).click();
+	await openFromMenu(page, en.navGroupMaster, en.navModels);
 	await field(page, en.modelsCustomer).selectOption({ label: 'MT · Master Customer' });
 	await field(page, en.modelGroupName).fill('Family A');
 	await page.getByRole('button', { name: en.modelGroupAdd }).click();

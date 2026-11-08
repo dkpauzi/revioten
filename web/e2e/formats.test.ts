@@ -3,11 +3,11 @@
 // TestRenameKeepsData); kolom disembunyikan, tidak dihapus.
 import { expect, test } from '@playwright/test';
 import { en } from '../src/lib/i18n/en.ts';
-import { createWorkAccount, logIn, logInFirstTime } from './helpers.ts';
+import { createWorkAccount, logIn, logInFirstTime, logOut, openFromMenu } from './helpers.ts';
 
 test('admin mengganti label kolom PFMEA, menyembunyikan kolom, dan mengisi kriteria skala', async ({ page }) => {
 	await logIn(page);
-	await page.getByRole('link', { name: en.navFormatTemplates }).click();
+	await openFromMenu(page, en.navGroupTemplates, en.navFormatTemplates);
 	await page.getByLabel(en.formatChoose).selectOption({ label: 'PFMEA AIAG 4th · PFMEA' });
 
 	// Ganti label: kolom ke-3 tetap di tempatnya dengan nama baru.
@@ -40,10 +40,10 @@ test('admin mengganti label kolom PFMEA, menyembunyikan kolom, dan mengisi krite
 test('Penyusun hanya melihat format template', async ({ page }) => {
 	await logIn(page);
 	const temporary = await createWorkAccount(page, 'Penyusun format', 'penyusun.format', ['author']);
-	await page.getByRole('button', { name: en.logout }).click();
+	await logOut(page);
 	await logInFirstTime(page, 'penyusun.format', temporary, 'kolom punya ID yang tetap selamanya');
 
-	await page.getByRole('link', { name: en.navFormatTemplates }).click();
+	await openFromMenu(page, en.navGroupTemplates, en.navFormatTemplates);
 	await expect(page.getByText(en.formatReadOnly)).toBeVisible();
 	await page.getByLabel(en.formatChoose).selectOption({ label: 'CP · CP' });
 	await expect(page.getByRole('row', { name: /^9 Special Characteristics / })).toBeVisible();
@@ -58,7 +58,7 @@ test('Penyusun hanya melihat format template', async ({ page }) => {
 
 test('admin menyalin format template CP lalu menambah kolom pilihan', async ({ page }) => {
 	await logIn(page);
-	await page.getByRole('link', { name: en.navFormatTemplates }).click();
+	await openFromMenu(page, en.navGroupTemplates, en.navFormatTemplates);
 	await page.getByLabel(en.formatName, { exact: true }).fill('CP with phase');
 	await page.getByLabel(en.formatDocumentType, { exact: true }).selectOption({ label: 'CP' });
 	await page.getByLabel(en.formatCopyFrom).selectOption({ label: 'CP · CP' });

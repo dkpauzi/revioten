@@ -84,6 +84,8 @@ Hasil `npm audit` setelah M0.5: 8 temuan (4 rendah, 4 tinggi). Yang rendah masih
 | Vitest | 5.0.5 | 2026-10-15 | 2026-10-27 | npm | Terbaru. Peer vite ^8 cocok. Engines: Node ^22.12, ^24, atau >=26. |
 | Playwright (`@playwright/test`) | 1.64.1 | 2026-10-14 | 2026-10-28 | npm | Terbaru. Dipasang sejak M0.5 untuk test E2E. Butuh Chromium revisi 1248 (Chrome for Testing 156.0.8078.4): di komputer pemilik pasang sekali dengan `npm --prefix web exec -- playwright install chromium` (perintah yang sama dengan CLAUDE.md, E-55). Container cloud hanya punya Chromium revisi 1243 di `/opt/pw-browsers`, jadi di cloud test memakai variabel `PLAYWRIGHT_CHROMIUM_EXECUTABLE=/opt/pw-browsers/chromium`. |
 | `@types/node` | 24.19.2 | 2026-10-09 | 2026-10-28 | npm | Dipasang sejak M0.5 supaya file Node (konfigurasi Playwright, `web/e2e/server.mjs`) lolos svelte-check. Mengikuti line Node yang dipakai (24), bukan dist-tag `latest` (26.6.5, untuk Node 26). Tidak punya peer dependency. |
+| `@fontsource-variable/geist` | 5.3.0 | 2026-07-19 | 2026-11-08 | npm | Terbaru. Huruf Geist (variable) untuk design system D-127, dibundel ke aplikasi sehingga tidak diambil dari internet. Lisensi OFL-1.1. Tanpa peer dependency. Line 5 punya beberapa rilis dan rilis ini lebih dari 14 hari (E-14). |
+| `@fontsource-variable/geist-mono` | 5.3.0 | 2026-07-19 | 2026-11-08 | npm | Terbaru. Huruf Geist Mono untuk nomor, kode, dan nilai yang perlu rata (D-127). Lisensi OFL-1.1. Tanpa peer dependency. |
 | tabulator-tables | 6.7.1 | 2026-10-22 | 2026-10-27 | npm | Terbaru. Dipakai mulai M4.2. |
 | `@xyflow/svelte` (Svelte Flow) | 1.7.0 | 2026-09-24 | 2026-10-27 | npm | Terbaru. Peer svelte ^5.25.0. Dipakai di M4.10 (opsional). |
 | elkjs | 0.12.0 | 2026-07-17 | 2026-10-27 | npm | Terbaru. |

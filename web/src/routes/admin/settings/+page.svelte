@@ -63,10 +63,3 @@
 		{/if}
 	</form>
 {/if}
-
-<style>
-	.error {
-		color: #b00020;
-		margin: 0;
-	}
-</style>

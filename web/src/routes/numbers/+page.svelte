@@ -179,21 +179,6 @@
 		align-items: flex-end;
 	}
 
-	.field {
-		display: flex;
-		flex-direction: column;
-		gap: 0.25rem;
-	}
-
-	.error {
-		color: #b00020;
-		margin: 0;
-	}
-
-	.hint {
-		color: #555;
-	}
-
 	.check {
 		display: block;
 		margin-top: 0.5rem;

@@ -556,9 +556,6 @@
 	}
 
 	.field {
-		display: flex;
-		flex-direction: column;
-		gap: 0.25rem;
 		margin-bottom: 1rem;
 	}
 
@@ -572,10 +569,6 @@
 		gap: 0.25rem 1rem;
 	}
 
-	dt {
-		font-weight: bold;
-	}
-
 	dd {
 		margin: 0;
 	}
@@ -585,31 +578,6 @@
 		flex-wrap: wrap;
 		gap: 1.5rem;
 		align-items: flex-start;
-	}
-
-	table {
-		border-collapse: collapse;
-	}
-
-	caption {
-		font-weight: bold;
-		text-align: left;
-	}
-
-	th,
-	td {
-		border-bottom: 1px solid #ddd;
-		padding: 0.25rem 0.5rem;
-		text-align: left;
-	}
-
-	.error {
-		color: #b00020;
-		margin: 0;
-	}
-
-	.hint {
-		color: #555;
 	}
 
 	.check {

@@ -275,22 +275,10 @@
 	}
 
 	.field {
-		display: flex;
-		flex-direction: column;
-		gap: 0.25rem;
 		margin-bottom: 1rem;
 	}
 
 	.chooser {
 		align-items: flex-start;
-	}
-
-	.error {
-		color: #b00020;
-		margin: 0;
-	}
-
-	.hint {
-		color: #555;
 	}
 </style>

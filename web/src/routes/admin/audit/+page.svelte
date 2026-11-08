@@ -120,21 +120,4 @@
 	section {
 		margin-bottom: 1.5rem;
 	}
-
-	.error {
-		color: #b00020;
-	}
-
-	table {
-		border-collapse: collapse;
-		margin-bottom: 1rem;
-	}
-
-	th,
-	td {
-		border: 1px solid #ccc;
-		padding: 0.25rem 0.75rem;
-		text-align: left;
-		vertical-align: top;
-	}
 </style>

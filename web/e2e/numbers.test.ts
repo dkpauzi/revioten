@@ -4,7 +4,7 @@
 // dan impor bersamaan (M2.5) oleh TestImportConcurrent.
 import { expect, test, type Page } from '@playwright/test';
 import { en } from '../src/lib/i18n/en.ts';
-import { createWorkAccount, ensureProjectGroup, logIn, logInFirstTime } from './helpers.ts';
+import { createWorkAccount, ensureProjectGroup, logIn, logInFirstTime, logOut, openFromMenu } from './helpers.ts';
 
 // ensureCustomer memastikan customer dengan kode itu ada di GR1, lewat API dari
 // browser yang sudah login sebagai admin.
@@ -31,13 +31,13 @@ async function logInAuthor(page: Page, login: string, roles: string[], customer 
 	await logIn(page);
 	await ensureCustomer(page, customer);
 	const temporary = await createWorkAccount(page, `Penyusun ${login}`, login, roles);
-	await page.getByRole('button', { name: en.logout }).click();
+	await logOut(page);
 	await logInFirstTime(page, login, temporary, 'nomor dokumen tidak pernah dipakai ulang');
 }
 
 test('Penyusun mendaftarkan nomor CP dan mendapat nomor berurutan', async ({ page }) => {
 	await logInAuthor(page, 'penyusun.nomor', ['author']);
-	await page.getByRole('link', { name: en.navNumbers }).click();
+	await openFromMenu(page, en.navGroupDocuments, en.navNumbers);
 
 	// Satu nomor, bukan set. .first(): formulir pendaftaran ada di atas
 	// saringan register yang berlabel sama.
@@ -56,14 +56,14 @@ test('Penyusun mendaftarkan nomor CP dan mendapat nomor berurutan', async ({ pag
 
 test('Viewer tidak mendapat formulir pendaftaran', async ({ page }) => {
 	await logInAuthor(page, 'viewer.nomor', []);
-	await page.getByRole('link', { name: en.navNumbers }).click();
+	await openFromMenu(page, en.navGroupDocuments, en.navNumbers);
 	await expect(page.getByRole('heading', { name: en.numbersTitle })).toBeVisible();
 	await expect(page.getByRole('button', { name: en.numberRegister, exact: true })).toHaveCount(0);
 });
 
 test('admin mengubah pola nomor di master data', async ({ page }) => {
 	await logIn(page);
-	await page.getByRole('link', { name: en.navDocumentTypes }).click();
+	await openFromMenu(page, en.navGroupMaster, en.navDocumentTypes);
 	const pattern = page.getByLabel(en.numberPattern, { exact: true });
 	await expect(pattern).toHaveValue('{prefix}-{customer}-{seq}');
 
@@ -80,7 +80,7 @@ test('admin mengubah pola nomor di master data', async ({ page }) => {
 test('dokumen kontrol membatalkan nomor dengan alasan, dan nomornya tetap di register', async ({ page }) => {
 	// Seperti PPAP Engineer: Penyusun sekaligus Dokumen kontrol (U3 bagian 2).
 	await logInAuthor(page, 'ppap.nomor', ['author', 'document_control']);
-	await page.getByRole('link', { name: en.navNumbers }).click();
+	await openFromMenu(page, en.navGroupDocuments, en.navNumbers);
 	await page.getByLabel(en.numberAsSet).uncheck();
 	await page.getByLabel(en.numberCustomer, { exact: true }).first().selectOption({ label: 'NB · Customer NB' });
 	await page.getByLabel(en.numberType, { exact: true }).first().selectOption({ label: 'PFD (SH)' });
@@ -108,7 +108,7 @@ test('dokumen kontrol membatalkan nomor dengan alasan, dan nomornya tetap di reg
 
 test('Penyusun mendaftarkan set dengan revisi awal -04, dan nomor yang dilewati tercatat', async ({ page }) => {
 	await logInAuthor(page, 'penyusun.set', ['author']);
-	await page.getByRole('link', { name: en.navNumbers }).click();
+	await openFromMenu(page, en.navGroupDocuments, en.navNumbers);
 	await expect(page.getByLabel(en.numberAsSet)).toBeChecked();
 	await page.getByLabel(en.numberCustomer, { exact: true }).first().selectOption({ label: 'NB · Customer NB' });
 	await page.getByLabel(en.numberInitialRevision).fill('4');
@@ -127,7 +127,7 @@ test('Penyusun mendaftarkan set dengan revisi awal -04, dan nomor yang dilewati 
 
 test('dokumen kontrol mengimpor nomor lama: pratinjau, laporan, lalu impor', async ({ page }) => {
 	await logInAuthor(page, 'dokumen.impor', ['document_control'], 'LG');
-	await page.getByRole('link', { name: en.navNumbers }).click();
+	await openFromMenu(page, en.navGroupDocuments, en.navNumbers);
 	await page.getByRole('link', { name: en.numberImportLink }).click();
 	await expect(page.getByRole('heading', { name: en.numberImportTitle })).toBeVisible();
 

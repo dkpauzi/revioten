@@ -136,27 +136,6 @@
 {/if}
 
 <style>
-	table {
-		border-collapse: collapse;
-		margin-bottom: 1rem;
-	}
-
-	th,
-	td {
-		border-bottom: 1px solid #ddd;
-		padding: 0.25rem 0.5rem;
-		text-align: left;
-		vertical-align: top;
-	}
-
-	tr.hidden td {
-		color: #777;
-	}
-
-	tr.selected td {
-		background: #eef4ff;
-	}
-
 	.edit {
 		display: flex;
 		flex-wrap: wrap;
@@ -164,18 +143,7 @@
 		align-items: flex-end;
 	}
 
-	.field {
-		display: flex;
-		flex-direction: column;
-		gap: 0.25rem;
-	}
-
 	.actions {
 		white-space: nowrap;
-	}
-
-	.error {
-		color: #b00020;
-		margin: 0;
 	}
 </style>

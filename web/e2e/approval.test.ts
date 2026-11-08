@@ -4,7 +4,7 @@
 // (D-54), satu pemegang NPI Manager (D-115), dan saklar tanggal tanda tangan (D-52).
 import { expect, test, type Page } from '@playwright/test';
 import { en } from '../src/lib/i18n/en.ts';
-import { createWorkAccount, ensureProjectGroup, logIn } from './helpers.ts';
+import { createWorkAccount, ensureProjectGroup, logIn, openFromMenu } from './helpers.ts';
 
 // ensureCustomer memastikan customer dengan kode itu ada di GR1, lewat API
 // dari browser yang sudah login sebagai admin.
@@ -28,7 +28,7 @@ async function ensureCustomer(page: Page, code: string): Promise<void> {
 test('admin mengatur rute default customer lewat layar', async ({ page }) => {
 	await logIn(page);
 	await ensureCustomer(page, 'RT');
-	await page.getByRole('link', { name: en.navApprovalRoutes }).click();
+	await openFromMenu(page, en.navGroupMaster, en.navApprovalRoutes);
 
 	const select = page.getByLabel(en.defaultRouteChoose.replace('{code}', 'RT'));
 	await expect(select.locator('option:checked')).toHaveText(en.defaultRouteNone);
@@ -51,7 +51,7 @@ test('admin mengatur rute default customer lewat layar', async ({ page }) => {
 
 test('slot GM dipindah dari Advisor ke Factory Manager lewat master data', async ({ page }) => {
 	await logIn(page);
-	await page.getByRole('link', { name: en.navApprovalRoutes }).click();
+	await openFromMenu(page, en.navGroupMaster, en.navApprovalRoutes);
 	const section = page.locator('section', { has: page.getByRole('heading', { name: 'Up to GM', exact: true }) });
 	await section.getByRole('button', { name: en.routeEdit }).click();
 
@@ -75,7 +75,7 @@ test('Project Leader dipegang satu orang per Project Group', async ({ page }) =>
 	await logIn(page);
 	await ensureProjectGroup(page, 'GR1');
 	await createWorkAccount(page, 'Project Leader E2E', 'pl.e2e', ['author']);
-	await page.getByRole('link', { name: en.navPositions }).click();
+	await openFromMenu(page, en.navGroupMaster, en.navPositions);
 
 	await page.getByLabel(en.positionName, { exact: true }).selectOption({ label: 'Project Leader' });
 	await page.getByLabel(en.holderPerson, { exact: true }).selectOption({ label: 'Project Leader E2E' });
@@ -99,7 +99,7 @@ test('NPI Manager dipegang satu orang', async ({ page }) => {
 	// karena satu slot mencetak satu nama (E-38, D-115).
 	await logIn(page);
 	await createWorkAccount(page, 'NPI Manager E2E', 'npi.e2e', []);
-	await page.getByRole('link', { name: en.navPositions }).click();
+	await openFromMenu(page, en.navGroupMaster, en.navPositions);
 	await expect(page.getByRole('row', { name: /^NPI Manager / })).toContainText(en.positionSingleHolder);
 
 	await page.getByLabel(en.positionName, { exact: true }).selectOption({ label: 'NPI Manager' });
@@ -117,7 +117,7 @@ test('NPI Manager dipegang satu orang', async ({ page }) => {
 
 test('tanggal tanda tangan per slot mati, dan bisa dinyalakan admin', async ({ page }) => {
 	await logIn(page);
-	await page.getByRole('link', { name: en.navSettings }).click();
+	await openFromMenu(page, en.navGroupAdmin, en.navSettings);
 	const signDates = page.getByLabel(en.settingsSignDates);
 	await expect(signDates).not.toBeChecked();
 

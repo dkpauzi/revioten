@@ -13,6 +13,27 @@ export async function logIn(page: Page, password: string = admin.password): Prom
 	await expect(page.getByRole('button', { name: en.logout })).toBeVisible();
 }
 
+// logOut menekan Log out dan menunggu sampai halaman login tampil. Tanpa
+// menunggu, langkah berikutnya bisa bertabrakan dengan pindah halaman yang
+// masih berjalan (terlihat di Windows, 8 November 2026).
+export async function logOut(page: Page): Promise<void> {
+	await page.getByRole('button', { name: en.logout }).click();
+	await expect(page).toHaveURL('/login');
+}
+
+// mainMenu adalah menu atas berkelompok (D-127).
+export function mainMenu(page: Page) {
+	return page.getByRole('navigation', { name: en.navMain });
+}
+
+// openFromMenu membuka satu halaman lewat menu atas: klik nama kelompok,
+// misalnya en.navGroupMaster, lalu tautan halamannya, misalnya en.navCustomers.
+export async function openFromMenu(page: Page, group: string, item: string): Promise<void> {
+	const menu = mainMenu(page);
+	await menu.getByRole('button', { name: group, exact: true }).click();
+	await menu.getByRole('link', { name: item, exact: true }).click();
+}
+
 // ensureProjectGroup memastikan Project Group dengan kode itu ada, lewat API
 // dari browser yang sudah login sebagai admin (M1.4). Customer baru wajib
 // dialokasikan ke satu Project Group (D-54).

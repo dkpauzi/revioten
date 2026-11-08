@@ -365,37 +365,8 @@
 		gap: 0.25rem;
 	}
 
-	.field {
-		display: flex;
-		flex-direction: column;
-		gap: 0.25rem;
-	}
-
 	form button {
 		align-self: flex-start;
-	}
-
-	.notice {
-		border: 1px solid #888;
-		padding: 0.5rem 1rem;
-		margin-bottom: 1rem;
-	}
-
-	.error {
-		color: #b00020;
-		margin: 0;
-	}
-
-	table {
-		border-collapse: collapse;
-	}
-
-	th,
-	td {
-		border: 1px solid #ccc;
-		padding: 0.25rem 0.75rem;
-		text-align: left;
-		vertical-align: top;
 	}
 
 	.actions {

@@ -149,19 +149,4 @@
 		gap: 1rem;
 		align-items: flex-end;
 	}
-
-	.field {
-		display: flex;
-		flex-direction: column;
-		gap: 0.25rem;
-	}
-
-	.error {
-		color: #b00020;
-		margin: 0;
-	}
-
-	.hint {
-		color: #555;
-	}
 </style>

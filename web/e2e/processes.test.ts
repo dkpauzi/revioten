@@ -3,7 +3,7 @@
 // Pengelola template (E-6, D-64); akun admin hanya melihat.
 import { expect, test, type Page } from '@playwright/test';
 import { en } from '../src/lib/i18n/en.ts';
-import { createWorkAccount, logIn, logInFirstTime } from './helpers.ts';
+import { createWorkAccount, logIn, logInFirstTime, logOut, openFromMenu } from './helpers.ts';
 
 // exact: true, karena "Process name" juga muncul di label lain.
 function field(page: Page, label: string) {
@@ -26,13 +26,13 @@ test('nama proses diganti tanpa memutus rujukan', async ({ page }) => {
 	]);
 
 	// Akun admin tidak memegang E-6: daftar terlihat, formulir tidak (D-64).
-	await page.getByRole('link', { name: en.navProcesses }).click();
+	await openFromMenu(page, en.navGroupTemplates, en.navProcesses);
 	await expect(page.getByRole('heading', { name: en.processesTitle })).toBeVisible();
 	await expect(page.getByRole('heading', { name: en.processAddTitle })).toHaveCount(0);
 
-	await page.getByRole('button', { name: en.logout }).click();
+	await logOut(page);
 	await logInFirstTime(page, 'ppap.engineer.e2e', temporary, 'jembatan bambu di atas kali');
-	await page.getByRole('link', { name: en.navProcesses }).click();
+	await openFromMenu(page, en.navGroupTemplates, en.navProcesses);
 
 	// Proses baru dengan alias, satu alias per baris.
 	await field(page, en.processName).fill('Parts  Receiving');
@@ -68,9 +68,9 @@ test('nama proses diganti tanpa memutus rujukan', async ({ page }) => {
 	});
 
 	// Audit log menunjuk ID yang sama, jadi entri lama ikut menampilkan nama baru.
-	await page.getByRole('button', { name: en.logout }).click();
+	await logOut(page);
 	await logIn(page);
-	await page.getByRole('link', { name: en.navAuditLog }).click();
+	await openFromMenu(page, en.navGroupAdmin, en.navAuditLog);
 	for (const action of [en.auditActionProcessCreated, en.auditActionProcessUpdated]) {
 		await expect(page.getByRole('row', { name: new RegExp(`${action} Receiving`) })).toBeVisible();
 	}

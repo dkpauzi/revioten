@@ -5,6 +5,7 @@
 - Status semua butir: **Terbuka**. Setiap butir menunggu keputusan pemilik sebelum masuk brief sebagai R- atau D-. Sampai diputuskan, elemen UML yang memakainya berstereotype `<<usulan>>`.
 - Isi register hanya diringkas sebagai jumlah. Nomor dokumen yang disebut di sini adalah contoh pola, bukan daftar.
 - Pembaruan 4 November 2026: dua temuan register sudah diputuskan pemilik. Kode customer tetap dua huruf sesuai WI (E-74, D-125), dan register PL1 dan PL3 adalah register Project Leader (E-75, D-126). Butir UX-01 sampai UX-07 sendiri tetap Terbuka.
+- Pembaruan 8 November 2026: UX-05 **diterima sebagian** (D-127). Design system dan menu berkelompok (Home, Documents, Template library, Master data, Admin) dipasang di halaman M0 sampai M3. Layar workbook (Tahap 4) dan pilihan bahasa EN/ID tetap Terbuka.
 
 | ID | Usulan | Asal | Dampak ke UML | Aturan terkait |
 |---|---|---|---|---|
