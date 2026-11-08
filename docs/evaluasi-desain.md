@@ -1417,7 +1417,7 @@ Salin blok ini untuk setiap temuan baru.
 - **Sumber:** `docs/uml/usulan-desain-ui.md` (UML draft 0.12, 3 November 2026) dan kanvas desain UI "Desain UI Sistem PFD PFMEA CP" (18 artboard, baris v2 disarankan).
 - **Status usulan:** tetap Terbuka di file sumbernya sampai pemilik memutuskan. Tabel ini menambahkan dampaknya ke kode yang sudah dibangun, serta saran Claude Code.
 - **Catatan tinjauan:** `docs/catatan/Tinjauan-desain-UI-UML-0.12.md`.
-- **Pembaruan 8 November 2026:** UX-05 diterima sebagian (D-127): design system dan menu berkelompok untuk halaman M0 sampai M3. Workbook dan bahasa EN/ID tetap terbuka. Catatan: `docs/catatan/UX-05-menu-dan-design-system.md`.
+- **Pembaruan 8 November 2026:** UX-05 diterima sebagian (D-127): design system dan menu berkelompok untuk halaman M0 sampai M3. Workbook dan bahasa EN/ID tetap terbuka. Catatan: `docs/catatan/UX-05-menu-dan-design-system.md`. Bahasa EN/ID dan tampilan responsif diputuskan di hari yang sama (D-128, menggantikan D-96); catatan: `docs/catatan/D-128-dua-bahasa-dan-responsif.md`.
 
 | Usulan | Dampak ke M0 sampai M3 | Perubahan kode sekarang | Saran Claude Code (usulan) |
 |---|---|---|---|

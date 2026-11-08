@@ -389,7 +389,25 @@ kbd {
 	margin-bottom: 0.5rem;
 }
 
-@media (max-width: 640px) {
+/*
+ * Tampilan per perangkat (D-128). Batasnya:
+ *   - HP: di bawah 640px
+ *   - tablet: 640px sampai 1023px
+ *   - laptop: 1024px ke atas
+ * Menu atas untuk HP dan tablet diatur di src/routes/+layout.svelte.
+ */
+
+/* Tablet: jarak tepi sedikit lebih kecil. */
+@media (max-width: 1023px) {
+	.page {
+		padding: 24px 20px 48px;
+	}
+}
+
+/* HP: jarak tepi 16px, field formulir selebar layar dan ditumpuk satu per
+   baris, sel tabel lebih rapat. Selektor main.page dipakai supaya menang atas
+   lebar field yang diatur di <style> komponen. */
+@media (max-width: 639px) {
 	.page {
 		padding: 20px 16px 40px;
 	}
@@ -400,5 +418,37 @@ kbd {
 
 	h1 {
 		font-size: 24px;
+	}
+
+	main.page .field {
+		flex: 1 1 100%;
+		max-width: none;
+	}
+
+	main.page .field input:not([type='checkbox'], [type='radio']),
+	main.page .field select,
+	main.page .field textarea {
+		width: 100%;
+	}
+
+	th,
+	td {
+		padding: 8px 10px;
+	}
+}
+
+/* Layar sentuh (HP dan tablet): target sentuh paling sedikit 44px supaya mudah
+   ditekan jari, berapa pun lebar layarnya. */
+@media (pointer: coarse) {
+	button,
+	input:not([type='checkbox'], [type='radio']),
+	select {
+		min-height: 44px;
+	}
+
+	input[type='checkbox'],
+	input[type='radio'] {
+		width: 22px;
+		height: 22px;
 	}
 }

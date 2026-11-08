@@ -7,9 +7,11 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import type { LayoutProps } from './$types';
+	import LanguageSwitch from '#lib/LanguageSwitch.svelte';
 	import { getSession, logout, setUnauthenticatedHandler } from '#lib/api/client.ts';
 	import { failureText } from '#lib/errors.ts';
 	import { t } from '#lib/i18n/index.ts';
+	import { language } from '#lib/i18n/language.svelte.ts';
 	import { activeGroup, buildMenu, type MenuGroup } from '#lib/menu.ts';
 	import { can, session } from '#lib/session.svelte.ts';
 
@@ -22,31 +24,49 @@
 	let sessionError = $state('');
 
 	// Menu atas berkelompok (D-127). Disusun ulang setiap kali sesi berubah,
-	// karena isinya mengikuti hak akun yang login.
-	let menu = $derived(session.current ? buildMenu(can) : []);
+	// karena isinya mengikuti hak akun yang login. Akun yang wajib ganti
+	// password dulu belum mendapat menu.
+	let showMenu = $derived(session.current !== null && !session.current.must_change_password);
+	let menu = $derived(showMenu ? buildMenu(can) : []);
 	let current = $derived(activeGroup(menu, page.url.pathname));
 
 	// Kelompok menu yang sedang terbuka, atau null bila semua tertutup.
 	let open = $state<MenuGroup['id'] | null>(null);
+	// Panel menu di HP dan tablet (D-128): di layar sempit menu dilipat ke
+	// tombol Menu. Di laptop panel ini selalu tampil dan nilainya diabaikan.
+	let panelOpen = $state(false);
 	let nav = $state<HTMLElement>();
+	let menuToggle = $state<HTMLButtonElement>();
 
-	// Pindah halaman selalu menutup menu.
+	// Pindah halaman selalu menutup menu dan panelnya.
 	$effect(() => {
 		void page.url.pathname;
 		open = null;
+		panelOpen = false;
+	});
+
+	// Atribut lang di <html> mengikuti bahasa layar (D-128), juga saat pertama dibuka.
+	$effect(() => {
+		document.documentElement.lang = language.current;
 	});
 
 	function toggle(id: MenuGroup['id']) {
 		open = open === id ? null : id;
 	}
 
-	// Escape menutup kelompok yang terbuka dan mengembalikan fokus ke tombolnya,
-	// supaya pengguna keyboard tidak kehilangan posisinya.
+	// Escape menutup kelompok yang terbuka lebih dulu, lalu panel menu, dan
+	// mengembalikan fokus ke tombolnya supaya pengguna keyboard tidak kehilangan posisi.
 	function onMenuKeydown(event: KeyboardEvent) {
-		if (event.key === 'Escape' && open) {
+		if (event.key !== 'Escape') {
+			return;
+		}
+		if (open) {
 			const button = nav?.querySelector<HTMLButtonElement>(`#menu-button-${open}`);
 			open = null;
 			button?.focus();
+		} else if (panelOpen) {
+			panelOpen = false;
+			menuToggle?.focus();
 		}
 	}
 
@@ -101,63 +121,89 @@
 <svelte:window onclick={onWindowClick} onkeydown={onMenuKeydown} />
 
 <header class="top">
-	<a class="brand" href="/">
+	<a class="brand" href="/" aria-label={t('appTitle')}>
 		<span class="mark" aria-hidden="true">P</span>
-		<span>{t('appTitle')}</span>
+		<span class="title" aria-hidden="true">{t('appTitle')}</span>
 	</a>
+
 	{#if session.current}
-		{#if !session.current.must_change_password}
-			<!-- Menu atas berkelompok (D-127). Menu hanya menyembunyikan halaman yang
-			     pasti ditolak; server tetap memeriksa setiap operasi (M1.2). -->
-			<nav bind:this={nav} aria-label={t('navMain')}>
-				<ul class="groups">
-					{#each menu as group (group.id)}
-						<li class="group">
-							{#if group.id === 'home'}
-								<a class="entry" href="/" data-active={current === 'home'} aria-current={page.url.pathname === '/' ? 'page' : undefined}>{t(group.label)}</a>
-							{:else}
-								<button
-									type="button"
-									id="menu-button-{group.id}"
-									class="entry"
-									aria-expanded={open === group.id}
-									aria-controls="menu-{group.id}"
-									data-active={current === group.id}
-									onclick={() => toggle(group.id)}
-								>
-									{t(group.label)}
-									<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
-										<path d="M3 4.5 6 7.5 9 4.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-									</svg>
-								</button>
-								{#if open === group.id}
-									<ul class="popup" id="menu-{group.id}">
-										{#each group.items as item (item.href)}
-											<li>
-												<a href={item.href} aria-current={page.url.pathname === item.href ? 'page' : undefined}>{t(item.label)}</a>
-											</li>
-										{/each}
-									</ul>
+		<!-- Di laptop isi panel ini tampil langsung di bar atas; di HP dan tablet
+		     baru tampil setelah tombol Menu ditekan. -->
+		<div class="panel" id="menu-panel" class:open={panelOpen} class:always={!showMenu}>
+			{#if showMenu}
+				<!-- Menu atas berkelompok (D-127). Menu hanya menyembunyikan halaman yang
+				     pasti ditolak; server tetap memeriksa setiap operasi (M1.2). -->
+				<nav bind:this={nav} aria-label={t('navMain')}>
+					<ul class="groups">
+						{#each menu as group (group.id)}
+							<li class="group">
+								{#if group.id === 'home'}
+									<a class="entry" href="/" data-active={current === 'home'} aria-current={page.url.pathname === '/' ? 'page' : undefined}>{t(group.label)}</a>
+								{:else}
+									<button
+										type="button"
+										id="menu-button-{group.id}"
+										class="entry"
+										aria-expanded={open === group.id}
+										aria-controls="menu-{group.id}"
+										data-active={current === group.id}
+										onclick={() => toggle(group.id)}
+									>
+										{t(group.label)}
+										<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+											<path d="M3 4.5 6 7.5 9 4.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+										</svg>
+									</button>
+									{#if open === group.id}
+										<ul class="popup" id="menu-{group.id}">
+											{#each group.items as item (item.href)}
+												<li>
+													<a href={item.href} aria-current={page.url.pathname === item.href ? 'page' : undefined}>{t(item.label)}</a>
+												</li>
+											{/each}
+										</ul>
+									{/if}
 								{/if}
-							{/if}
-						</li>
-					{/each}
-				</ul>
-			</nav>
-		{/if}
-		<!-- Logout selalu terlihat di setiap halaman yang butuh login (ASVS 7.4.4). -->
-		<div class="account">
-			<span class="who">
-				{t('loggedInAs', { name: session.current.person.name, login: session.current.account.login })}
-				{#if session.current.account.kind === 'admin'}
-					<em class="badge">{t('accountKindAdmin')}</em>
-				{/if}
-			</span>
-			<a href="/account/password">{t('navAccount')}</a>
-			<a href="/about">{t('navAbout')}</a>
-			<button type="button" onclick={onLogout}>{t('logout')}</button>
+							</li>
+						{/each}
+					</ul>
+				</nav>
+			{/if}
+			<div class="account">
+				<span class="who">
+					{t('loggedInAs', { name: session.current.person.name, login: session.current.account.login })}
+					{#if session.current.account.kind === 'admin'}
+						<em class="badge">{t('accountKindAdmin')}</em>
+					{/if}
+				</span>
+				<a href="/account/password">{t('navAccount')}</a>
+				<a href="/about">{t('navAbout')}</a>
+			</div>
 		</div>
 	{/if}
+
+	<div class="tools">
+		<LanguageSwitch />
+		{#if showMenu}
+			<button
+				type="button"
+				class="menu-toggle"
+				bind:this={menuToggle}
+				aria-expanded={panelOpen}
+				aria-controls="menu-panel"
+				onclick={() => (panelOpen = !panelOpen)}
+			>
+				<svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+					<path d="M3 5h12M3 9h12M3 13h12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+				</svg>
+				{t('navMenu')}
+			</button>
+		{/if}
+		{#if session.current}
+			<!-- Logout selalu terlihat di setiap halaman yang butuh login, juga di HP (ASVS 7.4.4). -->
+			<button type="button" onclick={onLogout}>{t('logout')}</button>
+		{/if}
+	</div>
 </header>
 
 <main class="page" class:login={onLoginPage}>
@@ -185,7 +231,6 @@
 		display: flex;
 		align-items: center;
 		gap: 10px;
-		margin-right: 8px;
 		color: var(--ink);
 		font-weight: 600;
 	}
@@ -197,12 +242,23 @@
 	.mark {
 		display: grid;
 		place-items: center;
+		flex: none;
 		width: 34px;
 		height: 34px;
 		border-radius: 9px;
 		background: var(--ink);
 		color: #ffffff;
 		font-weight: 700;
+	}
+
+	/* Isi panel (menu dan akun) di laptop: satu baris di antara logo dan alat. */
+	.panel {
+		display: flex;
+		flex: 1 1 auto;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 8px 16px;
+		min-width: 0;
 	}
 
 	.groups {
@@ -294,6 +350,16 @@
 		font-style: normal;
 	}
 
+	.tools {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.menu-toggle {
+		display: none;
+	}
+
 	/* Halaman login: satu kartu di tengah. */
 	.login {
 		max-width: 440px;
@@ -304,17 +370,86 @@
 		border-radius: var(--radius-lg);
 	}
 
-	@media (max-width: 640px) {
+	/* HP dan tablet (di bawah 1024px): menu dilipat ke tombol Menu, dan panelnya
+	   turun sebagai baris penuh di bawah bar atas. */
+	@media (max-width: 1023px) {
 		.top {
-			padding: 10px 16px;
+			padding: 10px 20px;
+		}
+
+		.tools {
+			margin-left: auto;
+		}
+
+		.menu-toggle {
+			display: inline-flex;
+		}
+
+		.panel:not(.always) {
+			display: none;
+		}
+
+		.panel.open {
+			display: flex;
+			flex-direction: column;
+			align-items: stretch;
+			order: 3;
+			flex-basis: 100%;
+			padding: 8px 0 4px;
+			border-top: 1px solid var(--border);
+		}
+
+		.panel.always {
+			order: 3;
+			flex-basis: 100%;
+		}
+
+		.panel.open .groups {
+			flex-direction: column;
+		}
+
+		.panel.open .entry {
+			width: 100%;
+			min-height: 48px;
+			justify-content: space-between;
+		}
+
+		/* Isi kelompok tampil di dalam panel, bukan melayang. */
+		.panel.open .popup {
+			position: static;
+			min-width: 0;
+			margin: 2px 0 6px 12px;
+			border: 0;
+			border-left: 2px solid var(--border);
+			border-radius: 0;
+			box-shadow: none;
+		}
+
+		.panel.open .popup a {
+			padding: 12px;
 		}
 
 		.account {
 			margin-left: 0;
+			padding-top: 8px;
+			border-top: 1px solid var(--border-soft);
+		}
+	}
+
+	/* HP (di bawah 640px): nama aplikasi disembunyikan dari tampilan supaya bar
+	   atas muat satu baris; namanya tetap dibacakan lewat aria-label tautan. */
+	@media (max-width: 639px) {
+		.top {
+			padding: 8px 16px;
+		}
+
+		.title {
+			display: none;
 		}
 
 		.login {
-			margin: 24px 16px;
+			margin: 24px 0 0;
+			padding: 24px 20px;
 		}
 	}
 </style>

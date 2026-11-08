@@ -1,18 +1,20 @@
 import { en, type MessageKey, type Messages } from './en.ts';
+import { id } from './id.ts';
+import { language, type Language } from './language.svelte.ts';
 
 export type { MessageKey };
 
-// Katalog bahasa yang aktif. Saat ini hanya bahasa Inggris (Q-14).
-//
-// Cara menambah bahasa Indonesia nanti:
-//   1. Buat id.ts berisi `export const id: Messages = { ... }` dengan kunci yang sama.
-//      TypeScript menolak bila ada kunci yang terlewat.
-//   2. Ganti katalog aktif di bawah ini menjadi `id`, atau buat pilihannya bisa
-//      diatur pengguna.
-const active: Messages = en;
+// Dua katalog dengan kunci yang sama (D-128). TypeScript menolak katalog yang
+// kekurangan kunci, karena keduanya bertipe Messages.
+const catalogs: Record<Language, Messages> = { en, id };
 
-// t mengembalikan teks layar untuk satu kunci. Tempat seperti {code} di teks
-// diisi dari vars; tempat yang tidak diberi nilai dibiarkan apa adanya.
+// t mengembalikan teks layar untuk satu kunci dalam bahasa yang aktif. Tempat
+// seperti {code} di teks diisi dari vars; tempat yang tidak diberi nilai
+// dibiarkan apa adanya.
+//
+// Karena t membaca language.current (rune $state), teks di template Svelte
+// ikut berganti saat bahasa diganti. Teks yang sudah disimpan di variabel
+// (misalnya pesan "tersimpan") baru berganti saat dibuat ulang.
 export function t(key: MessageKey, vars: Record<string, string> = {}): string {
-	return active[key].replace(/\{(\w+)\}/g, (placeholder, name: string) => vars[name] ?? placeholder);
+	return catalogs[language.current][key].replace(/\{(\w+)\}/g, (placeholder, name: string) => vars[name] ?? placeholder);
 }

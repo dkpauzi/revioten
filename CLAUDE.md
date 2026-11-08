@@ -2,7 +2,7 @@
 
 File ini dibaca Claude Code di awal setiap sesi. Isinya aturan kerja untuk menulis kode, diringkas dari brief desain. Bila file ini berbeda dengan brief, brief yang berlaku (brief bagian 0 dan bagian 15, butir 12).
 
-- Dibuat 27 Oktober 2026 dari brief desain v1.15 (D-77), diperbarui 30 Oktober 2026 mengikuti brief desain v1.16 (D-78 sampai D-120) dan v1.17 (kode Tahap 2), 3 November 2026 mengikuti brief v1.20 (tinjauan desain UI dan UML draft 0.12), 4 November 2026 mengikuti brief v1.21 (keputusan D-121 sampai D-126), dan 8 November 2026 mengikuti brief v1.22 (D-127, design system dan menu berkelompok).
+- Dibuat 27 Oktober 2026 dari brief desain v1.15 (D-77), diperbarui 30 Oktober 2026 mengikuti brief desain v1.16 (D-78 sampai D-120) dan v1.17 (kode Tahap 2), 3 November 2026 mengikuti brief v1.20 (tinjauan desain UI dan UML draft 0.12), 4 November 2026 mengikuti brief v1.21 (keputusan D-121 sampai D-126), dan 8 November 2026 mengikuti brief v1.22 (D-127, design system dan menu berkelompok; D-128, dua bahasa dan tampilan per perangkat).
 - Baris bertanda **(usulan)** adalah usulan Claude yang belum diputuskan pemilik. Ikuti sebagai rencana kerja, tapi bisa berubah.
 
 ## 1. Proyek ini
@@ -47,7 +47,7 @@ Baca bagian yang disentuh milestone yang sedang dikerjakan. Tidak perlu membaca 
 9. Saat melanjutkan pekerjaan, baca catatan milestone terakhir di `docs/catatan/` dan lanjutkan dari sana. Jangan mengulang langkah yang sudah selesai.
 10. Sebut ID keputusan dan aturan (D-, R-, UC-, M) di catatan milestone dan pesan commit.
 11. Nyatakan asumsi secara eksplisit dan catat di catatan milestone.
-12. Istilah di layar dan cetakan mengikuti glosarium U1 dan istilah di WI atau prosedur yang sudah ada. Jangan membuat istilah baru. Bahasa UI belum diputuskan (Q-14), jadi tanyakan bila perlu.
+12. Istilah di layar dan cetakan mengikuti glosarium U1 dan istilah di WI atau prosedur yang sudah ada. Jangan membuat istilah baru. Layar dua bahasa (D-128): Inggris bawaan di `web/src/lib/i18n/en.ts`, Indonesia di `id.ts` dengan kunci yang sama. Istilah Indonesia mengikuti kolom "Istilah" di U1, istilah Inggris kolom "Istilah layar (Inggris)". Setiap teks layar baru ditambahkan ke kedua katalog.
 
 ## 4. Stack dan versi (brief bagian 7)
 
@@ -90,7 +90,7 @@ Ini ringkasan. Teks lengkap dan statusnya ada di brief bagian 5 dan 6.
 - **Baris dokumen:** baris datar dengan isi JSONB yang divalidasi terhadap versi format template (D-02, R-DOC-01).
 - **Revisi rilis:** tidak bisa diubah, dengan snapshot dan SHA-256 (R-REV-02).
 - **Error API:** satu format berisi kode, pesan, dan request ID (R-API-13).
-- **Tampilan (D-127):** warna, huruf, tombol, field, tabel, dan label status diatur sekali di `web/src/app.css`, mengikuti artboard "Design system" di kanvas desain UI. `<style>` di komponen hanya untuk susunan khusus halaman itu. Menu atas disusun `web/src/lib/menu.ts` (kelompok Home, Documents, Template library, Master data, Admin); halaman baru ditambahkan ke sana, dan test E2E membuka halaman lewat `openFromMenu` di `web/e2e/helpers.ts`.
+- **Tampilan (D-127):** warna, huruf, tombol, field, tabel, dan label status diatur sekali di `web/src/app.css`, mengikuti artboard "Design system" di kanvas desain UI. `<style>` di komponen hanya untuk susunan khusus halaman itu. Menu atas disusun `web/src/lib/menu.ts` (kelompok Home, Documents, Template library, Master data, Admin); halaman baru ditambahkan ke sana, dan test E2E membuka halaman lewat `openFromMenu` di `web/e2e/helpers.ts`. Tampilan dibuat untuk HP (di bawah 640px), tablet (640 sampai 1023px), dan laptop (D-128); di bawah 1024px menu dilipat ke tombol Menu, dan `web/e2e/responsive.test.ts` memastikan halaman tidak bergeser ke samping. Halaman baru yang punya tabel atau formulir lebar ditambahkan ke daftar halaman di test itu.
 - **Integrasi:** tidak ada token integrasi sebelum M8.1 (D-19).
 
 ## 6. Mengevaluasi desain sambil membangun (D-77)

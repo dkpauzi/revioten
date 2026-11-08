@@ -3,7 +3,7 @@
 - Paket UML: draft 0.14, 4 November 2026 (draft 0.13 dan 0.12: 3 November 2026; draft 0.11, 0.10, 0.9, 0.8, dan 0.7: 31, 31, 30, 30, dan 27 Oktober 2026). Draft 0.12 menambah istilah dari desain UI 2 November 2026 dan temuan register nomor 3 November 2026, bertanda UX-xx (`usulan-desain-ui.md`). Draft 0.13 mencatat simbol Revision yang dipasang sistem (migrasi 00013). Draft 0.14 menambah kolom terisi otomatis dan aturan cetak tanda revisi (D-121 sampai D-123). Draft 0.15 (8 November 2026) menambah nama kelompok menu (D-127).
 - Sumber: brief desain v1.22, termasuk temuan dari dokumen TR-020 (brief bagian 21). Nama jabatan mengikuti bagan organisasi NPI (update 22 Januari 2026). Nama orang tidak dicantumkan. Setiap istilah merujuk ke ID di brief (R-UML-01).
 - Bahasa: penjelasan dalam bahasa Indonesia. Nama jabatan, nama standar, dan tahap tanda tangan memakai istilah yang sama dengan brief (R-UML-05, usulan).
-- Kolom **Istilah layar (Inggris)** (E-19, D-98): istilah yang dipakai di layar dan di katalog teks `web/src/lib/i18n/en.ts`, karena layar berbahasa Inggris untuk saat ini (D-96). Istilah baru di layar ditambahkan ke sini lebih dulu.
+- Kolom **Istilah layar (Inggris)** (E-19, D-98): istilah yang dipakai di layar berbahasa Inggris dan di katalog teks `web/src/lib/i18n/en.ts`. Layar juga punya bahasa Indonesia (D-128, menggantikan D-96); katalognya `web/src/lib/i18n/id.ts` memakai kolom **Istilah**. Istilah baru di layar ditambahkan ke sini lebih dulu.
 - Kolom **Cek WI**:
   - **Belum**: istilah domain yang harus dicocokkan dengan WI dan prosedur yang berlaku. Diisi pemilik.
   - **Tidak perlu**: istilah sistem yang tidak muncul di WI.

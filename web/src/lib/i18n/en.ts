@@ -1,8 +1,8 @@
-// Teks layar dalam bahasa Inggris (Q-14, keputusan pemilik 28 Oktober 2026).
+// Teks layar dalam bahasa Inggris, bahasa bawaan (Q-14, D-128).
 //
 // Setiap teks punya kunci tetap. Kode layar tidak menulis teks langsung, tapi
-// memanggil t('kunci'). Untuk bahasa lain cukup dibuat file baru dengan kunci
-// yang sama, misalnya id.ts untuk bahasa Indonesia (lihat index.ts).
+// memanggil t('kunci'). Bahasa Indonesia ada di id.ts dengan kunci yang sama
+// (lihat index.ts). Kunci baru selalu ditambahkan ke kedua file.
 // Tempat seperti {code} diisi saat dipanggil: t('customerSaved', { code: 'AB' }).
 //
 // E-19 (D-98): istilah Inggris mengikuti kolom "Istilah layar (Inggris)" di
@@ -19,6 +19,9 @@ export const en = {
 	navGroupMaster: 'Master data',
 	navGroupAdmin: 'Admin',
 	navMain: 'Main menu',
+	// Tombol Menu di HP dan tablet, dan pengalih bahasa (D-128).
+	navMenu: 'Menu',
+	languageLabel: 'Language',
 	homeTitle: 'Home',
 	healthChecking: 'Checking the server…',
 	healthOk: 'Server status: OK',
