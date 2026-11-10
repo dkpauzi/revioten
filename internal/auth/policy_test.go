@@ -13,9 +13,11 @@ func TestCheckNewPassword(t *testing.T) {
 		context  []string // nama login dan nama orang pemilik akun
 		want     []string // kode masalah yang diharapkan; kosong berarti diterima
 	}{
-		{name: "15 karakter diterima", password: "satu dua tiga!!"},
-		{name: "14 karakter ditolak", password: "satu dua tiga!", want: []string{"too_short"}},
-		{name: "huruf beraksen dihitung satu karakter", password: strings.Repeat("é", 15)},
+		{name: "8 karakter diterima", password: "satu dua"},
+		{name: "7 karakter ditolak", password: "satu du", want: []string{"too_short"}},
+		{name: "password umum pendek ditolak", password: "password1", want: []string{"too_common"}},
+		{name: "deret angka pendek ditolak", password: "12345678", want: []string{"too_common"}},
+		{name: "huruf beraksen dihitung satu karakter", password: strings.Repeat("é", 8)},
 		{name: "128 karakter diterima", password: strings.Repeat("ab", 64)},
 		{name: "129 karakter ditolak", password: strings.Repeat("ab", 64) + "c", want: []string{"too_long"}},
 		{name: "tanpa aturan komposisi", password: "semua huruf kecil saja"},

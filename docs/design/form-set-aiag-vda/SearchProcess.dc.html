@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Find by process</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#F4F5F7}
+*{box-sizing:border-box}
+a{color:#3730A3;text-decoration:none}
+.pg{min-height:1150px;font-family:Geist,system-ui,sans-serif;color:#101828;font-size:15px;line-height:1.5;background:#F4F5F7}
+.top{display:flex;align-items:center;gap:14px;padding:12px 28px;background:#FFFFFF;border-bottom:1px solid #E4E7EC;flex-wrap:wrap}
+.nav{display:flex;gap:4px}
+.nav a{display:inline-flex;align-items:center;height:40px;padding:0 14px;border-radius:8px;color:#344054;font-weight:500}
+.nav a.on{background:#EEF0FF;color:#3730A3}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:42px;padding:0 16px;border:1px solid #D0D5DD;border-radius:10px;background:#FFFFFF;color:#344054;font:inherit;font-weight:500;cursor:pointer;white-space:nowrap}
+.btn.p{background:#4338CA;border-color:#4338CA;color:#FFFFFF}
+.mut{color:#5D6B7E}
+.mono{font-family:"Geist Mono",ui-monospace,monospace;font-size:13.5px}
+.card{background:#FFFFFF;border:1px solid #E4E7EC;border-radius:14px}
+.search{display:flex;align-items:center;gap:12px;height:56px;padding:0 18px;border:2px solid #4338CA;border-radius:12px;background:#FFFFFF;font-size:18px}
+.fl{display:flex;flex-direction:column;gap:10px;padding:16px 18px;border-bottom:1px solid #EEF0F3}
+.fl b{font-weight:600;font-size:14px}
+.ck{display:flex;align-items:center;gap:10px;font-size:14.5px}
+.ck input{width:18px;height:18px;accent-color:#4338CA;margin:0}
+.ck span.n{margin-left:auto;color:#5D6B7E;font-size:13px}
+.chip{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;border-radius:999px;background:#EEF0FF;color:#3730A3;font-size:13.5px;font-weight:500}
+.badge{display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:999px;font-size:12.5px;font-weight:600;white-space:nowrap}
+.res{display:grid;grid-template-columns:1.3fr 1fr 1.5fr auto;gap:16px;align-items:center;padding:16px 20px;border-top:1px solid #EEF0F3}
+mark{background:#FEF0C7;color:inherit;padding:0 2px;border-radius:3px}
+</style>
+</helmet>
+<div class="pg">
+  <header class="top">
+    <span style="width: 36px; height: 36px; border-radius: 9px; background: #101828; color: #FFFFFF; display: grid; place-items: center; font-weight: 700">P</span>
+    <span style="font-weight: 600; font-size: 16px; margin-right: 10px">PFD · PFMEA · CP</span>
+    <nav class="nav" aria-label="Main"><a href="HomeV2.dc.html">Home</a><a class="on" href="SearchProcess.dc.html" aria-current="page">Search</a><a href="Numbers.dc.html">Documents</a><a href="LibraryV2.dc.html">Template library</a><a href="GenbaView.dc.html">Genba</a></nav>
+  </header>
+
+  <main style="max-width: 1360px; margin: 0 auto; padding: 26px 28px; display: flex; flex-direction: column; gap: 18px">
+    <div>
+      <h1 style="margin: 0; font-size: 26px; font-weight: 600">Find models by process</h1>
+      <p class="mut" style="margin: 2px 0 0">Search finds the process by its master name and every alias, in PFD, PFMEA and Control Plan.</p>
+    </div>
+    <div style="display: flex; gap: 12px; flex-wrap: wrap">
+      <div class="search" role="search" style="flex: 1 1 600px">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5D6B7E" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16z M21 21l-4.3-4.3"></path></svg>
+        <input aria-label="Search" placeholder="manual solder" style="flex: 1; border: 0; outline: 0; font: inherit">
+        <span class="badge" style="background: #F2F4F7; color: #344054">Process</span>
+      </div>
+      <div style="display: inline-flex; border: 1px solid #D0D5DD; border-radius: 10px; overflow: hidden; background: #FFFFFF" role="group" aria-label="Search in">
+        <button class="btn" type="button" style="border: 0; border-radius: 0; background: #101828; color: #FFFFFF">Process names</button>
+        <button class="btn" type="button" style="border: 0; border-radius: 0">All cell text</button>
+      </div>
+    </div>
+    <div class="mut" style="font-size: 14px">Matches process <b style="color: #101828">Manual Soldering</b> · also found as <mark>Hand Soldering</mark>, <mark>Manual Solder (THT)</mark>, <mark>Touch-up Solder</mark></div>
+
+    <div style="display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 20px; align-items: start">
+      <aside class="card" aria-label="Filters" style="overflow: hidden">
+        <div class="fl"><b>Customer</b>
+          <label class="ck"><input type="checkbox" checked="{{true}}" readOnly="{{true}}">Customer KT<span class="n">6</span></label>
+          <label class="ck"><input type="checkbox" checked="{{true}}" readOnly="{{true}}">Customer AB<span class="n">3</span></label>
+          <label class="ck"><input type="checkbox" readOnly="{{true}}">Customer NB<span class="n">4</span></label>
+          <label class="ck"><input type="checkbox" readOnly="{{true}}">Customer MS<span class="n">1</span></label>
+        </div>
+        <div class="fl"><b>Document</b>
+          <label class="ck"><input type="checkbox" checked="{{true}}" readOnly="{{true}}">PFD</label>
+          <label class="ck"><input type="checkbox" checked="{{true}}" readOnly="{{true}}">PFMEA</label>
+          <label class="ck"><input type="checkbox" checked="{{true}}" readOnly="{{true}}">Control Plan</label>
+        </div>
+        <div class="fl"><b>Status</b>
+          <label class="ck"><input type="radio" name="st" checked="{{true}}" readOnly="{{true}}">Released only</label>
+          <label class="ck"><input type="radio" name="st" readOnly="{{true}}">Include drafts</label>
+          <label class="ck"><input type="checkbox" readOnly="{{true}}">Show EOL models</label>
+        </div>
+        <div class="fl" style="border-bottom: 0"><b>Model group, form set</b>
+          <select aria-label="Model group" style="height: 40px; border: 1px solid #D0D5DD; border-radius: 8px; padding: 0 10px; font: inherit"><option>All model groups</option></select>
+          <select aria-label="Form set" style="height: 40px; border: 1px solid #D0D5DD; border-radius: 8px; padding: 0 10px; font: inherit"><option>All form sets</option></select>
+        </div>
+      </aside>
+
+      <section class="card" aria-labelledby="r-h" style="overflow: hidden">
+        <div style="display: flex; align-items: center; gap: 12px; padding: 16px 20px; flex-wrap: wrap">
+          <h2 id="r-h" style="margin: 0; font-size: 19px; font-weight: 600; flex: 1">9 models · 2 customers</h2>
+          <span class="chip">Customer KT ✕</span><span class="chip">Customer AB ✕</span>
+          <button class="btn" type="button">Download list (Excel)</button>
+          <button class="btn p" type="button">Start yokoten with these</button>
+        </div>
+        <div class="res" style="background: #F8F9FB; font-size: 13px; font-weight: 600; color: #5D6B7E; padding-top: 10px; padding-bottom: 10px"><span>Model</span><span>Documents</span><span>Where the process is</span><span></span></div>
+        <div class="res">
+          <span><b style="font-weight: 600">K-125</b> · Control unit PCBA<br><span class="mut" style="font-size: 13.5px">Customer KT</span></span>
+          <span class="mono">SH/SF/SC-KT-014 · rev 04</span>
+          <span>Op <b>8</b> <mark>Manual Soldering</mark> · 4 PFMEA rows · 6 CP rows</span>
+          <a class="btn" href="GenbaView.dc.html">Open at op 8</a>
+        </div>
+        <div class="res">
+          <span><b style="font-weight: 600">K-118</b> · Sensor board<br><span class="mut" style="font-size: 13.5px">Customer KT</span></span>
+          <span class="mono">SH/SF/SC-KT-011 · rev 02</span>
+          <span>Op <b>7.2</b> <mark>Hand Soldering</mark> (alias) · 3 PFMEA · 4 CP</span>
+          <a class="btn" href="GenbaView.dc.html">Open at op 7.2</a>
+        </div>
+        <div class="res">
+          <span><b style="font-weight: 600">LED-H20</b> · 3 parts<br><span class="mut" style="font-size: 13.5px">Customer KT</span></span>
+          <span class="mono">SH/SF/SC-KT-040 · rev 01</span>
+          <span>Part B op 5, part C op 5 · <mark>Manual Solder (THT)</mark></span>
+          <a class="btn" href="GenbaView.dc.html">Open at part B</a>
+        </div>
+        <div class="res">
+          <span><b style="font-weight: 600">M-210</b> · Control board PCBA<br><span class="mut" style="font-size: 13.5px">Customer AB</span></span>
+          <span class="mono">SH/SF/SC-AB-002 · rev 02</span>
+          <span>Op <b>090</b> <mark>Manual Soldering</mark> · 5 PFMEA · 3 CP <span class="badge" style="background: #FEE4E2; color: #B42318">AP H 1</span></span>
+          <a class="btn" href="GenbaView.dc.html">Open at op 090</a>
+        </div>
+        <div class="res">
+          <span><b style="font-weight: 600">A-300</b> · Power board<br><span class="mut" style="font-size: 13.5px">Customer AB</span></span>
+          <span class="mono">SH/SF/SC-AB-007 · rev 00</span>
+          <span>Op <b>9</b> <mark>Touch-up Solder</mark> (alias) · <span class="badge" style="background: #FFF6E5; color: #B54708">Only in PFD</span></span>
+          <a class="btn" href="GenbaView.dc.html">Open at op 9</a>
+        </div>
+        <div class="mut" style="padding: 14px 20px; border-top: 1px solid #EEF0F3; font-size: 14px">4 more models · <a href="#">Show all</a></div>
+      </section>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1150}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

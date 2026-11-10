@@ -588,14 +588,14 @@ export const id: Messages = {
 	passwordCurrent: 'Password sekarang',
 	passwordNew: 'Password baru',
 	passwordNewHint:
-		'Paling sedikit 15 karakter. Beberapa kata dengan spasi mudah diingat. Jangan pakai nama login, nama Anda, atau nama sistem.',
+		'Paling sedikit 8 karakter. Beberapa kata dengan spasi mudah diingat. Jangan pakai nama login, nama Anda, atau nama sistem.',
 	passwordConfirm: 'Ulangi password baru',
 	passwordSave: 'Ganti password',
 	passwordSaving: 'Menyimpan…',
 	passwordMismatch: 'Kedua password baru tidak sama.',
 	passwordChanged: 'Password Anda sudah diganti. Sesi lain dari akun ini sudah diakhiri.',
 	passwordCurrentIncorrect: 'Password sekarang salah.',
-	passwordTooShort: 'Paling sedikit 15 karakter.',
+	passwordTooShort: 'Paling sedikit 8 karakter.',
 	passwordTooLong: 'Paling banyak 128 karakter.',
 	passwordTooCommon:
 		'Password ini terlalu mudah ditebak. Jangan pakai password umum, nama login, nama Anda, atau nama sistem.',

@@ -6,8 +6,10 @@
 	"include": [
 		"src",
 		"e2e",
+		"tour",
 		"vite.config.ts",
 		"playwright.config.ts",
+		"playwright.tour.config.ts",
 		"openapi-ts.config.ts"
 	]
 }

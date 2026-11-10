@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Workbook · PFMEA AIAG-VDA</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0;background:#E9EBEF}
+*{box-sizing:border-box}
+a{color:#3730A3;text-decoration:none}a:hover{text-decoration:underline}
+.wb{display:flex;flex-direction:column;min-height:1300px;font-family:Geist,system-ui,sans-serif;color:#101828;font-size:14px;line-height:1.45;background:#E9EBEF}
+.top{display:flex;align-items:center;gap:14px;padding:10px 20px;background:#FFFFFF;border-bottom:1px solid #E4E7EC;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border:1px solid #D0D5DD;border-radius:8px;background:#FFFFFF;color:#344054;font:inherit;font-weight:500;cursor:pointer;white-space:nowrap}
+.btn:hover{background:#F9FAFB;color:#101828;text-decoration:none}
+.btn.p{background:#4338CA;border-color:#4338CA;color:#FFFFFF}
+.lang{display:inline-flex;border:1px solid #D0D5DD;border-radius:8px;overflow:hidden}
+.lang button{height:34px;padding:0 10px;border:0;background:#FFFFFF;font:inherit;font-size:13px;font-weight:600;color:#475467;cursor:pointer}
+.lang button.on{background:#101828;color:#FFFFFF}
+.mut{color:#5D6B7E}
+.mono{font-family:"Geist Mono",ui-monospace,monospace}
+.badge{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:999px;font-size:13px;font-weight:600}
+.rib{display:flex;align-items:stretch;padding:6px 12px 0;background:#F8F9FB;border-bottom:1px solid #E4E7EC;flex-wrap:wrap}
+.grp{display:flex;flex-direction:column;align-items:center;padding:0 10px 4px;border-right:1px solid #E4E7EC}
+.grp:last-child{border-right:0}
+.gb{display:flex;gap:2px}
+.gl{font-size:11.5px;color:#5D6B7E;margin-top:2px}
+.rb{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:80px;height:62px;border:1px solid transparent;border-radius:8px;background:transparent;font:inherit;font-size:12.5px;color:#344054;cursor:pointer;text-align:center;line-height:1.15}
+.rb:hover{background:#FFFFFF;border-color:#D0D5DD}
+.rb.on{background:#EEF0FF;border-color:#C7CBF5;color:#3730A3}
+.fx{display:flex;align-items:stretch;height:38px;background:#FFFFFF;border-bottom:1px solid #E4E7EC}
+.fx span{display:flex;align-items:center;padding:0 12px;font-size:13.5px}
+.paper{background:#FFFFFF;box-shadow:0 1px 3px rgba(16,24,40,.14),0 12px 32px rgba(16,24,40,.10);font-family:Arial,Helvetica,sans-serif;color:#000000;padding:16px 18px 24px}
+.hd{border-collapse:collapse;font-size:10px;line-height:1.3}
+.hd td{padding:2px 6px 2px 0;vertical-align:bottom}
+.hd td.v{border-bottom:1px solid #000000;min-width:150px}
+.f{border-collapse:collapse;table-layout:fixed;font-size:9.5px;line-height:1.28}
+.f th{border:1px solid #000000;font-weight:400;padding:3px;text-align:center;vertical-align:middle}
+.f th.b{font-weight:700;background:#F2F2F2}
+.f th.v{height:96px;padding:2px 0}
+.f th.v span{display:inline-block;transform:rotate(-90deg);white-space:nowrap}
+.f td{border:1px solid #000000;padding:3px 4px;vertical-align:top}
+.f td.c{text-align:center;vertical-align:middle}
+.f tr.sel td{background:#F3F4FF}
+.f td.cur{outline:2.5px solid #4338CA;outline-offset:-2px;background:#FFFFFF}
+.ap{font-weight:700}
+.apH{background:#FEE4E2 !important}
+.apM{background:#FEF0C7 !important}
+.apL{background:#E3F4EA !important}
+.side{flex:0 0 360px;background:#FFFFFF;border-left:1px solid #E4E7EC;padding:18px;display:flex;flex-direction:column;gap:18px}
+.sod{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.sod div{border:1px solid #E4E7EC;border-radius:10px;padding:8px 10px;text-align:center}
+.sod b{display:block;font-size:24px;font-weight:600;line-height:1.1}
+.chain{display:flex;flex-direction:column;gap:6px}
+.chain div{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border:1px solid #E4E7EC;border-radius:10px;font-size:13px}
+.chain i{font-style:normal;font-weight:600;font-size:11.5px;color:#5D6B7E;min-width:44px}
+.tabs{display:flex;align-items:flex-end;gap:2px;padding:0 12px;background:#F2F4F7;border-top:1px solid #D0D5DD;min-height:44px;flex-wrap:wrap}
+.st{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 18px;border:1px solid #D0D5DD;border-top:0;border-radius:0 0 8px 8px;background:#E9EBEF;color:#344054;font-weight:500;font-size:14px}
+.st.on{background:#FFFFFF;color:#101828;font-weight:600;box-shadow:inset 0 3px 0 #4338CA}
+.dot{width:8px;height:8px;border-radius:50%}
+</style>
+</helmet>
+<div class="wb">
+  <header class="top">
+    <a href="HomeV2.dc.html" style="display: flex; align-items: center; gap: 10px; color: #101828">
+      <span style="width: 34px; height: 34px; border-radius: 8px; background: #101828; color: #FFFFFF; display: grid; place-items: center; font-weight: 700">P</span>
+      <span style="font-weight: 600">PFD · PFMEA · CP</span>
+    </a>
+    <nav aria-label="Breadcrumb" class="mut" style="font-size: 14px; display: flex; gap: 8px">
+      <a href="HomeV2.dc.html">Home</a><span>›</span><span>Customer AB</span><span>›</span><span style="color: #101828; font-weight: 500">Model M-210</span>
+    </nav>
+    <span style="flex: 1"></span>
+    <div class="lang" role="group" aria-label="Language"><button type="button" class="on" aria-pressed="true">EN</button><button type="button">ID</button></div>
+    <button class="btn" type="button">Help</button>
+    <span style="display: flex; align-items: center; gap: 8px"><span style="width: 32px; height: 32px; border-radius: 50%; background: #4338CA; color: #FFFFFF; display: grid; place-items: center; font-size: 12px; font-weight: 600">RS</span><span>Rina S.</span></span>
+  </header>
+
+  <div style="display: flex; align-items: center; gap: 16px; padding: 14px 20px; background: #FFFFFF; border-bottom: 1px solid #E4E7EC; flex-wrap: wrap">
+    <div style="flex: 1 1 520px">
+      <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap">
+        <h1 style="margin: 0; font-size: 22px; font-weight: 600">Model M-210 · Control board PCBA</h1>
+        <a href="TemplateSets.dc.html" class="badge" style="background: #EEF0FF; color: #3730A3">Form set: AIAG-VDA 2019 + Control Plan 2024</a>
+      </div>
+      <div class="mut" style="font-size: 14px; margin-top: 2px">Revision 02 is being edited · PFD uses the general form, same as every set</div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 10px; background: #FEF3F2; border: 1px solid #FECDCA">
+      <span style="font-size: 14px"><b>3 rows with AP High</b> have no action yet</span>
+      <button class="btn p" type="button">Show them</button>
+    </div>
+  </div>
+
+  <div class="rib" role="toolbar" aria-label="Sheet tools">
+    <div class="grp"><div class="gb"><button class="rb" type="button">Undo</button></div><span class="gl">Edit</span></div>
+    <div class="grp"><div class="gb"><button class="rb" type="button">Insert row</button><button class="rb" type="button">Delete row</button><button class="rb" type="button">Add work element</button></div><span class="gl">Rows</span></div>
+    <div class="grp"><div class="gb"><button class="rb on" type="button">AP table</button><button class="rb" type="button">Show only AP High</button><button class="rb" type="button">Structure view</button></div><span class="gl">Risk (AIAG-VDA)</span></div>
+    <div class="grp"><div class="gb"><button class="rb" type="button">Use point for…</button><button class="rb" type="button">Link to CP row</button></div><span class="gl">Template</span></div>
+    <div class="grp"><div class="gb"><a class="rb" href="ChangeDiff.dc.html">Compare with 01</a><a class="rb" href="SyncCheck.dc.html">Check PFMEA and CP</a></div><span class="gl">Review</span></div>
+    <div class="grp"><div class="gb"><button class="rb" type="button">Print / PDF</button><button class="rb" type="button">Download Excel</button></div><span class="gl">Output</span></div>
+  </div>
+
+  <div class="fx" role="group" aria-label="Selected cell">
+    <span class="mono" style="background: #F8F9FB; border-right: 1px solid #E4E7EC; min-width: 280px; font-weight: 500">050 · Machine · Detection (D) of FC/FM</span>
+    <span class="mut" style="border-right: 1px solid #E4E7EC; font-style: italic">fx</span>
+    <span style="flex: 1">4 · AP is calculated: S 8, O 6, D 4 gives <b style="margin-left: 4px">H</b></span>
+  </div>
+
+  <div style="display: flex; flex: 1; min-height: 0">
+    <div style="flex: 1 1 auto; min-width: 0; overflow: auto; padding: 20px">
+      <div class="paper" style="width: 1950px">
+        <div style="display: flex; align-items: flex-start; gap: 16px">
+          <img src="/_blob/060ea449f259a1d603e7c3491e1f1b5c" alt="Company logo" style="height: 34px; width: auto">
+          <div style="flex: 1; text-align: center; font-weight: 700; font-size: 14px; padding-top: 6px">POTENTIAL FAILURE MODE AND EFFECTS ANALYSIS (PROCESS FMEA)</div>
+        </div>
+        <div style="font-weight: 700; font-size: 10px; margin: 10px 0 4px">PLANNING AND PREPARATION (STEP 1)</div>
+        <div style="display: flex; gap: 60px; margin-bottom: 12px">
+          <table class="hd"><tbody>
+            <tr><td><b>Part Name :</b></td><td class="v">Control board PCBA</td></tr>
+            <tr><td><b>Company Name :</b></td><td class="v">PT. SIIX EMS INDONESIA</td></tr>
+            <tr><td><b>Manufacturing Location :</b></td><td class="v">Karawang, Indonesia</td></tr>
+            <tr><td><b>Customer Name :</b></td><td class="v">Customer AB</td></tr>
+            <tr><td><b>Model Year(s)/Program(s) :</b></td><td class="v">2026</td></tr>
+          </tbody></table>
+          <table class="hd"><tbody>
+            <tr><td><b>Part No. :</b></td><td class="v">[PART NO.]</td></tr>
+            <tr><td><b>PFMEA Start Date :</b></td><td class="v">05/22/2026</td></tr>
+            <tr><td><b>PFMEA Revision Date :</b></td><td class="v">11/09/2026</td></tr>
+            <tr><td><b>Cross Functional Team :</b></td><td class="v" style="min-width: 420px">NPI, WH, IQC, Production 1, Production 2, QA/QC</td></tr>
+          </tbody></table>
+          <table class="hd"><tbody>
+            <tr><td><b>PFMEA ID Number</b></td><td class="v">SF-AB-002</td></tr>
+            <tr><td><b>Process Responsibility</b></td><td class="v">ALL</td></tr>
+            <tr><td><b>Confidentiality Level</b></td><td class="v">Internal</td></tr>
+          </tbody></table>
+        </div>
+        <table class="f" style="width: 1914px">
+          <colgroup>
+            <col style="width: 70px"><col style="width: 92px"><col style="width: 92px"><col style="width: 56px"><col style="width: 112px"><col style="width: 110px"><col style="width: 104px"><col style="width: 104px"><col style="width: 24px"><col style="width: 96px"><col style="width: 104px"><col style="width: 112px"><col style="width: 24px"><col style="width: 112px"><col style="width: 24px"><col style="width: 30px"><col style="width: 84px"><col style="width: 84px"><col style="width: 62px"><col style="width: 58px"><col style="width: 58px"><col style="width: 76px"><col style="width: 58px"><col style="width: 24px"><col style="width: 24px"><col style="width: 24px"><col style="width: 42px"><col style="width: 30px"><col style="width: 52px">
+          </colgroup>
+          <thead>
+            <tr>
+              <th>Continuous improvement</th>
+              <th colspan="3" class="b">STRUCTURE ANALYSIS (STEP 2)</th>
+              <th colspan="3" class="b">FUNCTION ANALYSIS (STEP 3)</th>
+              <th colspan="4" class="b">FAILURE ANALYSIS (STEP 4)</th>
+              <th colspan="5" class="b">RISK ANALYSIS (STEP 5)</th>
+              <th colspan="13" class="b">OPTIMIZATION (STEP 6)</th>
+            </tr>
+            <tr>
+              <th>History/change authorization (As applicable)</th>
+              <th>1. Process Item<br>System, Subsystem, Part element or name of process</th>
+              <th>2. Process Step<br>Station No. and Name of focus element</th>
+              <th>3. Process Work Element (4M)</th>
+              <th>1. Function of the Process Item</th>
+              <th>2. Function of the Process Step and Product Characteristic</th>
+              <th>3. Function of the Work Element and Process Characteristic</th>
+              <th>1. Failure Effects (FE)</th>
+              <th class="v"><span>Severity (S) of FE</span></th>
+              <th>2. Failure Mode (FM)</th>
+              <th>3. Failure Cause (FC)</th>
+              <th>Current Prevention Control (PC) of FC</th>
+              <th class="v"><span>Occurrence (O) of FC</span></th>
+              <th>Current Detection Controls (DC) of FC or FM</th>
+              <th class="v"><span>Detection (D) of FC/FM</span></th>
+              <th class="v"><span>PFMEA AP</span></th>
+              <th>Prevention Action</th>
+              <th>Detection Action</th>
+              <th>Responsible Person's Name</th>
+              <th>Target Completion Date</th>
+              <th>Status: Open, Completed, Discarded</th>
+              <th>Action Taken with Pointer to Evidence</th>
+              <th>Completion Date</th>
+              <th class="v"><span>Severity (S)</span></th>
+              <th class="v"><span>Occurrence (O)</span></th>
+              <th class="v"><span>Detection (D)</span></th>
+              <th class="v"><span>Special Characteristic</span></th>
+              <th class="v"><span>PFMEA AP</span></th>
+              <th>Note</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td rowspan="2"></td>
+              <td rowspan="2"><b>Part Receiving</b><br>(010)</td>
+              <td rowspan="2">Material inspection</td>
+              <td>Man</td>
+              <td rowspan="2">Receive only correct and undamaged material</td>
+              <td>Material matches the delivery note</td>
+              <td>Check packaging condition at unloading</td>
+              <td>Material cannot be used; line stop</td>
+              <td class="c">7</td>
+              <td>Damaged packaging accepted</td>
+              <td>Box handled roughly during unloading</td>
+              <td>Handling rule in receiving WI</td>
+              <td class="c">3</td>
+              <td>100% visual check at receiving</td>
+              <td class="c">7</td>
+              <td class="c ap apM">M</td>
+              <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="c">-</td><td></td><td></td>
+            </tr>
+            <tr>
+              <td>Material</td>
+              <td>Quantity equals the delivery note</td>
+              <td>Count and scan each lot</td>
+              <td>Wrong stock in system</td>
+              <td class="c">7</td>
+              <td>Quantity differs from delivery note</td>
+              <td>Supplier packs wrong quantity</td>
+              <td>Supplier quality agreement</td>
+              <td class="c">3</td>
+              <td>Count against DO, barcode scan</td>
+              <td class="c">4</td>
+              <td class="c ap apL">L</td>
+              <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="c">-</td><td></td><td></td>
+            </tr>
+            <tr>
+              <td rowspan="2"></td>
+              <td rowspan="2"><b>IQC - Incoming Quality Control</b><br>(020)</td>
+              <td>Check label and packing</td>
+              <td>Man</td>
+              <td rowspan="2">Stop NG material before production</td>
+              <td>Label matches supplier label</td>
+              <td>Verify label against supplier label</td>
+              <td>NG material goes to production</td>
+              <td class="c">5</td>
+              <td>Wrong part sent to next process</td>
+              <td>Label check skipped</td>
+              <td>100% barcode label verification</td>
+              <td class="c">3</td>
+              <td>Barcode scan and visual check</td>
+              <td class="c">5</td>
+              <td class="c ap apL">L</td>
+              <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="c">-</td><td></td><td></td>
+            </tr>
+            <tr>
+              <td>PCB visual and dimension</td>
+              <td>Machine</td>
+              <td>PCB outline within drawing tolerance</td>
+              <td>Measure with calibrated caliper</td>
+              <td>Assembly defect at placement</td>
+              <td class="c">6</td>
+              <td>Dimension NG not detected</td>
+              <td>Caliper out of calibration</td>
+              <td>Calibration schedule and label</td>
+              <td class="c">2</td>
+              <td>Calibration label check before use</td>
+              <td class="c">4</td>
+              <td class="c ap apL">L</td>
+              <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="c">&lt;IC&gt;</td><td></td><td></td>
+            </tr>
+            <tr class="sel">
+              <td>Rev 02: humidity limit added</td>
+              <td><b>Solder Paste Printing</b><br>(050)</td>
+              <td>Print solder paste</td>
+              <td>Machine</td>
+              <td>Apply the right paste volume on every pad</td>
+              <td>Paste volume 80–120% of aperture</td>
+              <td>Keep printer room humidity 40–60% RH</td>
+              <td>Solder bridge; field failure at customer</td>
+              <td class="c">8</td>
+              <td>Insufficient solder volume</td>
+              <td>Room humidity out of range</td>
+              <td>Humidity control per WI-PRT-01</td>
+              <td class="c">6</td>
+              <td>SPI 100% after printing</td>
+              <td class="c cur">4</td>
+              <td class="c ap apH">H</td>
+              <td>Auto humidity alarm at printer</td>
+              <td>SPI volume limit tightened</td>
+              <td>R. Santoso</td>
+              <td>12/15/2026</td>
+              <td>Open</td>
+              <td></td>
+              <td></td>
+              <td class="c">8</td><td class="c">2</td><td class="c">4</td>
+              <td class="c">&lt;IC&gt;</td>
+              <td class="c ap apL">L</td>
+              <td>Target after action</td>
+            </tr>
+          </tbody>
+        </table>
+        <p style="font-size: 9px; margin: 8px 0 0">Colour behind AP is shown on screen only. The printed sheet shows the letter, the same as the Excel form.</p>
+      </div>
+    </div>
+
+    <aside class="side" aria-labelledby="ap-h">
+      <div>
+        <div class="mut" style="font-size: 13px">Selected row</div>
+        <h2 id="ap-h" style="margin: 2px 0 0; font-size: 17px; font-weight: 600">050 Solder Paste Printing · Machine</h2>
+      </div>
+
+      <section aria-label="Action priority">
+        <div style="font-weight: 600; margin-bottom: 8px">Action Priority</div>
+        <div class="sod">
+          <div><span class="mut" style="font-size: 12px">Severity</span><b>8</b></div>
+          <div><span class="mut" style="font-size: 12px">Occurrence</span><b>6</b></div>
+          <div><span class="mut" style="font-size: 12px">Detection</span><b>4</b></div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; margin-top: 10px; padding: 12px; border-radius: 10px; background: #FEF3F2; border: 1px solid #FECDCA">
+          <span style="width: 44px; height: 44px; border-radius: 10px; background: #B42318; color: #FFFFFF; display: grid; place-items: center; font-size: 22px; font-weight: 700">H</span>
+          <span style="font-size: 13.5px"><b>High.</b> An action is required, or a written reason why the current controls are enough.</span>
+        </div>
+        <p class="mut" style="font-size: 12.5px; margin: 8px 0 0">AP comes from the AIAG-VDA 2019 AP table stored in the form template. You cannot type it; change S, O or D instead.</p>
+        <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 13px">
+          <span>After action:</span>
+          <span class="mono">S 8 · O 2 · D 4</span>
+          <span class="badge" style="background: #E3F4EA; color: #067647">L</span>
+        </div>
+      </section>
+
+      <section aria-label="Failure chain">
+        <div style="font-weight: 600; margin-bottom: 8px">Structure and failure chain</div>
+        <div class="chain">
+          <div><i>Item</i><span>Solder Paste Printing (050)</span></div>
+          <div><i>Step</i><span>Print solder paste</span></div>
+          <div><i>4M</i><span>Machine · keep printer room humidity 40–60% RH</span></div>
+          <div style="border-color: #FECDCA"><i>FE</i><span>Solder bridge; field failure at customer</span></div>
+          <div style="border-color: #FECDCA"><i>FM</i><span>Insufficient solder volume</span></div>
+          <div style="border-color: #FECDCA"><i>FC</i><span>Room humidity out of range</span></div>
+        </div>
+      </section>
+
+      <section aria-label="Linked control plan row">
+        <div style="font-weight: 600; margin-bottom: 8px">Linked Control Plan row</div>
+        <a href="ControlPlan2024.dc.html" style="display: block; padding: 10px 12px; border: 1px solid #E4E7EC; border-radius: 10px; color: #101828">
+          <span class="mono" style="font-size: 12.5px">050 · No. 2 · Process control</span><br>
+          Room humidity 40–60% RH · data log every hour
+        </a>
+      </section>
+    </aside>
+  </div>
+
+  <nav class="tabs" aria-label="Sheets in this workbook">
+    <a class="st" href="Cover.dc.html">Cover</a>
+    <a class="st" href="Pfd.dc.html">PFD</a>
+    <a class="st on" href="PfmeaVda.dc.html" aria-current="page">PFMEA (AIAG-VDA)</a>
+    <a class="st" href="ControlPlan2024.dc.html">Control Plan (2024)</a>
+    <a class="st" href="SyncCheck.dc.html"><span class="dot" style="background: #B54708"></span>Check (4 to do)</a>
+    <span style="flex: 1"></span>
+    <span class="mut" style="font-size: 13px; padding-bottom: 10px">Zoom 80% · scroll right for Optimization (Step 6)</span>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2340,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Form sets</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#F4F5F7}
+*{box-sizing:border-box}
+a{color:#3730A3;text-decoration:none}a:hover{text-decoration:underline}
+.pg{min-height:1200px;font-family:Geist,system-ui,sans-serif;color:#101828;font-size:15px;line-height:1.5;background:#F4F5F7}
+.top{display:flex;align-items:center;gap:14px;padding:12px 28px;background:#FFFFFF;border-bottom:1px solid #E4E7EC;flex-wrap:wrap}
+.nav{display:flex;gap:4px;flex-wrap:wrap}
+.nav a{display:inline-flex;align-items:center;height:40px;padding:0 14px;border-radius:8px;color:#344054;font-weight:500}
+.nav a.on{background:#EEF0FF;color:#3730A3}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:42px;padding:0 16px;border:1px solid #D0D5DD;border-radius:10px;background:#FFFFFF;color:#344054;font:inherit;font-weight:500;cursor:pointer;white-space:nowrap}
+.btn.p{background:#4338CA;border-color:#4338CA;color:#FFFFFF}
+.mut{color:#5D6B7E}
+.mono{font-family:"Geist Mono",ui-monospace,monospace;font-size:13.5px}
+.card{background:#FFFFFF;border:1px solid #E4E7EC;border-radius:14px}
+.badge{display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:999px;font-size:13px;font-weight:600;white-space:nowrap}
+.set{display:flex;flex-direction:column;gap:14px;padding:22px}
+.part{display:grid;grid-template-columns:120px 1fr auto;gap:12px;align-items:center;padding:10px 12px;border:1px solid #EEF0F3;border-radius:10px}
+table.t{width:100%;border-collapse:collapse}
+.t th{text-align:left;font-size:13px;font-weight:600;color:#5D6B7E;padding:10px 14px;border-bottom:1px solid #E4E7EC;background:#F8F9FB}
+.t td{padding:11px 14px;border-bottom:1px solid #EEF0F3;vertical-align:top;font-size:14px}
+.arrow{color:#98A2B3;text-align:center}
+</style>
+</helmet>
+<div class="pg">
+  <header class="top">
+    <a href="HomeV2.dc.html" style="display: flex; align-items: center; gap: 10px; color: #101828; margin-right: 10px">
+      <span style="width: 36px; height: 36px; border-radius: 9px; background: #101828; color: #FFFFFF; display: grid; place-items: center; font-weight: 700">P</span>
+      <span style="font-weight: 600; font-size: 16px">PFD · PFMEA · CP</span>
+    </a>
+    <nav class="nav" aria-label="Main">
+      <a href="HomeV2.dc.html">Home</a><a href="Numbers.dc.html">Documents</a><a href="LibraryV2.dc.html">Template library</a><a href="Yokoten.dc.html">Yokoten</a><a class="on" href="TemplateSets.dc.html" aria-current="page">Settings</a>
+    </nav>
+  </header>
+
+  <main style="max-width: 1360px; margin: 0 auto; padding: 28px; display: flex; flex-direction: column; gap: 22px">
+    <div style="display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap">
+      <div style="flex: 1 1 520px">
+        <div class="mut" style="font-size: 14px">Settings › Form sets</div>
+        <h1 style="margin: 2px 0 0; font-size: 26px; font-weight: 600">Form sets</h1>
+        <p class="mut" style="margin: 4px 0 0">A form set decides how the Cover, PFD, PFMEA and Control Plan sheets look. Every set uses the same general PFD form.</p>
+      </div>
+      <button class="btn" type="button">Compare two sets</button>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(560px, 1fr)); gap: 20px">
+      <section class="card set" aria-labelledby="s1">
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap">
+          <h2 id="s1" style="margin: 0; font-size: 19px; font-weight: 600; flex: 1">AIAG 4th set</h2>
+          <span class="badge" style="background: #ECFDF3; color: #067647">In use · 312 documents</span>
+        </div>
+        <div class="part"><b>Cover</b><span>Cover v1 · shared</span><span class="mut">same in both</span></div>
+        <div class="part"><b>PFD</b><span>General PFD v1</span><span class="mut">same in both</span></div>
+        <div class="part"><b>PFMEA</b><span>AIAG 4th edition · risk by <b>RPN</b> (S × O × D)</span><span class="mono">v3</span></div>
+        <div class="part"><b>Control Plan</b><span>AIAG CP · with Process Flow column</span><span class="mono">v2</span></div>
+      </section>
+
+      <section class="card set" aria-labelledby="s2" style="border: 2px solid #4338CA">
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap">
+          <h2 id="s2" style="margin: 0; font-size: 19px; font-weight: 600; flex: 1">AIAG-VDA set</h2>
+          <span class="badge" style="background: #FFF6E5; color: #B54708">Draft v1 · waiting approval</span>
+        </div>
+        <div class="part"><b>Cover</b><span>Cover v1 · shared</span><span class="mut">same in both</span></div>
+        <div class="part"><b>PFD</b><span>General PFD v1</span><span class="mut">same in both</span></div>
+        <div class="part"><b>PFMEA</b><span>AIAG-VDA 2019 · 7 steps · risk by <b>Action Priority</b> (H, M, L)</span><a href="PfmeaVda.dc.html" class="mono">v1</a></div>
+        <div class="part"><b>Control Plan</b><span>AIAG Control Plan 2024 · phase, owner, no flow column</span><a href="ControlPlan2024.dc.html" class="mono">v1</a></div>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap">
+          <button class="btn" type="button">Preview print</button>
+          <button class="btn" type="button">Edit AP table</button>
+          <button class="btn p" type="button">Send for approval</button>
+        </div>
+      </section>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(560px, 1fr)); gap: 20px; align-items: start">
+      <section class="card" aria-labelledby="def-h" style="overflow: hidden">
+        <div style="padding: 18px 20px 8px">
+          <h2 id="def-h" style="margin: 0; font-size: 19px; font-weight: 600">Default form set per customer</h2>
+          <p class="mut" style="margin: 4px 0 0; font-size: 14px">Used when someone makes a new document set. Documents that exist keep their set.</p>
+        </div>
+        <table class="t">
+          <thead><tr><th>Customer</th><th>Default for new sets</th><th>Documents now</th></tr></thead>
+          <tbody>
+            <tr><td><b>Customer AB</b></td><td><span class="badge" style="background: #EEF0FF; color: #3730A3">AIAG-VDA set</span></td><td>AIAG-VDA 3 · AIAG 4th 12</td></tr>
+            <tr><td><b>Customer KT</b></td><td><span class="badge" style="background: #F2F4F7; color: #344054">AIAG 4th set</span></td><td>AIAG 4th 41</td></tr>
+            <tr><td><b>Customer NB</b></td><td><span class="badge" style="background: #F2F4F7; color: #344054">AIAG 4th set</span></td><td>AIAG 4th 27</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="card" aria-labelledby="map-h" style="overflow: hidden">
+        <div style="padding: 18px 20px 8px">
+          <h2 id="map-h" style="margin: 0; font-size: 19px; font-weight: 600">Moving a PFMEA from AIAG 4th to AIAG-VDA</h2>
+          <p class="mut" style="margin: 4px 0 0; font-size: 14px">Done as a new revision through a change request. The system copies what matches; people fill the rest.</p>
+        </div>
+        <table class="t">
+          <thead><tr><th>AIAG 4th column</th><th></th><th>AIAG-VDA column</th><th>How</th></tr></thead>
+          <tbody>
+            <tr><td>Process Step / Function</td><td class="arrow">→</td><td>Process Item, Process Step</td><td><span class="badge" style="background: #ECFDF3; color: #067647">Copied</span></td></tr>
+            <tr><td>Potential Failure Mode</td><td class="arrow">→</td><td>Failure Mode (FM)</td><td><span class="badge" style="background: #ECFDF3; color: #067647">Copied</span></td></tr>
+            <tr><td>Potential Effect, SEV</td><td class="arrow">→</td><td>Failure Effects (FE), S</td><td><span class="badge" style="background: #ECFDF3; color: #067647">Copied</span></td></tr>
+            <tr><td>Potential Cause, OCC</td><td class="arrow">→</td><td>Failure Cause (FC), O</td><td><span class="badge" style="background: #ECFDF3; color: #067647">Copied</span></td></tr>
+            <tr><td>Prevention, Detection, DET</td><td class="arrow">→</td><td>PC, DC, D</td><td><span class="badge" style="background: #ECFDF3; color: #067647">Copied</span></td></tr>
+            <tr><td>RPN</td><td class="arrow">→</td><td>PFMEA AP</td><td><span class="badge" style="background: #EEF0FF; color: #3730A3">Calculated</span></td></tr>
+            <tr><td>Class</td><td class="arrow">→</td><td>Special Characteristic</td><td><span class="badge" style="background: #ECFDF3; color: #067647">Copied</span></td></tr>
+            <tr><td>(none)</td><td class="arrow">→</td><td>Work Element (4M), three Function columns</td><td><span class="badge" style="background: #FFF6E5; color: #B54708">To fill</span></td></tr>
+          </tbody>
+        </table>
+      </section>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1200}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

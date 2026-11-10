@@ -590,14 +590,14 @@ export const en = {
 	passwordCurrent: 'Current password',
 	passwordNew: 'New password',
 	passwordNewHint:
-		'At least 15 characters. A few words with spaces are easy to remember. Do not use your login name, your name, or the system name.',
+		'At least 8 characters. A few words with spaces are easy to remember. Do not use your login name, your name, or the system name.',
 	passwordConfirm: 'Repeat the new password',
 	passwordSave: 'Change password',
 	passwordSaving: 'Saving…',
 	passwordMismatch: 'The two new passwords are not the same.',
 	passwordChanged: 'Your password was changed. Other sessions of this account have ended.',
 	passwordCurrentIncorrect: 'The current password is not correct.',
-	passwordTooShort: 'Use at least 15 characters.',
+	passwordTooShort: 'Use at least 8 characters.',
 	passwordTooLong: 'Use at most 128 characters.',
 	passwordTooCommon:
 		'This password is too easy to guess. Do not use common passwords, your login name, your name, or the system name.',

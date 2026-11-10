@@ -8,7 +8,7 @@
 	let newPassword = $state('');
 	let confirm = $state('');
 	let saving = $state(false);
-	// Pesan per field, misalnya { new_password: 'Use at least 15 characters.' }.
+	// Pesan per field, misalnya { new_password: 'Use at least 8 characters.' }.
 	let fieldErrors = $state<Record<string, string>>({});
 	let formError = $state('');
 	let changed = $state(false);

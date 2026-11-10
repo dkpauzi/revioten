@@ -96,7 +96,7 @@ func printProblems(out io.Writer, problems []problem.Problem) {
 // dikirim lewat pipa oleh skrip), satu baris dibaca dari in.
 func readPassword(in io.Reader, out io.Writer) (string, error) {
 	if f, ok := in.(*os.File); ok && term.IsTerminal(int(f.Fd())) {
-		first, err := promptHidden(f, out, "Password admin (minimal 15 karakter): ")
+		first, err := promptHidden(f, out, "Password admin (minimal 8 karakter): ")
 		if err != nil {
 			return "", err
 		}

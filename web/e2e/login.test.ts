@@ -54,10 +54,10 @@ test('ganti password, lalu login dengan password baru', async ({ page }) => {
 	const confirm = page.getByLabel(en.passwordConfirm, { exact: true });
 	const save = page.getByRole('button', { name: en.passwordSave });
 
-	// Aturan panjang diperiksa server (15 karakter).
+	// Aturan panjang diperiksa server (8 karakter, D-132).
 	await current.fill(admin.password);
-	await next.fill('terlalu pendek');
-	await confirm.fill('terlalu pendek');
+	await next.fill('pendek!');
+	await confirm.fill('pendek!');
 	await save.click();
 	await expect(page.getByText(en.passwordTooShort)).toBeVisible();
 

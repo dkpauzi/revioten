@@ -10,10 +10,12 @@ import (
 	"github.com/dkpauzi/revioten/internal/problem"
 )
 
-// Aturan panjang password (E-08 (D-85), dicek 28 Oktober 2026):
-//   - minimal 15 karakter: NIST SP 800-63B-4 mewajibkannya untuk password
-//     yang dipakai sendirian (tanpa faktor kedua), dan ASVS 5.0 6.2.1
-//     sangat menyarankannya;
+// Aturan panjang password (E-08 (D-85), diubah D-132 pada 10 November 2026):
+//   - minimal 8 karakter (D-132, keputusan pemilik). Ini batas terendah yang
+//     diizinkan NIST SP 800-63B-4, yaitu untuk password yang dipakai bersama
+//     faktor kedua. Untuk password yang dipakai sendirian seperti di sistem
+//     ini, NIST meminta 15 karakter; selisih itu dicatat sebagai risiko di
+//     D-132 dan diimbangi daftar password umum serta kunci setelah 10 kali gagal;
 //   - maksimal 128 karakter: NIST dan ASVS 6.2.9 meminta minimal 64 boleh
 //     dipakai; batas atas menjaga biaya argon2id tetap wajar.
 //
@@ -21,7 +23,7 @@ import (
 // komposisi seperti wajib angka atau huruf besar (NIST, ASVS 6.2.5), dan tidak
 // ada kewajiban ganti berkala (ASVS 6.2.10).
 const (
-	minPasswordLength = 15
+	minPasswordLength = 8
 	maxPasswordLength = 128
 )
 
@@ -32,10 +34,15 @@ var serviceWords = []string{"revioten"}
 //go:embed common_passwords.txt
 var commonPasswordsFile string
 
+// Daftar tambahan untuk password 8 sampai 14 karakter (D-132, temuan E-79).
+//
+//go:embed common_passwords_short.txt
+var shortCommonPasswordsFile string
+
 // commonPasswords membaca daftar password umum sekali saja, saat pertama dipakai.
 var commonPasswords = sync.OnceValue(func() map[string]bool {
 	list := map[string]bool{}
-	for line := range strings.Lines(commonPasswordsFile) {
+	for line := range strings.Lines(commonPasswordsFile + "\n" + shortCommonPasswordsFile) {
 		line = strings.TrimSpace(line)
 		if line != "" && !strings.HasPrefix(line, "#") {
 			list[line] = true
@@ -51,7 +58,7 @@ func checkNewPassword(field, password string, contextWords ...string) []problem.
 	length := utf8.RuneCountInString(password)
 	switch {
 	case length < minPasswordLength:
-		return []problem.Problem{{Field: field, Code: problem.TooShort, Message: "Use at least 15 characters."}}
+		return []problem.Problem{{Field: field, Code: problem.TooShort, Message: "Use at least 8 characters."}}
 	case length > maxPasswordLength:
 		return []problem.Problem{{Field: field, Code: problem.TooLong, Message: "Use at most 128 characters."}}
 	case isGuessable(password, contextWords):

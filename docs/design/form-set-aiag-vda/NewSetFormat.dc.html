@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>New document set · choose form</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F4F5F7}
+*{box-sizing:border-box}
+a{color:#3730A3;text-decoration:none}
+.pg{min-height:1000px;font-family:Geist,system-ui,sans-serif;color:#101828;font-size:15px;line-height:1.5;background:#F4F5F7}
+.top{display:flex;align-items:center;gap:14px;padding:12px 28px;background:#FFFFFF;border-bottom:1px solid #E4E7EC}
+.btn{display:inline-flex;align-items:center;justify-content:center;height:46px;padding:0 22px;border:1px solid #D0D5DD;border-radius:10px;background:#FFFFFF;color:#344054;font:inherit;font-weight:500;cursor:pointer}
+.btn.p{background:#4338CA;border-color:#4338CA;color:#FFFFFF}
+.mut{color:#5D6B7E}
+.steps{display:flex;gap:8px;flex-wrap:wrap}
+.step{display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;background:#FFFFFF;border:1px solid #E4E7EC;font-size:14px}
+.step i{font-style:normal;display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:#F2F4F7;font-size:13px;font-weight:600}
+.step.on{border-color:#4338CA;color:#3730A3;font-weight:600}
+.step.on i{background:#4338CA;color:#FFFFFF}
+.step.done i{background:#067647;color:#FFFFFF}
+.opt{display:flex;flex-direction:column;gap:14px;padding:24px;background:#FFFFFF;border:2px solid #D0D5DD;border-radius:16px;cursor:pointer}
+.opt.on{border-color:#4338CA;background:#FAFAFF}
+.opt input{width:22px;height:22px;accent-color:#4338CA;margin:0}
+.strip{display:flex;border:1px solid #101828;font-family:Arial,Helvetica,sans-serif;font-size:10px;overflow:hidden}
+.strip span{flex:1;padding:6px 4px;border-left:1px solid #101828;text-align:center;background:#FFFFFF}
+.strip span:first-child{border-left:0}
+.strip span.g{background:#F2F2F2;font-weight:700}
+.badge{display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:999px;font-size:13px;font-weight:600}
+ul.l{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:4px;font-size:14.5px}
+</style>
+</helmet>
+<div class="pg">
+  <header class="top">
+    <span style="width: 36px; height: 36px; border-radius: 9px; background: #101828; color: #FFFFFF; display: grid; place-items: center; font-weight: 700">P</span>
+    <span style="font-weight: 600; font-size: 16px">Make a new document set</span>
+    <span style="flex: 1"></span>
+    <a href="HomeV2.dc.html" class="btn" style="height: 40px">Cancel</a>
+  </header>
+
+  <main style="max-width: 1240px; margin: 0 auto; padding: 28px; display: flex; flex-direction: column; gap: 24px">
+    <ol class="steps" aria-label="Steps" style="list-style: none; margin: 0; padding: 0">
+      <li class="step done"><i>✓</i>Model and numbers</li>
+      <li class="step on" aria-current="step"><i>2</i>Choose the form</li>
+      <li class="step"><i>3</i>Processes and points</li>
+      <li class="step"><i>4</i>Check and create</li>
+    </ol>
+
+    <div>
+      <h1 style="margin: 0; font-size: 26px; font-weight: 600">Which form should this set use?</h1>
+      <p class="mut" style="margin: 4px 0 0; font-size: 16px">Model M-210 · Customer AB. The PFD and the cover look the same in both.</p>
+    </div>
+
+    <fieldset style="border: 0; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(520px, 1fr)); gap: 20px">
+      <legend class="mut" style="font-size: 14px; margin-bottom: 10px">Form set</legend>
+      <label class="opt on">
+        <span style="display: flex; align-items: center; gap: 12px">
+          <input type="radio" name="set" checked="{{true}}" readOnly="{{true}}">
+          <b style="font-size: 19px; font-weight: 600; flex: 1">AIAG-VDA set</b>
+          <span class="badge" style="background: #EEF0FF; color: #3730A3">Default for Customer AB</span>
+        </span>
+        <ul class="l">
+          <li>PFMEA in 7 steps, risk shown as <b>Action Priority</b> H, M, L</li>
+          <li>Control Plan 2024: phase, owner, no flow column</li>
+          <li>Pick this when the customer asks for AIAG-VDA</li>
+        </ul>
+        <div>
+          <div class="mut" style="font-size: 13px; margin-bottom: 4px">PFMEA columns</div>
+          <div class="strip" aria-hidden="true"><span class="g">Structure</span><span class="g">Function</span><span class="g">Failure</span><span class="g">Risk · AP</span><span class="g">Optimization</span></div>
+        </div>
+      </label>
+
+      <label class="opt">
+        <span style="display: flex; align-items: center; gap: 12px">
+          <input type="radio" name="set" readOnly="{{true}}">
+          <b style="font-size: 19px; font-weight: 600; flex: 1">AIAG 4th set</b>
+          <span class="badge" style="background: #F2F4F7; color: #344054">Used by most models today</span>
+        </span>
+        <ul class="l">
+          <li>PFMEA with SEV, OCC, DET and <b>RPN</b></li>
+          <li>Control Plan with the Process Flow column</li>
+          <li>Pick this to match other models of the same customer</li>
+        </ul>
+        <div>
+          <div class="mut" style="font-size: 13px; margin-bottom: 4px">PFMEA columns</div>
+          <div class="strip" aria-hidden="true"><span>Process step</span><span>Failure mode</span><span>Effect · SEV</span><span>Cause · OCC</span><span>Controls · DET · RPN</span></div>
+        </div>
+      </label>
+    </fieldset>
+
+    <div style="display: flex; align-items: center; gap: 14px; padding: 14px 18px; background: #FFFFFF; border: 1px solid #E4E7EC; border-radius: 12px">
+      <span style="font-size: 22px" aria-hidden="true">ⓘ</span>
+      <span style="flex: 1">You can move to the other form later. It becomes a new revision, and the system copies the columns that match.</span>
+    </div>
+
+    <div style="display: flex; justify-content: space-between">
+      <button class="btn" type="button">Back</button>
+      <button class="btn p" type="button">Next: processes and points</button>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

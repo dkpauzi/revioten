@@ -100,6 +100,14 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-76 | Proses baru diminta saat menyusun, dan urutan standar proses di pustaka | Celah | M1.5, M3.3, M4.5, M4.6 | Tidak | Terbuka |
 | E-77 | Doc ref (Relevant Document) berbeda per model, padahal poinnya umum | Celah | M3.3, M4.1, M4.5, R-DOC-11 | Tidak (perlu sebelum M4.5) | Diputuskan (D-130) |
 | E-78 | Cakupan poin yang salah pilih: diubah, atau poin disembunyikan lalu dibuat ulang | Celah | M3.3, M3.4 | Tidak | Diputuskan (D-131) |
+| E-79 | Daftar password umum belum mencakup password 8 sampai 14 karakter dari sumber terverifikasi | Celah | M1.1 (D-132) | Tidak | Terbuka |
+| E-80 | Prompt form set mengandaikan editor, wizard, yokoten, dan ekspor yang belum dibangun | Kontradiksi | Tahap 3 sampai 6 | Ya, untuk mulai form set | Terbuka |
+| E-81 | Isi poin PFMEA di process template untuk form AIAG-VDA | Celah | M3.2, M4.5 | Tidak (perlu sebelum M4.5) | Terbuka |
+| E-82 | Siapa yang menyetujui form set baru dan perubahan tabel AP | Celah | Form set langkah A dan D | Ya, untuk langkah A dan D | Terbuka |
+| E-83 | Perpindahan dokumen set 1 ke set 2: satu per satu atau massal | Celah | Tahap 5 | Tidak | Terbuka |
+| E-84 | Genba: penulis catatan selain tim PPAP, dan lama penyimpanan foto | Celah | Tahap 6 | Tidak | Terbuka |
+| E-85 | Alias proses: siapa yang mengelola | Ambigu | M1.5, pencarian per proses | Tidak | Terbuka |
+| E-86 | Review berkala 3 tahun: rincian yang belum diputuskan | Celah | Tahap 5, 6, 7 | Tidak (perlu sebelum Tahap 6) | Terbuka |
 
 ## Keputusan 4 November 2026
 
@@ -1450,6 +1458,130 @@ Salin blok ini untuk setiap temuan baru.
 - **Status:** Diputuskan
 - **Keputusan pemilik (8 November 2026, D-131):** (a). Kutipan: "E-78 a".
 
+### E-79 · Daftar password umum untuk 8 sampai 14 karakter
+
+- **Tanggal dan milestone:** 10 November 2026, perubahan panjang password (D-132). Menyentuh M1.1.
+- **Jenis:** Celah
+- **Rujukan:** D-85, D-132, E-08, `internal/auth/common_passwords.txt`.
+- **Temuan:** daftar password umum yang ada disaring dari daftar NCSC hanya untuk panjang 15 sampai 128 karakter, karena waktu itu batas minimalnya 15. Setelah batas turun ke 8 (D-132), password seperti `password1` atau `12345678` tidak ada di daftar itu.
+- **Dampak bila dibiarkan:** password pendek yang paling sering dipakai diterima sistem, padahal D-132 mengandalkan daftar ini sebagai pengimbang.
+- **Opsi:**
+  - (a) Saring ulang daftar NCSC yang sama (SecLists, lisensi MIT) untuk panjang 8 sampai 128, lalu ganti kedua file dengan satu file. Perlu izin pemilik untuk mengunduh, dan file menjadi jauh lebih besar (belum diukur).
+  - (b) Tetap memakai daftar tambahan tulis tangan.
+- **Rekomendasi Claude Code (usulan):** (a).
+- **Asumsi sementara di kode (ASUMSI E-79):** (b). File `internal/auth/common_passwords_short.txt` berisi sekitar 170 password umum yang ditulis tangan dan belum diverifikasi terhadap sumber. Test memastikan `password1` dan `12345678` ditolak.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-80 · Prompt form set mengandaikan editor, wizard, yokoten, dan ekspor yang belum dibangun
+
+- **Tanggal dan milestone:** 10 November 2026, saat membaca prompt form set (D-133). Menyentuh Tahap 3 sampai Tahap 6.
+- **Jenis:** Kontradiksi
+- **Rujukan:** D-133, D-137, `docs/rencana/form-set-aiag-vda.md`, milestone Tahap 4 sampai 6.
+- **Temuan:** Prompt menulis "desain sebelumnya sudah kamu implementasikan" dan menyusun 11 milestone yang berurutan. Kode baru sampai M3.3: dokumen, baris, editor workbook, wizard, permintaan perubahan, yokoten, cetak, ekspor, dan rilis belum ada.
+- **Dampak bila dibiarkan:** milestone prompt nomor 3 sampai 11 tidak bisa diuji, karena layar tempat menumpangnya belum ada.
+- **Opsi:**
+  - (a) Bagian yang hanya menyentuh format template dikerjakan sekarang (mesin AP, isi awal dua format baru, form set dan default customer). Sisanya menumpang milestone yang sudah ada, seperti tabel di rencana.
+  - (b) Seluruh pekerjaan form set ditunda sampai Tahap 4 selesai.
+  - (c) Tahap 4 dikerjakan dulu dengan urutan yang diubah supaya milestone prompt bisa berurutan.
+- **Rekomendasi Claude Code (usulan):** (a).
+- **Asumsi sementara di kode:** tidak ada; belum ada kode form set.
+- **Menghambat milestone?** Ya, untuk mulai pekerjaan form set. Tidak untuk M3.4.
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+### E-81 · Isi poin PFMEA di process template untuk form AIAG-VDA
+
+- **Tanggal dan milestone:** 10 November 2026, pertanyaan 3 di prompt form set. Menyentuh M3.2, M4.5.
+- **Jenis:** Celah
+- **Rujukan:** E-73, D-133, R-TPL-01, R-CMP-04.
+- **Temuan:** Poin process template sekarang berisi satu baris teks (ASUMSI E-73). Form AIAG-VDA punya kolom yang tidak ada di AIAG 4th (work element dan tiga kolom fungsi). Belum diputuskan apakah poin menyimpan isi per kolom, dan bagaimana satu poin dipakai di set 1 dan set 2.
+- **Dampak bila dibiarkan:** perakitan (M4.5) tidak tahu kolom mana yang diisi dari poin untuk dokumen set 2.
+- **Opsi:**
+  - (a) Poin menyimpan isi per key kolom. Kolom yang sama di kedua form (failure mode, effect, cause, kontrol) dipakai bersama; kolom khusus VDA hanya diisi untuk set 2.
+  - (b) Poin terpisah untuk set 1 dan set 2.
+- **Rekomendasi Claude Code (usulan):** (a), diputuskan bersama E-73.
+- **Asumsi sementara di kode:** tidak ada.
+- **Menghambat milestone?** Tidak (perlu sebelum M4.5)
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+### E-82 · Siapa yang menyetujui form set baru dan perubahan tabel AP
+
+- **Tanggal dan milestone:** 10 November 2026, pertanyaan 4 di prompt form set.
+- **Jenis:** Celah
+- **Rujukan:** D-133, D-134, D-64, U3 (hak A-2 dan E-6).
+- **Temuan:** Format template dikelola admin (A-2), sedangkan process template dikelola Pengelola template (E-6). Prompt meminta form set 2 "masuk lewat approval" dan tabel AP "dikoreksi lewat versi baru dengan approval", tanpa menyebut siapa yang menyetujui.
+- **Dampak bila dibiarkan:** tabel AP yang menentukan prioritas tindakan bisa diubah satu orang tanpa orang kedua.
+- **Opsi:**
+  - (a) Admin menyusun draft, PPAP Engineer (E-6) menerbitkan. Dua orang berbeda.
+  - (b) Admin saja, seperti format template sekarang.
+  - (c) PPAP Engineer saja.
+- **Rekomendasi Claude Code (usulan):** (a), karena tabel AP adalah isi teknis dan admin bukan pemilik isinya.
+- **Asumsi sementara di kode:** tidak ada.
+- **Menghambat milestone?** Ya, untuk langkah A dan D di rencana form set
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+### E-83 · Perpindahan dokumen set 1 ke set 2: satu per satu atau massal
+
+- **Tanggal dan milestone:** 10 November 2026, pertanyaan 5 di prompt form set. Menyentuh Tahap 5.
+- **Jenis:** Celah
+- **Rujukan:** D-133, R-CHG, R-REV-02.
+- **Temuan:** Perpindahan dibuat sebagai permintaan perubahan per dokumen. Belum diputuskan apakah boleh massal per customer.
+- **Dampak bila dibiarkan:** customer yang mewajibkan AIAG-VDA untuk semua model butuh satu permintaan perubahan per set dokumen.
+- **Opsi:**
+  - (a) Satu per satu dulu; massal ditambahkan setelah alur satu dokumen terbukti.
+  - (b) Massal per customer sejak awal, tetap menghasilkan satu draft revisi per dokumen.
+- **Rekomendasi Claude Code (usulan):** (a).
+- **Asumsi sementara di kode:** tidak ada.
+- **Menghambat milestone?** Tidak (perlu sebelum perpindahan format dibangun)
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+### E-84 · Genba: penulis catatan selain tim PPAP, dan lama penyimpanan foto
+
+- **Tanggal dan milestone:** 10 November 2026, pertanyaan 8 di prompt form set. Menyentuh Tahap 6.
+- **Jenis:** Celah
+- **Rujukan:** D-137, U3, R-SEC-10.
+- **Temuan:** Prompt memberi izin `genba.note` ke Penyusun dan menyebut admin bisa memberi ke peran lain. Belum diputuskan peran mana (QA, leader produksi), dan berapa lama foto catatan disimpan. Katalog hak saat ini memakai kode L-, E-, V-, A-, jadi dua izin itu perlu kode baru, misalnya E-11 dan E-12.
+- **Dampak bila dibiarkan:** foto menumpuk tanpa batas, dan akun QA atau produksi tidak bisa menulis catatan.
+- **Opsi:**
+  - (a) Hak baru bisa diberikan admin ke peran mana pun; foto disimpan selama revisi itu masih punya catatan terbuka, lalu mengikuti retensi rekaman.
+  - (b) Hanya tim PPAP; foto disimpan selamanya.
+- **Rekomendasi Claude Code (usulan):** (a), setelah pemilik menyebut masa retensi.
+- **Asumsi sementara di kode:** tidak ada.
+- **Menghambat milestone?** Tidak (perlu sebelum tampilan genba dibangun)
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+### E-85 · Alias proses: siapa yang mengelola
+
+- **Tanggal dan milestone:** 10 November 2026, pertanyaan 9 di prompt form set. Menyentuh M1.5 dan pencarian per proses.
+- **Jenis:** Ambigu
+- **Rujukan:** D-06, D-64, D-137, E-76.
+- **Temuan:** Prompt bertanya apakah alias dikelola "Admin saja". Di kode sejak M1.5 alias dikelola Pengelola template (E-6), bukan admin (D-64). Belum diputuskan apakah penyusun boleh mengusulkan alias.
+- **Dampak bila dibiarkan:** penyusun yang menemukan nama lain sebuah proses harus meminta lewat jalur di luar sistem.
+- **Opsi:**
+  - (a) Tetap Pengelola template saja.
+  - (b) Penyusun mengusulkan, Pengelola template menyetujui. Bisa digabung dengan usulan proses baru (E-76).
+- **Rekomendasi Claude Code (usulan):** (b), bersama E-76.
+- **Asumsi sementara di kode:** alias tetap dikelola pemegang E-6 (M1.5).
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+### E-86 · Review berkala 3 tahun: rincian yang belum diputuskan
+
+- **Tanggal dan milestone:** 10 November 2026, permintaan pemilik (D-138). Menyentuh Tahap 5, 6, dan 7.
+- **Jenis:** Celah
+- **Rujukan:** D-138, R-REV-02, R-CHG-02, D-07, `docs/rencana/review-berkala-3-tahun.md`.
+- **Temuan:** D-138 menetapkan peringatan setelah 3 tahun tanpa revisi dan dua hasil review. Belum diputuskan: (1) bukti review tanpa perubahan; (2) jam dihitung per dokumen atau per set; (3) apakah review tanpa perubahan memulai lagi jam 3 tahun; (4) siapa yang mereview dan apakah perlu orang kedua; (5) berapa hari sebelum jatuh tempo peringatan muncul. Tanggal rilis baru ada di Tahap 6, jadi fitur ini belum bisa dibangun sekarang.
+- **Dampak bila dibiarkan:** review tanpa perubahan tidak punya bukti yang bisa ditunjukkan ke auditor, atau setiap review memaksa enam tanda tangan untuk dokumen yang tidak berubah.
+- **Opsi:**
+  - (a) Catatan review di sistem dengan daftar periksa, peserta, dan konfirmasi orang kedua; revisi tidak naik. Jam per set dokumen, dimulai lagi oleh catatan review. Peringatan 90 hari sebelumnya.
+  - (b) Revisi administratif: dokumen naik revisi dengan riwayat "Periodic review, no change" dan tanda tangan basah lengkap.
+  - (c) Seperti (a), ditambah lembar review yang dicetak, ditandatangani, dan dipindai sebagai lampiran.
+- **Rekomendasi Claude Code (usulan):** (a), atau (c) bila auditor atau customer meminta tanda tangan.
+- **Asumsi sementara di kode:** tidak ada; belum dibangun.
+- **Menghambat milestone?** Tidak (perlu sebelum Tahap 6)
+- **Status:** Terbuka
+- **Keputusan pemilik:**
 ## Usulan desain UI (UX-01 sampai UX-07): dampak ke M0 sampai M3 dan saran
 
 - **Sumber:** `docs/uml/usulan-desain-ui.md` (UML draft 0.12, 3 November 2026) dan kanvas desain UI "Desain UI Sistem PFD PFMEA CP" (18 artboard, baris v2 disarankan).

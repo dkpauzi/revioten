@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Workbook · Control Plan AIAG 2024</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0;background:#E9EBEF}
+*{box-sizing:border-box}
+a{color:#3730A3;text-decoration:none}a:hover{text-decoration:underline}
+.wb{display:flex;flex-direction:column;min-height:1300px;font-family:Geist,system-ui,sans-serif;color:#101828;font-size:14px;line-height:1.45;background:#E9EBEF}
+.top{display:flex;align-items:center;gap:14px;padding:10px 20px;background:#FFFFFF;border-bottom:1px solid #E4E7EC;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border:1px solid #D0D5DD;border-radius:8px;background:#FFFFFF;color:#344054;font:inherit;font-weight:500;cursor:pointer;white-space:nowrap}
+.btn.p{background:#4338CA;border-color:#4338CA;color:#FFFFFF}
+.lang{display:inline-flex;border:1px solid #D0D5DD;border-radius:8px;overflow:hidden}
+.lang button{height:34px;padding:0 10px;border:0;background:#FFFFFF;font:inherit;font-size:13px;font-weight:600;color:#475467;cursor:pointer}
+.lang button.on{background:#101828;color:#FFFFFF}
+.mut{color:#5D6B7E}
+.mono{font-family:"Geist Mono",ui-monospace,monospace}
+.badge{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:999px;font-size:13px;font-weight:600}
+.rib{display:flex;align-items:stretch;padding:6px 12px 0;background:#F8F9FB;border-bottom:1px solid #E4E7EC;flex-wrap:wrap}
+.grp{display:flex;flex-direction:column;align-items:center;padding:0 10px 4px;border-right:1px solid #E4E7EC}
+.grp:last-child{border-right:0}
+.gb{display:flex;gap:2px}
+.gl{font-size:11.5px;color:#5D6B7E;margin-top:2px}
+.rb{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:80px;height:62px;border:1px solid transparent;border-radius:8px;background:transparent;font:inherit;font-size:12.5px;color:#344054;cursor:pointer;text-align:center;line-height:1.15}
+.rb.on{background:#EEF0FF;border-color:#C7CBF5;color:#3730A3}
+.fx{display:flex;align-items:stretch;height:38px;background:#FFFFFF;border-bottom:1px solid #E4E7EC}
+.fx span{display:flex;align-items:center;padding:0 12px;font-size:13.5px}
+.paper{background:#FFFFFF;box-shadow:0 1px 3px rgba(16,24,40,.14),0 12px 32px rgba(16,24,40,.10);font-family:Arial,Helvetica,sans-serif;color:#000000;padding:18px 20px 26px}
+.h{border-collapse:collapse;width:100%;font-size:10px;table-layout:fixed}
+.h td{border:1px solid #000000;padding:2px 5px;vertical-align:top;height:30px}
+.h td small{display:block;font-size:9.5px}
+.f{border-collapse:collapse;table-layout:fixed;font-size:10px;line-height:1.3}
+.f th{border:1px solid #000000;font-weight:400;padding:3px;text-align:center;vertical-align:middle}
+.f td{border:1px solid #000000;padding:4px;vertical-align:top}
+.f td.c{text-align:center;vertical-align:middle}
+.f td.n{border-top:0;border-bottom:0}
+.f tr.sel td{background:#F3F4FF}
+.f td.cur{outline:2.5px solid #4338CA;outline-offset:-2px;background:#FFFFFF}
+.side{flex:0 0 360px;background:#FFFFFF;border-left:1px solid #E4E7EC;padding:18px;display:flex;flex-direction:column;gap:18px}
+.chk{display:inline-flex;align-items:center;gap:4px;margin-right:18px}
+.chk i{display:inline-grid;place-items:center;width:11px;height:11px;border:1px solid #000000;font-style:normal;font-size:9px;line-height:1}
+.tabs{display:flex;align-items:flex-end;gap:2px;padding:0 12px;background:#F2F4F7;border-top:1px solid #D0D5DD;min-height:44px;flex-wrap:wrap}
+.st{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 18px;border:1px solid #D0D5DD;border-top:0;border-radius:0 0 8px 8px;background:#E9EBEF;color:#344054;font-weight:500;font-size:14px}
+.st.on{background:#FFFFFF;color:#101828;font-weight:600;box-shadow:inset 0 3px 0 #4338CA}
+.dot{width:8px;height:8px;border-radius:50%}
+.li{display:flex;gap:10px;align-items:flex-start;font-size:13px}
+.li b{font-weight:600}
+</style>
+</helmet>
+<div class="wb">
+  <header class="top">
+    <a href="HomeV2.dc.html" style="display: flex; align-items: center; gap: 10px; color: #101828">
+      <span style="width: 34px; height: 34px; border-radius: 8px; background: #101828; color: #FFFFFF; display: grid; place-items: center; font-weight: 700">P</span>
+      <span style="font-weight: 600">PFD · PFMEA · CP</span>
+    </a>
+    <nav aria-label="Breadcrumb" class="mut" style="font-size: 14px; display: flex; gap: 8px">
+      <a href="HomeV2.dc.html">Home</a><span>›</span><span>Customer AB</span><span>›</span><span style="color: #101828; font-weight: 500">Model M-210</span>
+    </nav>
+    <span style="flex: 1"></span>
+    <div class="lang" role="group" aria-label="Language"><button type="button" class="on" aria-pressed="true">EN</button><button type="button">ID</button></div>
+    <button class="btn" type="button">Help</button>
+    <span style="display: flex; align-items: center; gap: 8px"><span style="width: 32px; height: 32px; border-radius: 50%; background: #4338CA; color: #FFFFFF; display: grid; place-items: center; font-size: 12px; font-weight: 600">RS</span><span>Rina S.</span></span>
+  </header>
+
+  <div style="display: flex; align-items: center; gap: 16px; padding: 14px 20px; background: #FFFFFF; border-bottom: 1px solid #E4E7EC; flex-wrap: wrap">
+    <div style="flex: 1 1 520px">
+      <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap">
+        <h1 style="margin: 0; font-size: 22px; font-weight: 600">Model M-210 · Control board PCBA</h1>
+        <a href="TemplateSets.dc.html" class="badge" style="background: #EEF0FF; color: #3730A3">Form set: AIAG-VDA 2019 + Control Plan 2024</a>
+      </div>
+      <div class="mut" style="font-size: 14px; margin-top: 2px">Phase: Pre-launch · Revision 02 is being edited</div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 10px; background: #F7F7FF; border: 1px solid #C7CBF5">
+      <span style="font-size: 14px"><b>Next step:</b> check PFMEA against Control Plan</span>
+      <a class="btn p" href="SyncCheck.dc.html">Open check</a>
+    </div>
+  </div>
+
+  <div class="rib" role="toolbar" aria-label="Sheet tools">
+    <div class="grp"><div class="gb"><button class="rb" type="button">Undo</button></div><span class="gl">Edit</span></div>
+    <div class="grp"><div class="gb"><button class="rb" type="button">Insert row</button><button class="rb" type="button">Delete row</button><button class="rb" type="button">Move up</button><button class="rb" type="button">Move down</button></div><span class="gl">Rows</span></div>
+    <div class="grp"><div class="gb"><button class="rb" type="button">Picture</button><button class="rb" type="button">Spec table</button><button class="rb" type="button">Symbol</button></div><span class="gl">Insert in cell</span></div>
+    <div class="grp"><div class="gb"><button class="rb on" type="button">Link to PFMEA</button><button class="rb" type="button">Use point for…</button></div><span class="gl">Template</span></div>
+    <div class="grp"><div class="gb"><button class="rb" type="button">Change phase</button></div><span class="gl">Control Plan</span></div>
+    <div class="grp"><div class="gb"><button class="rb" type="button">Print / PDF</button><button class="rb" type="button">Download Excel</button></div><span class="gl">Output</span></div>
+  </div>
+
+  <div class="fx" role="group" aria-label="Selected cell">
+    <span class="mono" style="background: #F8F9FB; border-right: 1px solid #E4E7EC; min-width: 280px; font-weight: 500">050 · No. 2 · Specification/Tolerance</span>
+    <span class="mut" style="border-right: 1px solid #E4E7EC; font-style: italic">fx</span>
+    <span style="flex: 1">Room humidity 40–60% RH</span>
+  </div>
+
+  <div style="display: flex; flex: 1; min-height: 0">
+    <div style="flex: 1 1 auto; min-width: 0; overflow: auto; padding: 20px">
+      <div class="paper" style="width: 1380px">
+        <div style="display: flex; align-items: flex-end; gap: 22px">
+          <img src="/_blob/060ea449f259a1d603e7c3491e1f1b5c" alt="Company logo" style="height: 36px; width: auto">
+          <b style="font-size: 12px; padding-bottom: 4px">PT. SIIX EMS INDONESIA</b>
+          <span style="flex: 1; text-align: center; font-size: 18px; font-weight: 700; text-decoration: underline; padding-bottom: 2px">Control Plan</span>
+          <span style="width: 260px"></span>
+        </div>
+        <div style="font-size: 10px; margin: 8px 0 4px">
+          <span class="chk"><i></i>Prototype</span><span class="chk"><i>✕</i>Pre-launch</span><span class="chk"><i></i>Safe Launch</span><span class="chk"><i></i>Production</span>
+        </div>
+        <table class="h">
+          <colgroup><col style="width: 24%"><col style="width: 50%"><col style="width: 13%"><col style="width: 13%"></colgroup>
+          <tbody>
+            <tr><td><small>Control plan No.</small>SC-AB-002</td><td><small>Key Contact</small>NPI · [name] · [phone]</td><td><small>Date (orig)</small>22-May-26</td><td><small>Date (rev)</small><b>09-Nov-26</b></td></tr>
+            <tr><td><small>Customer Name</small>Customer AB</td><td><small>Core Team</small>NPI, WH, IQC, Production 1, Production 2, QA/QC</td><td colspan="2"><small>Customer Engineering Approval/Date (if req'd)</small></td></tr>
+            <tr><td><small>Part Number</small>[PART NO.]</td><td><small>Organization/Plant Approval/Date</small>22-May-26</td><td colspan="2"><small>Customer Quality Approval/Date (if req'd)</small></td></tr>
+            <tr><td><small>Part Name</small>Control board PCBA</td><td><small>Other Approval/Date (if req'd)</small></td><td colspan="2"><small>Other Approval/Date (if req'd)</small></td></tr>
+          </tbody>
+        </table>
+        <div style="display: flex; align-items: center; gap: 18px; font-size: 10px; margin: 8px 0">
+          <b>Remark :</b>
+          <span style="display: inline-flex; align-items: center; gap: 6px">Critical Process
+            <svg width="30" height="22" viewBox="0 0 34 26" aria-hidden="true"><path d="M2 2h30L17 24z" fill="#FFFFFF" stroke="#2E75B6" stroke-width="1.4" stroke-linejoin="round"></path><text x="17" y="13" text-anchor="middle" font-size="10" fill="#000000" font-family="Arial">F</text></svg>
+          </span>
+          <span style="display: inline-flex; align-items: center; gap: 6px">Revision
+            <svg width="26" height="22" viewBox="0 0 30 26" aria-hidden="true"><path d="M15 2 28 24H2z" fill="#FFFFFF" stroke="#E00000" stroke-width="1.4" stroke-linejoin="round"></path></svg>
+          </span>
+        </div>
+        <table class="f" style="width: 1340px">
+          <colgroup>
+            <col style="width: 44px"><col style="width: 110px"><col style="width: 50px"><col style="width: 104px"><col style="width: 32px"><col style="width: 104px"><col style="width: 136px"><col style="width: 52px"><col style="width: 226px"><col style="width: 90px"><col style="width: 48px"><col style="width: 82px"><col style="width: 116px"><col style="width: 142px">
+          </colgroup>
+          <thead>
+            <tr>
+              <th colspan="3">Part/Process Number</th>
+              <th rowspan="3">Machine, device, jig or tool for MFG.</th>
+              <th colspan="3">Characteristics</th>
+              <th rowspan="3">Special Char. (Class)</th>
+              <th colspan="5">Methods</th>
+              <th rowspan="3">Reaction Plan</th>
+            </tr>
+            <tr>
+              <th rowspan="2">No</th><th rowspan="2">Description</th><th rowspan="2">Owner</th>
+              <th rowspan="2">No.</th><th rowspan="2">Product control</th><th rowspan="2">Process control</th>
+              <th rowspan="2">Product/Process Specification/Tolerance</th><th rowspan="2">Evaluation / Measurement technique</th><th colspan="2">Sample</th><th rowspan="2">Control Method</th>
+            </tr>
+            <tr><th>Size</th><th>Freq</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="c" rowspan="3"><b>010</b></td>
+              <td rowspan="3"><b>Part Receiving</b></td>
+              <td rowspan="3">WH</td>
+              <td rowspan="2"></td>
+              <td class="c">1</td><td>-</td><td>Verify packaging</td><td class="c">-</td>
+              <td>Packaging not damaged</td><td>Visual</td><td class="c">100%</td><td>Each lot</td><td class="c">WI-WH-004</td><td>Return and request replacement</td>
+            </tr>
+            <tr>
+              <td class="c">2</td><td>-</td><td>Verify material against DO</td><td class="c">-</td>
+              <td>Correct part number and quantity</td><td>Visual</td><td class="c">100%</td><td>Each lot</td><td class="c">WI-WH-010</td><td>Return and request replacement</td>
+            </tr>
+            <tr>
+              <td>Barcode printer</td>
+              <td class="c">3</td><td>-</td><td>Register material and paste label</td><td class="c">-</td>
+              <td>No wrong label</td><td>Barcode scan, visual</td><td class="c">100%</td><td>Each lot</td><td class="c">WI-WH-010</td><td>Return and request replacement</td>
+            </tr>
+            <tr>
+              <td class="c" rowspan="2"><b>020</b></td>
+              <td rowspan="2"><b>IQC</b> - Incoming Quality Control (PCB)</td>
+              <td rowspan="2">IQC</td>
+              <td>Barcode scanner</td>
+              <td class="c">1</td><td>-</td><td>Compare SAP label with supplier label</td><td class="c">-</td>
+              <td>No wrong description or part number</td><td>Visual check</td><td class="c">100%</td><td>Each lot</td><td class="c">WI-IQC-006</td><td>Report to immediate superior</td>
+            </tr>
+            <tr>
+              <td>Caliper, thickness gauge</td>
+              <td class="c">2</td><td>PCB outline and appearance</td><td>-</td><td class="c">&lt;IC&gt;</td>
+              <td>No warp, no scratch; outline per drawing:
+                <svg viewBox="0 0 160 78" width="100%" role="img" aria-label="Sample PCB drawing with outline dimensions" style="display: block; margin-top: 4px">
+                  <rect x="14" y="8" width="120" height="50" rx="3" fill="#E8F3EA" stroke="#1F5130" stroke-width="1.2"></rect>
+                  <rect x="40" y="20" width="30" height="18" fill="#1F5130"></rect>
+                  <rect x="82" y="18" width="12" height="8" fill="#C9A227"></rect>
+                  <path d="M14 66h120 M14 62v8 M134 62v8" stroke="#000000" stroke-width=".8"></path>
+                  <text x="74" y="76" text-anchor="middle" font-size="7" font-family="Arial">120.0 ± 0.2</text>
+                </svg>
+              </td>
+              <td>Measured</td><td class="c">N=5</td><td>Each incoming</td><td class="c">IQC check sheet</td><td>Hold lot, report to immediate superior</td>
+            </tr>
+            <tr>
+              <td class="c" rowspan="2"><b>050</b></td>
+              <td rowspan="2"><b>Solder Paste Printing</b>
+                <svg width="24" height="18" viewBox="0 0 34 26" role="img" aria-label="Critical process" style="display: block; margin-top: 4px"><path d="M2 2h30L17 24z" fill="#FFFFFF" stroke="#2E75B6" stroke-width="1.4" stroke-linejoin="round"></path><text x="17" y="13" text-anchor="middle" font-size="10" fill="#000000" font-family="Arial">F</text></svg>
+              </td>
+              <td rowspan="2">Prod</td>
+              <td rowspan="2">Screen printer, hygrometer</td>
+              <td class="c">1</td><td>Solder paste volume</td><td>-</td><td class="c">&lt;IC&gt;</td>
+              <td>80–120% of aperture volume</td><td>SPI</td><td class="c">100%</td><td>Each board</td><td class="c">SPI program</td><td>Stop line, clean stencil, reprint</td>
+            </tr>
+            <tr class="sel">
+              <td class="c">2</td><td>-</td>
+              <td><svg width="13" height="11" viewBox="0 0 14 12" role="img" aria-label="Revision 02" style="vertical-align: -1px; margin-right: 3px"><path d="M7 1 13 11H1z" fill="#FFFFFF" stroke="#E00000" stroke-width="1.1"></path><text x="7" y="9.6" text-anchor="middle" font-size="6.5" font-weight="700" fill="#E00000" font-family="Arial">2</text></svg>Printer room humidity</td>
+              <td class="c">-</td>
+              <td class="cur">Room humidity 40–60% RH</td><td>Hygrometer</td><td class="c">-</td><td>Every hour</td><td class="c">Data log</td><td>Stop printing, report to immediate superior</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <aside class="side" aria-labelledby="row-h">
+      <div>
+        <div class="mut" style="font-size: 13px">Selected row</div>
+        <h2 id="row-h" style="margin: 2px 0 0; font-size: 17px; font-weight: 600">050 · No. 2 · Printer room humidity</h2>
+      </div>
+
+      <section aria-label="Linked PFMEA rows">
+        <div style="font-weight: 600; margin-bottom: 8px">Linked PFMEA row</div>
+        <a href="PfmeaVda.dc.html" style="display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1px solid #E4E7EC; border-radius: 10px; color: #101828">
+          <span class="badge" style="background: #FEE4E2; color: #B42318">AP H</span>
+          <span style="font-size: 13px">FC: Room humidity out of range<br><span class="mut">PC: humidity control · DC: SPI 100%</span></span>
+        </a>
+        <p class="mut" style="font-size: 12.5px; margin: 8px 0 0">Links are made by people, as today. The check sheet shows rows with no link.</p>
+      </section>
+
+      <section aria-label="Changes from the earlier form">
+        <div style="font-weight: 600; margin-bottom: 8px">What is new in this form</div>
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <div class="li"><b>Phase</b><span class="mut">Prototype, Pre-launch, Safe Launch or Production, ticked in the header</span></div>
+          <div class="li"><b>Owner</b><span class="mut">Department that owns each process</span></div>
+          <div class="li"><b>No process flow column</b><span class="mut">The flow lives in the PFD sheet</span></div>
+          <div class="li"><b>Evaluation technique</b><span class="mut">Separate from the control method</span></div>
+          <div class="li"><b>Approvals</b><span class="mut">Customer engineering and quality boxes in the header</span></div>
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <nav class="tabs" aria-label="Sheets in this workbook">
+    <a class="st" href="Cover.dc.html">Cover</a>
+    <a class="st" href="Pfd.dc.html">PFD</a>
+    <a class="st" href="PfmeaVda.dc.html">PFMEA (AIAG-VDA)</a>
+    <a class="st on" href="ControlPlan2024.dc.html" aria-current="page">Control Plan (2024)</a>
+    <a class="st" href="SyncCheck.dc.html"><span class="dot" style="background: #B54708"></span>Check (4 to do)</a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1820,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

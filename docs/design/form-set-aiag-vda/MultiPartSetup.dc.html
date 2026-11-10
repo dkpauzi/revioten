@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>New document set · parts</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#F4F5F7}
+*{box-sizing:border-box}
+a{color:#3730A3;text-decoration:none}
+.pg{min-height:1150px;font-family:Geist,system-ui,sans-serif;color:#101828;font-size:15px;line-height:1.5;background:#F4F5F7}
+.top{display:flex;align-items:center;gap:14px;padding:12px 28px;background:#FFFFFF;border-bottom:1px solid #E4E7EC}
+.btn{display:inline-flex;align-items:center;justify-content:center;height:44px;padding:0 20px;border:1px solid #D0D5DD;border-radius:10px;background:#FFFFFF;color:#344054;font:inherit;font-weight:500;cursor:pointer}
+.btn.p{background:#4338CA;border-color:#4338CA;color:#FFFFFF}
+.mut{color:#5D6B7E}
+.mono{font-family:"Geist Mono",ui-monospace,monospace;font-size:14px}
+.card{background:#FFFFFF;border:1px solid #E4E7EC;border-radius:14px}
+.steps{display:flex;gap:8px;list-style:none;margin:0;padding:0}
+.step{display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;background:#FFFFFF;border:1px solid #E4E7EC;font-size:14px}
+.step i{font-style:normal;display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:#F2F4F7;font-size:13px;font-weight:600}
+.step.on{border-color:#4338CA;color:#3730A3;font-weight:600}
+.step.on i{background:#4338CA;color:#FFFFFF}
+.opt{display:flex;gap:12px;align-items:flex-start;padding:16px 18px;border:2px solid #D0D5DD;border-radius:12px;background:#FFFFFF;flex:1}
+.opt.on{border-color:#4338CA;background:#FAFAFF}
+.opt input{width:22px;height:22px;accent-color:#4338CA;margin:2px 0 0}
+.in{height:42px;border:1px solid #D0D5DD;border-radius:8px;padding:0 12px;font:inherit;background:#FFFFFF;width:100%}
+table.t{width:100%;border-collapse:collapse}
+.t th{text-align:left;font-size:13px;font-weight:600;color:#5D6B7E;padding:10px 12px;border-bottom:1px solid #E4E7EC;background:#F8F9FB}
+.t td{padding:10px 12px;border-bottom:1px solid #EEF0F3;vertical-align:middle}
+.k{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:7px;background:#101828;color:#FFFFFF;font-weight:700}
+.cv{font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#000000;background:#FFFFFF;border:1px solid #D0D5DD;padding:18px 22px}
+.cv td{padding:2px 6px;border-bottom:1px solid #000000}
+</style>
+</helmet>
+<div class="pg">
+  <header class="top">
+    <span style="width: 36px; height: 36px; border-radius: 9px; background: #101828; color: #FFFFFF; display: grid; place-items: center; font-weight: 700">P</span>
+    <span style="font-weight: 600; font-size: 16px">Make a new document set</span>
+    <span style="flex: 1"></span>
+    <a href="HomeV2.dc.html" class="btn" style="height: 40px">Cancel</a>
+  </header>
+
+  <main style="max-width: 1360px; margin: 0 auto; padding: 28px; display: flex; flex-direction: column; gap: 22px">
+    <ol class="steps" aria-label="Steps">
+      <li class="step on" aria-current="step"><i>1</i>Model and numbers</li>
+      <li class="step"><i>2</i>Choose the form</li>
+      <li class="step"><i>3</i>Processes and points</li>
+      <li class="step"><i>4</i>Check and create</li>
+    </ol>
+
+    <div>
+      <h1 style="margin: 0; font-size: 26px; font-weight: 600">How many parts does this document cover?</h1>
+      <p class="mut" style="margin: 4px 0 0; font-size: 16px">Most models have one part. Some customers want several parts under one document number.</p>
+    </div>
+
+    <fieldset style="border: 0; padding: 0; margin: 0; display: flex; gap: 16px; flex-wrap: wrap">
+      <legend class="mut" style="font-size: 14px; margin-bottom: 8px">Parts</legend>
+      <label class="opt"><input type="radio" name="parts" readOnly="{{true}}"><span><b style="font-weight: 600">One part</b><br><span class="mut" style="font-size: 14px">Normal case. Nothing changes.</span></span></label>
+      <label class="opt on"><input type="radio" name="parts" checked="{{true}}" readOnly="{{true}}"><span><b style="font-weight: 600">Several parts, one document number</b><br><span class="mut" style="font-size: 14px">One cover, one revision, one signature. Each part gets its own processes.</span></span></label>
+    </fieldset>
+
+    <div style="display: grid; grid-template-columns: minmax(0, 1fr) 420px; gap: 22px; align-items: start">
+      <section class="card" aria-labelledby="pl-h" style="overflow: hidden">
+        <div style="display: flex; align-items: center; gap: 12px; padding: 18px 20px 10px">
+          <h2 id="pl-h" style="margin: 0; font-size: 19px; font-weight: 600; flex: 1">Parts in SC-KT-040</h2>
+          <button class="btn" type="button" style="height: 40px">+ Add part</button>
+        </div>
+        <table class="t">
+          <thead><tr><th style="width: 52px"></th><th>Part name</th><th>Part numbers</th><th>Start processes from</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><span class="k">A</span></td>
+              <td><input class="in" placeholder="Main board A"></td>
+              <td><input class="in" placeholder="[PART NO. A]"></td>
+              <td><span class="mut">Template</span></td>
+            </tr>
+            <tr>
+              <td><span class="k">B</span></td>
+              <td><input class="in" placeholder="Heatsink assy (R/L)"></td>
+              <td><input class="in" placeholder="[PART NO. B-R], [PART NO. B-L]"></td>
+              <td><b>Copy of part A</b><span class="mut">, then edit</span></td>
+            </tr>
+            <tr>
+              <td><span class="k">C</span></td>
+              <td><input class="in" placeholder="Base assy (R/L)"></td>
+              <td><input class="in" placeholder="[PART NO. C-R], [PART NO. C-L]"></td>
+              <td><b>Copy of part A</b><span class="mut">, then edit</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <div style="padding: 14px 20px; display: flex; flex-direction: column; gap: 6px; font-size: 14px">
+          <span>• Part names and numbers come from master data; R/L pairs can share one part.</span>
+          <span>• PFD, PFMEA and Control Plan all follow the same parts.</span>
+          <span>• You can add or remove a part later through a change request.</span>
+        </div>
+      </section>
+
+      <section aria-labelledby="cv-h" style="display: flex; flex-direction: column; gap: 10px">
+        <h2 id="cv-h" style="margin: 0; font-size: 16px; font-weight: 600">Cover preview</h2>
+        <div class="cv">
+          <div style="text-align: right; font-size: 10px; font-weight: 700">PCP No : SC-KT-040</div>
+          <div style="text-align: center; font-size: 15px; font-weight: 700; text-decoration: underline; margin: 6px 0 12px">Process Control Plan (PCP)</div>
+          <table style="border-collapse: collapse; width: 100%"><tbody>
+            <tr><td style="width: 34%; border: 0"><b>Customer</b></td><td>: Customer KT</td></tr>
+            <tr><td style="border: 0"><b>Model Name</b></td><td>: LED-H20</td></tr>
+            <tr><td style="border: 0"><b>Part Name</b></td><td>: Main board A</td></tr>
+            <tr><td style="border: 0"></td><td>&#160;&#160;Heatsink assy (R/L)</td></tr>
+            <tr><td style="border: 0"></td><td>&#160;&#160;Base assy (R/L)</td></tr>
+            <tr><td style="border: 0"><b>Part Number</b></td><td>: [PART NO. A]</td></tr>
+            <tr><td style="border: 0"></td><td>&#160;&#160;[PART NO. B-R] / [B-L]</td></tr>
+            <tr><td style="border: 0"></td><td>&#160;&#160;[PART NO. C-R] / [C-L]</td></tr>
+          </tbody></table>
+          <div style="margin-top: 12px; text-align: center; font-style: italic; font-weight: 700; font-size: 10px">Document Revision History</div>
+          <div style="height: 40px; border: 1px solid #000000; margin-top: 4px"></div>
+        </div>
+        <p class="mut" style="margin: 0; font-size: 13.5px">The cover lists every part in order. Then each part prints its own section with its own title and part numbers.</p>
+      </section>
+    </div>
+
+    <div style="display: flex; justify-content: flex-end">
+      <button class="btn p" type="button">Next: choose the form</button>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1150}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

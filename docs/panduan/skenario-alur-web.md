@@ -5,6 +5,36 @@
 - **Isinya:** hanya layar yang sudah dibangun (M0.1 sampai M3.3). Langkah yang belum ada di sistem ditulis di bagian 9.
 - **Nama orang:** semua nama di sini contoh. Jangan memakai nama orang asli di data uji.
 
+## Versi otomatis (tur)
+
+Skenario ini juga bisa ditonton: browser terbuka sendiri, mengisi formulir dan memilih menu langkah demi langkah, dengan keterangan langkah di pita bawah layar.
+
+1. Pastikan Docker Desktop menyala, lalu jalankan `docker compose up -d`.
+2. Jalankan tur dari root repo:
+   ```bash
+   npm --prefix web run tour
+   ```
+3. Jendela browser muncul setelah kira-kira satu menit (aplikasi dibangun dulu). Jangan klik apa pun di jendela itu selama tur berjalan.
+4. Tur memakai database terpisah bernama `revioten_e2e` di port 8090, yang dibuat ulang dari kosong setiap kali. Database kerja Anda di port 8080 tidak disentuh.
+5. Rekaman videonya tersimpan di `web/test-results/` (file `video.webm`), bisa diputar ulang di browser.
+
+Kecepatan diatur lewat variabel `TOUR_SPEED` di PowerShell:
+
+| Perintah | Hasil |
+|---|---|
+| `$env:TOUR_SPEED="slow"; npm --prefix web run tour` | Pelan, tiap keterangan ditahan 6 detik |
+| `npm --prefix web run tour` | Normal, kira-kira 3 menit |
+| `$env:TOUR_SPEED="fast"; npm --prefix web run tour` | Tanpa jeda, untuk memeriksa bahwa tur masih jalan |
+
+Setelah memakai `TOUR_SPEED`, kembalikan dengan `Remove-Item Env:TOUR_SPEED`.
+
+Tur ini memakai Playwright, alat yang sama dengan test E2E di `web/e2e/`. Skripnya ada di `web/tour/alur.tour.ts` dan bisa dibaca seperti daftar langkah. Dua alat Playwright lain yang berguna untuk belajar:
+
+| Perintah (dari folder `web`) | Gunanya |
+|---|---|
+| `npx playwright test --ui` | Menjalankan test E2E satu per satu sambil melihat layarnya di setiap langkah, bisa dimundurkan |
+| `npx playwright codegen http://127.0.0.1:8080` | Merekam klik dan ketikan Anda sendiri menjadi skrip test. Butuh server yang sedang berjalan |
+
 ## 0. Gambaran besar
 
 Urutannya mengikuti siapa yang boleh melakukan apa:
@@ -80,7 +110,7 @@ Untuk uji coba pertama, `ppap.engineer` dan `ppap.staff` sudah cukup.
    ```
 5. Buka http://127.0.0.1:8080 di browser.
 
-Password saat ini minimal 15 karakter (D-85, aturan NIST untuk password tanpa faktor kedua). Kalimat pendek yang mudah diingat paling praktis, misalnya `kopi pagi di pabrik`. Password yang memuat nama login, nama orang, atau kata `revioten` ditolak.
+Password minimal 8 karakter (D-132). Kalimat pendek yang mudah diingat tetap paling aman, misalnya `kopi pagi di pabrik`. Password yang sangat umum seperti `password1` ditolak. Password yang memuat nama login, nama orang, atau kata `revioten` ditolak.
 
 ## 3. Admin: login dan data dasar
 

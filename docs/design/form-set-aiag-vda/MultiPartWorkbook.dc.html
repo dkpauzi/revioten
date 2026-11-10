@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Workbook · one number, several parts</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0;background:#E9EBEF}
+*{box-sizing:border-box}
+a{color:#3730A3;text-decoration:none}
+.wb{display:flex;flex-direction:column;min-height:1250px;font-family:Geist,system-ui,sans-serif;color:#101828;font-size:14px;line-height:1.45;background:#E9EBEF}
+.top{display:flex;align-items:center;gap:14px;padding:10px 20px;background:#FFFFFF;border-bottom:1px solid #E4E7EC}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border:1px solid #D0D5DD;border-radius:8px;background:#FFFFFF;color:#344054;font:inherit;font-weight:500;cursor:pointer;white-space:nowrap}
+.btn.p{background:#4338CA;border-color:#4338CA;color:#FFFFFF}
+.mut{color:#5D6B7E}
+.mono{font-family:"Geist Mono",ui-monospace,monospace}
+.badge{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:999px;font-size:13px;font-weight:600}
+.rib{display:flex;align-items:stretch;padding:6px 12px 0;background:#F8F9FB;border-bottom:1px solid #E4E7EC}
+.grp{display:flex;flex-direction:column;align-items:center;padding:0 10px 4px;border-right:1px solid #E4E7EC}
+.grp:last-child{border-right:0}
+.gb{display:flex;gap:2px}
+.gl{font-size:11.5px;color:#5D6B7E;margin-top:2px}
+.rb{display:flex;flex-direction:column;align-items:center;justify-content:center;width:80px;height:58px;border:1px solid transparent;border-radius:8px;background:transparent;font:inherit;font-size:12.5px;color:#344054;cursor:pointer;text-align:center;line-height:1.15}
+.rb.on{background:#EEF0FF;border-color:#C7CBF5;color:#3730A3}
+.parts{display:flex;align-items:stretch;gap:8px;padding:12px 20px;background:#FFFFFF;border-bottom:1px solid #E4E7EC;flex-wrap:wrap}
+.pt{display:flex;flex-direction:column;justify-content:center;gap:1px;min-width:190px;padding:8px 14px;border:1.5px solid #D0D5DD;border-radius:10px;background:#FFFFFF;color:#344054;font-size:13px}
+.pt b{font-size:14.5px;font-weight:600;color:#101828}
+.pt.on{border-color:#4338CA;background:#F7F7FF;box-shadow:inset 0 -3px 0 #4338CA}
+.pt .k{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:6px;background:#101828;color:#FFFFFF;font-size:12px;font-weight:700;margin-right:6px}
+.paper{background:#FFFFFF;box-shadow:0 1px 3px rgba(16,24,40,.14),0 12px 32px rgba(16,24,40,.10);font-family:Arial,Helvetica,sans-serif;color:#000000;padding:16px 18px 24px}
+.h{border-collapse:collapse;font-size:10px}
+.h td{border:1px solid #000000;padding:3px 6px;vertical-align:top}
+.f{border-collapse:collapse;table-layout:fixed;font-size:9.8px;line-height:1.3}
+.f th{border:1px solid #000000;font-weight:400;padding:3px;text-align:center;vertical-align:middle}
+.f td{border:1px solid #000000;padding:4px;vertical-align:top}
+.f td.c{text-align:center;vertical-align:middle}
+.f td.fl{border-top:0;border-bottom:0;padding:6px 0 0;background:linear-gradient(#000000,#000000) no-repeat center top/1.2px 100%;text-align:center}
+.f tr.sel td:not(.fl){background:#F3F4FF}
+.diff{background:#FFF6E5 !important}
+.side{flex:0 0 360px;background:#FFFFFF;border-left:1px solid #E4E7EC;padding:18px;display:flex;flex-direction:column;gap:18px}
+.prow{display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:center;padding:10px 12px;border:1px solid #E4E7EC;border-radius:10px}
+.tabs{display:flex;align-items:flex-end;gap:2px;padding:0 12px;background:#F2F4F7;border-top:1px solid #D0D5DD;min-height:44px}
+.st{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 18px;border:1px solid #D0D5DD;border-top:0;border-radius:0 0 8px 8px;background:#E9EBEF;color:#344054;font-weight:500;font-size:14px}
+.st.on{background:#FFFFFF;color:#101828;font-weight:600;box-shadow:inset 0 3px 0 #4338CA}
+</style>
+</helmet>
+<div class="wb">
+  <header class="top">
+    <span style="width: 34px; height: 34px; border-radius: 8px; background: #101828; color: #FFFFFF; display: grid; place-items: center; font-weight: 700">P</span>
+    <span style="font-weight: 600">PFD · PFMEA · CP</span>
+    <nav aria-label="Breadcrumb" class="mut" style="font-size: 14px; display: flex; gap: 8px"><a href="HomeV2.dc.html">Home</a><span>›</span><span>Customer KT</span><span>›</span><span style="color: #101828; font-weight: 500">Model LED-H20</span></nav>
+    <span style="flex: 1"></span>
+    <span style="display: flex; align-items: center; gap: 8px"><span style="width: 32px; height: 32px; border-radius: 50%; background: #4338CA; color: #FFFFFF; display: grid; place-items: center; font-size: 12px; font-weight: 600">RS</span>Rina S.</span>
+  </header>
+
+  <div style="display: flex; align-items: center; gap: 16px; padding: 14px 20px; background: #FFFFFF; border-bottom: 1px solid #E4E7EC; flex-wrap: wrap">
+    <div style="flex: 1 1 520px">
+      <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap">
+        <h1 style="margin: 0; font-size: 22px; font-weight: 600">Model LED-H20 · SC-KT-040</h1>
+        <span class="badge" style="background: #FFF6E5; color: #B54708">3 parts in one document</span>
+      </div>
+      <div class="mut" style="font-size: 14px; margin-top: 2px">One number, one cover, one revision, one signature. Each part has its own processes.</div>
+    </div>
+  </div>
+
+  <nav class="parts" aria-label="Parts in this document">
+    <a class="pt" href="#"><b>All parts</b><span class="mut">Cover order A, B, C</span></a>
+    <a class="pt" href="#"><b><span class="k">A</span>Main board A</b><span class="mut">1 part number · 12 processes</span></a>
+    <a class="pt on" href="#" aria-current="true"><b><span class="k">B</span>Heatsink assy (R/L)</b><span class="mut">2 part numbers · 9 processes</span></a>
+    <a class="pt" href="#"><b><span class="k">C</span>Base assy (R/L)</b><span class="mut">2 part numbers · 10 processes</span></a>
+    <button class="btn" type="button" style="height: auto; border-style: dashed">+ Add part</button>
+  </nav>
+
+  <div class="rib" role="toolbar" aria-label="Sheet tools">
+    <div class="grp"><div class="gb"><button class="rb" type="button">Undo</button></div><span class="gl">Edit</span></div>
+    <div class="grp"><div class="gb"><button class="rb" type="button">Insert row</button><button class="rb" type="button">Delete row</button></div><span class="gl">Rows</span></div>
+    <div class="grp"><div class="gb"><button class="rb on" type="button">Copy from part…</button><button class="rb" type="button">Rename part</button><button class="rb" type="button">Move part</button></div><span class="gl">Part</span></div>
+    <div class="grp"><div class="gb"><button class="rb" type="button">Picture</button><button class="rb" type="button">Spec table</button></div><span class="gl">Insert in cell</span></div>
+    <div class="grp"><div class="gb"><button class="rb" type="button">Print this part</button><button class="rb" type="button">Print all parts</button></div><span class="gl">Output</span></div>
+  </div>
+
+  <div style="display: flex; flex: 1; min-height: 0">
+    <div style="flex: 1 1 auto; min-width: 0; overflow: auto; padding: 20px">
+      <div class="paper" style="width: 1130px">
+        <div style="display: flex; align-items: flex-start; gap: 14px">
+          <img src="/_blob/060ea449f259a1d603e7c3491e1f1b5c" alt="Company logo" style="height: 32px; width: auto">
+          <b style="font-size: 12px; padding-top: 8px">PT. SIIX EMS INDONESIA</b>
+          <span style="flex: 1; text-align: center; font-size: 13px; font-weight: 700; padding-top: 8px">CONTROL PLAN</span>
+          <span class="badge" style="background: #EEF0FF; color: #3730A3; font-family: Geist, sans-serif">Part B of 3 · screen only</span>
+        </div>
+        <div style="display: flex; gap: 18px; align-items: stretch; margin: 10px 0">
+          <table class="h" style="width: 330px"><tbody>
+            <tr><td style="width: 110px">Control Plan No.</td><td>SC-KT-040</td></tr>
+            <tr><td>Product</td><td><b>Heatsink assy (R/L)</b></td></tr>
+            <tr><td>Customer Name</td><td>Customer KT</td></tr>
+            <tr><td>Rev. Description</td><td>01</td></tr>
+          </tbody></table>
+          <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; border: 1px solid #000000; padding: 8px">
+            <b style="font-size: 17px">Heatsink assy (Main board A R/L)</b>
+            <b style="font-size: 15px">[PART NO. B-R], [PART NO. B-L]</b>
+          </div>
+        </div>
+        <table class="f" style="width: 1094px">
+          <colgroup><col style="width: 56px"><col style="width: 26px"><col style="width: 116px"><col style="width: 96px"><col style="width: 26px"><col style="width: 120px"><col style="width: 136px"><col style="width: 120px"><col style="width: 50px"><col style="width: 84px"><col style="width: 60px"><col style="width: 56px"><col style="width: 148px"></colgroup>
+          <thead>
+            <tr><th rowspan="2">Process Flow</th><th rowspan="2">No</th><th rowspan="2">Process Name / Operation Description</th><th rowspan="2">Machine, Jigs, Tools</th><th colspan="2">Characteristics</th><th rowspan="2">Specification / Tolerance</th><th rowspan="2">Process characteristics</th><th rowspan="2">Special Char.</th><th rowspan="2">Method</th><th rowspan="2">Frequency</th><th rowspan="2">PIC</th><th rowspan="2">Reaction Plan</th></tr>
+            <tr><th>No</th><th>Product</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="fl"><span style="display: inline-block; border: 1px solid #000000; background: #FFFFFF; padding: 1px 6px; font-weight: 700">1</span></td>
+              <td class="c">1</td><td>Part Receiving (General)</td><td>Barcode printer</td><td class="c">1</td><td>-</td><td>No packaging damage</td><td>Verify packaging</td><td class="c">-</td><td>Visual</td><td>100%</td><td>WH</td><td>Return and request replacement</td>
+            </tr>
+            <tr>
+              <td class="fl"><span style="display: inline-block; border: 1px solid #000000; background: #FFFFFF; padding: 1px 6px; font-weight: 700">2</span></td>
+              <td class="c">2</td><td>IQC - Incoming Quality Control (PCB)</td><td>Caliper, magnifier</td><td class="c">1</td><td>PCB appearance</td><td>No scratch, no warp</td><td>-</td><td class="c">-</td><td>Visual</td><td>N=1/lot</td><td>IQC</td><td>Hold lot, report to superior</td>
+            </tr>
+            <tr class="sel">
+              <td class="fl"></td>
+              <td class="c"></td><td class="diff">IQC - Incoming Quality Control (Heatsink)<br><span style="font-family: Geist, sans-serif; font-size: 10px; color: #B54708">Only in part B</span></td><td class="diff">Caliper</td><td class="c">1</td><td class="diff">Heatsink dimension</td><td class="diff">Point 1: 40.6 ± 0.1<br>Point 2: 2.5 ± 0.1</td><td>-</td><td class="c">&lt;IC&gt;</td><td>Measure</td><td>N=5/lot</td><td>IQC</td><td>Hold lot, report to superior</td>
+            </tr>
+            <tr>
+              <td class="fl"><span style="display: inline-block; border: 1px solid #000000; background: #FFFFFF; padding: 1px 6px; font-weight: 700">3</span></td>
+              <td class="c">3</td><td class="diff">Screw tightening (heatsink to board)</td><td>Torque driver</td><td class="c">1</td><td>-</td><td>Torque 0.5 ± 0.05 N·m</td><td>Torque setting</td><td class="c">&lt;IC&gt;</td><td>Torque check</td><td>Start of shift</td><td>Prod</td><td>Stop, re-set driver, check last lot</td>
+            </tr>
+            <tr>
+              <td class="fl" style="height: 26px; color: #98A2B3">⋮</td>
+              <td class="c" style="color: #98A2B3">⋮</td><td colspan="11" style="color: #98A2B3">4 to 9 · Final inspection, packing, delivery</td>
+            </tr>
+          </tbody>
+        </table>
+        <p style="font-size: 9px; margin: 8px 0 0">Yellow cells are screen only: they show where this part differs from part A.</p>
+      </div>
+    </div>
+
+    <aside class="side" aria-labelledby="pp-h">
+      <div>
+        <h2 id="pp-h" style="margin: 0; font-size: 17px; font-weight: 600">Parts in SC-KT-040</h2>
+        <p class="mut" style="font-size: 13px; margin: 4px 0 0">Process numbers start at 1 in every part, the same as the Excel file.</p>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <div class="prow"><span class="badge" style="background: #101828; color: #FFFFFF; padding: 0 8px">A</span><span>Main board A<br><span class="mut" style="font-size: 12.5px">[PART NO. A]</span></span><span class="mut" style="font-size: 12.5px">12 proc.</span></div>
+        <div class="prow" style="border-color: #4338CA; background: #F7F7FF"><span class="badge" style="background: #4338CA; color: #FFFFFF; padding: 0 8px">B</span><span>Heatsink assy (R/L)<br><span class="mut" style="font-size: 12.5px">[PART NO. B-R], [B-L]</span></span><span class="mut" style="font-size: 12.5px">9 proc.</span></div>
+        <div class="prow"><span class="badge" style="background: #101828; color: #FFFFFF; padding: 0 8px">C</span><span>Base assy (R/L)<br><span class="mut" style="font-size: 12.5px">[PART NO. C-R], [C-L]</span></span><span class="mut" style="font-size: 12.5px">10 proc.</span></div>
+      </div>
+      <section style="display: flex; flex-direction: column; gap: 8px">
+        <div style="font-weight: 600">Shared by every part</div>
+        <div class="mut" style="font-size: 13.5px">Document number · cover · revision history · approval route and signatures · core team · customer</div>
+        <div style="font-weight: 600; margin-top: 6px">Different per part</div>
+        <div class="mut" style="font-size: 13.5px">Product name and part numbers · process flow · rows · sync check · yokoten target</div>
+      </section>
+      <section style="padding: 12px 14px; border-radius: 10px; background: #F8F9FB; border: 1px solid #E4E7EC; font-size: 13.5px">
+        <b>Yokoten on this document</b><br>
+        A yokoten can target one part only. Example: the torque change applies to part B and C, not part A.
+      </section>
+    </aside>
+  </div>
+
+  <nav class="tabs" aria-label="Sheets in this workbook">
+    <a class="st" href="Cover.dc.html">Cover</a><a class="st" href="Pfd.dc.html">PFD</a><a class="st" href="PfmeaEditor.dc.html">PFMEA</a><a class="st on" href="#" aria-current="page">Control Plan</a><a class="st" href="SyncCheck.dc.html">Check</a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":1250}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

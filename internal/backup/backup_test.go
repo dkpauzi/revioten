@@ -71,7 +71,7 @@ func TestEncryptRoundTrip(t *testing.T) {
 	}
 }
 
-// TestCheckPassphrase: passphrase paling sedikit 15 karakter, sama dengan
+// TestCheckPassphrase: passphrase paling sedikit 15 karakter. Sebelum D-132 sama dengan
 // panjang minimal password (D-85).
 func TestCheckPassphrase(t *testing.T) {
 	if err := CheckPassphrase("pendek"); err == nil {
