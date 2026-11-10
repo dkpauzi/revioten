@@ -53,9 +53,10 @@ type ProcessTemplate struct {
 
 // ProcessVersionSummary adalah ringkasan satu versi untuk daftar template.
 type ProcessVersionSummary struct {
-	ID      string
-	Version int
-	Status  string
+	ID          string
+	Version     int
+	Status      string
+	PublishedAt *time.Time // nil selama draft; selalu UTC (M3.4)
 }
 
 // ProcessVersion adalah satu versi process template lengkap dengan isinya.
@@ -67,6 +68,7 @@ type ProcessVersion struct {
 	Status       string
 	Subprocesses []Subprocess // menurut urutan, tidak pernah nil
 	CreatedAt    time.Time    // selalu UTC
+	PublishedAt  *time.Time   // nil selama draft; selalu UTC (M3.4)
 }
 
 // Subprocess adalah satu sub-proses dalam satu versi beserta poinnya.

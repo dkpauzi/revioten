@@ -149,6 +149,7 @@ type FormatTemplateVersion struct {
 	HighlightRpnAbove        *int16
 	HighlightSeverityAtLeast *int16
 	CreatedAt                time.Time
+	PublishedAt              *time.Time
 }
 
 type FormatVersionField struct {
@@ -296,12 +297,13 @@ type ProcessTemplateVariant struct {
 }
 
 type ProcessTemplateVersion struct {
-	ID         string
-	TemplateID string
-	ProcessID  string
-	Version    int32
-	Status     string
-	CreatedAt  time.Time
+	ID          string
+	TemplateID  string
+	ProcessID   string
+	Version     int32
+	Status      string
+	CreatedAt   time.Time
+	PublishedAt *time.Time
 }
 
 type ProjectGroup struct {

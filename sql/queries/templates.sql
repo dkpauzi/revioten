@@ -31,12 +31,12 @@ UPDATE format_templates SET name = $2 WHERE id = $1;
 
 -- name: ListFormatVersions :many
 -- ListFormatVersions mengambil semua versi semua template, untuk daftar template.
-SELECT id, template_id, version, status, risk_method, highlight_rpn_above, highlight_severity_at_least, created_at
+SELECT id, template_id, version, status, risk_method, highlight_rpn_above, highlight_severity_at_least, created_at, published_at
 FROM format_template_versions
 ORDER BY template_id, version;
 
 -- name: GetFormatVersion :one
-SELECT id, template_id, version, status, risk_method, highlight_rpn_above, highlight_severity_at_least, created_at
+SELECT id, template_id, version, status, risk_method, highlight_rpn_above, highlight_severity_at_least, created_at, published_at
 FROM format_template_versions
 WHERE id = $1;
 
@@ -117,7 +117,40 @@ INSERT INTO format_symbols (version_id, key, name, position, automatic) VALUES (
 UPDATE format_symbols SET name = $3 WHERE version_id = $1 AND key = $2;
 
 -- name: ListVersionsOfTemplate :many
-SELECT id, template_id, version, status, risk_method, highlight_rpn_above, highlight_severity_at_least, created_at
+SELECT id, template_id, version, status, risk_method, highlight_rpn_above, highlight_severity_at_least, created_at, published_at
 FROM format_template_versions
 WHERE template_id = $1
 ORDER BY version;
+
+
+-- M3.4: versi terbit dan versi baru. Lihat migrasi 00016.
+
+-- name: PublishFormatVersion :execrows
+-- PublishFormatVersion menerbitkan versi draft. Hasil 0 baris berarti versi
+-- itu tidak ada atau sudah terbit.
+UPDATE format_template_versions
+SET status = 'published', published_at = now()
+WHERE id = $1 AND status = 'draft';
+
+
+-- name: CopyFormatVersionFields :exec
+-- CopyFormatVersionFields menyalin field satu versi ke versi baru template
+-- yang sama. ID field tetap, jadi data dokumen tetap terbaca (R-TPL-02).
+INSERT INTO format_version_fields (version_id, field_id, template_id, area, label, position, required, hidden, options)
+SELECT sqlc.arg(target_id)::uuid, s.field_id, s.template_id, s.area, s.label, s.position, s.required, s.hidden, s.options
+FROM format_version_fields s
+WHERE s.version_id = sqlc.arg(source_id);
+
+
+-- name: CopyFormatRatingCriteria :exec
+INSERT INTO format_rating_criteria (version_id, scale, value, criteria)
+SELECT sqlc.arg(target_id)::uuid, s.scale, s.value, s.criteria
+FROM format_rating_criteria s
+WHERE s.version_id = sqlc.arg(source_id);
+
+
+-- name: CopyFormatSymbols :exec
+INSERT INTO format_symbols (version_id, key, name, position, automatic)
+SELECT sqlc.arg(target_id)::uuid, s.key, s.name, s.position, s.automatic
+FROM format_symbols s
+WHERE s.version_id = sqlc.arg(source_id);

@@ -371,6 +371,16 @@ type fakeTemplates struct {
 	gotSymbols []template.Symbol
 }
 
+func (f *fakeTemplates) PublishFormatVersion(_ context.Context, _ access.Actor, versionID string) (template.FormatVersion, error) {
+	f.got = called{method: "PublishFormatVersion", id: versionID}
+	return f.version, f.err
+}
+
+func (f *fakeTemplates) NewFormatVersion(_ context.Context, _ access.Actor, templateID string) (template.FormatVersion, error) {
+	f.got = called{method: "NewFormatVersion", id: templateID}
+	return f.version, f.err
+}
+
 func (f *fakeTemplates) ListFormatTemplates(context.Context, access.Actor) ([]template.FormatTemplate, error) {
 	f.got = called{method: "ListFormatTemplates"}
 	return f.templates, f.err
@@ -458,6 +468,16 @@ func (f *fakeProcessTemplates) UpdateVariant(_ context.Context, _ access.Actor, 
 func (f *fakeProcessTemplates) ResolvePoints(_ context.Context, _ access.Actor, versionID, modelID string) (template.Resolved, error) {
 	f.got = called{method: "ResolvePoints", id: versionID, input: modelID}
 	return f.resolved, f.err
+}
+
+func (f *fakeProcessTemplates) PublishProcessVersion(_ context.Context, _ access.Actor, versionID string) (template.ProcessVersion, error) {
+	f.got = called{method: "PublishProcessVersion", id: versionID}
+	return f.version, f.err
+}
+
+func (f *fakeProcessTemplates) NewProcessVersion(_ context.Context, _ access.Actor, templateID string) (template.ProcessVersion, error) {
+	f.got = called{method: "NewProcessVersion", id: templateID}
+	return f.version, f.err
 }
 
 func (f *fakeProcessTemplates) ListProcessTemplates(context.Context, access.Actor) ([]template.ProcessTemplate, error) {

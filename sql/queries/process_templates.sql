@@ -19,12 +19,12 @@ INSERT INTO process_templates (process_id) VALUES ($1) RETURNING id;
 
 -- name: ListAllProcessVersions :many
 -- ListAllProcessVersions mengambil ringkasan versi semua template, untuk daftar.
-SELECT id, template_id, version, status
+SELECT id, template_id, version, status, published_at
 FROM process_template_versions
 ORDER BY template_id, version;
 
 -- name: ListProcessVersionsOfTemplate :many
-SELECT id, template_id, version, status
+SELECT id, template_id, version, status, published_at
 FROM process_template_versions
 WHERE template_id = $1
 ORDER BY version;
@@ -35,7 +35,7 @@ VALUES ($1, $2, $3)
 RETURNING id;
 
 -- name: GetProcessVersion :one
-SELECT v.id, v.template_id, v.process_id, n.name AS process_name, v.version, v.status, v.created_at
+SELECT v.id, v.template_id, v.process_id, n.name AS process_name, v.version, v.status, v.created_at, v.published_at
 FROM process_template_versions v
 JOIN process_names n ON n.process_id = v.process_id AND n.kind = 'display'
 WHERE v.id = $1;
@@ -149,3 +149,37 @@ WHERE version_id = sqlc.arg(version_id) AND subprocess_id = sqlc.arg(subprocess_
 
 -- name: SetPointPosition :exec
 UPDATE process_template_points SET position = $3 WHERE version_id = $1 AND point_id = $2;
+
+
+-- M3.4: versi terbit dan versi baru. Lihat migrasi 00016.
+
+
+-- name: PublishProcessVersion :execrows
+-- PublishProcessVersion menerbitkan versi draft. Hasil 0 baris berarti versi
+-- itu tidak ada atau sudah terbit.
+UPDATE process_template_versions
+SET status = 'published', published_at = now()
+WHERE id = $1 AND status = 'draft';
+
+
+-- name: CopyProcessVersionSubprocesses :exec
+-- Tiga query Copy menyalin isi satu versi ke versi baru template yang sama.
+-- ID sub-proses, poin, dan varian tetap (R-TPL-04).
+INSERT INTO process_template_subprocesses (version_id, process_id, subprocess_id, name, position, hidden)
+SELECT sqlc.arg(target_id)::uuid, s.process_id, s.subprocess_id, s.name, s.position, s.hidden
+FROM process_template_subprocesses s
+WHERE s.version_id = sqlc.arg(source_id);
+
+
+-- name: CopyProcessVersionPoints :exec
+INSERT INTO process_template_points (version_id, subprocess_id, document_type_id, point_id, text, position, hidden)
+SELECT sqlc.arg(target_id)::uuid, s.subprocess_id, s.document_type_id, s.point_id, s.text, s.position, s.hidden
+FROM process_template_points s
+WHERE s.version_id = sqlc.arg(source_id);
+
+
+-- name: CopyProcessVersionVariants :exec
+INSERT INTO process_template_variants (version_id, point_id, origin_point_id, text, hidden)
+SELECT sqlc.arg(target_id)::uuid, s.point_id, s.origin_point_id, s.text, s.hidden
+FROM process_template_variants s
+WHERE s.version_id = sqlc.arg(source_id);

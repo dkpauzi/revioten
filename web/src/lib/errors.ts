@@ -143,7 +143,10 @@ const scopedKeys: Record<string, MessageKey> = {
 	'processTemplate.scope_target_id:invalid_format': 'scopeTargetInvalid',
 	'processTemplate.scope_target_id:not_allowed': 'variantOutsidePoint',
 	'processTemplate.scope_target_id:taken': 'variantTaken',
-	'processTemplate.model_id:invalid_format': 'previewModelRequired'
+	'processTemplate.model_id:invalid_format': 'previewModelRequired',
+	// Versi terbit dan versi baru (M3.4): status versi tidak cocok dengan aksinya.
+	'processTemplate.status:not_allowed': 'versionStatusNotAllowed',
+	'formatTemplate.status:not_allowed': 'versionStatusNotAllowed'
 };
 
 // problemText memberi teks layar untuk satu masalah input: teks khusus

@@ -97,6 +97,16 @@ func TestFormatTemplateEndpoints(t *testing.T) {
 	if rec.Code != http.StatusOK || !slices.Equal(fake.gotSymbols, []template.Symbol{{Key: "revision", Name: "Revision Mark"}, {Name: "Safety"}}) {
 		t.Errorf("simbol: status %d, %+v", rec.Code, fake.gotSymbols)
 	}
+
+	// Menerbitkan dan membuat versi baru (M3.4).
+	rec = srv.do(http.MethodPost, "/api/v1/format-template-versions/v-1/publish", "")
+	if rec.Code != http.StatusOK || fake.got != (called{method: "PublishFormatVersion", id: "v-1"}) {
+		t.Errorf("terbitkan: status %d, %+v", rec.Code, fake.got)
+	}
+	rec = srv.do(http.MethodPost, "/api/v1/format-templates/t-1/versions", "")
+	if rec.Code != http.StatusCreated || fake.got != (called{method: "NewFormatVersion", id: "t-1"}) {
+		t.Errorf("versi baru: status %d, %+v", rec.Code, fake.got)
+	}
 }
 
 // sameJSON membandingkan dua teks JSON tanpa memedulikan urutan key.

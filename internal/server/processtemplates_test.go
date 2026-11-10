@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"net/http"
 	"reflect"
 	"testing"
@@ -123,6 +124,26 @@ func TestProcessTemplateEndpoints(t *testing.T) {
 		`"origin_id":"pp-1","point_id":"va-2","scope":{"label":"AB","level":"customer","target_id":"c-1"},"text":"Customer AB check"}]}]}`
 	if rec.Code != http.StatusOK || fake.got != (called{method: "ResolvePoints", id: "v-1", input: "m-2"}) || !sameJSON(t, rec.Body.String(), want) {
 		t.Errorf("pratinjau: status %d, %+v\n%s\ningin\n%s", rec.Code, fake.got, rec.Body.String(), want)
+	}
+
+	// Menerbitkan dan membuat versi baru (M3.4): waktu terbit ikut di jawaban.
+	published := time.Date(2026, 11, 10, 9, 30, 0, 0, time.UTC)
+	fake.version.Status, fake.version.PublishedAt = template.StatusPublished, &published
+	rec = srv.do(http.MethodPost, "/api/v1/process-template-versions/v-1/publish", "")
+	var body struct {
+		Status      string `json:"status"`
+		PublishedAt string `json:"published_at"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+		t.Fatal(err)
+	}
+	if rec.Code != http.StatusOK || fake.got != (called{method: "PublishProcessVersion", id: "v-1"}) ||
+		body.Status != "published" || body.PublishedAt != "2026-11-10T09:30:00Z" {
+		t.Errorf("terbitkan: status %d, %+v, %+v", rec.Code, fake.got, body)
+	}
+	rec = srv.do(http.MethodPost, "/api/v1/process-templates/pt-1/versions", "")
+	if rec.Code != http.StatusCreated || fake.got != (called{method: "NewProcessVersion", id: "pt-1"}) {
+		t.Errorf("versi baru: status %d, %+v", rec.Code, fake.got)
 	}
 
 	// Penolakan layanan diteruskan dalam format error API (R-API-13).

@@ -84,6 +84,9 @@ const (
 	ActionFormatFieldChanged    = "format_template.field_changed"
 	ActionFormatRatingsChanged  = "format_template.ratings_changed"
 	ActionFormatSymbolsChanged  = "format_template.symbols_changed"
+	// M3.4: versi terbit dan versi baru (R-TPL-05).
+	ActionFormatVersionPublished = "format_template.version_published"
+	ActionFormatVersionCreated   = "format_template.version_created"
 	// Process template (M3.2). Sasarannya selalu template; versinya ada di rincian.
 	ActionProcessTemplateCreated = "process_template.created"
 	ActionSubprocessAdded        = "process_template.subprocess_added"
@@ -93,6 +96,9 @@ const (
 	// Varian poin untuk cakupan yang lebih sempit (M3.3, D-129).
 	ActionTemplateVariantAdded   = "process_template.variant_added"
 	ActionTemplateVariantChanged = "process_template.variant_changed"
+	// M3.4: versi terbit dan versi baru (R-TPL-05).
+	ActionProcessVersionPublished = "process_template.version_published"
+	ActionProcessVersionCreated   = "process_template.version_created"
 )
 
 // Jenis sasaran entri.

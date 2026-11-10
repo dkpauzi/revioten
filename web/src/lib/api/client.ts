@@ -512,6 +512,19 @@ export function renameFormatTemplate(
 }
 
 // getFormatVersion memanggil GET /api/v1/format-template-versions/{id}.
+// publishFormatVersion memanggil POST .../format-template-versions/{id}/publish (A-2, M3.4).
+export function publishFormatVersion(versionId: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<FormatVersion>> {
+	const path = itemPath('format-template-versions', versionId) + '/publish';
+	return call<FormatVersion>(fetchFn, path, { method: 'POST' });
+}
+
+// createFormatVersion memanggil POST .../format-templates/{id}/versions (A-2, M3.4):
+// versi draft berikutnya, salinan versi terbit terakhir.
+export function createFormatVersion(templateId: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<FormatVersion>> {
+	const path = itemPath('format-templates', templateId) + '/versions';
+	return call<FormatVersion>(fetchFn, path, { method: 'POST' });
+}
+
 export function getFormatVersion(id: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<FormatVersion>> {
 	return call<FormatVersion>(fetchFn, itemPath('format-template-versions', id), { method: 'GET' });
 }
@@ -575,6 +588,25 @@ export function createProcessTemplate(processId: string, fetchFn: typeof fetch =
 }
 
 // getProcessTemplateVersion memanggil GET /api/v1/process-template-versions/{id}.
+// publishProcessTemplateVersion memanggil POST .../process-template-versions/{id}/publish (E-6, M3.4).
+export function publishProcessTemplateVersion(
+	versionId: string,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<ProcessTemplateVersion>> {
+	const path = itemPath('process-template-versions', versionId) + '/publish';
+	return call<ProcessTemplateVersion>(fetchFn, path, { method: 'POST' });
+}
+
+// createProcessTemplateVersion memanggil POST .../process-templates/{id}/versions (E-6, M3.4):
+// versi draft berikutnya, salinan versi terbit terakhir.
+export function createProcessTemplateVersion(
+	templateId: string,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<ProcessTemplateVersion>> {
+	const path = itemPath('process-templates', templateId) + '/versions';
+	return call<ProcessTemplateVersion>(fetchFn, path, { method: 'POST' });
+}
+
 export function getProcessTemplateVersion(
 	id: string,
 	fetchFn: typeof fetch = fetch

@@ -1282,6 +1282,40 @@ paths:
                 $ref: '#/components/schemas/FormatTemplate'
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/format-templates/{formatTemplateId}/versions:
+    post:
+      operationId: createFormatVersion
+      summary: Make the next draft version of a format template from its last published version (A-2, R-TPL-05)
+      description: >-
+        The new version copies the fields, rating criteria, symbols, and highlight rule of the last version, with the
+        same field IDs. Refused with 409 while the template still has a draft version.
+      parameters:
+        - $ref: '#/components/parameters/FormatTemplateId'
+      responses:
+        '201':
+          description: The new draft version.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormatVersion'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/format-template-versions/{formatVersionId}/publish:
+    post:
+      operationId: publishFormatVersion
+      summary: Publish a draft version of a format template (A-2, R-TPL-05)
+      description: A published version cannot be changed. Changes go into a new version. Refused with 409 if it is already published.
+      parameters:
+        - $ref: '#/components/parameters/FormatVersionId'
+      responses:
+        '200':
+          description: The published version.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormatVersion'
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/format-template-versions/{formatVersionId}:
     get:
       operationId: getFormatVersion
@@ -1439,6 +1473,40 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProcessTemplate'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/process-templates/{processTemplateId}/versions:
+    post:
+      operationId: createProcessTemplateVersion
+      summary: Make the next draft version of a process template from its last published version (E-6, R-TPL-05)
+      description: >-
+        The new version copies the sub-processes, points, and variants of the last version, with the same IDs.
+        Refused with 409 while the template still has a draft version.
+      parameters:
+        - $ref: '#/components/parameters/ProcessTemplateId'
+      responses:
+        '201':
+          description: The new draft version.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessTemplateVersion'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/process-template-versions/{processVersionId}/publish:
+    post:
+      operationId: publishProcessTemplateVersion
+      summary: Publish a draft version of a process template (E-6, R-TPL-05)
+      description: A published version cannot be changed. Changes go into a new version. Refused with 409 if it is already published.
+      parameters:
+        - $ref: '#/components/parameters/ProcessVersionId'
+      responses:
+        '200':
+          description: The published version.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessTemplateVersion'
         default:
           $ref: '#/components/responses/Error'
   /api/v1/process-template-versions/{processVersionId}:
@@ -1842,6 +1910,12 @@ components:
         type: string
     FormatFieldId:
       name: formatFieldId
+      in: path
+      required: true
+      schema:
+        type: string
+    ProcessTemplateId:
+      name: processTemplateId
       in: path
       required: true
       schema:
@@ -3131,6 +3205,10 @@ components:
         risk_method:
           type: string
           enum: [rpn, ap, none]
+        published_at:
+          type: string
+          format: date-time
+          description: When the version was published. Absent while it is a draft (M3.4).
     NewFormatTemplate:
       type: object
       required: [name, document_type_id]
@@ -3195,6 +3273,10 @@ components:
         created_at:
           type: string
           format: date-time
+        published_at:
+          type: string
+          format: date-time
+          description: When the version was published. Absent while it is a draft (M3.4).
     FormatField:
       type: object
       required: [id, area, kind, label, position, required, hidden]
@@ -3380,6 +3462,10 @@ components:
         status:
           type: string
           enum: [draft, published]
+        published_at:
+          type: string
+          format: date-time
+          description: When the version was published. Absent while it is a draft (M3.4).
     NewProcessTemplate:
       type: object
       required: [process_id]
@@ -3409,6 +3495,10 @@ components:
         created_at:
           type: string
           format: date-time
+        published_at:
+          type: string
+          format: date-time
+          description: When the version was published. Absent while it is a draft (M3.4).
     Subprocess:
       type: object
       required: [id, name, position, hidden, points]

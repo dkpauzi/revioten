@@ -37,6 +37,24 @@ func (a *apiServer) GetProcessTemplateVersion(ctx context.Context, req GetProces
 	return GetProcessTemplateVersion200JSONResponse(toAPIProcessVersion(v)), nil
 }
 
+// PublishProcessTemplateVersion menjawab POST /api/v1/process-template-versions/{processVersionId}/publish (M3.4).
+func (a *apiServer) PublishProcessTemplateVersion(ctx context.Context, req PublishProcessTemplateVersionRequestObject) (PublishProcessTemplateVersionResponseObject, error) {
+	v, err := a.processTemplates.PublishProcessVersion(ctx, actorFrom(ctx), req.ProcessVersionId)
+	if err != nil {
+		return nil, err
+	}
+	return PublishProcessTemplateVersion200JSONResponse(toAPIProcessVersion(v)), nil
+}
+
+// CreateProcessTemplateVersion menjawab POST /api/v1/process-templates/{processTemplateId}/versions (M3.4).
+func (a *apiServer) CreateProcessTemplateVersion(ctx context.Context, req CreateProcessTemplateVersionRequestObject) (CreateProcessTemplateVersionResponseObject, error) {
+	v, err := a.processTemplates.NewProcessVersion(ctx, actorFrom(ctx), req.ProcessTemplateId)
+	if err != nil {
+		return nil, err
+	}
+	return CreateProcessTemplateVersion201JSONResponse(toAPIProcessVersion(v)), nil
+}
+
 // AddSubprocess menjawab POST /api/v1/process-template-versions/{processVersionId}/subprocesses.
 func (a *apiServer) AddSubprocess(ctx context.Context, req AddSubprocessRequestObject) (AddSubprocessResponseObject, error) {
 	v, err := a.processTemplates.AddSubprocess(ctx, actorFrom(ctx), req.ProcessVersionId, req.Body.Name)
@@ -145,7 +163,7 @@ func toAPIProcessTemplate(t template.ProcessTemplate) ProcessTemplate {
 		Versions: make([]ProcessVersionSummary, 0, len(t.Versions)),
 	}
 	for _, v := range t.Versions {
-		out.Versions = append(out.Versions, ProcessVersionSummary{Id: v.ID, Version: v.Version, Status: ProcessVersionSummaryStatus(v.Status)})
+		out.Versions = append(out.Versions, ProcessVersionSummary{Id: v.ID, Version: v.Version, Status: ProcessVersionSummaryStatus(v.Status), PublishedAt: v.PublishedAt})
 	}
 	return out
 }
@@ -155,7 +173,7 @@ func toAPIProcessTemplate(t template.ProcessTemplate) ProcessTemplate {
 func toAPIProcessVersion(v template.ProcessVersion) ProcessTemplateVersion {
 	out := ProcessTemplateVersion{
 		Id: v.ID, TemplateId: v.TemplateID, Process: ProcessRef{Id: v.Process.ID, Name: v.Process.Name},
-		Version: v.Version, Status: ProcessTemplateVersionStatus(v.Status), CreatedAt: v.CreatedAt,
+		Version: v.Version, Status: ProcessTemplateVersionStatus(v.Status), CreatedAt: v.CreatedAt, PublishedAt: v.PublishedAt,
 		Subprocesses: make([]Subprocess, 0, len(v.Subprocesses)),
 	}
 	for _, s := range v.Subprocesses {

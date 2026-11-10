@@ -1542,6 +1542,9 @@ type FormatVersion struct {
 	HighlightSeverityAtLeast int    `json:"highlight_severity_at_least"`
 	Id                       string `json:"id"`
 
+	// PublishedAt When the version was published. Absent while it is a draft (M3.4).
+	PublishedAt *time.Time `json:"published_at,omitempty"`
+
 	// Ratings Severity, occurrence, then detection, values 1 to 10. Empty without a risk method.
 	Ratings    []RatingCriterion       `json:"ratings"`
 	RiskMethod FormatVersionRiskMethod `json:"risk_method"`
@@ -1559,10 +1562,13 @@ type FormatVersionStatus string
 
 // FormatVersionSummary defines model for FormatVersionSummary.
 type FormatVersionSummary struct {
-	Id         string                         `json:"id"`
-	RiskMethod FormatVersionSummaryRiskMethod `json:"risk_method"`
-	Status     FormatVersionSummaryStatus     `json:"status"`
-	Version    int                            `json:"version"`
+	Id string `json:"id"`
+
+	// PublishedAt When the version was published. Absent while it is a draft (M3.4).
+	PublishedAt *time.Time                     `json:"published_at,omitempty"`
+	RiskMethod  FormatVersionSummaryRiskMethod `json:"risk_method"`
+	Status      FormatVersionSummaryStatus     `json:"status"`
+	Version     int                            `json:"version"`
 }
 
 // FormatVersionSummaryRiskMethod defines model for FormatVersionSummary.RiskMethod.
@@ -2124,10 +2130,13 @@ type ProcessTemplateList struct {
 
 // ProcessTemplateVersion defines model for ProcessTemplateVersion.
 type ProcessTemplateVersion struct {
-	CreatedAt time.Time                    `json:"created_at"`
-	Id        string                       `json:"id"`
-	Process   ProcessRef                   `json:"process"`
-	Status    ProcessTemplateVersionStatus `json:"status"`
+	CreatedAt time.Time  `json:"created_at"`
+	Id        string     `json:"id"`
+	Process   ProcessRef `json:"process"`
+
+	// PublishedAt When the version was published. Absent while it is a draft (M3.4).
+	PublishedAt *time.Time                   `json:"published_at,omitempty"`
+	Status      ProcessTemplateVersionStatus `json:"status"`
 
 	// Subprocesses In order, hidden ones included.
 	Subprocesses []Subprocess `json:"subprocesses"`
@@ -2147,9 +2156,12 @@ type ProcessUpdate struct {
 
 // ProcessVersionSummary defines model for ProcessVersionSummary.
 type ProcessVersionSummary struct {
-	Id      string                      `json:"id"`
-	Status  ProcessVersionSummaryStatus `json:"status"`
-	Version int                         `json:"version"`
+	Id string `json:"id"`
+
+	// PublishedAt When the version was published. Absent while it is a draft (M3.4).
+	PublishedAt *time.Time                  `json:"published_at,omitempty"`
+	Status      ProcessVersionSummaryStatus `json:"status"`
+	Version     int                         `json:"version"`
 }
 
 // ProcessVersionSummaryStatus defines model for ProcessVersionSummary.Status.
@@ -2489,6 +2501,9 @@ type PositionId = string
 
 // ProcessId defines model for ProcessId.
 type ProcessId = string
+
+// ProcessTemplateId defines model for ProcessTemplateId.
+type ProcessTemplateId = string
 
 // ProcessVersionId defines model for ProcessVersionId.
 type ProcessVersionId = string
@@ -2850,6 +2865,9 @@ type ServerInterface interface {
 	// UpdateFormatField Change the label, required flag, hidden flag, position, or options of a field in a draft version (A-2, R-TPL-02)
 	// (PUT /api/v1/format-template-versions/{formatVersionId}/fields/{formatFieldId})
 	UpdateFormatField(w http.ResponseWriter, r *http.Request, formatVersionId FormatVersionId, formatFieldId FormatFieldId)
+	// PublishFormatVersion Publish a draft version of a format template (A-2, R-TPL-05)
+	// (POST /api/v1/format-template-versions/{formatVersionId}/publish)
+	PublishFormatVersion(w http.ResponseWriter, r *http.Request, formatVersionId FormatVersionId)
 	// SetFormatRatingCriteria Change the criteria text of rating values in a draft version (A-2, R-TPL-01)
 	// (PUT /api/v1/format-template-versions/{formatVersionId}/rating-criteria)
 	SetFormatRatingCriteria(w http.ResponseWriter, r *http.Request, formatVersionId FormatVersionId)
@@ -2865,6 +2883,9 @@ type ServerInterface interface {
 	// RenameFormatTemplate Rename a format template (A-2)
 	// (PUT /api/v1/format-templates/{formatTemplateId})
 	RenameFormatTemplate(w http.ResponseWriter, r *http.Request, formatTemplateId FormatTemplateId)
+	// CreateFormatVersion Make the next draft version of a format template from its last published version (A-2, R-TPL-05)
+	// (POST /api/v1/format-templates/{formatTemplateId}/versions)
+	CreateFormatVersion(w http.ResponseWriter, r *http.Request, formatTemplateId FormatTemplateId)
 	// ListFourMCategories The 4M categories Man, Machine, Material, and Method
 	// (GET /api/v1/four-m-categories)
 	ListFourMCategories(w http.ResponseWriter, r *http.Request)
@@ -2928,6 +2949,9 @@ type ServerInterface interface {
 	// AddPointVariant Add a variant of a point for a narrower scope in a draft version (E-6, M3.3, D-129)
 	// (POST /api/v1/process-template-versions/{processVersionId}/points/{pointId}/variants)
 	AddPointVariant(w http.ResponseWriter, r *http.Request, processVersionId ProcessVersionId, pointId PointId)
+	// PublishProcessTemplateVersion Publish a draft version of a process template (E-6, R-TPL-05)
+	// (POST /api/v1/process-template-versions/{processVersionId}/publish)
+	PublishProcessTemplateVersion(w http.ResponseWriter, r *http.Request, processVersionId ProcessVersionId)
 	// ResolveProcessTemplatePoints The points of a version that apply to one model (L-2 for the customer of the model, M3.3, R-TPL-03)
 	// (GET /api/v1/process-template-versions/{processVersionId}/resolved)
 	ResolveProcessTemplatePoints(w http.ResponseWriter, r *http.Request, processVersionId ProcessVersionId, params ResolveProcessTemplatePointsParams)
@@ -2946,6 +2970,9 @@ type ServerInterface interface {
 	// CreateProcessTemplate Add the process template of a process, with an empty draft version 1 (E-6, UC-21, D-64)
 	// (POST /api/v1/process-templates)
 	CreateProcessTemplate(w http.ResponseWriter, r *http.Request)
+	// CreateProcessTemplateVersion Make the next draft version of a process template from its last published version (E-6, R-TPL-05)
+	// (POST /api/v1/process-templates/{processTemplateId}/versions)
+	CreateProcessTemplateVersion(w http.ResponseWriter, r *http.Request, processTemplateId ProcessTemplateId)
 	// ListProcesses All processes with their aliases, ordered by name (UC-04)
 	// (GET /api/v1/processes)
 	ListProcesses(w http.ResponseWriter, r *http.Request)
@@ -3953,6 +3980,32 @@ func (siw *ServerInterfaceWrapper) UpdateFormatField(w http.ResponseWriter, r *h
 	handler.ServeHTTP(w, r)
 }
 
+// PublishFormatVersion operation middleware
+func (siw *ServerInterfaceWrapper) PublishFormatVersion(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "formatVersionId" -------------
+	var formatVersionId FormatVersionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "formatVersionId", r.PathValue("formatVersionId"), &formatVersionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "formatVersionId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PublishFormatVersion(w, r, formatVersionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // SetFormatRatingCriteria operation middleware
 func (siw *ServerInterfaceWrapper) SetFormatRatingCriteria(w http.ResponseWriter, r *http.Request) {
 
@@ -4050,6 +4103,32 @@ func (siw *ServerInterfaceWrapper) RenameFormatTemplate(w http.ResponseWriter, r
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.RenameFormatTemplate(w, r, formatTemplateId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateFormatVersion operation middleware
+func (siw *ServerInterfaceWrapper) CreateFormatVersion(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "formatTemplateId" -------------
+	var formatTemplateId FormatTemplateId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "formatTemplateId", r.PathValue("formatTemplateId"), &formatTemplateId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "formatTemplateId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateFormatVersion(w, r, formatTemplateId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -4569,6 +4648,32 @@ func (siw *ServerInterfaceWrapper) AddPointVariant(w http.ResponseWriter, r *htt
 	handler.ServeHTTP(w, r)
 }
 
+// PublishProcessTemplateVersion operation middleware
+func (siw *ServerInterfaceWrapper) PublishProcessTemplateVersion(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "processVersionId" -------------
+	var processVersionId ProcessVersionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "processVersionId", r.PathValue("processVersionId"), &processVersionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "processVersionId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PublishProcessTemplateVersion(w, r, processVersionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ResolveProcessTemplatePoints operation middleware
 func (siw *ServerInterfaceWrapper) ResolveProcessTemplatePoints(w http.ResponseWriter, r *http.Request) {
 
@@ -4726,6 +4831,32 @@ func (siw *ServerInterfaceWrapper) CreateProcessTemplate(w http.ResponseWriter, 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreateProcessTemplate(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateProcessTemplateVersion operation middleware
+func (siw *ServerInterfaceWrapper) CreateProcessTemplateVersion(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "processTemplateId" -------------
+	var processTemplateId ProcessTemplateId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "processTemplateId", r.PathValue("processTemplateId"), &processTemplateId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "processTemplateId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateProcessTemplateVersion(w, r, processTemplateId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -5207,6 +5338,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/format-templates", wrapper.ListFormatTemplates)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/format-templates", wrapper.CreateFormatTemplate)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/format-templates/{formatTemplateId}", wrapper.RenameFormatTemplate)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/format-templates/{formatTemplateId}/versions", wrapper.CreateFormatVersion)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/format-template-versions/{formatVersionId}/publish", wrapper.PublishFormatVersion)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/format-template-versions/{formatVersionId}", wrapper.GetFormatVersion)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/format-template-versions/{formatVersionId}", wrapper.UpdateFormatHighlights)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/format-template-versions/{formatVersionId}/fields", wrapper.AddFormatField)
@@ -5215,6 +5348,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/format-template-versions/{formatVersionId}/symbols", wrapper.SaveFormatSymbols)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/process-templates", wrapper.ListProcessTemplates)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/process-templates", wrapper.CreateProcessTemplate)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/process-templates/{processTemplateId}/versions", wrapper.CreateProcessTemplateVersion)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/process-template-versions/{processVersionId}/publish", wrapper.PublishProcessTemplateVersion)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/process-template-versions/{processVersionId}", wrapper.GetProcessTemplateVersion)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/process-template-versions/{processVersionId}/subprocesses", wrapper.AddSubprocess)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/process-template-versions/{processVersionId}/subprocesses/{subprocessId}", wrapper.UpdateSubprocess)
@@ -6786,6 +6921,45 @@ func (response UpdateFormatFielddefaultJSONResponse) VisitUpdateFormatFieldRespo
 	return err
 }
 
+type PublishFormatVersionRequestObject struct {
+	FormatVersionId FormatVersionId `json:"formatVersionId"`
+}
+
+type PublishFormatVersionResponseObject interface {
+	VisitPublishFormatVersionResponse(w http.ResponseWriter) error
+}
+
+type PublishFormatVersion200JSONResponse FormatVersion
+
+func (response PublishFormatVersion200JSONResponse) VisitPublishFormatVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PublishFormatVersiondefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response PublishFormatVersiondefaultJSONResponse) VisitPublishFormatVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type SetFormatRatingCriteriaRequestObject struct {
 	FormatVersionId FormatVersionId `json:"formatVersionId"`
 	Body            *SetFormatRatingCriteriaJSONRequestBody
@@ -6972,6 +7146,45 @@ type RenameFormatTemplatedefaultJSONResponse struct {
 }
 
 func (response RenameFormatTemplatedefaultJSONResponse) VisitRenameFormatTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateFormatVersionRequestObject struct {
+	FormatTemplateId FormatTemplateId `json:"formatTemplateId"`
+}
+
+type CreateFormatVersionResponseObject interface {
+	VisitCreateFormatVersionResponse(w http.ResponseWriter) error
+}
+
+type CreateFormatVersion201JSONResponse FormatVersion
+
+func (response CreateFormatVersion201JSONResponse) VisitCreateFormatVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateFormatVersiondefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response CreateFormatVersiondefaultJSONResponse) VisitCreateFormatVersionResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -7805,6 +8018,45 @@ func (response AddPointVariantdefaultJSONResponse) VisitAddPointVariantResponse(
 	return err
 }
 
+type PublishProcessTemplateVersionRequestObject struct {
+	ProcessVersionId ProcessVersionId `json:"processVersionId"`
+}
+
+type PublishProcessTemplateVersionResponseObject interface {
+	VisitPublishProcessTemplateVersionResponse(w http.ResponseWriter) error
+}
+
+type PublishProcessTemplateVersion200JSONResponse ProcessTemplateVersion
+
+func (response PublishProcessTemplateVersion200JSONResponse) VisitPublishProcessTemplateVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PublishProcessTemplateVersiondefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response PublishProcessTemplateVersiondefaultJSONResponse) VisitPublishProcessTemplateVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ResolveProcessTemplatePointsRequestObject struct {
 	ProcessVersionId ProcessVersionId `json:"processVersionId"`
 	Params           ResolveProcessTemplatePointsParams
@@ -8033,6 +8285,45 @@ type CreateProcessTemplatedefaultJSONResponse struct {
 }
 
 func (response CreateProcessTemplatedefaultJSONResponse) VisitCreateProcessTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateProcessTemplateVersionRequestObject struct {
+	ProcessTemplateId ProcessTemplateId `json:"processTemplateId"`
+}
+
+type CreateProcessTemplateVersionResponseObject interface {
+	VisitCreateProcessTemplateVersionResponse(w http.ResponseWriter) error
+}
+
+type CreateProcessTemplateVersion201JSONResponse ProcessTemplateVersion
+
+func (response CreateProcessTemplateVersion201JSONResponse) VisitCreateProcessTemplateVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateProcessTemplateVersiondefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response CreateProcessTemplateVersiondefaultJSONResponse) VisitCreateProcessTemplateVersionResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -8852,6 +9143,9 @@ type StrictServerInterface interface {
 	// UpdateFormatField Change the label, required flag, hidden flag, position, or options of a field in a draft version (A-2, R-TPL-02)
 	// (PUT /api/v1/format-template-versions/{formatVersionId}/fields/{formatFieldId})
 	UpdateFormatField(ctx context.Context, request UpdateFormatFieldRequestObject) (UpdateFormatFieldResponseObject, error)
+	// PublishFormatVersion Publish a draft version of a format template (A-2, R-TPL-05)
+	// (POST /api/v1/format-template-versions/{formatVersionId}/publish)
+	PublishFormatVersion(ctx context.Context, request PublishFormatVersionRequestObject) (PublishFormatVersionResponseObject, error)
 	// SetFormatRatingCriteria Change the criteria text of rating values in a draft version (A-2, R-TPL-01)
 	// (PUT /api/v1/format-template-versions/{formatVersionId}/rating-criteria)
 	SetFormatRatingCriteria(ctx context.Context, request SetFormatRatingCriteriaRequestObject) (SetFormatRatingCriteriaResponseObject, error)
@@ -8867,6 +9161,9 @@ type StrictServerInterface interface {
 	// RenameFormatTemplate Rename a format template (A-2)
 	// (PUT /api/v1/format-templates/{formatTemplateId})
 	RenameFormatTemplate(ctx context.Context, request RenameFormatTemplateRequestObject) (RenameFormatTemplateResponseObject, error)
+	// CreateFormatVersion Make the next draft version of a format template from its last published version (A-2, R-TPL-05)
+	// (POST /api/v1/format-templates/{formatTemplateId}/versions)
+	CreateFormatVersion(ctx context.Context, request CreateFormatVersionRequestObject) (CreateFormatVersionResponseObject, error)
 	// ListFourMCategories The 4M categories Man, Machine, Material, and Method
 	// (GET /api/v1/four-m-categories)
 	ListFourMCategories(ctx context.Context, request ListFourMCategoriesRequestObject) (ListFourMCategoriesResponseObject, error)
@@ -8930,6 +9227,9 @@ type StrictServerInterface interface {
 	// AddPointVariant Add a variant of a point for a narrower scope in a draft version (E-6, M3.3, D-129)
 	// (POST /api/v1/process-template-versions/{processVersionId}/points/{pointId}/variants)
 	AddPointVariant(ctx context.Context, request AddPointVariantRequestObject) (AddPointVariantResponseObject, error)
+	// PublishProcessTemplateVersion Publish a draft version of a process template (E-6, R-TPL-05)
+	// (POST /api/v1/process-template-versions/{processVersionId}/publish)
+	PublishProcessTemplateVersion(ctx context.Context, request PublishProcessTemplateVersionRequestObject) (PublishProcessTemplateVersionResponseObject, error)
 	// ResolveProcessTemplatePoints The points of a version that apply to one model (L-2 for the customer of the model, M3.3, R-TPL-03)
 	// (GET /api/v1/process-template-versions/{processVersionId}/resolved)
 	ResolveProcessTemplatePoints(ctx context.Context, request ResolveProcessTemplatePointsRequestObject) (ResolveProcessTemplatePointsResponseObject, error)
@@ -8948,6 +9248,9 @@ type StrictServerInterface interface {
 	// CreateProcessTemplate Add the process template of a process, with an empty draft version 1 (E-6, UC-21, D-64)
 	// (POST /api/v1/process-templates)
 	CreateProcessTemplate(ctx context.Context, request CreateProcessTemplateRequestObject) (CreateProcessTemplateResponseObject, error)
+	// CreateProcessTemplateVersion Make the next draft version of a process template from its last published version (E-6, R-TPL-05)
+	// (POST /api/v1/process-templates/{processTemplateId}/versions)
+	CreateProcessTemplateVersion(ctx context.Context, request CreateProcessTemplateVersionRequestObject) (CreateProcessTemplateVersionResponseObject, error)
 	// ListProcesses All processes with their aliases, ordered by name (UC-04)
 	// (GET /api/v1/processes)
 	ListProcesses(ctx context.Context, request ListProcessesRequestObject) (ListProcessesResponseObject, error)
@@ -10136,6 +10439,32 @@ func (sh *strictHandler) UpdateFormatField(w http.ResponseWriter, r *http.Reques
 	}
 }
 
+// PublishFormatVersion operation middleware
+func (sh *strictHandler) PublishFormatVersion(w http.ResponseWriter, r *http.Request, formatVersionId FormatVersionId) {
+	var request PublishFormatVersionRequestObject
+
+	request.FormatVersionId = formatVersionId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PublishFormatVersion(ctx, request.(PublishFormatVersionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PublishFormatVersion")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PublishFormatVersionResponseObject); ok {
+		if err := validResponse.VisitPublishFormatVersionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // SetFormatRatingCriteria operation middleware
 func (sh *strictHandler) SetFormatRatingCriteria(w http.ResponseWriter, r *http.Request, formatVersionId FormatVersionId) {
 	var request SetFormatRatingCriteriaRequestObject
@@ -10283,6 +10612,32 @@ func (sh *strictHandler) RenameFormatTemplate(w http.ResponseWriter, r *http.Req
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(RenameFormatTemplateResponseObject); ok {
 		if err := validResponse.VisitRenameFormatTemplateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateFormatVersion operation middleware
+func (sh *strictHandler) CreateFormatVersion(w http.ResponseWriter, r *http.Request, formatTemplateId FormatTemplateId) {
+	var request CreateFormatVersionRequestObject
+
+	request.FormatTemplateId = formatTemplateId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateFormatVersion(ctx, request.(CreateFormatVersionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateFormatVersion")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateFormatVersionResponseObject); ok {
+		if err := validResponse.VisitCreateFormatVersionResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -10916,6 +11271,32 @@ func (sh *strictHandler) AddPointVariant(w http.ResponseWriter, r *http.Request,
 	}
 }
 
+// PublishProcessTemplateVersion operation middleware
+func (sh *strictHandler) PublishProcessTemplateVersion(w http.ResponseWriter, r *http.Request, processVersionId ProcessVersionId) {
+	var request PublishProcessTemplateVersionRequestObject
+
+	request.ProcessVersionId = processVersionId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PublishProcessTemplateVersion(ctx, request.(PublishProcessTemplateVersionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PublishProcessTemplateVersion")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PublishProcessTemplateVersionResponseObject); ok {
+		if err := validResponse.VisitPublishProcessTemplateVersionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ResolveProcessTemplatePoints operation middleware
 func (sh *strictHandler) ResolveProcessTemplatePoints(w http.ResponseWriter, r *http.Request, processVersionId ProcessVersionId, params ResolveProcessTemplatePointsParams) {
 	var request ResolveProcessTemplatePointsRequestObject
@@ -11092,6 +11473,32 @@ func (sh *strictHandler) CreateProcessTemplate(w http.ResponseWriter, r *http.Re
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(CreateProcessTemplateResponseObject); ok {
 		if err := validResponse.VisitCreateProcessTemplateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateProcessTemplateVersion operation middleware
+func (sh *strictHandler) CreateProcessTemplateVersion(w http.ResponseWriter, r *http.Request, processTemplateId ProcessTemplateId) {
+	var request CreateProcessTemplateVersionRequestObject
+
+	request.ProcessTemplateId = processTemplateId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateProcessTemplateVersion(ctx, request.(CreateProcessTemplateVersionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateProcessTemplateVersion")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateProcessTemplateVersionResponseObject); ok {
+		if err := validResponse.VisitCreateProcessTemplateVersionResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

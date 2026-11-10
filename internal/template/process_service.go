@@ -48,7 +48,7 @@ func (s *ProcessService) ListProcessTemplates(ctx context.Context, actor access.
 	byTemplate := make(map[string][]ProcessVersionSummary)
 	for _, v := range versions {
 		byTemplate[v.TemplateID] = append(byTemplate[v.TemplateID],
-			ProcessVersionSummary{ID: v.ID, Version: int(v.Version), Status: v.Status})
+			ProcessVersionSummary{ID: v.ID, Version: int(v.Version), Status: v.Status, PublishedAt: utcTime(v.PublishedAt)})
 	}
 	list := make([]ProcessTemplate, 0, len(rows))
 	for _, r := range rows {
@@ -450,7 +450,7 @@ func getProcessTemplate(ctx context.Context, q *db.Queries, id string) (ProcessT
 	}
 	versions := make([]ProcessVersionSummary, 0, len(rows))
 	for _, v := range rows {
-		versions = append(versions, ProcessVersionSummary{ID: v.ID, Version: int(v.Version), Status: v.Status})
+		versions = append(versions, ProcessVersionSummary{ID: v.ID, Version: int(v.Version), Status: v.Status, PublishedAt: utcTime(v.PublishedAt)})
 	}
 	return ProcessTemplate{
 		ID: r.ID, Process: ProcessRef{ID: r.ProcessID, Name: r.ProcessName}, Versions: versions, CreatedAt: r.CreatedAt.UTC(),
@@ -506,7 +506,7 @@ func getProcessVersion(ctx context.Context, q *db.Queries, id string) (ProcessVe
 	}
 	return ProcessVersion{
 		ID: r.ID, TemplateID: r.TemplateID, Process: ProcessRef{ID: r.ProcessID, Name: r.ProcessName},
-		Version: int(r.Version), Status: r.Status, Subprocesses: subs, CreatedAt: r.CreatedAt.UTC(),
+		Version: int(r.Version), Status: r.Status, Subprocesses: subs, CreatedAt: r.CreatedAt.UTC(), PublishedAt: utcTime(r.PublishedAt),
 	}, nil
 }
 

@@ -341,7 +341,9 @@ kbd {
 }
 
 /* Status nomor dokumen (R-NUM-04), warna mengikuti artboard Design system. */
-.badge[data-status='reserved'] {
+/* Versi template (M3.4): draft seperti Reserved, terbit seperti Released. */
+.badge[data-status='reserved'],
+.badge[data-status='draft'] {
 	background: var(--info-weak);
 	color: var(--info);
 }
@@ -351,7 +353,8 @@ kbd {
 	color: var(--purple);
 }
 
-.badge[data-status='released'] {
+.badge[data-status='released'],
+.badge[data-status='published'] {
 	background: var(--success-weak);
 	color: var(--success);
 }

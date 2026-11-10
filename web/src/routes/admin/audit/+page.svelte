@@ -83,6 +83,9 @@
 {:else if entries.length === 0}
 	<p>{t('auditEmpty')}</p>
 {:else}
+	<!-- Tabel di dalam kartu: bila isinya lebih lebar dari layar, tabel bergulir
+	     di dalam kartunya dan halaman tidak bergeser ke samping (D-128). -->
+	<section>
 	<table>
 		<thead>
 			<tr>
@@ -114,6 +117,7 @@
 			{t('auditLoadMore')}
 		</button>
 	{/if}
+	</section>
 {/if}
 
 <style>

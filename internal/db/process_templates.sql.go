@@ -82,6 +82,59 @@ func (q *Queries) AddVersionVariant(ctx context.Context, arg AddVersionVariantPa
 	return err
 }
 
+const copyProcessVersionPoints = `-- name: CopyProcessVersionPoints :exec
+INSERT INTO process_template_points (version_id, subprocess_id, document_type_id, point_id, text, position, hidden)
+SELECT $1::uuid, s.subprocess_id, s.document_type_id, s.point_id, s.text, s.position, s.hidden
+FROM process_template_points s
+WHERE s.version_id = $2
+`
+
+type CopyProcessVersionPointsParams struct {
+	TargetID string
+	SourceID string
+}
+
+func (q *Queries) CopyProcessVersionPoints(ctx context.Context, arg CopyProcessVersionPointsParams) error {
+	_, err := q.db.Exec(ctx, copyProcessVersionPoints, arg.TargetID, arg.SourceID)
+	return err
+}
+
+const copyProcessVersionSubprocesses = `-- name: CopyProcessVersionSubprocesses :exec
+INSERT INTO process_template_subprocesses (version_id, process_id, subprocess_id, name, position, hidden)
+SELECT $1::uuid, s.process_id, s.subprocess_id, s.name, s.position, s.hidden
+FROM process_template_subprocesses s
+WHERE s.version_id = $2
+`
+
+type CopyProcessVersionSubprocessesParams struct {
+	TargetID string
+	SourceID string
+}
+
+// Tiga query Copy menyalin isi satu versi ke versi baru template yang sama.
+// ID sub-proses, poin, dan varian tetap (R-TPL-04).
+func (q *Queries) CopyProcessVersionSubprocesses(ctx context.Context, arg CopyProcessVersionSubprocessesParams) error {
+	_, err := q.db.Exec(ctx, copyProcessVersionSubprocesses, arg.TargetID, arg.SourceID)
+	return err
+}
+
+const copyProcessVersionVariants = `-- name: CopyProcessVersionVariants :exec
+INSERT INTO process_template_variants (version_id, point_id, origin_point_id, text, hidden)
+SELECT $1::uuid, s.point_id, s.origin_point_id, s.text, s.hidden
+FROM process_template_variants s
+WHERE s.version_id = $2
+`
+
+type CopyProcessVersionVariantsParams struct {
+	TargetID string
+	SourceID string
+}
+
+func (q *Queries) CopyProcessVersionVariants(ctx context.Context, arg CopyProcessVersionVariantsParams) error {
+	_, err := q.db.Exec(ctx, copyProcessVersionVariants, arg.TargetID, arg.SourceID)
+	return err
+}
+
 const createProcessTemplate = `-- name: CreateProcessTemplate :one
 INSERT INTO process_templates (process_id) VALUES ($1) RETURNING id
 `
@@ -183,7 +236,7 @@ func (q *Queries) GetProcessTemplate(ctx context.Context, id string) (GetProcess
 }
 
 const getProcessVersion = `-- name: GetProcessVersion :one
-SELECT v.id, v.template_id, v.process_id, n.name AS process_name, v.version, v.status, v.created_at
+SELECT v.id, v.template_id, v.process_id, n.name AS process_name, v.version, v.status, v.created_at, v.published_at
 FROM process_template_versions v
 JOIN process_names n ON n.process_id = v.process_id AND n.kind = 'display'
 WHERE v.id = $1
@@ -197,6 +250,7 @@ type GetProcessVersionRow struct {
 	Version     int32
 	Status      string
 	CreatedAt   time.Time
+	PublishedAt *time.Time
 }
 
 func (q *Queries) GetProcessVersion(ctx context.Context, id string) (GetProcessVersionRow, error) {
@@ -210,21 +264,23 @@ func (q *Queries) GetProcessVersion(ctx context.Context, id string) (GetProcessV
 		&i.Version,
 		&i.Status,
 		&i.CreatedAt,
+		&i.PublishedAt,
 	)
 	return i, err
 }
 
 const listAllProcessVersions = `-- name: ListAllProcessVersions :many
-SELECT id, template_id, version, status
+SELECT id, template_id, version, status, published_at
 FROM process_template_versions
 ORDER BY template_id, version
 `
 
 type ListAllProcessVersionsRow struct {
-	ID         string
-	TemplateID string
-	Version    int32
-	Status     string
+	ID          string
+	TemplateID  string
+	Version     int32
+	Status      string
+	PublishedAt *time.Time
 }
 
 // ListAllProcessVersions mengambil ringkasan versi semua template, untuk daftar.
@@ -242,6 +298,7 @@ func (q *Queries) ListAllProcessVersions(ctx context.Context) ([]ListAllProcessV
 			&i.TemplateID,
 			&i.Version,
 			&i.Status,
+			&i.PublishedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -297,17 +354,18 @@ func (q *Queries) ListProcessTemplates(ctx context.Context) ([]ListProcessTempla
 }
 
 const listProcessVersionsOfTemplate = `-- name: ListProcessVersionsOfTemplate :many
-SELECT id, template_id, version, status
+SELECT id, template_id, version, status, published_at
 FROM process_template_versions
 WHERE template_id = $1
 ORDER BY version
 `
 
 type ListProcessVersionsOfTemplateRow struct {
-	ID         string
-	TemplateID string
-	Version    int32
-	Status     string
+	ID          string
+	TemplateID  string
+	Version     int32
+	Status      string
+	PublishedAt *time.Time
 }
 
 func (q *Queries) ListProcessVersionsOfTemplate(ctx context.Context, templateID string) ([]ListProcessVersionsOfTemplateRow, error) {
@@ -324,6 +382,7 @@ func (q *Queries) ListProcessVersionsOfTemplate(ctx context.Context, templateID 
 			&i.TemplateID,
 			&i.Version,
 			&i.Status,
+			&i.PublishedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -523,6 +582,25 @@ SELECT id FROM process_template_versions WHERE id = $1 FOR NO KEY UPDATE
 func (q *Queries) LockProcessVersion(ctx context.Context, id string) error {
 	_, err := q.db.Exec(ctx, lockProcessVersion, id)
 	return err
+}
+
+const publishProcessVersion = `-- name: PublishProcessVersion :execrows
+
+
+UPDATE process_template_versions
+SET status = 'published', published_at = now()
+WHERE id = $1 AND status = 'draft'
+`
+
+// M3.4: versi terbit dan versi baru. Lihat migrasi 00016.
+// PublishProcessVersion menerbitkan versi draft. Hasil 0 baris berarti versi
+// itu tidak ada atau sudah terbit.
+func (q *Queries) PublishProcessVersion(ctx context.Context, id string) (int64, error) {
+	result, err := q.db.Exec(ctx, publishProcessVersion, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const setPointPosition = `-- name: SetPointPosition :exec

@@ -549,7 +549,7 @@ func getVersion(ctx context.Context, q *db.Queries, id string) (FormatVersion, e
 	v := FormatVersion{
 		ID: row.ID, TemplateID: row.TemplateID, Version: int(row.Version), Status: row.Status, RiskMethod: row.RiskMethod,
 		HighlightRPNAbove: deref(row.HighlightRpnAbove), HighlightSeverityAtLeast: deref(row.HighlightSeverityAtLeast),
-		Fields: []Field{}, Ratings: []Rating{}, Symbols: []Symbol{}, CreatedAt: row.CreatedAt.UTC(),
+		Fields: []Field{}, Ratings: []Rating{}, Symbols: []Symbol{}, CreatedAt: row.CreatedAt.UTC(), PublishedAt: utcTime(row.PublishedAt),
 	}
 	fields, err := q.ListVersionFields(ctx, id)
 	if err != nil {
@@ -596,7 +596,7 @@ func fromTemplate(r db.GetFormatTemplateRow, versions []VersionSummary) FormatTe
 }
 
 func summary(v db.FormatTemplateVersion) VersionSummary {
-	return VersionSummary{ID: v.ID, Version: int(v.Version), Status: v.Status, RiskMethod: v.RiskMethod}
+	return VersionSummary{ID: v.ID, Version: int(v.Version), Status: v.Status, RiskMethod: v.RiskMethod, PublishedAt: utcTime(v.PublishedAt)}
 }
 
 // optionJSON adalah bentuk pilihan di kolom options (jsonb).
@@ -726,6 +726,10 @@ func result(err error, doing string) error {
 		return taken("name", "This name is already used by another sub-process in this version.")
 	case db.IsUniqueViolation(err, "template_points_variant_scope_key"):
 		return taken("scope_target_id", "This point already has a variant for this scope.")
+	case db.IsUniqueViolation(err, "format_template_versions_draft_key"), db.IsUniqueViolation(err, "format_template_versions_version_key"),
+		db.IsUniqueViolation(err, "process_template_versions_draft_key"), db.IsUniqueViolation(err, "process_template_versions_version_key"):
+		// Dua permintaan versi baru bersamaan: yang kedua ditolak indeks unik (M3.4).
+		return statusConflict(draftExists)
 	case errors.As(err, &invalid), errors.As(err, &conflict), errors.Is(err, problem.ErrNotFound):
 		return err
 	}

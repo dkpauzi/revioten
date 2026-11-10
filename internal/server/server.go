@@ -126,6 +126,9 @@ type TemplateService interface {
 	SetRatingCriteria(ctx context.Context, actor access.Actor, versionID string, ratings []template.Rating) (template.FormatVersion, error)
 	SaveSymbols(ctx context.Context, actor access.Actor, versionID string, symbols []template.Symbol) (template.FormatVersion, error)
 	SetHighlights(ctx context.Context, actor access.Actor, versionID string, in template.HighlightSettings) (template.FormatVersion, error)
+	// Versi terbit dan versi baru (M3.4, R-TPL-05).
+	PublishFormatVersion(ctx context.Context, actor access.Actor, versionID string) (template.FormatVersion, error)
+	NewFormatVersion(ctx context.Context, actor access.Actor, templateID string) (template.FormatVersion, error)
 }
 
 // ProcessTemplateService adalah operasi process template yang dipakai API
@@ -142,6 +145,9 @@ type ProcessTemplateService interface {
 	AddVariant(ctx context.Context, actor access.Actor, versionID, pointID string, in template.NewVariant) (template.ProcessVersion, error)
 	UpdateVariant(ctx context.Context, actor access.Actor, versionID, variantID string, in template.VariantUpdate) (template.ProcessVersion, error)
 	ResolvePoints(ctx context.Context, actor access.Actor, versionID, modelID string) (template.Resolved, error)
+	// Versi terbit dan versi baru (M3.4, R-TPL-05).
+	PublishProcessVersion(ctx context.Context, actor access.Actor, versionID string) (template.ProcessVersion, error)
+	NewProcessVersion(ctx context.Context, actor access.Actor, templateID string) (template.ProcessVersion, error)
 }
 
 // SettingsService adalah operasi pengaturan sistem yang dipakai API (M1.8).

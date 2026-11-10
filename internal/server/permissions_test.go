@@ -231,7 +231,7 @@ func TestPermissionsPerOperation(t *testing.T) {
 		"processId": proc.ID, "documentTypeId": docTypes[0].ID, "cpTypeId": docTypes[2].ID, "documentNumberId": reg.Numbers[0].ID, "specialCodeId": specialCodes[0].ID,
 		"changeTypeId": changeTypes[0].ID, "changeSourceId": sources[0].ID, "fourMCategoryId": categories[0].ID,
 		"formatTemplateId": pfmeaFormat.ID, "formatVersionId": pfmeaVersion.ID, "formatFieldId": pfmeaVersion.Fields[0].ID,
-		"freeProcessId": reflow.ID, "processVersionId": iqcVersion.ID, "subprocessId": iqcVersion.Subprocesses[0].ID,
+		"freeProcessId": reflow.ID, "processVersionId": iqcVersion.ID, "processTemplateId": iqcVersion.TemplateID, "subprocessId": iqcVersion.Subprocesses[0].ID,
 		"pointId": iqcVersion.Subprocesses[0].Points[0].ID, "variantId": iqcVersion.Subprocesses[0].Points[0].Variants[0].ID,
 	}
 
@@ -283,6 +283,10 @@ func TestPermissionsPerOperation(t *testing.T) {
 		{http.MethodPost, "/api/v1/process-template-versions/{processVersionId}/points/{pointId}/variants", `{"scope_level":"model","scope_target_id":"{modelId}","text":"Check MSL label model"}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
 		{http.MethodPut, "/api/v1/process-template-versions/{processVersionId}/variants/{variantId}", `{"text":"Check MSL label customer"}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/process-template-versions/{processVersionId}/resolved?model_id={modelId}", "", http.StatusOK, http.StatusOK, http.StatusOK},
+		// Menerbitkan dan membuat versi baru lewat E-6 (M3.4). Di akhir kelompok
+		// ini, karena versi terbit menolak perubahan di baris-baris sebelumnya.
+		{http.MethodPost, "/api/v1/process-template-versions/{processVersionId}/publish", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		{http.MethodPost, "/api/v1/process-templates/{processTemplateId}/versions", "", http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
 		// Jenis dokumen dan perubahan diubah Admin (A-2, UC-05).
 		{http.MethodGet, "/api/v1/number-settings", "", http.StatusOK, http.StatusOK, http.StatusOK},
 		{http.MethodPut, "/api/v1/number-settings", `{"factory_code":"T"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
@@ -302,6 +306,9 @@ func TestPermissionsPerOperation(t *testing.T) {
 		{http.MethodPut, "/api/v1/format-template-versions/{formatVersionId}/fields/{formatFieldId}", `{"label":"Process or Line"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
 		{http.MethodPut, "/api/v1/format-template-versions/{formatVersionId}/rating-criteria", `{"items":[{"scale":"severity","value":1,"criteria":""}]}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
 		{http.MethodPut, "/api/v1/format-template-versions/{formatVersionId}/symbols", `{"items":[{"key":"critical_process","name":"Critical Process"},{"key":"revision","name":"Revision"},{"key":"important_character","name":"Important Character"},{"key":"regulation","name":"Regulation"}]}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		// Menerbitkan dan membuat versi baru lewat A-2 (M3.4), sesudah semua perubahan versi itu.
+		{http.MethodPost, "/api/v1/format-template-versions/{formatVersionId}/publish", "", http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodPost, "/api/v1/format-templates/{formatTemplateId}/versions", "", http.StatusForbidden, http.StatusForbidden, http.StatusCreated},
 		{http.MethodGet, "/api/v1/change-types", "", http.StatusOK, http.StatusOK, http.StatusOK},
 		{http.MethodPut, "/api/v1/change-types/{changeTypeId}", `{"name":"Content change"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
 		{http.MethodGet, "/api/v1/change-sources", "", http.StatusOK, http.StatusOK, http.StatusOK},

@@ -61,7 +61,12 @@ const actionKeys: Record<string, MessageKey> = {
 	'process_template.point_added': 'auditActionTemplatePointAdded',
 	'process_template.point_changed': 'auditActionTemplatePointChanged',
 	'process_template.variant_added': 'auditActionTemplateVariantAdded',
-	'process_template.variant_changed': 'auditActionTemplateVariantChanged'
+	'process_template.variant_changed': 'auditActionTemplateVariantChanged',
+	// Versi terbit dan versi baru (M3.4).
+	'format_template.version_published': 'auditActionFormatVersionPublished',
+	'format_template.version_created': 'auditActionFormatVersionCreated',
+	'process_template.version_published': 'auditActionProcessVersionPublished',
+	'process_template.version_created': 'auditActionProcessVersionCreated'
 };
 
 const detailKeys: Record<string, MessageKey> = {
@@ -103,7 +108,8 @@ const detailKeys: Record<string, MessageKey> = {
 	text: 'auditDetailText',
 	position: 'auditDetailOrder',
 	hidden: 'auditDetailHidden',
-	scope: 'auditDetailScope'
+	scope: 'auditDetailScope',
+	copied_from: 'auditDetailCopiedFrom'
 };
 
 const reasonKeys: Record<string, MessageKey> = {

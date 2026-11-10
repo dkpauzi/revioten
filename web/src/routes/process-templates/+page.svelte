@@ -7,17 +7,22 @@
 	//
 	// Sejak M3.3 (D-129) poin punya cakupan dan varian, dan bagian pratinjau
 	// menampilkan poin yang berlaku untuk satu model (R-TPL-03).
+	//
+	// Sejak M3.4 (R-TPL-05) versi berjalan dari draft ke terbit. Versi terbit
+	// hanya bisa dibaca; perubahan berikutnya masuk ke versi baru.
 	import { onMount } from 'svelte';
 	import {
 		addSubprocess,
 		addTemplatePoint,
 		createProcessTemplate,
+		createProcessTemplateVersion,
 		getProcessTemplateVersion,
 		listCustomers,
 		listDocumentTypes,
 		listModels,
 		listProcessTemplates,
 		listProcesses,
+		publishProcessTemplateVersion,
 		resolveProcessTemplatePoints,
 		type ApiFailure
 	} from '#lib/api/client.ts';
@@ -35,8 +40,10 @@
 	import PointTable from '#lib/processTemplates/PointTable.svelte';
 	import ScopePicker from '#lib/processTemplates/ScopePicker.svelte';
 	import SubprocessTable from '#lib/processTemplates/SubprocessTable.svelte';
-	import { pointTypes, pointsOf, scopeLevels, scopeText, templateOf, versionText, type ScopeLevel } from '#lib/processTemplates.ts';
+	import { pointTypes, pointsOf, scopeLevels, scopeText, templateOf, type ScopeLevel } from '#lib/processTemplates.ts';
 	import { can } from '#lib/session.svelte.ts';
+	import VersionBar from '#lib/templates/VersionBar.svelte';
+	import { isDraft, latestVersion } from '#lib/versions.ts';
 
 	// Data dari server. null berarti belum selesai dimuat.
 	let processes = $state<Process[] | null>(null);
@@ -53,6 +60,8 @@
 	let version = $state<ProcessTemplateVersion | null>(null);
 	let subprocessId = $state('');
 	let subprocess = $derived(version?.subprocesses.find((s) => s.id === subprocessId) ?? null);
+	// Isi hanya bisa diubah oleh pemegang E-6, dan hanya selama versinya draft (M3.4).
+	let editable = $derived(canEdit && isDraft(version));
 
 	let message = $state('');
 	let failure = $state('');
@@ -103,20 +112,68 @@
 		loadError = '';
 	}
 
-	// show memuat versi pertama template proses yang dipilih. Versi berikutnya datang di M3.4.
+	// show memuat versi terakhir template proses yang dipilih: draft yang
+	// sedang dikerjakan, atau versi terbit terbaru (M3.4).
 	async function show() {
 		version = null;
 		subprocessId = '';
 		reset();
-		if (template === null) {
-			return;
+		const latest = template === null ? null : latestVersion(template.versions);
+		if (latest !== null) {
+			await showVersion(latest.id);
 		}
-		const result = await getProcessTemplateVersion(template.versions[0].id);
+	}
+
+	// showVersion memuat satu versi, misalnya versi lama yang dipilih dari daftar.
+	async function showVersion(versionId: string) {
+		reset();
+		preview = null;
+		const result = await getProcessTemplateVersion(versionId);
 		if (!result.ok) {
 			failure = failureText(result.error);
 			return;
 		}
 		version = result.data;
+		if (!version.subprocesses.some((s) => s.id === subprocessId)) {
+			subprocessId = '';
+		}
+		if (previewModelId !== '') {
+			await showPreview();
+		}
+	}
+
+	// publish menerbitkan versi draft yang sedang dibuka (E-6). Daftar template
+	// dimuat ulang supaya status versinya ikut berubah.
+	async function publish() {
+		reset();
+		if (version === null) {
+			return;
+		}
+		const result = await publishProcessTemplateVersion(version.id);
+		if (!result.ok) {
+			showErrors(result.error);
+			return;
+		}
+		await load();
+		version = result.data;
+		message = t('versionPublished', { version: String(result.data.version) });
+	}
+
+	// newVersion membuat versi draft berikutnya, salinan versi terbit terakhir (E-6).
+	async function newVersion() {
+		reset();
+		if (template === null || version === null) {
+			return;
+		}
+		const from = latestVersion(template.versions)?.version ?? version.version;
+		const result = await createProcessTemplateVersion(template.id);
+		if (!result.ok) {
+			showErrors(result.error);
+			return;
+		}
+		await load();
+		version = result.data;
+		message = t('versionCreated', { version: String(result.data.version), from: String(from) });
 	}
 
 	function saved(v: ProcessTemplateVersion, text: string) {
@@ -264,14 +321,25 @@
 		</section>
 	{/if}
 
-	{#if selectedProcess && version}
+	{#if selectedProcess && template && version}
 		<section>
-			<p>{versionText(version)}</p>
+			<VersionBar
+				id="process-template"
+				versions={template.versions}
+				current={version}
+				{canEdit}
+				onselect={showVersion}
+				onpublish={publish}
+				onnew={newVersion}
+			/>
+			{#if fieldErrors.status}<p class="error" role="alert">{fieldErrors.status}</p>{/if}
+		</section>
+		<section>
 			<h2>{t('subprocessesTitle')}</h2>
 			<SubprocessTable
 				{version}
 				{types}
-				{canEdit}
+				canEdit={editable}
 				selectedId={subprocessId}
 				onselect={(id) => {
 					subprocessId = id;
@@ -279,7 +347,7 @@
 				}}
 				onsaved={saved}
 			/>
-			{#if canEdit}
+			{#if editable}
 				<h3>{t('subprocessAddTitle')}</h3>
 				<form class="row" onsubmit={addSub} novalidate>
 					<div class="field">
@@ -298,9 +366,9 @@
 				<p class="hint">{t('pointsIntro')}</p>
 				{#each types as d (d.id)}
 					<h3>{d.name}</h3>
-					<PointTable {version} points={pointsOf(subprocess, d.id)} {customers} {canEdit} onsaved={saved} />
+					<PointTable {version} points={pointsOf(subprocess, d.id)} {customers} canEdit={editable} onsaved={saved} />
 				{/each}
-				{#if canEdit}
+				{#if editable}
 					<h3>{t('pointAddTitle', { name: subprocess.name })}</h3>
 					<form class="row" onsubmit={addPoint} novalidate>
 						<div class="field">

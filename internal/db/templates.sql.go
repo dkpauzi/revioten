@@ -88,6 +88,59 @@ func (q *Queries) AddVersionField(ctx context.Context, arg AddVersionFieldParams
 	return err
 }
 
+const copyFormatRatingCriteria = `-- name: CopyFormatRatingCriteria :exec
+INSERT INTO format_rating_criteria (version_id, scale, value, criteria)
+SELECT $1::uuid, s.scale, s.value, s.criteria
+FROM format_rating_criteria s
+WHERE s.version_id = $2
+`
+
+type CopyFormatRatingCriteriaParams struct {
+	TargetID string
+	SourceID string
+}
+
+func (q *Queries) CopyFormatRatingCriteria(ctx context.Context, arg CopyFormatRatingCriteriaParams) error {
+	_, err := q.db.Exec(ctx, copyFormatRatingCriteria, arg.TargetID, arg.SourceID)
+	return err
+}
+
+const copyFormatSymbols = `-- name: CopyFormatSymbols :exec
+INSERT INTO format_symbols (version_id, key, name, position, automatic)
+SELECT $1::uuid, s.key, s.name, s.position, s.automatic
+FROM format_symbols s
+WHERE s.version_id = $2
+`
+
+type CopyFormatSymbolsParams struct {
+	TargetID string
+	SourceID string
+}
+
+func (q *Queries) CopyFormatSymbols(ctx context.Context, arg CopyFormatSymbolsParams) error {
+	_, err := q.db.Exec(ctx, copyFormatSymbols, arg.TargetID, arg.SourceID)
+	return err
+}
+
+const copyFormatVersionFields = `-- name: CopyFormatVersionFields :exec
+INSERT INTO format_version_fields (version_id, field_id, template_id, area, label, position, required, hidden, options)
+SELECT $1::uuid, s.field_id, s.template_id, s.area, s.label, s.position, s.required, s.hidden, s.options
+FROM format_version_fields s
+WHERE s.version_id = $2
+`
+
+type CopyFormatVersionFieldsParams struct {
+	TargetID string
+	SourceID string
+}
+
+// CopyFormatVersionFields menyalin field satu versi ke versi baru template
+// yang sama. ID field tetap, jadi data dokumen tetap terbaca (R-TPL-02).
+func (q *Queries) CopyFormatVersionFields(ctx context.Context, arg CopyFormatVersionFieldsParams) error {
+	_, err := q.db.Exec(ctx, copyFormatVersionFields, arg.TargetID, arg.SourceID)
+	return err
+}
+
 const createFormatField = `-- name: CreateFormatField :one
 INSERT INTO format_fields (template_id, area, kind, rating_scale, rating_set)
 VALUES ($1, $2, $3, $4, $5)
@@ -206,7 +259,7 @@ func (q *Queries) GetFormatTemplate(ctx context.Context, id string) (GetFormatTe
 }
 
 const getFormatVersion = `-- name: GetFormatVersion :one
-SELECT id, template_id, version, status, risk_method, highlight_rpn_above, highlight_severity_at_least, created_at
+SELECT id, template_id, version, status, risk_method, highlight_rpn_above, highlight_severity_at_least, created_at, published_at
 FROM format_template_versions
 WHERE id = $1
 `
@@ -223,6 +276,7 @@ func (q *Queries) GetFormatVersion(ctx context.Context, id string) (FormatTempla
 		&i.HighlightRpnAbove,
 		&i.HighlightSeverityAtLeast,
 		&i.CreatedAt,
+		&i.PublishedAt,
 	)
 	return i, err
 }
@@ -317,7 +371,7 @@ func (q *Queries) ListFormatTemplates(ctx context.Context) ([]ListFormatTemplate
 }
 
 const listFormatVersions = `-- name: ListFormatVersions :many
-SELECT id, template_id, version, status, risk_method, highlight_rpn_above, highlight_severity_at_least, created_at
+SELECT id, template_id, version, status, risk_method, highlight_rpn_above, highlight_severity_at_least, created_at, published_at
 FROM format_template_versions
 ORDER BY template_id, version
 `
@@ -341,6 +395,7 @@ func (q *Queries) ListFormatVersions(ctx context.Context) ([]FormatTemplateVersi
 			&i.HighlightRpnAbove,
 			&i.HighlightSeverityAtLeast,
 			&i.CreatedAt,
+			&i.PublishedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -443,7 +498,7 @@ func (q *Queries) ListVersionFields(ctx context.Context, versionID string) ([]Li
 }
 
 const listVersionsOfTemplate = `-- name: ListVersionsOfTemplate :many
-SELECT id, template_id, version, status, risk_method, highlight_rpn_above, highlight_severity_at_least, created_at
+SELECT id, template_id, version, status, risk_method, highlight_rpn_above, highlight_severity_at_least, created_at, published_at
 FROM format_template_versions
 WHERE template_id = $1
 ORDER BY version
@@ -467,6 +522,7 @@ func (q *Queries) ListVersionsOfTemplate(ctx context.Context, templateID string)
 			&i.HighlightRpnAbove,
 			&i.HighlightSeverityAtLeast,
 			&i.CreatedAt,
+			&i.PublishedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -498,6 +554,24 @@ SELECT id FROM format_template_versions WHERE id = $1 FOR NO KEY UPDATE
 func (q *Queries) LockFormatVersion(ctx context.Context, id string) error {
 	_, err := q.db.Exec(ctx, lockFormatVersion, id)
 	return err
+}
+
+const publishFormatVersion = `-- name: PublishFormatVersion :execrows
+
+UPDATE format_template_versions
+SET status = 'published', published_at = now()
+WHERE id = $1 AND status = 'draft'
+`
+
+// M3.4: versi terbit dan versi baru. Lihat migrasi 00016.
+// PublishFormatVersion menerbitkan versi draft. Hasil 0 baris berarti versi
+// itu tidak ada atau sudah terbit.
+func (q *Queries) PublishFormatVersion(ctx context.Context, id string) (int64, error) {
+	result, err := q.db.Exec(ctx, publishFormatVersion, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const renameFormatSymbol = `-- name: RenameFormatSymbol :exec

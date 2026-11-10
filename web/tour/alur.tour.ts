@@ -1,4 +1,4 @@
-// Tur otomatis alur web, dari database kosong sampai nomor dokumen.
+// Tur otomatis alur web, dari database kosong sampai nomor dokumen (M0 sampai M3.4).
 // Mengikuti docs/panduan/skenario-alur-web.md langkah demi langkah. Semua
 // dikerjakan lewat layar (klik dan ketik), tidak lewat API, supaya yang
 // terlihat sama dengan yang dikerjakan orang.
@@ -137,8 +137,10 @@ test('alur dari admin sampai nomor dokumen', async ({ page }) => {
 	await expect(page.getByText(en.processSaved.replace('{name}', 'Laser marking'))).toBeVisible();
 
 	await openFromMenu(page, en.navGroupTemplates, en.navProcessTemplates);
+	// Tunggu halamannya berganti dulu: halaman Processes juga punya label "Process name".
+	await expect(page.getByRole('heading', { name: en.processTemplateTitle, exact: true })).toBeVisible();
 	await say(page, 'Langkah 10', 'Process templates. Satu proses punya satu template; versi pertama berstatus Draft.');
-	await page.getByLabel(en.processTemplateChoose).selectOption({ label: 'Laser marking' });
+	await page.getByLabel(en.processTemplateChoose, { exact: true }).selectOption({ label: 'Laser marking' });
 	await page.getByRole('button', { name: en.processTemplateCreate }).click();
 	await page.getByLabel(en.subprocessName, { exact: true }).fill('Marking');
 	await page.getByRole('button', { name: en.subprocessAdd }).click();
@@ -171,14 +173,30 @@ test('alur dari admin sampai nomor dokumen', async ({ page }) => {
 	await expect(preview.getByRole('row', { name: /Laser type sesuai spesifikasi/ })).toBeVisible();
 	await say(page, 'Langkah 11', 'K-200 tidak punya varian, jadi memakai poin umum.');
 
+	// Terbitkan versi 1, lalu buat versi 2 (M3.4, R-TPL-05).
+	await page.getByLabel(en.versionChoose, { exact: true }).scrollIntoViewIfNeeded();
+	await say(page, 'Langkah 12', 'Template masih Draft. Sesudah diterbitkan, versi ini tidak bisa diubah lagi.');
+	page.once('dialog', (dialog) => dialog.accept());
+	await page.getByRole('button', { name: en.versionPublish.replace('{version}', '1') }).click();
+	await expect(page.getByRole('status')).toHaveText(en.versionPublished.replace('{version}', '1'));
+	await say(page, 'Langkah 12', 'Versi 1 terbit: tombol tambah dan ubah hilang, isinya hanya bisa dibaca.');
+	if (process.env.TOUR_SHOT) {
+		await page.screenshot({ path: process.env.TOUR_SHOT });
+	}
+	await page.getByRole('button', { name: en.versionNew }).click();
+	await expect(page.getByRole('status')).toHaveText(en.versionCreated.replace('{version}', '2').replace('{from}', '1'));
+	await say(page, 'Langkah 12', 'Perubahan berikutnya masuk ke versi 2 (draft), salinan versi 1 dengan ID poin yang sama.');
+
 	await openFromMenu(page, en.navGroupDocuments, en.navNumbers);
-	await say(page, 'Langkah 12', 'Documents > Numbers. Satu set: PFD, PFMEA, dan CP dengan nomor berjalan yang sama.');
+	await say(page, 'Langkah 13', 'Documents > Numbers. Satu set: PFD, PFMEA, dan CP dengan nomor berjalan yang sama.');
 	await page.getByLabel(en.numberCustomer, { exact: true }).first().selectOption({ label: 'LM · Contoh Customer LM' });
+	// Tunggu nomor berikutnya tampil dulu, supaya pilihan customer sudah terpakai.
+	await expect(page.getByText('SH-LM-001')).toBeVisible();
 	await page.getByRole('button', { name: en.numberRegister, exact: true }).click();
 	await expect(page.getByRole('status')).toContainText('SH-LM-001');
-	await say(page, 'Langkah 12', 'Tiga nomor terdaftar dengan status Reserved. Nomor tidak pernah dihapus atau dipakai ulang.');
+	await say(page, 'Langkah 13', 'Tiga nomor terdaftar dengan status Reserved. Nomor tidak pernah dihapus atau dipakai ulang.');
 
-	await say(page, 'Langkah 13', 'Dokumen kontrol membatalkan (Void) satu nomor. Alasannya wajib diisi.');
+	await say(page, 'Langkah 14', 'Dokumen kontrol membatalkan (Void) satu nomor. Alasannya wajib diisi.');
 	const numberRow = page.getByRole('row', { name: /^SH-LM-001 / });
 	await numberRow.getByRole('button', { name: en.numberVoid }).click();
 	await page.getByLabel(en.numberReason.replace('{number}', 'SH-LM-001')).fill('Contoh: salah pilih customer');
@@ -186,15 +204,15 @@ test('alur dari admin sampai nomor dokumen', async ({ page }) => {
 	await expect(
 		page.getByText(en.numberStatusChanged.replace('{number}', 'SH-LM-001').replace('{status}', en.numberStatusVoid))
 	).toBeVisible();
-	await say(page, 'Langkah 13', 'SH-LM-001 sekarang Void, tetapi tetap ada di register beserta alasannya.');
+	await say(page, 'Langkah 14', 'SH-LM-001 sekarang Void, tetapi tetap ada di register beserta alasannya.');
 
 	// ---------- Bagian C: admin memeriksa jejak ----------
 	await logOut(page);
-	await say(page, 'Langkah 14', 'Admin login lagi untuk memeriksa audit log.');
+	await say(page, 'Langkah 15', 'Admin login lagi untuk memeriksa audit log.');
 	await logInAs(page, admin.login, admin.password);
 	await expect(page.getByRole('button', { name: en.logout })).toBeVisible();
 	await openFromMenu(page, en.navGroupAdmin, en.navAuditLog);
-	await say(page, 'Langkah 14', 'Semua langkah tadi tercatat: siapa, kapan, dan apa. Catatan ini tidak bisa diubah.');
+	await say(page, 'Langkah 15', 'Semua langkah tadi tercatat: siapa, kapan, dan apa. Catatan ini tidak bisa diubah.');
 	await page.getByRole('button', { name: en.auditVerify }).click();
 	await expect(page.getByRole('status')).toContainText(en.auditChainValid.split('{entries}')[0]);
 	await say(page, 'Selesai', 'Rantai audit utuh. Langkah berikutnya (draft dokumen) dibangun di Tahap 4.');

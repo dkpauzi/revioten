@@ -3,14 +3,19 @@
 	// field header dan kolom ber-ID tetap, metode risiko, tabel skala, simbol,
 	// dan aturan sorot. Semua akun bisa melihat (L-2); mengubah hanya untuk
 	// pemegang A-2. Server tetap memeriksa setiap operasi.
+	//
+	// Sejak M3.4 (R-TPL-05) versi berjalan dari draft ke terbit. Versi terbit
+	// hanya bisa dibaca; perubahan berikutnya masuk ke versi baru.
 	import { onMount } from 'svelte';
 	import {
 		addFormatField,
 		createFormatTemplate,
+		createFormatVersion,
 		getFormatVersion,
 		listCustomers,
 		listDocumentTypes,
 		listFormatTemplates,
+		publishFormatVersion,
 		renameFormatTemplate,
 		saveFormatSymbols,
 		setFormatRatingCriteria,
@@ -42,6 +47,8 @@
 	} from '#lib/formats.ts';
 	import { t } from '#lib/i18n/index.ts';
 	import { can } from '#lib/session.svelte.ts';
+	import VersionBar from '#lib/templates/VersionBar.svelte';
+	import { isDraft, latestVersion } from '#lib/versions.ts';
 
 	const kinds: FormatField['kind'][] = ['text', 'date', 'select', 'symbol', 'rating', 'rpn', 'operation_number', 'process', 'process_flow'];
 	const scales = ['severity', 'occurrence', 'detection'] as const;
@@ -57,6 +64,9 @@
 	let selectedId = $state('');
 	let selected = $derived(templates?.find((ft) => ft.id === selectedId) ?? null);
 	let version = $state<FormatVersion | null>(null);
+	// Isi versi hanya bisa diubah oleh pemegang A-2, dan hanya selama versinya
+	// draft (M3.4). Nama template bukan bagian dari versi, jadi tetap memakai canEdit.
+	let editable = $derived(canEdit && isDraft(version));
 
 	let message = $state('');
 	let failure = $state('');
@@ -75,7 +85,7 @@
 		{ name: '', documentTypeId: '', methodology: '', customerId: '', riskMethod: '', copyFrom: '' }
 	);
 
-	// Versi yang bisa disalin: versi pertama setiap template dengan jenis dokumen yang dipilih.
+	// Versi yang bisa disalin: versi terakhir setiap template dengan jenis dokumen yang dipilih.
 	let copySources = $derived((templates ?? []).filter((ft) => ft.document_type.id === draft.documentTypeId));
 
 	async function load() {
@@ -103,21 +113,61 @@
 		loadError = '';
 	}
 
-	// show memuat versi pertama template yang dipilih. Versi berikutnya datang di M3.4.
+	// show memuat versi terakhir template yang dipilih: draft yang sedang
+	// dikerjakan, atau versi terbit terbaru (M3.4).
 	async function show() {
 		version = null;
 		message = '';
 		failure = '';
-		if (selected === null) {
+		const latest = selected === null ? null : latestVersion(selected.versions);
+		if (selected === null || latest === null) {
 			return;
 		}
-		const result = await getFormatVersion(selected.versions[0].id);
+		newName = selected.name;
+		await showVersion(latest.id);
+	}
+
+	// showVersion memuat satu versi, misalnya versi lama yang dipilih dari daftar.
+	async function showVersion(versionId: string) {
+		reset();
+		const result = await getFormatVersion(versionId);
 		if (!result.ok) {
 			failure = failureText(result.error);
 			return;
 		}
 		use(result.data);
-		newName = selected.name;
+	}
+
+	// publish menerbitkan versi draft yang sedang dibuka (A-2). Daftar template
+	// dimuat ulang supaya status versinya ikut berubah.
+	async function publish() {
+		reset();
+		if (version === null) {
+			return;
+		}
+		const result = await publishFormatVersion(version.id);
+		if (!result.ok) {
+			showErrors(result.error, 'formatTemplate');
+			return;
+		}
+		await load();
+		saved(result.data, t('versionPublished', { version: String(result.data.version) }));
+	}
+
+	// newVersion membuat versi draft berikutnya, salinan versi terbit terakhir (A-2).
+	async function newVersion() {
+		reset();
+		if (selected === null || version === null) {
+			return;
+		}
+		const from = latestVersion(selected.versions)?.version ?? version.version;
+		const result = await createFormatVersion(selected.id);
+		if (!result.ok) {
+			showErrors(result.error, 'formatTemplate');
+			return;
+		}
+		await load();
+		saved(result.data, t('versionCreated', { version: String(result.data.version), from: String(from) }));
 	}
 
 	// use memakai versi dari server dan mengisi ulang formulir yang bergantung padanya.
@@ -314,12 +364,16 @@
 				<dt>{t('formatRiskMethod')}</dt>
 				<dd>{riskText(version.risk_method)}</dd>
 			</dl>
-			<p>
-				{t('formatVersionLabel', {
-					version: String(version.version),
-					status: version.status === 'draft' ? t('formatStatusDraft') : t('formatStatusPublished')
-				})}
-			</p>
+			<VersionBar
+				id="format-template"
+				versions={selected.versions}
+				current={version}
+				{canEdit}
+				onselect={showVersion}
+				onpublish={publish}
+				onnew={newVersion}
+			/>
+			{#if fieldErrors.status}<p class="error" role="alert">{fieldErrors.status}</p>{/if}
 			{#if canEdit}
 				<form class="row" onsubmit={rename} novalidate>
 					<div class="field">
@@ -334,12 +388,12 @@
 
 		<section>
 			<h2>{t('formatHeaderFields')}</h2>
-			<FieldTable {version} area="header" {canEdit} onsaved={saved} />
+			<FieldTable {version} area="header" canEdit={editable} onsaved={saved} />
 			<h2>{t('formatColumns')}</h2>
-			<FieldTable {version} area="row" {canEdit} onsaved={saved} />
+			<FieldTable {version} area="row" canEdit={editable} onsaved={saved} />
 		</section>
 
-		{#if canEdit}
+		{#if editable}
 			<section>
 				<h2>{t('formatAddFieldTitle')}</h2>
 				<form class="row" onsubmit={addField} novalidate>
@@ -408,16 +462,16 @@
 					{#if version.risk_method === 'rpn'}
 						<div class="field">
 							<label for="highlight-rpn">{t('formatHighlightRpn')}</label>
-							<input id="highlight-rpn" type="number" min="0" max="999" bind:value={rpnAbove} disabled={!canEdit} />
+							<input id="highlight-rpn" type="number" min="0" max="999" bind:value={rpnAbove} disabled={!editable} />
 							{#if fieldErrors.highlight_rpn_above}<p class="error">{fieldErrors.highlight_rpn_above}</p>{/if}
 						</div>
 					{/if}
 					<div class="field">
 						<label for="highlight-severity">{t('formatHighlightSeverity')}</label>
-						<input id="highlight-severity" type="number" min="0" max="10" bind:value={severityAtLeast} disabled={!canEdit} />
+						<input id="highlight-severity" type="number" min="0" max="10" bind:value={severityAtLeast} disabled={!editable} />
 						{#if fieldErrors.highlight_severity_at_least}<p class="error">{fieldErrors.highlight_severity_at_least}</p>{/if}
 					</div>
-					{#if canEdit}<button type="submit">{t('formatHighlightsSave')}</button>{/if}
+					{#if editable}<button type="submit">{t('formatHighlightsSave')}</button>{/if}
 				</form>
 			</section>
 
@@ -445,7 +499,7 @@
 													bind:value={criteria[`${scale}-${r.value}`]}
 													maxlength="500"
 													size="30"
-													disabled={!canEdit}
+													disabled={!editable}
 												/>
 											</td>
 										</tr>
@@ -455,7 +509,7 @@
 						{/each}
 					</div>
 					{#if fieldErrors.ratings}<p class="error">{fieldErrors.ratings}</p>{/if}
-					{#if canEdit}<button type="submit">{t('formatRatingsSave')}</button>{/if}
+					{#if editable}<button type="submit">{t('formatRatingsSave')}</button>{/if}
 				</form>
 			</section>
 		{/if}
@@ -469,10 +523,10 @@
 			<form class="row" onsubmit={saveSymbols} novalidate>
 				<div class="field">
 					<label for="format-symbols">{t('formatSymbols')}</label>
-					<textarea id="format-symbols" bind:value={symbolsText} rows="5" disabled={!canEdit}></textarea>
+					<textarea id="format-symbols" bind:value={symbolsText} rows="5" disabled={!editable}></textarea>
 					{#if fieldErrors.symbols}<p class="error">{fieldErrors.symbols}</p>{/if}
 				</div>
-				{#if canEdit}<button type="submit">{t('formatSymbolsSave')}</button>{/if}
+				{#if editable}<button type="submit">{t('formatSymbolsSave')}</button>{/if}
 			</form>
 		</section>
 	{/if}
@@ -520,7 +574,7 @@
 					<select id="create-copy" bind:value={draft.copyFrom}>
 						<option value="">{t('formatCopyNone')}</option>
 						{#each copySources as ft (ft.id)}
-							<option value={ft.versions[0].id}>{templateLabel(ft)}</option>
+							<option value={latestVersion(ft.versions)?.id}>{templateLabel(ft)}</option>
 						{/each}
 					</select>
 					{#if fieldErrors.copy_from_version_id}<p class="error">{fieldErrors.copy_from_version_id}</p>{/if}

@@ -111,10 +111,11 @@ type FormatTemplate struct {
 
 // VersionSummary adalah ringkasan satu versi untuk daftar template.
 type VersionSummary struct {
-	ID         string
-	Version    int
-	Status     string
-	RiskMethod string
+	ID          string
+	Version     int
+	Status      string
+	RiskMethod  string
+	PublishedAt *time.Time // nil selama draft; selalu UTC (M3.4)
 }
 
 // FormatVersion adalah satu versi format template lengkap dengan isinya.
@@ -130,7 +131,8 @@ type FormatVersion struct {
 	Fields                   []Field  // header dulu, lalu kolom baris, menurut urutan
 	Ratings                  []Rating // severity, occurrence, lalu detection, nilai 1 sampai 10
 	Symbols                  []Symbol
-	CreatedAt                time.Time // selalu UTC
+	CreatedAt                time.Time  // selalu UTC
+	PublishedAt              *time.Time // nil selama draft; selalu UTC (M3.4)
 }
 
 // Field adalah satu field header atau kolom baris dalam satu versi.

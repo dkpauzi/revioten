@@ -936,6 +936,10 @@ export type FormatVersionSummary = {
     version: number;
     status: 'draft' | 'published';
     risk_method: 'rpn' | 'ap' | 'none';
+    /**
+     * When the version was published. Absent while it is a draft (M3.4).
+     */
+    published_at?: string;
 };
 
 export type NewFormatTemplate = {
@@ -978,6 +982,10 @@ export type FormatVersion = {
     ratings: Array<RatingCriterion>;
     symbols: Array<FormatSymbol>;
     created_at: string;
+    /**
+     * When the version was published. Absent while it is a draft (M3.4).
+     */
+    published_at?: string;
 };
 
 export type FormatField = {
@@ -1100,6 +1108,10 @@ export type ProcessVersionSummary = {
     id: string;
     version: number;
     status: 'draft' | 'published';
+    /**
+     * When the version was published. Absent while it is a draft (M3.4).
+     */
+    published_at?: string;
 };
 
 export type NewProcessTemplate = {
@@ -1117,6 +1129,10 @@ export type ProcessTemplateVersion = {
      */
     subprocesses: Array<Subprocess>;
     created_at: string;
+    /**
+     * When the version was published. Absent while it is a draft (M3.4).
+     */
+    published_at?: string;
 };
 
 export type Subprocess = {
@@ -1325,6 +1341,10 @@ export type FormatVersionWritable = {
     ratings: Array<RatingCriterion>;
     symbols: Array<FormatSymbolWritable>;
     created_at: string;
+    /**
+     * When the version was published. Absent while it is a draft (M3.4).
+     */
+    published_at?: string;
 };
 
 export type FormatSymbolListWritable = {
@@ -1394,6 +1414,8 @@ export type FormatTemplateId = string;
 export type FormatVersionId = string;
 
 export type FormatFieldId = string;
+
+export type ProcessTemplateId = string;
 
 export type ProcessVersionId = string;
 
@@ -3776,6 +3798,76 @@ export type RenameFormatTemplateResponses = {
 
 export type RenameFormatTemplateResponse = RenameFormatTemplateResponses[keyof RenameFormatTemplateResponses];
 
+export type CreateFormatVersionData = {
+    body?: never;
+    path: {
+        formatTemplateId: string;
+    };
+    query?: never;
+    url: '/api/v1/format-templates/{formatTemplateId}/versions';
+};
+
+export type CreateFormatVersionErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type CreateFormatVersionError = CreateFormatVersionErrors[keyof CreateFormatVersionErrors];
+
+export type CreateFormatVersionResponses = {
+    /**
+     * The new draft version.
+     */
+    201: FormatVersion;
+};
+
+export type CreateFormatVersionResponse = CreateFormatVersionResponses[keyof CreateFormatVersionResponses];
+
+export type PublishFormatVersionData = {
+    body?: never;
+    path: {
+        formatVersionId: string;
+    };
+    query?: never;
+    url: '/api/v1/format-template-versions/{formatVersionId}/publish';
+};
+
+export type PublishFormatVersionErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type PublishFormatVersionError = PublishFormatVersionErrors[keyof PublishFormatVersionErrors];
+
+export type PublishFormatVersionResponses = {
+    /**
+     * The published version.
+     */
+    200: FormatVersion;
+};
+
+export type PublishFormatVersionResponse = PublishFormatVersionResponses[keyof PublishFormatVersionResponses];
+
 export type GetFormatVersionData = {
     body?: never;
     path: {
@@ -4052,6 +4144,76 @@ export type CreateProcessTemplateResponses = {
 };
 
 export type CreateProcessTemplateResponse = CreateProcessTemplateResponses[keyof CreateProcessTemplateResponses];
+
+export type CreateProcessTemplateVersionData = {
+    body?: never;
+    path: {
+        processTemplateId: string;
+    };
+    query?: never;
+    url: '/api/v1/process-templates/{processTemplateId}/versions';
+};
+
+export type CreateProcessTemplateVersionErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type CreateProcessTemplateVersionError = CreateProcessTemplateVersionErrors[keyof CreateProcessTemplateVersionErrors];
+
+export type CreateProcessTemplateVersionResponses = {
+    /**
+     * The new draft version.
+     */
+    201: ProcessTemplateVersion;
+};
+
+export type CreateProcessTemplateVersionResponse = CreateProcessTemplateVersionResponses[keyof CreateProcessTemplateVersionResponses];
+
+export type PublishProcessTemplateVersionData = {
+    body?: never;
+    path: {
+        processVersionId: string;
+    };
+    query?: never;
+    url: '/api/v1/process-template-versions/{processVersionId}/publish';
+};
+
+export type PublishProcessTemplateVersionErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type PublishProcessTemplateVersionError = PublishProcessTemplateVersionErrors[keyof PublishProcessTemplateVersionErrors];
+
+export type PublishProcessTemplateVersionResponses = {
+    /**
+     * The published version.
+     */
+    200: ProcessTemplateVersion;
+};
+
+export type PublishProcessTemplateVersionResponse = PublishProcessTemplateVersionResponses[keyof PublishProcessTemplateVersionResponses];
 
 export type GetProcessTemplateVersionData = {
     body?: never;

@@ -56,6 +56,24 @@ func (a *apiServer) GetFormatVersion(ctx context.Context, req GetFormatVersionRe
 	return GetFormatVersion200JSONResponse(toAPIFormatVersion(v)), nil
 }
 
+// PublishFormatVersion menjawab POST /api/v1/format-template-versions/{formatVersionId}/publish (M3.4).
+func (a *apiServer) PublishFormatVersion(ctx context.Context, req PublishFormatVersionRequestObject) (PublishFormatVersionResponseObject, error) {
+	v, err := a.templates.PublishFormatVersion(ctx, actorFrom(ctx), req.FormatVersionId)
+	if err != nil {
+		return nil, err
+	}
+	return PublishFormatVersion200JSONResponse(toAPIFormatVersion(v)), nil
+}
+
+// CreateFormatVersion menjawab POST /api/v1/format-templates/{formatTemplateId}/versions (M3.4).
+func (a *apiServer) CreateFormatVersion(ctx context.Context, req CreateFormatVersionRequestObject) (CreateFormatVersionResponseObject, error) {
+	v, err := a.templates.NewFormatVersion(ctx, actorFrom(ctx), req.FormatTemplateId)
+	if err != nil {
+		return nil, err
+	}
+	return CreateFormatVersion201JSONResponse(toAPIFormatVersion(v)), nil
+}
+
 // UpdateFormatHighlights menjawab PUT /api/v1/format-template-versions/{formatVersionId}.
 // Aturan yang tidak dikirim tetap (D-111).
 func (a *apiServer) UpdateFormatHighlights(ctx context.Context, req UpdateFormatHighlightsRequestObject) (UpdateFormatHighlightsResponseObject, error) {
@@ -144,7 +162,7 @@ func toAPIFormatTemplate(t template.FormatTemplate) FormatTemplate {
 	}
 	for _, v := range t.Versions {
 		out.Versions = append(out.Versions, FormatVersionSummary{
-			Id: v.ID, Version: v.Version, Status: FormatVersionSummaryStatus(v.Status), RiskMethod: FormatVersionSummaryRiskMethod(v.RiskMethod),
+			Id: v.ID, Version: v.Version, Status: FormatVersionSummaryStatus(v.Status), RiskMethod: FormatVersionSummaryRiskMethod(v.RiskMethod), PublishedAt: v.PublishedAt,
 		})
 	}
 	return out
@@ -156,7 +174,7 @@ func toAPIFormatVersion(v template.FormatVersion) FormatVersion {
 	out := FormatVersion{
 		Id: v.ID, TemplateId: v.TemplateID, Version: v.Version, Status: FormatVersionStatus(v.Status),
 		RiskMethod: FormatVersionRiskMethod(v.RiskMethod), HighlightRpnAbove: v.HighlightRPNAbove,
-		HighlightSeverityAtLeast: v.HighlightSeverityAtLeast, CreatedAt: v.CreatedAt,
+		HighlightSeverityAtLeast: v.HighlightSeverityAtLeast, CreatedAt: v.CreatedAt, PublishedAt: v.PublishedAt,
 		Fields:  make([]FormatField, 0, len(v.Fields)),
 		Ratings: make([]RatingCriterion, 0, len(v.Ratings)),
 		Symbols: make([]FormatSymbol, 0, len(v.Symbols)),
