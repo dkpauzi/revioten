@@ -41,7 +41,7 @@ func TestFormatTemplateEndpoints(t *testing.T) {
 	rec = srv.do(http.MethodGet, "/api/v1/format-template-versions/v-1", "")
 	want = `{"created_at":"2026-10-31T08:00:00Z","fields":[{"hidden":false,"id":"f-1","kind":"select","label":"Flow Symbol",` +
 		`"options":[{"key":"process","label":"Process"}],"position":1,"required":false,"area":"row"}],` +
-		`"highlight_rpn_above":0,"highlight_severity_at_least":0,"id":"v-1","ratings":[],"risk_method":"none","status":"draft",` +
+		`"ap_rules":[],"highlight_rpn_above":0,"highlight_severity_at_least":0,"id":"v-1","ratings":[],"risk_method":"none","status":"draft",` +
 		`"symbols":[{"automatic":true,"key":"revision","name":"Revision"},{"automatic":false,"key":"regulation","name":"Regulation"}],` +
 		`"template_id":"ft-1","version":1}` + "\n"
 	if rec.Code != http.StatusOK || fake.got != (called{method: "GetFormatVersion", id: "v-1"}) {
@@ -96,6 +96,19 @@ func TestFormatTemplateEndpoints(t *testing.T) {
 		`{"items":[{"key":"revision","name":"Revision Mark"},{"name":"Safety","automatic":true}]}`)
 	if rec.Code != http.StatusOK || !slices.Equal(fake.gotSymbols, []template.Symbol{{Key: "revision", Name: "Revision Mark"}, {Name: "Safety"}}) {
 		t.Errorf("simbol: status %d, %+v", rec.Code, fake.gotSymbols)
+	}
+
+	// Tabel AP dan hitungannya (form set langkah A, D-134).
+	rec = srv.do(http.MethodPut, "/api/v1/format-template-versions/v-1/ap-rules",
+		`{"items":[{"s_min":1,"s_max":10,"o_min":1,"o_max":10,"d_min":1,"d_max":10,"priority":"L"}]}`)
+	wantRules := []template.APRule{{SMin: 1, SMax: 10, OMin: 1, OMax: 10, DMin: 1, DMax: 10, Priority: "L"}}
+	if rec.Code != http.StatusOK || fake.got != (called{method: "SetAPRules", id: "v-1"}) || !slices.Equal(fake.gotAPRules, wantRules) {
+		t.Errorf("tabel AP: status %d, %+v", rec.Code, fake.gotAPRules)
+	}
+	rec = srv.do(http.MethodGet, "/api/v1/format-template-versions/v-1/action-priority?severity=8&occurrence=6&detection=4", "")
+	if rec.Code != http.StatusOK || fake.got != (called{method: "ActionPriorityOf", id: "v-1", input: [3]int{8, 6, 4}}) ||
+		!sameJSON(t, rec.Body.String(), `{"priority":"H"}`) {
+		t.Errorf("hitung AP: status %d, %+v, %s", rec.Code, fake.got, rec.Body.String())
 	}
 
 	// Menerbitkan dan membuat versi baru (M3.4).

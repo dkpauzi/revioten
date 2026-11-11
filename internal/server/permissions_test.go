@@ -306,6 +306,9 @@ func TestPermissionsPerOperation(t *testing.T) {
 		{http.MethodPut, "/api/v1/format-template-versions/{formatVersionId}/fields/{formatFieldId}", `{"label":"Process or Line"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
 		{http.MethodPut, "/api/v1/format-template-versions/{formatVersionId}/rating-criteria", `{"items":[{"scale":"severity","value":1,"criteria":""}]}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
 		{http.MethodPut, "/api/v1/format-template-versions/{formatVersionId}/symbols", `{"items":[{"key":"critical_process","name":"Critical Process"},{"key":"revision","name":"Revision"},{"key":"important_character","name":"Important Character"},{"key":"regulation","name":"Regulation"}]}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		// Tabel AP: versi PFMEA di sini memakai RPN, jadi admin mendapat 422; hitungan AP boleh semua akun tetapi ditolak 422 dengan alasan yang sama.
+		{http.MethodPut, "/api/v1/format-template-versions/{formatVersionId}/ap-rules", `{"items":[{"s_min":1,"s_max":10,"o_min":1,"o_max":10,"d_min":1,"d_max":10,"priority":"L"}]}`, http.StatusForbidden, http.StatusForbidden, http.StatusUnprocessableEntity},
+		{http.MethodGet, "/api/v1/format-template-versions/{formatVersionId}/action-priority?severity=8&occurrence=6&detection=4", "", http.StatusUnprocessableEntity, http.StatusUnprocessableEntity, http.StatusUnprocessableEntity},
 		// Menerbitkan dan membuat versi baru lewat A-2 (M3.4), sesudah semua perubahan versi itu.
 		{http.MethodPost, "/api/v1/format-template-versions/{formatVersionId}/publish", "", http.StatusForbidden, http.StatusForbidden, http.StatusOK},
 		{http.MethodPost, "/api/v1/format-templates/{formatTemplateId}/versions", "", http.StatusForbidden, http.StatusForbidden, http.StatusCreated},

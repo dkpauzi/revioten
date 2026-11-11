@@ -194,8 +194,8 @@ func (q *Queries) CreateFormatTemplate(ctx context.Context, arg CreateFormatTemp
 }
 
 const createFormatVersion = `-- name: CreateFormatVersion :one
-INSERT INTO format_template_versions (template_id, version, risk_method, highlight_rpn_above, highlight_severity_at_least)
-VALUES ($1, $2, $3, $4, $5)
+INSERT INTO format_template_versions (template_id, version, risk_method, highlight_rpn_above, highlight_severity_at_least, ap_rules)
+VALUES ($1, $2, $3, $4, $5, $6)
 RETURNING id
 `
 
@@ -205,6 +205,7 @@ type CreateFormatVersionParams struct {
 	RiskMethod               string
 	HighlightRpnAbove        *int16
 	HighlightSeverityAtLeast *int16
+	ApRules                  []byte
 }
 
 func (q *Queries) CreateFormatVersion(ctx context.Context, arg CreateFormatVersionParams) (string, error) {
@@ -214,6 +215,7 @@ func (q *Queries) CreateFormatVersion(ctx context.Context, arg CreateFormatVersi
 		arg.RiskMethod,
 		arg.HighlightRpnAbove,
 		arg.HighlightSeverityAtLeast,
+		arg.ApRules,
 	)
 	var id string
 	err := row.Scan(&id)
@@ -259,7 +261,7 @@ func (q *Queries) GetFormatTemplate(ctx context.Context, id string) (GetFormatTe
 }
 
 const getFormatVersion = `-- name: GetFormatVersion :one
-SELECT id, template_id, version, status, risk_method, highlight_rpn_above, highlight_severity_at_least, created_at, published_at
+SELECT id, template_id, version, status, risk_method, highlight_rpn_above, highlight_severity_at_least, created_at, published_at, ap_rules
 FROM format_template_versions
 WHERE id = $1
 `
@@ -277,6 +279,7 @@ func (q *Queries) GetFormatVersion(ctx context.Context, id string) (FormatTempla
 		&i.HighlightSeverityAtLeast,
 		&i.CreatedAt,
 		&i.PublishedAt,
+		&i.ApRules,
 	)
 	return i, err
 }
@@ -371,7 +374,7 @@ func (q *Queries) ListFormatTemplates(ctx context.Context) ([]ListFormatTemplate
 }
 
 const listFormatVersions = `-- name: ListFormatVersions :many
-SELECT id, template_id, version, status, risk_method, highlight_rpn_above, highlight_severity_at_least, created_at, published_at
+SELECT id, template_id, version, status, risk_method, highlight_rpn_above, highlight_severity_at_least, created_at, published_at, ap_rules
 FROM format_template_versions
 ORDER BY template_id, version
 `
@@ -396,6 +399,7 @@ func (q *Queries) ListFormatVersions(ctx context.Context) ([]FormatTemplateVersi
 			&i.HighlightSeverityAtLeast,
 			&i.CreatedAt,
 			&i.PublishedAt,
+			&i.ApRules,
 		); err != nil {
 			return nil, err
 		}
@@ -498,7 +502,7 @@ func (q *Queries) ListVersionFields(ctx context.Context, versionID string) ([]Li
 }
 
 const listVersionsOfTemplate = `-- name: ListVersionsOfTemplate :many
-SELECT id, template_id, version, status, risk_method, highlight_rpn_above, highlight_severity_at_least, created_at, published_at
+SELECT id, template_id, version, status, risk_method, highlight_rpn_above, highlight_severity_at_least, created_at, published_at, ap_rules
 FROM format_template_versions
 WHERE template_id = $1
 ORDER BY version
@@ -523,6 +527,7 @@ func (q *Queries) ListVersionsOfTemplate(ctx context.Context, templateID string)
 			&i.HighlightSeverityAtLeast,
 			&i.CreatedAt,
 			&i.PublishedAt,
+			&i.ApRules,
 		); err != nil {
 			return nil, err
 		}
@@ -615,6 +620,21 @@ type SetFieldPositionParams struct {
 
 func (q *Queries) SetFieldPosition(ctx context.Context, arg SetFieldPositionParams) error {
 	_, err := q.db.Exec(ctx, setFieldPosition, arg.VersionID, arg.FieldID, arg.Position)
+	return err
+}
+
+const setFormatAPRules = `-- name: SetFormatAPRules :exec
+UPDATE format_template_versions SET ap_rules = $2 WHERE id = $1
+`
+
+type SetFormatAPRulesParams struct {
+	ID      string
+	ApRules []byte
+}
+
+// SetFormatAPRules mengganti tabel AP satu versi (langkah A form set, D-134).
+func (q *Queries) SetFormatAPRules(ctx context.Context, arg SetFormatAPRulesParams) error {
+	_, err := q.db.Exec(ctx, setFormatAPRules, arg.ID, arg.ApRules)
 	return err
 }
 

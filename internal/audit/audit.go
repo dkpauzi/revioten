@@ -87,6 +87,8 @@ const (
 	// M3.4: versi terbit dan versi baru (R-TPL-05).
 	ActionFormatVersionPublished = "format_template.version_published"
 	ActionFormatVersionCreated   = "format_template.version_created"
+	// Tabel AP (form set langkah A, D-134).
+	ActionFormatAPRulesChanged = "format_template.ap_rules_changed"
 	// Process template (M3.2). Sasarannya selalu template; versinya ada di rincian.
 	ActionProcessTemplateCreated = "process_template.created"
 	ActionSubprocessAdded        = "process_template.subprocess_added"

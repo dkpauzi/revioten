@@ -369,6 +369,17 @@ type fakeTemplates struct {
 	gotNew     template.NewField
 	gotRatings []template.Rating
 	gotSymbols []template.Symbol
+	gotAPRules []template.APRule
+}
+
+func (f *fakeTemplates) SetAPRules(_ context.Context, _ access.Actor, versionID string, rules []template.APRule) (template.FormatVersion, error) {
+	f.got, f.gotAPRules = called{method: "SetAPRules", id: versionID}, rules
+	return f.version, f.err
+}
+
+func (f *fakeTemplates) ActionPriorityOf(_ context.Context, _ access.Actor, versionID string, s, o, d int) (string, error) {
+	f.got = called{method: "ActionPriorityOf", id: versionID, input: [3]int{s, o, d}}
+	return "H", f.err
 }
 
 func (f *fakeTemplates) PublishFormatVersion(_ context.Context, _ access.Actor, versionID string) (template.FormatVersion, error) {

@@ -33,6 +33,7 @@
 		NewFormatTemplate
 	} from '#lib/api/gen/index.ts';
 	import { failureText, problemText, type ProblemScope } from '#lib/errors.ts';
+	import ApTable from '#lib/formats/ApTable.svelte';
 	import FieldTable from '#lib/formats/FieldTable.svelte';
 	import {
 		automaticSymbolNames,
@@ -511,6 +512,15 @@
 					{#if fieldErrors.ratings}<p class="error">{fieldErrors.ratings}</p>{/if}
 					{#if editable}<button type="submit">{t('formatRatingsSave')}</button>{/if}
 				</form>
+			</section>
+		{/if}
+
+		{#if version.risk_method === 'ap'}
+			<!-- Tabel Action Priority (form set langkah A, D-134). -->
+			<section>
+				<h2>{t('apTableTitle')}</h2>
+				<p class="hint">{t('apTableIntro')}</p>
+				<ApTable rules={version.ap_rules} />
 			</section>
 		{/if}
 

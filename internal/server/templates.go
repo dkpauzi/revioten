@@ -56,6 +56,31 @@ func (a *apiServer) GetFormatVersion(ctx context.Context, req GetFormatVersionRe
 	return GetFormatVersion200JSONResponse(toAPIFormatVersion(v)), nil
 }
 
+// SetFormatApRules menjawab PUT /api/v1/format-template-versions/{formatVersionId}/ap-rules (D-134).
+func (a *apiServer) SetFormatApRules(ctx context.Context, req SetFormatApRulesRequestObject) (SetFormatApRulesResponseObject, error) {
+	rules := make([]template.APRule, 0, len(req.Body.Items))
+	for _, r := range req.Body.Items {
+		rules = append(rules, template.APRule{
+			SMin: r.SMin, SMax: r.SMax, OMin: r.OMin, OMax: r.OMax, DMin: r.DMin, DMax: r.DMax, Priority: string(r.Priority),
+		})
+	}
+	v, err := a.templates.SetAPRules(ctx, actorFrom(ctx), req.FormatVersionId, rules)
+	if err != nil {
+		return nil, err
+	}
+	return SetFormatApRules200JSONResponse(toAPIFormatVersion(v)), nil
+}
+
+// GetActionPriority menjawab GET /api/v1/format-template-versions/{formatVersionId}/action-priority (D-134).
+func (a *apiServer) GetActionPriority(ctx context.Context, req GetActionPriorityRequestObject) (GetActionPriorityResponseObject, error) {
+	p := req.Params
+	priority, err := a.templates.ActionPriorityOf(ctx, actorFrom(ctx), req.FormatVersionId, p.Severity, p.Occurrence, p.Detection)
+	if err != nil {
+		return nil, err
+	}
+	return GetActionPriority200JSONResponse{Priority: ActionPriorityResultPriority(priority)}, nil
+}
+
 // PublishFormatVersion menjawab POST /api/v1/format-template-versions/{formatVersionId}/publish (M3.4).
 func (a *apiServer) PublishFormatVersion(ctx context.Context, req PublishFormatVersionRequestObject) (PublishFormatVersionResponseObject, error) {
 	v, err := a.templates.PublishFormatVersion(ctx, actorFrom(ctx), req.FormatVersionId)
@@ -178,6 +203,12 @@ func toAPIFormatVersion(v template.FormatVersion) FormatVersion {
 		Fields:  make([]FormatField, 0, len(v.Fields)),
 		Ratings: make([]RatingCriterion, 0, len(v.Ratings)),
 		Symbols: make([]FormatSymbol, 0, len(v.Symbols)),
+		ApRules: make([]ApRule, 0, len(v.APRules)),
+	}
+	for _, r := range v.APRules {
+		out.ApRules = append(out.ApRules, ApRule{
+			SMin: r.SMin, SMax: r.SMax, OMin: r.OMin, OMax: r.OMax, DMin: r.DMin, DMax: r.DMax, Priority: ApRulePriority(r.Priority),
+		})
 	}
 	for _, f := range v.Fields {
 		field := FormatField{

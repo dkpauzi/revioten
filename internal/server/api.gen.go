@@ -53,6 +53,48 @@ func (e AccountInfoKind) Valid() bool {
 	}
 }
 
+// Defines values for ActionPriorityResultPriority.
+const (
+	ActionPriorityResultPriorityH ActionPriorityResultPriority = "H"
+	ActionPriorityResultPriorityL ActionPriorityResultPriority = "L"
+	ActionPriorityResultPriorityM ActionPriorityResultPriority = "M"
+)
+
+// Valid indicates whether the value is a known member of the ActionPriorityResultPriority enum.
+func (e ActionPriorityResultPriority) Valid() bool {
+	switch e {
+	case ActionPriorityResultPriorityH:
+		return true
+	case ActionPriorityResultPriorityL:
+		return true
+	case ActionPriorityResultPriorityM:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ApRulePriority.
+const (
+	ApRulePriorityH ApRulePriority = "H"
+	ApRulePriorityL ApRulePriority = "L"
+	ApRulePriorityM ApRulePriority = "M"
+)
+
+// Valid indicates whether the value is a known member of the ApRulePriority enum.
+func (e ApRulePriority) Valid() bool {
+	switch e {
+	case ApRulePriorityH:
+		return true
+	case ApRulePriorityL:
+		return true
+	case ApRulePriorityM:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AuditActorType.
 const (
 	AuditActorTypeAnonymous AuditActorType = "anonymous"
@@ -1075,6 +1117,33 @@ type AccountList struct {
 	Items []AccountInfo `json:"items"`
 }
 
+// ActionPriorityResult defines model for ActionPriorityResult.
+type ActionPriorityResult struct {
+	Priority ActionPriorityResultPriority `json:"priority"`
+}
+
+// ActionPriorityResultPriority defines model for ActionPriorityResult.Priority.
+type ActionPriorityResultPriority string
+
+// ApRule One Action Priority for a box of severity, occurrence, and detection ranges; both ends included.
+type ApRule struct {
+	DMax     int            `json:"d_max"`
+	DMin     int            `json:"d_min"`
+	OMax     int            `json:"o_max"`
+	OMin     int            `json:"o_min"`
+	Priority ApRulePriority `json:"priority"`
+	SMax     int            `json:"s_max"`
+	SMin     int            `json:"s_min"`
+}
+
+// ApRulePriority defines model for ApRule.Priority.
+type ApRulePriority string
+
+// ApRuleList defines model for ApRuleList.
+type ApRuleList struct {
+	Items []ApRule `json:"items"`
+}
+
 // ApprovalRoute An ordered list of signature slots (R-APR-08). One Prepared slot, one Checked slot, then one or more Approved slots (D-45, D-48, D-49).
 type ApprovalRoute struct {
 	CreatedAt time.Time   `json:"created_at"`
@@ -1530,6 +1599,8 @@ type FormatTemplateRename struct {
 
 // FormatVersion defines model for FormatVersion.
 type FormatVersion struct {
+	// ApRules The Action Priority table. Empty unless the risk method is AP (D-134).
+	ApRules   []ApRule  `json:"ap_rules"`
 	CreatedAt time.Time `json:"created_at"`
 
 	// Fields Header fields first, then columns, each by position.
@@ -2573,6 +2644,13 @@ type RegisterDocumentNumberSetParams struct {
 	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
 }
 
+// GetActionPriorityParams defines parameters for GetActionPriority.
+type GetActionPriorityParams struct {
+	Severity   int `form:"severity" json:"severity"`
+	Occurrence int `form:"occurrence" json:"occurrence"`
+	Detection  int `form:"detection" json:"detection"`
+}
+
 // ListModelGroupsParams defines parameters for ListModelGroups.
 type ListModelGroupsParams struct {
 	// CustomerId The customer whose master data is listed.
@@ -2658,6 +2736,9 @@ type UpdateDocumentTypeJSONRequestBody = DocumentTypeInput
 
 // UpdateFormatHighlightsJSONRequestBody defines body for UpdateFormatHighlights for application/json ContentType.
 type UpdateFormatHighlightsJSONRequestBody = FormatHighlights
+
+// SetFormatApRulesJSONRequestBody defines body for SetFormatApRules for application/json ContentType.
+type SetFormatApRulesJSONRequestBody = ApRuleList
 
 // AddFormatFieldJSONRequestBody defines body for AddFormatField for application/json ContentType.
 type AddFormatFieldJSONRequestBody = NewFormatField
@@ -2859,6 +2940,12 @@ type ServerInterface interface {
 	// UpdateFormatHighlights Change the highlight rule of a draft version, for example RPN above 100 or severity 8 (A-2, R-TPL-11)
 	// (PUT /api/v1/format-template-versions/{formatVersionId})
 	UpdateFormatHighlights(w http.ResponseWriter, r *http.Request, formatVersionId FormatVersionId)
+	// GetActionPriority The Action Priority of one severity, occurrence, and detection, from the AP table of the version (L-2, D-134)
+	// (GET /api/v1/format-template-versions/{formatVersionId}/action-priority)
+	GetActionPriority(w http.ResponseWriter, r *http.Request, formatVersionId FormatVersionId, params GetActionPriorityParams)
+	// SetFormatApRules Replace the Action Priority table of a draft version (A-2, D-134)
+	// (PUT /api/v1/format-template-versions/{formatVersionId}/ap-rules)
+	SetFormatApRules(w http.ResponseWriter, r *http.Request, formatVersionId FormatVersionId)
 	// AddFormatField Add a header field or a column at the end of its area in a draft version (A-2, R-TPL-02)
 	// (POST /api/v1/format-template-versions/{formatVersionId}/fields)
 	AddFormatField(w http.ResponseWriter, r *http.Request, formatVersionId FormatVersionId)
@@ -3910,6 +3997,100 @@ func (siw *ServerInterfaceWrapper) UpdateFormatHighlights(w http.ResponseWriter,
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UpdateFormatHighlights(w, r, formatVersionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetActionPriority operation middleware
+func (siw *ServerInterfaceWrapper) GetActionPriority(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "formatVersionId" -------------
+	var formatVersionId FormatVersionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "formatVersionId", r.PathValue("formatVersionId"), &formatVersionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "formatVersionId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetActionPriorityParams
+
+	// ------------- Required query parameter "severity" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "severity", r.URL.Query(), &params.Severity, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "severity"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "severity", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "occurrence" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "occurrence", r.URL.Query(), &params.Occurrence, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "occurrence"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "occurrence", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "detection" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "detection", r.URL.Query(), &params.Detection, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "detection"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "detection", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetActionPriority(w, r, formatVersionId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetFormatApRules operation middleware
+func (siw *ServerInterfaceWrapper) SetFormatApRules(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "formatVersionId" -------------
+	var formatVersionId FormatVersionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "formatVersionId", r.PathValue("formatVersionId"), &formatVersionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "formatVersionId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetFormatApRules(w, r, formatVersionId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -5339,6 +5520,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/format-templates", wrapper.CreateFormatTemplate)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/format-templates/{formatTemplateId}", wrapper.RenameFormatTemplate)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/format-templates/{formatTemplateId}/versions", wrapper.CreateFormatVersion)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/format-template-versions/{formatVersionId}/ap-rules", wrapper.SetFormatApRules)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/format-template-versions/{formatVersionId}/action-priority", wrapper.GetActionPriority)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/format-template-versions/{formatVersionId}/publish", wrapper.PublishFormatVersion)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/format-template-versions/{formatVersionId}", wrapper.GetFormatVersion)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/format-template-versions/{formatVersionId}", wrapper.UpdateFormatHighlights)
@@ -6829,6 +7012,86 @@ type UpdateFormatHighlightsdefaultJSONResponse struct {
 }
 
 func (response UpdateFormatHighlightsdefaultJSONResponse) VisitUpdateFormatHighlightsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetActionPriorityRequestObject struct {
+	FormatVersionId FormatVersionId `json:"formatVersionId"`
+	Params          GetActionPriorityParams
+}
+
+type GetActionPriorityResponseObject interface {
+	VisitGetActionPriorityResponse(w http.ResponseWriter) error
+}
+
+type GetActionPriority200JSONResponse ActionPriorityResult
+
+func (response GetActionPriority200JSONResponse) VisitGetActionPriorityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetActionPrioritydefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response GetActionPrioritydefaultJSONResponse) VisitGetActionPriorityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetFormatApRulesRequestObject struct {
+	FormatVersionId FormatVersionId `json:"formatVersionId"`
+	Body            *SetFormatApRulesJSONRequestBody
+}
+
+type SetFormatApRulesResponseObject interface {
+	VisitSetFormatApRulesResponse(w http.ResponseWriter) error
+}
+
+type SetFormatApRules200JSONResponse FormatVersion
+
+func (response SetFormatApRules200JSONResponse) VisitSetFormatApRulesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetFormatApRulesdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response SetFormatApRulesdefaultJSONResponse) VisitSetFormatApRulesResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -9137,6 +9400,12 @@ type StrictServerInterface interface {
 	// UpdateFormatHighlights Change the highlight rule of a draft version, for example RPN above 100 or severity 8 (A-2, R-TPL-11)
 	// (PUT /api/v1/format-template-versions/{formatVersionId})
 	UpdateFormatHighlights(ctx context.Context, request UpdateFormatHighlightsRequestObject) (UpdateFormatHighlightsResponseObject, error)
+	// GetActionPriority The Action Priority of one severity, occurrence, and detection, from the AP table of the version (L-2, D-134)
+	// (GET /api/v1/format-template-versions/{formatVersionId}/action-priority)
+	GetActionPriority(ctx context.Context, request GetActionPriorityRequestObject) (GetActionPriorityResponseObject, error)
+	// SetFormatApRules Replace the Action Priority table of a draft version (A-2, D-134)
+	// (PUT /api/v1/format-template-versions/{formatVersionId}/ap-rules)
+	SetFormatApRules(ctx context.Context, request SetFormatApRulesRequestObject) (SetFormatApRulesResponseObject, error)
 	// AddFormatField Add a header field or a column at the end of its area in a draft version (A-2, R-TPL-02)
 	// (POST /api/v1/format-template-versions/{formatVersionId}/fields)
 	AddFormatField(ctx context.Context, request AddFormatFieldRequestObject) (AddFormatFieldResponseObject, error)
@@ -10365,6 +10634,66 @@ func (sh *strictHandler) UpdateFormatHighlights(w http.ResponseWriter, r *http.R
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UpdateFormatHighlightsResponseObject); ok {
 		if err := validResponse.VisitUpdateFormatHighlightsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetActionPriority operation middleware
+func (sh *strictHandler) GetActionPriority(w http.ResponseWriter, r *http.Request, formatVersionId FormatVersionId, params GetActionPriorityParams) {
+	var request GetActionPriorityRequestObject
+
+	request.FormatVersionId = formatVersionId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetActionPriority(ctx, request.(GetActionPriorityRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetActionPriority")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetActionPriorityResponseObject); ok {
+		if err := validResponse.VisitGetActionPriorityResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SetFormatApRules operation middleware
+func (sh *strictHandler) SetFormatApRules(w http.ResponseWriter, r *http.Request, formatVersionId FormatVersionId) {
+	var request SetFormatApRulesRequestObject
+
+	request.FormatVersionId = formatVersionId
+
+	var body SetFormatApRulesJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetFormatApRules(ctx, request.(SetFormatApRulesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetFormatApRules")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetFormatApRulesResponseObject); ok {
+		if err := validResponse.VisitSetFormatApRulesResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

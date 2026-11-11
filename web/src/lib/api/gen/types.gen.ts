@@ -958,6 +958,27 @@ export type FormatTemplateRename = {
     name: string;
 };
 
+/**
+ * One Action Priority for a box of severity, occurrence, and detection ranges; both ends included.
+ */
+export type ApRule = {
+    s_min: number;
+    s_max: number;
+    o_min: number;
+    o_max: number;
+    d_min: number;
+    d_max: number;
+    priority: 'H' | 'M' | 'L';
+};
+
+export type ApRuleList = {
+    items: Array<ApRule>;
+};
+
+export type ActionPriorityResult = {
+    priority: 'H' | 'M' | 'L';
+};
+
 export type FormatVersion = {
     id: string;
     template_id: string;
@@ -981,6 +1002,10 @@ export type FormatVersion = {
      */
     ratings: Array<RatingCriterion>;
     symbols: Array<FormatSymbol>;
+    /**
+     * The Action Priority table. Empty unless the risk method is AP (D-134).
+     */
+    ap_rules: Array<ApRule>;
     created_at: string;
     /**
      * When the version was published. Absent while it is a draft (M3.4).
@@ -1340,6 +1365,10 @@ export type FormatVersionWritable = {
      */
     ratings: Array<RatingCriterion>;
     symbols: Array<FormatSymbolWritable>;
+    /**
+     * The Action Priority table. Empty unless the risk method is AP (D-134).
+     */
+    ap_rules: Array<ApRule>;
     created_at: string;
     /**
      * When the version was published. Absent while it is a draft (M3.4).
@@ -3832,6 +3861,80 @@ export type CreateFormatVersionResponses = {
 };
 
 export type CreateFormatVersionResponse = CreateFormatVersionResponses[keyof CreateFormatVersionResponses];
+
+export type SetFormatApRulesData = {
+    body: ApRuleList;
+    path: {
+        formatVersionId: string;
+    };
+    query?: never;
+    url: '/api/v1/format-template-versions/{formatVersionId}/ap-rules';
+};
+
+export type SetFormatApRulesErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type SetFormatApRulesError = SetFormatApRulesErrors[keyof SetFormatApRulesErrors];
+
+export type SetFormatApRulesResponses = {
+    /**
+     * The version after the change.
+     */
+    200: FormatVersion;
+};
+
+export type SetFormatApRulesResponse = SetFormatApRulesResponses[keyof SetFormatApRulesResponses];
+
+export type GetActionPriorityData = {
+    body?: never;
+    path: {
+        formatVersionId: string;
+    };
+    query: {
+        severity: number;
+        occurrence: number;
+        detection: number;
+    };
+    url: '/api/v1/format-template-versions/{formatVersionId}/action-priority';
+};
+
+export type GetActionPriorityErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type GetActionPriorityError = GetActionPriorityErrors[keyof GetActionPriorityErrors];
+
+export type GetActionPriorityResponses = {
+    /**
+     * The action priority.
+     */
+    200: ActionPriorityResult;
+};
+
+export type GetActionPriorityResponse = GetActionPriorityResponses[keyof GetActionPriorityResponses];
 
 export type PublishFormatVersionData = {
     body?: never;

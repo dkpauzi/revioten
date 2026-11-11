@@ -126,6 +126,9 @@ type TemplateService interface {
 	SetRatingCriteria(ctx context.Context, actor access.Actor, versionID string, ratings []template.Rating) (template.FormatVersion, error)
 	SaveSymbols(ctx context.Context, actor access.Actor, versionID string, symbols []template.Symbol) (template.FormatVersion, error)
 	SetHighlights(ctx context.Context, actor access.Actor, versionID string, in template.HighlightSettings) (template.FormatVersion, error)
+	// Tabel AP (form set langkah A, D-134).
+	SetAPRules(ctx context.Context, actor access.Actor, versionID string, rules []template.APRule) (template.FormatVersion, error)
+	ActionPriorityOf(ctx context.Context, actor access.Actor, versionID string, severity, occurrence, detection int) (string, error)
 	// Versi terbit dan versi baru (M3.4, R-TPL-05).
 	PublishFormatVersion(ctx context.Context, actor access.Actor, versionID string) (template.FormatVersion, error)
 	NewFormatVersion(ctx context.Context, actor access.Actor, templateID string) (template.FormatVersion, error)

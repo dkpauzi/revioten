@@ -460,7 +460,12 @@ func (s *Service) copySource(ctx context.Context, versionID, documentTypeID stri
 // emptyVersion membuat versi 1 tanpa field. Metode risiko RPN dan AP
 // mendapat tabel skala 1 sampai 10 dengan kriteria kosong.
 func emptyVersion(ctx context.Context, q *db.Queries, templateID, risk string) error {
-	versionID, err := q.CreateFormatVersion(ctx, db.CreateFormatVersionParams{TemplateID: templateID, Version: 1, RiskMethod: risk})
+	// Metode risiko AP mendapat tabel AP bawaan dari handbook (D-134).
+	var apRules []byte
+	if risk == RiskAP {
+		apRules = apRulesJSON(DefaultAPRules())
+	}
+	versionID, err := q.CreateFormatVersion(ctx, db.CreateFormatVersionParams{TemplateID: templateID, Version: 1, RiskMethod: risk, ApRules: apRules})
 	if err != nil || risk == RiskNone {
 		return err
 	}
@@ -481,6 +486,7 @@ func copyVersion(ctx context.Context, q *db.Queries, templateID string, source F
 	versionID, err := q.CreateFormatVersion(ctx, db.CreateFormatVersionParams{
 		TemplateID: templateID, Version: 1, RiskMethod: source.RiskMethod,
 		HighlightRpnAbove: optionalSmall(source.HighlightRPNAbove), HighlightSeverityAtLeast: optionalSmall(source.HighlightSeverityAtLeast),
+		ApRules: apRulesJSON(source.APRules),
 	})
 	if err != nil {
 		return err
@@ -550,6 +556,9 @@ func getVersion(ctx context.Context, q *db.Queries, id string) (FormatVersion, e
 		ID: row.ID, TemplateID: row.TemplateID, Version: int(row.Version), Status: row.Status, RiskMethod: row.RiskMethod,
 		HighlightRPNAbove: deref(row.HighlightRpnAbove), HighlightSeverityAtLeast: deref(row.HighlightSeverityAtLeast),
 		Fields: []Field{}, Ratings: []Rating{}, Symbols: []Symbol{}, CreatedAt: row.CreatedAt.UTC(), PublishedAt: utcTime(row.PublishedAt),
+	}
+	if v.APRules, err = parseAPRules(row.ApRules); err != nil {
+		return FormatVersion{}, err
 	}
 	fields, err := q.ListVersionFields(ctx, id)
 	if err != nil {

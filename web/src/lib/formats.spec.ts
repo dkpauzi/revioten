@@ -59,6 +59,7 @@ describe('teks format template', () => {
 				{ scale: 'detection', value: 1, criteria: 'Almost certain' }
 			],
 			symbols: [],
+			ap_rules: [],
 			created_at: '2026-10-31T00:00:00Z'
 		};
 		expect(fieldsOf(v, 'header').map((f) => f.id)).toEqual(['h']);

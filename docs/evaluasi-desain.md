@@ -108,7 +108,7 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-84 | Genba: penulis catatan selain tim PPAP, dan lama penyimpanan foto | Celah | Tahap 6 | Tidak | Terbuka |
 | E-85 | Alias proses: siapa yang mengelola | Ambigu | M1.5, pencarian per proses | Tidak | Terbuka |
 | E-86 | Review berkala 3 tahun: rincian yang belum diputuskan | Celah | Tahap 5, 6, 7 | Tidak (perlu sebelum Tahap 6) | Terbuka |
-| E-87 | Menerbitkan versi template: perlu orang kedua atau tidak | Celah | M3.4, form set | Tidak | Terbuka |
+| E-87 | Menerbitkan versi template: perlu orang kedua atau tidak | Celah | M3.4, form set | Tidak | Diputuskan (D-143) |
 
 ## Keputusan 4 November 2026
 
@@ -1596,8 +1596,8 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (a) untuk process template, karena perubahan template tetap lewat revisi dokumen yang disetujui (R-TPL-06); (b) hanya untuk form set dan tabel AP, sesuai D-139.
 - **Asumsi sementara di kode (ASUMSI E-87):** (a).
 - **Menghambat milestone?** Tidak
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan
+- **Keputusan pemilik (11 November 2026, D-143):** (a). Kutipan: "E-87 boleh".
 
 ## Usulan desain UI (UX-01 sampai UX-07): dampak ke M0 sampai M3 dan saran
 

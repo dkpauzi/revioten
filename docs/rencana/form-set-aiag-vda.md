@@ -38,7 +38,7 @@ Kolom "Kapan" memakai urutan milestone yang sudah ada. FS = milestone prompt.
 
 | Langkah | Isi | Dari prompt | Kapan | Bergantung pada |
 |---|---|---|---|---|
-| A | **Mesin AP.** Tabel AP sebagai data di versi format template, fungsi hitung murni, endpoint hitung. Test untuk 1.000 kombinasi dan 6 contoh di prompt | FS-2 | Sekarang (lanjutan Tahap 3) | — |
+| A ✅ (11 Nov 2026) | **Mesin AP.** Tabel AP sebagai data di versi format template, fungsi hitung murni, endpoint hitung. Test untuk 1.000 kombinasi dan 6 contoh di prompt | FS-2 | Sekarang (lanjutan Tahap 3) | — |
 | B | **Format PFMEA AIAG-VDA 2019.** Isi awal: 12 field header, 29 kolom dengan grup langkah 2 sampai 6, jenis kolom baru `ap` | FS-3 (bagian data) | Sekarang | A |
 | C | **Format CP AIAG 2024.** Isi awal: 14 field header termasuk fase (4 pilihan), 14 kolom, tanpa Process Flow | FS-4 (bagian data) | Sekarang | — |
 | D | **Form set.** Tabel `form_sets` dan `form_set_versions`, set 1 dari data yang ada, set 2, default per customer, layar Settings › Form sets | FS-1, FS-5 (tanpa wizard) | Sekarang | B, C |

@@ -74,3 +74,39 @@ test('admin menyalin format template CP lalu menambah kolom pilihan', async ({ p
 	await expect(page.getByRole('status')).toHaveText(en.formatFieldAdded.replace('{label}', 'Phase'));
 	await expect(page.getByRole('row', { name: /^17 Phase / })).toContainText('Prototype, Pre-Launch, Production');
 });
+
+test('format template dengan metode AP menampilkan tabel Action Priority dan kalkulatornya', async ({ page }) => {
+	// Form set langkah A (D-134): versi baru bermetode AP mendapat tabel handbook.
+	await logIn(page);
+	await openFromMenu(page, en.navGroupTemplates, en.navFormatTemplates);
+	await page.getByLabel(en.formatName, { exact: true }).fill('PFMEA AP E2E');
+	// Jenis dokumen kedua (PFMEA) dipilih menurut urutan, karena test lain boleh mengganti namanya.
+	await page.getByLabel(en.formatDocumentType, { exact: true }).selectOption({ index: 2 });
+	await page.getByLabel(en.formatRiskMethod, { exact: true }).selectOption({ label: en.formatRiskAp });
+	await page.getByRole('button', { name: en.formatCreate }).click();
+	await expect(page.getByRole('status')).toHaveText(en.formatCreated.replace('{name}', 'PFMEA AP E2E'));
+
+	const section = page.locator('section').filter({ has: page.getByRole('heading', { name: en.apTableTitle }) });
+	// Baris pertama tabel handbook: S 9–10, O 8–10 selalu H.
+	await expect(section.getByRole('row', { name: /^9–10 8–10 H H H H$/ })).toBeVisible();
+	await expect(section.getByRole('row', { name: /^1 8–10 L L L L$/ })).toBeVisible();
+
+	// Kalkulator: contoh dari prompt pemilik.
+	const result = section.locator('.result');
+	await expect(result).toContainText('H'); // bawaan 8, 6, 4
+	await section.getByLabel(en.formatScaleOccurrence).fill('2');
+	await expect(result).toContainText('L'); // 8, 2, 4
+	await section.getByLabel(en.formatScaleSeverity).fill('7');
+	await section.getByLabel(en.formatScaleOccurrence).fill('3');
+	await section.getByLabel(en.formatScaleDetection).fill('7');
+	await expect(result).toContainText('M'); // 7, 3, 7
+
+	// Server memberi jawaban yang sama untuk klien API.
+	const priority = await page.evaluate(async () => {
+		const templates = await (await fetch('/api/v1/format-templates')).json();
+		const ft = templates.items.find((x: { name: string }) => x.name === 'PFMEA AP E2E');
+		const response = await fetch(`/api/v1/format-template-versions/${ft.versions[0].id}/action-priority?severity=8&occurrence=6&detection=4`);
+		return (await response.json()).priority;
+	});
+	expect(priority).toBe('H');
+});

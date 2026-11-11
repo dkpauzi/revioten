@@ -150,6 +150,7 @@ type FormatTemplateVersion struct {
 	HighlightSeverityAtLeast *int16
 	CreatedAt                time.Time
 	PublishedAt              *time.Time
+	ApRules                  []byte
 }
 
 type FormatVersionField struct {

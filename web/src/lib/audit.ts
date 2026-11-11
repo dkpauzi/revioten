@@ -63,6 +63,7 @@ const actionKeys: Record<string, MessageKey> = {
 	'process_template.variant_added': 'auditActionTemplateVariantAdded',
 	'process_template.variant_changed': 'auditActionTemplateVariantChanged',
 	// Versi terbit dan versi baru (M3.4).
+	'format_template.ap_rules_changed': 'auditActionFormatApRulesChanged',
 	'format_template.version_published': 'auditActionFormatVersionPublished',
 	'format_template.version_created': 'auditActionFormatVersionCreated',
 	'process_template.version_published': 'auditActionProcessVersionPublished',
@@ -109,7 +110,8 @@ const detailKeys: Record<string, MessageKey> = {
 	position: 'auditDetailOrder',
 	hidden: 'auditDetailHidden',
 	scope: 'auditDetailScope',
-	copied_from: 'auditDetailCopiedFrom'
+	copied_from: 'auditDetailCopiedFrom',
+	changed_combinations: 'auditDetailChangedCombinations'
 };
 
 const reasonKeys: Record<string, MessageKey> = {

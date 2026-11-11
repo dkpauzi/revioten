@@ -131,6 +131,7 @@ type FormatVersion struct {
 	Fields                   []Field  // header dulu, lalu kolom baris, menurut urutan
 	Ratings                  []Rating // severity, occurrence, lalu detection, nilai 1 sampai 10
 	Symbols                  []Symbol
+	APRules                  []APRule   // tabel AP; kosong kecuali metode risiko AP (D-134); tidak pernah nil
 	CreatedAt                time.Time  // selalu UTC
 	PublishedAt              *time.Time // nil selama draft; selalu UTC (M3.4)
 }

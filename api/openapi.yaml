@@ -1300,6 +1300,60 @@ paths:
                 $ref: '#/components/schemas/FormatVersion'
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/format-template-versions/{formatVersionId}/ap-rules:
+    put:
+      operationId: setFormatApRules
+      summary: Replace the Action Priority table of a draft version (A-2, D-134)
+      description: >-
+        Only for a version with the AP risk method. The table must give exactly one priority for each of the 1,000
+        combinations of severity, occurrence, and detection.
+      parameters:
+        - $ref: '#/components/parameters/FormatVersionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApRuleList'
+      responses:
+        '200':
+          description: The version after the change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormatVersion'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/format-template-versions/{formatVersionId}/action-priority:
+    get:
+      operationId: getActionPriority
+      summary: The Action Priority of one severity, occurrence, and detection, from the AP table of the version (L-2, D-134)
+      parameters:
+        - $ref: '#/components/parameters/FormatVersionId'
+        - name: severity
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: occurrence
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: detection
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: The action priority.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionPriorityResult'
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/format-template-versions/{formatVersionId}/publish:
     post:
       operationId: publishFormatVersion
@@ -3234,9 +3288,44 @@ components:
       properties:
         name:
           type: string
+    ApRule:
+      type: object
+      description: One Action Priority for a box of severity, occurrence, and detection ranges; both ends included.
+      required: [s_min, s_max, o_min, o_max, d_min, d_max, priority]
+      properties:
+        s_min:
+          type: integer
+        s_max:
+          type: integer
+        o_min:
+          type: integer
+        o_max:
+          type: integer
+        d_min:
+          type: integer
+        d_max:
+          type: integer
+        priority:
+          type: string
+          enum: [H, M, L]
+    ApRuleList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ApRule'
+    ActionPriorityResult:
+      type: object
+      required: [priority]
+      properties:
+        priority:
+          type: string
+          enum: [H, M, L]
     FormatVersion:
       type: object
-      required: [id, template_id, version, status, risk_method, highlight_rpn_above, highlight_severity_at_least, fields, ratings, symbols, created_at]
+      required: [id, template_id, version, status, risk_method, highlight_rpn_above, highlight_severity_at_least, fields, ratings, symbols, ap_rules, created_at]
       properties:
         id:
           type: string
@@ -3270,6 +3359,11 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/FormatSymbol'
+        ap_rules:
+          type: array
+          description: The Action Priority table. Empty unless the risk method is AP (D-134).
+          items:
+            $ref: '#/components/schemas/ApRule'
         created_at:
           type: string
           format: date-time
