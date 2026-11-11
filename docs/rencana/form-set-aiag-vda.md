@@ -82,13 +82,13 @@ Langkah A sampai D bisa dikerjakan segera setelah Anda setuju, sebelum Tahap 4, 
 
 ## 4. Pertanyaan yang perlu Anda jawab
 
-Pertanyaan 3, 4, 5, 8, dan 9 dari prompt sudah saya catat sebagai temuan Terbuka. Yang menghambat langkah A sampai D hanya E-82.
+Pertanyaan 3, 4, 5, 8, dan 9 dari prompt sudah saya catat sebagai temuan Terbuka. E-82 sudah diputuskan (D-139), jadi yang menghambat langkah A sampai D tinggal E-80.
 
 | Temuan | Pertanyaan | Menghambat |
 |---|---|---|
 | E-80 | Setuju urutan di bagian 2 (A sampai D sekarang, sisanya menumpang milestone yang ada)? | Ya, untuk mulai |
 | E-81 | Poin PFMEA di process template: satu baris teks, atau isi per kolom (dan bagaimana dipakai di set 1 dan set 2)? | Sebelum M4.5 |
-| E-82 | Siapa yang menyetujui form set baru dan perubahan tabel AP: Admin, PPAP Engineer, atau keduanya? | Langkah A dan D |
+| E-82 ✅ | Diputuskan 11 November 2026 (D-139): PPAP Supervisor (APQP/PPAP Controller) untuk saat ini, lewat hak baru yang bisa diberikan admin ke akun lain, misalnya Project Leader | — |
 | E-83 | Dokumen set 1 dipindah ke set 2 satu per satu, atau boleh massal per customer? | Sebelum langkah J |
 | E-84 | Genba: siapa selain tim PPAP yang boleh menulis catatan, dan berapa lama foto disimpan? | Sebelum langkah L |
 | E-85 | Alias proses: dikelola Pengelola template saja (seperti sekarang), atau penyusun boleh mengusulkan? | Sebelum langkah I |

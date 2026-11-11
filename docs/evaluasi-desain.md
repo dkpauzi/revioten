@@ -103,7 +103,7 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-79 | Daftar password umum belum mencakup password 8 sampai 14 karakter dari sumber terverifikasi | Celah | M1.1 (D-132) | Tidak | Terbuka |
 | E-80 | Prompt form set mengandaikan editor, wizard, yokoten, dan ekspor yang belum dibangun | Kontradiksi | Tahap 3 sampai 6 | Ya, untuk mulai form set | Terbuka |
 | E-81 | Isi poin PFMEA di process template untuk form AIAG-VDA | Celah | M3.2, M4.5 | Tidak (perlu sebelum M4.5) | Terbuka |
-| E-82 | Siapa yang menyetujui form set baru dan perubahan tabel AP | Celah | Form set langkah A dan D | Ya, untuk langkah A dan D | Terbuka |
+| E-82 | Siapa yang menyetujui form set baru dan perubahan tabel AP | Celah | Form set langkah A dan D | Ya, untuk langkah A dan D | Diputuskan (D-139) |
 | E-83 | Perpindahan dokumen set 1 ke set 2: satu per satu atau massal | Celah | Tahap 5 | Tidak | Terbuka |
 | E-84 | Genba: penulis catatan selain tim PPAP, dan lama penyimpanan foto | Celah | Tahap 6 | Tidak | Terbuka |
 | E-85 | Alias proses: siapa yang mengelola | Ambigu | M1.5, pencarian per proses | Tidak | Terbuka |
@@ -1519,8 +1519,8 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (a), karena tabel AP adalah isi teknis dan admin bukan pemilik isinya.
 - **Asumsi sementara di kode:** tidak ada.
 - **Menghambat milestone?** Ya, untuk langkah A dan D di rencana form set
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan
+- **Keputusan pemilik (11 November 2026, D-139):** PPAP Supervisor (jabatan APQP/PPAP Controller) untuk saat ini, dan harus bisa diubah nanti tanpa mengubah kode. Kutipan: "E-82 untuk saat ini PPAP supervisor, namun buat ini juga flexible, jadi di masa depan bisa saja project leader ikut menyetujui". Ini berbeda dari ketiga opsi di atas. Rancangannya (usulan): hak baru di katalog yang dipegang peran baru, sehingga admin cukup memberi peran itu ke akun lain (D-66). Masih terbuka: bila pemegangnya lebih dari satu, cukup satu persetujuan (asumsi kerja) atau semua harus setuju.
 ### E-83 · Perpindahan dokumen set 1 ke set 2: satu per satu atau massal
 
 - **Tanggal dan milestone:** 10 November 2026, pertanyaan 5 di prompt form set. Menyentuh Tahap 5.
