@@ -178,6 +178,7 @@
 					{/if}
 				</span>
 				<a href="/account/password">{t('navAccount')}</a>
+				<a href="/help">{t('navHelp')}</a>
 				<a href="/about">{t('navAbout')}</a>
 			</div>
 		</div>
@@ -372,6 +373,38 @@
 		background: var(--surface);
 		border: 1px solid var(--border);
 		border-radius: var(--radius-lg);
+	}
+
+	/* Laptop (1024px ke atas): dua baris yang tetap. Baris atas berisi logo,
+	   akun, dan alat; baris bawah berisi menu. Tanpa aturan ini isi bilah atas
+	   terlipat tidak teratur begitu teks akun lebih panjang, misalnya dalam
+	   bahasa Indonesia. display: contents membuat menu dan akun ikut diatur
+	   langsung oleh .top. */
+	@media (min-width: 1024px) {
+		.panel {
+			display: contents;
+		}
+
+		.account {
+			order: 2;
+			flex-wrap: nowrap;
+			min-width: 0;
+			white-space: nowrap;
+		}
+
+		.who {
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+
+		.tools {
+			order: 3;
+		}
+
+		nav {
+			order: 4;
+			flex-basis: 100%;
+		}
 	}
 
 	/* HP dan tablet (di bawah 1024px): menu dilipat ke tombol Menu, dan panelnya

@@ -7,9 +7,11 @@
 		"src",
 		"e2e",
 		"tour",
+		"help-shots",
 		"vite.config.ts",
 		"playwright.config.ts",
 		"playwright.tour.config.ts",
+		"playwright.help.config.ts",
 		"openapi-ts.config.ts"
 	]
 }

@@ -14,6 +14,7 @@ export const id: Messages = {
 	navHome: 'Beranda',
 	navCustomers: 'Customer',
 	navAbout: 'Tentang',
+	navHelp: 'Bantuan',
 	navGroupDocuments: 'Dokumen',
 	navGroupTemplates: 'Pustaka template',
 	navGroupMaster: 'Master data',

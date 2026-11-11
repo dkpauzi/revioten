@@ -29,7 +29,9 @@ export default defineConfig({
 		headless: process.env.TOUR_HEADLESS === '1',
 		viewport: { width: 1366, height: 768 },
 		// Rekaman video tur disimpan di web/test-results/, bisa diputar ulang.
-		video: 'on'
+		video: 'on',
+		// Izin clipboard, supaya kata sandi sementara tersalin seperti di browser biasa.
+		permissions: ['clipboard-read', 'clipboard-write']
 	},
 	projects: [
 		{

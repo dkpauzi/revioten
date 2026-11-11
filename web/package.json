@@ -12,7 +12,8 @@
 		"test": "vitest --run",
 		"gen:api": "svelte-kit sync && openapi-ts",
 		"test:e2e": "vite build && playwright test",
-		"tour": "vite build && playwright test --config playwright.tour.config.ts"
+		"tour": "vite build && playwright test --config playwright.tour.config.ts",
+		"help:shots": "vite build && playwright test --config playwright.help.config.ts"
 	},
 	"devDependencies": {
 		"@fontsource-variable/geist": "5.3.0",

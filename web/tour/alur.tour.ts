@@ -189,6 +189,8 @@ test('alur dari admin sampai nomor dokumen', async ({ page }) => {
 
 	await openFromMenu(page, en.navGroupDocuments, en.navNumbers);
 	await say(page, 'Langkah 13', 'Documents > Numbers. Satu set: PFD, PFMEA, dan CP dengan nomor berjalan yang sama.');
+	// Tunggu formulir daftar tampil dulu: saringan register juga punya kotak "Customer".
+	await expect(page.getByRole('button', { name: en.numberRegister, exact: true })).toBeVisible();
 	await page.getByLabel(en.numberCustomer, { exact: true }).first().selectOption({ label: 'LM · Contoh Customer LM' });
 	await page.getByRole('button', { name: en.numberRegister, exact: true }).click();
 	await expect(page.getByRole('status')).toContainText('SH-LM-001');

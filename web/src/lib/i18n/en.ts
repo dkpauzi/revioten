@@ -13,6 +13,7 @@ export const en = {
 	navHome: 'Home',
 	navCustomers: 'Customers',
 	navAbout: 'About',
+	navHelp: 'Help',
 	// Kelompok menu atas (D-127). Istilahnya tercatat di glosarium U1 bagian 7.
 	navGroupDocuments: 'Documents',
 	navGroupTemplates: 'Template library',

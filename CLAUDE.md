@@ -93,6 +93,7 @@ Ini ringkasan. Teks lengkap dan statusnya ada di brief bagian 5 dan 6.
 - **Tampilan (D-127):** warna, huruf, tombol, field, tabel, dan label status diatur sekali di `web/src/app.css`, mengikuti artboard "Design system" di kanvas desain UI. `<style>` di komponen hanya untuk susunan khusus halaman itu. Menu atas disusun `web/src/lib/menu.ts` (kelompok Home, Documents, Template library, Master data, Admin); halaman baru ditambahkan ke sana, dan test E2E membuka halaman lewat `openFromMenu` di `web/e2e/helpers.ts`. Tampilan dibuat untuk HP (di bawah 640px), tablet (640 sampai 1023px), dan laptop (D-128); di bawah 1024px menu dilipat ke tombol Menu, dan `web/e2e/responsive.test.ts` memastikan halaman tidak bergeser ke samping. Halaman baru yang punya tabel atau formulir lebar ditambahkan ke daftar halaman di test itu.
 - **Pesan hasil aksi (D-142):** halaman menulis hasil aksi sebagai elemen `role="status"` (berhasil) atau `role="alert"` (gagal). `web/src/lib/Toaster.svelte` di layout menyalin setiap pesan itu ke pop-up di pojok layar, jadi halaman baru cukup memakai pola yang sama. Kata sandi sementara disalin ke clipboard lewat `web/src/lib/clipboard.ts`.
 - **Versi template (M3.4):** versi terbit tidak bisa diubah dan dijaga trigger di database (migrasi 00016). Migrasi yang perlu mengisi kolom baru pada versi terbit harus mematikan trigger itu dengan sengaja.
+- **Halaman Help (D-141):** buku panduan pengguna ada di `web/src/lib/help/en.ts` dan `id.ts` (bentuk sama, dijaga `content.spec.ts`). Nama tombol ditulis sebagai `{kunciKatalog}`. Milestone yang menambah atau mengubah layar juga memperbarui babnya di kedua bahasa dan gambarnya (`help:shots`).
 - **Integrasi:** tidak ada token integrasi sebelum M8.1 (D-19).
 
 ## 6. Mengevaluasi desain sambil membangun (D-77)
@@ -130,6 +131,7 @@ Kode sekarang punya dua tujuan: belajar, dan menguji apakah desain (brief, UML, 
 | `web/` | SvelteKit. Hasil build (`web/build/app`) di-embed ke binary Go lewat `web/web.go`; `web/build/.gitkeep` di-commit supaya `go build` tetap jalan sebelum frontend di-build | M0.4 |
 | `web/e2e/` | **(usulan M0.5)** Test E2E Playwright dan skrip server E2E | M0.5 |
 | `web/tour/` | Tur otomatis alur web (Playwright dengan jendela browser dan jeda), mengikuti `docs/panduan/skenario-alur-web.md`. Diperbarui setiap milestone menambah langkah alur | 10 Nov 2026 |
+| `web/help-shots/` dan `web/static/help/` | Skrip pemotret layar dan gambar halaman Help (D-141). Gambar di-commit | 11 Nov 2026 |
 | `bin/` | Hasil `go build`, tidak di-commit | M0.2 |
 | `docs/` | Brief, milestone, UML, catatan milestone, evaluasi desain, versi | Sesi 1 |
 | Root | `go.mod`, `compose.yaml`, `.env.example`, `.gitignore`, `.gitattributes`, `sqlc.yaml` (M0.5) | M0.1, M0.2 |
@@ -191,6 +193,7 @@ Dijalankan dari root repo. Terbukti di container cloud Linux (bash) pada M0.1 (2
 | Pasang browser untuk test E2E (sekali) | `npm --prefix web exec -- playwright install chromium` (belum dicoba di komputer pemilik; di container cloud tidak dipakai, lihat baris berikut) |
 | Test E2E (Playwright) | `docker compose up -d` dulu, lalu `npm --prefix web run test:e2e`. Skrip ini membangun tampilan web, membuat ulang database `revioten_e2e` di container, menjalankan server di port 8090, lalu membuka browser. Di container cloud: `PLAYWRIGHT_CHROMIUM_EXECUTABLE=/opt/pw-browsers/chromium npm --prefix web run test:e2e` |
 | Tur otomatis alur web (sejak 10 November 2026) | `docker compose up -d` dulu, lalu `npm --prefix web run tour`. Browser tampil dan mengisi formulir sendiri dengan keterangan langkah; memakai database `revioten_e2e` di port 8090 seperti test E2E. Kecepatan: `TOUR_SPEED` = `slow`, `normal`, atau `fast`; tanpa jendela: `TOUR_HEADLESS=1`. Terbukti di komputer pemilik (Windows) dengan `fast` dan tanpa jendela |
+| Perbarui gambar halaman Help (sejak 11 November 2026, D-141) | `docker compose up -d` dulu, lalu `npm --prefix web run help:shots`, lalu `npm --prefix web run build` supaya gambar baru masuk ke binary. Hasilnya di `web/static/help/en` dan `id` |
 
 Jangan menjalankan `docker compose down -v` kecuali memang ingin menghapus seluruh isi database, karena `-v` ikut menghapus volume `revioten_pgdata`.
 

@@ -396,6 +396,19 @@ kbd {
 	margin-bottom: 0.5rem;
 }
 
+/* Cetak (halaman Help, D-141): bilah atas, pop-up, dan tombol tidak ikut dicetak. */
+@media print {
+	header,
+	.toaster,
+	.no-print {
+		display: none !important;
+	}
+
+	body {
+		background: #ffffff;
+	}
+}
+
 /*
  * Tampilan per perangkat (D-128). Batasnya:
  *   - HP: di bawah 640px

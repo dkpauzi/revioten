@@ -42,6 +42,8 @@ test('Penyusun mendaftarkan nomor CP dan mendapat nomor berurutan', async ({ pag
 	// Satu nomor, bukan set. .first(): formulir pendaftaran ada di atas
 	// saringan register yang berlabel sama.
 	await page.getByLabel(en.numberAsSet).uncheck();
+	// Tunggu formulir daftar tampil dulu: saringan register juga punya kotak "Customer".
+	await expect(page.getByRole('button', { name: en.numberRegister, exact: true })).toBeVisible();
 	await page.getByLabel(en.numberCustomer, { exact: true }).first().selectOption({ label: 'NB · Customer NB' });
 	await page.getByLabel(en.numberType, { exact: true }).first().selectOption({ label: 'CP (SC)' });
 	await expect(page.getByText(en.numberNext.replace('{number}', 'SC-NB-001'))).toBeVisible();
@@ -82,6 +84,8 @@ test('dokumen kontrol membatalkan nomor dengan alasan, dan nomornya tetap di reg
 	await logInAuthor(page, 'ppap.nomor', ['author', 'document_control']);
 	await openFromMenu(page, en.navGroupDocuments, en.navNumbers);
 	await page.getByLabel(en.numberAsSet).uncheck();
+	// Tunggu formulir daftar tampil dulu: saringan register juga punya kotak "Customer".
+	await expect(page.getByRole('button', { name: en.numberRegister, exact: true })).toBeVisible();
 	await page.getByLabel(en.numberCustomer, { exact: true }).first().selectOption({ label: 'NB · Customer NB' });
 	await page.getByLabel(en.numberType, { exact: true }).first().selectOption({ label: 'PFD (SH)' });
 	await page.getByRole('button', { name: en.numberRegister, exact: true }).click();
@@ -110,6 +114,8 @@ test('Penyusun mendaftarkan set dengan revisi awal -04, dan nomor yang dilewati 
 	await logInAuthor(page, 'penyusun.set', ['author']);
 	await openFromMenu(page, en.navGroupDocuments, en.navNumbers);
 	await expect(page.getByLabel(en.numberAsSet)).toBeChecked();
+	// Tunggu formulir daftar tampil dulu: saringan register juga punya kotak "Customer".
+	await expect(page.getByRole('button', { name: en.numberRegister, exact: true })).toBeVisible();
 	await page.getByLabel(en.numberCustomer, { exact: true }).first().selectOption({ label: 'NB · Customer NB' });
 	await page.getByLabel(en.numberInitialRevision).fill('4');
 	await page.getByRole('button', { name: en.numberRegister, exact: true }).click();

@@ -12,6 +12,7 @@
 	// membacakan pesan yang sama dua kali.
 	import { onMount } from 'svelte';
 	import { t } from '#lib/i18n/index.ts';
+	import { language } from '#lib/i18n/language.svelte.ts';
 
 	type Toast = { id: number; text: string; kind: 'status' | 'alert' };
 
@@ -35,6 +36,19 @@
 		setTimeout(() => dismiss(id), long ? duration.long : duration[kind]);
 	}
 
+	// Saat bahasa diganti, semua pesan di halaman berubah teksnya sekaligus.
+	// Itu bukan pesan baru, jadi selama sesaat perubahan hanya dicatat, tidak
+	// dijadikan pop-up.
+	let quietUntil = 0;
+	let lastLanguage = language.current;
+	$effect(() => {
+		// Hanya saat bahasa benar-benar berganti, bukan saat halaman baru dibuka.
+		if (language.current !== lastLanguage) {
+			lastLanguage = language.current;
+			quietUntil = Date.now() + 500;
+		}
+	});
+
 	// scan mencari pesan baru atau pesan yang teksnya berubah.
 	function scan(root: Element) {
 		for (const el of root.querySelectorAll('[role="status"], [role="alert"]')) {
@@ -43,6 +57,9 @@
 				continue;
 			}
 			seen.set(el, text);
+			if (Date.now() < quietUntil) {
+				continue;
+			}
 			show(text, el.getAttribute('role') === 'alert' ? 'alert' : 'status', el.hasAttribute('data-toast-long'));
 		}
 	}
