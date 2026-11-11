@@ -147,7 +147,9 @@ func TestSeededTemplates(t *testing.T) {
 			t.Errorf("%s: versi %+v", ft.Name, ft.Versions)
 		}
 	}
-	if want := []string{"PFD:pfd:", "PFMEA AIAG 4th:pfmea:aiag_4th", "CP:cp:"}; !slices.Equal(names, want) {
+	// Sejak migrasi 00018 ada dua form baru: PFMEA AIAG-VDA 2019 dan Control Plan AIAG 2024 (D-133).
+	want := []string{"PFD:pfd:", "PFMEA AIAG 4th:pfmea:aiag_4th", "PFMEA AIAG-VDA 2019:pfmea:aiag_vda", "Control Plan AIAG 2024:cp:aiag_cp_2024", "CP:cp:"}
+	if !slices.Equal(names, want) {
 		t.Errorf("format template = %v, ingin %v", names, want)
 	}
 

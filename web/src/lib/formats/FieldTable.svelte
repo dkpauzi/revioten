@@ -119,7 +119,11 @@
 							</form>
 						</td>
 					{:else}
-						<td>{f.label}</td>
+						<td>
+							{f.label}
+							<!-- Judul grup kolom di form, misalnya FAILURE ANALYSIS (STEP 4) (migrasi 00018). -->
+							{#if f.group}<br /><small class="hint">{f.group}</small>{/if}
+						</td>
 						<td>{kindText(f)}</td>
 						<td>{f.required ? t('formatYes') : ''}</td>
 						<td>{f.hidden ? t('formatYes') : ''}</td>

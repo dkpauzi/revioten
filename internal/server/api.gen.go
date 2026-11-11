@@ -373,7 +373,9 @@ func (e FormatFieldArea) Valid() bool {
 
 // Defines values for FormatFieldKind.
 const (
+	FormatFieldKindAp              FormatFieldKind = "ap"
 	FormatFieldKindDate            FormatFieldKind = "date"
+	FormatFieldKindDocumentNumber  FormatFieldKind = "document_number"
 	FormatFieldKindOperationNumber FormatFieldKind = "operation_number"
 	FormatFieldKindProcess         FormatFieldKind = "process"
 	FormatFieldKindProcessFlow     FormatFieldKind = "process_flow"
@@ -387,7 +389,11 @@ const (
 // Valid indicates whether the value is a known member of the FormatFieldKind enum.
 func (e FormatFieldKind) Valid() bool {
 	switch e {
+	case FormatFieldKindAp:
+		return true
 	case FormatFieldKindDate:
+		return true
+	case FormatFieldKindDocumentNumber:
 		return true
 	case FormatFieldKindOperationNumber:
 		return true
@@ -433,15 +439,18 @@ func (e FormatFieldRatingScale) Valid() bool {
 
 // Defines values for FormatTemplateMethodology.
 const (
-	FormatTemplateMethodologyAiag4th FormatTemplateMethodology = "aiag_4th"
-	FormatTemplateMethodologyAiagVda FormatTemplateMethodology = "aiag_vda"
-	FormatTemplateMethodologySqam    FormatTemplateMethodology = "sqam"
+	FormatTemplateMethodologyAiag4th    FormatTemplateMethodology = "aiag_4th"
+	FormatTemplateMethodologyAiagCp2024 FormatTemplateMethodology = "aiag_cp_2024"
+	FormatTemplateMethodologyAiagVda    FormatTemplateMethodology = "aiag_vda"
+	FormatTemplateMethodologySqam       FormatTemplateMethodology = "sqam"
 )
 
 // Valid indicates whether the value is a known member of the FormatTemplateMethodology enum.
 func (e FormatTemplateMethodology) Valid() bool {
 	switch e {
 	case FormatTemplateMethodologyAiag4th:
+		return true
+	case FormatTemplateMethodologyAiagCp2024:
 		return true
 	case FormatTemplateMethodologyAiagVda:
 		return true
@@ -628,7 +637,9 @@ func (e NewFormatFieldArea) Valid() bool {
 
 // Defines values for NewFormatFieldKind.
 const (
+	NewFormatFieldKindAp              NewFormatFieldKind = "ap"
 	NewFormatFieldKindDate            NewFormatFieldKind = "date"
+	NewFormatFieldKindDocumentNumber  NewFormatFieldKind = "document_number"
 	NewFormatFieldKindOperationNumber NewFormatFieldKind = "operation_number"
 	NewFormatFieldKindProcess         NewFormatFieldKind = "process"
 	NewFormatFieldKindProcessFlow     NewFormatFieldKind = "process_flow"
@@ -642,7 +653,11 @@ const (
 // Valid indicates whether the value is a known member of the NewFormatFieldKind enum.
 func (e NewFormatFieldKind) Valid() bool {
 	switch e {
+	case NewFormatFieldKindAp:
+		return true
 	case NewFormatFieldKindDate:
+		return true
+	case NewFormatFieldKindDocumentNumber:
 		return true
 	case NewFormatFieldKindOperationNumber:
 		return true
@@ -688,15 +703,18 @@ func (e NewFormatFieldRatingScale) Valid() bool {
 
 // Defines values for NewFormatTemplateMethodology.
 const (
-	NewFormatTemplateMethodologyAiag4th NewFormatTemplateMethodology = "aiag_4th"
-	NewFormatTemplateMethodologyAiagVda NewFormatTemplateMethodology = "aiag_vda"
-	NewFormatTemplateMethodologySqam    NewFormatTemplateMethodology = "sqam"
+	NewFormatTemplateMethodologyAiag4th    NewFormatTemplateMethodology = "aiag_4th"
+	NewFormatTemplateMethodologyAiagCp2024 NewFormatTemplateMethodology = "aiag_cp_2024"
+	NewFormatTemplateMethodologyAiagVda    NewFormatTemplateMethodology = "aiag_vda"
+	NewFormatTemplateMethodologySqam       NewFormatTemplateMethodology = "sqam"
 )
 
 // Valid indicates whether the value is a known member of the NewFormatTemplateMethodology enum.
 func (e NewFormatTemplateMethodology) Valid() bool {
 	switch e {
 	case NewFormatTemplateMethodologyAiag4th:
+		return true
+	case NewFormatTemplateMethodologyAiagCp2024:
 		return true
 	case NewFormatTemplateMethodologyAiagVda:
 		return true
@@ -1509,11 +1527,17 @@ type FieldOption struct {
 
 // FormatField defines model for FormatField.
 type FormatField struct {
-	Area   FormatFieldArea `json:"area"`
-	Hidden bool            `json:"hidden"`
+	Area FormatFieldArea `json:"area"`
+
+	// Group Title of the column group above this column, for example FAILURE ANALYSIS (STEP 4).
+	Group  *string `json:"group,omitempty"`
+	Hidden bool    `json:"hidden"`
 
 	// Id Fixed across versions; row content uses this ID.
 	Id string `json:"id"`
+
+	// Key Fixed key of the field, for example failure_mode. Absent for fields without a key.
+	Key *string `json:"key,omitempty"`
 
 	// Kind operation_number, process, and process_flow are filled from the row (operation number, process master, PFD steps) and never typed, like rpn (D-122, D-123).
 	Kind    FormatFieldKind `json:"kind"`
@@ -1524,7 +1548,7 @@ type FormatField struct {
 	Position    int                     `json:"position"`
 	RatingScale *FormatFieldRatingScale `json:"rating_scale,omitempty"`
 
-	// RatingSet For rating and rpn, 1 for the current values and 2 for the action results.
+	// RatingSet For rating, rpn, and ap, 1 for the current values and 2 for the action results.
 	RatingSet *int `json:"rating_set,omitempty"`
 	Required  bool `json:"required"`
 }

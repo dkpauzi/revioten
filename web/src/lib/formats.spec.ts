@@ -25,6 +25,9 @@ describe('teks format template', () => {
 			en.formatKindRatingDetail.replace('{scale}', en.formatScaleSeverity).replace('{set}', en.formatSetResult)
 		);
 		expect(kindText(field({ kind: 'rpn', rating_set: 1 }))).toBe(en.formatKindRpnDetail.replace('{set}', en.formatSetCurrent));
+		// Kolom AP dan nomor dokumen (form set langkah B dan C).
+		expect(kindText(field({ kind: 'ap', rating_set: 2 }))).toBe(en.formatKindApDetail.replace('{set}', en.formatSetResult));
+		expect(kindText(field({ kind: 'document_number' }))).toBe(en.formatKindDocumentNumber);
 		expect(kindText(field({ kind: 'process_flow' }))).toBe(en.formatKindProcessFlow);
 	});
 

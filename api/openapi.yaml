@@ -3231,7 +3231,7 @@ components:
           $ref: '#/components/schemas/DocumentTypeRef'
         methodology:
           type: string
-          enum: [aiag_4th, aiag_vda, sqam]
+          enum: [aiag_4th, aiag_vda, sqam, aiag_cp_2024]
           description: Missing for the forms in use today (PFD, CP).
         customer_id:
           type: string
@@ -3273,7 +3273,7 @@ components:
           type: string
         methodology:
           type: string
-          enum: [aiag_4th, aiag_vda, sqam]
+          enum: [aiag_4th, aiag_vda, sqam, aiag_cp_2024]
         customer_id:
           type: string
         risk_method:
@@ -3383,14 +3383,20 @@ components:
           enum: [header, row]
         kind:
           type: string
-          enum: [text, date, select, symbol, rating, rpn, operation_number, process, process_flow]
+          enum: [text, date, select, symbol, rating, rpn, ap, operation_number, process, process_flow, document_number]
           description: operation_number, process, and process_flow are filled from the row (operation number, process master, PFD steps) and never typed, like rpn (D-122, D-123).
         rating_scale:
           type: string
           enum: [severity, occurrence, detection]
         rating_set:
           type: integer
-          description: For rating and rpn, 1 for the current values and 2 for the action results.
+          description: For rating, rpn, and ap, 1 for the current values and 2 for the action results.
+        key:
+          type: string
+          description: Fixed key of the field, for example failure_mode. Absent for fields without a key.
+        group:
+          type: string
+          description: Title of the column group above this column, for example FAILURE ANALYSIS (STEP 4).
         label:
           type: string
         position:
@@ -3422,7 +3428,7 @@ components:
           enum: [header, row]
         kind:
           type: string
-          enum: [text, date, select, symbol, rating, rpn, operation_number, process, process_flow]
+          enum: [text, date, select, symbol, rating, rpn, ap, operation_number, process, process_flow, document_number]
           description: operation_number, process, and process_flow are filled from the row (operation number, process master, PFD steps) and never typed, like rpn (D-122, D-123).
         label:
           type: string

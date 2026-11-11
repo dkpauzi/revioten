@@ -16,9 +16,11 @@ const kindKeys: Record<FormatField['kind'], MessageKey> = {
 	symbol: 'formatKindSymbol',
 	rating: 'formatKindRating',
 	rpn: 'formatKindRpn',
+	ap: 'formatKindAp',
 	operation_number: 'formatKindOperationNumber',
 	process: 'formatKindProcess',
-	process_flow: 'formatKindProcessFlow'
+	process_flow: 'formatKindProcessFlow',
+	document_number: 'formatKindDocumentNumber'
 };
 
 const scaleKeys: Record<RatingCriterion['scale'], MessageKey> = {
@@ -30,7 +32,8 @@ const scaleKeys: Record<RatingCriterion['scale'], MessageKey> = {
 const methodologyKeys: Record<NonNullable<FormatTemplate['methodology']>, MessageKey> = {
 	aiag_4th: 'formatMethodAiag4th',
 	aiag_vda: 'formatMethodAiagVda',
-	sqam: 'formatMethodSqam'
+	sqam: 'formatMethodSqam',
+	aiag_cp_2024: 'formatMethodAiagCp2024'
 };
 
 const riskKeys: Record<FormatVersion['risk_method'], MessageKey> = {
@@ -47,6 +50,9 @@ export function kindText(f: FormatField): string {
 	}
 	if (f.kind === 'rpn') {
 		return t('formatKindRpnDetail', { set: setText(f.rating_set) });
+	}
+	if (f.kind === 'ap') {
+		return t('formatKindApDetail', { set: setText(f.rating_set) });
 	}
 	return t(kindKeys[f.kind]);
 }

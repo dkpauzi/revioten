@@ -493,14 +493,14 @@ func copyVersion(ctx context.Context, q *db.Queries, templateID string, source F
 	}
 	for _, f := range source.Fields {
 		fieldID, err := q.CreateFormatField(ctx, db.CreateFormatFieldParams{
-			TemplateID: templateID, Area: f.Area, Kind: f.Kind, RatingScale: optional(f.RatingScale), RatingSet: optionalSmall(f.RatingSet),
+			TemplateID: templateID, Area: f.Area, Kind: f.Kind, RatingScale: optional(f.RatingScale), RatingSet: optionalSmall(f.RatingSet), Key: optional(f.Key),
 		})
 		if err != nil {
 			return err
 		}
 		err = q.AddVersionField(ctx, db.AddVersionFieldParams{
 			VersionID: versionID, FieldID: fieldID, TemplateID: templateID, Area: f.Area, Label: f.Label,
-			Position: int16(f.Position), Required: f.Required, Hidden: f.Hidden, Options: optionsJSON(f.Options),
+			Position: int16(f.Position), Required: f.Required, Hidden: f.Hidden, Options: optionsJSON(f.Options), GroupLabel: optional(f.Group),
 		})
 		if err != nil {
 			return err
@@ -567,7 +567,7 @@ func getVersion(ctx context.Context, q *db.Queries, id string) (FormatVersion, e
 	for _, f := range fields {
 		field := Field{
 			ID: f.FieldID, Area: f.Area, Kind: f.Kind, RatingScale: derefText(f.RatingScale), RatingSet: deref(f.RatingSet),
-			Label: f.Label, Position: int(f.Position), Required: f.Required, Hidden: f.Hidden,
+			Label: f.Label, Position: int(f.Position), Required: f.Required, Hidden: f.Hidden, Key: derefText(f.Key), Group: derefText(f.GroupLabel),
 		}
 		if field.Options, err = parseOptions(f.Options); err != nil {
 			return FormatVersion{}, err

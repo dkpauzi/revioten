@@ -114,6 +114,7 @@ type FormatField struct {
 	RatingScale *string
 	RatingSet   *int16
 	CreatedAt   time.Time
+	Key         *string
 }
 
 type FormatRatingCriterium struct {
@@ -163,6 +164,7 @@ type FormatVersionField struct {
 	Required   bool
 	Hidden     bool
 	Options    []byte
+	GroupLabel *string
 }
 
 type FourMCategory struct {

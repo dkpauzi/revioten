@@ -110,3 +110,36 @@ test('format template dengan metode AP menampilkan tabel Action Priority dan kal
 	});
 	expect(priority).toBe('H');
 });
+
+test('form PFMEA AIAG-VDA 2019 dan Control Plan AIAG 2024 tersedia sejak awal', async ({ page }) => {
+	// Form set langkah B dan C (D-133, D-135): isi awal kedua form baru.
+	await logIn(page);
+	await openFromMenu(page, en.navGroupTemplates, en.navFormatTemplates);
+	const choose = page.getByLabel(en.formatChoose);
+	// Pilihan dicari menurut nama template, karena nama jenis dokumennya boleh diganti test lain.
+	const pick = async (name: string) => {
+		const value = await choose.locator('option', { hasText: name }).getAttribute('value');
+		await choose.selectOption(value ?? '');
+	};
+
+	await pick('PFMEA AIAG-VDA 2019');
+	// Kolom dengan judul grupnya, dan dua kolom AP yang dihitung.
+	const failureMode = page.getByRole('row', { name: /^10 2\. Failure Mode \(FM\) FAILURE ANALYSIS \(STEP 4\) / });
+	await expect(failureMode).toContainText(en.formatKindText);
+	await expect(page.getByRole('row', { name: /^16 PFMEA AP RISK ANALYSIS \(STEP 5\) / })).toContainText(
+		en.formatKindApDetail.replace('{set}', en.formatSetCurrent)
+	);
+	await expect(page.getByRole('row', { name: /^28 PFMEA AP \(after action\) / })).toContainText(
+		en.formatKindApDetail.replace('{set}', en.formatSetResult)
+	);
+	await expect(page.getByRole('row', { name: /^4 3\. Process Work Element \(4M\) / })).toContainText('Man, Machine, Material, Method, Measurement, Milieu');
+	await expect(page.getByRole('row', { name: /^10 PFMEA ID Number / })).toContainText(en.formatKindDocumentNumber);
+	await expect(page.getByRole('heading', { name: en.apTableTitle })).toBeVisible();
+
+	await pick('Control Plan AIAG 2024');
+	await expect(page.getByRole('row', { name: /^1 Phase / })).toContainText('Prototype, Pre-launch, Safe Launch, Production');
+	await expect(page.getByRole('row', { name: /^2 Control plan No\. / })).toContainText(en.formatKindDocumentNumber);
+	await expect(page.getByRole('row', { name: /^3 Owner Part\/Process Number / })).toBeVisible();
+	// CP 2024 tidak punya kolom Process Flow; alurnya ada di PFD.
+	await expect(page.getByRole('row').filter({ hasText: en.formatKindProcessFlow })).toHaveCount(0);
+});

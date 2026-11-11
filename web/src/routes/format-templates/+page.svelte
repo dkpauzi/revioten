@@ -51,7 +51,7 @@
 	import VersionBar from '#lib/templates/VersionBar.svelte';
 	import { isDraft, latestVersion } from '#lib/versions.ts';
 
-	const kinds: FormatField['kind'][] = ['text', 'date', 'select', 'symbol', 'rating', 'rpn', 'operation_number', 'process', 'process_flow'];
+	const kinds: FormatField['kind'][] = ['text', 'date', 'select', 'symbol', 'rating', 'rpn', 'ap', 'operation_number', 'process', 'process_flow', 'document_number'];
 	const scales = ['severity', 'occurrence', 'detection'] as const;
 
 	// Data dari server. null berarti belum selesai dimuat.
@@ -231,7 +231,7 @@
 		if (field.kind === 'rating') {
 			input.rating_scale = (field.scale || undefined) as NewFormatField['rating_scale'];
 		}
-		if (field.kind === 'rating' || field.kind === 'rpn') {
+		if (field.kind === 'rating' || field.kind === 'rpn' || field.kind === 'ap') {
 			input.rating_set = field.set;
 		}
 		if (field.kind === 'select') {
@@ -432,7 +432,7 @@
 							{#if fieldErrors.rating_scale}<p class="error">{fieldErrors.rating_scale}</p>{/if}
 						</div>
 					{/if}
-					{#if field.kind === 'rating' || field.kind === 'rpn'}
+					{#if field.kind === 'rating' || field.kind === 'rpn' || field.kind === 'ap'}
 						<div class="field">
 							<label for="new-field-set">{t('formatRatingSet')}</label>
 							<select id="new-field-set" bind:value={field.set}>
@@ -567,6 +567,7 @@
 						<option value="aiag_4th">{t('formatMethodAiag4th')}</option>
 						<option value="aiag_vda">{t('formatMethodAiagVda')}</option>
 						<option value="sqam">{t('formatMethodSqam')}</option>
+						<option value="aiag_cp_2024">{t('formatMethodAiagCp2024')}</option>
 					</select>
 				</div>
 				<div class="field">

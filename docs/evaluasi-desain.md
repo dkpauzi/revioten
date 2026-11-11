@@ -109,6 +109,8 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-85 | Alias proses: siapa yang mengelola | Ambigu | M1.5, pencarian per proses | Tidak | Terbuka |
 | E-86 | Review berkala 3 tahun: rincian yang belum diputuskan | Celah | Tahap 5, 6, 7 | Tidak (perlu sebelum Tahap 6) | Terbuka |
 | E-87 | Menerbitkan versi template: perlu orang kedua atau tidak | Celah | M3.4, form set | Tidak | Diputuskan (D-143) |
+| E-88 | Label kembar di form asli, sedangkan label harus unik per area | Kontradiksi | M3.1, Tahap 6 | Tidak (perlu sebelum Tahap 6) | Terbuka |
+| E-89 | Nama proses di PFMEA AIAG-VDA: diketik atau diisi dari master proses | Kontradiksi | M4.1, M4.5 | Tidak (perlu sebelum M4.1) | Terbuka |
 
 ## Keputusan 4 November 2026
 
@@ -1599,6 +1601,37 @@ Salin blok ini untuk setiap temuan baru.
 - **Status:** Diputuskan
 - **Keputusan pemilik (11 November 2026, D-143):** (a). Kutipan: "E-87 boleh".
 
+### E-88 · Label kembar di form asli, sedangkan label harus unik per area
+
+- **Tanggal dan milestone:** 12 November 2026, form set langkah B dan C. Menyentuh M3.1 dan Tahap 6 (cetak).
+- **Jenis:** Kontradiksi
+- **Rujukan:** R-TPL-02, D-133, indeks `format_version_fields_label_key`.
+- **Temuan:** Form PFMEA AIAG-VDA punya dua kolom berlabel "PFMEA AP" (sebelum dan sesudah tindakan), dan form CP 2024 punya dua field "Other Approval/Date (if req'd)". Sejak M3.1 label wajib unik per area dalam satu versi.
+- **Dampak bila dibiarkan:** layar menampilkan label yang sedikit berbeda dari form cetak, atau cetakan harus punya label sendiri.
+- **Opsi:**
+  - (a) Label layar tetap unik (diberi pembeda), dan cetakan memakai label cetak terpisah yang boleh sama. Kolom label cetak ditambahkan saat ekspor dibangun (Tahap 6).
+  - (b) Aturan unik dilonggarkan menjadi unik per grup kolom.
+  - (c) Tetap diberi pembeda, juga di cetakan.
+- **Rekomendasi Claude Code (usulan):** (a).
+- **Asumsi sementara di kode:** (ASUMSI E-88) label diberi pembeda: "PFMEA AP (after action)" dan "Other Approval/Date (if req'd) 1" dan "2".
+- **Menghambat milestone?** Tidak (perlu sebelum ekspor, Tahap 6)
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+### E-89 · Nama proses di PFMEA AIAG-VDA: diketik atau diisi dari master proses
+
+- **Tanggal dan milestone:** 12 November 2026, form set langkah B. Menyentuh M4.1, M4.5, dan pencarian per proses.
+- **Jenis:** Kontradiksi
+- **Rujukan:** D-123, D-06, R-DOC-04, D-133, D-137.
+- **Temuan:** D-123 menetapkan nama proses dan nomor operasi selalu tampil sebagai kolom yang diisi dari baris, tidak pernah diketik. Tabel di prompt form set menulis kolom "1. Process Item" dan "2. Process Step" sebagai teks. Form CP 2024 di prompt yang sama memakai nomor dan nama proses dari baris.
+- **Dampak bila dibiarkan:** nama proses di PFMEA AIAG-VDA bisa berbeda ejaan dari master proses, dan pencarian per proses (D-137) harus mencocokkan teks, bukan ID.
+- **Opsi:**
+  - (a) "2. Process Step" menjadi kolom terisi otomatis: nomor operasi dan nama proses dari baris. "1. Process Item" tetap teks (nama produk atau line).
+  - (b) Keduanya tetap teks seperti di prompt.
+- **Rekomendasi Claude Code (usulan):** (a), supaya sama dengan D-123 dan form lain.
+- **Asumsi sementara di kode:** (ASUMSI E-89) (b), mengikuti tabel di prompt. Belum ada dokumen yang memakai form ini, jadi masih mudah diubah.
+- **Menghambat milestone?** Tidak (perlu sebelum M4.1 memakai form ini)
+- **Status:** Terbuka
+- **Keputusan pemilik:**
 ## Usulan desain UI (UX-01 sampai UX-07): dampak ke M0 sampai M3 dan saran
 
 - **Sumber:** `docs/uml/usulan-desain-ui.md` (UML draft 0.12, 3 November 2026) dan kanvas desain UI "Desain UI Sistem PFD PFMEA CP" (18 artboard, baris v2 disarankan).

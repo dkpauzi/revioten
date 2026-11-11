@@ -35,6 +35,7 @@ const (
 	KindSymbol = "symbol" // satu simbol karakteristik milik versi (R-TPL-11)
 	KindRating = "rating" // nilai 1 sampai 10 pada satu skala (severity, occurrence, detection)
 	KindRPN    = "rpn"    // dihitung: severity x occurrence x detection dengan set yang sama
+	KindAP     = "ap"     // dihitung: Action Priority dari tabel AP versi itu, dengan set yang sama (D-134)
 
 	// Kolom terisi otomatis (D-122, D-123, migrasi 00014). Isinya tidak
 	// diketik, tetapi diambil dari baris dokumen, jadi kolomnya selalu tampil
@@ -42,6 +43,8 @@ const (
 	KindOperationNumber = "operation_number" // nomor operasi baris, misalnya 5.2 (R-CMP-01)
 	KindProcess         = "process"          // nama proses baris dari master proses (D-06, R-DOC-04)
 	KindProcessFlow     = "process_flow"     // simbol alur langkah itu, dibentuk dari PFD (R-DOC-09)
+	// Field header yang diisi dari register nomor, tidak diketik (form set langkah B dan C).
+	KindDocumentNumber = "document_number"
 )
 
 // Skala rating (R-TPL-01).
@@ -64,6 +67,9 @@ const (
 	MethodAIAG4th = "aiag_4th"
 	MethodAIAGVDA = "aiag_vda"
 	MethodSQAM    = "sqam"
+	// Form Control Plan manual AIAG 2024 (D-135). Nilai sendiri, supaya CP
+	// lama dan CP 2024 bisa dibedakan tanpa melihat nama template.
+	MethodAIAGCP2024 = "aiag_cp_2024"
 )
 
 // Status versi. Published dipakai mulai M3.4 (R-TPL-05).
@@ -86,13 +92,16 @@ const (
 
 var (
 	scales = []string{ScaleSeverity, ScaleOccurrence, ScaleDetection}
-	kinds  = []string{KindText, KindDate, KindSelect, KindSymbol, KindRating, KindRPN, KindOperationNumber, KindProcess, KindProcessFlow}
+	kinds  = []string{KindText, KindDate, KindSelect, KindSymbol, KindRating, KindRPN, KindAP, KindOperationNumber, KindProcess, KindProcessFlow, KindDocumentNumber}
 	// filledKinds adalah kolom terisi otomatis: tidak diketik, dan paling
 	// banyak satu kolom per jenis dalam satu versi.
 	filledKinds = []string{KindOperationNumber, KindProcess, KindProcessFlow}
-	methods     = []string{MethodAIAG4th, MethodAIAGVDA, MethodSQAM}
-	risks       = []string{RiskRPN, RiskAP, RiskNone}
-	areaOrder   = map[string]int{AreaHeader: 0, AreaRow: 1}
+	// notTyped adalah semua jenis yang isinya tidak pernah diketik: dihitung
+	// (RPN, AP) atau diisi sistem (kolom terisi otomatis, nomor dokumen).
+	notTyped  = []string{KindRPN, KindAP, KindOperationNumber, KindProcess, KindProcessFlow, KindDocumentNumber}
+	methods   = []string{MethodAIAG4th, MethodAIAGVDA, MethodSQAM, MethodAIAGCP2024}
+	risks     = []string{RiskRPN, RiskAP, RiskNone}
+	areaOrder = map[string]int{AreaHeader: 0, AreaRow: 1}
 )
 
 // FormatTemplate adalah satu format template beserta ringkasan versinya.
@@ -142,7 +151,9 @@ type Field struct {
 	Area        string
 	Kind        string
 	RatingScale string // untuk KindRating
-	RatingSet   int    // untuk KindRating dan KindRPN: 1 nilai sekarang, 2 hasil tindakan
+	RatingSet   int    // untuk KindRating, KindRPN, dan KindAP: 1 nilai sekarang, 2 hasil tindakan
+	Key         string // key tetap, misalnya failure_mode; "" untuk field tanpa key (migrasi 00018)
+	Group       string // judul grup di atas kolom, misalnya "FAILURE ANALYSIS (STEP 4)"; "" tanpa grup
 	Label       string
 	Position    int // urutan dalam area, mulai 1
 	Required    bool
@@ -248,7 +259,7 @@ func CheckContent(v FormatVersion, area string, content map[string]any) ContentC
 		if blank(value) {
 			// RPN dihitung dan kolom terisi otomatis diambil dari baris, jadi
 			// keduanya tidak pernah dianggap kosong.
-			if f.Required && !f.Hidden && f.Kind != KindRPN && !slices.Contains(filledKinds, f.Kind) {
+			if f.Required && !f.Hidden && !slices.Contains(notTyped, f.Kind) {
 				c.Missing = append(c.Missing, f.ID)
 			}
 			continue
@@ -289,6 +300,10 @@ func checkValue(f Field, value any, symbols []Symbol) *problem.Problem {
 	switch f.Kind {
 	case KindRPN:
 		return bad(problem.NotAllowed, "RPN is calculated from severity, occurrence, and detection.")
+	case KindAP:
+		return bad(problem.NotAllowed, "The action priority is read from the AP table, not typed.")
+	case KindDocumentNumber:
+		return bad(problem.NotAllowed, "The document number comes from the register, not typed.")
 	case KindOperationNumber:
 		return bad(problem.NotAllowed, "The operation number comes from the row, not typed.")
 	case KindProcess:
@@ -377,6 +392,61 @@ func RPN(v FormatVersion, content map[string]any) map[string]int {
 	return out
 }
 
+// AP mencari Action Priority setiap kolom AP dari severity, occurrence, dan
+// detection dengan set yang sama, memakai tabel AP versi itu (D-134). Kolom
+// AP yang salah satu nilainya belum sah tidak ikut di hasil.
+func AP(v FormatVersion, content map[string]any) map[string]string {
+	ratings := map[string]int{} // "skala/set" menjadi nilai
+	for _, f := range v.Fields {
+		if f.Kind != KindRating {
+			continue
+		}
+		if n, ok := whole(content[f.ID]); ok && n >= 1 && n <= maxRating {
+			ratings[fmt.Sprintf("%s/%d", f.RatingScale, f.RatingSet)] = n
+		}
+	}
+	out := map[string]string{}
+	for _, f := range v.Fields {
+		if f.Kind != KindAP {
+			continue
+		}
+		s, sOK := ratings[fmt.Sprintf("%s/%d", ScaleSeverity, f.RatingSet)]
+		o, oOK := ratings[fmt.Sprintf("%s/%d", ScaleOccurrence, f.RatingSet)]
+		d, dOK := ratings[fmt.Sprintf("%s/%d", ScaleDetection, f.RatingSet)]
+		if !sOK || !oOK || !dOK {
+			continue
+		}
+		if priority, ok := ActionPriority(v.APRules, s, o, d); ok {
+			out[f.ID] = priority
+		}
+	}
+	return out
+}
+
+// Key kolom tindakan di form PFMEA AIAG-VDA. Aturan sorot AP melihat kedua
+// kolom ini lewat key-nya, karena labelnya boleh diganti.
+const (
+	keyPreventionAction = "prevention_action"
+	keyDetectionAction  = "detection_action"
+)
+
+// apHighWithoutAction melaporkan apakah baris dengan AP H belum punya
+// tindakan: Prevention Action dan Detection Action sama-sama kosong. Form
+// tanpa kedua kolom itu tidak pernah disorot.
+func apHighWithoutAction(v FormatVersion, content map[string]any) bool {
+	found := false
+	for _, f := range v.Fields {
+		if f.Key != keyPreventionAction && f.Key != keyDetectionAction {
+			continue
+		}
+		found = true
+		if !blank(content[f.ID]) {
+			return false
+		}
+	}
+	return found
+}
+
 // Highlights mengembalikan ID field yang disorot menurut aturan sorot versi:
 // RPN di atas ambang, dan severity paling sedikit ambang (R-TPL-11). Sorotan
 // hanya tanda; isi tetap sah dan tetap bisa disimpan (R-DOC-06).
@@ -384,9 +454,16 @@ func RPN(v FormatVersion, content map[string]any) map[string]int {
 // untuk nilai sekarang maupun hasil tindakan.
 func Highlights(v FormatVersion, content map[string]any) []string {
 	rpn := RPN(v, content)
+	ap := AP(v, content)
+	noAction := apHighWithoutAction(v, content)
 	var out []string
 	for _, f := range v.Fields {
 		switch {
+		// AP H (nilai sekarang) tanpa tindakan: hanya menandai, tidak memblokir (prompt form set, R-TPL-11).
+		case f.Kind == KindAP && f.RatingSet == 1:
+			if ap[f.ID] == PriorityHigh && noAction {
+				out = append(out, f.ID)
+			}
 		case f.Kind == KindRPN && v.HighlightRPNAbove > 0:
 			if n, ok := rpn[f.ID]; ok && n > v.HighlightRPNAbove {
 				out = append(out, f.ID)
@@ -451,18 +528,21 @@ func cleanNewField(v FormatVersion, in NewField) (NewField, []*problem.Problem) 
 		add("kind", problem.Required, "Choose the kind of field.")
 	case !slices.Contains(kinds, in.Kind):
 		add("kind", problem.InvalidFormat, "Choose a kind from the list.")
-	case (in.Kind == KindRating || in.Kind == KindRPN || in.Kind == KindSymbol || slices.Contains(filledKinds, in.Kind)) && in.Area == AreaHeader:
+	case (in.Kind == KindRating || in.Kind == KindRPN || in.Kind == KindAP || in.Kind == KindSymbol || slices.Contains(filledKinds, in.Kind)) && in.Area == AreaHeader:
 		add("kind", problem.NotAllowed, "Ratings, RPN, symbols, and filled columns are columns, not header fields.")
 	case in.Kind == KindRating && v.RiskMethod == RiskNone,
-		in.Kind == KindRPN && v.RiskMethod != RiskRPN:
+		in.Kind == KindRPN && v.RiskMethod != RiskRPN,
+		in.Kind == KindAP && v.RiskMethod != RiskAP:
 		add("kind", problem.NotAllowed, "The risk method of this format template has no such column.")
+	case in.Kind == KindDocumentNumber && in.Area == AreaRow:
+		add("kind", problem.NotAllowed, "The document number is a header field, not a column.")
 	}
 	kindAllowed := len(list) == kindProblems
 	label, labelProblem := problem.Text("label", in.Label, true, maxLabelLength)
 	list = append(list, labelProblem)
 	out := NewField{Area: in.Area, Kind: in.Kind, Label: label, Required: in.Required}
 
-	if in.Kind == KindRating || in.Kind == KindRPN {
+	if in.Kind == KindRating || in.Kind == KindRPN || in.Kind == KindAP {
 		if in.RatingSet != 1 && in.RatingSet != 2 {
 			add("rating_set", problem.InvalidFormat, "Use set 1 for the current values or 2 for the action results.")
 		}
@@ -479,11 +559,11 @@ func cleanNewField(v FormatVersion, in NewField) (NewField, []*problem.Problem) 
 	}
 	// Satu kolom per skala dan set, satu kolom RPN per set, supaya RPN dan
 	// aturan sorot tahu nilai mana yang dipakai.
-	if kindAllowed && (in.Kind == KindRating || in.Kind == KindRPN) {
+	if kindAllowed && (in.Kind == KindRating || in.Kind == KindRPN || in.Kind == KindAP) {
 		for _, f := range v.Fields {
 			if f.Kind == in.Kind && f.RatingSet == in.RatingSet && f.RatingScale == in.RatingScale {
 				field := "rating_scale"
-				if in.Kind == KindRPN {
+				if in.Kind == KindRPN || in.Kind == KindAP {
 					field = "rating_set"
 				}
 				add(field, problem.Taken, "This format template already has this column.")
@@ -493,7 +573,7 @@ func cleanNewField(v FormatVersion, in NewField) (NewField, []*problem.Problem) 
 	}
 
 	// Kolom terisi otomatis cukup satu per jenis: isinya sama untuk satu baris.
-	if kindAllowed && slices.Contains(filledKinds, in.Kind) &&
+	if kindAllowed && (slices.Contains(filledKinds, in.Kind) || in.Kind == KindDocumentNumber) &&
 		slices.ContainsFunc(v.Fields, func(f Field) bool { return f.Kind == in.Kind }) {
 		add("kind", problem.Taken, "This format template already has this column.")
 	}

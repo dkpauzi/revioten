@@ -126,7 +126,8 @@ export const helpId: HelpContent = {
 			image: 'format-templates',
 			imageAlt: 'Halaman Format templates dengan kolom form PFMEA.',
 			tips: [
-				'Nomor operasi, nama proses, dan process flow diisi sistem dan tidak pernah diketik.',
+				'Sistem dimulai dengan dua set form: PFMEA AIAG 4th (RPN) dengan Control Plan yang dipakai sekarang, dan PFMEA AIAG-VDA 2019 (Action Priority) dengan Control Plan AIAG 2024. Form PFD sama untuk keduanya.',
+				'Nomor operasi, nama proses, process flow, nomor dokumen, RPN, dan Action Priority diisi sistem dan tidak pernah diketik.',
 				'Mengganti label tidak mengubah data dokumen, karena dokumen menunjuk ID tetap sebuah field.'
 			]
 		},

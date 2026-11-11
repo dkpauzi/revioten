@@ -126,7 +126,8 @@ export const helpEn: HelpContent = {
 			image: 'format-templates',
 			imageAlt: 'The Format templates page with the columns of the PFMEA form.',
 			tips: [
-				'The operation number, the process name, and the process flow are filled in by the system and are never typed.',
+				'The system starts with two sets of forms: PFMEA AIAG 4th (RPN) with the current Control Plan, and PFMEA AIAG-VDA 2019 (Action Priority) with Control Plan AIAG 2024. The PFD form is the same for both.',
+				'The operation number, the process name, the process flow, the document number, RPN, and Action Priority are filled in by the system and are never typed.',
 				'Changing a label never changes the data of documents, because documents refer to the fixed ID of a field.'
 			]
 		},

@@ -222,6 +222,12 @@ func toAPIFormatVersion(v template.FormatVersion) FormatVersion {
 		if f.RatingSet != 0 {
 			field.RatingSet = &f.RatingSet
 		}
+		if f.Key != "" {
+			field.Key = &f.Key
+		}
+		if f.Group != "" {
+			field.Group = &f.Group
+		}
 		if f.Kind == template.KindSelect {
 			options := make([]FieldOption, 0, len(f.Options))
 			for _, o := range f.Options {

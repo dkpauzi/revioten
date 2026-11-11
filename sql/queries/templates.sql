@@ -56,19 +56,19 @@ SET highlight_rpn_above = $2, highlight_severity_at_least = $3
 WHERE id = $1;
 
 -- name: CreateFormatField :one
-INSERT INTO format_fields (template_id, area, kind, rating_scale, rating_set)
-VALUES ($1, $2, $3, $4, $5)
+INSERT INTO format_fields (template_id, area, kind, rating_scale, rating_set, key)
+VALUES ($1, $2, $3, $4, $5, $6)
 RETURNING id;
 
 -- name: AddVersionField :exec
-INSERT INTO format_version_fields (version_id, field_id, template_id, area, label, position, required, hidden, options)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);
+INSERT INTO format_version_fields (version_id, field_id, template_id, area, label, position, required, hidden, options, group_label)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);
 
 -- name: ListVersionFields :many
 -- ListVersionFields mengambil field satu versi: field header dulu, lalu
 -- kolom baris, masing-masing menurut urutan.
 SELECT vf.field_id, vf.area, f.kind, f.rating_scale, f.rating_set,
-       vf.label, vf.position, vf.required, vf.hidden, vf.options
+       vf.label, vf.position, vf.required, vf.hidden, vf.options, f.key, vf.group_label
 FROM format_version_fields vf
 JOIN format_fields f ON f.id = vf.field_id
 WHERE vf.version_id = $1
@@ -136,8 +136,8 @@ WHERE id = $1 AND status = 'draft';
 -- name: CopyFormatVersionFields :exec
 -- CopyFormatVersionFields menyalin field satu versi ke versi baru template
 -- yang sama. ID field tetap, jadi data dokumen tetap terbaca (R-TPL-02).
-INSERT INTO format_version_fields (version_id, field_id, template_id, area, label, position, required, hidden, options)
-SELECT sqlc.arg(target_id)::uuid, s.field_id, s.template_id, s.area, s.label, s.position, s.required, s.hidden, s.options
+INSERT INTO format_version_fields (version_id, field_id, template_id, area, label, position, required, hidden, options, group_label)
+SELECT sqlc.arg(target_id)::uuid, s.field_id, s.template_id, s.area, s.label, s.position, s.required, s.hidden, s.options, s.group_label
 FROM format_version_fields s
 WHERE s.version_id = sqlc.arg(source_id);
 

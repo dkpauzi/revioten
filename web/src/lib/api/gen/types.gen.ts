@@ -921,7 +921,7 @@ export type FormatTemplate = {
     /**
      * Missing for the forms in use today (PFD, CP).
      */
-    methodology?: 'aiag_4th' | 'aiag_vda' | 'sqam';
+    methodology?: 'aiag_4th' | 'aiag_vda' | 'sqam' | 'aiag_cp_2024';
     /**
      * Missing for a general format template; set for a customer SQAM format.
      */
@@ -945,7 +945,7 @@ export type FormatVersionSummary = {
 export type NewFormatTemplate = {
     name: string;
     document_type_id: string;
-    methodology?: 'aiag_4th' | 'aiag_vda' | 'sqam';
+    methodology?: 'aiag_4th' | 'aiag_vda' | 'sqam' | 'aiag_cp_2024';
     customer_id?: string;
     /**
      * Required without copy_from_version_id; a copy takes the risk method of its source.
@@ -1022,12 +1022,20 @@ export type FormatField = {
     /**
      * operation_number, process, and process_flow are filled from the row (operation number, process master, PFD steps) and never typed, like rpn (D-122, D-123).
      */
-    kind: 'text' | 'date' | 'select' | 'symbol' | 'rating' | 'rpn' | 'operation_number' | 'process' | 'process_flow';
+    kind: 'text' | 'date' | 'select' | 'symbol' | 'rating' | 'rpn' | 'ap' | 'operation_number' | 'process' | 'process_flow' | 'document_number';
     rating_scale?: 'severity' | 'occurrence' | 'detection';
     /**
-     * For rating and rpn, 1 for the current values and 2 for the action results.
+     * For rating, rpn, and ap, 1 for the current values and 2 for the action results.
      */
     rating_set?: number;
+    /**
+     * Fixed key of the field, for example failure_mode. Absent for fields without a key.
+     */
+    key?: string;
+    /**
+     * Title of the column group above this column, for example FAILURE ANALYSIS (STEP 4).
+     */
+    group?: string;
     label: string;
     /**
      * Position within the area, from 1.
@@ -1051,7 +1059,7 @@ export type NewFormatField = {
     /**
      * operation_number, process, and process_flow are filled from the row (operation number, process master, PFD steps) and never typed, like rpn (D-122, D-123).
      */
-    kind: 'text' | 'date' | 'select' | 'symbol' | 'rating' | 'rpn' | 'operation_number' | 'process' | 'process_flow';
+    kind: 'text' | 'date' | 'select' | 'symbol' | 'rating' | 'rpn' | 'ap' | 'operation_number' | 'process' | 'process_flow' | 'document_number';
     label: string;
     required?: boolean;
     rating_scale?: 'severity' | 'occurrence' | 'detection';

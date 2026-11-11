@@ -57,8 +57,8 @@ func (q *Queries) AddRatingCriterion(ctx context.Context, arg AddRatingCriterion
 }
 
 const addVersionField = `-- name: AddVersionField :exec
-INSERT INTO format_version_fields (version_id, field_id, template_id, area, label, position, required, hidden, options)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+INSERT INTO format_version_fields (version_id, field_id, template_id, area, label, position, required, hidden, options, group_label)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 `
 
 type AddVersionFieldParams struct {
@@ -71,6 +71,7 @@ type AddVersionFieldParams struct {
 	Required   bool
 	Hidden     bool
 	Options    []byte
+	GroupLabel *string
 }
 
 func (q *Queries) AddVersionField(ctx context.Context, arg AddVersionFieldParams) error {
@@ -84,6 +85,7 @@ func (q *Queries) AddVersionField(ctx context.Context, arg AddVersionFieldParams
 		arg.Required,
 		arg.Hidden,
 		arg.Options,
+		arg.GroupLabel,
 	)
 	return err
 }
@@ -123,8 +125,8 @@ func (q *Queries) CopyFormatSymbols(ctx context.Context, arg CopyFormatSymbolsPa
 }
 
 const copyFormatVersionFields = `-- name: CopyFormatVersionFields :exec
-INSERT INTO format_version_fields (version_id, field_id, template_id, area, label, position, required, hidden, options)
-SELECT $1::uuid, s.field_id, s.template_id, s.area, s.label, s.position, s.required, s.hidden, s.options
+INSERT INTO format_version_fields (version_id, field_id, template_id, area, label, position, required, hidden, options, group_label)
+SELECT $1::uuid, s.field_id, s.template_id, s.area, s.label, s.position, s.required, s.hidden, s.options, s.group_label
 FROM format_version_fields s
 WHERE s.version_id = $2
 `
@@ -142,8 +144,8 @@ func (q *Queries) CopyFormatVersionFields(ctx context.Context, arg CopyFormatVer
 }
 
 const createFormatField = `-- name: CreateFormatField :one
-INSERT INTO format_fields (template_id, area, kind, rating_scale, rating_set)
-VALUES ($1, $2, $3, $4, $5)
+INSERT INTO format_fields (template_id, area, kind, rating_scale, rating_set, key)
+VALUES ($1, $2, $3, $4, $5, $6)
 RETURNING id
 `
 
@@ -153,6 +155,7 @@ type CreateFormatFieldParams struct {
 	Kind        string
 	RatingScale *string
 	RatingSet   *int16
+	Key         *string
 }
 
 func (q *Queries) CreateFormatField(ctx context.Context, arg CreateFormatFieldParams) (string, error) {
@@ -162,6 +165,7 @@ func (q *Queries) CreateFormatField(ctx context.Context, arg CreateFormatFieldPa
 		arg.Kind,
 		arg.RatingScale,
 		arg.RatingSet,
+		arg.Key,
 	)
 	var id string
 	err := row.Scan(&id)
@@ -448,7 +452,7 @@ func (q *Queries) ListRatingCriteria(ctx context.Context, versionID string) ([]L
 
 const listVersionFields = `-- name: ListVersionFields :many
 SELECT vf.field_id, vf.area, f.kind, f.rating_scale, f.rating_set,
-       vf.label, vf.position, vf.required, vf.hidden, vf.options
+       vf.label, vf.position, vf.required, vf.hidden, vf.options, f.key, vf.group_label
 FROM format_version_fields vf
 JOIN format_fields f ON f.id = vf.field_id
 WHERE vf.version_id = $1
@@ -466,6 +470,8 @@ type ListVersionFieldsRow struct {
 	Required    bool
 	Hidden      bool
 	Options     []byte
+	Key         *string
+	GroupLabel  *string
 }
 
 // ListVersionFields mengambil field satu versi: field header dulu, lalu
@@ -490,6 +496,8 @@ func (q *Queries) ListVersionFields(ctx context.Context, versionID string) ([]Li
 			&i.Required,
 			&i.Hidden,
 			&i.Options,
+			&i.Key,
+			&i.GroupLabel,
 		); err != nil {
 			return nil, err
 		}
