@@ -1,7 +1,7 @@
 # Rencana · Form set AIAG-VDA, multi-part, pencarian per proses, dan tampilan genba
 
 - **Dibuat:** 10 November 2026, dari prompt pemilik `docs/design/form-set-aiag-vda/PROMPT-claude-code-form-set-aiag-vda.md` dan board desain di folder yang sama.
-- **Status:** rencana, **menunggu persetujuan pemilik**. Belum ada kode yang ditulis untuk rencana ini.
+- **Status:** urutan disetujui pemilik pada 11 November 2026 ("E-80 A", D-140). Langkah A sampai D dikerjakan satu per satu, masing-masing dengan rencana singkat lebih dulu. Belum ada kode yang ditulis.
 - **Keputusan yang sudah dicatat di brief:** D-133 (form set), D-134 (tabel AP mengikuti handbook), D-135 (fase CP 2024), D-136 (multi-part), D-137 (pencarian per proses dan tampilan genba).
 
 ## 1. Hal yang perlu Anda ketahui dulu
@@ -86,7 +86,7 @@ Pertanyaan 3, 4, 5, 8, dan 9 dari prompt sudah saya catat sebagai temuan Terbuka
 
 | Temuan | Pertanyaan | Menghambat |
 |---|---|---|
-| E-80 | Setuju urutan di bagian 2 (A sampai D sekarang, sisanya menumpang milestone yang ada)? | Ya, untuk mulai |
+| E-80 ✅ | Diputuskan 11 November 2026 (D-140): opsi (a) | — |
 | E-81 | Poin PFMEA di process template: satu baris teks, atau isi per kolom (dan bagaimana dipakai di set 1 dan set 2)? | Sebelum M4.5 |
 | E-82 ✅ | Diputuskan 11 November 2026 (D-139): PPAP Supervisor (APQP/PPAP Controller) untuk saat ini, lewat hak baru yang bisa diberikan admin ke akun lain, misalnya Project Leader | — |
 | E-83 | Dokumen set 1 dipindah ke set 2 satu per satu, atau boleh massal per customer? | Sebelum langkah J |

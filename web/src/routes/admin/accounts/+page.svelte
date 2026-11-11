@@ -1,7 +1,7 @@
 <script lang="ts">
 	// Halaman pengelolaan akun (M1.2, hak A-1). Server memeriksa hak setiap
 	// operasi; halaman ini hanya menawarkan aksi yang masuk akal.
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import {
 		createAccount,
 		disableAccount,
@@ -16,6 +16,7 @@
 	import type { AccountInfo, NewAccount, Role, RoleGrant } from '#lib/api/gen/index.ts';
 	import { accountStatus, peopleOf } from '#lib/accounts.ts';
 	import { failureText, problemText } from '#lib/errors.ts';
+	import { copyText } from '#lib/clipboard.ts';
 	import { t } from '#lib/i18n/index.ts';
 	import RoleEditor from '#lib/RoleEditor.svelte';
 	import { grantLabel } from '#lib/roles.ts';
@@ -45,6 +46,25 @@
 	// Password sementara hanya dikirim server satu kali, jadi ditampilkan di
 	// sini sampai ada aksi lain atau halaman ditinggalkan.
 	let temporary = $state<{ login: string; password: string } | null>(null);
+	// Kata sandi sementara disalin otomatis ke clipboard. null berarti belum dicoba.
+	let copied = $state<boolean | null>(null);
+	let notice = $state<HTMLElement | null>(null);
+
+	// showTemporary menampilkan kata sandi sementara, menyalinnya ke clipboard,
+	// dan menggulir layar ke kotaknya supaya tidak terlewat (masukan pemilik,
+	// 11 November 2026). Kata sandi tetap tampil di layar bila penyalinan ditolak browser.
+	async function showTemporary(login: string, password: string) {
+		copied = await copyText(password);
+		temporary = { login, password };
+		await tick();
+		notice?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+	}
+
+	async function copyAgain() {
+		if (temporary) {
+			copied = await copyText(temporary.password);
+		}
+	}
 
 	// Akun yang perannya sedang diubah, beserta pilihan peran barunya.
 	let editingId = $state<string | null>(null);
@@ -100,13 +120,14 @@
 			}
 			return;
 		}
-		temporary = { login: result.data.account.login, password: result.data.temporary_password };
+		const created = result.data;
 		personName = '';
 		employeeNumber = '';
 		personId = '';
 		login = '';
 		grants = [];
 		await load();
+		await showTemporary(created.account.login, created.temporary_password);
 	}
 
 	// failureMessage memberi teks kegagalan sebuah aksi: masalah dari server bila
@@ -151,7 +172,7 @@
 		}
 		const data = await run(() => resetAccountPassword(account.id));
 		if (data) {
-			temporary = { login: account.login, password: data.temporary_password };
+			await showTemporary(account.login, data.temporary_password);
 		}
 	}
 
@@ -180,9 +201,14 @@
 <h1>{t('accountsTitle')}</h1>
 
 {#if temporary}
-	<div class="notice" role="status">
-		<p>{t('accountTemporaryPassword', { login: temporary.login })} <code>{temporary.password}</code></p>
-		<p>{t('accountTemporaryHint')}</p>
+	<div class="notice" bind:this={notice}>
+		<!-- Hanya bagian ini yang menjadi pesan (dan pop-up); tombol di luarnya. -->
+		<div role="status" data-toast-long>
+			<p>{t('accountTemporaryPassword', { login: temporary.login })} <code>{temporary.password}</code></p>
+			<p>{copied ? t('accountPasswordCopied') : t('accountPasswordNotCopied')}</p>
+			<p>{t('accountTemporaryHint')}</p>
+		</div>
+		<button type="button" onclick={copyAgain}>{t('accountCopyPassword')}</button>
 	</div>
 {/if}
 

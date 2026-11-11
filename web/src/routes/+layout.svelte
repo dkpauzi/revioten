@@ -8,6 +8,7 @@
 	import { page } from '$app/state';
 	import type { LayoutProps } from './$types';
 	import LanguageSwitch from '#lib/LanguageSwitch.svelte';
+	import Toaster from '#lib/Toaster.svelte';
 	import { getSession, logout, setUnauthenticatedHandler } from '#lib/api/client.ts';
 	import { failureText } from '#lib/errors.ts';
 	import { t } from '#lib/i18n/index.ts';
@@ -215,6 +216,9 @@
 		<p>{t('sessionChecking')}</p>
 	{/if}
 </main>
+
+<!-- Pop-up untuk setiap pesan berhasil atau gagal di halaman. -->
+<Toaster />
 
 <style>
 	.top {

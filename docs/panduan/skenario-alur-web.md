@@ -2,7 +2,7 @@
 
 - **Dibuat:** 8 November 2026, setelah M3.3. Akan diperbarui setiap milestone menambah layar.
 - **Untuk siapa:** pemilik, untuk mencoba seluruh sistem dari database kosong secara berurutan.
-- **Isinya:** hanya layar yang sudah dibangun (M0.1 sampai M3.3). Langkah yang belum ada di sistem ditulis di bagian 9.
+- **Isinya:** hanya layar yang sudah dibangun (M0.1 sampai M3.4). Langkah yang belum ada di sistem ditulis di bagian 9.
 - **Nama orang:** semua nama di sini contoh. Jangan memakai nama orang asli di data uji.
 
 ## Versi otomatis (tur)
@@ -51,9 +51,10 @@ Urutannya mengikuti siapa yang boleh melakukan apa:
                    9. Master proses (Processes)
                   10. Process template: sub-proses, poin, cakupan, varian
                   11. Pratinjau poin untuk satu model
-                  12. Daftarkan nomor dokumen (sebagai set)
-[PPAP Staff]      13. Void / obsolete nomor, impor nomor lama
-[Admin]           14. Audit log: periksa rantai
+                  12. Terbitkan versi template, lalu buat versi baru
+                  13. Daftarkan nomor dokumen (sebagai set)
+[PPAP Staff]      14. Void / obsolete nomor, impor nomor lama
+[Admin]           15. Audit log: periksa rantai
 ```
 
 Mengapa admin lebih dulu: data dasar (customer, model, akun, jabatan) hanya bisa dibuat akun admin (hak A-1 dan A-2). Akun kerja tidak bisa membuatnya, dan akun admin tidak bisa menyusun template atau mendaftarkan nomor (D-72: akun admin tidak pernah memegang peran kerja).
@@ -153,7 +154,7 @@ Menu **Admin → Accounts**, bagian **Create an account**.
 3. **Login name**: 3 sampai 64 karakter, berupa huruf kecil a sampai z, angka, titik, garis bawah, atau tanda minus. Contoh: `ppap.engineer`. Nama login tidak bisa dipakai dua kali.
 4. **Roles**: centang peran sesuai tabel di bagian 1, lalu pilih cakupan setiap peran, yaitu **All customers** atau **Own project group**.
 5. Tekan **Create account**.
-6. Layar menampilkan **Temporary password for ppap.engineer** satu kali saja. Salin ke tempat aman sementara: password ini tidak bisa dilihat lagi. Orangnya wajib menggantinya saat login pertama.
+6. Layar bergulir ke kotak **Temporary password for ppap.engineer** di bagian atas, dan pop-up di pojok kanan atas menampilkan pesan yang sama. Kata sandi sementara ini **otomatis disalin ke clipboard**, jadi cukup tempel dengan Ctrl+V di tempat Anda mencatatnya. Bila penyalinan ditolak browser, tekan **Copy password**. Kata sandi ini tampil satu kali saja dan wajib diganti orangnya saat login pertama.
 7. Ulangi untuk `ppap.staff`.
 
 Di daftar **All accounts**, admin bisa mengubah peran (**Edit roles**, lalu **Save roles**), mereset password (**Reset password**), atau menonaktifkan akun (**Disable**). Akun tidak pernah dihapus.
@@ -211,7 +212,7 @@ Dokumen menunjuk proses lewat ID tetapnya, jadi mengganti nama proses lewat **Ed
 ### Langkah 10 · Process template
 Menu **Template library → Process templates**.
 
-1. **Process**: pilih `Laser marking`. Bila belum punya template, tekan **Add process template**. Satu proses hanya punya satu template (D-129). Template baru dibuat sebagai **Version 1 · Draft**.
+1. **Process**: pilih `Laser marking`. Bila belum punya template, tekan **Add process template**. Satu proses hanya punya satu template (D-129). Template baru dibuat sebagai **Version 1 · Draft** (lihat langkah 12).
 2. **Sub-processes**: isi **Name** (misalnya `Persiapan`, lalu `Marking`, lalu `Inspeksi`) dan tekan **Add sub-process** untuk setiap sub-proses. Urutan bisa diubah dengan tombol panah naik dan turun.
 3. Pada sub-proses `Marking`, tekan **Points**. Bagian **Points of Marking** terbuka, dengan daftar terpisah untuk PFD, PFMEA, dan CP.
 4. Di **Add a point to Marking**:
@@ -237,9 +238,20 @@ Contoh: laser type biasanya umum, tetapi model K-125 memakai laser fiber 20 W.
 
 Urutan yang menang: model, lalu group model, lalu customer, lalu umum (R-TPL-03).
 
+### Langkah 12 · Terbitkan versi, lalu buat versi baru
+Template baru berstatus **Draft**. Selama draft, isinya bebas diubah.
+
+1. Di baris **Version** (di atas daftar sub-proses), tekan **Publish version 1**.
+2. Jawab **OK** pada pertanyaan konfirmasi. Sesudah terbit, versi itu tidak bisa diubah lagi oleh siapa pun.
+3. Label berubah menjadi **Published**, dan tombol tambah serta ubah hilang.
+4. Untuk mengubah isi template sesudah terbit, tekan **New version**. Sistem membuat **Version 2 · Draft** sebagai salinan versi 1, dengan ID sub-proses dan poin yang sama.
+5. Kotak pilihan **Version** dipakai untuk membuka kembali versi lama (hanya bisa dibaca).
+
+Satu template paling banyak punya satu draft, jadi **New version** baru muncul lagi setelah versi 2 diterbitkan. Format template punya baris versi yang sama; yang menerbitkannya akun admin.
+
 ## 5. Penyusun: daftarkan nomor dokumen
 
-### Langkah 12 · Register nomor
+### Langkah 13 · Register nomor
 Akun `ppap.engineer` juga memegang peran Author. Buka menu **Documents → Numbers**.
 
 1. Di **Register a number**, pilih **Customer** `LM`.
@@ -253,7 +265,7 @@ Register bisa disaring dengan **Customer**, **Type**, **Status**, dan **Number c
 
 ## 6. Dokumen kontrol: status nomor dan impor
 
-### Langkah 13 · Void, obsolete, dan impor
+### Langkah 14 · Void, obsolete, dan impor
 Logout, lalu login dengan `ppap.staff` dan ganti password seperti langkah 8.
 
 1. **Documents → Numbers**: setiap baris register punya tombol **Void** dan **Make obsolete**. Isi alasan (wajib), lalu tekan **Confirm**.
@@ -265,7 +277,7 @@ Logout, lalu login dengan `ppap.staff` dan ganti password seperti langkah 8.
 
 ## 7. Admin: periksa jejak
 
-### Langkah 14 · Audit log
+### Langkah 15 · Audit log
 Logout, lalu login lagi sebagai `admin.contoh`. Buka **Admin → Audit log**.
 
 1. Setiap langkah di atas tercatat: siapa, kapan, apa, dan akun mana (termasuk orang pemegangnya).
@@ -288,7 +300,6 @@ Langkah ini akan ditambahkan ke panduan saat milestone-nya selesai.
 
 | Milestone | Langkah yang akan muncul |
 |---|---|
-| M3.4 | Menerbitkan versi process template (Draft → Published) dan versi baru |
 | M4.x | Membuat draft PFD, PFMEA, dan CP dari nomor yang sudah didaftarkan, lalu merakit baris dari process template untuk satu model (varian otomatis terpilih) |
 | M4.5 | Doc ref terisi dari master dokumen terkait (D-130) |
 | Tahap 5 | Permintaan perubahan, verifikasi, dan draft revisi |

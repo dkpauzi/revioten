@@ -190,8 +190,6 @@ test('alur dari admin sampai nomor dokumen', async ({ page }) => {
 	await openFromMenu(page, en.navGroupDocuments, en.navNumbers);
 	await say(page, 'Langkah 13', 'Documents > Numbers. Satu set: PFD, PFMEA, dan CP dengan nomor berjalan yang sama.');
 	await page.getByLabel(en.numberCustomer, { exact: true }).first().selectOption({ label: 'LM · Contoh Customer LM' });
-	// Tunggu nomor berikutnya tampil dulu, supaya pilihan customer sudah terpakai.
-	await expect(page.getByText('SH-LM-001')).toBeVisible();
 	await page.getByRole('button', { name: en.numberRegister, exact: true }).click();
 	await expect(page.getByRole('status')).toContainText('SH-LM-001');
 	await say(page, 'Langkah 13', 'Tiga nomor terdaftar dengan status Reserved. Nomor tidak pernah dihapus atau dipakai ulang.');

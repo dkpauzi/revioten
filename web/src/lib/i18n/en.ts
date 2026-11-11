@@ -636,6 +636,10 @@ export const en = {
 	accountCreate: 'Create account',
 	accountCreating: 'Creating…',
 	accountTemporaryPassword: 'Temporary password for {login}:',
+	accountPasswordCopied: 'The password was copied to the clipboard. Paste it with Ctrl+V.',
+	accountPasswordNotCopied: 'The password could not be copied automatically. Use the Copy password button, or copy it from here.',
+	accountCopyPassword: 'Copy password',
+	toastDismiss: 'Click to close',
 	accountTemporaryHint:
 		'Give this password to the person. It is shown only once. The person must change it at the first login.',
 	accountStatus: 'Status',

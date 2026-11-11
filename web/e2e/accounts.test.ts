@@ -5,6 +5,10 @@ import { expect, test, type Page } from '@playwright/test';
 import { en } from '../src/lib/i18n/en.ts';
 import { logIn, logOut, mainMenu, openFromMenu } from './helpers.ts';
 
+// Kata sandi sementara disalin otomatis ke clipboard, jadi browser test diberi
+// izin membaca dan menulis clipboard.
+test.use({ permissions: ['clipboard-read', 'clipboard-write'] });
+
 // createWorkAccount mengisi formulir akun kerja untuk orang baru, lalu
 // mengembalikan password sementara yang ditampilkan satu kali.
 async function createWorkAccount(
@@ -60,6 +64,14 @@ test('akun baru wajib ganti password, lalu hanya mendapat hak dari perannya', as
 		.selectOption('own_project_group');
 	await form.getByRole('button', { name: en.accountCreate }).click();
 	const temporary = await temporaryPasswordFor(page, 'author.e2e');
+
+	// Kata sandi sementara sudah ada di clipboard, kotaknya digulir ke layar,
+	// dan pop-up di pojok menampilkan pesan yang sama (masukan pemilik, 11 November 2026).
+	expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(temporary);
+	await expect(page.getByRole('status')).toContainText(en.accountPasswordCopied);
+	await expect(page.getByRole('status')).toBeInViewport();
+	await expect(page.locator('.toast')).toHaveAttribute('data-text', new RegExp(`author\\.e2e.*${temporary}`));
+	await expect(page.getByRole('button', { name: en.accountCopyPassword })).toBeVisible();
 
 	const row = page.getByRole('row', { name: /author\.e2e/ });
 	await expect(row).toContainText(`${en.roleAuthor} (${en.scopeOwnProjectGroup})`);

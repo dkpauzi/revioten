@@ -101,13 +101,14 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-77 | Doc ref (Relevant Document) berbeda per model, padahal poinnya umum | Celah | M3.3, M4.1, M4.5, R-DOC-11 | Tidak (perlu sebelum M4.5) | Diputuskan (D-130) |
 | E-78 | Cakupan poin yang salah pilih: diubah, atau poin disembunyikan lalu dibuat ulang | Celah | M3.3, M3.4 | Tidak | Diputuskan (D-131) |
 | E-79 | Daftar password umum belum mencakup password 8 sampai 14 karakter dari sumber terverifikasi | Celah | M1.1 (D-132) | Tidak | Terbuka |
-| E-80 | Prompt form set mengandaikan editor, wizard, yokoten, dan ekspor yang belum dibangun | Kontradiksi | Tahap 3 sampai 6 | Ya, untuk mulai form set | Terbuka |
+| E-80 | Prompt form set mengandaikan editor, wizard, yokoten, dan ekspor yang belum dibangun | Kontradiksi | Tahap 3 sampai 6 | Ya, untuk mulai form set | Diputuskan (D-140) |
 | E-81 | Isi poin PFMEA di process template untuk form AIAG-VDA | Celah | M3.2, M4.5 | Tidak (perlu sebelum M4.5) | Terbuka |
 | E-82 | Siapa yang menyetujui form set baru dan perubahan tabel AP | Celah | Form set langkah A dan D | Ya, untuk langkah A dan D | Diputuskan (D-139) |
 | E-83 | Perpindahan dokumen set 1 ke set 2: satu per satu atau massal | Celah | Tahap 5 | Tidak | Terbuka |
 | E-84 | Genba: penulis catatan selain tim PPAP, dan lama penyimpanan foto | Celah | Tahap 6 | Tidak | Terbuka |
 | E-85 | Alias proses: siapa yang mengelola | Ambigu | M1.5, pencarian per proses | Tidak | Terbuka |
 | E-86 | Review berkala 3 tahun: rincian yang belum diputuskan | Celah | Tahap 5, 6, 7 | Tidak (perlu sebelum Tahap 6) | Terbuka |
+| E-87 | Menerbitkan versi template: perlu orang kedua atau tidak | Celah | M3.4, form set | Tidak | Terbuka |
 
 ## Keputusan 4 November 2026
 
@@ -1488,8 +1489,8 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (a).
 - **Asumsi sementara di kode:** tidak ada; belum ada kode form set.
 - **Menghambat milestone?** Ya, untuk mulai pekerjaan form set. Tidak untuk M3.4.
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan
+- **Keputusan pemilik (11 November 2026, D-140):** (a). Kutipan: "E-80 A".
 ### E-81 · Isi poin PFMEA di process template untuk form AIAG-VDA
 
 - **Tanggal dan milestone:** 10 November 2026, pertanyaan 3 di prompt form set. Menyentuh M3.2, M4.5.
@@ -1582,6 +1583,22 @@ Salin blok ini untuk setiap temuan baru.
 - **Menghambat milestone?** Tidak (perlu sebelum Tahap 6)
 - **Status:** Terbuka
 - **Keputusan pemilik:**
+### E-87 · Menerbitkan versi template: perlu orang kedua atau tidak
+
+- **Tanggal dan milestone:** 11 November 2026, M3.4.
+- **Jenis:** Celah
+- **Rujukan:** R-TPL-05, D-64, D-139, R-SEC-11.
+- **Temuan:** R-TPL-05 tidak menyebut siapa yang menerbitkan versi template. Di M3.4 orang yang menyusun draft juga boleh menerbitkannya: admin untuk format template, Pengelola template untuk process template. Untuk form set dan tabel AP, pemilik sudah memutuskan penyetuju terpisah (D-139).
+- **Dampak bila dibiarkan:** satu orang bisa mengubah dan menerbitkan template yang nanti dipakai banyak dokumen, tanpa pemeriksaan orang kedua.
+- **Opsi:**
+  - (a) Tetap seperti M3.4: penyusun boleh menerbitkan. Pemeriksaan terjadi saat dokumen direvisi dan ditandatangani.
+  - (b) Penerbit harus orang lain, dengan hak yang sama seperti D-139.
+- **Rekomendasi Claude Code (usulan):** (a) untuk process template, karena perubahan template tetap lewat revisi dokumen yang disetujui (R-TPL-06); (b) hanya untuk form set dan tabel AP, sesuai D-139.
+- **Asumsi sementara di kode (ASUMSI E-87):** (a).
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
 ## Usulan desain UI (UX-01 sampai UX-07): dampak ke M0 sampai M3 dan saran
 
 - **Sumber:** `docs/uml/usulan-desain-ui.md` (UML draft 0.12, 3 November 2026) dan kanvas desain UI "Desain UI Sistem PFD PFMEA CP" (18 artboard, baris v2 disarankan).

@@ -22,6 +22,8 @@ test('customer yang ditambah di layar tersimpan di database', async ({ page }) =
 
 	// Server merapikan kode " ab " menjadi AB.
 	await expect(page.getByRole('status')).toHaveText(en.customerSaved.replace('{code}', 'AB'));
+	// Setiap pesan berhasil juga tampil sebagai pop-up di pojok layar.
+	await expect(page.locator('.toast')).toHaveAttribute('data-text', en.customerSaved.replace('{code}', 'AB'));
 	await expect(page.getByRole('row', { name: /AB Example Customer GR1/ })).toBeVisible();
 
 	// Muat ulang halaman: daftar datang lagi dari database, bukan dari memori browser.

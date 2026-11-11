@@ -54,6 +54,7 @@ func utcTime(t *time.Time) *time.Time {
 }
 
 // PublishFormatVersion menerbitkan satu versi draft format template (A-2).
+// ASUMSI E-87: penyusun draft boleh menerbitkannya sendiri.
 // Sesudah itu versi tersebut tidak bisa diubah.
 func (s *Service) PublishFormatVersion(ctx context.Context, actor access.Actor, versionID string) (FormatVersion, error) {
 	if err := s.authz.Authorize(ctx, actor, access.ManageMasterData, access.Resource{}); err != nil {
