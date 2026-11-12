@@ -958,6 +958,75 @@ export type FormatTemplateRename = {
     name: string;
 };
 
+export type FormSetList = {
+    items: Array<FormSet>;
+    /**
+     * Every customer, by code, with its chosen form set.
+     */
+    customer_defaults: Array<CustomerFormSet>;
+};
+
+export type FormSet = {
+    id: string;
+    /**
+     * Fixed key, for example aiag_4th.
+     */
+    key: string;
+    name: string;
+    /**
+     * The form set of customers that have not chosen one.
+     */
+    default: boolean;
+    versions: Array<FormSetVersion>;
+};
+
+export type FormSetVersion = {
+    id: string;
+    version: number;
+    status: 'draft' | 'published';
+    published_at?: string;
+    pfd: FormSetSheet;
+    pfmea: FormSetSheet;
+    cp: FormSetSheet;
+};
+
+/**
+ * The format template version used for one sheet.
+ */
+export type FormSetSheet = {
+    format_version_id: string;
+    template_name: string;
+    version: number;
+    status: 'draft' | 'published';
+};
+
+export type FormSetSheets = {
+    pfd_format_version_id: string;
+    pfmea_format_version_id: string;
+    cp_format_version_id: string;
+};
+
+export type NewFormSet = {
+    name: string;
+    pfd_format_version_id: string;
+    pfmea_format_version_id: string;
+    cp_format_version_id: string;
+};
+
+export type CustomerFormSet = {
+    customer_id: string;
+    customer_code: string;
+    customer_name: string;
+    /**
+     * Absent when the customer uses the default form set.
+     */
+    form_set_id?: string;
+};
+
+export type CustomerFormSetChoice = {
+    form_set_id?: string;
+};
+
 /**
  * One Action Priority for a box of severity, occurrence, and detection ranges; both ends included.
  */
@@ -1451,6 +1520,10 @@ export type FormatTemplateId = string;
 export type FormatVersionId = string;
 
 export type FormatFieldId = string;
+
+export type FormSetId = string;
+
+export type FormSetVersionId = string;
 
 export type ProcessTemplateId = string;
 
@@ -4189,6 +4262,212 @@ export type SaveFormatSymbolsResponses = {
 };
 
 export type SaveFormatSymbolsResponse = SaveFormatSymbolsResponses[keyof SaveFormatSymbolsResponses];
+
+export type ListFormSetsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/form-sets';
+};
+
+export type ListFormSetsErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ListFormSetsError = ListFormSetsErrors[keyof ListFormSetsErrors];
+
+export type ListFormSetsResponses = {
+    /**
+     * The form sets, the default one first, and the choice of each customer.
+     */
+    200: FormSetList;
+};
+
+export type ListFormSetsResponse = ListFormSetsResponses[keyof ListFormSetsResponses];
+
+export type CreateFormSetData = {
+    body: NewFormSet;
+    path?: never;
+    query?: never;
+    url: '/api/v1/form-sets';
+};
+
+export type CreateFormSetErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type CreateFormSetError = CreateFormSetErrors[keyof CreateFormSetErrors];
+
+export type CreateFormSetResponses = {
+    /**
+     * The form set was added.
+     */
+    201: FormSet;
+};
+
+export type CreateFormSetResponse = CreateFormSetResponses[keyof CreateFormSetResponses];
+
+export type CreateFormSetVersionData = {
+    body?: never;
+    path: {
+        formSetId: string;
+    };
+    query?: never;
+    url: '/api/v1/form-sets/{formSetId}/versions';
+};
+
+export type CreateFormSetVersionErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type CreateFormSetVersionError = CreateFormSetVersionErrors[keyof CreateFormSetVersionErrors];
+
+export type CreateFormSetVersionResponses = {
+    /**
+     * The form set with the new draft version.
+     */
+    201: FormSet;
+};
+
+export type CreateFormSetVersionResponse = CreateFormSetVersionResponses[keyof CreateFormSetVersionResponses];
+
+export type SetFormSetSheetsData = {
+    body: FormSetSheets;
+    path: {
+        formSetVersionId: string;
+    };
+    query?: never;
+    url: '/api/v1/form-set-versions/{formSetVersionId}';
+};
+
+export type SetFormSetSheetsErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type SetFormSetSheetsError = SetFormSetSheetsErrors[keyof SetFormSetSheetsErrors];
+
+export type SetFormSetSheetsResponses = {
+    /**
+     * The form set after the change.
+     */
+    200: FormSet;
+};
+
+export type SetFormSetSheetsResponse = SetFormSetSheetsResponses[keyof SetFormSetSheetsResponses];
+
+export type PublishFormSetVersionData = {
+    body?: never;
+    path: {
+        formSetVersionId: string;
+    };
+    query?: never;
+    url: '/api/v1/form-set-versions/{formSetVersionId}/publish';
+};
+
+export type PublishFormSetVersionErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type PublishFormSetVersionError = PublishFormSetVersionErrors[keyof PublishFormSetVersionErrors];
+
+export type PublishFormSetVersionResponses = {
+    /**
+     * The form set with the published version.
+     */
+    200: FormSet;
+};
+
+export type PublishFormSetVersionResponse = PublishFormSetVersionResponses[keyof PublishFormSetVersionResponses];
+
+export type SetCustomerFormSetData = {
+    body: CustomerFormSetChoice;
+    path: {
+        customerId: string;
+    };
+    query?: never;
+    url: '/api/v1/customers/{customerId}/default-form-set';
+};
+
+export type SetCustomerFormSetErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type SetCustomerFormSetError = SetCustomerFormSetErrors[keyof SetCustomerFormSetErrors];
+
+export type SetCustomerFormSetResponses = {
+    /**
+     * The choice was saved.
+     */
+    204: void;
+};
+
+export type SetCustomerFormSetResponse = SetCustomerFormSetResponses[keyof SetCustomerFormSetResponses];
 
 export type ListProcessTemplatesData = {
     body?: never;

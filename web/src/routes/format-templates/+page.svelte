@@ -18,6 +18,7 @@
 		publishFormatVersion,
 		renameFormatTemplate,
 		saveFormatSymbols,
+		setFormatApRules,
 		setFormatRatingCriteria,
 		updateFormatHighlights,
 		type ApiFailure
@@ -26,6 +27,7 @@
 		Customer,
 		DocumentType,
 		FormatField,
+		ApRule,
 		FormatHighlights,
 		FormatTemplate,
 		FormatVersion,
@@ -68,6 +70,9 @@
 	// Isi versi hanya bisa diubah oleh pemegang A-2, dan hanya selama versinya
 	// draft (M3.4). Nama template bukan bagian dari versi, jadi tetap memakai canEdit.
 	let editable = $derived(canEdit && isDraft(version));
+	// Versi bermetode AP membawa tabel AP, jadi diterbitkan penyetuju form (V-3,
+	// D-139); versi lain diterbitkan admin.
+	let canPublish = $derived(version?.risk_method === 'ap' ? can('V-3') : canEdit);
 
 	let message = $state('');
 	let failure = $state('');
@@ -279,6 +284,22 @@
 		saved(result.data, t('formatSymbolsSaved'));
 	}
 
+	// saveApRules menyimpan tabel AP yang diubah (A-2, versi draft). Hasilnya
+	// true bila tersimpan, supaya tabel kembali ke tampilan baca.
+	async function saveApRules(rules: ApRule[]): Promise<boolean> {
+		reset();
+		if (version === null) {
+			return false;
+		}
+		const result = await setFormatApRules(version.id, rules);
+		if (!result.ok) {
+			showErrors(result.error);
+			return false;
+		}
+		saved(result.data, t('apSaved'));
+		return true;
+	}
+
 	async function saveHighlights(event: SubmitEvent) {
 		event.preventDefault();
 		reset();
@@ -370,6 +391,7 @@
 				versions={selected.versions}
 				current={version}
 				{canEdit}
+				{canPublish}
 				onselect={showVersion}
 				onpublish={publish}
 				onnew={newVersion}
@@ -520,7 +542,8 @@
 			<section>
 				<h2>{t('apTableTitle')}</h2>
 				<p class="hint">{t('apTableIntro')}</p>
-				<ApTable rules={version.ap_rules} />
+				<ApTable rules={version.ap_rules} {editable} onsave={saveApRules} />
+				{#if fieldErrors.ap_rules}<p class="error" role="alert">{fieldErrors.ap_rules}</p>{/if}
 			</section>
 		{/if}
 

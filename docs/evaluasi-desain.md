@@ -94,7 +94,7 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-70 | Isi awal format template dan aturan field yang belum ditetapkan | Celah | M3.1, M4.1 | Tidak (perlu sebelum M4.1) | Diputuskan sebagian (D-124) |
 | E-71 | Aturan sorot PFMEA: arti "severity 8" dan nilai mana yang disorot | Ambigu | M3.1 | Tidak | Terbuka |
 | E-72 | Satuan process template: satu per proses, atau satu pustaka untuk semua proses | Ambigu | M3.2, M3.3, M3.4, M5.8 | Tidak (perlu sebelum M3.3) | Diputuskan (D-129) |
-| E-73 | Isi poin process template dan format template yang diikutinya | Celah | M3.2, M4.5, M5.8, M7.4 | Tidak (perlu sebelum M4.5) | Terbuka |
+| E-73 | Isi poin process template dan format template yang diikutinya | Celah | M3.2, M4.5, M5.8, M7.4 | Tidak (perlu sebelum M4.5) | Diputuskan (D-146) |
 | E-74 | Kode customer tiga huruf di register (AJI, AVI) bertentangan dengan D-100 | Kontradiksi | M1.4, M2.1, M2.5 | Tidak (perlu sebelum register asli diimpor) | Diputuskan (D-125) |
 | E-75 | Register terpisah PL1 dan PL3: plant, line, atau Project Leader (Q-19) | Ambigu | M2.1, M2.5 | Tidak (perlu sebelum register asli diimpor) | Diputuskan (D-126) |
 | E-76 | Proses baru diminta saat menyusun, dan urutan standar proses di pustaka | Celah | M1.5, M3.3, M4.5, M4.6 | Tidak | Terbuka |
@@ -102,15 +102,15 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-78 | Cakupan poin yang salah pilih: diubah, atau poin disembunyikan lalu dibuat ulang | Celah | M3.3, M3.4 | Tidak | Diputuskan (D-131) |
 | E-79 | Daftar password umum belum mencakup password 8 sampai 14 karakter dari sumber terverifikasi | Celah | M1.1 (D-132) | Tidak | Terbuka |
 | E-80 | Prompt form set mengandaikan editor, wizard, yokoten, dan ekspor yang belum dibangun | Kontradiksi | Tahap 3 sampai 6 | Ya, untuk mulai form set | Diputuskan (D-140) |
-| E-81 | Isi poin PFMEA di process template untuk form AIAG-VDA | Celah | M3.2, M4.5 | Tidak (perlu sebelum M4.5) | Terbuka |
+| E-81 | Isi poin PFMEA di process template untuk form AIAG-VDA | Celah | M3.2, M4.5 | Tidak (perlu sebelum M4.5) | Diputuskan (D-146) |
 | E-82 | Siapa yang menyetujui form set baru dan perubahan tabel AP | Celah | Form set langkah A dan D | Ya, untuk langkah A dan D | Diputuskan (D-139) |
 | E-83 | Perpindahan dokumen set 1 ke set 2: satu per satu atau massal | Celah | Tahap 5 | Tidak | Terbuka |
 | E-84 | Genba: penulis catatan selain tim PPAP, dan lama penyimpanan foto | Celah | Tahap 6 | Tidak | Terbuka |
 | E-85 | Alias proses: siapa yang mengelola | Ambigu | M1.5, pencarian per proses | Tidak | Terbuka |
 | E-86 | Review berkala 3 tahun: rincian yang belum diputuskan | Celah | Tahap 5, 6, 7 | Tidak (perlu sebelum Tahap 6) | Terbuka |
 | E-87 | Menerbitkan versi template: perlu orang kedua atau tidak | Celah | M3.4, form set | Tidak | Diputuskan (D-143) |
-| E-88 | Label kembar di form asli, sedangkan label harus unik per area | Kontradiksi | M3.1, Tahap 6 | Tidak (perlu sebelum Tahap 6) | Terbuka |
-| E-89 | Nama proses di PFMEA AIAG-VDA: diketik atau diisi dari master proses | Kontradiksi | M4.1, M4.5 | Tidak (perlu sebelum M4.1) | Terbuka |
+| E-88 | Label kembar di form asli, sedangkan label harus unik per area | Kontradiksi | M3.1, Tahap 6 | Tidak (perlu sebelum Tahap 6) | Diputuskan (D-147) |
+| E-89 | Nama proses di PFMEA AIAG-VDA: diketik atau diisi dari master proses | Kontradiksi | M4.1, M4.5 | Tidak (perlu sebelum M4.1) | Diputuskan (D-144) |
 
 ## Keputusan 4 November 2026
 
@@ -1366,13 +1366,13 @@ Salin blok ini untuk setiap temuan baru.
 
   Ditandai di `sql/migrations/00012_create_process_templates.sql` dan `internal/template/process.go`.
 - **Menghambat milestone?** Tidak (perlu sebelum M4.5)
-- **Status:** Terbuka
+- **Status:** Diputuskan
 - **Bukti baru (tinjauan desain UI, 3 November 2026):**
   - UX-02 (masukan pemilik): sel CP boleh berisi gambar atau tabel spesifikasi kecil, di kolom dan proses mana pun, dan ikut tercetak di dalam sel. Satu baris teks tidak cukup untuk isi poin.
   - Artboard "Template items editor": poin PFMEA membawa kolom form sampai RPN, sedangkan "Recommended action and action results are filled per document". Poin juga punya tautan pasangan (kolom Linked CP dan Linked PFMEA).
   - Artboard "Template library" (v2): poin CP menampilkan karakteristik, spesifikasi, cakupan, dan tambahan (gambar atau simbol).
 - **Rekomendasi Claude Code (usulan, diperbarui 3 November 2026):** (b), dengan isi poin memakai bentuk isi sel yang sama dengan baris dokumen (teks, gambar, atau tabel spesifikasi, UX-02). Kolom hasil tindakan tidak ikut di poin.
-- **Keputusan pemilik:**
+- **Keputusan pemilik (12 November 2026, D-146):** (b): isi poin per kolom format. Pemetaan antar format memakai key tetap field (migrasi 00018), bukan ID field sumber. Kutipan: "E-73 dan E-81 OK".
 
 ### E-74 · Kode customer tiga huruf di register (AJI, AVI) bertentangan dengan D-100
 
@@ -1506,8 +1506,8 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (a), diputuskan bersama E-73.
 - **Asumsi sementara di kode:** tidak ada.
 - **Menghambat milestone?** Tidak (perlu sebelum M4.5)
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan
+- **Keputusan pemilik (12 November 2026, D-146):** (a). Kutipan: "E-73 dan E-81 OK".
 ### E-82 · Siapa yang menyetujui form set baru dan perubahan tabel AP
 
 - **Tanggal dan milestone:** 10 November 2026, pertanyaan 4 di prompt form set.
@@ -1615,8 +1615,8 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (a).
 - **Asumsi sementara di kode:** (ASUMSI E-88) label diberi pembeda: "PFMEA AP (after action)" dan "Other Approval/Date (if req'd) 1" dan "2".
 - **Menghambat milestone?** Tidak (perlu sebelum ekspor, Tahap 6)
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan
+- **Keputusan pemilik (12 November 2026, D-147):** (a). Kutipan: "E-88 ok".
 ### E-89 · Nama proses di PFMEA AIAG-VDA: diketik atau diisi dari master proses
 
 - **Tanggal dan milestone:** 12 November 2026, form set langkah B. Menyentuh M4.1, M4.5, dan pencarian per proses.
@@ -1630,8 +1630,8 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (a), supaya sama dengan D-123 dan form lain.
 - **Asumsi sementara di kode:** (ASUMSI E-89) (b), mengikuti tabel di prompt. Belum ada dokumen yang memakai form ini, jadi masih mudah diubah.
 - **Menghambat milestone?** Tidak (perlu sebelum M4.1 memakai form ini)
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan
+- **Keputusan pemilik (12 November 2026, D-144):** (a). Kutipan: "E-89 ok".
 ## Usulan desain UI (UX-01 sampai UX-07): dampak ke M0 sampai M3 dan saran
 
 - **Sumber:** `docs/uml/usulan-desain-ui.md` (UML draft 0.12, 3 November 2026) dan kanvas desain UI "Desain UI Sistem PFD PFMEA CP" (18 artboard, baris v2 disarankan).

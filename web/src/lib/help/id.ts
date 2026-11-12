@@ -87,7 +87,7 @@ export const helpId: HelpContent = {
 			imageAlt: 'Halaman Accounts dengan kotak kata sandi sementara di atas formulir.',
 			tips: [
 				'{roleAuthor}: mendaftarkan nomor dokumen. {roleTemplateMaintainer}: mengelola proses dan process template. {roleDocumentControl}: membatalkan nomor, menjadikannya obsolete, dan mengimpor nomor lama.',
-				'{roleVerifier}, {rolePfmeaCpChecker}, dan {roleMigration} untuk layar yang dibangun nanti.',
+				'{roleFormApprover}: menerbitkan form set dan tabel AP; untuk saat ini PPAP Supervisor. {roleVerifier}, {rolePfmeaCpChecker}, dan {roleMigration} untuk layar yang dibangun nanti.',
 				'Kata sandi sementara hanya tampil satu kali. Bila hilang, atur ulang kata sandi akun itu.',
 				'Akun admin tidak memegang peran kerja. Pemegangnya memakai akun kerja terpisah untuk pekerjaan sehari-hari.',
 				'Akun tidak pernah dihapus, hanya dinonaktifkan.'
@@ -185,6 +185,27 @@ export const helpId: HelpContent = {
 			tips: [
 				'Satu template paling banyak punya satu draft, jadi {versionNew} hanya muncul bila versi terakhir sudah terbit.',
 				'Versi baru memakai ID field dan poin yang sama, jadi dokumen tetap tersambung.'
+			]
+		},
+		{
+			id: 'form-sets',
+			title: 'Form set',
+			who: 'Admin, dan penyetuju form untuk menerbitkan',
+			intro: 'Form set adalah satu paket form untuk PFD, PFMEA, dan Control Plan. Sistem punya dua: set AIAG 4th (RPN) dan set AIAG-VDA (Action Priority). Setiap customer memakai satu form set untuk dokumen barunya.',
+			steps: [
+				'Buka {navGroupTemplates}, lalu {navFormSets}.',
+				'Setiap form set menampilkan tiga sheet-nya: {formSetSheetPfd}, {formSetSheetPfmea}, dan {formSetSheetCp}. Admin mengganti sheet versi draft dan menekan {formSetSaveSheets}.',
+				'Terbitkan dulu format template ketiga sheet itu, di {navFormatTemplates}.',
+				'Penyetuju form membuka form set itu dan menekan [[Terbitkan versi 1]]. Orang yang menyusun draft tidak boleh menerbitkannya.',
+				'Di bagian {formSetCustomersTitle}, admin memilih form set setiap customer. Tanpa pilihan, customer memakai form set bawaan.',
+				'Untuk membuat paket baru, pakai {formSetCreateTitle} di bagian bawah halaman.'
+			],
+			image: 'form-sets',
+			imageAlt: 'Halaman Form set dengan dua form set dan form set per customer.',
+			tips: [
+				'Format PFMEA dengan Action Priority juga diterbitkan penyetuju form, karena tabel AP-nya menentukan prioritas tindakan.',
+				'Admin bisa mengubah tabel AP versi draft: tekan {apEdit} di format template, klik satu prioritas untuk mengubahnya, lalu tekan {apSave}.',
+				'Berikan peran {roleFormApprover} ke akun lain di {navAccounts} bila penyetujunya bertambah, misalnya para Project Leader.'
 			]
 		},
 		{

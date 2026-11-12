@@ -68,6 +68,7 @@ const (
 	MigrateDocuments  Permission = "E-10" // migrasikan dokumen lama
 	VerifyChanges     Permission = "V-1"  // verifikasi permintaan perubahan
 	CheckPFMEACP      Permission = "V-2"  // tanda dicek PFMEA dan CP
+	ApproveForms      Permission = "V-3"  // setujui (terbitkan) form set dan tabel AP (D-139)
 	ManageUsers       Permission = "A-1"  // kelola pengguna dan hak akses
 	ManageMasterData  Permission = "A-2"  // kelola master data
 	ManageSettings    Permission = "A-3"  // kelola pengaturan sistem
@@ -86,6 +87,7 @@ const (
 	RoleTemplateMaintainer = "template_maintainer" // Pengelola template
 	RolePFMEACPChecker     = "pfmea_cp_checker"    // Pemeriksa PFMEA–CP
 	RoleVerifier           = "verifier"            // Verifikator
+	RoleFormApprover       = "form_approver"       // Penyetuju form (D-139)
 	RoleDocumentControl    = "document_control"    // Dokumen kontrol
 	RoleMigration          = "migration"           // Petugas migrasi
 	RoleViewer             = "viewer"              // Viewer, dimiliki semua akun

@@ -189,7 +189,8 @@ func TestAPRulesInVersions(t *testing.T) {
 	}
 
 	// Terbit, lalu versi baru: tabel ikut disalin, versi terbit menolak perubahan.
-	if _, err := f.s.PublishFormatVersion(ctx, f.admin, v.ID); err != nil {
+	approver := newActor(t, f.pool, "ppap.supervisor", access.AccountWork, access.RoleFormApprover)
+	if _, err := f.s.PublishFormatVersion(ctx, approver, v.ID); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := f.s.SetAPRules(ctx, f.admin, v.ID, DefaultAPRules()); !slices.Equal(problemCodes(t, err), []string{"status:not_allowed"}) {

@@ -57,14 +57,14 @@ Belum dibuat: tampilan sheet di editor (judul vertikal, sel gabung, kotak centan
 ## 5. Asumsi
 
 - **ASUMSI E-88:** dua pasang label yang sama di form asli diberi pembeda, karena label wajib unik per area: "PFMEA AP" dan "PFMEA AP (after action)", serta "Other Approval/Date (if req'd) 1" dan "2".
-- **ASUMSI E-89:** `process_item` dan `process_step` di PFMEA AIAG-VDA dibuat sebagai teks, seperti tabel di prompt.
+- **ASUMSI E-89:** `process_item` dan `process_step` di PFMEA AIAG-VDA dibuat sebagai teks, seperti tabel di prompt. Pemilik memutuskan lain pada 12 November 2026 (D-144): `process_step` diisi dari master proses; diubah di migrasi 00019.
 - `date_rev` di CP 2024 dibuat sebagai tanggal biasa; pengisian otomatis saat cetak menumpang Tahap 6.
 - Kriteria skala S, O, D form AIAG-VDA dibiarkan kosong, seperti form lama; isinya dari form yang dipakai perusahaan.
 
 ## 6. Temuan desain baru
 
-- **E-88** (Terbuka): label kembar di form asli, sedangkan label harus unik per area.
-- **E-89** (Terbuka): nama proses di PFMEA AIAG-VDA diketik (prompt) atau diisi dari master proses (D-123).
+- **E-88**: label kembar di form asli. Diputuskan 12 November 2026 (D-147): label cetak terpisah, dibangun bersama ekspor.
+- **E-89**: nama proses di PFMEA AIAG-VDA. Diputuskan 12 November 2026 (D-144): diisi dari master proses.
 
 ## 7. Status test (komputer pemilik, Windows, 12 November 2026)
 

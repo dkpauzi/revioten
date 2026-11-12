@@ -64,6 +64,11 @@ const actionKeys: Record<string, MessageKey> = {
 	'process_template.variant_changed': 'auditActionTemplateVariantChanged',
 	// Versi terbit dan versi baru (M3.4).
 	'format_template.ap_rules_changed': 'auditActionFormatApRulesChanged',
+	'customer.default_form_set_changed': 'auditActionCustomerFormSetChanged',
+	'form_set.created': 'auditActionFormSetCreated',
+	'form_set.changed': 'auditActionFormSetChanged',
+	'form_set.version_created': 'auditActionFormSetVersionCreated',
+	'form_set.version_published': 'auditActionFormSetVersionPublished',
 	'format_template.version_published': 'auditActionFormatVersionPublished',
 	'format_template.version_created': 'auditActionFormatVersionCreated',
 	'process_template.version_published': 'auditActionProcessVersionPublished',
@@ -111,7 +116,8 @@ const detailKeys: Record<string, MessageKey> = {
 	hidden: 'auditDetailHidden',
 	scope: 'auditDetailScope',
 	copied_from: 'auditDetailCopiedFrom',
-	changed_combinations: 'auditDetailChangedCombinations'
+	changed_combinations: 'auditDetailChangedCombinations',
+	form_set: 'auditDetailFormSet'
 };
 
 const reasonKeys: Record<string, MessageKey> = {

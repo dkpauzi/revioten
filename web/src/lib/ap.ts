@@ -19,6 +19,47 @@ export type ApMatrix = {
 	rows: { severity: string; occurrence: string; cells: string[] }[];
 };
 
+// ApGrid adalah tabel AP yang bisa diubah: rentang S, O, dan D sebagai angka,
+// dan satu prioritas per kotak. cells[i][j][k] adalah AP untuk rentang S ke-i,
+// O ke-j, dan D ke-k.
+export type ApGrid = {
+	severity: [number, number][];
+	occurrence: [number, number][];
+	detection: [number, number][];
+	cells: ApRule['priority'][][][];
+};
+
+// apGrid memecah aturan menjadi kotak-kotak yang tidak terbelah, supaya
+// setiap kotak bisa diubah sendiri di layar.
+export function apGrid(rules: ApRule[]): ApGrid {
+	const severity = bands(rules.map((r) => r.s_min));
+	const occurrence = bands(rules.map((r) => r.o_min));
+	const detection = bands(rules.map((r) => r.d_min));
+	return {
+		severity,
+		occurrence,
+		detection,
+		cells: severity.map((s) => occurrence.map((o) => detection.map((d) => actionPriority(rules, s[0], o[0], d[0]) ?? 'L')))
+	};
+}
+
+// rulesFromGrid menulis kembali kotak-kotak itu sebagai aturan: satu aturan
+// per kotak. Hasilnya selalu menutup 1.000 kombinasi tepat satu kali.
+export function rulesFromGrid(grid: ApGrid): ApRule[] {
+	return grid.severity.flatMap((s, i) =>
+		grid.occurrence.flatMap((o, j) =>
+			grid.detection.map((d, k) => ({
+				s_min: s[0], s_max: s[1], o_min: o[0], o_max: o[1], d_min: d[0], d_max: d[1], priority: grid.cells[i][j][k]
+			}))
+		)
+	);
+}
+
+// bandLabel menulis satu rentang untuk layar, misalnya "9–10" atau "1".
+export function bandLabel(band: [number, number]): string {
+	return label(band);
+}
+
 // bands mengumpulkan batas rentang satu skala lalu memotong 1 sampai 10
 // menjadi rentang yang tidak terbelah oleh aturan mana pun, dari yang tertinggi.
 function bands(starts: number[]): [number, number][] {

@@ -12,7 +12,7 @@ const devices = [
 ];
 
 // Halaman dengan tabel dan formulir terlebar, ditambah beranda.
-const pages = ['/', '/numbers', '/format-templates', '/process-templates', '/customers', '/admin/accounts', '/admin/audit', '/help'];
+const pages = ['/', '/numbers', '/format-templates', '/process-templates', '/customers', '/admin/accounts', '/admin/audit', '/help', '/form-sets'];
 
 // noSideScroll memastikan lebar isi halaman tidak melebihi lebar layar.
 async function noSideScroll(page: Page, path: string) {

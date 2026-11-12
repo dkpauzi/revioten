@@ -26,7 +26,7 @@ SELECT l.seq, l.occurred_at, l.actor_type, l.actor_account_id, a.login AS actor_
        l.action, l.target_type, l.target_id,
        coalesce(ta.login, tc.code, tp.code, tg.name, tm.name, tn.number, tpr.name,
                 tns.factory_code, tdt.name, tsc.code, tct.name, tcs.name, tfm.name,
-                tpo.name, tar.name, tdn.number, tft.name, tptn.name, '') AS target_label,
+                tpo.name, tar.name, tdn.number, tft.name, tptn.name, tfs.name, '') AS target_label,
        l.details, l.prev_hash, l.hash
 FROM audit_log l
 LEFT JOIN accounts a ON a.id = l.actor_account_id
@@ -52,6 +52,7 @@ LEFT JOIN format_templates tft ON l.target_type = 'format_template' AND tft.id =
 -- Process template ditampilkan dengan nama tampilan prosesnya yang berlaku sekarang.
 LEFT JOIN process_templates tpt ON l.target_type = 'process_template' AND tpt.id = l.target_id
 LEFT JOIN process_names tptn ON tptn.process_id = tpt.process_id AND tptn.kind = 'display'
+LEFT JOIN form_sets tfs ON l.target_type = 'form_set' AND tfs.id = l.target_id
 WHERE l.seq < sqlc.arg(before)
 ORDER BY l.seq DESC
 LIMIT sqlc.arg(max_entries);

@@ -126,6 +126,13 @@ type TemplateService interface {
 	SetRatingCriteria(ctx context.Context, actor access.Actor, versionID string, ratings []template.Rating) (template.FormatVersion, error)
 	SaveSymbols(ctx context.Context, actor access.Actor, versionID string, symbols []template.Symbol) (template.FormatVersion, error)
 	SetHighlights(ctx context.Context, actor access.Actor, versionID string, in template.HighlightSettings) (template.FormatVersion, error)
+	// Form set (langkah D, D-133, D-139).
+	ListFormSets(ctx context.Context, actor access.Actor) (template.FormSetList, error)
+	CreateFormSet(ctx context.Context, actor access.Actor, in template.NewFormSet) (template.FormSet, error)
+	SetFormSetSheets(ctx context.Context, actor access.Actor, versionID string, sheets template.FormSetSheets) (template.FormSet, error)
+	NewFormSetVersion(ctx context.Context, actor access.Actor, formSetID string) (template.FormSet, error)
+	PublishFormSetVersion(ctx context.Context, actor access.Actor, versionID string) (template.FormSet, error)
+	SetCustomerFormSet(ctx context.Context, actor access.Actor, customerID, formSetID string) error
 	// Tabel AP (form set langkah A, D-134).
 	SetAPRules(ctx context.Context, actor access.Actor, versionID string, rules []template.APRule) (template.FormatVersion, error)
 	ActionPriorityOf(ctx context.Context, actor access.Actor, versionID string, severity, occurrence, detection int) (string, error)

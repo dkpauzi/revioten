@@ -1497,6 +1497,109 @@ paths:
                 $ref: '#/components/schemas/FormatVersion'
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/form-sets:
+    get:
+      operationId: listFormSets
+      summary: Form sets with their versions, and the form set of each customer (L-2, D-133)
+      responses:
+        '200':
+          description: The form sets, the default one first, and the choice of each customer.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormSetList'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: createFormSet
+      summary: Add a form set with a draft version 1 (A-2, D-133)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewFormSet'
+      responses:
+        '201':
+          description: The form set was added.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormSet'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/form-sets/{formSetId}/versions:
+    post:
+      operationId: createFormSetVersion
+      summary: Make the next draft version of a form set from its last published version (A-2)
+      parameters:
+        - $ref: '#/components/parameters/FormSetId'
+      responses:
+        '201':
+          description: The form set with the new draft version.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormSet'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/form-set-versions/{formSetVersionId}:
+    put:
+      operationId: setFormSetSheets
+      summary: Choose the format template versions of the sheets of a draft form set version (A-2)
+      parameters:
+        - $ref: '#/components/parameters/FormSetVersionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FormSetSheets'
+      responses:
+        '200':
+          description: The form set after the change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormSet'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/form-set-versions/{formSetVersionId}/publish:
+    post:
+      operationId: publishFormSetVersion
+      summary: Approve and publish a draft form set version (V-3, D-139)
+      description: >-
+        Only a holder of V-3 who did not prepare the draft. All format template versions of the form set must be
+        published first. A published version cannot be changed.
+      parameters:
+        - $ref: '#/components/parameters/FormSetVersionId'
+      responses:
+        '200':
+          description: The form set with the published version.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormSet'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/customers/{customerId}/default-form-set:
+    put:
+      operationId: setCustomerFormSet
+      summary: Choose the form set for new documents of a customer (A-2, D-133)
+      description: Without form_set_id the customer uses the default form set of the system.
+      parameters:
+        - $ref: '#/components/parameters/CustomerId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerFormSetChoice'
+      responses:
+        '204':
+          description: The choice was saved.
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/process-templates:
     get:
       operationId: listProcessTemplates
@@ -1964,6 +2067,18 @@ components:
         type: string
     FormatFieldId:
       name: formatFieldId
+      in: path
+      required: true
+      schema:
+        type: string
+    FormSetId:
+      name: formSetId
+      in: path
+      required: true
+      schema:
+        type: string
+    FormSetVersionId:
+      name: formSetVersionId
       in: path
       required: true
       schema:
@@ -3287,6 +3402,111 @@ components:
       required: [name]
       properties:
         name:
+          type: string
+    FormSetList:
+      type: object
+      required: [items, customer_defaults]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/FormSet'
+        customer_defaults:
+          type: array
+          description: Every customer, by code, with its chosen form set.
+          items:
+            $ref: '#/components/schemas/CustomerFormSet'
+    FormSet:
+      type: object
+      required: [id, key, name, default, versions]
+      properties:
+        id:
+          type: string
+        key:
+          type: string
+          description: Fixed key, for example aiag_4th.
+        name:
+          type: string
+        default:
+          type: boolean
+          description: The form set of customers that have not chosen one.
+        versions:
+          type: array
+          items:
+            $ref: '#/components/schemas/FormSetVersion'
+    FormSetVersion:
+      type: object
+      required: [id, version, status, pfd, pfmea, cp]
+      properties:
+        id:
+          type: string
+        version:
+          type: integer
+        status:
+          type: string
+          enum: [draft, published]
+        published_at:
+          type: string
+          format: date-time
+        pfd:
+          $ref: '#/components/schemas/FormSetSheet'
+        pfmea:
+          $ref: '#/components/schemas/FormSetSheet'
+        cp:
+          $ref: '#/components/schemas/FormSetSheet'
+    FormSetSheet:
+      type: object
+      description: The format template version used for one sheet.
+      required: [format_version_id, template_name, version, status]
+      properties:
+        format_version_id:
+          type: string
+        template_name:
+          type: string
+        version:
+          type: integer
+        status:
+          type: string
+          enum: [draft, published]
+    FormSetSheets:
+      type: object
+      required: [pfd_format_version_id, pfmea_format_version_id, cp_format_version_id]
+      properties:
+        pfd_format_version_id:
+          type: string
+        pfmea_format_version_id:
+          type: string
+        cp_format_version_id:
+          type: string
+    NewFormSet:
+      type: object
+      required: [name, pfd_format_version_id, pfmea_format_version_id, cp_format_version_id]
+      properties:
+        name:
+          type: string
+        pfd_format_version_id:
+          type: string
+        pfmea_format_version_id:
+          type: string
+        cp_format_version_id:
+          type: string
+    CustomerFormSet:
+      type: object
+      required: [customer_id, customer_code, customer_name]
+      properties:
+        customer_id:
+          type: string
+        customer_code:
+          type: string
+        customer_name:
+          type: string
+        form_set_id:
+          type: string
+          description: Absent when the customer uses the default form set.
+    CustomerFormSetChoice:
+      type: object
+      properties:
+        form_set_id:
           type: string
     ApRule:
       type: object

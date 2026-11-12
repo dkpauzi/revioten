@@ -96,7 +96,8 @@ export type ProblemScope =
 	| 'holder'
 	| 'route'
 	| 'formatTemplate'
-	| 'processTemplate';
+	| 'processTemplate'
+	| 'formSet';
 
 // scopedKeys memetakan "formulir.field:kode masalah" ke kunci teks layar.
 const scopedKeys: Record<string, MessageKey> = {
@@ -146,7 +147,20 @@ const scopedKeys: Record<string, MessageKey> = {
 	'processTemplate.model_id:invalid_format': 'previewModelRequired',
 	// Versi terbit dan versi baru (M3.4): status versi tidak cocok dengan aksinya.
 	'processTemplate.status:not_allowed': 'versionStatusNotAllowed',
-	'formatTemplate.status:not_allowed': 'versionStatusNotAllowed'
+	'formatTemplate.status:not_allowed': 'versionStatusNotAllowed',
+	// Form set (langkah D, D-139).
+	'formSet.name:required': 'formSetNameRequired',
+	'formSet.name:taken': 'formSetNameTaken',
+	'formSet.pfd_format_version_id:required': 'formSetSheetRequired',
+	'formSet.pfmea_format_version_id:required': 'formSetSheetRequired',
+	'formSet.cp_format_version_id:required': 'formSetSheetRequired',
+	'formSet.pfd_format_version_id:not_allowed': 'formSetSheetWrongType',
+	'formSet.pfmea_format_version_id:not_allowed': 'formSetSheetWrongType',
+	'formSet.cp_format_version_id:not_allowed': 'formSetSheetWrongType',
+	'formSet.sheets:not_allowed': 'formSetSheetsNotPublished',
+	'formSet.approver:not_allowed': 'formSetSameApprover',
+	'formSet.status:not_allowed': 'versionStatusNotAllowed',
+	'formatTemplate.approver:not_allowed': 'formSetSameApprover'
 };
 
 // problemText memberi teks layar untuk satu masalah input: teks khusus

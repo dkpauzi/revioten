@@ -34,6 +34,11 @@ import type {
 	NewDocumentNumber,
 	NewDocumentNumberSet,
 	NextDocumentNumber,
+	ApRule,
+	FormSet,
+	FormSetList,
+	FormSetSheets,
+	NewFormSet,
 	FormatFieldUpdate,
 	FormatHighlights,
 	FormatSymbol,
@@ -512,6 +517,45 @@ export function renameFormatTemplate(
 }
 
 // getFormatVersion memanggil GET /api/v1/format-template-versions/{id}.
+// Form set (langkah D, D-133, D-139).
+
+// listFormSets memanggil GET /api/v1/form-sets (L-2).
+export function listFormSets(fetchFn: typeof fetch = fetch): Promise<ApiResult<FormSetList>> {
+	return call<FormSetList>(fetchFn, '/api/v1/form-sets', { method: 'GET' });
+}
+
+// createFormSet memanggil POST /api/v1/form-sets (A-2).
+export function createFormSet(input: NewFormSet, fetchFn: typeof fetch = fetch): Promise<ApiResult<FormSet>> {
+	return call<FormSet>(fetchFn, '/api/v1/form-sets', jsonRequest('POST', input));
+}
+
+// setFormSetSheets memanggil PUT /api/v1/form-set-versions/{id} (A-2, versi draft).
+export function setFormSetSheets(versionId: string, sheets: FormSetSheets, fetchFn: typeof fetch = fetch): Promise<ApiResult<FormSet>> {
+	return call<FormSet>(fetchFn, itemPath('form-set-versions', versionId), jsonRequest('PUT', sheets));
+}
+
+// createFormSetVersion memanggil POST /api/v1/form-sets/{id}/versions (A-2).
+export function createFormSetVersion(formSetId: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<FormSet>> {
+	return call<FormSet>(fetchFn, itemPath('form-sets', formSetId) + '/versions', { method: 'POST' });
+}
+
+// publishFormSetVersion memanggil POST /api/v1/form-set-versions/{id}/publish (V-3).
+export function publishFormSetVersion(versionId: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<FormSet>> {
+	return call<FormSet>(fetchFn, itemPath('form-set-versions', versionId) + '/publish', { method: 'POST' });
+}
+
+// setCustomerFormSet memanggil PUT /api/v1/customers/{id}/default-form-set (A-2).
+// formSetId kosong berarti customer memakai set bawaan.
+export function setCustomerFormSet(customerId: string, formSetId: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<void>> {
+	const body = formSetId === '' ? {} : { form_set_id: formSetId };
+	return call<void>(fetchFn, `${itemPath('customers', customerId)}/default-form-set`, jsonRequest('PUT', body));
+}
+
+// setFormatApRules memanggil PUT /api/v1/format-template-versions/{id}/ap-rules (A-2, versi draft).
+export function setFormatApRules(versionId: string, items: ApRule[], fetchFn: typeof fetch = fetch): Promise<ApiResult<FormatVersion>> {
+	return call<FormatVersion>(fetchFn, itemPath('format-template-versions', versionId) + '/ap-rules', jsonRequest('PUT', { items }));
+}
+
 // publishFormatVersion memanggil POST .../format-template-versions/{id}/publish (A-2, M3.4).
 export function publishFormatVersion(versionId: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<FormatVersion>> {
 	const path = itemPath('format-template-versions', versionId) + '/publish';

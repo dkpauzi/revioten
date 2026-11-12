@@ -353,6 +353,42 @@ func (e ErrorDetailCode) Valid() bool {
 	}
 }
 
+// Defines values for FormSetSheetStatus.
+const (
+	FormSetSheetStatusDraft     FormSetSheetStatus = "draft"
+	FormSetSheetStatusPublished FormSetSheetStatus = "published"
+)
+
+// Valid indicates whether the value is a known member of the FormSetSheetStatus enum.
+func (e FormSetSheetStatus) Valid() bool {
+	switch e {
+	case FormSetSheetStatusDraft:
+		return true
+	case FormSetSheetStatusPublished:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for FormSetVersionStatus.
+const (
+	FormSetVersionStatusDraft     FormSetVersionStatus = "draft"
+	FormSetVersionStatusPublished FormSetVersionStatus = "published"
+)
+
+// Valid indicates whether the value is a known member of the FormSetVersionStatus enum.
+func (e FormSetVersionStatus) Valid() bool {
+	switch e {
+	case FormSetVersionStatusDraft:
+		return true
+	case FormSetVersionStatusPublished:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for FormatFieldArea.
 const (
 	FormatFieldAreaHeader FormatFieldArea = "header"
@@ -1382,6 +1418,21 @@ type CustomerCodeChange struct {
 	Code string `json:"code"`
 }
 
+// CustomerFormSet defines model for CustomerFormSet.
+type CustomerFormSet struct {
+	CustomerCode string `json:"customer_code"`
+	CustomerId   string `json:"customer_id"`
+	CustomerName string `json:"customer_name"`
+
+	// FormSetId Absent when the customer uses the default form set.
+	FormSetId *string `json:"form_set_id,omitempty"`
+}
+
+// CustomerFormSetChoice defines model for CustomerFormSetChoice.
+type CustomerFormSetChoice struct {
+	FormSetId *string `json:"form_set_id,omitempty"`
+}
+
 // CustomerList defines model for CustomerList.
 type CustomerList struct {
 	Items []Customer `json:"items"`
@@ -1524,6 +1575,62 @@ type FieldOption struct {
 	Key   *string `json:"key,omitempty"`
 	Label string  `json:"label"`
 }
+
+// FormSet defines model for FormSet.
+type FormSet struct {
+	// Default The form set of customers that have not chosen one.
+	Default bool   `json:"default"`
+	Id      string `json:"id"`
+
+	// Key Fixed key, for example aiag_4th.
+	Key      string           `json:"key"`
+	Name     string           `json:"name"`
+	Versions []FormSetVersion `json:"versions"`
+}
+
+// FormSetList defines model for FormSetList.
+type FormSetList struct {
+	// CustomerDefaults Every customer, by code, with its chosen form set.
+	CustomerDefaults []CustomerFormSet `json:"customer_defaults"`
+	Items            []FormSet         `json:"items"`
+}
+
+// FormSetSheet The format template version used for one sheet.
+type FormSetSheet struct {
+	FormatVersionId string             `json:"format_version_id"`
+	Status          FormSetSheetStatus `json:"status"`
+	TemplateName    string             `json:"template_name"`
+	Version         int                `json:"version"`
+}
+
+// FormSetSheetStatus defines model for FormSetSheet.Status.
+type FormSetSheetStatus string
+
+// FormSetSheets defines model for FormSetSheets.
+type FormSetSheets struct {
+	CpFormatVersionId    string `json:"cp_format_version_id"`
+	PfdFormatVersionId   string `json:"pfd_format_version_id"`
+	PfmeaFormatVersionId string `json:"pfmea_format_version_id"`
+}
+
+// FormSetVersion defines model for FormSetVersion.
+type FormSetVersion struct {
+	// Cp The format template version used for one sheet.
+	Cp FormSetSheet `json:"cp"`
+	Id string       `json:"id"`
+
+	// Pfd The format template version used for one sheet.
+	Pfd FormSetSheet `json:"pfd"`
+
+	// Pfmea The format template version used for one sheet.
+	Pfmea       FormSetSheet         `json:"pfmea"`
+	PublishedAt *time.Time           `json:"published_at,omitempty"`
+	Status      FormSetVersionStatus `json:"status"`
+	Version     int                  `json:"version"`
+}
+
+// FormSetVersionStatus defines model for FormSetVersion.Status.
+type FormSetVersionStatus string
 
 // FormatField defines model for FormatField.
 type FormatField struct {
@@ -1810,6 +1917,14 @@ type NewDocumentNumberSet struct {
 
 	// InitialRevision First revision of the three documents, for example 4 for -04. Default 0.
 	InitialRevision *int `json:"initial_revision,omitempty"`
+}
+
+// NewFormSet defines model for NewFormSet.
+type NewFormSet struct {
+	CpFormatVersionId    string `json:"cp_format_version_id"`
+	Name                 string `json:"name"`
+	PfdFormatVersionId   string `json:"pfd_format_version_id"`
+	PfmeaFormatVersionId string `json:"pfmea_format_version_id"`
 }
 
 // NewFormatField defines model for NewFormatField.
@@ -2561,6 +2676,12 @@ type DocumentTypeId = string
 // DocumentTypeIdQuery defines model for DocumentTypeIdQuery.
 type DocumentTypeIdQuery = string
 
+// FormSetId defines model for FormSetId.
+type FormSetId = string
+
+// FormSetVersionId defines model for FormSetVersionId.
+type FormSetVersionId = string
+
 // FormatFieldId defines model for FormatFieldId.
 type FormatFieldId = string
 
@@ -2734,6 +2855,9 @@ type UpdateCustomerJSONRequestBody = CustomerUpdate
 // ChangeCustomerCodeJSONRequestBody defines body for ChangeCustomerCode for application/json ContentType.
 type ChangeCustomerCodeJSONRequestBody = CustomerCodeChange
 
+// SetCustomerFormSetJSONRequestBody defines body for SetCustomerFormSet for application/json ContentType.
+type SetCustomerFormSetJSONRequestBody = CustomerFormSetChoice
+
 // SetCustomerDefaultRouteJSONRequestBody defines body for SetCustomerDefaultRoute for application/json ContentType.
 type SetCustomerDefaultRouteJSONRequestBody = RouteChoice
 
@@ -2757,6 +2881,12 @@ type CreateDocumentTypeJSONRequestBody = DocumentTypeInput
 
 // UpdateDocumentTypeJSONRequestBody defines body for UpdateDocumentType for application/json ContentType.
 type UpdateDocumentTypeJSONRequestBody = DocumentTypeInput
+
+// SetFormSetSheetsJSONRequestBody defines body for SetFormSetSheets for application/json ContentType.
+type SetFormSetSheetsJSONRequestBody = FormSetSheets
+
+// CreateFormSetJSONRequestBody defines body for CreateFormSet for application/json ContentType.
+type CreateFormSetJSONRequestBody = NewFormSet
 
 // UpdateFormatHighlightsJSONRequestBody defines body for UpdateFormatHighlights for application/json ContentType.
 type UpdateFormatHighlightsJSONRequestBody = FormatHighlights
@@ -2925,6 +3055,9 @@ type ServerInterface interface {
 	// ChangeCustomerCode Give a customer a new code; the old code stays in its history (A-2, E-11)
 	// (POST /api/v1/customers/{customerId}/code)
 	ChangeCustomerCode(w http.ResponseWriter, r *http.Request, customerId CustomerId)
+	// SetCustomerFormSet Choose the form set for new documents of a customer (A-2, D-133)
+	// (PUT /api/v1/customers/{customerId}/default-form-set)
+	SetCustomerFormSet(w http.ResponseWriter, r *http.Request, customerId CustomerId)
 	// SetCustomerDefaultRoute Set the default approval route of a customer (A-2, D-47)
 	// (PUT /api/v1/customers/{customerId}/default-route)
 	SetCustomerDefaultRoute(w http.ResponseWriter, r *http.Request, customerId CustomerId)
@@ -2958,6 +3091,21 @@ type ServerInterface interface {
 	// UpdateDocumentType Change the name and letter of a document type (A-2)
 	// (PUT /api/v1/document-types/{documentTypeId})
 	UpdateDocumentType(w http.ResponseWriter, r *http.Request, documentTypeId DocumentTypeId)
+	// SetFormSetSheets Choose the format template versions of the sheets of a draft form set version (A-2)
+	// (PUT /api/v1/form-set-versions/{formSetVersionId})
+	SetFormSetSheets(w http.ResponseWriter, r *http.Request, formSetVersionId FormSetVersionId)
+	// PublishFormSetVersion Approve and publish a draft form set version (V-3, D-139)
+	// (POST /api/v1/form-set-versions/{formSetVersionId}/publish)
+	PublishFormSetVersion(w http.ResponseWriter, r *http.Request, formSetVersionId FormSetVersionId)
+	// ListFormSets Form sets with their versions, and the form set of each customer (L-2, D-133)
+	// (GET /api/v1/form-sets)
+	ListFormSets(w http.ResponseWriter, r *http.Request)
+	// CreateFormSet Add a form set with a draft version 1 (A-2, D-133)
+	// (POST /api/v1/form-sets)
+	CreateFormSet(w http.ResponseWriter, r *http.Request)
+	// CreateFormSetVersion Make the next draft version of a form set from its last published version (A-2)
+	// (POST /api/v1/form-sets/{formSetId}/versions)
+	CreateFormSetVersion(w http.ResponseWriter, r *http.Request, formSetId FormSetId)
 	// GetFormatVersion One format template version with its fields, rating criteria, and symbols (L-2)
 	// (GET /api/v1/format-template-versions/{formatVersionId})
 	GetFormatVersion(w http.ResponseWriter, r *http.Request, formatVersionId FormatVersionId)
@@ -3606,6 +3754,32 @@ func (siw *ServerInterfaceWrapper) ChangeCustomerCode(w http.ResponseWriter, r *
 	handler.ServeHTTP(w, r)
 }
 
+// SetCustomerFormSet operation middleware
+func (siw *ServerInterfaceWrapper) SetCustomerFormSet(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "customerId" -------------
+	var customerId CustomerId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "customerId", r.PathValue("customerId"), &customerId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customerId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetCustomerFormSet(w, r, customerId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // SetCustomerDefaultRoute operation middleware
 func (siw *ServerInterfaceWrapper) SetCustomerDefaultRoute(w http.ResponseWriter, r *http.Request) {
 
@@ -3969,6 +4143,112 @@ func (siw *ServerInterfaceWrapper) UpdateDocumentType(w http.ResponseWriter, r *
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UpdateDocumentType(w, r, documentTypeId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetFormSetSheets operation middleware
+func (siw *ServerInterfaceWrapper) SetFormSetSheets(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "formSetVersionId" -------------
+	var formSetVersionId FormSetVersionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "formSetVersionId", r.PathValue("formSetVersionId"), &formSetVersionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "formSetVersionId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetFormSetSheets(w, r, formSetVersionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PublishFormSetVersion operation middleware
+func (siw *ServerInterfaceWrapper) PublishFormSetVersion(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "formSetVersionId" -------------
+	var formSetVersionId FormSetVersionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "formSetVersionId", r.PathValue("formSetVersionId"), &formSetVersionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "formSetVersionId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PublishFormSetVersion(w, r, formSetVersionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListFormSets operation middleware
+func (siw *ServerInterfaceWrapper) ListFormSets(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListFormSets(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateFormSet operation middleware
+func (siw *ServerInterfaceWrapper) CreateFormSet(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateFormSet(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateFormSetVersion operation middleware
+func (siw *ServerInterfaceWrapper) CreateFormSetVersion(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "formSetId" -------------
+	var formSetId FormSetId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "formSetId", r.PathValue("formSetId"), &formSetId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "formSetId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateFormSetVersion(w, r, formSetId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -5553,6 +5833,12 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/format-template-versions/{formatVersionId}/fields/{formatFieldId}", wrapper.UpdateFormatField)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/format-template-versions/{formatVersionId}/rating-criteria", wrapper.SetFormatRatingCriteria)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/format-template-versions/{formatVersionId}/symbols", wrapper.SaveFormatSymbols)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/form-sets", wrapper.ListFormSets)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/form-sets", wrapper.CreateFormSet)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/form-sets/{formSetId}/versions", wrapper.CreateFormSetVersion)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/form-set-versions/{formSetVersionId}", wrapper.SetFormSetSheets)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/form-set-versions/{formSetVersionId}/publish", wrapper.PublishFormSetVersion)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/customers/{customerId}/default-form-set", wrapper.SetCustomerFormSet)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/process-templates", wrapper.ListProcessTemplates)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/process-templates", wrapper.CreateProcessTemplate)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/process-templates/{processTemplateId}/versions", wrapper.CreateProcessTemplateVersion)
@@ -6506,6 +6792,40 @@ func (response ChangeCustomerCodedefaultJSONResponse) VisitChangeCustomerCodeRes
 	return err
 }
 
+type SetCustomerFormSetRequestObject struct {
+	CustomerId CustomerId `json:"customerId"`
+	Body       *SetCustomerFormSetJSONRequestBody
+}
+
+type SetCustomerFormSetResponseObject interface {
+	VisitSetCustomerFormSetResponse(w http.ResponseWriter) error
+}
+
+type SetCustomerFormSet204Response struct {
+}
+
+func (response SetCustomerFormSet204Response) VisitSetCustomerFormSetResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type SetCustomerFormSetdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response SetCustomerFormSetdefaultJSONResponse) VisitSetCustomerFormSetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type SetCustomerDefaultRouteRequestObject struct {
 	CustomerId CustomerId `json:"customerId"`
 	Body       *SetCustomerDefaultRouteJSONRequestBody
@@ -6957,6 +7277,201 @@ type UpdateDocumentTypedefaultJSONResponse struct {
 }
 
 func (response UpdateDocumentTypedefaultJSONResponse) VisitUpdateDocumentTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetFormSetSheetsRequestObject struct {
+	FormSetVersionId FormSetVersionId `json:"formSetVersionId"`
+	Body             *SetFormSetSheetsJSONRequestBody
+}
+
+type SetFormSetSheetsResponseObject interface {
+	VisitSetFormSetSheetsResponse(w http.ResponseWriter) error
+}
+
+type SetFormSetSheets200JSONResponse FormSet
+
+func (response SetFormSetSheets200JSONResponse) VisitSetFormSetSheetsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetFormSetSheetsdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response SetFormSetSheetsdefaultJSONResponse) VisitSetFormSetSheetsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PublishFormSetVersionRequestObject struct {
+	FormSetVersionId FormSetVersionId `json:"formSetVersionId"`
+}
+
+type PublishFormSetVersionResponseObject interface {
+	VisitPublishFormSetVersionResponse(w http.ResponseWriter) error
+}
+
+type PublishFormSetVersion200JSONResponse FormSet
+
+func (response PublishFormSetVersion200JSONResponse) VisitPublishFormSetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PublishFormSetVersiondefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response PublishFormSetVersiondefaultJSONResponse) VisitPublishFormSetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListFormSetsRequestObject struct {
+}
+
+type ListFormSetsResponseObject interface {
+	VisitListFormSetsResponse(w http.ResponseWriter) error
+}
+
+type ListFormSets200JSONResponse FormSetList
+
+func (response ListFormSets200JSONResponse) VisitListFormSetsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListFormSetsdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ListFormSetsdefaultJSONResponse) VisitListFormSetsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateFormSetRequestObject struct {
+	Body *CreateFormSetJSONRequestBody
+}
+
+type CreateFormSetResponseObject interface {
+	VisitCreateFormSetResponse(w http.ResponseWriter) error
+}
+
+type CreateFormSet201JSONResponse FormSet
+
+func (response CreateFormSet201JSONResponse) VisitCreateFormSetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateFormSetdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response CreateFormSetdefaultJSONResponse) VisitCreateFormSetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateFormSetVersionRequestObject struct {
+	FormSetId FormSetId `json:"formSetId"`
+}
+
+type CreateFormSetVersionResponseObject interface {
+	VisitCreateFormSetVersionResponse(w http.ResponseWriter) error
+}
+
+type CreateFormSetVersion201JSONResponse FormSet
+
+func (response CreateFormSetVersion201JSONResponse) VisitCreateFormSetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateFormSetVersiondefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response CreateFormSetVersiondefaultJSONResponse) VisitCreateFormSetVersionResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -9385,6 +9900,9 @@ type StrictServerInterface interface {
 	// ChangeCustomerCode Give a customer a new code; the old code stays in its history (A-2, E-11)
 	// (POST /api/v1/customers/{customerId}/code)
 	ChangeCustomerCode(ctx context.Context, request ChangeCustomerCodeRequestObject) (ChangeCustomerCodeResponseObject, error)
+	// SetCustomerFormSet Choose the form set for new documents of a customer (A-2, D-133)
+	// (PUT /api/v1/customers/{customerId}/default-form-set)
+	SetCustomerFormSet(ctx context.Context, request SetCustomerFormSetRequestObject) (SetCustomerFormSetResponseObject, error)
 	// SetCustomerDefaultRoute Set the default approval route of a customer (A-2, D-47)
 	// (PUT /api/v1/customers/{customerId}/default-route)
 	SetCustomerDefaultRoute(ctx context.Context, request SetCustomerDefaultRouteRequestObject) (SetCustomerDefaultRouteResponseObject, error)
@@ -9418,6 +9936,21 @@ type StrictServerInterface interface {
 	// UpdateDocumentType Change the name and letter of a document type (A-2)
 	// (PUT /api/v1/document-types/{documentTypeId})
 	UpdateDocumentType(ctx context.Context, request UpdateDocumentTypeRequestObject) (UpdateDocumentTypeResponseObject, error)
+	// SetFormSetSheets Choose the format template versions of the sheets of a draft form set version (A-2)
+	// (PUT /api/v1/form-set-versions/{formSetVersionId})
+	SetFormSetSheets(ctx context.Context, request SetFormSetSheetsRequestObject) (SetFormSetSheetsResponseObject, error)
+	// PublishFormSetVersion Approve and publish a draft form set version (V-3, D-139)
+	// (POST /api/v1/form-set-versions/{formSetVersionId}/publish)
+	PublishFormSetVersion(ctx context.Context, request PublishFormSetVersionRequestObject) (PublishFormSetVersionResponseObject, error)
+	// ListFormSets Form sets with their versions, and the form set of each customer (L-2, D-133)
+	// (GET /api/v1/form-sets)
+	ListFormSets(ctx context.Context, request ListFormSetsRequestObject) (ListFormSetsResponseObject, error)
+	// CreateFormSet Add a form set with a draft version 1 (A-2, D-133)
+	// (POST /api/v1/form-sets)
+	CreateFormSet(ctx context.Context, request CreateFormSetRequestObject) (CreateFormSetResponseObject, error)
+	// CreateFormSetVersion Make the next draft version of a form set from its last published version (A-2)
+	// (POST /api/v1/form-sets/{formSetId}/versions)
+	CreateFormSetVersion(ctx context.Context, request CreateFormSetVersionRequestObject) (CreateFormSetVersionResponseObject, error)
 	// GetFormatVersion One format template version with its fields, rating criteria, and symbols (L-2)
 	// (GET /api/v1/format-template-versions/{formatVersionId})
 	GetFormatVersion(ctx context.Context, request GetFormatVersionRequestObject) (GetFormatVersionResponseObject, error)
@@ -10270,6 +10803,39 @@ func (sh *strictHandler) ChangeCustomerCode(w http.ResponseWriter, r *http.Reque
 	}
 }
 
+// SetCustomerFormSet operation middleware
+func (sh *strictHandler) SetCustomerFormSet(w http.ResponseWriter, r *http.Request, customerId CustomerId) {
+	var request SetCustomerFormSetRequestObject
+
+	request.CustomerId = customerId
+
+	var body SetCustomerFormSetJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetCustomerFormSet(ctx, request.(SetCustomerFormSetRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetCustomerFormSet")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetCustomerFormSetResponseObject); ok {
+		if err := validResponse.VisitSetCustomerFormSetResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // SetCustomerDefaultRoute operation middleware
 func (sh *strictHandler) SetCustomerDefaultRoute(w http.ResponseWriter, r *http.Request, customerId CustomerId) {
 	var request SetCustomerDefaultRouteRequestObject
@@ -10599,6 +11165,146 @@ func (sh *strictHandler) UpdateDocumentType(w http.ResponseWriter, r *http.Reque
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UpdateDocumentTypeResponseObject); ok {
 		if err := validResponse.VisitUpdateDocumentTypeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SetFormSetSheets operation middleware
+func (sh *strictHandler) SetFormSetSheets(w http.ResponseWriter, r *http.Request, formSetVersionId FormSetVersionId) {
+	var request SetFormSetSheetsRequestObject
+
+	request.FormSetVersionId = formSetVersionId
+
+	var body SetFormSetSheetsJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetFormSetSheets(ctx, request.(SetFormSetSheetsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetFormSetSheets")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetFormSetSheetsResponseObject); ok {
+		if err := validResponse.VisitSetFormSetSheetsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PublishFormSetVersion operation middleware
+func (sh *strictHandler) PublishFormSetVersion(w http.ResponseWriter, r *http.Request, formSetVersionId FormSetVersionId) {
+	var request PublishFormSetVersionRequestObject
+
+	request.FormSetVersionId = formSetVersionId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PublishFormSetVersion(ctx, request.(PublishFormSetVersionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PublishFormSetVersion")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PublishFormSetVersionResponseObject); ok {
+		if err := validResponse.VisitPublishFormSetVersionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListFormSets operation middleware
+func (sh *strictHandler) ListFormSets(w http.ResponseWriter, r *http.Request) {
+	var request ListFormSetsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListFormSets(ctx, request.(ListFormSetsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListFormSets")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListFormSetsResponseObject); ok {
+		if err := validResponse.VisitListFormSetsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateFormSet operation middleware
+func (sh *strictHandler) CreateFormSet(w http.ResponseWriter, r *http.Request) {
+	var request CreateFormSetRequestObject
+
+	var body CreateFormSetJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateFormSet(ctx, request.(CreateFormSetRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateFormSet")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateFormSetResponseObject); ok {
+		if err := validResponse.VisitCreateFormSetResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateFormSetVersion operation middleware
+func (sh *strictHandler) CreateFormSetVersion(w http.ResponseWriter, r *http.Request, formSetId FormSetId) {
+	var request CreateFormSetVersionRequestObject
+
+	request.FormSetId = formSetId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateFormSetVersion(ctx, request.(CreateFormSetVersionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateFormSetVersion")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateFormSetVersionResponseObject); ok {
+		if err := validResponse.VisitCreateFormSetVersionResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

@@ -31,12 +31,12 @@ UPDATE format_templates SET name = $2 WHERE id = $1;
 
 -- name: ListFormatVersions :many
 -- ListFormatVersions mengambil semua versi semua template, untuk daftar template.
-SELECT id, template_id, version, status, risk_method, highlight_rpn_above, highlight_severity_at_least, created_at, published_at, ap_rules
+SELECT id, template_id, version, status, risk_method, highlight_rpn_above, highlight_severity_at_least, created_at, published_at, ap_rules, changed_by_person_id
 FROM format_template_versions
 ORDER BY template_id, version;
 
 -- name: GetFormatVersion :one
-SELECT id, template_id, version, status, risk_method, highlight_rpn_above, highlight_severity_at_least, created_at, published_at, ap_rules
+SELECT id, template_id, version, status, risk_method, highlight_rpn_above, highlight_severity_at_least, created_at, published_at, ap_rules, changed_by_person_id
 FROM format_template_versions
 WHERE id = $1;
 
@@ -46,8 +46,8 @@ WHERE id = $1;
 SELECT id FROM format_template_versions WHERE id = $1 FOR NO KEY UPDATE;
 
 -- name: CreateFormatVersion :one
-INSERT INTO format_template_versions (template_id, version, risk_method, highlight_rpn_above, highlight_severity_at_least, ap_rules)
-VALUES ($1, $2, $3, $4, $5, $6)
+INSERT INTO format_template_versions (template_id, version, risk_method, highlight_rpn_above, highlight_severity_at_least, ap_rules, changed_by_person_id)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
 RETURNING id;
 
 -- name: SetFormatHighlights :exec
@@ -117,7 +117,7 @@ INSERT INTO format_symbols (version_id, key, name, position, automatic) VALUES (
 UPDATE format_symbols SET name = $3 WHERE version_id = $1 AND key = $2;
 
 -- name: ListVersionsOfTemplate :many
-SELECT id, template_id, version, status, risk_method, highlight_rpn_above, highlight_severity_at_least, created_at, published_at, ap_rules
+SELECT id, template_id, version, status, risk_method, highlight_rpn_above, highlight_severity_at_least, created_at, published_at, ap_rules, changed_by_person_id
 FROM format_template_versions
 WHERE template_id = $1
 ORDER BY version;
@@ -159,3 +159,9 @@ WHERE s.version_id = sqlc.arg(source_id);
 -- name: SetFormatAPRules :exec
 -- SetFormatAPRules mengganti tabel AP satu versi (langkah A form set, D-134).
 UPDATE format_template_versions SET ap_rules = $2 WHERE id = $1;
+
+
+-- name: SetFormatVersionEditor :exec
+-- SetFormatVersionEditor mencatat orang yang terakhir mengubah isi versi draft.
+-- Penyetuju tabel AP tidak boleh orang ini (D-139).
+UPDATE format_template_versions SET changed_by_person_id = $2 WHERE id = $1;

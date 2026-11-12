@@ -140,9 +140,12 @@ type FormatVersion struct {
 	Fields                   []Field  // header dulu, lalu kolom baris, menurut urutan
 	Ratings                  []Rating // severity, occurrence, lalu detection, nilai 1 sampai 10
 	Symbols                  []Symbol
-	APRules                  []APRule   // tabel AP; kosong kecuali metode risiko AP (D-134); tidak pernah nil
-	CreatedAt                time.Time  // selalu UTC
-	PublishedAt              *time.Time // nil selama draft; selalu UTC (M3.4)
+	APRules                  []APRule // tabel AP; kosong kecuali metode risiko AP (D-134); tidak pernah nil
+	// ChangedByPersonID adalah orang yang terakhir mengubah isi versi ini;
+	// "" bila belum pernah diubah. Dipakai aturan D-139, tidak dikirim ke API.
+	ChangedByPersonID string
+	CreatedAt         time.Time  // selalu UTC
+	PublishedAt       *time.Time // nil selama draft; selalu UTC (M3.4)
 }
 
 // Field adalah satu field header atau kolom baris dalam satu versi.

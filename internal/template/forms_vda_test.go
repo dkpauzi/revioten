@@ -3,6 +3,8 @@ package template
 import (
 	"slices"
 	"testing"
+
+	"github.com/dkpauzi/revioten/internal/access"
 )
 
 // Form set langkah B dan C (D-133, D-135, D-140): isi awal form PFMEA
@@ -72,7 +74,7 @@ func TestSeededPFMEAVDA(t *testing.T) {
 	}
 
 	kinds := map[string]string{
-		"pfmea_id_number": KindDocumentNumber, "pfmea_start_date": KindDate, "work_element": KindSelect,
+		"pfmea_id_number": KindDocumentNumber, "pfmea_start_date": KindDate, "work_element": KindSelect, "process_step": KindProcess, "process_item": KindText,
 		"severity": KindRating, "occurrence": KindRating, "detection": KindRating, "ap": KindAP,
 		"severity_after": KindRating, "ap_after": KindAP, "special_characteristic": KindSymbol,
 		"target_completion_date": KindDate, "action_status": KindSelect, "failure_mode": KindText,
@@ -233,7 +235,8 @@ func TestAPFieldRules(t *testing.T) {
 	if !slices.Equal(keysOf(cv, AreaRow), keysOf(vda, AreaRow)) || byKey(t, cv, "ap").Group != "RISK ANALYSIS (STEP 5)" {
 		t.Errorf("salinan kehilangan key atau grup")
 	}
-	if _, err := f.s.PublishFormatVersion(ctx, f.admin, vda.ID); err != nil {
+	approver := newActor(t, f.pool, "ppap.supervisor", access.AccountWork, access.RoleFormApprover)
+	if _, err := f.s.PublishFormatVersion(ctx, approver, vda.ID); err != nil {
 		t.Fatal(err)
 	}
 	v2, err := f.s.NewFormatVersion(ctx, f.admin, ft.ID)

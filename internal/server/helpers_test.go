@@ -370,6 +370,38 @@ type fakeTemplates struct {
 	gotRatings []template.Rating
 	gotSymbols []template.Symbol
 	gotAPRules []template.APRule
+	formSets   template.FormSetList
+	formSet    template.FormSet
+}
+
+func (f *fakeTemplates) ListFormSets(context.Context, access.Actor) (template.FormSetList, error) {
+	f.got = called{method: "ListFormSets"}
+	return f.formSets, f.err
+}
+
+func (f *fakeTemplates) CreateFormSet(_ context.Context, _ access.Actor, in template.NewFormSet) (template.FormSet, error) {
+	f.got = called{method: "CreateFormSet", input: in}
+	return f.formSet, f.err
+}
+
+func (f *fakeTemplates) SetFormSetSheets(_ context.Context, _ access.Actor, versionID string, sheets template.FormSetSheets) (template.FormSet, error) {
+	f.got = called{method: "SetFormSetSheets", id: versionID, input: sheets}
+	return f.formSet, f.err
+}
+
+func (f *fakeTemplates) NewFormSetVersion(_ context.Context, _ access.Actor, formSetID string) (template.FormSet, error) {
+	f.got = called{method: "NewFormSetVersion", id: formSetID}
+	return f.formSet, f.err
+}
+
+func (f *fakeTemplates) PublishFormSetVersion(_ context.Context, _ access.Actor, versionID string) (template.FormSet, error) {
+	f.got = called{method: "PublishFormSetVersion", id: versionID}
+	return f.formSet, f.err
+}
+
+func (f *fakeTemplates) SetCustomerFormSet(_ context.Context, _ access.Actor, customerID, formSetID string) error {
+	f.got = called{method: "SetCustomerFormSet", id: customerID, input: formSetID}
+	return f.err
 }
 
 func (f *fakeTemplates) SetAPRules(_ context.Context, _ access.Actor, versionID string, rules []template.APRule) (template.FormatVersion, error) {

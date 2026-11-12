@@ -38,6 +38,8 @@ const groups: { id: MenuGroup['id']; label: MessageKey; entries: Entry[] }[] = [
 		entries: [
 			{ href: '/format-templates', label: 'navFormatTemplates' },
 			{ href: '/process-templates', label: 'navProcessTemplates' },
+			// Form set (langkah D, D-133): semua akun melihat; admin mengubah, penyetuju form menerbitkan.
+			{ href: '/form-sets', label: 'navFormSets' },
 			{ href: '/processes', label: 'navProcesses' }
 		]
 	},

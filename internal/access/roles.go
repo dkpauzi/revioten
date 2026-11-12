@@ -90,7 +90,7 @@ func ValidateRoles(kind string, grants []RoleGrant) []problem.Problem {
 
 // workRoles adalah peran yang boleh dipegang akun kerja.
 var workRoles = []string{
-	RoleAuthor, RoleTemplateMaintainer, RolePFMEACPChecker, RoleVerifier, RoleDocumentControl, RoleMigration,
+	RoleAuthor, RoleTemplateMaintainer, RolePFMEACPChecker, RoleVerifier, RoleFormApprover, RoleDocumentControl, RoleMigration,
 }
 
 // ReplaceRoles mengganti seluruh peran akun dengan grants. Dipanggil di dalam

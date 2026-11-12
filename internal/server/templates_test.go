@@ -111,6 +111,55 @@ func TestFormatTemplateEndpoints(t *testing.T) {
 		t.Errorf("hitung AP: status %d, %+v, %s", rec.Code, fake.got, rec.Body.String())
 	}
 
+	// Form set (langkah D, D-133, D-139).
+	sheet := func(id, name string) template.SheetRef {
+		return template.SheetRef{FormatVersionID: id, TemplateName: name, Version: 1, Status: template.StatusDraft}
+	}
+	fake.formSet = template.FormSet{ID: "fs-1", Key: "aiag_4th", Name: "AIAG 4th set", Default: true, Versions: []template.FormSetVersion{{
+		ID: "fsv-1", Version: 1, Status: template.StatusDraft, PFD: sheet("v-1", "PFD"), PFMEA: sheet("v-2", "PFMEA AIAG 4th"), CP: sheet("v-3", "CP"),
+	}}}
+	fake.formSets = template.FormSetList{
+		Sets:     []template.FormSet{fake.formSet},
+		Defaults: []template.CustomerFormSet{{CustomerID: "c-1", CustomerCode: "AB", CustomerName: "Customer AB"}, {CustomerID: "c-2", CustomerCode: "CD", CustomerName: "Customer CD", FormSetID: "fs-1"}},
+	}
+	rec = srv.do(http.MethodGet, "/api/v1/form-sets", "")
+	want = `{"items":[{"id":"fs-1","key":"aiag_4th","name":"AIAG 4th set","default":true,"versions":[{"id":"fsv-1","version":1,"status":"draft",` +
+		`"pfd":{"format_version_id":"v-1","template_name":"PFD","version":1,"status":"draft"},` +
+		`"pfmea":{"format_version_id":"v-2","template_name":"PFMEA AIAG 4th","version":1,"status":"draft"},` +
+		`"cp":{"format_version_id":"v-3","template_name":"CP","version":1,"status":"draft"}}]}],` +
+		`"customer_defaults":[{"customer_id":"c-1","customer_code":"AB","customer_name":"Customer AB"},` +
+		`{"customer_id":"c-2","customer_code":"CD","customer_name":"Customer CD","form_set_id":"fs-1"}]}`
+	if rec.Code != http.StatusOK || !sameJSON(t, rec.Body.String(), want) {
+		t.Errorf("daftar form set: status %d\n%s\ningin\n%s", rec.Code, rec.Body.String(), want)
+	}
+	wantSheets := template.FormSetSheets{PFD: "v-1", PFMEA: "v-2", CP: "v-3"}
+	sheetsBody := `"pfd_format_version_id":"v-1","pfmea_format_version_id":"v-2","cp_format_version_id":"v-3"}`
+	rec = srv.do(http.MethodPost, "/api/v1/form-sets", `{"name":"Set baru",`+sheetsBody)
+	if rec.Code != http.StatusCreated || fake.got != (called{method: "CreateFormSet", input: template.NewFormSet{Name: "Set baru", Sheets: wantSheets}}) {
+		t.Errorf("buat form set: status %d, %+v", rec.Code, fake.got)
+	}
+	rec = srv.do(http.MethodPut, "/api/v1/form-set-versions/fsv-1", `{`+sheetsBody)
+	if rec.Code != http.StatusOK || fake.got != (called{method: "SetFormSetSheets", id: "fsv-1", input: wantSheets}) {
+		t.Errorf("ubah sheet: status %d, %+v", rec.Code, fake.got)
+	}
+	rec = srv.do(http.MethodPost, "/api/v1/form-sets/fs-1/versions", "")
+	if rec.Code != http.StatusCreated || fake.got != (called{method: "NewFormSetVersion", id: "fs-1"}) {
+		t.Errorf("versi form set baru: status %d, %+v", rec.Code, fake.got)
+	}
+	rec = srv.do(http.MethodPost, "/api/v1/form-set-versions/fsv-1/publish", "")
+	if rec.Code != http.StatusOK || fake.got != (called{method: "PublishFormSetVersion", id: "fsv-1"}) {
+		t.Errorf("terbitkan form set: status %d, %+v", rec.Code, fake.got)
+	}
+	// Tanpa form_set_id berarti kembali ke set bawaan.
+	rec = srv.do(http.MethodPut, "/api/v1/customers/c-1/default-form-set", `{"form_set_id":"fs-1"}`)
+	if rec.Code != http.StatusNoContent || fake.got != (called{method: "SetCustomerFormSet", id: "c-1", input: "fs-1"}) {
+		t.Errorf("form set customer: status %d, %+v", rec.Code, fake.got)
+	}
+	rec = srv.do(http.MethodPut, "/api/v1/customers/c-1/default-form-set", `{}`)
+	if rec.Code != http.StatusNoContent || fake.got != (called{method: "SetCustomerFormSet", id: "c-1", input: ""}) {
+		t.Errorf("form set customer dikosongkan: status %d, %+v", rec.Code, fake.got)
+	}
+
 	// Menerbitkan dan membuat versi baru (M3.4).
 	rec = srv.do(http.MethodPost, "/api/v1/format-template-versions/v-1/publish", "")
 	if rec.Code != http.StatusOK || fake.got != (called{method: "PublishFormatVersion", id: "v-1"}) {

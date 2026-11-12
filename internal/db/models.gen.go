@@ -67,13 +67,14 @@ type ChangeType struct {
 }
 
 type Customer struct {
-	ID             string
-	Code           string
-	Name           string
-	CreatedAt      time.Time
-	ProjectGroupID *string
-	Active         bool
-	DefaultRouteID *string
+	ID               string
+	Code             string
+	Name             string
+	CreatedAt        time.Time
+	ProjectGroupID   *string
+	Active           bool
+	DefaultRouteID   *string
+	DefaultFormSetID *string
 }
 
 type CustomerCode struct {
@@ -104,6 +105,28 @@ type DocumentType struct {
 	Name     string
 	Letter   string
 	Position int16
+}
+
+type FormSet struct {
+	ID        string
+	Key       string
+	Name      string
+	IsDefault bool
+	CreatedAt time.Time
+}
+
+type FormSetVersion struct {
+	ID                   string
+	FormSetID            string
+	Version              int32
+	Status               string
+	PublishedAt          *time.Time
+	CoverFormatVersionID *string
+	PfdFormatVersionID   string
+	PfmeaFormatVersionID string
+	CpFormatVersionID    string
+	PreparedByPersonID   *string
+	CreatedAt            time.Time
 }
 
 type FormatField struct {
@@ -152,6 +175,7 @@ type FormatTemplateVersion struct {
 	CreatedAt                time.Time
 	PublishedAt              *time.Time
 	ApRules                  []byte
+	ChangedByPersonID        *string
 }
 
 type FormatVersionField struct {

@@ -7,6 +7,7 @@
 - Pembaruan 4 November 2026: dua temuan register sudah diputuskan pemilik. Kode customer tetap dua huruf sesuai WI (E-74, D-125), dan register PL1 dan PL3 adalah register Project Leader (E-75, D-126). Butir UX-01 sampai UX-07 sendiri tetap Terbuka.
 - Pembaruan 8 November 2026: UX-05 **diterima sebagian** (D-127). Design system dan menu berkelompok (Home, Documents, Template library, Master data, Admin) dipasang di halaman M0 sampai M3. Layar workbook (Tahap 4) dan pilihan bahasa EN/ID tetap Terbuka. Di hari yang sama pilihan bahasa EN/ID juga diterima (D-128, menggantikan D-96), bersama tampilan untuk HP, tablet, dan laptop. Yang masih Terbuka dari UX-05 tinggal layar workbook.
 - Pembaruan 8 November 2026 (2): bagian cakupan UX-01 **diterima** (D-129, keputusan E-72): satu template per proses, dan setiap poin punya cakupan umum, customer, group model, atau model, dengan yang paling spesifik menang. Cara penyusun memilih cakupan saat menyusun (UC-25) tetap Terbuka sampai M4.5.
+- Pembaruan 12 November 2026: layar workbook UX-05 **diterima** (D-145), jadi UX-05 selesai seluruhnya. Isi poin per kolom (bagian UX-02 yang menyangkut E-73) diputuskan lewat D-146.
 
 | ID | Usulan | Asal | Dampak ke UML | Aturan terkait |
 |---|---|---|---|---|

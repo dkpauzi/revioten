@@ -88,6 +88,8 @@ func TestPermissionsPerOperation(t *testing.T) {
 			{Role: access.RoleAuthor, Scope: access.ScopeAll},
 			{Role: access.RoleTemplateMaintainer, Scope: access.ScopeAll},
 			{Role: access.RoleDocumentControl, Scope: access.ScopeAll},
+			// Penyetuju form (V-3, D-139), untuk operasi menerbitkan form set.
+			{Role: access.RoleFormApprover, Scope: access.ScopeAll},
 		},
 	})
 	if err != nil {
@@ -193,6 +195,12 @@ func TestPermissionsPerOperation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// Form set bawaan (langkah D): versi 1 set AIAG 4th masih draft.
+	formSets, err := templates.ListFormSets(ctx, admin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	formSet := formSets.Sets[0]
 	// Process template IQC (M3.2) dengan satu sub-proses dan satu poin CP,
 	// dibuat PPAP Engineer. Proses Reflow belum punya template, untuk operasi
 	// membuat template.
@@ -230,7 +238,7 @@ func TestPermissionsPerOperation(t *testing.T) {
 		"modelGroupId": modelGroup.ID, "modelId": model.ID, "partNumberId": part.ID,
 		"processId": proc.ID, "documentTypeId": docTypes[0].ID, "cpTypeId": docTypes[2].ID, "documentNumberId": reg.Numbers[0].ID, "specialCodeId": specialCodes[0].ID,
 		"changeTypeId": changeTypes[0].ID, "changeSourceId": sources[0].ID, "fourMCategoryId": categories[0].ID,
-		"formatTemplateId": pfmeaFormat.ID, "formatVersionId": pfmeaVersion.ID, "formatFieldId": pfmeaVersion.Fields[0].ID,
+		"formatTemplateId": pfmeaFormat.ID, "formatVersionId": pfmeaVersion.ID, "formSetId": formSet.ID, "formSetVersionId": formSet.Versions[0].ID, "pfdSheetId": formSet.Versions[0].PFD.FormatVersionID, "pfmeaSheetId": formSet.Versions[0].PFMEA.FormatVersionID, "cpSheetId": formSet.Versions[0].CP.FormatVersionID, "formatFieldId": pfmeaVersion.Fields[0].ID,
 		"freeProcessId": reflow.ID, "processVersionId": iqcVersion.ID, "processTemplateId": iqcVersion.TemplateID, "subprocessId": iqcVersion.Subprocesses[0].ID,
 		"pointId": iqcVersion.Subprocesses[0].Points[0].ID, "variantId": iqcVersion.Subprocesses[0].Points[0].Variants[0].ID,
 	}
@@ -306,6 +314,14 @@ func TestPermissionsPerOperation(t *testing.T) {
 		{http.MethodPut, "/api/v1/format-template-versions/{formatVersionId}/fields/{formatFieldId}", `{"label":"Process or Line"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
 		{http.MethodPut, "/api/v1/format-template-versions/{formatVersionId}/rating-criteria", `{"items":[{"scale":"severity","value":1,"criteria":""}]}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
 		{http.MethodPut, "/api/v1/format-template-versions/{formatVersionId}/symbols", `{"items":[{"key":"critical_process","name":"Critical Process"},{"key":"revision","name":"Revision"},{"key":"important_character","name":"Important Character"},{"key":"regulation","name":"Regulation"}]}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		// Form set (langkah D): melihat lewat L-2, menyusun lewat A-2, menerbitkan lewat V-3 (D-139).
+		// Engineer memegang V-3, tetapi format di dalam set masih draft, jadi jawabannya 409, bukan 403.
+		{http.MethodGet, "/api/v1/form-sets", "", http.StatusOK, http.StatusOK, http.StatusOK},
+		{http.MethodPost, "/api/v1/form-sets", `{"name":"Set uji izin","pfd_format_version_id":"{pfdSheetId}","pfmea_format_version_id":"{pfmeaSheetId}","cp_format_version_id":"{cpSheetId}"}`, http.StatusForbidden, http.StatusForbidden, http.StatusCreated},
+		{http.MethodPut, "/api/v1/form-set-versions/{formSetVersionId}", `{"pfd_format_version_id":"{pfdSheetId}","pfmea_format_version_id":"{pfmeaSheetId}","cp_format_version_id":"{cpSheetId}"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodPost, "/api/v1/form-set-versions/{formSetVersionId}/publish", "", http.StatusForbidden, http.StatusConflict, http.StatusForbidden},
+		{http.MethodPost, "/api/v1/form-sets/{formSetId}/versions", "", http.StatusForbidden, http.StatusForbidden, http.StatusConflict},
+		{http.MethodPut, "/api/v1/customers/{customerId}/default-form-set", `{"form_set_id":"{formSetId}"}`, http.StatusForbidden, http.StatusForbidden, http.StatusNoContent},
 		// Tabel AP: versi PFMEA di sini memakai RPN, jadi admin mendapat 422; hitungan AP boleh semua akun tetapi ditolak 422 dengan alasan yang sama.
 		{http.MethodPut, "/api/v1/format-template-versions/{formatVersionId}/ap-rules", `{"items":[{"s_min":1,"s_max":10,"o_min":1,"o_max":10,"d_min":1,"d_max":10,"priority":"L"}]}`, http.StatusForbidden, http.StatusForbidden, http.StatusUnprocessableEntity},
 		{http.MethodGet, "/api/v1/format-template-versions/{formatVersionId}/action-priority?severity=8&occurrence=6&detection=4", "", http.StatusUnprocessableEntity, http.StatusUnprocessableEntity, http.StatusUnprocessableEntity},

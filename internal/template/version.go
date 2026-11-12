@@ -56,8 +56,20 @@ func utcTime(t *time.Time) *time.Time {
 // PublishFormatVersion menerbitkan satu versi draft format template (A-2).
 // D-143 (keputusan E-87): penyusun draft boleh menerbitkannya sendiri.
 // Sesudah itu versi tersebut tidak bisa diubah.
+//
+// Versi bermetode AP membawa tabel AP, jadi diterbitkan pemegang V-3 dan
+// bukan oleh orang yang terakhir mengubahnya (D-139). Versi lain tetap
+// diterbitkan admin, termasuk oleh penyusunnya sendiri (D-143).
 func (s *Service) PublishFormatVersion(ctx context.Context, actor access.Actor, versionID string) (FormatVersion, error) {
-	if err := s.authz.Authorize(ctx, actor, access.ManageMasterData, access.Resource{}); err != nil {
+	// Hak yang dibutuhkan bergantung pada metode risiko versi itu. Versi yang
+	// tidak ada diperlakukan seperti versi biasa, supaya jawabannya sama.
+	needed := access.ManageMasterData
+	if db.IsUUID(versionID) {
+		if row, err := s.q.GetFormatVersion(ctx, versionID); err == nil && row.RiskMethod == RiskAP {
+			needed = access.ApproveForms
+		}
+	}
+	if err := s.authz.Authorize(ctx, actor, needed, access.Resource{}); err != nil {
 		return FormatVersion{}, err
 	}
 	if !db.IsUUID(versionID) {
@@ -76,6 +88,9 @@ func (s *Service) PublishFormatVersion(ctx context.Context, actor access.Actor, 
 		}
 		if v.Status != StatusDraft {
 			return statusConflict(alreadyPublished)
+		}
+		if v.RiskMethod == RiskAP && v.ChangedByPersonID != "" && v.ChangedByPersonID == actor.PersonID {
+			return errSamePerson()
 		}
 		if _, err := q.PublishFormatVersion(ctx, versionID); err != nil {
 			return err

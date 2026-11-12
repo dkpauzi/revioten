@@ -22,7 +22,7 @@ var allPermissions = []Permission{
 	ViewReleased, ViewRegister, ExportReleased, ViewDrafts,
 	RegisterNumbers, EditDrafts, ProposeChanges, WorkRevisions, PrintForSignature,
 	ManageTemplates, RecordRelease, ManageNumbers, ControlledCopies, MigrateDocuments,
-	VerifyChanges, CheckPFMEACP,
+	VerifyChanges, CheckPFMEACP, ApproveForms,
 	ManageUsers, ManageMasterData, ManageSettings, ViewAuditLog,
 }
 
@@ -33,10 +33,12 @@ var u3Matrix = map[string][]Permission{
 	RoleTemplateMaintainer: {ViewReleased, ViewRegister, ExportReleased, ViewDrafts, ManageTemplates},
 	RolePFMEACPChecker:     {ViewReleased, ViewRegister, ExportReleased, ViewDrafts, CheckPFMEACP},
 	RoleVerifier:           {ViewReleased, ViewRegister, ExportReleased, ViewDrafts, VerifyChanges},
-	RoleDocumentControl:    {ViewReleased, ViewRegister, ExportReleased, ViewDrafts, RecordRelease, ManageNumbers, ControlledCopies},
-	RoleMigration:          {ViewReleased, ViewRegister, ExportReleased, ViewDrafts, MigrateDocuments},
-	RoleViewer:             {ViewReleased, ViewRegister, ExportReleased},
-	RoleAdmin:              {ViewReleased, ViewRegister, ExportReleased, ManageUsers, ManageMasterData, ManageSettings, ViewAuditLog},
+	// Penyetuju form (D-139, migrasi 00019): menerbitkan form set dan tabel AP.
+	RoleFormApprover:    {ViewReleased, ViewRegister, ExportReleased, ViewDrafts, ApproveForms},
+	RoleDocumentControl: {ViewReleased, ViewRegister, ExportReleased, ViewDrafts, RecordRelease, ManageNumbers, ControlledCopies},
+	RoleMigration:       {ViewReleased, ViewRegister, ExportReleased, ViewDrafts, MigrateDocuments},
+	RoleViewer:          {ViewReleased, ViewRegister, ExportReleased},
+	RoleAdmin:           {ViewReleased, ViewRegister, ExportReleased, ManageUsers, ManageMasterData, ManageSettings, ViewAuditLog},
 }
 
 // newAccount membuat orang dan akun langsung lewat query, lalu memberi peran.

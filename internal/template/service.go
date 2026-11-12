@@ -336,6 +336,11 @@ func (s *Service) editVersion(ctx context.Context, actor access.Actor, versionID
 			return err
 		}
 		details["version"] = strconv.Itoa(v.Version)
+		// Orang yang mengubah dicatat di versinya: penyetuju tabel AP tidak
+		// boleh orang ini (D-139).
+		if err := q.SetFormatVersionEditor(ctx, db.SetFormatVersionEditorParams{ID: v.ID, ChangedByPersonID: optional(actor.PersonID)}); err != nil {
+			return err
+		}
 		return audit.Record(ctx, q, actor, audit.Event{
 			Action: action, TargetType: audit.TargetFormatTemplate, TargetID: v.TemplateID, Details: details,
 		})
@@ -555,7 +560,7 @@ func getVersion(ctx context.Context, q *db.Queries, id string) (FormatVersion, e
 	v := FormatVersion{
 		ID: row.ID, TemplateID: row.TemplateID, Version: int(row.Version), Status: row.Status, RiskMethod: row.RiskMethod,
 		HighlightRPNAbove: deref(row.HighlightRpnAbove), HighlightSeverityAtLeast: deref(row.HighlightSeverityAtLeast),
-		Fields: []Field{}, Ratings: []Rating{}, Symbols: []Symbol{}, CreatedAt: row.CreatedAt.UTC(), PublishedAt: utcTime(row.PublishedAt),
+		Fields: []Field{}, Ratings: []Rating{}, Symbols: []Symbol{}, CreatedAt: row.CreatedAt.UTC(), PublishedAt: utcTime(row.PublishedAt), ChangedByPersonID: derefText(row.ChangedByPersonID),
 	}
 	if v.APRules, err = parseAPRules(row.ApRules); err != nil {
 		return FormatVersion{}, err
@@ -735,7 +740,10 @@ func result(err error, doing string) error {
 		return taken("name", "This name is already used by another sub-process in this version.")
 	case db.IsUniqueViolation(err, "template_points_variant_scope_key"):
 		return taken("scope_target_id", "This point already has a variant for this scope.")
-	case db.IsUniqueViolation(err, "format_template_versions_draft_key"), db.IsUniqueViolation(err, "format_template_versions_version_key"),
+	case db.IsUniqueViolation(err, "form_sets_name_key"):
+		return taken("name", "This name is already used by another form set.")
+	case db.IsUniqueViolation(err, "form_set_versions_draft_key"), db.IsUniqueViolation(err, "form_set_versions_version_key"),
+		db.IsUniqueViolation(err, "format_template_versions_draft_key"), db.IsUniqueViolation(err, "format_template_versions_version_key"),
 		db.IsUniqueViolation(err, "process_template_versions_draft_key"), db.IsUniqueViolation(err, "process_template_versions_version_key"):
 		// Dua permintaan versi baru bersamaan: yang kedua ditolak indeks unik (M3.4).
 		return statusConflict(draftExists)

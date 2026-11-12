@@ -87,7 +87,7 @@ export const helpEn: HelpContent = {
 			imageAlt: 'The Accounts page with the box of the temporary password above the form.',
 			tips: [
 				'{roleAuthor}: registers document numbers. {roleTemplateMaintainer}: manages processes and process templates. {roleDocumentControl}: voids numbers, makes them obsolete, and imports legacy numbers.',
-				'{roleVerifier}, {rolePfmeaCpChecker}, and {roleMigration} are for screens that come later.',
+				'{roleFormApprover}: publishes form sets and AP tables; for now the PPAP Supervisor. {roleVerifier}, {rolePfmeaCpChecker}, and {roleMigration} are for screens that come later.',
 				'The temporary password is shown only once. If it is lost, reset the password of the account.',
 				'An admin account holds no work role. The person who holds it uses a separate work account for daily work.',
 				'An account is never deleted, only disabled.'
@@ -185,6 +185,27 @@ export const helpEn: HelpContent = {
 			tips: [
 				'A template has at most one draft, so {versionNew} only appears when the last version is published.',
 				'A new version keeps the same IDs of fields and points, so documents stay linked.'
+			]
+		},
+		{
+			id: 'form-sets',
+			title: 'Form sets',
+			who: 'Admin, and the form approver to publish',
+			intro: 'A form set is one package of forms for PFD, PFMEA, and Control Plan. The system has two: the AIAG 4th set (RPN) and the AIAG-VDA set (Action Priority). Each customer uses one form set for its new documents.',
+			steps: [
+				'Open {navGroupTemplates}, then {navFormSets}.',
+				'Each form set shows its three sheets: {formSetSheetPfd}, {formSetSheetPfmea}, and {formSetSheetCp}. The admin changes the sheets of a draft version and presses {formSetSaveSheets}.',
+				'Publish the format templates of the three sheets first, under {navFormatTemplates}.',
+				'The form approver opens the form set and presses [[Publish version 1]]. The person who prepared the draft cannot publish it.',
+				'Under {formSetCustomersTitle}, the admin chooses the form set of each customer. Without a choice the customer uses the default form set.',
+				'To make a new package, use {formSetCreateTitle} at the bottom of the page.'
+			],
+			image: 'form-sets',
+			imageAlt: 'The Form sets page with the two form sets and the form set per customer.',
+			tips: [
+				'A PFMEA format with Action Priority is also published by the form approver, because its AP table decides the priority of actions.',
+				'The admin can change the AP table of a draft version: press {apEdit} on the format template, click a priority to change it, then press {apSave}.',
+				'Give the role {roleFormApprover} to more accounts under {navAccounts} when more people approve, for example the Project Leaders.'
 			]
 		},
 		{

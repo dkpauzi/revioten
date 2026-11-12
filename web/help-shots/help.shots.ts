@@ -114,6 +114,10 @@ test('potret layar untuk halaman Help', async ({ page }) => {
 	await expect(columns).toBeVisible();
 	await shot(page, 'format-templates', columns);
 
+	await openFromMenu(page, en.navGroupTemplates, en.navFormSets);
+	await expect(page.getByRole('heading', { name: en.formSetCustomersTitle })).toBeVisible();
+	await shot(page, 'form-sets');
+
 	// Pengelola template.
 	await logOut(page);
 	await logInAs(page, engineer.login, temporary);

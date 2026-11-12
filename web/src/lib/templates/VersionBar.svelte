@@ -11,6 +11,7 @@
 		versions,
 		current,
 		canEdit,
+		canPublish = undefined,
 		onselect,
 		onpublish,
 		onnew
@@ -19,6 +20,9 @@
 		versions: VersionInfo[]; // semua versi template, menurut nomor
 		current: VersionInfo; // versi yang sedang ditampilkan
 		canEdit: boolean; // akun ini boleh mengubah template
+		// Akun ini boleh menerbitkan. Biasanya sama dengan canEdit; versi bermetode
+		// AP diterbitkan penyetuju form (D-139).
+		canPublish?: boolean;
 		onselect: (versionId: string) => void;
 		onpublish: () => void;
 		onnew: () => void;
@@ -44,7 +48,7 @@
 	<span class="badge" data-status={current.status}>
 		{isDraft(current) ? t('versionStatusDraft') : t('versionStatusPublished')}
 	</span>
-	{#if canEdit && isDraft(current)}
+	{#if (canPublish ?? canEdit) && isDraft(current)}
 		<button type="button" class="primary" onclick={publish}>
 			{t('versionPublish', { version: String(current.version) })}
 		</button>

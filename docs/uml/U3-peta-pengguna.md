@@ -10,7 +10,7 @@
 | Level | Artinya | Peran di level ini |
 |---|---|---|
 | **Buat / Edit** | Membuat atau mengubah isi dokumen, nomor, template, atau status rilis. | Penyusun, Pengelola template, Dokumen kontrol, Petugas migrasi |
-| **Verifikasi** | Menerima atau menolak permintaan perubahan, atau memberi tanda dicek, tanpa mengedit isi dokumen. | Verifikator, Pemeriksa PFMEA–CP |
+| **Verifikasi** | Menerima atau menolak permintaan perubahan, atau memberi tanda dicek, tanpa mengedit isi dokumen. | Verifikator, Pemeriksa PFMEA–CP, Penyetuju form |
 | **Lihat** | Hanya membaca dan mengekspor dokumen rilis. | Viewer |
 | **Admin** | Mengelola pengguna, hak akses, master data, dan pengaturan, serta melihat audit log. Dikerjakan lewat akun admin terpisah yang tidak memegang peran kerja (D-72, R-SEC-13). | Admin |
 
@@ -25,7 +25,7 @@ Semua pengguna yang login otomatis punya hak dasar level Lihat (L-1 sampai L-3),
 | Akun admin (terpisah) | Admin | Admin | Semua | D-72 sampai D-75. Saat ini dipegang PPAP Staff, sehingga ia punya dua akun. Hanya untuk tugas admin, dan hanya akun ini yang melihat audit log (D-75). Akun ditautkan ke pemegangnya, sehingga audit log menampilkan akun dan orangnya (D-74). |
 | Project Leader (level Supervisor, satu per Project Group) | Buat / Edit | Penyusun, Verifikator | Customer di Project Group sendiri (D-71) | D-51, D-54, D-63, D-67. Juga pengecek di kertas. |
 | Project Engineer (level Leader, satu per Project Group) | Buat / Edit | Penyusun, Verifikator | Customer di Project Group sendiri (D-71) | D-51, D-54, D-67. Juga pengecek di kertas. |
-| APQP/PPAP Controller (PPAP Supervisor) | Verifikasi | Verifikator | Semua customer | D-51, D-54. Dipegang satu orang (D-115). |
+| APQP/PPAP Controller (PPAP Supervisor) | Verifikasi | Verifikator, Penyetuju form (D-139) | Semua customer | D-51, D-54. Dipegang satu orang (D-115). |
 | NPI Manager, QA QC Manager, Advisor (slot GM), Factory Manager | Lihat | Viewer | Semua customer, dokumen rilis | D-70. Tetap menandatangani di kertas. Setiap jabatan ini dipegang satu orang, karena satu slot mencetak satu nama (D-115). |
 | QA, QC, internal audit | Lihat | Viewer | Semua customer, dokumen rilis | D-41, D-70 |
 | DCC (Dept Document Control) | Lihat, saat ini | Viewer | Semua customer, dokumen rilis | D-70. Nanti admin bisa menambahkan peran Dokumen kontrol (D-60, D-66). |
@@ -59,10 +59,13 @@ Semua pengguna yang login otomatis punya hak dasar level Lihat (L-1 sampai L-3),
 | **E-10** | Migrasikan dokumen lama | UC-60 sampai UC-63 | — | — | — | — | — | ✓ | — | — |
 | **V-1** | Verifikasi permintaan perubahan | UC-41 | — | — | — | ✓ | — | — | — | — |
 | **V-2** | Beri tanda dicek di perbandingan PFMEA dan CP | UC-36 | — | — | ✓ | — | — | — | — | — |
+| **V-3** | Setujui (terbitkan) form set dan versi format bermetode AP; bukan oleh penyusun drafnya | Form set (D-139) | — | — | — | — | — | — | — | — |
 | **A-1** | Kelola pengguna dan hak akses | UC-02 | — | — | — | — | — | — | — | ✓ |
 | **A-2** | Kelola master data, jenis dokumen dan perubahan, rute approval, dokumen terkait, format template, dan master simbol karakteristik (usulan) | UC-03, UC-05, UC-06, UC-09, UC-20, UC-24 | — | — | — | — | — | — | — | ✓ |
 | **A-3** | Kelola pengaturan sistem | UC-07 | — | — | — | — | — | — | — | ✓ |
 | **A-4** | Lihat audit log | UC-08 | — | — | — | — | — | — | — | ✓ |
+
+**Penyetuju form** (peran `form_approver`, D-139, migrasi 00019, 12 November 2026) memegang L-1 sampai L-4 dan V-3. Kolomnya tidak ditambahkan ke matriks di atas supaya tabel tetap terbaca; untuk saat ini dipegang APQP/PPAP Controller (PPAP Supervisor), dan admin bisa memberikannya ke akun lain, misalnya Project Leader.
 
 Hak yang tercantum di matriks ini adalah isi awal setiap peran. Admin bisa menambah atau mengurangi hak sebuah peran, atau memberi peran tambahan kepada seorang pengguna (R-SEC-10).
 

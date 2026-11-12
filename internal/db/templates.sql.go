@@ -198,8 +198,8 @@ func (q *Queries) CreateFormatTemplate(ctx context.Context, arg CreateFormatTemp
 }
 
 const createFormatVersion = `-- name: CreateFormatVersion :one
-INSERT INTO format_template_versions (template_id, version, risk_method, highlight_rpn_above, highlight_severity_at_least, ap_rules)
-VALUES ($1, $2, $3, $4, $5, $6)
+INSERT INTO format_template_versions (template_id, version, risk_method, highlight_rpn_above, highlight_severity_at_least, ap_rules, changed_by_person_id)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
 RETURNING id
 `
 
@@ -210,6 +210,7 @@ type CreateFormatVersionParams struct {
 	HighlightRpnAbove        *int16
 	HighlightSeverityAtLeast *int16
 	ApRules                  []byte
+	ChangedByPersonID        *string
 }
 
 func (q *Queries) CreateFormatVersion(ctx context.Context, arg CreateFormatVersionParams) (string, error) {
@@ -220,6 +221,7 @@ func (q *Queries) CreateFormatVersion(ctx context.Context, arg CreateFormatVersi
 		arg.HighlightRpnAbove,
 		arg.HighlightSeverityAtLeast,
 		arg.ApRules,
+		arg.ChangedByPersonID,
 	)
 	var id string
 	err := row.Scan(&id)
@@ -265,7 +267,7 @@ func (q *Queries) GetFormatTemplate(ctx context.Context, id string) (GetFormatTe
 }
 
 const getFormatVersion = `-- name: GetFormatVersion :one
-SELECT id, template_id, version, status, risk_method, highlight_rpn_above, highlight_severity_at_least, created_at, published_at, ap_rules
+SELECT id, template_id, version, status, risk_method, highlight_rpn_above, highlight_severity_at_least, created_at, published_at, ap_rules, changed_by_person_id
 FROM format_template_versions
 WHERE id = $1
 `
@@ -284,6 +286,7 @@ func (q *Queries) GetFormatVersion(ctx context.Context, id string) (FormatTempla
 		&i.CreatedAt,
 		&i.PublishedAt,
 		&i.ApRules,
+		&i.ChangedByPersonID,
 	)
 	return i, err
 }
@@ -378,7 +381,7 @@ func (q *Queries) ListFormatTemplates(ctx context.Context) ([]ListFormatTemplate
 }
 
 const listFormatVersions = `-- name: ListFormatVersions :many
-SELECT id, template_id, version, status, risk_method, highlight_rpn_above, highlight_severity_at_least, created_at, published_at, ap_rules
+SELECT id, template_id, version, status, risk_method, highlight_rpn_above, highlight_severity_at_least, created_at, published_at, ap_rules, changed_by_person_id
 FROM format_template_versions
 ORDER BY template_id, version
 `
@@ -404,6 +407,7 @@ func (q *Queries) ListFormatVersions(ctx context.Context) ([]FormatTemplateVersi
 			&i.CreatedAt,
 			&i.PublishedAt,
 			&i.ApRules,
+			&i.ChangedByPersonID,
 		); err != nil {
 			return nil, err
 		}
@@ -510,7 +514,7 @@ func (q *Queries) ListVersionFields(ctx context.Context, versionID string) ([]Li
 }
 
 const listVersionsOfTemplate = `-- name: ListVersionsOfTemplate :many
-SELECT id, template_id, version, status, risk_method, highlight_rpn_above, highlight_severity_at_least, created_at, published_at, ap_rules
+SELECT id, template_id, version, status, risk_method, highlight_rpn_above, highlight_severity_at_least, created_at, published_at, ap_rules, changed_by_person_id
 FROM format_template_versions
 WHERE template_id = $1
 ORDER BY version
@@ -536,6 +540,7 @@ func (q *Queries) ListVersionsOfTemplate(ctx context.Context, templateID string)
 			&i.CreatedAt,
 			&i.PublishedAt,
 			&i.ApRules,
+			&i.ChangedByPersonID,
 		); err != nil {
 			return nil, err
 		}
@@ -660,6 +665,22 @@ type SetFormatHighlightsParams struct {
 
 func (q *Queries) SetFormatHighlights(ctx context.Context, arg SetFormatHighlightsParams) error {
 	_, err := q.db.Exec(ctx, setFormatHighlights, arg.ID, arg.HighlightRpnAbove, arg.HighlightSeverityAtLeast)
+	return err
+}
+
+const setFormatVersionEditor = `-- name: SetFormatVersionEditor :exec
+UPDATE format_template_versions SET changed_by_person_id = $2 WHERE id = $1
+`
+
+type SetFormatVersionEditorParams struct {
+	ID                string
+	ChangedByPersonID *string
+}
+
+// SetFormatVersionEditor mencatat orang yang terakhir mengubah isi versi draft.
+// Penyetuju tabel AP tidak boleh orang ini (D-139).
+func (q *Queries) SetFormatVersionEditor(ctx context.Context, arg SetFormatVersionEditorParams) error {
+	_, err := q.db.Exec(ctx, setFormatVersionEditor, arg.ID, arg.ChangedByPersonID)
 	return err
 }
 

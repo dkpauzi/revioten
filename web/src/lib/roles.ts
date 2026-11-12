@@ -10,6 +10,7 @@ const roleKeys: Record<string, MessageKey> = {
 	template_maintainer: 'roleTemplateMaintainer',
 	pfmea_cp_checker: 'rolePfmeaCpChecker',
 	verifier: 'roleVerifier',
+	form_approver: 'roleFormApprover',
 	document_control: 'roleDocumentControl',
 	migration: 'roleMigration',
 	viewer: 'roleViewer',
