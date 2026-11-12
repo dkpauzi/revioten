@@ -69,6 +69,8 @@ const actionKeys: Record<string, MessageKey> = {
 	'form_set.changed': 'auditActionFormSetChanged',
 	'form_set.version_created': 'auditActionFormSetVersionCreated',
 	'form_set.version_published': 'auditActionFormSetVersionPublished',
+	'form_set.version_approved': 'auditActionFormSetVersionApproved',
+	'format_template.version_approved': 'auditActionFormatVersionApproved',
 	'format_template.version_published': 'auditActionFormatVersionPublished',
 	'format_template.version_created': 'auditActionFormatVersionCreated',
 	'process_template.version_published': 'auditActionProcessVersionPublished',
@@ -117,7 +119,9 @@ const detailKeys: Record<string, MessageKey> = {
 	scope: 'auditDetailScope',
 	copied_from: 'auditDetailCopiedFrom',
 	changed_combinations: 'auditDetailChangedCombinations',
-	form_set: 'auditDetailFormSet'
+	form_set: 'auditDetailFormSet',
+	pending: 'auditDetailPending',
+	form_approval_mode: 'auditDetailFormApprovalMode'
 };
 
 const reasonKeys: Record<string, MessageKey> = {

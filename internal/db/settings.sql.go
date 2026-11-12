@@ -10,24 +10,24 @@ import (
 )
 
 const getSystemSettings = `-- name: GetSystemSettings :one
-SELECT id, sign_dates_enabled FROM system_settings
+SELECT id, sign_dates_enabled, form_approval_mode FROM system_settings
 `
 
 func (q *Queries) GetSystemSettings(ctx context.Context) (SystemSetting, error) {
 	row := q.db.QueryRow(ctx, getSystemSettings)
 	var i SystemSetting
-	err := row.Scan(&i.ID, &i.SignDatesEnabled)
+	err := row.Scan(&i.ID, &i.SignDatesEnabled, &i.FormApprovalMode)
 	return i, err
 }
 
 const lockSystemSettings = `-- name: LockSystemSettings :one
-SELECT id, sign_dates_enabled FROM system_settings FOR NO KEY UPDATE
+SELECT id, sign_dates_enabled, form_approval_mode FROM system_settings FOR NO KEY UPDATE
 `
 
 func (q *Queries) LockSystemSettings(ctx context.Context) (SystemSetting, error) {
 	row := q.db.QueryRow(ctx, lockSystemSettings)
 	var i SystemSetting
-	err := row.Scan(&i.ID, &i.SignDatesEnabled)
+	err := row.Scan(&i.ID, &i.SignDatesEnabled, &i.FormApprovalMode)
 	return i, err
 }
 

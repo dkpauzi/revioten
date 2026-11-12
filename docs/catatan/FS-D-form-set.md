@@ -31,6 +31,15 @@ Belum dibuat: langkah "Choose the form" di wizard dokumen (menumpang wizard Taha
 | API | `listFormSets`, `createFormSet`, `setFormSetSheets`, `createFormSetVersion`, `publishFormSetVersion`, `setCustomerFormSet` |
 | Layar | `web/src/routes/form-sets/+page.svelte`, `web/src/lib/formSets.ts`, `ApTable.svelte` (mode ubah), `VersionBar.svelte` (`canPublish`) |
 
+### Tambahan 12 November 2026: aturan persetujuan bisa diatur (D-148)
+
+Atas permintaan pemilik, sisa D-139 dibuat bisa diatur admin di **Admin → Settings → Approval of form sets and AP tables**:
+
+- **All form approvers must approve** (bawaan): versi baru terbit setelah semua penyetuju form aktif setuju, kecuali penyusun drafnya;
+- **One form approver is enough**.
+
+Setiap persetujuan dicatat per orang di tabel `form_approvals` (migrasi 00020), yang hanya bisa ditambah. Layar menampilkan "Approved by" dan "Waiting for" di form set dan di format bertabel AP. Menyetujui dua kali ditolak. File: `internal/template/approval.go`, `internal/settings/settings.go`, `web/src/lib/templates/Approvals.svelte`. Test: `TestApprovalAll`, `TestApprovalAny`, `TestApprovalPreparerNotCounted`, `TestFormApprovalMode`, dan dua test E2E di `formsets.test.ts`.
+
 ## 2. Cara mengulang dari nol
 
 1. Tulis `internal/template/formset_test.go` dulu: set bawaan, pilihan customer, versi dan penerbitan, form set baru, dan pemisahan tugas.
@@ -57,7 +66,7 @@ Belum dibuat: langkah "Choose the form" di wizard dokumen (menumpang wizard Taha
 
 ## 5. Asumsi
 
-- Penyetuju cukup satu orang (sisa D-139, masih terbuka).
+- Sejak D-148: jumlah penyetuju diatur di Settings, bawaannya semua.
 - Pengubah terakhir versi format dicatat untuk semua perubahan isi, tetapi hanya dipakai untuk versi bermetode AP.
 - Kolom Cover di versi form set disiapkan dan boleh kosong.
 

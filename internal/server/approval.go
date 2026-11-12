@@ -87,17 +87,27 @@ func (a *apiServer) GetSystemSettings(ctx context.Context, _ GetSystemSettingsRe
 	if err != nil {
 		return nil, err
 	}
-	return GetSystemSettings200JSONResponse{SignDatesEnabled: current.SignDatesEnabled}, nil
+	return GetSystemSettings200JSONResponse(toAPISettings(current)), nil
 }
 
 // UpdateSystemSettings menjawab PUT /api/v1/system-settings. Saklar yang
 // tidak dikirim tetap seperti sebelumnya (E-34).
 func (a *apiServer) UpdateSystemSettings(ctx context.Context, req UpdateSystemSettingsRequestObject) (UpdateSystemSettingsResponseObject, error) {
-	updated, err := a.settings.Apply(ctx, actorFrom(ctx), settings.Update{SignDatesEnabled: req.Body.SignDatesEnabled})
+	in := settings.Update{SignDatesEnabled: req.Body.SignDatesEnabled}
+	if req.Body.FormApprovalMode != nil {
+		mode := string(*req.Body.FormApprovalMode)
+		in.FormApprovalMode = &mode
+	}
+	updated, err := a.settings.Apply(ctx, actorFrom(ctx), in)
 	if err != nil {
 		return nil, err
 	}
-	return UpdateSystemSettings200JSONResponse{SignDatesEnabled: updated.SignDatesEnabled}, nil
+	return UpdateSystemSettings200JSONResponse(toAPISettings(updated)), nil
+}
+
+// toAPISettings mengubah Settings domain menjadi SystemSettings kontrak API.
+func toAPISettings(s settings.Settings) SystemSettings {
+	return SystemSettings{SignDatesEnabled: s.SignDatesEnabled, FormApprovalMode: SystemSettingsFormApprovalMode(s.FormApprovalMode)}
 }
 
 // toAPIPosition mengubah Position domain menjadi Position kontrak API.

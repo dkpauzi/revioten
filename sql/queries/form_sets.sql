@@ -111,3 +111,37 @@ WHERE c.id = $1;
 
 -- name: SetCustomerFormSet :exec
 UPDATE customers SET default_form_set_id = $2 WHERE id = $1;
+
+-- D-139: aturan persetujuan dan persetujuan per orang (migrasi 00020).
+
+-- name: GetFormApprovalMode :one
+SELECT form_approval_mode FROM system_settings;
+
+
+-- name: SetFormApprovalMode :exec
+UPDATE system_settings SET form_approval_mode = $1;
+
+
+-- name: ListFormApprovers :many
+-- ListFormApprovers mengambil orang yang bisa menyetujui: akun kerja aktif
+-- dengan peran yang memegang V-3.
+SELECT DISTINCT p.id AS person_id, p.name AS person_name
+FROM accounts a
+JOIN people p ON p.id = a.person_id
+JOIN account_roles ar ON ar.account_id = a.id
+JOIN role_permissions rp ON rp.role_id = ar.role_id
+WHERE rp.permission_code = 'V-3' AND a.kind = 'work' AND a.disabled_at IS NULL
+ORDER BY p.name, p.id;
+
+
+-- name: ListFormApprovals :many
+SELECT fa.person_id, p.name AS person_name, fa.approved_at
+FROM form_approvals fa
+JOIN people p ON p.id = fa.person_id
+WHERE fa.target_kind = $1 AND fa.target_id = $2
+ORDER BY fa.approved_at, fa.id;
+
+
+-- name: AddFormApproval :exec
+INSERT INTO form_approvals (target_kind, target_id, person_id, account_id)
+VALUES ($1, $2, $3, $4);

@@ -92,6 +92,19 @@ func (s *Service) PublishFormatVersion(ctx context.Context, actor access.Actor, 
 		if v.RiskMethod == RiskAP && v.ChangedByPersonID != "" && v.ChangedByPersonID == actor.PersonID {
 			return errSamePerson()
 		}
+		// Versi bermetode AP terbit setelah aturan persetujuan terpenuhi (D-139).
+		if v.RiskMethod == RiskAP {
+			complete, waiting, err := approve(ctx, q, actor, approvalFormatVersion, versionID, v.ChangedByPersonID)
+			if err != nil {
+				return err
+			}
+			if !complete {
+				return audit.Record(ctx, q, actor, audit.Event{
+					Action: audit.ActionFormatVersionApproved, TargetType: audit.TargetFormatTemplate, TargetID: v.TemplateID,
+					Details: map[string]string{"version": strconv.Itoa(v.Version), "pending": strconv.Itoa(waiting)},
+				})
+			}
+		}
 		if _, err := q.PublishFormatVersion(ctx, versionID); err != nil {
 			return err
 		}

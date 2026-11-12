@@ -108,9 +108,43 @@ test('admin mengubah tabel AP, dan hanya penyetuju form yang menerbitkannya', as
 	const choose = page.getByLabel(en.formatChoose);
 	const value = await choose.locator('option', { hasText: 'PFMEA AP ubah' }).getAttribute('value');
 	await choose.selectOption(value ?? '');
+	// Aturan bawaan (D-139): semua penyetuju form harus setuju. Penyetuju dari
+	// test sebelumnya (PPAP Supervisor E2E) masih ditunggu.
+	acceptNextDialog(page);
+	await page.getByRole('button', { name: en.versionPublish.replace('{version}', '1') }).click();
+	await expect(page.getByRole('status')).toHaveText(en.approvalRecorded);
+	await expect(page.getByText(en.approvalsPending)).toBeVisible();
+	await expect(page.locator('.approvals')).toContainText('PPAP Supervisor E2E');
+	// Penyetuju form tidak mengubah tabel AP.
+	await expect(page.getByRole('button', { name: en.apEdit })).toHaveCount(0);
+
+	// Penyetuju kedua menyetujui: sekarang versi itu terbit.
+	await logOut(page);
+	await page.getByLabel(en.loginName).fill('ppap.supervisor.e2e');
+	await page.getByLabel(en.loginPassword).fill('tanda tangan basah tetap di kertas');
+	await page.getByRole('button', { name: en.loginSubmit }).click();
+	await expect(page.getByRole('button', { name: en.logout })).toBeVisible();
+	await openFromMenu(page, en.navGroupTemplates, en.navFormatTemplates);
+	const again = page.getByLabel(en.formatChoose);
+	await again.selectOption((await again.locator('option', { hasText: 'PFMEA AP ubah' }).getAttribute('value')) ?? '');
 	acceptNextDialog(page);
 	await page.getByRole('button', { name: en.versionPublish.replace('{version}', '1') }).click();
 	await expect(page.getByRole('status')).toHaveText(en.versionPublished.replace('{version}', '1'));
-	// Penyetuju form tidak mengubah tabel AP.
-	await expect(page.getByRole('button', { name: en.apEdit })).toHaveCount(0);
+	await expect(page.getByText(en.approvalsPending)).toHaveCount(0);
+});
+
+test('admin melihat dan mengubah aturan persetujuan form di Settings', async ({ page }) => {
+	await logIn(page);
+	await openFromMenu(page, en.navGroupAdmin, en.navSettings);
+	const all = page.getByLabel(en.settingsFormApprovalAll);
+	await expect(all).toBeChecked();
+	await page.getByLabel(en.settingsFormApprovalAny).check();
+	await page.getByRole('button', { name: en.settingsSave }).click();
+	await expect(page.getByRole('status')).toHaveText(en.settingsSaved);
+	await page.reload();
+	await expect(page.getByLabel(en.settingsFormApprovalAny)).toBeChecked();
+	// Kembalikan ke bawaan, supaya test lain tidak terpengaruh.
+	await all.check();
+	await page.getByRole('button', { name: en.settingsSave }).click();
+	await expect(page.getByRole('status')).toHaveText(en.settingsSaved);
 });

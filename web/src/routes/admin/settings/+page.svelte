@@ -1,6 +1,7 @@
 <script lang="ts">
-	// Halaman pengaturan sistem (M1.8, UC-07). Untuk sekarang hanya saklar
-	// tanggal tanda tangan per slot, yang saat ini mati (D-52, R-APR-14).
+	// Halaman pengaturan sistem (M1.8, UC-07): saklar tanggal tanda tangan per
+	// slot, yang saat ini mati (D-52, R-APR-14), dan aturan persetujuan form
+	// set dan tabel AP (D-139, bawaan semua penyetuju).
 	// Mengubahnya butuh hak A-3; server tetap memeriksa setiap operasi.
 	import { onMount } from 'svelte';
 	import { getSystemSettings, updateSystemSettings } from '#lib/api/client.ts';
@@ -10,6 +11,8 @@
 
 	let loaded = $state(false);
 	let signDates = $state(false);
+	// Aturan persetujuan form set dan tabel AP (D-139).
+	let approvalMode = $state<'all' | 'any'>('all');
 	let loadError = $state('');
 	let message = $state('');
 	let failure = $state('');
@@ -22,6 +25,7 @@
 			return;
 		}
 		signDates = result.data.sign_dates_enabled;
+		approvalMode = result.data.form_approval_mode;
 		loaded = true;
 	}
 
@@ -29,12 +33,13 @@
 		event.preventDefault();
 		message = '';
 		failure = '';
-		const result = await updateSystemSettings({ sign_dates_enabled: signDates });
+		const result = await updateSystemSettings({ sign_dates_enabled: signDates, form_approval_mode: approvalMode });
 		if (!result.ok) {
 			failure = failureText(result.error);
 			return;
 		}
 		signDates = result.data.sign_dates_enabled;
+		approvalMode = result.data.form_approval_mode;
 		message = t('settingsSaved');
 	}
 
@@ -58,6 +63,12 @@
 			{t('settingsSignDates')}
 		</label>
 		<p id="sign-dates-hint"><small>{t('settingsSignDatesHint')}</small></p>
+		<fieldset>
+			<legend>{t('settingsFormApproval')}</legend>
+			<label><input type="radio" bind:group={approvalMode} value="all" disabled={!canEdit} /> {t('settingsFormApprovalAll')}</label>
+			<label><input type="radio" bind:group={approvalMode} value="any" disabled={!canEdit} /> {t('settingsFormApprovalAny')}</label>
+			<p><small>{t('settingsFormApprovalHint')}</small></p>
+		</fieldset>
 		{#if canEdit}
 			<button type="submit">{t('settingsSave')}</button>
 		{/if}

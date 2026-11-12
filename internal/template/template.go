@@ -144,8 +144,11 @@ type FormatVersion struct {
 	// ChangedByPersonID adalah orang yang terakhir mengubah isi versi ini;
 	// "" bila belum pernah diubah. Dipakai aturan D-139, tidak dikirim ke API.
 	ChangedByPersonID string
-	CreatedAt         time.Time  // selalu UTC
-	PublishedAt       *time.Time // nil selama draft; selalu UTC (M3.4)
+	// Persetujuan versi bermetode AP (D-139); kosong untuk metode lain.
+	Approvals        []Approver
+	PendingApprovers []Approver
+	CreatedAt        time.Time  // selalu UTC
+	PublishedAt      *time.Time // nil selama draft; selalu UTC (M3.4)
 }
 
 // Field adalah satu field header atau kolom baris dalam satu versi.

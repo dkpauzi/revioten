@@ -159,6 +159,8 @@ const scopedKeys: Record<string, MessageKey> = {
 	'formSet.cp_format_version_id:not_allowed': 'formSetSheetWrongType',
 	'formSet.sheets:not_allowed': 'formSetSheetsNotPublished',
 	'formSet.approver:not_allowed': 'formSetSameApprover',
+	'formSet.approver:taken': 'approvalTaken',
+	'formatTemplate.approver:taken': 'approvalTaken',
 	'formSet.status:not_allowed': 'versionStatusNotAllowed',
 	'formatTemplate.approver:not_allowed': 'formSetSameApprover'
 };

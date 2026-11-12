@@ -10,6 +10,28 @@ import (
 	"time"
 )
 
+const addFormApproval = `-- name: AddFormApproval :exec
+INSERT INTO form_approvals (target_kind, target_id, person_id, account_id)
+VALUES ($1, $2, $3, $4)
+`
+
+type AddFormApprovalParams struct {
+	TargetKind string
+	TargetID   string
+	PersonID   string
+	AccountID  string
+}
+
+func (q *Queries) AddFormApproval(ctx context.Context, arg AddFormApprovalParams) error {
+	_, err := q.db.Exec(ctx, addFormApproval,
+		arg.TargetKind,
+		arg.TargetID,
+		arg.PersonID,
+		arg.AccountID,
+	)
+	return err
+}
+
 const createFormSet = `-- name: CreateFormSet :one
 INSERT INTO form_sets (key, name)
 VALUES ($1, $2)
@@ -93,6 +115,19 @@ func (q *Queries) GetDefaultFormSet(ctx context.Context) (FormSet, error) {
 		&i.CreatedAt,
 	)
 	return i, err
+}
+
+const getFormApprovalMode = `-- name: GetFormApprovalMode :one
+
+SELECT form_approval_mode FROM system_settings
+`
+
+// D-139: aturan persetujuan dan persetujuan per orang (migrasi 00020).
+func (q *Queries) GetFormApprovalMode(ctx context.Context) (string, error) {
+	row := q.db.QueryRow(ctx, getFormApprovalMode)
+	var form_approval_mode string
+	err := row.Scan(&form_approval_mode)
+	return form_approval_mode, err
 }
 
 const getFormSet = `-- name: GetFormSet :one
@@ -245,6 +280,82 @@ func (q *Queries) ListCustomerFormSets(ctx context.Context) ([]ListCustomerFormS
 			&i.Name,
 			&i.DefaultFormSetID,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listFormApprovals = `-- name: ListFormApprovals :many
+SELECT fa.person_id, p.name AS person_name, fa.approved_at
+FROM form_approvals fa
+JOIN people p ON p.id = fa.person_id
+WHERE fa.target_kind = $1 AND fa.target_id = $2
+ORDER BY fa.approved_at, fa.id
+`
+
+type ListFormApprovalsParams struct {
+	TargetKind string
+	TargetID   string
+}
+
+type ListFormApprovalsRow struct {
+	PersonID   string
+	PersonName string
+	ApprovedAt time.Time
+}
+
+func (q *Queries) ListFormApprovals(ctx context.Context, arg ListFormApprovalsParams) ([]ListFormApprovalsRow, error) {
+	rows, err := q.db.Query(ctx, listFormApprovals, arg.TargetKind, arg.TargetID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListFormApprovalsRow{}
+	for rows.Next() {
+		var i ListFormApprovalsRow
+		if err := rows.Scan(&i.PersonID, &i.PersonName, &i.ApprovedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listFormApprovers = `-- name: ListFormApprovers :many
+SELECT DISTINCT p.id AS person_id, p.name AS person_name
+FROM accounts a
+JOIN people p ON p.id = a.person_id
+JOIN account_roles ar ON ar.account_id = a.id
+JOIN role_permissions rp ON rp.role_id = ar.role_id
+WHERE rp.permission_code = 'V-3' AND a.kind = 'work' AND a.disabled_at IS NULL
+ORDER BY p.name, p.id
+`
+
+type ListFormApproversRow struct {
+	PersonID   string
+	PersonName string
+}
+
+// ListFormApprovers mengambil orang yang bisa menyetujui: akun kerja aktif
+// dengan peran yang memegang V-3.
+func (q *Queries) ListFormApprovers(ctx context.Context) ([]ListFormApproversRow, error) {
+	rows, err := q.db.Query(ctx, listFormApprovers)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListFormApproversRow{}
+	for rows.Next() {
+		var i ListFormApproversRow
+		if err := rows.Scan(&i.PersonID, &i.PersonName); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -426,6 +537,15 @@ type SetCustomerFormSetParams struct {
 
 func (q *Queries) SetCustomerFormSet(ctx context.Context, arg SetCustomerFormSetParams) error {
 	_, err := q.db.Exec(ctx, setCustomerFormSet, arg.ID, arg.DefaultFormSetID)
+	return err
+}
+
+const setFormApprovalMode = `-- name: SetFormApprovalMode :exec
+UPDATE system_settings SET form_approval_mode = $1
+`
+
+func (q *Queries) SetFormApprovalMode(ctx context.Context, formApprovalMode string) error {
+	_, err := q.db.Exec(ctx, setFormApprovalMode, formApprovalMode)
 	return err
 }
 

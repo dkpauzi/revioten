@@ -615,6 +615,7 @@ type fakeSettings struct {
 	current settings.Settings
 	err     error
 	got     *bool // saklar terakhir yang dikirim ke Apply
+	gotMode *string
 }
 
 func (f *fakeSettings) Get(context.Context, access.Actor) (settings.Settings, error) {
@@ -622,7 +623,10 @@ func (f *fakeSettings) Get(context.Context, access.Actor) (settings.Settings, er
 }
 
 func (f *fakeSettings) Apply(_ context.Context, _ access.Actor, in settings.Update) (settings.Settings, error) {
-	f.got = in.SignDatesEnabled
+	f.got, f.gotMode = in.SignDatesEnabled, in.FormApprovalMode
+	if in.FormApprovalMode != nil {
+		f.current.FormApprovalMode = *in.FormApprovalMode
+	}
 	if in.SignDatesEnabled != nil {
 		f.current.SignDatesEnabled = *in.SignDatesEnabled
 	}

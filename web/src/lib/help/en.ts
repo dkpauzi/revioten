@@ -196,7 +196,7 @@ export const helpEn: HelpContent = {
 				'Open {navGroupTemplates}, then {navFormSets}.',
 				'Each form set shows its three sheets: {formSetSheetPfd}, {formSetSheetPfmea}, and {formSetSheetCp}. The admin changes the sheets of a draft version and presses {formSetSaveSheets}.',
 				'Publish the format templates of the three sheets first, under {navFormatTemplates}.',
-				'The form approver opens the form set and presses [[Publish version 1]]. The person who prepared the draft cannot publish it.',
+				'The form approver opens the form set and presses [[Publish version 1]]. The person who prepared the draft cannot publish it. By default every form approver must approve; the list shows {approvalsDone} and {approvalsPending}. The admin can change this rule under {navSettings}.',
 				'Under {formSetCustomersTitle}, the admin chooses the form set of each customer. Without a choice the customer uses the default form set.',
 				'To make a new package, use {formSetCreateTitle} at the bottom of the page.'
 			],

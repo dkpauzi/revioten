@@ -3448,12 +3448,34 @@ components:
         published_at:
           type: string
           format: date-time
+        approvals:
+          type: array
+          description: Form approvers who approved this version (D-139).
+          items:
+            $ref: '#/components/schemas/FormApprover'
+        pending_approvers:
+          type: array
+          description: Form approvers still needed before a draft is published, by the approval rule in the system settings.
+          items:
+            $ref: '#/components/schemas/FormApprover'
         pfd:
           $ref: '#/components/schemas/FormSetSheet'
         pfmea:
           $ref: '#/components/schemas/FormSetSheet'
         cp:
           $ref: '#/components/schemas/FormSetSheet'
+    FormApprover:
+      type: object
+      required: [person_id, person_name]
+      properties:
+        person_id:
+          type: string
+        person_name:
+          type: string
+        approved_at:
+          type: string
+          format: date-time
+          description: Absent for an approver who has not approved yet.
     FormSetSheet:
       type: object
       description: The format template version used for one sheet.
@@ -3584,6 +3606,16 @@ components:
           description: The Action Priority table. Empty unless the risk method is AP (D-134).
           items:
             $ref: '#/components/schemas/ApRule'
+        approvals:
+          type: array
+          description: Form approvers who approved this version (D-139).
+          items:
+            $ref: '#/components/schemas/FormApprover'
+        pending_approvers:
+          type: array
+          description: Form approvers still needed before a draft is published, by the approval rule in the system settings.
+          items:
+            $ref: '#/components/schemas/FormApprover'
         created_at:
           type: string
           format: date-time
@@ -4006,16 +4038,24 @@ components:
           type: boolean
     SystemSettings:
       type: object
-      required: [sign_dates_enabled]
+      required: [sign_dates_enabled, form_approval_mode]
       properties:
         sign_dates_enabled:
           type: boolean
           description: When false, signature slots have no sign date and the field is hidden (D-52).
+        form_approval_mode:
+          type: string
+          enum: [all, any]
+          description: How many form approvers must approve a form set or an AP table before it is published (D-139). all is the default.
     SystemSettingsUpdate:
       type: object
       properties:
         sign_dates_enabled:
           type: boolean
+          description: Leave it out to keep the current value.
+        form_approval_mode:
+          type: string
+          enum: [all, any]
           description: Leave it out to keep the current value.
     CustomerList:
       type: object

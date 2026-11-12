@@ -985,9 +985,26 @@ export type FormSetVersion = {
     version: number;
     status: 'draft' | 'published';
     published_at?: string;
+    /**
+     * Form approvers who approved this version (D-139).
+     */
+    approvals?: Array<FormApprover>;
+    /**
+     * Form approvers still needed before a draft is published, by the approval rule in the system settings.
+     */
+    pending_approvers?: Array<FormApprover>;
     pfd: FormSetSheet;
     pfmea: FormSetSheet;
     cp: FormSetSheet;
+};
+
+export type FormApprover = {
+    person_id: string;
+    person_name: string;
+    /**
+     * Absent for an approver who has not approved yet.
+     */
+    approved_at?: string;
 };
 
 /**
@@ -1075,6 +1092,14 @@ export type FormatVersion = {
      * The Action Priority table. Empty unless the risk method is AP (D-134).
      */
     ap_rules: Array<ApRule>;
+    /**
+     * Form approvers who approved this version (D-139).
+     */
+    approvals?: Array<FormApprover>;
+    /**
+     * Form approvers still needed before a draft is published, by the approval rule in the system settings.
+     */
+    pending_approvers?: Array<FormApprover>;
     created_at: string;
     /**
      * When the version was published. Absent while it is a draft (M3.4).
@@ -1384,6 +1409,10 @@ export type SystemSettings = {
      * When false, signature slots have no sign date and the field is hidden (D-52).
      */
     sign_dates_enabled: boolean;
+    /**
+     * How many form approvers must approve a form set or an AP table before it is published (D-139). all is the default.
+     */
+    form_approval_mode: 'all' | 'any';
 };
 
 export type SystemSettingsUpdate = {
@@ -1391,6 +1420,10 @@ export type SystemSettingsUpdate = {
      * Leave it out to keep the current value.
      */
     sign_dates_enabled?: boolean;
+    /**
+     * Leave it out to keep the current value.
+     */
+    form_approval_mode?: 'all' | 'any';
 };
 
 export type CustomerList = {
@@ -1446,6 +1479,14 @@ export type FormatVersionWritable = {
      * The Action Priority table. Empty unless the risk method is AP (D-134).
      */
     ap_rules: Array<ApRule>;
+    /**
+     * Form approvers who approved this version (D-139).
+     */
+    approvals?: Array<FormApprover>;
+    /**
+     * Form approvers still needed before a draft is published, by the approval rule in the system settings.
+     */
+    pending_approvers?: Array<FormApprover>;
     created_at: string;
     /**
      * When the version was published. Absent while it is a draft (M3.4).

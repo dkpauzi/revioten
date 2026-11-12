@@ -77,6 +77,18 @@ func (a *apiServer) SetCustomerFormSet(ctx context.Context, req SetCustomerFormS
 	return SetCustomerFormSet204Response{}, nil
 }
 
+// toAPIApprovers mengubah daftar penyetuju (D-139); daftar kosong tidak dikirim.
+func toAPIApprovers(list []template.Approver) *[]FormApprover {
+	if len(list) == 0 {
+		return nil
+	}
+	out := make([]FormApprover, 0, len(list))
+	for _, a := range list {
+		out = append(out, FormApprover{PersonId: a.PersonID, PersonName: a.PersonName, ApprovedAt: a.ApprovedAt})
+	}
+	return &out
+}
+
 // toAPIFormSet mengubah FormSet domain menjadi FormSet kontrak API.
 func toAPIFormSet(fs template.FormSet) FormSet {
 	sheet := func(s template.SheetRef) FormSetSheet {
@@ -87,6 +99,7 @@ func toAPIFormSet(fs template.FormSet) FormSet {
 		out.Versions = append(out.Versions, FormSetVersion{
 			Id: v.ID, Version: v.Version, Status: FormSetVersionStatus(v.Status), PublishedAt: v.PublishedAt,
 			Pfd: sheet(v.PFD), Pfmea: sheet(v.PFMEA), Cp: sheet(v.CP),
+			Approvals: toAPIApprovers(v.Approvals), PendingApprovers: toAPIApprovers(v.PendingApprovers),
 		})
 	}
 	return out

@@ -204,6 +204,8 @@ func toAPIFormatVersion(v template.FormatVersion) FormatVersion {
 		Ratings: make([]RatingCriterion, 0, len(v.Ratings)),
 		Symbols: make([]FormatSymbol, 0, len(v.Symbols)),
 		ApRules: make([]ApRule, 0, len(v.APRules)),
+		// Persetujuan versi bermetode AP (D-139).
+		Approvals: toAPIApprovers(v.Approvals), PendingApprovers: toAPIApprovers(v.PendingApprovers),
 	}
 	for _, r := range v.APRules {
 		out.ApRules = append(out.ApRules, ApRule{

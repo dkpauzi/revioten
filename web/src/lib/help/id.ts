@@ -196,7 +196,7 @@ export const helpId: HelpContent = {
 				'Buka {navGroupTemplates}, lalu {navFormSets}.',
 				'Setiap form set menampilkan tiga sheet-nya: {formSetSheetPfd}, {formSetSheetPfmea}, dan {formSetSheetCp}. Admin mengganti sheet versi draft dan menekan {formSetSaveSheets}.',
 				'Terbitkan dulu format template ketiga sheet itu, di {navFormatTemplates}.',
-				'Penyetuju form membuka form set itu dan menekan [[Terbitkan versi 1]]. Orang yang menyusun draft tidak boleh menerbitkannya.',
+				'Penyetuju form membuka form set itu dan menekan [[Terbitkan versi 1]]. Orang yang menyusun draft tidak boleh menerbitkannya. Bawaannya semua penyetuju form harus setuju; daftarnya menampilkan {approvalsDone} dan {approvalsPending}. Admin bisa mengubah aturan ini di {navSettings}.',
 				'Di bagian {formSetCustomersTitle}, admin memilih form set setiap customer. Tanpa pilihan, customer memakai form set bawaan.',
 				'Untuk membuat paket baru, pakai {formSetCreateTitle} di bagian bawah halaman.'
 			],

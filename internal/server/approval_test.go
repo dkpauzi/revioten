@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/dkpauzi/revioten/internal/approval"
@@ -119,11 +120,11 @@ func TestDefaultRouteEndpoints(t *testing.T) {
 
 // TestSystemSettingsEndpoints: saklar tanggal tanda tangan (D-52).
 func TestSystemSettingsEndpoints(t *testing.T) {
-	fake := &fakeSettings{current: settings.Settings{SignDatesEnabled: false}}
+	fake := &fakeSettings{current: settings.Settings{SignDatesEnabled: false, FormApprovalMode: settings.ApprovalAll}}
 	srv := newTestServer(t, nil, Deps{Settings: fake})
 
 	rec := srv.do(http.MethodGet, "/api/v1/system-settings", "")
-	if rec.Code != http.StatusOK || rec.Body.String() != `{"sign_dates_enabled":false}`+"\n" {
+	if rec.Code != http.StatusOK || rec.Body.String() != `{"form_approval_mode":"all","sign_dates_enabled":false}`+"\n" {
 		t.Errorf("baca: status %d: %s", rec.Code, rec.Body.String())
 	}
 	rec = srv.do(http.MethodPut, "/api/v1/system-settings", `{"sign_dates_enabled":true}`)
@@ -132,7 +133,12 @@ func TestSystemSettingsEndpoints(t *testing.T) {
 	}
 	// Saklar yang tidak dikirim diteruskan sebagai nil: tetap seperti sebelumnya.
 	rec = srv.do(http.MethodPut, "/api/v1/system-settings", `{}`)
-	if rec.Code != http.StatusOK || fake.got != nil || rec.Body.String() != `{"sign_dates_enabled":true}`+"\n" {
+	if rec.Code != http.StatusOK || fake.got != nil || rec.Body.String() != `{"form_approval_mode":"all","sign_dates_enabled":true}`+"\n" {
 		t.Errorf("tanpa saklar: status %d, %v: %s", rec.Code, fake.got, rec.Body.String())
+	}
+	// Aturan persetujuan form (D-139).
+	rec = srv.do(http.MethodPut, "/api/v1/system-settings", `{"form_approval_mode":"any"}`)
+	if rec.Code != http.StatusOK || fake.gotMode == nil || *fake.gotMode != "any" || !strings.Contains(rec.Body.String(), `"form_approval_mode":"any"`) {
+		t.Errorf("aturan persetujuan: status %d, %v: %s", rec.Code, fake.gotMode, rec.Body.String())
 	}
 }

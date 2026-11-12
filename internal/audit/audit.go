@@ -75,6 +75,8 @@ const (
 	ActionFormSetChanged          = "form_set.changed"
 	ActionFormSetVersionCreated   = "form_set.version_created"
 	ActionFormSetVersionPublished = "form_set.version_published"
+	ActionFormSetVersionApproved  = "form_set.version_approved"
+	ActionFormatVersionApproved   = "format_template.version_approved"
 	ActionChangeTypeRouteChanged  = "change_type.route_changed"
 	ActionSystemSettingsUpdated   = "system_settings.updated"
 	// Register nomor dokumen (Tahap 2).

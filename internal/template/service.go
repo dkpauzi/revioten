@@ -565,6 +565,13 @@ func getVersion(ctx context.Context, q *db.Queries, id string) (FormatVersion, e
 	if v.APRules, err = parseAPRules(row.ApRules); err != nil {
 		return FormatVersion{}, err
 	}
+	v.Approvals, v.PendingApprovers = []Approver{}, []Approver{}
+	if v.RiskMethod == RiskAP {
+		v.Approvals, v.PendingApprovers, err = approvalState(ctx, q, approvalFormatVersion, v.ID, v.ChangedByPersonID, v.Status == StatusDraft)
+		if err != nil {
+			return FormatVersion{}, fmt.Errorf("membaca persetujuan: %w", err)
+		}
+	}
 	fields, err := q.ListVersionFields(ctx, id)
 	if err != nil {
 		return FormatVersion{}, fmt.Errorf("membaca field: %w", err)

@@ -52,9 +52,13 @@ type FormSetVersion struct {
 	Version     int
 	Status      string
 	PublishedAt *time.Time // nil selama draft; selalu UTC
-	PFD         SheetRef
-	PFMEA       SheetRef
-	CP          SheetRef
+	// Persetujuan (D-139): yang sudah setuju, dan selama draft, yang masih
+	// ditunggu menurut aturan di Settings. Tidak pernah nil.
+	Approvals        []Approver
+	PendingApprovers []Approver
+	PFD              SheetRef
+	PFMEA            SheetRef
+	CP               SheetRef
 }
 
 // FormSet adalah satu form set beserta versinya.
@@ -357,6 +361,18 @@ func (s *Service) PublishFormSetVersion(ctx context.Context, actor access.Actor,
 				}}}
 			}
 		}
+		// Persetujuan dicatat; versi baru terbit bila aturan persetujuan
+		// (Settings, D-139) sudah terpenuhi.
+		complete, waiting, err := approve(ctx, q, actor, approvalFormSetVersion, versionID, derefText(v.PreparedByPersonID))
+		if err != nil {
+			return err
+		}
+		if !complete {
+			return audit.Record(ctx, q, actor, audit.Event{
+				Action: audit.ActionFormSetVersionApproved, TargetType: audit.TargetFormSet, TargetID: v.FormSetID,
+				Details: map[string]string{"version": strconv.Itoa(int(v.Version)), "pending": strconv.Itoa(waiting)},
+			})
+		}
 		if _, err := q.PublishFormSetVersion(ctx, versionID); err != nil {
 			return err
 		}
@@ -424,8 +440,13 @@ func listFormSets(ctx context.Context, q *db.Queries) ([]FormSet, error) {
 	}
 	bySet := map[string][]FormSetVersion{}
 	for _, v := range versions {
+		approved, pending, err := approvalState(ctx, q, approvalFormSetVersion, v.ID, derefText(v.PreparedByPersonID), v.Status == StatusDraft)
+		if err != nil {
+			return nil, fmt.Errorf("membaca persetujuan form set: %w", err)
+		}
 		bySet[v.FormSetID] = append(bySet[v.FormSetID], FormSetVersion{
 			ID: v.ID, Version: int(v.Version), Status: v.Status, PublishedAt: utcTime(v.PublishedAt),
+			Approvals: approved, PendingApprovers: pending,
 			PFD:   SheetRef{FormatVersionID: v.PfdFormatVersionID, TemplateName: v.PfdTemplateName, Version: int(v.PfdVersion), Status: v.PfdStatus},
 			PFMEA: SheetRef{FormatVersionID: v.PfmeaFormatVersionID, TemplateName: v.PfmeaTemplateName, Version: int(v.PfmeaVersion), Status: v.PfmeaStatus},
 			CP:    SheetRef{FormatVersionID: v.CpFormatVersionID, TemplateName: v.CpTemplateName, Version: int(v.CpVersion), Status: v.CpStatus},

@@ -107,6 +107,15 @@ type DocumentType struct {
 	Position int16
 }
 
+type FormApproval struct {
+	ID         string
+	TargetKind string
+	TargetID   string
+	PersonID   string
+	AccountID  string
+	ApprovedAt time.Time
+}
+
 type FormSet struct {
 	ID        string
 	Key       string
@@ -388,6 +397,7 @@ type Subprocess struct {
 type SystemSetting struct {
 	ID               string
 	SignDatesEnabled bool
+	FormApprovalMode string
 }
 
 type TemplatePoint struct {

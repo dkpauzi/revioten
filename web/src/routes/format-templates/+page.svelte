@@ -50,6 +50,7 @@
 	} from '#lib/formats.ts';
 	import { t } from '#lib/i18n/index.ts';
 	import { can } from '#lib/session.svelte.ts';
+	import Approvals from '#lib/templates/Approvals.svelte';
 	import VersionBar from '#lib/templates/VersionBar.svelte';
 	import { isDraft, latestVersion } from '#lib/versions.ts';
 
@@ -157,7 +158,8 @@
 			return;
 		}
 		await load();
-		saved(result.data, t('versionPublished', { version: String(result.data.version) }));
+		// Versi bermetode AP bisa masih menunggu penyetuju lain (D-139).
+		saved(result.data, result.data.status === 'published' ? t('versionPublished', { version: String(result.data.version) }) : t('approvalRecorded'));
 	}
 
 	// newVersion membuat versi draft berikutnya, salinan versi terbit terakhir (A-2).
@@ -397,6 +399,8 @@
 				onnew={newVersion}
 			/>
 			{#if fieldErrors.status}<p class="error" role="alert">{fieldErrors.status}</p>{/if}
+			{#if fieldErrors.approver}<p class="error" role="alert">{fieldErrors.approver}</p>{/if}
+			<Approvals approvals={version.approvals} pending={version.pending_approvers} />
 			{#if canEdit}
 				<form class="row" onsubmit={rename} novalidate>
 					<div class="field">

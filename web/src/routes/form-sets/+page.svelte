@@ -19,6 +19,7 @@
 	import { formSetNameOf, sheetKeys, sheetOptions, sheetText, type SheetKey } from '#lib/formSets.ts';
 	import { t, type MessageKey } from '#lib/i18n/index.ts';
 	import { can } from '#lib/session.svelte.ts';
+	import Approvals from '#lib/templates/Approvals.svelte';
 	import VersionBar from '#lib/templates/VersionBar.svelte';
 	import { latestVersion } from '#lib/versions.ts';
 
@@ -122,7 +123,13 @@
 			return;
 		}
 		replace(result.data);
-		message = t('formSetPublished', { version: String(v.version), name: fs.name });
+		// Dengan aturan "semua penyetuju" (D-139), persetujuan bisa tercatat
+		// tanpa versi langsung terbit.
+		const after = result.data.versions.find((x) => x.id === v.id);
+		message =
+			after?.status === 'published'
+				? t('formSetPublished', { version: String(v.version), name: fs.name })
+				: t('approvalRecorded');
 	}
 
 	async function newVersion(fs: FormSet) {
@@ -210,6 +217,7 @@
 					onpublish={() => publish(fs, v)}
 					onnew={() => newVersion(fs)}
 				/>
+				<Approvals approvals={v.approvals} pending={v.pending_approvers} />
 				{#if v.status === 'draft' && (canEdit || canApprove)}
 					<p class="hint">{t('formSetPublishHint')}</p>
 				{/if}

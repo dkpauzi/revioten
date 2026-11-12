@@ -11,6 +11,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/audit"
 	"github.com/dkpauzi/revioten/internal/db"
 	"github.com/dkpauzi/revioten/internal/db/dbtest"
+	"github.com/dkpauzi/revioten/internal/problem"
 )
 
 func TestMain(m *testing.M) {
@@ -78,5 +79,36 @@ func TestSignDates(t *testing.T) {
 	}
 	if rows, _ := db.New(pool).ListAuditChain(ctx); len(rows) != 1 {
 		t.Errorf("simpan tanpa perubahan menambah entri: %d", len(rows))
+	}
+}
+
+// TestFormApprovalMode: aturan persetujuan form set dan tabel AP (D-139)
+// diatur admin; bawaannya semua penyetuju harus setuju.
+func TestFormApprovalMode(t *testing.T) {
+	pool := dbtest.NewPool(t)
+	ctx := t.Context()
+	s := NewService(pool, access.NewChecker(pool))
+	admin := newActor(t, pool, "admin.uji", access.AccountAdmin, access.RoleAdmin)
+	worker := newActor(t, pool, "penyusun.uji", access.AccountWork, access.RoleAuthor)
+
+	got, err := s.Get(ctx, worker)
+	if err != nil || got.FormApprovalMode != ApprovalAll {
+		t.Fatalf("isi awal: %+v, %v; ingin all", got, err)
+	}
+	anyMode, bad := ApprovalAny, "most"
+	if _, err := s.Apply(ctx, worker, Update{FormApprovalMode: &anyMode}); !errors.Is(err, access.ErrForbidden) {
+		t.Errorf("akun kerja: %v, ingin ErrForbidden", err)
+	}
+	var invalid *problem.ValidationError
+	if _, err := s.Apply(ctx, admin, Update{FormApprovalMode: &bad}); !errors.As(err, &invalid) || invalid.Problems[0].Field != "form_approval_mode" {
+		t.Errorf("aturan tidak dikenal: %v", err)
+	}
+	got, err = s.Apply(ctx, admin, Update{FormApprovalMode: &anyMode})
+	if err != nil || got.FormApprovalMode != ApprovalAny || got.SignDatesEnabled {
+		t.Fatalf("Apply: %+v, %v", got, err)
+	}
+	rows, err := db.New(pool).ListAuditChain(ctx)
+	if err != nil || len(rows) != 1 || rows[0].Details != `{"form_approval_mode":"all → any"}` {
+		t.Errorf("audit log: %+v, %v", rows, err)
 	}
 }

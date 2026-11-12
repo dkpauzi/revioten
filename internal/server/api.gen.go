@@ -1103,6 +1103,42 @@ func (e RouteSlotInputStage) Valid() bool {
 	}
 }
 
+// Defines values for SystemSettingsFormApprovalMode.
+const (
+	SystemSettingsFormApprovalModeAll SystemSettingsFormApprovalMode = "all"
+	SystemSettingsFormApprovalModeAny SystemSettingsFormApprovalMode = "any"
+)
+
+// Valid indicates whether the value is a known member of the SystemSettingsFormApprovalMode enum.
+func (e SystemSettingsFormApprovalMode) Valid() bool {
+	switch e {
+	case SystemSettingsFormApprovalModeAll:
+		return true
+	case SystemSettingsFormApprovalModeAny:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SystemSettingsUpdateFormApprovalMode.
+const (
+	SystemSettingsUpdateFormApprovalModeAll SystemSettingsUpdateFormApprovalMode = "all"
+	SystemSettingsUpdateFormApprovalModeAny SystemSettingsUpdateFormApprovalMode = "any"
+)
+
+// Valid indicates whether the value is a known member of the SystemSettingsUpdateFormApprovalMode enum.
+func (e SystemSettingsUpdateFormApprovalMode) Valid() bool {
+	switch e {
+	case SystemSettingsUpdateFormApprovalModeAll:
+		return true
+	case SystemSettingsUpdateFormApprovalModeAny:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListDocumentNumbersParamsStatus.
 const (
 	ListDocumentNumbersParamsStatusInUse    ListDocumentNumbersParamsStatus = "in_use"
@@ -1576,6 +1612,14 @@ type FieldOption struct {
 	Label string  `json:"label"`
 }
 
+// FormApprover defines model for FormApprover.
+type FormApprover struct {
+	// ApprovedAt Absent for an approver who has not approved yet.
+	ApprovedAt *time.Time `json:"approved_at,omitempty"`
+	PersonId   string     `json:"person_id"`
+	PersonName string     `json:"person_name"`
+}
+
 // FormSet defines model for FormSet.
 type FormSet struct {
 	// Default The form set of customers that have not chosen one.
@@ -1615,9 +1659,15 @@ type FormSetSheets struct {
 
 // FormSetVersion defines model for FormSetVersion.
 type FormSetVersion struct {
+	// Approvals Form approvers who approved this version (D-139).
+	Approvals *[]FormApprover `json:"approvals,omitempty"`
+
 	// Cp The format template version used for one sheet.
 	Cp FormSetSheet `json:"cp"`
 	Id string       `json:"id"`
+
+	// PendingApprovers Form approvers still needed before a draft is published, by the approval rule in the system settings.
+	PendingApprovers *[]FormApprover `json:"pending_approvers,omitempty"`
 
 	// Pfd The format template version used for one sheet.
 	Pfd FormSetSheet `json:"pfd"`
@@ -1731,8 +1781,11 @@ type FormatTemplateRename struct {
 // FormatVersion defines model for FormatVersion.
 type FormatVersion struct {
 	// ApRules The Action Priority table. Empty unless the risk method is AP (D-134).
-	ApRules   []ApRule  `json:"ap_rules"`
-	CreatedAt time.Time `json:"created_at"`
+	ApRules []ApRule `json:"ap_rules"`
+
+	// Approvals Form approvers who approved this version (D-139).
+	Approvals *[]FormApprover `json:"approvals,omitempty"`
+	CreatedAt time.Time       `json:"created_at"`
 
 	// Fields Header fields first, then columns, each by position.
 	Fields []FormatField `json:"fields"`
@@ -1743,6 +1796,9 @@ type FormatVersion struct {
 	// HighlightSeverityAtLeast Highlight a severity of at least this value; 0 means off.
 	HighlightSeverityAtLeast int    `json:"highlight_severity_at_least"`
 	Id                       string `json:"id"`
+
+	// PendingApprovers Form approvers still needed before a draft is published, by the approval rule in the system settings.
+	PendingApprovers *[]FormApprover `json:"pending_approvers,omitempty"`
 
 	// PublishedAt When the version was published. Absent while it is a draft (M3.4).
 	PublishedAt *time.Time `json:"published_at,omitempty"`
@@ -2607,15 +2663,27 @@ type SubprocessUpdate struct {
 
 // SystemSettings defines model for SystemSettings.
 type SystemSettings struct {
+	// FormApprovalMode How many form approvers must approve a form set or an AP table before it is published (D-139). all is the default.
+	FormApprovalMode SystemSettingsFormApprovalMode `json:"form_approval_mode"`
+
 	// SignDatesEnabled When false, signature slots have no sign date and the field is hidden (D-52).
 	SignDatesEnabled bool `json:"sign_dates_enabled"`
 }
 
+// SystemSettingsFormApprovalMode How many form approvers must approve a form set or an AP table before it is published (D-139). all is the default.
+type SystemSettingsFormApprovalMode string
+
 // SystemSettingsUpdate defines model for SystemSettingsUpdate.
 type SystemSettingsUpdate struct {
+	// FormApprovalMode Leave it out to keep the current value.
+	FormApprovalMode *SystemSettingsUpdateFormApprovalMode `json:"form_approval_mode,omitempty"`
+
 	// SignDatesEnabled Leave it out to keep the current value.
 	SignDatesEnabled *bool `json:"sign_dates_enabled,omitempty"`
 }
+
+// SystemSettingsUpdateFormApprovalMode Leave it out to keep the current value.
+type SystemSettingsUpdateFormApprovalMode string
 
 // TemplatePoint defines model for TemplatePoint.
 type TemplatePoint struct {

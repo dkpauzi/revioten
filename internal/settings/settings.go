@@ -7,6 +7,7 @@ package settings
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -16,6 +17,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/access"
 	"github.com/dkpauzi/revioten/internal/audit"
 	"github.com/dkpauzi/revioten/internal/db"
+	"github.com/dkpauzi/revioten/internal/problem"
 )
 
 // Settings adalah pengaturan sistem yang berlaku.
@@ -23,7 +25,17 @@ type Settings struct {
 	// SignDatesEnabled true berarti setiap slot tanda tangan punya tanggal.
 	// Bila false, isiannya disembunyikan dan hanya tanggal rilis yang dicatat (D-52).
 	SignDatesEnabled bool
+	// FormApprovalMode adalah aturan persetujuan form set dan tabel AP (D-139):
+	// ApprovalAll (bawaan) berarti semua penyetuju form harus setuju,
+	// ApprovalAny berarti satu persetujuan cukup.
+	FormApprovalMode string
 }
+
+// Aturan persetujuan form (D-139). Nilainya sama dengan di internal/template.
+const (
+	ApprovalAll = "all"
+	ApprovalAny = "any"
+)
 
 // Service membaca dan mengubah pengaturan sistem.
 type Service struct {
@@ -48,12 +60,13 @@ func (s *Service) Get(ctx context.Context, actor access.Actor) (Settings, error)
 	if err != nil {
 		return Settings{}, fmt.Errorf("membaca pengaturan sistem: %w", err)
 	}
-	return Settings{SignDatesEnabled: row.SignDatesEnabled}, nil
+	return Settings{SignDatesEnabled: row.SignDatesEnabled, FormApprovalMode: row.FormApprovalMode}, nil
 }
 
 // Update adalah perubahan pengaturan. Saklar yang nil tetap seperti sebelumnya.
 type Update struct {
 	SignDatesEnabled *bool
+	FormApprovalMode *string
 }
 
 // Apply mengubah pengaturan sistem (A-3). Hak diperiksa dulu, juga bila
@@ -62,6 +75,11 @@ func (s *Service) Apply(ctx context.Context, actor access.Actor, in Update) (Set
 	if err := s.authz.Authorize(ctx, actor, access.ManageSettings, access.Resource{}); err != nil {
 		return Settings{}, err
 	}
+	if in.FormApprovalMode != nil && *in.FormApprovalMode != ApprovalAll && *in.FormApprovalMode != ApprovalAny {
+		return Settings{}, &problem.ValidationError{Problems: []problem.Problem{{
+			Field: "form_approval_mode", Code: problem.InvalidFormat, Message: "Choose all approvers or any one approver.",
+		}}}
+	}
 	var after Settings
 	err := db.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
 		q := s.q.WithTx(tx)
@@ -69,24 +87,37 @@ func (s *Service) Apply(ctx context.Context, actor access.Actor, in Update) (Set
 		if err != nil {
 			return err
 		}
-		enabled := before.SignDatesEnabled
+		after = Settings{SignDatesEnabled: before.SignDatesEnabled, FormApprovalMode: before.FormApprovalMode}
 		if in.SignDatesEnabled != nil {
-			enabled = *in.SignDatesEnabled
+			after.SignDatesEnabled = *in.SignDatesEnabled
 		}
-		after = Settings{SignDatesEnabled: enabled}
-		if before.SignDatesEnabled == enabled {
+		if in.FormApprovalMode != nil {
+			after.FormApprovalMode = *in.FormApprovalMode
+		}
+		details := map[string]string{}
+		if after.SignDatesEnabled != before.SignDatesEnabled {
+			if err := q.SetSignDates(ctx, after.SignDatesEnabled); err != nil {
+				return err
+			}
+			details["sign_dates_enabled"] = audit.Change(strconv.FormatBool(before.SignDatesEnabled), strconv.FormatBool(after.SignDatesEnabled))
+		}
+		if after.FormApprovalMode != before.FormApprovalMode {
+			if err := q.SetFormApprovalMode(ctx, after.FormApprovalMode); err != nil {
+				return err
+			}
+			details["form_approval_mode"] = audit.Change(before.FormApprovalMode, after.FormApprovalMode)
+		}
+		if len(details) == 0 {
 			return nil // tidak ada yang berubah, jadi tidak dicatat
 		}
-		if err := q.SetSignDates(ctx, enabled); err != nil {
-			return err
-		}
 		return audit.Record(ctx, q, actor, audit.Event{
-			Action: audit.ActionSystemSettingsUpdated, TargetType: audit.TargetSystemSettings, TargetID: before.ID,
-			Details: map[string]string{
-				"sign_dates_enabled": audit.Change(strconv.FormatBool(before.SignDatesEnabled), strconv.FormatBool(enabled)),
-			},
+			Action: audit.ActionSystemSettingsUpdated, TargetType: audit.TargetSystemSettings, TargetID: before.ID, Details: details,
 		})
 	})
+	var invalid *problem.ValidationError
+	if errors.As(err, &invalid) {
+		return Settings{}, err
+	}
 	if err != nil {
 		return Settings{}, fmt.Errorf("mengubah pengaturan sistem: %w", err)
 	}
