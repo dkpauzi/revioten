@@ -590,3 +590,65 @@ func TestConcurrentRowUpdates(t *testing.T) {
 		t.Errorf("versi akhir %d, ingin 2", final.Rows[0].Version)
 	}
 }
+
+// TestAddRows (M4.4): blok baris dari Excel masuk dalam satu transaksi.
+// Semua baris masuk menurut urutan, atau tidak ada yang masuk.
+func TestAddRows(t *testing.T) {
+	f := newFixture(t)
+	ctx := t.Context()
+	d, err := f.s.Create(ctx, f.author, NewDocument{NumberID: f.cpNumber.ID, ModelIDs: []string{f.k125}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if d, err = f.s.AddRow(ctx, f.author, d.ID, NewRow{OperationNumber: "10"}); err != nil {
+		t.Fatal(err)
+	}
+	format, err := template.LoadFormatVersion(ctx, f.q, d.FormatVersionID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	product := fieldID(t, format, template.AreaRow, "Product Characteristics")
+
+	rows := []NewRow{
+		{OperationNumber: "20", Content: map[string]any{product: "Solder joint"}},
+		{OperationNumber: "30", Content: map[string]any{product: "Polarity"}},
+		{Content: map[string]any{}},
+	}
+	if _, err := f.s.AddRows(ctx, f.viewer, d.ID, rows); !errors.Is(err, access.ErrForbidden) {
+		t.Errorf("viewer menempel baris: %v", err)
+	}
+	d, err = f.s.AddRows(ctx, f.author, d.ID, rows)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(d.Rows) != 4 || d.Rows[1].OperationNumber != "20" || d.Rows[2].Content[product] != "Polarity" || d.Rows[3].Position != 4 {
+		t.Errorf("sesudah tempel: %+v", d.Rows)
+	}
+	var action, details string
+	if err := f.pool.QueryRow(ctx, "SELECT action, details FROM audit_log ORDER BY seq DESC LIMIT 1").Scan(&action, &details); err != nil {
+		t.Fatal(err)
+	}
+	if action != "document.rows_pasted" || details != `{"count":"3","from_position":"2","to_position":"4"}` {
+		t.Errorf("audit: %s %s", action, details)
+	}
+
+	// Satu baris yang salah membatalkan semuanya; masalahnya menunjuk barisnya.
+	bad := []NewRow{{OperationNumber: "40"}, {Content: map[string]any{"bukan-kolom": "x"}}}
+	_, err = f.s.AddRows(ctx, f.author, d.ID, bad)
+	if got := codes(t, err); !slices.Contains(got, "rows[1].bukan-kolom:not_allowed") {
+		t.Errorf("baris salah: %v", got)
+	}
+	if _, err := f.s.AddRows(ctx, f.author, d.ID, nil); !slices.Contains(codes(t, err), "rows:required") {
+		t.Errorf("tanpa baris: %v", err)
+	}
+	after, err := f.s.Get(ctx, f.author, d.ID)
+	if err != nil || len(after.Rows) != 4 {
+		t.Errorf("baris sesudah penolakan: %d, %v", len(after.Rows), err)
+	}
+
+	// Batas 1000 baris per dokumen berlaku untuk jumlah sesudah tempel.
+	many := make([]NewRow, maxRows)
+	if _, err := f.s.AddRows(ctx, f.author, d.ID, many); !slices.Contains(codes(t, err), "rows:not_allowed") {
+		t.Errorf("melewati batas: %v", err)
+	}
+}

@@ -1075,6 +1075,10 @@ export type DocumentRowInput = {
     version?: number;
 };
 
+export type DocumentRowBatch = {
+    rows: Array<DocumentRowInput>;
+};
+
 export type DocumentHeader = {
     header: {
         [key: string]: unknown;
@@ -4607,6 +4611,41 @@ export type AddDocumentRowResponses = {
 };
 
 export type AddDocumentRowResponse = AddDocumentRowResponses[keyof AddDocumentRowResponses];
+
+export type AddDocumentRowsData = {
+    body: DocumentRowBatch;
+    path: {
+        documentId: string;
+    };
+    query?: never;
+    url: '/api/v1/documents/{documentId}/rows/batch';
+};
+
+export type AddDocumentRowsErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type AddDocumentRowsError = AddDocumentRowsErrors[keyof AddDocumentRowsErrors];
+
+export type AddDocumentRowsResponses = {
+    /**
+     * The document after the change.
+     */
+    201: Document;
+};
+
+export type AddDocumentRowsResponse = AddDocumentRowsResponses[keyof AddDocumentRowsResponses];
 
 export type DeleteDocumentRowData = {
     body?: never;

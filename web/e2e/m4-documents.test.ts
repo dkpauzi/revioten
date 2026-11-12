@@ -157,4 +157,33 @@ test('penyusun membuat dokumen CP, lalu baris dan header tersimpan', async ({ pa
 	await page.getByLabel('Core Team', { exact: true }).fill('PE, QA');
 	await page.getByRole('button', { name: en.documentHeaderSave }).click();
 	await expect(page.getByRole('status')).toHaveText(en.documentHeaderSaved);
+
+	// M4.4 (R-MIG-02): blok sel dari Excel ditempel, dipratinjau, lalu diimpor.
+	// Baris judul memetakan kolom; proses yang tidak dikenal ditandai, tetapi
+	// barisnya tetap masuk.
+	await page.getByRole('button', { name: en.pasteOpen }).click();
+	// Judul kolom nomor operasi dan proses dibaca dari tabel, seperti orang
+	// menyalin baris judul form.
+	const titleOf = async (field: string) => ((await grid.locator(`.tabulator-col[tabulator-field="${field}"] .tabulator-col-title`).first().textContent()) ?? '').trim();
+	const pasted = [`Method\t${await titleOf('_process')}\tProduct Characteristics\t${await titleOf('_operation')}`, 'X-ray\tDokumen Reflow\t"Void\nunder BGA"\t30', 'Pull test\tBukan Proses\tWire bond\t40'].join('\r\n');
+	await page.getByLabel(en.pasteText).fill(pasted);
+	await page.getByLabel(en.pasteHasHeader).check();
+	await page.getByRole('button', { name: en.pastePreview }).click();
+	const summary = page.getByTestId('paste-summary');
+	await expect(summary).toHaveText(en.pasteSummary.replace('{rows}', '2').replace('{flags}', '1'));
+	await expect(page.locator('.preview td.flag')).toContainText(en.pasteReasonProcess);
+	// Pemetaan bisa diubah: kolom pertama dilewati, lalu dikembalikan.
+	const firstColumn = page.getByLabel(en.pasteColumn.replace('{n}', '1'));
+	await expect(firstColumn).toHaveValue(method);
+	await firstColumn.selectOption('');
+	await firstColumn.selectOption(method);
+	await page.getByRole('button', { name: en.pasteImport.replace('{rows}', '2') }).click();
+	await expect(page.getByRole('status')).toHaveText(en.pasteDone.replace('{rows}', '2'));
+	await expect(rows).toHaveCount(4);
+	await expect(cell(2, '_operation')).toHaveText('30');
+	await expect(cell(2, '_process')).toHaveText('Dokumen Reflow');
+	await expect(cell(2, product)).toHaveText('Void under BGA');
+	await expect(cell(2, method)).toHaveText('X-ray');
+	await expect(cell(3, '_process')).toHaveText('');
+	await expect(cell(3, method)).toHaveText('Pull test');
 });

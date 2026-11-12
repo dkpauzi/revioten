@@ -434,6 +434,53 @@ func (s *Service) AddRow(ctx context.Context, actor access.Actor, id string, in 
 	})
 }
 
+// AddRows menambah beberapa baris sekaligus di akhir dokumen (E-2, M4.4,
+// R-MIG-02): blok baris yang ditempel dari Excel. Semua baris masuk dalam
+// satu transaksi; satu baris yang ditolak membatalkan semuanya, dan
+// masalahnya menunjuk barisnya, misalnya "rows[2].<id kolom>".
+func (s *Service) AddRows(ctx context.Context, actor access.Actor, id string, rows []NewRow) (Document, error) {
+	return s.edit(ctx, actor, id, func(q *db.Queries, d Document, format template.FormatVersion) (string, map[string]string, error) {
+		if len(rows) == 0 {
+			return "", nil, problems(invalid("rows", problem.Required, "Send at least one row."))
+		}
+		if len(d.Rows)+len(rows) > maxRows {
+			return "", nil, problems(invalid("rows", problem.NotAllowed, "A document has at most 1000 rows."))
+		}
+		var first, last int32
+		for i, in := range rows {
+			operation, content, err := checkRow(ctx, q, format, in.ProcessID, in.OperationNumber, in.Content)
+			if err != nil {
+				return "", nil, atRow(i, err)
+			}
+			row, err := q.AddDocumentRow(ctx, db.AddDocumentRowParams{DocumentID: d.ID, ProcessID: optional(in.ProcessID), OperationNumber: optional(operation), Content: content})
+			if err != nil {
+				return "", nil, err
+			}
+			if i == 0 {
+				first = row.Position
+			}
+			last = row.Position
+		}
+		return audit.ActionDocumentRowsPasted, map[string]string{
+			"count": strconv.Itoa(len(rows)), "from_position": strconv.Itoa(int(first)), "to_position": strconv.Itoa(int(last)),
+		}, nil
+	})
+}
+
+// atRow menambahkan nomor baris (mulai 0) ke nama field setiap masalah input.
+func atRow(i int, err error) error {
+	var invalid *problem.ValidationError
+	if !errors.As(err, &invalid) {
+		return err
+	}
+	out := make([]problem.Problem, len(invalid.Problems))
+	for n, p := range invalid.Problems {
+		p.Field = fmt.Sprintf("rows[%d].%s", i, p.Field)
+		out[n] = p
+	}
+	return &problem.ValidationError{Problems: out}
+}
+
 // UpdateRow mengganti isi satu baris (E-2). ID dan urutannya tetap.
 func (s *Service) UpdateRow(ctx context.Context, actor access.Actor, id, rowID string, in RowUpdate) (Document, error) {
 	return s.edit(ctx, actor, id, func(q *db.Queries, d Document, format template.FormatVersion) (string, map[string]string, error) {

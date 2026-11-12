@@ -72,6 +72,19 @@ func (a *apiServer) AddDocumentRow(ctx context.Context, req AddDocumentRowReques
 	return AddDocumentRow201JSONResponse(toAPIDocument(d)), nil
 }
 
+// AddDocumentRows menjawab POST /api/v1/documents/{documentId}/rows/batch (M4.4).
+func (a *apiServer) AddDocumentRows(ctx context.Context, req AddDocumentRowsRequestObject) (AddDocumentRowsResponseObject, error) {
+	rows := make([]document.NewRow, 0, len(req.Body.Rows))
+	for _, b := range req.Body.Rows {
+		rows = append(rows, document.NewRow{ProcessID: deref(b.ProcessId), OperationNumber: deref(b.OperationNumber), Content: b.Content})
+	}
+	d, err := a.documents.AddRows(ctx, actorFrom(ctx), req.DocumentId, rows)
+	if err != nil {
+		return nil, err
+	}
+	return AddDocumentRows201JSONResponse(toAPIDocument(d)), nil
+}
+
 // UpdateDocumentRow menjawab PUT /api/v1/documents/{documentId}/rows/{rowId}.
 func (a *apiServer) UpdateDocumentRow(ctx context.Context, req UpdateDocumentRowRequestObject) (UpdateDocumentRowResponseObject, error) {
 	b := req.Body

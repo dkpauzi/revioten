@@ -73,6 +73,7 @@ const actionKeys: Record<string, MessageKey> = {
 	'document.created': 'auditActionDocumentCreated',
 	'document.header_changed': 'auditActionDocumentHeaderChanged',
 	'document.row_added': 'auditActionDocumentRowAdded',
+	'document.rows_pasted': 'auditActionDocumentRowsPasted',
 	'document.row_changed': 'auditActionDocumentRowChanged',
 	'document.row_removed': 'auditActionDocumentRowRemoved',
 	'format_template.version_approved': 'auditActionFormatVersionApproved',
@@ -130,7 +131,10 @@ const detailKeys: Record<string, MessageKey> = {
 	route_reason: 'auditDetailRouteReason',
 	document_number: 'auditDetailDocumentNumber',
 	fields: 'auditDetailFields',
-	operation_number: 'auditDetailOperationNumber'
+	operation_number: 'auditDetailOperationNumber',
+	count: 'auditDetailRowCount',
+	from_position: 'auditDetailFromPosition',
+	to_position: 'auditDetailToPosition'
 };
 
 const reasonKeys: Record<string, MessageKey> = {

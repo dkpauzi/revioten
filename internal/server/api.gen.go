@@ -1642,6 +1642,11 @@ type DocumentRow struct {
 	Version int `json:"version"`
 }
 
+// DocumentRowBatch defines model for DocumentRowBatch.
+type DocumentRowBatch struct {
+	Rows []DocumentRowInput `json:"rows"`
+}
+
 // DocumentRowInput defines model for DocumentRowInput.
 type DocumentRowInput struct {
 	Content         map[string]interface{} `json:"content"`
@@ -3126,6 +3131,9 @@ type SetDocumentHeaderJSONRequestBody = DocumentHeader
 // AddDocumentRowJSONRequestBody defines body for AddDocumentRow for application/json ContentType.
 type AddDocumentRowJSONRequestBody = DocumentRowInput
 
+// AddDocumentRowsJSONRequestBody defines body for AddDocumentRows for application/json ContentType.
+type AddDocumentRowsJSONRequestBody = DocumentRowBatch
+
 // UpdateDocumentRowJSONRequestBody defines body for UpdateDocumentRow for application/json ContentType.
 type UpdateDocumentRowJSONRequestBody = DocumentRowInput
 
@@ -3353,6 +3361,9 @@ type ServerInterface interface {
 	// AddDocumentRow Add a row at the end of a draft document (E-2)
 	// (POST /api/v1/documents/{documentId}/rows)
 	AddDocumentRow(w http.ResponseWriter, r *http.Request, documentId DocumentId)
+	// AddDocumentRows Add several rows at the end of a draft document, as pasted from Excel (E-2, M4.4)
+	// (POST /api/v1/documents/{documentId}/rows/batch)
+	AddDocumentRows(w http.ResponseWriter, r *http.Request, documentId DocumentId)
 	// DeleteDocumentRow Remove one row of a draft document (E-2, M4.2)
 	// (DELETE /api/v1/documents/{documentId}/rows/{rowId})
 	DeleteDocumentRow(w http.ResponseWriter, r *http.Request, documentId DocumentId, rowId RowId)
@@ -4536,6 +4547,32 @@ func (siw *ServerInterfaceWrapper) AddDocumentRow(w http.ResponseWriter, r *http
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.AddDocumentRow(w, r, documentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AddDocumentRows operation middleware
+func (siw *ServerInterfaceWrapper) AddDocumentRows(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", r.PathValue("documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AddDocumentRows(w, r, documentId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -6301,6 +6338,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/documents/{documentId}", wrapper.GetDocument)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/documents/{documentId}/header", wrapper.SetDocumentHeader)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/rows", wrapper.AddDocumentRow)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/rows/batch", wrapper.AddDocumentRows)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/documents/{documentId}/rows/{rowId}", wrapper.DeleteDocumentRow)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/documents/{documentId}/rows/{rowId}", wrapper.UpdateDocumentRow)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/form-sets", wrapper.ListFormSets)
@@ -7944,6 +7982,46 @@ type AddDocumentRowdefaultJSONResponse struct {
 }
 
 func (response AddDocumentRowdefaultJSONResponse) VisitAddDocumentRowResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddDocumentRowsRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+	Body       *AddDocumentRowsJSONRequestBody
+}
+
+type AddDocumentRowsResponseObject interface {
+	VisitAddDocumentRowsResponse(w http.ResponseWriter) error
+}
+
+type AddDocumentRows201JSONResponse Document
+
+func (response AddDocumentRows201JSONResponse) VisitAddDocumentRowsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddDocumentRowsdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response AddDocumentRowsdefaultJSONResponse) VisitAddDocumentRowsResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -10699,6 +10777,9 @@ type StrictServerInterface interface {
 	// AddDocumentRow Add a row at the end of a draft document (E-2)
 	// (POST /api/v1/documents/{documentId}/rows)
 	AddDocumentRow(ctx context.Context, request AddDocumentRowRequestObject) (AddDocumentRowResponseObject, error)
+	// AddDocumentRows Add several rows at the end of a draft document, as pasted from Excel (E-2, M4.4)
+	// (POST /api/v1/documents/{documentId}/rows/batch)
+	AddDocumentRows(ctx context.Context, request AddDocumentRowsRequestObject) (AddDocumentRowsResponseObject, error)
 	// DeleteDocumentRow Remove one row of a draft document (E-2, M4.2)
 	// (DELETE /api/v1/documents/{documentId}/rows/{rowId})
 	DeleteDocumentRow(ctx context.Context, request DeleteDocumentRowRequestObject) (DeleteDocumentRowResponseObject, error)
@@ -12083,6 +12164,39 @@ func (sh *strictHandler) AddDocumentRow(w http.ResponseWriter, r *http.Request, 
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(AddDocumentRowResponseObject); ok {
 		if err := validResponse.VisitAddDocumentRowResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AddDocumentRows operation middleware
+func (sh *strictHandler) AddDocumentRows(w http.ResponseWriter, r *http.Request, documentId DocumentId) {
+	var request AddDocumentRowsRequestObject
+
+	request.DocumentId = documentId
+
+	var body AddDocumentRowsJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.AddDocumentRows(ctx, request.(AddDocumentRowsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AddDocumentRows")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AddDocumentRowsResponseObject); ok {
+		if err := validResponse.VisitAddDocumentRowsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

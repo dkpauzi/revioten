@@ -1595,6 +1595,30 @@ paths:
                 $ref: '#/components/schemas/Document'
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/documents/{documentId}/rows/batch:
+    post:
+      operationId: addDocumentRows
+      summary: Add several rows at the end of a draft document, as pasted from Excel (E-2, M4.4)
+      description: >-
+        All rows are added in the order given, or none at all. A problem names its row, for example
+        rows[2].<field id> (R-MIG-02).
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentRowBatch'
+      responses:
+        '201':
+          description: The document after the change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/documents/{documentId}/rows/{rowId}:
     delete:
       operationId: deleteDocumentRow
@@ -3733,6 +3757,14 @@ components:
             The version of the row that was read. Required when changing a row, ignored when adding one. When the row
             was changed by someone else in the meantime the answer is 409 with code changed, and nothing is saved
             (optimistic locking, R-DOC-07).
+    DocumentRowBatch:
+      type: object
+      required: [rows]
+      properties:
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentRowInput'
     DocumentHeader:
       type: object
       required: [header, header_version]

@@ -5,8 +5,9 @@
 	// D-123); kolom yang dihitung tidak diketik.
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
-	import { addDocumentRow, deleteDocumentRow, getDocument, getFormatVersion, listProcesses, setDocumentHeader, updateDocumentRow, type ApiFailure } from '#lib/api/client.ts';
+	import { addDocumentRow, addDocumentRows, deleteDocumentRow, getDocument, getFormatVersion, listProcesses, setDocumentHeader, updateDocumentRow, type ApiFailure } from '#lib/api/client.ts';
 	import type { Document, DocumentRow, DocumentRowInput, FormatVersion, Process } from '#lib/api/gen/index.ts';
+	import PastePanel from '#lib/documents/PastePanel.svelte';
 	import Workbook from '#lib/documents/Workbook.svelte';
 	import { cleanContent, typedFields } from '#lib/documents.ts';
 	import { failureText, problemText } from '#lib/errors.ts';
@@ -23,6 +24,9 @@
 	let canEdit = $derived(can('E-2'));
 
 	let typedHeader = $derived(format ? typedFields(format.fields, 'header') : []);
+
+	// pasting: panel Tempel dari Excel sedang dibuka (M4.4).
+	let pasting = $state(false);
 
 	// Isian header.
 	let header = $state<Record<string, string>>({});
@@ -143,6 +147,23 @@
 		message = t('documentRowAdded');
 	}
 
+	// pasteRows menambah blok baris dari Excel dalam satu permintaan (M4.4).
+	async function pasteRows(rows: DocumentRowInput[]): Promise<boolean> {
+		reset();
+		if (!doc) {
+			return false;
+		}
+		const result = await addDocumentRows(doc.id, rows);
+		if (!result.ok) {
+			showErrors(result.error);
+			return false;
+		}
+		use(result.data);
+		pasting = false;
+		message = t('pasteDone', { rows: String(rows.length) });
+		return true;
+	}
+
 	async function removeRow(rowId: string) {
 		reset();
 		if (!doc) {
@@ -239,9 +260,18 @@
 			<Workbook {doc} {format} {processes} {canEdit} onsave={saveCell} ondelete={removeRow} />
 		{/key}
 		{#if canEdit}
-			<p><button type="button" onclick={addRow}>{t('documentRowAdd')}</button></p>
+			<p class="row-actions">
+				<button type="button" onclick={addRow}>{t('documentRowAdd')}</button>
+				{#if !pasting}<button type="button" onclick={() => (pasting = true)}>{t('pasteOpen')}</button>{/if}
+			</p>
 		{/if}
-	</section>{/if}
+	</section>
+
+	{#if canEdit && pasting}
+		<section>
+			<PastePanel {format} {processes} onimport={pasteRows} oncancel={() => (pasting = false)} />
+		</section>
+	{/if}{/if}
 
 <style>
 	.facts {
@@ -272,6 +302,12 @@
 
 	.grid > button {
 		margin-top: var(--label-space);
+	}
+
+	.row-actions {
+		display: flex;
+		gap: 8px;
+		flex-wrap: wrap;
 	}
 
 	.sheets {

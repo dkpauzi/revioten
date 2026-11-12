@@ -238,6 +238,7 @@ export const helpId: HelpContent = {
 				'Di bagian {documentCreateTitle}, pilih {documentNumber}, centang {documentModels} yang dicakup dokumen, lalu tekan {documentCreate}. Nomornya menjadi In use.',
 				'Buka dokumen itu dari daftar. Isi field header dan tekan {documentHeaderSave}.',
 				'Tekan {documentRowAdd} untuk menambah baris kosong di akhir sheet.',
+'Untuk membawa baris dari file Excel, tekan {pasteOpen}. Salin sel di Excel, tempel di kotaknya, lalu tekan {pastePreview}. Centang {pasteHasHeader} bila baris judul ikut disalin; kolom lalu dicocokkan menurut judulnya. Di atas setiap kolom Anda memilih ke mana kolom itu masuk. Sel yang tidak cocok dengan kolomnya, misalnya severity yang bukan angka, ditandai dan dikosongkan; barisnya tetap ditambahkan. Belum ada yang disimpan sampai Anda menekan tombol Impor.',
 'Dua orang bisa bekerja di dokumen yang sama. Bila orang lain lebih dulu menyimpan baris yang sama, perubahan Anda tidak disimpan: pesan muncul, isi terbaru ditampilkan, dan Anda memasukkan lagi perubahan Anda.',
 				'Klik satu sel lalu ketik, seperti di Excel. Tekan Enter atau klik di tempat lain, dan barisnya tersimpan. Di kolom nomor operasi dan proses, Anda memilih nilai milik baris itu sendiri.',
 				'Tekan {documentRowDelete} pada satu baris untuk menghapusnya. Baris sesudahnya bergeser naik.',

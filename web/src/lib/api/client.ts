@@ -549,6 +549,11 @@ export function addDocumentRow(id: string, input: DocumentRowInput, fetchFn: typ
 	return call<Document>(fetchFn, itemPath('documents', id) + '/rows', jsonRequest('POST', input));
 }
 
+// addDocumentRows memanggil POST /api/v1/documents/{id}/rows/batch (E-2, M4.4).
+export function addDocumentRows(id: string, rows: DocumentRowInput[], fetchFn: typeof fetch = fetch): Promise<ApiResult<Document>> {
+	return call<Document>(fetchFn, itemPath('documents', id) + '/rows/batch', jsonRequest('POST', { rows }));
+}
+
 // updateDocumentRow memanggil PUT /api/v1/documents/{id}/rows/{rowId} (E-2).
 export function updateDocumentRow(id: string, rowId: string, input: DocumentRowInput, fetchFn: typeof fetch = fetch): Promise<ApiResult<Document>> {
 	return call<Document>(fetchFn, `${itemPath('documents', id)}/rows/${encodeURIComponent(rowId)}`, jsonRequest('PUT', input));

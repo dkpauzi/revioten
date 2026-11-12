@@ -568,7 +568,9 @@ type fakeDocuments struct {
 	gotNew document.NewDocument
 	gotRow document.NewRow
 	gotUpd document.RowUpdate
-	header map[string]any
+	// gotRows adalah blok baris pada AddRows (M4.4).
+	gotRows []document.NewRow
+	header  map[string]any
 	// headerVersion adalah versi header yang dikirim klien (M4.3).
 	headerVersion int
 }
@@ -595,6 +597,11 @@ func (f *fakeDocuments) SetHeader(_ context.Context, _ access.Actor, id string, 
 
 func (f *fakeDocuments) AddRow(_ context.Context, _ access.Actor, id string, in document.NewRow) (document.Document, error) {
 	f.got, f.gotRow = called{method: "AddRow", id: id}, in
+	return f.doc, f.err
+}
+
+func (f *fakeDocuments) AddRows(_ context.Context, _ access.Actor, id string, rows []document.NewRow) (document.Document, error) {
+	f.got, f.gotRows = called{method: "AddRows", id: id}, rows
 	return f.doc, f.err
 }
 

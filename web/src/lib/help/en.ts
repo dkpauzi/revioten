@@ -238,6 +238,7 @@ export const helpEn: HelpContent = {
 				'Under {documentCreateTitle}, choose the {documentNumber}, tick the {documentModels} the document covers, and press {documentCreate}. The number becomes In use.',
 				'Open the document from the list. Fill in the header fields and press {documentHeaderSave}.',
 				'Press {documentRowAdd} to add an empty row at the end of the sheet.',
+'To bring rows from an Excel file, press {pasteOpen}. Copy the cells in Excel, paste them in the box, and press {pastePreview}. Tick {pasteHasHeader} when you copied the title row too; the columns are then matched by title. Above each column you choose where it goes. A cell that does not fit its column, such as a severity that is not a number, is marked and left empty; the row is still added. Nothing is saved until you press the Import button.',
 'Two people can work in the same document. When someone else saved the same row before you, your change is not saved: a message appears, the latest content is shown, and you enter your change again.',
 				'Click a cell and type, like in Excel. Press Enter or click elsewhere, and the row is saved. In the operation number and process columns you choose the values of the row itself.',
 				'Press {documentRowDelete} on a row to remove it. The rows after it move up.',

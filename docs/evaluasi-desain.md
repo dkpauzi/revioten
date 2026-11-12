@@ -112,6 +112,7 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-88 | Label kembar di form asli, sedangkan label harus unik per area | Kontradiksi | M3.1, Tahap 6 | Tidak (perlu sebelum Tahap 6) | Diputuskan (D-147) |
 | E-89 | Nama proses di PFMEA AIAG-VDA: diketik atau diisi dari master proses | Kontradiksi | M4.1, M4.5 | Tidak (perlu sebelum M4.1) | Diputuskan (D-144) |
 | E-90 | Batas isian dokumen, dan dokumen umum (kode ZZ) tanpa model | Celah | M4.1 | Tidak | Terbuka |
+| E-91 | Tempel dari Excel: ke mana isi sel janggal | Ambigu | M4.4 | Tidak | Terbuka |
 
 ## Keputusan 4 November 2026
 
@@ -1645,6 +1646,23 @@ Salin blok ini untuk setiap temuan baru.
   - (b) Model selalu wajib.
 - **Rekomendasi Claude Code (usulan):** (a).
 - **Asumsi sementara di kode (ASUMSI E-90):** nomor operasi 20 karakter, alasan rute 500 karakter, 1.000 baris per dokumen, minimal satu model.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-91 · Tempel dari Excel: ke mana isi sel janggal
+
+- **Tanggal dan milestone:** 13 November 2026, M4.4.
+- **Jenis:** Ambigu
+- **Rujukan:** M4.4 ("baris janggal ditandai tapi tidak ditolak"), R-MIG-02, R-DOC-01.
+- **Temuan:** milestone meminta baris janggal ditandai tetapi tidak ditolak. Brief tidak menyebut apa yang terjadi pada isi sel yang tidak cocok dengan jenis kolomnya (misalnya Severity "tinggi", tanggal "03/04/2026", proses yang tidak ada di master). Isi baris divalidasi terhadap format (R-DOC-01), jadi nilai seperti itu tidak bisa disimpan apa adanya.
+- **Dampak bila dibiarkan:** penyusun bisa mengira isi sel janggal ikut tersimpan.
+- **Opsi:**
+  - (a) Sel janggal ditandai di pratinjau dengan alasannya, barisnya tetap masuk, dan sel itu dikosongkan. Penyusun mengisinya lagi di tabel.
+  - (b) Seperti (a), ditambah tanda "perlu diperiksa" yang tersimpan di baris sampai penyusun menghapusnya.
+  - (c) Isi asli sel janggal disimpan sebagai catatan baris.
+- **Rekomendasi Claude Code (usulan):** (a) sekarang; (b) bila dalam pemakaian ternyata tanda di pratinjau saja kurang.
+- **Asumsi sementara di kode (ASUMSI E-91):** opsi (a). Tanggal hanya diterima sebagai 2026-11-13 atau 13-Nov-26, karena bentuk 03/04/2026 bisa tertukar hari dan bulannya.
 - **Menghambat milestone?** Tidak
 - **Status:** Terbuka
 - **Keputusan pemilik:**

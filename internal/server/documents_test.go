@@ -46,6 +46,10 @@ func TestDocumentEndpoints(t *testing.T) {
 	if rec.Code != http.StatusCreated || !reflect.DeepEqual(fake.gotRow, document.NewRow{ProcessID: "p-1", OperationNumber: "20", Content: map[string]any{"f-2": "Height"}}) {
 		t.Errorf("tambah baris: status %d, %+v", rec.Code, fake.gotRow)
 	}
+	rec = srv.do(http.MethodPost, "/api/v1/documents/d-1/rows/batch", `{"rows":[{"operation_number":"20","content":{}},{"content":{"f-2":"Height"}}]}`)
+	if rec.Code != http.StatusCreated || len(fake.gotRows) != 2 || fake.gotRows[0].OperationNumber != "20" || fake.gotRows[1].Content["f-2"] != "Height" {
+		t.Errorf("tempel baris: status %d, %+v", rec.Code, fake.gotRows)
+	}
 	rec = srv.do(http.MethodPut, "/api/v1/documents/d-1/rows/row-1", `{"content":{},"version":2}`)
 	if rec.Code != http.StatusOK || fake.got != (called{method: "UpdateRow", id: "d-1", input: "row-1"}) || fake.gotUpd.Version != 2 {
 		t.Errorf("ubah baris: status %d, %+v, versi %d", rec.Code, fake.got, fake.gotUpd.Version)
