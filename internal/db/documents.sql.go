@@ -104,6 +104,30 @@ func (q *Queries) CreateDocument(ctx context.Context, arg CreateDocumentParams) 
 	return id, err
 }
 
+const deleteDocumentRow = `-- name: DeleteDocumentRow :one
+
+DELETE FROM document_rows WHERE id = $1 AND document_id = $2
+RETURNING position, operation_number
+`
+
+type DeleteDocumentRowParams struct {
+	ID         string
+	DocumentID string
+}
+
+type DeleteDocumentRowRow struct {
+	Position        int32
+	OperationNumber *string
+}
+
+// M4.2 · Editor tabel.
+func (q *Queries) DeleteDocumentRow(ctx context.Context, arg DeleteDocumentRowParams) (DeleteDocumentRowRow, error) {
+	row := q.db.QueryRow(ctx, deleteDocumentRow, arg.ID, arg.DocumentID)
+	var i DeleteDocumentRowRow
+	err := row.Scan(&i.Position, &i.OperationNumber)
+	return i, err
+}
+
 const documentExistsForNumber = `-- name: DocumentExistsForNumber :one
 SELECT EXISTS (SELECT 1 FROM documents WHERE document_number_id = $1)
 `
@@ -399,6 +423,51 @@ func (q *Queries) ListDocumentRows(ctx context.Context, documentID string) ([]Li
 	return items, nil
 }
 
+const listDocumentSet = `-- name: ListDocumentSet :many
+SELECT d.id, n.number, t.id AS document_type_id, t.key AS document_type_key, t.name AS document_type_name
+FROM documents d
+JOIN document_numbers n ON n.id = d.document_number_id
+JOIN document_types t ON t.id = d.document_type_id
+WHERE n.batch_id = (SELECT n2.batch_id FROM documents d2 JOIN document_numbers n2 ON n2.id = d2.document_number_id WHERE d2.id = $1)
+ORDER BY t.position, n.number
+`
+
+type ListDocumentSetRow struct {
+	ID               string
+	Number           string
+	DocumentTypeID   string
+	DocumentTypeKey  *string
+	DocumentTypeName string
+}
+
+// ListDocumentSet mengambil dokumen yang nomornya didaftarkan dalam satu
+// pendaftaran (set PFD, PFMEA, CP, M2.4), menurut urutan jenis dokumen.
+func (q *Queries) ListDocumentSet(ctx context.Context, id string) ([]ListDocumentSetRow, error) {
+	rows, err := q.db.Query(ctx, listDocumentSet, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListDocumentSetRow{}
+	for rows.Next() {
+		var i ListDocumentSetRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Number,
+			&i.DocumentTypeID,
+			&i.DocumentTypeKey,
+			&i.DocumentTypeName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listDocuments = `-- name: ListDocuments :many
 SELECT d.id, n.number, t.key AS document_type_key, t.name AS document_type_name, d.revision, d.status,
        s.name AS form_set_name, d.updated_at,
@@ -496,6 +565,22 @@ type SetDocumentHeaderParams struct {
 
 func (q *Queries) SetDocumentHeader(ctx context.Context, arg SetDocumentHeaderParams) error {
 	_, err := q.db.Exec(ctx, setDocumentHeader, arg.ID, arg.Header)
+	return err
+}
+
+const shiftRowsUp = `-- name: ShiftRowsUp :exec
+UPDATE document_rows SET position = position - 1
+WHERE document_id = $1 AND position > $2
+`
+
+type ShiftRowsUpParams struct {
+	DocumentID string
+	Position   int32
+}
+
+// ShiftRowsUp menggeser baris sesudah posisi yang dihapus satu tempat naik.
+func (q *Queries) ShiftRowsUp(ctx context.Context, arg ShiftRowsUpParams) error {
+	_, err := q.db.Exec(ctx, shiftRowsUp, arg.DocumentID, arg.Position)
 	return err
 }
 

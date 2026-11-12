@@ -1596,6 +1596,22 @@ paths:
         default:
           $ref: '#/components/responses/Error'
   /api/v1/documents/{documentId}/rows/{rowId}:
+    delete:
+      operationId: deleteDocumentRow
+      summary: Remove one row of a draft document (E-2, M4.2)
+      description: The rows after it move up one place; the IDs of other rows stay.
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+        - $ref: '#/components/parameters/RowId'
+      responses:
+        '200':
+          description: The document after the change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        default:
+          $ref: '#/components/responses/Error'
     put:
       operationId: updateDocumentRow
       summary: Replace the process, operation number, and content of one row (E-2)
@@ -3588,7 +3604,7 @@ components:
           description: Required when route_id is not the default route of the customer (D-47).
     Document:
       type: object
-      required: [id, document_number_id, number, customer_id, customer_code, document_type, revision, status, form_set_version_id, form_set_name, format_version_id, models, part_numbers, header, rows, created_at, updated_at]
+      required: [id, document_number_id, number, customer_id, customer_code, document_type, revision, status, form_set_version_id, form_set_name, format_version_id, models, part_numbers, header, rows, set, created_at, updated_at]
       properties:
         id:
           type: string
@@ -3634,12 +3650,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/DocumentRow'
+        set:
+          type: array
+          description: >-
+            The documents of the same set, this one included, by document type (M4.2). Documents from numbers registered
+            as a set of PFD, PFMEA, and CP know each other; a single number gives only this document.
+          items:
+            $ref: '#/components/schemas/DocumentSetMember'
         created_at:
           type: string
           format: date-time
         updated_at:
           type: string
           format: date-time
+    DocumentSetMember:
+      type: object
+      required: [id, number, document_type]
+      properties:
+        id:
+          type: string
+        number:
+          type: string
+        document_type:
+          $ref: '#/components/schemas/DocumentTypeRef'
     NamedRef:
       type: object
       required: [id, name]

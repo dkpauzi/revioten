@@ -361,6 +361,7 @@ func TestPermissionsPerOperation(t *testing.T) {
 		{http.MethodPut, "/api/v1/documents/{documentId}/header", `{"header":{}}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodPost, "/api/v1/documents/{documentId}/rows", `{"content":{}}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
 		{http.MethodPut, "/api/v1/documents/{documentId}/rows/{rowId}", `{"content":{}}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		{http.MethodDelete, "/api/v1/documents/{documentId}/rows/{rowId}", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		// Form set (langkah D): melihat lewat L-2, menyusun lewat A-2, menerbitkan lewat V-3 (D-139).
 		// Engineer memegang V-3, tetapi format di dalam set masih draft, jadi jawabannya 409, bukan 403.
 		{http.MethodGet, "/api/v1/form-sets", "", http.StatusOK, http.StatusOK, http.StatusOK},

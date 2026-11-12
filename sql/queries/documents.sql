@@ -130,3 +130,26 @@ UPDATE documents SET updated_at = now() WHERE id = $1;
 
 -- name: ProcessExists :one
 SELECT EXISTS (SELECT 1 FROM processes WHERE id = $1);
+
+-- M4.2 · Editor tabel.
+
+-- name: DeleteDocumentRow :one
+DELETE FROM document_rows WHERE id = $1 AND document_id = $2
+RETURNING position, operation_number;
+
+
+-- name: ShiftRowsUp :exec
+-- ShiftRowsUp menggeser baris sesudah posisi yang dihapus satu tempat naik.
+UPDATE document_rows SET position = position - 1
+WHERE document_id = $1 AND position > $2;
+
+
+-- name: ListDocumentSet :many
+-- ListDocumentSet mengambil dokumen yang nomornya didaftarkan dalam satu
+-- pendaftaran (set PFD, PFMEA, CP, M2.4), menurut urutan jenis dokumen.
+SELECT d.id, n.number, t.id AS document_type_id, t.key AS document_type_key, t.name AS document_type_name
+FROM documents d
+JOIN document_numbers n ON n.id = d.document_number_id
+JOIN document_types t ON t.id = d.document_type_id
+WHERE n.batch_id = (SELECT n2.batch_id FROM documents d2 JOIN document_numbers n2 ON n2.id = d2.document_number_id WHERE d2.id = $1)
+ORDER BY t.position, n.number;

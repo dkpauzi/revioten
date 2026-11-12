@@ -237,13 +237,15 @@ export const helpEn: HelpContent = {
 				'Open {navGroupDocuments}, then {navDocuments}, and choose the {documentCustomer}.',
 				'Under {documentCreateTitle}, choose the {documentNumber}, tick the {documentModels} the document covers, and press {documentCreate}. The number becomes In use.',
 				'Open the document from the list. Fill in the header fields and press {documentHeaderSave}.',
-				'Under {documentRowAddTitle}, fill in the {documentOperationNumber}, choose the {documentProcess}, fill in the columns, and press {documentRowAdd}.',
-				'Press {formatEdit} on a row to change it, then {documentRowSave}. The row keeps its place.'
+				'Press {documentRowAdd} to add an empty row at the end of the sheet.',
+				'Click a cell and type, like in Excel. Press Enter or click elsewhere, and the row is saved. In the operation number and process columns you choose the values of the row itself.',
+				'Press {documentRowDelete} on a row to remove it. The rows after it move up.',
+				'The tabs above the table open the other documents of the same set: PFD, PFMEA, and Control Plan.'
 			],
 			tips: [
 				'The operation number and the process name are columns filled from the row; they are never typed in the column itself.',
 				'RPN and Action Priority are calculated and cannot be typed.',
-				'A spreadsheet-like workbook with sheet tabs comes in a later step (D-145).'
+				'Grey columns are filled or calculated by the system and cannot be typed.'
 			]
 		},
 		{

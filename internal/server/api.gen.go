@@ -1543,8 +1543,11 @@ type Document struct {
 	Route       *NamedRef              `json:"route,omitempty"`
 	RouteReason *string                `json:"route_reason,omitempty"`
 	Rows        []DocumentRow          `json:"rows"`
-	Status      DocumentStatus         `json:"status"`
-	UpdatedAt   time.Time              `json:"updated_at"`
+
+	// Set The documents of the same set, this one included, by document type (M4.2). Documents from numbers registered as a set of PFD, PFMEA, and CP know each other; a single number gives only this document.
+	Set       []DocumentSetMember `json:"set"`
+	Status    DocumentStatus      `json:"status"`
+	UpdatedAt time.Time           `json:"updated_at"`
 }
 
 // DocumentStatus defines model for Document.Status.
@@ -1632,6 +1635,13 @@ type DocumentRowInput struct {
 	Content         map[string]interface{} `json:"content"`
 	OperationNumber *string                `json:"operation_number,omitempty"`
 	ProcessId       *string                `json:"process_id,omitempty"`
+}
+
+// DocumentSetMember defines model for DocumentSetMember.
+type DocumentSetMember struct {
+	DocumentType DocumentTypeRef `json:"document_type"`
+	Id           string          `json:"id"`
+	Number       string          `json:"number"`
 }
 
 // DocumentSummary defines model for DocumentSummary.
@@ -3328,6 +3338,9 @@ type ServerInterface interface {
 	// AddDocumentRow Add a row at the end of a draft document (E-2)
 	// (POST /api/v1/documents/{documentId}/rows)
 	AddDocumentRow(w http.ResponseWriter, r *http.Request, documentId DocumentId)
+	// DeleteDocumentRow Remove one row of a draft document (E-2, M4.2)
+	// (DELETE /api/v1/documents/{documentId}/rows/{rowId})
+	DeleteDocumentRow(w http.ResponseWriter, r *http.Request, documentId DocumentId, rowId RowId)
 	// UpdateDocumentRow Replace the process, operation number, and content of one row (E-2)
 	// (PUT /api/v1/documents/{documentId}/rows/{rowId})
 	UpdateDocumentRow(w http.ResponseWriter, r *http.Request, documentId DocumentId, rowId RowId)
@@ -4508,6 +4521,41 @@ func (siw *ServerInterfaceWrapper) AddDocumentRow(w http.ResponseWriter, r *http
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.AddDocumentRow(w, r, documentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteDocumentRow operation middleware
+func (siw *ServerInterfaceWrapper) DeleteDocumentRow(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", r.PathValue("documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "rowId" -------------
+	var rowId RowId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "rowId", r.PathValue("rowId"), &rowId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "rowId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteDocumentRow(w, r, documentId, rowId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -6238,6 +6286,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/documents/{documentId}", wrapper.GetDocument)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/documents/{documentId}/header", wrapper.SetDocumentHeader)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/rows", wrapper.AddDocumentRow)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/documents/{documentId}/rows/{rowId}", wrapper.DeleteDocumentRow)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/documents/{documentId}/rows/{rowId}", wrapper.UpdateDocumentRow)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/form-sets", wrapper.ListFormSets)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/form-sets", wrapper.CreateFormSet)
@@ -7880,6 +7929,46 @@ type AddDocumentRowdefaultJSONResponse struct {
 }
 
 func (response AddDocumentRowdefaultJSONResponse) VisitAddDocumentRowResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteDocumentRowRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+	RowId      RowId      `json:"rowId"`
+}
+
+type DeleteDocumentRowResponseObject interface {
+	VisitDeleteDocumentRowResponse(w http.ResponseWriter) error
+}
+
+type DeleteDocumentRow200JSONResponse Document
+
+func (response DeleteDocumentRow200JSONResponse) VisitDeleteDocumentRowResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteDocumentRowdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response DeleteDocumentRowdefaultJSONResponse) VisitDeleteDocumentRowResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -10595,6 +10684,9 @@ type StrictServerInterface interface {
 	// AddDocumentRow Add a row at the end of a draft document (E-2)
 	// (POST /api/v1/documents/{documentId}/rows)
 	AddDocumentRow(ctx context.Context, request AddDocumentRowRequestObject) (AddDocumentRowResponseObject, error)
+	// DeleteDocumentRow Remove one row of a draft document (E-2, M4.2)
+	// (DELETE /api/v1/documents/{documentId}/rows/{rowId})
+	DeleteDocumentRow(ctx context.Context, request DeleteDocumentRowRequestObject) (DeleteDocumentRowResponseObject, error)
 	// UpdateDocumentRow Replace the process, operation number, and content of one row (E-2)
 	// (PUT /api/v1/documents/{documentId}/rows/{rowId})
 	UpdateDocumentRow(ctx context.Context, request UpdateDocumentRowRequestObject) (UpdateDocumentRowResponseObject, error)
@@ -11976,6 +12068,33 @@ func (sh *strictHandler) AddDocumentRow(w http.ResponseWriter, r *http.Request, 
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(AddDocumentRowResponseObject); ok {
 		if err := validResponse.VisitAddDocumentRowResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteDocumentRow operation middleware
+func (sh *strictHandler) DeleteDocumentRow(w http.ResponseWriter, r *http.Request, documentId DocumentId, rowId RowId) {
+	var request DeleteDocumentRowRequestObject
+
+	request.DocumentId = documentId
+	request.RowId = rowId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteDocumentRow(ctx, request.(DeleteDocumentRowRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteDocumentRow")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteDocumentRowResponseObject); ok {
+		if err := validResponse.VisitDeleteDocumentRowResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

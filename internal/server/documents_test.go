@@ -29,7 +29,7 @@ func TestDocumentEndpoints(t *testing.T) {
 		`"document_type":{"id":"dt-3","key":"cp","name":"CP"},"revision":0,"status":"draft","form_set_version_id":"fsv-1",` +
 		`"form_set_name":"AIAG 4th set","format_version_id":"v-3","models":[{"id":"m-1","name":"K-125"}],"part_numbers":[],` +
 		`"route":{"id":"r-1","name":"Up to GM"},"header":{"f-1":"Line 1"},` +
-		`"rows":[{"id":"row-1","position":1,"process_id":"p-1","process_name":"SMT","operation_number":"10","content":{"f-2":"Paste"}}],` +
+		`"rows":[{"id":"row-1","position":1,"process_id":"p-1","process_name":"SMT","operation_number":"10","content":{"f-2":"Paste"}}],"set":[],` +
 		`"created_at":"2026-11-12T08:00:00Z","updated_at":"2026-11-12T08:00:00Z"}`
 	if rec.Code != http.StatusOK || fake.got != (called{method: "Get", id: "d-1"}) || !sameJSON(t, rec.Body.String(), want) {
 		t.Errorf("baca: status %d\n%s\ningin\n%s", rec.Code, rec.Body.String(), want)
@@ -51,6 +51,10 @@ func TestDocumentEndpoints(t *testing.T) {
 	rec = srv.do(http.MethodPut, "/api/v1/documents/d-1/header", `{"header":{"f-1":"Line 2"}}`)
 	if rec.Code != http.StatusOK || fake.header["f-1"] != "Line 2" {
 		t.Errorf("header: status %d, %+v", rec.Code, fake.header)
+	}
+	rec = srv.do(http.MethodDelete, "/api/v1/documents/d-1/rows/row-1", "")
+	if rec.Code != http.StatusOK || fake.got != (called{method: "DeleteRow", id: "d-1", input: "row-1"}) {
+		t.Errorf("hapus baris: status %d, %+v", rec.Code, fake.got)
 	}
 	rec = srv.do(http.MethodGet, "/api/v1/documents?customer_id=c-1", "")
 	if rec.Code != http.StatusOK || fake.got != (called{method: "List", id: "c-1"}) {

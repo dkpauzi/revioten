@@ -1,7 +1,7 @@
 // Bantuan layar dokumen (M4.1). Isi header dan baris disimpan per ID field
 // format (R-DOC-01); kolom terisi otomatis dibaca dari baris (D-122, D-123),
 // dan kolom yang dihitung (RPN, AP) tidak pernah diketik.
-import type { DocumentRow, FormatField } from './api/gen/index.ts';
+import type { DocumentRow, DocumentRowInput, FormatField, FormatVersion } from './api/gen/index.ts';
 
 // notTyped adalah jenis field yang isinya tidak diketik penyusun.
 const notTyped: FormatField['kind'][] = ['rpn', 'ap', 'operation_number', 'process', 'process_flow', 'document_number'];
@@ -42,4 +42,30 @@ export function cellText(field: FormatField, row: Pick<DocumentRow, 'process_nam
 		return field.options?.find((o) => o.key === value)?.label ?? String(value);
 	}
 	return String(value);
+}
+
+// GridData adalah satu baris di tabel workbook (M4.2): isi per ID kolom,
+// ditambah proses dan nomor operasi milik baris.
+export type GridData = Record<string, unknown> & { id: string; position: number; _process?: string; _operation?: string };
+
+// gridRow mengubah baris dokumen menjadi data tabel workbook.
+export function gridRow(row: Pick<DocumentRow, 'id' | 'position' | 'process_id' | 'operation_number' | 'content'>): GridData {
+	return { id: row.id, position: row.position, _process: row.process_id ?? '', _operation: row.operation_number ?? '', ...row.content };
+}
+
+// rowInputFrom mengubah data tabel kembali menjadi isian baris untuk server:
+// hanya kolom yang diketik ikut sebagai isi; isian kosong dibuang.
+export function rowInputFrom(format: Pick<FormatVersion, 'fields'>, data: Record<string, unknown>): DocumentRowInput {
+	const fields = typedFields(format.fields, 'row');
+	const values = Object.fromEntries(fields.map((f) => [f.id, data[f.id] === undefined || data[f.id] === null ? '' : String(data[f.id])]));
+	const input: DocumentRowInput = { content: cleanContent(fields, values) };
+	const process = String(data._process ?? '').trim();
+	const operation = String(data._operation ?? '').trim();
+	if (process !== '') {
+		input.process_id = process;
+	}
+	if (operation !== '') {
+		input.operation_number = operation;
+	}
+	return input;
 }

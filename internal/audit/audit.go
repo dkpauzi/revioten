@@ -82,6 +82,7 @@ const (
 	ActionDocumentHeaderChanged  = "document.header_changed"
 	ActionDocumentRowAdded       = "document.row_added"
 	ActionDocumentRowChanged     = "document.row_changed"
+	ActionDocumentRowRemoved     = "document.row_removed"
 	ActionChangeTypeRouteChanged = "change_type.route_changed"
 	ActionSystemSettingsUpdated  = "system_settings.updated"
 	// Register nomor dokumen (Tahap 2).

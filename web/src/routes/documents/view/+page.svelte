@@ -1,13 +1,14 @@
 <script lang="ts">
-	// Halaman satu dokumen (M4.1): header dan baris disimpan lalu dibaca lagi
-	// dari server. Kolom terisi otomatis (nomor operasi, proses) diambil dari
-	// atribut baris (D-122, D-123); kolom yang dihitung tidak diketik. Layar
-	// workbook mirip Excel menggantikan tabel ini di M4.2 (D-145).
+	// Halaman satu dokumen (M4.1, M4.2): header, dan baris di workbook mirip
+	// Excel (D-145) dengan tab sheet untuk dokumen satu set. Kolom terisi
+	// otomatis (nomor operasi, proses) diambil dari atribut baris (D-122,
+	// D-123); kolom yang dihitung tidak diketik.
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
-	import { addDocumentRow, getDocument, getFormatVersion, listProcesses, setDocumentHeader, updateDocumentRow, type ApiFailure } from '#lib/api/client.ts';
-	import type { Document, DocumentRow, FormatVersion, Process } from '#lib/api/gen/index.ts';
-	import { cellText, cleanContent, typedFields } from '#lib/documents.ts';
+	import { addDocumentRow, deleteDocumentRow, getDocument, getFormatVersion, listProcesses, setDocumentHeader, updateDocumentRow, type ApiFailure } from '#lib/api/client.ts';
+	import type { Document, DocumentRowInput, FormatVersion, Process } from '#lib/api/gen/index.ts';
+	import Workbook from '#lib/documents/Workbook.svelte';
+	import { cleanContent, typedFields } from '#lib/documents.ts';
 	import { failureText, problemText } from '#lib/errors.ts';
 	import { t } from '#lib/i18n/index.ts';
 	import { can } from '#lib/session.svelte.ts';
@@ -21,14 +22,10 @@
 	let fieldErrors = $state<Record<string, string>>({});
 	let canEdit = $derived(can('E-2'));
 
-	let rowFields = $derived(format ? format.fields.filter((f) => f.area === 'row' && !f.hidden) : []);
-	let typedRow = $derived(format ? typedFields(format.fields, 'row') : []);
 	let typedHeader = $derived(format ? typedFields(format.fields, 'header') : []);
 
-	// Isian header, baris baru, dan baris yang sedang diubah.
+	// Isian header.
 	let header = $state<Record<string, string>>({});
-	let row = $state<{ processId: string; operation: string; values: Record<string, string> }>({ processId: '', operation: '', values: {} });
-	let editingId = $state<string | null>(null);
 
 	onMount(load);
 
@@ -81,39 +78,66 @@
 		message = t('documentHeaderSaved');
 	}
 
-	// startEdit membuka satu baris di formulir yang sama dengan baris baru.
-	function startEdit(r: DocumentRow) {
+	// saveCell menyimpan satu baris dari tabel workbook (M4.2). Dokumen tidak
+	// dimuat ulang, supaya posisi kursor di tabel tidak hilang.
+	async function saveCell(rowId: string, input: DocumentRowInput): Promise<boolean> {
 		reset();
-		editingId = r.id;
-		row = {
-			processId: r.process_id ?? '',
-			operation: r.operation_number ?? '',
-			values: Object.fromEntries(Object.entries(r.content).map(([k, v]) => [k, String(v ?? '')]))
-		};
+		if (!doc) {
+			return false;
+		}
+		const result = await updateDocumentRow(doc.id, rowId, input);
+		if (!result.ok) {
+			showErrors(result.error);
+			return false;
+		}
+		message = t('documentRowSaved');
+		return true;
 	}
 
-	function clearRow() {
-		editingId = null;
-		row = { processId: '', operation: '', values: {} };
-	}
-
-	async function saveRow(event: SubmitEvent) {
-		event.preventDefault();
+	// addRow menambah baris kosong di akhir; isinya diketik langsung di tabel.
+	async function addRow() {
 		reset();
 		if (!doc) {
 			return;
 		}
-		const input = { process_id: row.processId || undefined, operation_number: row.operation || undefined, content: cleanContent(typedRow, row.values) };
-		const result = editingId ? await updateDocumentRow(doc.id, editingId, input) : await addDocumentRow(doc.id, input);
+		const result = await addDocumentRow(doc.id, { content: {} });
 		if (!result.ok) {
 			showErrors(result.error);
 			return;
 		}
-		message = editingId ? t('documentRowSaved') : t('documentRowAdded');
 		use(result.data);
-		clearRow();
+		message = t('documentRowAdded');
 	}
-</script>
+
+	async function removeRow(rowId: string) {
+		reset();
+		if (!doc) {
+			return;
+		}
+		const position = doc.rows.find((r) => r.id === rowId)?.position ?? 0;
+		if (!confirm(t('documentRowDeleteConfirm', { position: String(position) }))) {
+			return;
+		}
+		const result = await deleteDocumentRow(doc.id, rowId);
+		if (!result.ok) {
+			showErrors(result.error);
+			return;
+		}
+		use(result.data);
+		message = t('documentRowRemoved', { position: String(position) });
+	}
+
+	// openSheet berpindah ke dokumen lain di set yang sama tanpa memuat ulang halaman.
+	async function openSheet(event: MouseEvent, id: string) {
+		event.preventDefault();
+		if (doc && id === doc.id) {
+			return;
+		}
+		history.pushState({}, '', `/documents/view?id=${id}`);
+		reset();
+		doc = null;
+		await load();
+	}</script>
 
 {#if loadError}
 	<h1>{t('documentsTitle')}</h1>
@@ -169,74 +193,21 @@
 	{/if}
 
 	<section>
+		<!-- Tab sheet workbook (D-145): dokumen satu set PFD, PFMEA, dan CP. Tab Check menyusul di M4.9. -->
+		<nav class="sheets" aria-label={t('documentSheets')}>
+			{#each doc.set as m (m.id)}
+				<a href="/documents/view?id={m.id}" aria-current={m.id === doc.id ? 'page' : undefined} onclick={(e) => openSheet(e, m.id)}>{m.document_type.name}</a>
+			{/each}
+		</nav>
 		<h2>{t('documentRowsTitle')}</h2>
-		{#if doc.rows.length === 0}
-			<p>{t('documentRowsEmpty')}</p>
-		{:else}
-			<table>
-				<thead>
-					<tr>
-						<th>#</th>
-						{#each rowFields as f (f.id)}<th>{f.label}</th>{/each}
-						{#if canEdit}<th>{t('masterActions')}</th>{/if}
-					</tr>
-				</thead>
-				<tbody>
-					{#each doc.rows as r (r.id)}
-						<tr class:editing={editingId === r.id}>
-							<td>{r.position}</td>
-							{#each rowFields as f (f.id)}<td>{cellText(f, r)}</td>{/each}
-							{#if canEdit}<td><button type="button" onclick={() => startEdit(r)}>{t('formatEdit')}</button></td>{/if}
-						</tr>
-					{/each}
-				</tbody>
-			</table>
-		{/if}
-
+		{#if canEdit}<p class="hint">{t('documentGridHint')}</p>{/if}
+		{#key doc.id}
+			<Workbook {doc} {format} {processes} {canEdit} onsave={saveCell} ondelete={removeRow} />
+		{/key}
 		{#if canEdit}
-			<h3>{editingId ? t('documentRowEditTitle') : t('documentRowAddTitle')}</h3>
-			<form class="grid" onsubmit={saveRow} novalidate>
-				<div class="field">
-					<label for="row-operation">{t('documentOperationNumber')}</label>
-					<input id="row-operation" bind:value={row.operation} maxlength="20" />
-					{#if fieldErrors.operation_number}<p class="error">{fieldErrors.operation_number}</p>{/if}
-				</div>
-				<div class="field">
-					<label for="row-process">{t('documentProcess')}</label>
-					<select id="row-process" bind:value={row.processId}>
-						<option value=""></option>
-						{#each processes as p (p.id)}<option value={p.id}>{p.name}</option>{/each}
-					</select>
-					{#if fieldErrors.process_id}<p class="error">{fieldErrors.process_id}</p>{/if}
-				</div>
-				{#each typedRow as f (f.id)}
-					<div class="field">
-						<label for="row-{f.id}">{f.label}</label>
-						{#if f.kind === 'select' || f.kind === 'symbol'}
-							<select id="row-{f.id}" bind:value={row.values[f.id]}>
-								<option value=""></option>
-								{#if f.kind === 'select'}
-									{#each f.options ?? [] as o (o.key)}<option value={o.key}>{o.label}</option>{/each}
-								{:else}
-									{#each format.symbols.filter((s) => !s.automatic) as s (s.key)}<option value={s.key}>{s.name}</option>{/each}
-								{/if}
-							</select>
-						{:else if f.kind === 'rating'}
-							<input id="row-{f.id}" type="number" min="1" max="10" bind:value={row.values[f.id]} />
-						{:else}
-							<input id="row-{f.id}" type={f.kind === 'date' ? 'date' : 'text'} bind:value={row.values[f.id]} />
-						{/if}
-						{#if fieldErrors[f.id]}<p class="error">{fieldErrors[f.id]}</p>{/if}
-					</div>
-				{/each}
-				<div class="actions">
-					<button type="submit">{editingId ? t('documentRowSave') : t('documentRowAdd')}</button>
-					{#if editingId}<button type="button" onclick={clearRow}>{t('masterCancel')}</button>{/if}
-				</div>
-			</form>
+			<p><button type="button" onclick={addRow}>{t('documentRowAdd')}</button></p>
 		{/if}
-	</section>
-{/if}
+	</section>{/if}
 
 <style>
 	.facts {
@@ -265,18 +236,31 @@
 		min-width: 12rem;
 	}
 
-	.grid > button,
-	.actions {
+	.grid > button {
 		margin-top: var(--label-space);
 	}
 
-	.actions {
+	.sheets {
 		display: flex;
-		gap: 0.5rem;
+		gap: 4px;
+		margin-bottom: 1rem;
+		border-bottom: 1px solid var(--border);
 	}
 
-	tr.editing td {
-		background: var(--accent-weak);
+	.sheets a {
+		padding: 8px 16px;
+		border: 1px solid transparent;
+		border-bottom: none;
+		border-radius: var(--radius) var(--radius) 0 0;
+		color: var(--text-2);
+	}
+
+	.sheets a[aria-current='page'] {
+		background: var(--surface);
+		border-color: var(--border);
+		color: var(--accent-ink);
+		font-weight: 600;
+		margin-bottom: -1px;
 	}
 
 	.mono {

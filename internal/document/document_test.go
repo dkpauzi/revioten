@@ -416,3 +416,81 @@ func TestDocumentGuards(t *testing.T) {
 		}
 	}
 }
+
+// TestDeleteRow (M4.2): baris draft bisa dihapus; urutan baris sesudahnya
+// bergeser naik, dan ID baris lain tetap.
+func TestDeleteRow(t *testing.T) {
+	f := newFixture(t)
+	ctx := t.Context()
+	d, err := f.s.Create(ctx, f.author, NewDocument{NumberID: f.cpNumber.ID, ModelIDs: []string{f.k125}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, op := range []string{"10", "20", "30"} {
+		if d, err = f.s.AddRow(ctx, f.author, d.ID, NewRow{OperationNumber: op}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	middle, last := d.Rows[1].ID, d.Rows[2].ID
+	if _, err := f.s.DeleteRow(ctx, f.viewer, d.ID, middle); !errors.Is(err, access.ErrForbidden) {
+		t.Errorf("viewer menghapus baris: %v", err)
+	}
+	d, err = f.s.DeleteRow(ctx, f.author, d.ID, middle)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(d.Rows) != 2 || d.Rows[1].ID != last || d.Rows[1].Position != 2 || d.Rows[1].OperationNumber != "30" {
+		t.Errorf("sesudah hapus: %+v", d.Rows)
+	}
+	if _, err := f.s.DeleteRow(ctx, f.author, d.ID, middle); !errors.Is(err, problem.ErrNotFound) {
+		t.Errorf("hapus baris yang sudah tidak ada: %v", err)
+	}
+	var action, details string
+	if err := f.pool.QueryRow(ctx, "SELECT action, details FROM audit_log ORDER BY seq DESC LIMIT 1").Scan(&action, &details); err != nil {
+		t.Fatal(err)
+	}
+	if action != "document.row_removed" || details != `{"operation_number":"20","position":"2"}` {
+		t.Errorf("audit: %s %s", action, details)
+	}
+}
+
+// TestDocumentSet (M4.2): dokumen dari nomor yang didaftarkan sebagai set
+// saling mengenal, supaya workbook bisa menampilkan tab PFD, PFMEA, dan CP.
+func TestDocumentSet(t *testing.T) {
+	f := newFixture(t)
+	ctx := t.Context()
+	reg, err := f.numbers.RegisterSet(ctx, f.author, numbering.NewSet{CustomerID: f.custAB, IdempotencyKey: "set-" + t.Name()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var ids []string
+	for _, n := range reg.Numbers {
+		if n.Status != "reserved" {
+			continue
+		}
+		d, err := f.s.Create(ctx, f.author, NewDocument{NumberID: n.ID, ModelIDs: []string{f.k125}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		ids = append(ids, d.ID)
+	}
+	d, err := f.s.Get(ctx, f.author, ids[1])
+	if err != nil {
+		t.Fatal(err)
+	}
+	var keys []string
+	for _, m := range d.Set {
+		keys = append(keys, m.DocumentType.Key)
+	}
+	if !slices.Equal(keys, []string{"pfd", "pfmea", "cp"}) {
+		t.Errorf("anggota set: %v", keys)
+	}
+	// Dokumen dari nomor tunggal hanya mengenal dirinya sendiri.
+	single, err := f.s.Create(ctx, f.author, NewDocument{NumberID: f.cpNumber.ID, ModelIDs: []string{f.k125}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(single.Set) != 1 || single.Set[0].ID != single.ID {
+		t.Errorf("set dokumen tunggal: %+v", single.Set)
+	}
+}

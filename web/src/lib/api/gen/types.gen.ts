@@ -1013,8 +1013,18 @@ export type Document = {
         [key: string]: unknown;
     };
     rows: Array<DocumentRow>;
+    /**
+     * The documents of the same set, this one included, by document type (M4.2). Documents from numbers registered as a set of PFD, PFMEA, and CP know each other; a single number gives only this document.
+     */
+    set: Array<DocumentSetMember>;
     created_at: string;
     updated_at: string;
+};
+
+export type DocumentSetMember = {
+    id: string;
+    number: string;
+    document_type: DocumentTypeRef;
 };
 
 export type NamedRef = {
@@ -4581,6 +4591,42 @@ export type AddDocumentRowResponses = {
 };
 
 export type AddDocumentRowResponse = AddDocumentRowResponses[keyof AddDocumentRowResponses];
+
+export type DeleteDocumentRowData = {
+    body?: never;
+    path: {
+        documentId: string;
+        rowId: string;
+    };
+    query?: never;
+    url: '/api/v1/documents/{documentId}/rows/{rowId}';
+};
+
+export type DeleteDocumentRowErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type DeleteDocumentRowError = DeleteDocumentRowErrors[keyof DeleteDocumentRowErrors];
+
+export type DeleteDocumentRowResponses = {
+    /**
+     * The document after the change.
+     */
+    200: Document;
+};
+
+export type DeleteDocumentRowResponse = DeleteDocumentRowResponses[keyof DeleteDocumentRowResponses];
 
 export type UpdateDocumentRowData = {
     body: DocumentRowInput;

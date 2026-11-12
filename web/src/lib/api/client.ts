@@ -553,6 +553,11 @@ export function updateDocumentRow(id: string, rowId: string, input: DocumentRowI
 	return call<Document>(fetchFn, `${itemPath('documents', id)}/rows/${encodeURIComponent(rowId)}`, jsonRequest('PUT', input));
 }
 
+// deleteDocumentRow memanggil DELETE /api/v1/documents/{id}/rows/{rowId} (E-2, M4.2).
+export function deleteDocumentRow(id: string, rowId: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<Document>> {
+	return call<Document>(fetchFn, `${itemPath('documents', id)}/rows/${encodeURIComponent(rowId)}`, { method: 'DELETE' });
+}
+
 // Form set (langkah D, D-133, D-139).
 
 // listFormSets memanggil GET /api/v1/form-sets (L-2).

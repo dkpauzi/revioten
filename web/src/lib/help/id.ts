@@ -237,13 +237,15 @@ export const helpId: HelpContent = {
 				'Buka {navGroupDocuments}, lalu {navDocuments}, dan pilih {documentCustomer}.',
 				'Di bagian {documentCreateTitle}, pilih {documentNumber}, centang {documentModels} yang dicakup dokumen, lalu tekan {documentCreate}. Nomornya menjadi In use.',
 				'Buka dokumen itu dari daftar. Isi field header dan tekan {documentHeaderSave}.',
-				'Di bagian {documentRowAddTitle}, isi {documentOperationNumber}, pilih {documentProcess}, isi kolomnya, lalu tekan {documentRowAdd}.',
-				'Tekan {formatEdit} pada satu baris untuk mengubahnya, lalu {documentRowSave}. Baris itu tetap di tempatnya.'
+				'Tekan {documentRowAdd} untuk menambah baris kosong di akhir sheet.',
+				'Klik satu sel lalu ketik, seperti di Excel. Tekan Enter atau klik di tempat lain, dan barisnya tersimpan. Di kolom nomor operasi dan proses, Anda memilih nilai milik baris itu sendiri.',
+				'Tekan {documentRowDelete} pada satu baris untuk menghapusnya. Baris sesudahnya bergeser naik.',
+				'Tab di atas tabel membuka dokumen lain di set yang sama: PFD, PFMEA, dan Control Plan.'
 			],
 			tips: [
 				'Nomor operasi dan nama proses adalah kolom yang diisi dari baris; keduanya tidak diketik di kolomnya sendiri.',
 				'RPN dan Action Priority dihitung dan tidak bisa diketik.',
-				'Workbook mirip Excel dengan tab sheet menyusul di langkah berikutnya (D-145).'
+				'Kolom abu-abu diisi atau dihitung sistem dan tidak bisa diketik.'
 			]
 		},
 		{

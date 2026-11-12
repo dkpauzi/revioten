@@ -596,6 +596,11 @@ func (f *fakeDocuments) AddRow(_ context.Context, _ access.Actor, id string, in 
 	return f.doc, f.err
 }
 
+func (f *fakeDocuments) DeleteRow(_ context.Context, _ access.Actor, id, rowID string) (document.Document, error) {
+	f.got = called{method: "DeleteRow", id: id, input: rowID}
+	return f.doc, f.err
+}
+
 func (f *fakeDocuments) UpdateRow(_ context.Context, _ access.Actor, id, rowID string, in document.RowUpdate) (document.Document, error) {
 	f.got, f.gotUpd = called{method: "UpdateRow", id: id, input: rowID}, in
 	return f.doc, f.err

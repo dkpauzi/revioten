@@ -97,8 +97,20 @@ type Document struct {
 	RouteReason      string // "" bila memakai rute bawaan
 	Header           map[string]any
 	Rows             []Row // menurut urutan, tidak pernah nil
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
+	// Set berisi dokumen satu set, termasuk dokumen ini, menurut urutan jenis
+	// dokumen (M4.2). Dokumen dari nomor tunggal hanya berisi dirinya sendiri.
+	Set       []SetMember
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+// SetMember adalah satu dokumen di set yang sama (M4.2): nomornya didaftarkan
+// dalam satu pendaftaran set PFD, PFMEA, dan CP (M2.4). Workbook memakainya
+// sebagai tab sheet.
+type SetMember struct {
+	ID           string
+	Number       string
+	DocumentType TypeRef
 }
 
 // Summary adalah satu dokumen di daftar.
@@ -426,6 +438,28 @@ func (s *Service) UpdateRow(ctx context.Context, actor access.Actor, id, rowID s
 	})
 }
 
+// DeleteRow menghapus satu baris draft (E-2, M4.2). Baris sesudahnya bergeser
+// naik; ID baris lain tetap.
+func (s *Service) DeleteRow(ctx context.Context, actor access.Actor, id, rowID string) (Document, error) {
+	return s.edit(ctx, actor, id, func(q *db.Queries, d Document, _ template.FormatVersion) (string, map[string]string, error) {
+		if !db.IsUUID(rowID) || !slices.ContainsFunc(d.Rows, func(r Row) bool { return r.ID == rowID }) {
+			return "", nil, problem.ErrNotFound
+		}
+		gone, err := q.DeleteDocumentRow(ctx, db.DeleteDocumentRowParams{ID: rowID, DocumentID: d.ID})
+		if err != nil {
+			return "", nil, err
+		}
+		if err := q.ShiftRowsUp(ctx, db.ShiftRowsUpParams{DocumentID: d.ID, Position: gone.Position}); err != nil {
+			return "", nil, err
+		}
+		details := map[string]string{"position": strconv.Itoa(int(gone.Position))}
+		if gone.OperationNumber != nil {
+			details["operation_number"] = *gone.OperationNumber
+		}
+		return audit.ActionDocumentRowRemoved, details, nil
+	})
+}
+
 // edit menjalankan satu perubahan dokumen draft di dalam transaksi: hak E-2
 // untuk customer dokumen itu, dokumen dikunci, lalu entri audit.
 func (s *Service) edit(ctx context.Context, actor access.Actor, id string,
@@ -535,6 +569,14 @@ func getDocument(ctx context.Context, q *db.Queries, id string) (Document, error
 	}
 	for _, p := range parts {
 		d.PartNumbers = append(d.PartNumbers, PartRef{ID: p.ID, Number: p.Number, Name: deref(p.Name)})
+	}
+	members, err := q.ListDocumentSet(ctx, id)
+	if err != nil {
+		return Document{}, err
+	}
+	d.Set = make([]SetMember, 0, len(members))
+	for _, m := range members {
+		d.Set = append(d.Set, SetMember{ID: m.ID, Number: m.Number, DocumentType: TypeRef{ID: m.DocumentTypeID, Key: deref(m.DocumentTypeKey), Name: m.DocumentTypeName}})
 	}
 	rows, err := q.ListDocumentRows(ctx, id)
 	if err != nil {

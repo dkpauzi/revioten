@@ -170,6 +170,7 @@ type DocumentService interface {
 	SetHeader(ctx context.Context, actor access.Actor, id string, header map[string]any) (document.Document, error)
 	AddRow(ctx context.Context, actor access.Actor, id string, in document.NewRow) (document.Document, error)
 	UpdateRow(ctx context.Context, actor access.Actor, id, rowID string, in document.RowUpdate) (document.Document, error)
+	DeleteRow(ctx context.Context, actor access.Actor, id, rowID string) (document.Document, error)
 }
 
 // SettingsService adalah operasi pengaturan sistem yang dipakai API (M1.8).

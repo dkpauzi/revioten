@@ -84,6 +84,15 @@ func (a *apiServer) UpdateDocumentRow(ctx context.Context, req UpdateDocumentRow
 	return UpdateDocumentRow200JSONResponse(toAPIDocument(d)), nil
 }
 
+// DeleteDocumentRow menjawab DELETE /api/v1/documents/{documentId}/rows/{rowId} (M4.2).
+func (a *apiServer) DeleteDocumentRow(ctx context.Context, req DeleteDocumentRowRequestObject) (DeleteDocumentRowResponseObject, error) {
+	d, err := a.documents.DeleteRow(ctx, actorFrom(ctx), req.DocumentId, req.RowId)
+	if err != nil {
+		return nil, err
+	}
+	return DeleteDocumentRow200JSONResponse(toAPIDocument(d)), nil
+}
+
 // toAPIDocument mengubah Document domain menjadi Document kontrak API.
 func toAPIDocument(d document.Document) Document {
 	out := Document{
@@ -93,6 +102,10 @@ func toAPIDocument(d document.Document) Document {
 		FormatVersionId: d.FormatVersionID, Header: d.Header, CreatedAt: d.CreatedAt, UpdatedAt: d.UpdatedAt,
 		Models: make([]NamedRef, 0, len(d.Models)), PartNumbers: make([]DocumentPartNumber, 0, len(d.PartNumbers)),
 		Rows: make([]DocumentRow, 0, len(d.Rows)), RouteReason: optional(d.RouteReason),
+		Set: make([]DocumentSetMember, 0, len(d.Set)),
+	}
+	for _, m := range d.Set {
+		out.Set = append(out.Set, DocumentSetMember{Id: m.ID, Number: m.Number, DocumentType: DocumentTypeRef{Id: m.DocumentType.ID, Key: DocumentTypeRefKey(m.DocumentType.Key), Name: m.DocumentType.Name}})
 	}
 	if out.Header == nil {
 		out.Header = map[string]any{}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { FormatField } from './api/gen/index.ts';
-import { cellText, cleanContent, typedFields } from './documents.ts';
+import { cellText, cleanContent, gridRow, rowInputFrom, typedFields } from './documents.ts';
 
 const field = (over: Partial<FormatField>): FormatField => ({
 	id: 'f', area: 'row', kind: 'text', label: 'L', position: 1, required: false, hidden: false, ...over
@@ -37,5 +37,22 @@ describe('cellText', () => {
 		expect(cellText(fields[3], row)).toBe('Alpha');
 		expect(cellText(fields[2], row)).toBe('Paste');
 		expect(cellText(fields[4], row)).toBe('');
+	});
+});
+
+describe('gridRow dan rowInputFrom', () => {
+	const format = { fields } as unknown as Parameters<typeof rowInputFrom>[0];
+	it('mengubah baris menjadi data tabel dan kembali menjadi isian baris', () => {
+		const data = gridRow({ id: 'r', position: 2, process_id: 'p-1', operation_number: '10', content: { txt: 'Paste', sev: 8 } });
+		expect(data).toEqual({ id: 'r', position: 2, _process: 'p-1', _operation: '10', txt: 'Paste', sev: 8 });
+		expect(rowInputFrom(format, { ...data, txt: ' Paste height ', sel: '' })).toEqual({
+			process_id: 'p-1',
+			operation_number: '10',
+			content: { txt: 'Paste height', sev: 8 }
+		});
+	});
+
+	it('tidak mengirim proses dan nomor operasi yang kosong', () => {
+		expect(rowInputFrom(format, { id: 'r', position: 1, _process: '', _operation: ' ' })).toEqual({ content: {} });
 	});
 });
