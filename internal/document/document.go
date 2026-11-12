@@ -1,0 +1,562 @@
+// Package document berisi dokumen PFD, PFMEA, dan CP beserta barisnya
+// (Tahap 4, M4.1).
+//
+// Satu dokumen:
+//   - memakai satu nomor register (satu nomor satu dokumen), dan nomor itu
+//     menjadi In use;
+//   - milik satu customer (hook portal, brief bagian 17) dan mencakup satu
+//     atau lebih model serta part number (R-DOC-08);
+//   - memakai versi terbit terakhir form set customer itu, sehingga format
+//     setiap sheet sudah pasti dan tidak berubah (D-133);
+//   - memakai rute approval bawaan customer, atau rute lain dengan alasan
+//     yang tercatat di audit log (D-47);
+//   - berisi header dan baris. Isinya JSONB per ID field format, diperiksa
+//     terhadap versi format itu (R-DOC-01). Baris punya ID tetap dan urutan
+//     sendiri (R-DOC-02), serta proses master dan nomor operasi sebagai
+//     atribut baris, tempat kolom terisi otomatis membaca isinya (D-122, D-123).
+//
+// Dokumen baru selalu draft. Revisi, rilis, dan snapshot datang di Tahap 5 dan 6.
+package document
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"slices"
+	"strconv"
+	"time"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/dkpauzi/revioten/internal/access"
+	"github.com/dkpauzi/revioten/internal/audit"
+	"github.com/dkpauzi/revioten/internal/db"
+	"github.com/dkpauzi/revioten/internal/problem"
+	"github.com/dkpauzi/revioten/internal/template"
+)
+
+// StatusDraft adalah satu-satunya status dokumen sampai Tahap 5.
+const StatusDraft = "draft"
+
+// Batas isian. ASUMSI E-90 (Terbuka): nomor operasi paling banyak 20 karakter, alasan
+// rute 500 karakter, dan paling banyak 1.000 baris per dokumen.
+const (
+	maxOperationNumber = 20
+	maxRouteReason     = 500
+	maxRows            = 1000
+)
+
+// TypeRef adalah jenis dokumen.
+type TypeRef struct {
+	ID   string
+	Key  string // pfd, pfmea, atau cp
+	Name string
+}
+
+// Ref adalah rujukan bernama: model atau rute.
+type Ref struct {
+	ID   string
+	Name string
+}
+
+// PartRef adalah satu part number yang dicakup dokumen.
+type PartRef struct {
+	ID     string
+	Number string
+	Name   string
+}
+
+// Row adalah satu baris dokumen.
+type Row struct {
+	ID              string // tetap selamanya (R-DOC-02)
+	Position        int    // urutan, mulai 1
+	ProcessID       string // "" bila belum dipilih
+	ProcessName     string // nama tampilan proses yang berlaku sekarang (D-06)
+	OperationNumber string
+	Content         map[string]any // per ID kolom format
+}
+
+// Document adalah satu dokumen lengkap dengan header dan barisnya.
+type Document struct {
+	ID               string
+	NumberID         string
+	Number           string
+	CustomerID       string
+	CustomerCode     string
+	DocumentType     TypeRef
+	Revision         int
+	Status           string
+	FormSetVersionID string
+	FormSetName      string
+	FormatVersionID  string // versi format sheet dokumen ini
+	Models           []Ref  // tidak pernah nil
+	PartNumbers      []PartRef
+	Route            *Ref   // nil bila belum ada rute
+	RouteReason      string // "" bila memakai rute bawaan
+	Header           map[string]any
+	Rows             []Row // menurut urutan, tidak pernah nil
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+}
+
+// Summary adalah satu dokumen di daftar.
+type Summary struct {
+	ID           string
+	Number       string
+	DocumentType TypeRef
+	Revision     int
+	Status       string
+	FormSetName  string
+	RowCount     int
+	UpdatedAt    time.Time
+}
+
+// NewDocument adalah isian dokumen baru.
+type NewDocument struct {
+	NumberID      string
+	ModelIDs      []string
+	PartNumberIDs []string
+	// RouteID kosong berarti rute bawaan customer. Rute lain butuh alasan (D-47).
+	RouteID     string
+	RouteReason string
+}
+
+// NewRow adalah isian baris baru; baris baru ditaruh di akhir.
+type NewRow struct {
+	ProcessID       string
+	OperationNumber string
+	Content         map[string]any
+}
+
+// RowUpdate adalah isi baru satu baris. Semua isian dikirim utuh.
+type RowUpdate struct {
+	ProcessID       string
+	OperationNumber string
+	Content         map[string]any
+}
+
+// Service membuat, membaca, dan mengubah dokumen.
+type Service struct {
+	pool  *pgxpool.Pool
+	q     *db.Queries
+	authz access.Authorizer
+}
+
+// NewService membuat Service yang memakai pool database.
+func NewService(pool *pgxpool.Pool, authz access.Authorizer) *Service {
+	return &Service{pool: pool, q: db.New(pool), authz: authz}
+}
+
+func invalid(field, code, message string) *problem.Problem {
+	return &problem.Problem{Field: field, Code: code, Message: message}
+}
+
+func problems(ps ...*problem.Problem) error {
+	var list []problem.Problem
+	for _, p := range ps {
+		if p != nil {
+			list = append(list, *p)
+		}
+	}
+	if len(list) == 0 {
+		return nil
+	}
+	return &problem.ValidationError{Problems: list}
+}
+
+func optional(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
+}
+
+func deref(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
+}
+
+// Create membuat dokumen draft dari satu nomor register (E-2 untuk customer nomor itu).
+func (s *Service) Create(ctx context.Context, actor access.Actor, in NewDocument) (Document, error) {
+	if in.NumberID == "" {
+		return Document{}, problems(invalid("document_number_id", problem.Required, "Choose the document number."))
+	}
+	if !db.IsUUID(in.NumberID) {
+		return Document{}, problems(invalid("document_number_id", problem.InvalidFormat, "Choose an existing document number."))
+	}
+	number, err := s.q.GetNumberForDocument(ctx, in.NumberID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return Document{}, problems(invalid("document_number_id", problem.InvalidFormat, "Choose an existing document number."))
+	}
+	if err != nil {
+		return Document{}, fmt.Errorf("membaca nomor: %w", err)
+	}
+	if err := s.authz.Authorize(ctx, actor, access.EditDrafts, access.Resource{CustomerID: number.CustomerID}); err != nil {
+		return Document{}, err
+	}
+
+	var id string
+	err = db.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
+		q := s.q.WithTx(tx)
+		// Nomor dikunci, supaya dua permintaan tidak memakai nomor yang sama.
+		number, err := q.GetNumberForDocument(ctx, in.NumberID)
+		if err != nil {
+			return err
+		}
+		used, err := q.DocumentExistsForNumber(ctx, number.ID)
+		if err != nil {
+			return err
+		}
+		if used || number.Status != "reserved" {
+			return problems(invalid("document_number_id", problem.NotAllowed, "Choose a Reserved number that no document uses yet."))
+		}
+		customer, err := q.GetCustomerForDocument(ctx, number.CustomerID)
+		if err != nil {
+			return err
+		}
+		list := s.checkScope(ctx, q, number.CustomerID, in)
+		route, reason, routeProblem := checkRoute(ctx, q, customer.DefaultRouteID, in)
+		list = append(list, routeProblem)
+		set, setProblem := formSetOf(ctx, q, customer.DefaultFormSetID)
+		list = append(list, setProblem)
+		if err := problems(list...); err != nil {
+			return err
+		}
+		formatID := map[string]string{"pfd": set.PfdFormatVersionID, "pfmea": set.PfmeaFormatVersionID, "cp": set.CpFormatVersionID}[deref(number.DocumentTypeKey)]
+		if formatID == "" {
+			return problems(invalid("document_number_id", problem.NotAllowed, "Only PFD, PFMEA, and CP numbers make documents."))
+		}
+
+		id, err = q.CreateDocument(ctx, db.CreateDocumentParams{
+			DocumentNumberID: number.ID, CustomerID: number.CustomerID, DocumentTypeID: number.DocumentTypeID,
+			Revision: number.InitialRevision, FormSetVersionID: set.ID, FormatVersionID: formatID,
+			ApprovalRouteID: route, RouteReason: optional(reason), CreatedByPersonID: actor.PersonID,
+		})
+		if err != nil {
+			return err
+		}
+		for _, m := range in.ModelIDs {
+			if err := q.AddDocumentModel(ctx, db.AddDocumentModelParams{DocumentID: id, ModelID: m}); err != nil {
+				return err
+			}
+		}
+		for _, p := range in.PartNumberIDs {
+			if err := q.AddDocumentPartNumber(ctx, db.AddDocumentPartNumberParams{DocumentID: id, PartNumberID: p}); err != nil {
+				return err
+			}
+		}
+		// Nomor yang sudah dipakai dokumen menjadi In use (R-NUM-04).
+		now := time.Now()
+		if err := q.SetDocumentNumberStatus(ctx, db.SetDocumentNumberStatusParams{ID: number.ID, Status: "in_use", StatusChangedAt: &now}); err != nil {
+			return err
+		}
+		details := map[string]string{"document_number": number.Number, "form_set": set.Name}
+		if reason != "" {
+			details["route_reason"] = reason
+		}
+		return audit.Record(ctx, q, actor, audit.Event{Action: audit.ActionDocumentCreated, TargetType: audit.TargetDocument, TargetID: id, Details: details})
+	})
+	if err != nil {
+		return Document{}, result(err, "membuat dokumen")
+	}
+	return getDocument(ctx, s.q, id)
+}
+
+// checkScope memeriksa model dan part number: minimal satu model, semua milik
+// customer nomor itu, dan part number milik salah satu model yang dipilih.
+func (s *Service) checkScope(ctx context.Context, q *db.Queries, customerID string, in NewDocument) []*problem.Problem {
+	var list []*problem.Problem
+	if len(in.ModelIDs) == 0 {
+		return append(list, invalid("model_ids", problem.Required, "Choose at least one model."))
+	}
+	for _, m := range in.ModelIDs {
+		owner, err := q.GetModelOwner(ctx, m)
+		if !db.IsUUID(m) || err != nil || owner != customerID {
+			list = append(list, invalid("model_ids", problem.NotAllowed, "Choose models of the customer of this document number."))
+			break
+		}
+	}
+	for _, p := range in.PartNumberIDs {
+		owner, err := q.GetPartNumberOwner(ctx, p)
+		if !db.IsUUID(p) || err != nil || owner.CustomerID != customerID || !slices.Contains(in.ModelIDs, owner.ModelID) {
+			list = append(list, invalid("part_number_ids", problem.NotAllowed, "Choose part numbers of the chosen models."))
+			break
+		}
+	}
+	return list
+}
+
+// checkRoute menentukan rute: bawaan customer, atau rute lain dengan alasan (D-47).
+func checkRoute(ctx context.Context, q *db.Queries, defaultRoute *string, in NewDocument) (*string, string, *problem.Problem) {
+	if in.RouteID == "" || (defaultRoute != nil && *defaultRoute == in.RouteID) {
+		return defaultRoute, "", nil
+	}
+	exists, err := q.RouteExists(ctx, in.RouteID)
+	if !db.IsUUID(in.RouteID) || err != nil || !exists {
+		return nil, "", invalid("route_id", problem.InvalidFormat, "Choose an existing approval route.")
+	}
+	reason, p := problem.Text("route_reason", in.RouteReason, true, maxRouteReason)
+	if p != nil {
+		if p.Code == problem.Required {
+			p.Message = "Give the reason for not using the default route of the customer."
+		}
+		return nil, "", p
+	}
+	return &in.RouteID, reason, nil
+}
+
+// formSetOf mengambil versi terbit terakhir form set customer, atau form set bawaan.
+func formSetOf(ctx context.Context, q *db.Queries, chosen *string) (db.LatestPublishedFormSetVersionRow, *problem.Problem) {
+	setID := deref(chosen)
+	if setID == "" {
+		def, err := q.GetDefaultFormSet(ctx)
+		if err != nil {
+			return db.LatestPublishedFormSetVersionRow{}, invalid("form_set", problem.NotAllowed, "There is no default form set.")
+		}
+		setID = def.ID
+	}
+	v, err := q.LatestPublishedFormSetVersion(ctx, setID)
+	if err != nil {
+		return db.LatestPublishedFormSetVersionRow{}, invalid("form_set", problem.NotAllowed,
+			"The form set of this customer has no published version yet. Ask a form approver to publish it.")
+	}
+	return v, nil
+}
+
+// List mengembalikan dokumen satu customer (L-4: lihat draft).
+func (s *Service) List(ctx context.Context, actor access.Actor, customerID string) ([]Summary, error) {
+	if !db.IsUUID(customerID) {
+		return nil, problems(invalid("customer_id", problem.InvalidFormat, "Choose an existing customer."))
+	}
+	if err := s.authz.Authorize(ctx, actor, access.ViewDrafts, access.Resource{CustomerID: customerID}); err != nil {
+		return nil, err
+	}
+	rows, err := s.q.ListDocuments(ctx, customerID)
+	if err != nil {
+		return nil, fmt.Errorf("mengambil dokumen: %w", err)
+	}
+	out := make([]Summary, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, Summary{
+			ID: r.ID, Number: r.Number, DocumentType: TypeRef{Key: deref(r.DocumentTypeKey), Name: r.DocumentTypeName},
+			Revision: int(r.Revision), Status: r.Status, FormSetName: r.FormSetName, RowCount: int(r.RowCount), UpdatedAt: r.UpdatedAt.UTC(),
+		})
+	}
+	return out, nil
+}
+
+// Get mengembalikan satu dokumen lengkap (L-4).
+func (s *Service) Get(ctx context.Context, actor access.Actor, id string) (Document, error) {
+	d, err := s.load(ctx, id)
+	if err != nil {
+		return Document{}, err
+	}
+	if err := s.authz.Authorize(ctx, actor, access.ViewDrafts, access.Resource{CustomerID: d.CustomerID}); err != nil {
+		return Document{}, err
+	}
+	return d, nil
+}
+
+// load membaca dokumen tanpa memeriksa hak; dipakai untuk mencari customer-nya dulu.
+func (s *Service) load(ctx context.Context, id string) (Document, error) {
+	if !db.IsUUID(id) {
+		return Document{}, problem.ErrNotFound
+	}
+	return getDocument(ctx, s.q, id)
+}
+
+// SetHeader mengganti isi header dokumen (E-2).
+func (s *Service) SetHeader(ctx context.Context, actor access.Actor, id string, header map[string]any) (Document, error) {
+	return s.edit(ctx, actor, id, func(q *db.Queries, d Document, format template.FormatVersion) (string, map[string]string, error) {
+		if header == nil {
+			header = map[string]any{}
+		}
+		if err := checkContent(format, template.AreaHeader, header); err != nil {
+			return "", nil, err
+		}
+		data, err := json.Marshal(header)
+		if err != nil {
+			return "", nil, err
+		}
+		if err := q.SetDocumentHeader(ctx, db.SetDocumentHeaderParams{ID: d.ID, Header: data}); err != nil {
+			return "", nil, err
+		}
+		return audit.ActionDocumentHeaderChanged, map[string]string{"fields": strconv.Itoa(len(header))}, nil
+	})
+}
+
+// AddRow menambah satu baris di akhir dokumen (E-2).
+func (s *Service) AddRow(ctx context.Context, actor access.Actor, id string, in NewRow) (Document, error) {
+	return s.edit(ctx, actor, id, func(q *db.Queries, d Document, format template.FormatVersion) (string, map[string]string, error) {
+		if len(d.Rows) >= maxRows {
+			return "", nil, problems(invalid("rows", problem.NotAllowed, "A document has at most 1000 rows."))
+		}
+		operation, content, err := checkRow(ctx, q, format, in.ProcessID, in.OperationNumber, in.Content)
+		if err != nil {
+			return "", nil, err
+		}
+		row, err := q.AddDocumentRow(ctx, db.AddDocumentRowParams{DocumentID: d.ID, ProcessID: optional(in.ProcessID), OperationNumber: optional(operation), Content: content})
+		if err != nil {
+			return "", nil, err
+		}
+		return audit.ActionDocumentRowAdded, map[string]string{"position": strconv.Itoa(int(row.Position))}, nil
+	})
+}
+
+// UpdateRow mengganti isi satu baris (E-2). ID dan urutannya tetap.
+func (s *Service) UpdateRow(ctx context.Context, actor access.Actor, id, rowID string, in RowUpdate) (Document, error) {
+	return s.edit(ctx, actor, id, func(q *db.Queries, d Document, format template.FormatVersion) (string, map[string]string, error) {
+		i := slices.IndexFunc(d.Rows, func(r Row) bool { return r.ID == rowID })
+		if i < 0 {
+			return "", nil, problem.ErrNotFound
+		}
+		operation, content, err := checkRow(ctx, q, format, in.ProcessID, in.OperationNumber, in.Content)
+		if err != nil {
+			return "", nil, err
+		}
+		_, err = q.UpdateDocumentRow(ctx, db.UpdateDocumentRowParams{ID: rowID, DocumentID: d.ID, ProcessID: optional(in.ProcessID), OperationNumber: optional(operation), Content: content})
+		if err != nil {
+			return "", nil, err
+		}
+		return audit.ActionDocumentRowChanged, map[string]string{"position": strconv.Itoa(d.Rows[i].Position)}, nil
+	})
+}
+
+// edit menjalankan satu perubahan dokumen draft di dalam transaksi: hak E-2
+// untuk customer dokumen itu, dokumen dikunci, lalu entri audit.
+func (s *Service) edit(ctx context.Context, actor access.Actor, id string,
+	change func(q *db.Queries, d Document, format template.FormatVersion) (string, map[string]string, error)) (Document, error) {
+	d, err := s.load(ctx, id)
+	if err != nil {
+		return Document{}, err
+	}
+	if err := s.authz.Authorize(ctx, actor, access.EditDrafts, access.Resource{CustomerID: d.CustomerID}); err != nil {
+		return Document{}, err
+	}
+	err = db.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
+		q := s.q.WithTx(tx)
+		if err := q.LockDocument(ctx, id); err != nil {
+			return err
+		}
+		d, err := getDocument(ctx, q, id)
+		if err != nil {
+			return err
+		}
+		format, err := template.LoadFormatVersion(ctx, q, d.FormatVersionID)
+		if err != nil {
+			return err
+		}
+		action, details, err := change(q, d, format)
+		if err != nil {
+			return err
+		}
+		if err := q.TouchDocument(ctx, id); err != nil {
+			return err
+		}
+		return audit.Record(ctx, q, actor, audit.Event{Action: action, TargetType: audit.TargetDocument, TargetID: id, Details: details})
+	})
+	if err != nil {
+		return Document{}, result(err, "mengubah dokumen")
+	}
+	return getDocument(ctx, s.q, id)
+}
+
+// checkRow memeriksa proses, nomor operasi, dan isi satu baris, lalu
+// mengembalikan isi dalam bentuk JSON.
+func checkRow(ctx context.Context, q *db.Queries, format template.FormatVersion, processID, operation string, content map[string]any) (string, []byte, error) {
+	var list []*problem.Problem
+	if processID != "" {
+		exists, err := q.ProcessExists(ctx, processID)
+		if !db.IsUUID(processID) || err != nil || !exists {
+			list = append(list, invalid("process_id", problem.InvalidFormat, "Choose an existing process."))
+		}
+	}
+	operation, p := problem.Text("operation_number", operation, false, maxOperationNumber)
+	list = append(list, p)
+	if err := problems(list...); err != nil {
+		return "", nil, err
+	}
+	if content == nil {
+		content = map[string]any{}
+	}
+	if err := checkContent(format, template.AreaRow, content); err != nil {
+		return "", nil, err
+	}
+	data, err := json.Marshal(content)
+	return operation, data, err
+}
+
+// checkContent memeriksa isi terhadap versi format. Isian wajib yang masih
+// kosong tidak ditolak, karena draft boleh belum lengkap.
+func checkContent(format template.FormatVersion, area string, content map[string]any) error {
+	check := template.CheckContent(format, area, content)
+	if check.Valid() {
+		return nil
+	}
+	return &problem.ValidationError{Problems: check.Problems}
+}
+
+// getDocument membaca satu dokumen beserta model, part number, dan barisnya.
+func getDocument(ctx context.Context, q *db.Queries, id string) (Document, error) {
+	r, err := q.GetDocument(ctx, id)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return Document{}, problem.ErrNotFound
+	}
+	if err != nil {
+		return Document{}, fmt.Errorf("membaca dokumen: %w", err)
+	}
+	d := Document{
+		ID: r.ID, NumberID: r.DocumentNumberID, Number: r.Number, CustomerID: r.CustomerID, CustomerCode: r.CustomerCode,
+		DocumentType: TypeRef{ID: r.DocumentTypeID, Key: deref(r.DocumentTypeKey), Name: r.DocumentTypeName},
+		Revision:     int(r.Revision), Status: r.Status, FormSetVersionID: r.FormSetVersionID, FormSetName: r.FormSetName,
+		FormatVersionID: r.FormatVersionID, RouteReason: deref(r.RouteReason),
+		Models: []Ref{}, PartNumbers: []PartRef{}, Rows: []Row{}, CreatedAt: r.CreatedAt.UTC(), UpdatedAt: r.UpdatedAt.UTC(),
+	}
+	if r.ApprovalRouteID != nil {
+		d.Route = &Ref{ID: *r.ApprovalRouteID, Name: deref(r.RouteName)}
+	}
+	if err := json.Unmarshal(r.Header, &d.Header); err != nil {
+		return Document{}, fmt.Errorf("membaca header: %w", err)
+	}
+	models, err := q.ListDocumentModels(ctx, id)
+	if err != nil {
+		return Document{}, err
+	}
+	for _, m := range models {
+		d.Models = append(d.Models, Ref{ID: m.ID, Name: m.Name})
+	}
+	parts, err := q.ListDocumentPartNumbers(ctx, id)
+	if err != nil {
+		return Document{}, err
+	}
+	for _, p := range parts {
+		d.PartNumbers = append(d.PartNumbers, PartRef{ID: p.ID, Number: p.Number, Name: deref(p.Name)})
+	}
+	rows, err := q.ListDocumentRows(ctx, id)
+	if err != nil {
+		return Document{}, err
+	}
+	for _, row := range rows {
+		item := Row{ID: row.ID, Position: int(row.Position), ProcessID: deref(row.ProcessID), ProcessName: deref(row.ProcessName), OperationNumber: deref(row.OperationNumber)}
+		if err := json.Unmarshal(row.Content, &item.Content); err != nil {
+			return Document{}, fmt.Errorf("membaca baris: %w", err)
+		}
+		d.Rows = append(d.Rows, item)
+	}
+	return d, nil
+}
+
+// result meneruskan penolakan input dan "tidak ada" apa adanya, dan
+// membungkus error lain.
+func result(err error, doing string) error {
+	var invalid *problem.ValidationError
+	var conflict *problem.ConflictError
+	if errors.As(err, &invalid) || errors.As(err, &conflict) || errors.Is(err, problem.ErrNotFound) || errors.Is(err, access.ErrForbidden) {
+		return err
+	}
+	return fmt.Errorf("%s: %w", doing, err)
+}

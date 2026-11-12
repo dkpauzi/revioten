@@ -70,6 +70,10 @@ const actionKeys: Record<string, MessageKey> = {
 	'form_set.version_created': 'auditActionFormSetVersionCreated',
 	'form_set.version_published': 'auditActionFormSetVersionPublished',
 	'form_set.version_approved': 'auditActionFormSetVersionApproved',
+	'document.created': 'auditActionDocumentCreated',
+	'document.header_changed': 'auditActionDocumentHeaderChanged',
+	'document.row_added': 'auditActionDocumentRowAdded',
+	'document.row_changed': 'auditActionDocumentRowChanged',
 	'format_template.version_approved': 'auditActionFormatVersionApproved',
 	'format_template.version_published': 'auditActionFormatVersionPublished',
 	'format_template.version_created': 'auditActionFormatVersionCreated',
@@ -121,7 +125,10 @@ const detailKeys: Record<string, MessageKey> = {
 	changed_combinations: 'auditDetailChangedCombinations',
 	form_set: 'auditDetailFormSet',
 	pending: 'auditDetailPending',
-	form_approval_mode: 'auditDetailFormApprovalMode'
+	form_approval_mode: 'auditDetailFormApprovalMode',
+	route_reason: 'auditDetailRouteReason',
+	document_number: 'auditDetailDocumentNumber',
+	fields: 'auditDetailFields'
 };
 
 const reasonKeys: Record<string, MessageKey> = {

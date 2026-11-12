@@ -35,6 +35,10 @@ import type {
 	NewDocumentNumberSet,
 	NextDocumentNumber,
 	ApRule,
+	Document,
+	DocumentList,
+	DocumentRowInput,
+	NewDocument,
 	FormSet,
 	FormSetList,
 	FormSetSheets,
@@ -517,6 +521,38 @@ export function renameFormatTemplate(
 }
 
 // getFormatVersion memanggil GET /api/v1/format-template-versions/{id}.
+// Dokumen (M4.1).
+
+// listDocuments memanggil GET /api/v1/documents?customer_id= (L-4).
+export function listDocuments(customerId: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<DocumentList>> {
+	return call<DocumentList>(fetchFn, `/api/v1/documents?customer_id=${encodeURIComponent(customerId)}`, { method: 'GET' });
+}
+
+// createDocument memanggil POST /api/v1/documents (E-2).
+export function createDocument(input: NewDocument, fetchFn: typeof fetch = fetch): Promise<ApiResult<Document>> {
+	return call<Document>(fetchFn, '/api/v1/documents', jsonRequest('POST', input));
+}
+
+// getDocument memanggil GET /api/v1/documents/{id} (L-4).
+export function getDocument(id: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<Document>> {
+	return call<Document>(fetchFn, itemPath('documents', id), { method: 'GET' });
+}
+
+// setDocumentHeader memanggil PUT /api/v1/documents/{id}/header (E-2).
+export function setDocumentHeader(id: string, header: Record<string, unknown>, fetchFn: typeof fetch = fetch): Promise<ApiResult<Document>> {
+	return call<Document>(fetchFn, itemPath('documents', id) + '/header', jsonRequest('PUT', { header }));
+}
+
+// addDocumentRow memanggil POST /api/v1/documents/{id}/rows (E-2).
+export function addDocumentRow(id: string, input: DocumentRowInput, fetchFn: typeof fetch = fetch): Promise<ApiResult<Document>> {
+	return call<Document>(fetchFn, itemPath('documents', id) + '/rows', jsonRequest('POST', input));
+}
+
+// updateDocumentRow memanggil PUT /api/v1/documents/{id}/rows/{rowId} (E-2).
+export function updateDocumentRow(id: string, rowId: string, input: DocumentRowInput, fetchFn: typeof fetch = fetch): Promise<ApiResult<Document>> {
+	return call<Document>(fetchFn, `${itemPath('documents', id)}/rows/${encodeURIComponent(rowId)}`, jsonRequest('PUT', input));
+}
+
 // Form set (langkah D, D-133, D-139).
 
 // listFormSets memanggil GET /api/v1/form-sets (L-2).

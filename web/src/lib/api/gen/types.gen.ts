@@ -958,6 +958,107 @@ export type FormatTemplateRename = {
     name: string;
 };
 
+export type DocumentList = {
+    items: Array<DocumentSummary>;
+};
+
+export type DocumentSummary = {
+    id: string;
+    number: string;
+    document_type: DocumentTypeRef;
+    revision: number;
+    status: 'draft';
+    form_set_name: string;
+    row_count: number;
+    updated_at: string;
+};
+
+export type NewDocument = {
+    document_number_id: string;
+    model_ids: Array<string>;
+    part_number_ids?: Array<string>;
+    /**
+     * Leave it out to use the default route of the customer.
+     */
+    route_id?: string;
+    /**
+     * Required when route_id is not the default route of the customer (D-47).
+     */
+    route_reason?: string;
+};
+
+export type Document = {
+    id: string;
+    document_number_id: string;
+    number: string;
+    customer_id: string;
+    customer_code: string;
+    document_type: DocumentTypeRef;
+    revision: number;
+    status: 'draft';
+    form_set_version_id: string;
+    form_set_name: string;
+    /**
+     * The format template version of the sheet of this document.
+     */
+    format_version_id: string;
+    models: Array<NamedRef>;
+    part_numbers: Array<DocumentPartNumber>;
+    route?: NamedRef;
+    route_reason?: string;
+    /**
+     * Header content keyed by header field ID.
+     */
+    header: {
+        [key: string]: unknown;
+    };
+    rows: Array<DocumentRow>;
+    created_at: string;
+    updated_at: string;
+};
+
+export type NamedRef = {
+    id: string;
+    name: string;
+};
+
+export type DocumentPartNumber = {
+    id: string;
+    number: string;
+    name?: string;
+};
+
+export type DocumentRow = {
+    /**
+     * Fixed for the life of the row (R-DOC-02).
+     */
+    id: string;
+    position: number;
+    process_id?: string;
+    process_name?: string;
+    operation_number?: string;
+    /**
+     * Row content keyed by column field ID.
+     */
+    content: {
+        [key: string]: unknown;
+    };
+};
+
+export type DocumentRowInput = {
+    process_id?: string;
+    operation_number?: string;
+    content: {
+        [key: string]: unknown;
+    };
+};
+
+export type DocumentHeader = {
+    header: {
+        [key: string]: unknown;
+    };
+};
+
 export type FormSetList = {
     items: Array<FormSet>;
     /**
@@ -1561,6 +1662,10 @@ export type FormatTemplateId = string;
 export type FormatVersionId = string;
 
 export type FormatFieldId = string;
+
+export type DocumentId = string;
+
+export type RowId = string;
 
 export type FormSetId = string;
 
@@ -4303,6 +4408,215 @@ export type SaveFormatSymbolsResponses = {
 };
 
 export type SaveFormatSymbolsResponse = SaveFormatSymbolsResponses[keyof SaveFormatSymbolsResponses];
+
+export type ListDocumentsData = {
+    body?: never;
+    path?: never;
+    query: {
+        customer_id: string;
+    };
+    url: '/api/v1/documents';
+};
+
+export type ListDocumentsErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ListDocumentsError = ListDocumentsErrors[keyof ListDocumentsErrors];
+
+export type ListDocumentsResponses = {
+    /**
+     * The documents, by number.
+     */
+    200: DocumentList;
+};
+
+export type ListDocumentsResponse = ListDocumentsResponses[keyof ListDocumentsResponses];
+
+export type CreateDocumentData = {
+    body: NewDocument;
+    path?: never;
+    query?: never;
+    url: '/api/v1/documents';
+};
+
+export type CreateDocumentErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type CreateDocumentError = CreateDocumentErrors[keyof CreateDocumentErrors];
+
+export type CreateDocumentResponses = {
+    /**
+     * The document was made.
+     */
+    201: Document;
+};
+
+export type CreateDocumentResponse = CreateDocumentResponses[keyof CreateDocumentResponses];
+
+export type GetDocumentData = {
+    body?: never;
+    path: {
+        documentId: string;
+    };
+    query?: never;
+    url: '/api/v1/documents/{documentId}';
+};
+
+export type GetDocumentErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type GetDocumentError = GetDocumentErrors[keyof GetDocumentErrors];
+
+export type GetDocumentResponses = {
+    /**
+     * The document.
+     */
+    200: Document;
+};
+
+export type GetDocumentResponse = GetDocumentResponses[keyof GetDocumentResponses];
+
+export type SetDocumentHeaderData = {
+    body: DocumentHeader;
+    path: {
+        documentId: string;
+    };
+    query?: never;
+    url: '/api/v1/documents/{documentId}/header';
+};
+
+export type SetDocumentHeaderErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type SetDocumentHeaderError = SetDocumentHeaderErrors[keyof SetDocumentHeaderErrors];
+
+export type SetDocumentHeaderResponses = {
+    /**
+     * The document after the change.
+     */
+    200: Document;
+};
+
+export type SetDocumentHeaderResponse = SetDocumentHeaderResponses[keyof SetDocumentHeaderResponses];
+
+export type AddDocumentRowData = {
+    body: DocumentRowInput;
+    path: {
+        documentId: string;
+    };
+    query?: never;
+    url: '/api/v1/documents/{documentId}/rows';
+};
+
+export type AddDocumentRowErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type AddDocumentRowError = AddDocumentRowErrors[keyof AddDocumentRowErrors];
+
+export type AddDocumentRowResponses = {
+    /**
+     * The document after the change.
+     */
+    201: Document;
+};
+
+export type AddDocumentRowResponse = AddDocumentRowResponses[keyof AddDocumentRowResponses];
+
+export type UpdateDocumentRowData = {
+    body: DocumentRowInput;
+    path: {
+        documentId: string;
+        rowId: string;
+    };
+    query?: never;
+    url: '/api/v1/documents/{documentId}/rows/{rowId}';
+};
+
+export type UpdateDocumentRowErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type UpdateDocumentRowError = UpdateDocumentRowErrors[keyof UpdateDocumentRowErrors];
+
+export type UpdateDocumentRowResponses = {
+    /**
+     * The document after the change.
+     */
+    200: Document;
+};
+
+export type UpdateDocumentRowResponse = UpdateDocumentRowResponses[keyof UpdateDocumentRowResponses];
 
 export type ListFormSetsData = {
     body?: never;

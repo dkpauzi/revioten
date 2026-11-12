@@ -162,6 +162,7 @@ const scopedKeys: Record<string, MessageKey> = {
 	'formSet.approver:taken': 'approvalTaken',
 	'formatTemplate.approver:taken': 'approvalTaken',
 	'formSet.status:not_allowed': 'versionStatusNotAllowed',
+	// Dokumen (M4.1): pesan dari server dipakai bila tidak ada teks khusus.
 	'formatTemplate.approver:not_allowed': 'formSetSameApprover'
 };
 

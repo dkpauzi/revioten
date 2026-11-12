@@ -1497,6 +1497,127 @@ paths:
                 $ref: '#/components/schemas/FormatVersion'
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/documents:
+    get:
+      operationId: listDocuments
+      summary: Documents of one customer (L-4, M4.1)
+      parameters:
+        - name: customer_id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The documents, by number.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentList'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: createDocument
+      summary: Make a draft document from a Reserved document number (E-2, M4.1)
+      description: >-
+        The document uses the latest published version of the form set of its customer (D-133) and the default approval
+        route of the customer, unless another route is given with a reason (D-47). The number becomes In use.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewDocument'
+      responses:
+        '201':
+          description: The document was made.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/documents/{documentId}:
+    get:
+      operationId: getDocument
+      summary: One document with its header and rows (L-4)
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      responses:
+        '200':
+          description: The document.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/documents/{documentId}/header:
+    put:
+      operationId: setDocumentHeader
+      summary: Replace the header content of a draft document (E-2)
+      description: Content is keyed by header field ID of the format version of the document (R-DOC-01).
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentHeader'
+      responses:
+        '200':
+          description: The document after the change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/documents/{documentId}/rows:
+    post:
+      operationId: addDocumentRow
+      summary: Add a row at the end of a draft document (E-2)
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentRowInput'
+      responses:
+        '201':
+          description: The document after the change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/documents/{documentId}/rows/{rowId}:
+    put:
+      operationId: updateDocumentRow
+      summary: Replace the process, operation number, and content of one row (E-2)
+      description: The row keeps its ID and position (R-DOC-02).
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+        - $ref: '#/components/parameters/RowId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentRowInput'
+      responses:
+        '200':
+          description: The document after the change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/form-sets:
     get:
       operationId: listFormSets
@@ -2067,6 +2188,18 @@ components:
         type: string
     FormatFieldId:
       name: formatFieldId
+      in: path
+      required: true
+      schema:
+        type: string
+    DocumentId:
+      name: documentId
+      in: path
+      required: true
+      schema:
+        type: string
+    RowId:
+      name: rowId
       in: path
       required: true
       schema:
@@ -3403,6 +3536,165 @@ components:
       properties:
         name:
           type: string
+    DocumentList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentSummary'
+    DocumentSummary:
+      type: object
+      required: [id, number, document_type, revision, status, form_set_name, row_count, updated_at]
+      properties:
+        id:
+          type: string
+        number:
+          type: string
+        document_type:
+          $ref: '#/components/schemas/DocumentTypeRef'
+        revision:
+          type: integer
+        status:
+          type: string
+          enum: [draft]
+        form_set_name:
+          type: string
+        row_count:
+          type: integer
+        updated_at:
+          type: string
+          format: date-time
+    NewDocument:
+      type: object
+      required: [document_number_id, model_ids]
+      properties:
+        document_number_id:
+          type: string
+        model_ids:
+          type: array
+          items:
+            type: string
+        part_number_ids:
+          type: array
+          items:
+            type: string
+        route_id:
+          type: string
+          description: Leave it out to use the default route of the customer.
+        route_reason:
+          type: string
+          description: Required when route_id is not the default route of the customer (D-47).
+    Document:
+      type: object
+      required: [id, document_number_id, number, customer_id, customer_code, document_type, revision, status, form_set_version_id, form_set_name, format_version_id, models, part_numbers, header, rows, created_at, updated_at]
+      properties:
+        id:
+          type: string
+        document_number_id:
+          type: string
+        number:
+          type: string
+        customer_id:
+          type: string
+        customer_code:
+          type: string
+        document_type:
+          $ref: '#/components/schemas/DocumentTypeRef'
+        revision:
+          type: integer
+        status:
+          type: string
+          enum: [draft]
+        form_set_version_id:
+          type: string
+        form_set_name:
+          type: string
+        format_version_id:
+          type: string
+          description: The format template version of the sheet of this document.
+        models:
+          type: array
+          items:
+            $ref: '#/components/schemas/NamedRef'
+        part_numbers:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentPartNumber'
+        route:
+          $ref: '#/components/schemas/NamedRef'
+        route_reason:
+          type: string
+        header:
+          type: object
+          additionalProperties: true
+          description: Header content keyed by header field ID.
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentRow'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    NamedRef:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+    DocumentPartNumber:
+      type: object
+      required: [id, number]
+      properties:
+        id:
+          type: string
+        number:
+          type: string
+        name:
+          type: string
+    DocumentRow:
+      type: object
+      required: [id, position, content]
+      properties:
+        id:
+          type: string
+          description: Fixed for the life of the row (R-DOC-02).
+        position:
+          type: integer
+        process_id:
+          type: string
+        process_name:
+          type: string
+        operation_number:
+          type: string
+        content:
+          type: object
+          additionalProperties: true
+          description: Row content keyed by column field ID.
+    DocumentRowInput:
+      type: object
+      required: [content]
+      properties:
+        process_id:
+          type: string
+        operation_number:
+          type: string
+        content:
+          type: object
+          additionalProperties: true
+    DocumentHeader:
+      type: object
+      required: [header]
+      properties:
+        header:
+          type: object
+          additionalProperties: true
     FormSetList:
       type: object
       required: [items, customer_defaults]

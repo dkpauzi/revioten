@@ -259,3 +259,9 @@ func (s *ProcessService) NewProcessVersion(ctx context.Context, actor access.Act
 	}
 	return getProcessVersion(ctx, s.q, newID)
 }
+
+// LoadFormatVersion membaca satu versi format lengkap, untuk paket lain yang
+// memeriksa isi terhadap format (dokumen, M4.1). Hak diperiksa pemanggil.
+func LoadFormatVersion(ctx context.Context, q *db.Queries, id string) (FormatVersion, error) {
+	return getVersion(ctx, q, id)
+}

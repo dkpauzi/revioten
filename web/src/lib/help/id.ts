@@ -228,6 +228,25 @@ export const helpId: HelpContent = {
 			]
 		},
 		{
+			id: 'documents',
+			title: 'Dokumen',
+			who: 'Penyusun',
+			intro: 'Dokumen adalah satu PFD, PFMEA, atau Control Plan dengan nomornya sendiri. Dokumen memakai form set customer-nya yang sudah terbit, jadi langkah terbit di bab Form set dikerjakan lebih dulu.',
+			steps: [
+				'Daftarkan dulu nomornya di {navNumbers}. Dokumen butuh nomor berstatus {numberStatusReserved}.',
+				'Buka {navGroupDocuments}, lalu {navDocuments}, dan pilih {documentCustomer}.',
+				'Di bagian {documentCreateTitle}, pilih {documentNumber}, centang {documentModels} yang dicakup dokumen, lalu tekan {documentCreate}. Nomornya menjadi In use.',
+				'Buka dokumen itu dari daftar. Isi field header dan tekan {documentHeaderSave}.',
+				'Di bagian {documentRowAddTitle}, isi {documentOperationNumber}, pilih {documentProcess}, isi kolomnya, lalu tekan {documentRowAdd}.',
+				'Tekan {formatEdit} pada satu baris untuk mengubahnya, lalu {documentRowSave}. Baris itu tetap di tempatnya.'
+			],
+			tips: [
+				'Nomor operasi dan nama proses adalah kolom yang diisi dari baris; keduanya tidak diketik di kolomnya sendiri.',
+				'RPN dan Action Priority dihitung dan tidak bisa diketik.',
+				'Workbook mirip Excel dengan tab sheet menyusul di langkah berikutnya (D-145).'
+			]
+		},
+		{
 			id: 'document-control',
 			title: 'Void, obsolete, dan nomor lama',
 			who: 'Dokumen kontrol',

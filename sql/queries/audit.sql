@@ -26,7 +26,7 @@ SELECT l.seq, l.occurred_at, l.actor_type, l.actor_account_id, a.login AS actor_
        l.action, l.target_type, l.target_id,
        coalesce(ta.login, tc.code, tp.code, tg.name, tm.name, tn.number, tpr.name,
                 tns.factory_code, tdt.name, tsc.code, tct.name, tcs.name, tfm.name,
-                tpo.name, tar.name, tdn.number, tft.name, tptn.name, tfs.name, '') AS target_label,
+                tpo.name, tar.name, tdn.number, tft.name, tptn.name, tfs.name, tdocn.number, '') AS target_label,
        l.details, l.prev_hash, l.hash
 FROM audit_log l
 LEFT JOIN accounts a ON a.id = l.actor_account_id
@@ -53,6 +53,9 @@ LEFT JOIN format_templates tft ON l.target_type = 'format_template' AND tft.id =
 LEFT JOIN process_templates tpt ON l.target_type = 'process_template' AND tpt.id = l.target_id
 LEFT JOIN process_names tptn ON tptn.process_id = tpt.process_id AND tptn.kind = 'display'
 LEFT JOIN form_sets tfs ON l.target_type = 'form_set' AND tfs.id = l.target_id
+-- Dokumen ditampilkan dengan nomornya (M4.1).
+LEFT JOIN documents tdoc ON l.target_type = 'document' AND tdoc.id = l.target_id
+LEFT JOIN document_numbers tdocn ON tdocn.id = tdoc.document_number_id
 WHERE l.seq < sqlc.arg(before)
 ORDER BY l.seq DESC
 LIMIT sqlc.arg(max_entries);

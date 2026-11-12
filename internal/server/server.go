@@ -15,6 +15,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/auth"
 	"github.com/dkpauzi/revioten/internal/change"
 	"github.com/dkpauzi/revioten/internal/customer"
+	"github.com/dkpauzi/revioten/internal/document"
 	"github.com/dkpauzi/revioten/internal/numbering"
 	"github.com/dkpauzi/revioten/internal/process"
 	"github.com/dkpauzi/revioten/internal/product"
@@ -160,6 +161,17 @@ type ProcessTemplateService interface {
 	NewProcessVersion(ctx context.Context, actor access.Actor, templateID string) (template.ProcessVersion, error)
 }
 
+// DocumentService adalah operasi dokumen yang dipakai API (M4.1).
+// *document.Service memenuhinya; test memakai versi palsu.
+type DocumentService interface {
+	List(ctx context.Context, actor access.Actor, customerID string) ([]document.Summary, error)
+	Create(ctx context.Context, actor access.Actor, in document.NewDocument) (document.Document, error)
+	Get(ctx context.Context, actor access.Actor, id string) (document.Document, error)
+	SetHeader(ctx context.Context, actor access.Actor, id string, header map[string]any) (document.Document, error)
+	AddRow(ctx context.Context, actor access.Actor, id string, in document.NewRow) (document.Document, error)
+	UpdateRow(ctx context.Context, actor access.Actor, id, rowID string, in document.RowUpdate) (document.Document, error)
+}
+
 // SettingsService adalah operasi pengaturan sistem yang dipakai API (M1.8).
 // *settings.Service memenuhinya; test memakai versi palsu.
 type SettingsService interface {
@@ -213,6 +225,8 @@ type Deps struct {
 	Templates TemplateService
 	// ProcessTemplates adalah pustaka proses (M3.2).
 	ProcessTemplates ProcessTemplateService
+	// Documents adalah dokumen dan barisnya (M4.1).
+	Documents DocumentService
 	// Logger untuk log server. Bila nil, dipakai slog.Default().
 	Logger *slog.Logger
 }
@@ -232,7 +246,7 @@ func NewHandler(ui fs.FS, deps Deps) http.Handler {
 		db: deps.DB, customers: deps.Customers, auth: deps.Auth, access: deps.Access,
 		audit: deps.Audit, products: deps.Products, processes: deps.Processes,
 		numbering: deps.Numbering, changes: deps.Changes, approval: deps.Approval, settings: deps.Settings,
-		templates: deps.Templates, processTemplates: deps.ProcessTemplates, log: log,
+		templates: deps.Templates, processTemplates: deps.ProcessTemplates, documents: deps.Documents, log: log,
 	}
 
 	// Route dari kontrak didaftarkan oleh kode hasil generate ke mux khusus API.
@@ -288,5 +302,6 @@ type apiServer struct {
 	templates TemplateService
 	// processTemplates adalah pustaka proses (M3.2).
 	processTemplates ProcessTemplateService
+	documents        DocumentService
 	log              *slog.Logger
 }

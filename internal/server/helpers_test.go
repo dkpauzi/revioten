@@ -20,6 +20,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/auth"
 	"github.com/dkpauzi/revioten/internal/change"
 	"github.com/dkpauzi/revioten/internal/customer"
+	"github.com/dkpauzi/revioten/internal/document"
 	"github.com/dkpauzi/revioten/internal/numbering"
 	"github.com/dkpauzi/revioten/internal/process"
 	"github.com/dkpauzi/revioten/internal/product"
@@ -558,6 +559,48 @@ func (f *fakeProcessTemplates) UpdatePoint(_ context.Context, _ access.Actor, ve
 	return f.version, f.err
 }
 
+// fakeDocuments meniru document.Service.
+type fakeDocuments struct {
+	list   []document.Summary
+	doc    document.Document
+	err    error
+	got    called
+	gotNew document.NewDocument
+	gotRow document.NewRow
+	gotUpd document.RowUpdate
+	header map[string]any
+}
+
+func (f *fakeDocuments) List(_ context.Context, _ access.Actor, customerID string) ([]document.Summary, error) {
+	f.got = called{method: "List", id: customerID}
+	return f.list, f.err
+}
+
+func (f *fakeDocuments) Create(_ context.Context, _ access.Actor, in document.NewDocument) (document.Document, error) {
+	f.got, f.gotNew = called{method: "Create"}, in
+	return f.doc, f.err
+}
+
+func (f *fakeDocuments) Get(_ context.Context, _ access.Actor, id string) (document.Document, error) {
+	f.got = called{method: "Get", id: id}
+	return f.doc, f.err
+}
+
+func (f *fakeDocuments) SetHeader(_ context.Context, _ access.Actor, id string, header map[string]any) (document.Document, error) {
+	f.got, f.header = called{method: "SetHeader", id: id}, header
+	return f.doc, f.err
+}
+
+func (f *fakeDocuments) AddRow(_ context.Context, _ access.Actor, id string, in document.NewRow) (document.Document, error) {
+	f.got, f.gotRow = called{method: "AddRow", id: id}, in
+	return f.doc, f.err
+}
+
+func (f *fakeDocuments) UpdateRow(_ context.Context, _ access.Actor, id, rowID string, in document.RowUpdate) (document.Document, error) {
+	f.got, f.gotUpd = called{method: "UpdateRow", id: id, input: rowID}, in
+	return f.doc, f.err
+}
+
 // fakeApproval meniru approval.Service.
 type fakeApproval struct {
 	positions []approval.Position
@@ -815,6 +858,9 @@ func newTestServer(t *testing.T, ui fs.FS, deps Deps) testServer {
 	}
 	if deps.ProcessTemplates == nil {
 		deps.ProcessTemplates = &fakeProcessTemplates{}
+	}
+	if deps.Documents == nil {
+		deps.Documents = &fakeDocuments{}
 	}
 	var log bytes.Buffer
 	deps.Logger = slog.New(slog.NewTextHandler(&log, nil))

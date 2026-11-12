@@ -84,6 +84,28 @@ type CustomerCode struct {
 	ValidUntil *time.Time
 }
 
+type Document struct {
+	ID                string
+	DocumentNumberID  string
+	CustomerID        string
+	DocumentTypeID    string
+	Revision          int16
+	Status            string
+	FormSetVersionID  string
+	FormatVersionID   string
+	ApprovalRouteID   *string
+	RouteReason       *string
+	Header            []byte
+	CreatedByPersonID string
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
+}
+
+type DocumentModel struct {
+	DocumentID string
+	ModelID    string
+}
+
 type DocumentNumber struct {
 	ID              string
 	Number          string
@@ -97,6 +119,22 @@ type DocumentNumber struct {
 	StatusReason    *string
 	StatusChangedAt *time.Time
 	CreatedAt       time.Time
+}
+
+type DocumentPartNumber struct {
+	DocumentID   string
+	PartNumberID string
+}
+
+type DocumentRow struct {
+	ID              string
+	DocumentID      string
+	Position        int32
+	ProcessID       *string
+	OperationNumber *string
+	Content         []byte
+	CreatedAt       time.Time
+	UpdatedAt       time.Time
 }
 
 type DocumentType struct {

@@ -77,8 +77,13 @@ const (
 	ActionFormSetVersionPublished = "form_set.version_published"
 	ActionFormSetVersionApproved  = "form_set.version_approved"
 	ActionFormatVersionApproved   = "format_template.version_approved"
-	ActionChangeTypeRouteChanged  = "change_type.route_changed"
-	ActionSystemSettingsUpdated   = "system_settings.updated"
+	// Dokumen (M4.1).
+	ActionDocumentCreated        = "document.created"
+	ActionDocumentHeaderChanged  = "document.header_changed"
+	ActionDocumentRowAdded       = "document.row_added"
+	ActionDocumentRowChanged     = "document.row_changed"
+	ActionChangeTypeRouteChanged = "change_type.route_changed"
+	ActionSystemSettingsUpdated  = "system_settings.updated"
 	// Register nomor dokumen (Tahap 2).
 	ActionDocumentNumberRegistered = "document_number.registered"
 	ActionDocumentNumberImported   = "document_number.imported"
@@ -133,6 +138,7 @@ const (
 	TargetFormatTemplate  = "format_template"
 	TargetProcessTemplate = "process_template"
 	TargetFormSet         = "form_set"
+	TargetDocument        = "document"
 )
 
 // Change menulis perubahan satu field untuk rincian entri: "lama → baru".

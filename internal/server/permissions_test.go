@@ -18,6 +18,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/change"
 	"github.com/dkpauzi/revioten/internal/customer"
 	"github.com/dkpauzi/revioten/internal/db/dbtest"
+	"github.com/dkpauzi/revioten/internal/document"
 	"github.com/dkpauzi/revioten/internal/numbering"
 	"github.com/dkpauzi/revioten/internal/process"
 	"github.com/dkpauzi/revioten/internal/product"
@@ -59,6 +60,7 @@ func TestPermissionsPerOperation(t *testing.T) {
 		Audit: audit.NewService(pool, checker), Products: products, Processes: processes,
 		Numbering: numbers, Changes: changes, Approval: approvals, Settings: settings.NewService(pool, checker),
 		Templates: template.NewService(pool, checker), ProcessTemplates: template.NewProcessService(pool, checker),
+		Documents: document.NewService(pool, checker),
 	})
 
 	// Admin pertama, satu akun kerja tanpa peran (hanya hak dasar Viewer), dan
@@ -201,6 +203,44 @@ func TestPermissionsPerOperation(t *testing.T) {
 		t.Fatal(err)
 	}
 	formSet := formSets.Sets[0]
+	// Dokumen (M4.1) butuh form set yang sudah terbit: set AIAG-VDA diterbitkan
+	// (format oleh admin, versi AP dan set oleh engineer sebagai penyetuju
+	// form) dan menjadi form set customer. Set AIAG 4th tetap draft.
+	vdaSet := formSets.Sets[1]
+	vdaV := vdaSet.Versions[0]
+	for _, id := range []string{vdaV.PFD.FormatVersionID, vdaV.CP.FormatVersionID} {
+		if _, err := templates.PublishFormatVersion(ctx, admin, id); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := templates.PublishFormatVersion(ctx, engineer, vdaV.PFMEA.FormatVersionID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := templates.PublishFormSetVersion(ctx, engineer, vdaV.ID); err != nil {
+		t.Fatal(err)
+	}
+	if err := templates.SetCustomerFormSet(ctx, admin, cust.ID, vdaSet.ID); err != nil {
+		t.Fatal(err)
+	}
+	docNumbers, err := numbers.RegisterSet(ctx, engineer, numbering.NewSet{CustomerID: cust.ID, IdempotencyKey: "setup-dokumen"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Nomor Reserved dari set itu (nomor Skipped tidak bisa dipakai dokumen).
+	var reserved []string
+	for _, n := range docNumbers.Numbers {
+		if n.Status == "reserved" {
+			reserved = append(reserved, n.ID)
+		}
+	}
+	documents := document.NewService(pool, checker)
+	doc, err := documents.Create(ctx, engineer, document.NewDocument{NumberID: reserved[0], ModelIDs: []string{model.ID}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if doc, err = documents.AddRow(ctx, engineer, doc.ID, document.NewRow{}); err != nil {
+		t.Fatal(err)
+	}
 	// Process template IQC (M3.2) dengan satu sub-proses dan satu poin CP,
 	// dibuat PPAP Engineer. Proses Reflow belum punya template, untuk operasi
 	// membuat template.
@@ -236,7 +276,7 @@ func TestPermissionsPerOperation(t *testing.T) {
 		"viewerPersonId": viewerInfo.PersonID,
 		"accountId":      viewerInfo.ID, "projectGroupId": group.ID, "customerId": cust.ID,
 		"modelGroupId": modelGroup.ID, "modelId": model.ID, "partNumberId": part.ID,
-		"processId": proc.ID, "documentTypeId": docTypes[0].ID, "cpTypeId": docTypes[2].ID, "documentNumberId": reg.Numbers[0].ID, "specialCodeId": specialCodes[0].ID,
+		"processId": proc.ID, "documentTypeId": docTypes[0].ID, "cpTypeId": docTypes[2].ID, "documentNumberId": reg.Numbers[0].ID, "documentId": doc.ID, "rowId": doc.Rows[0].ID, "freeNumberId": reserved[1], "specialCodeId": specialCodes[0].ID,
 		"changeTypeId": changeTypes[0].ID, "changeSourceId": sources[0].ID, "fourMCategoryId": categories[0].ID,
 		"formatTemplateId": pfmeaFormat.ID, "formatVersionId": pfmeaVersion.ID, "formSetId": formSet.ID, "formSetVersionId": formSet.Versions[0].ID, "pfdSheetId": formSet.Versions[0].PFD.FormatVersionID, "pfmeaSheetId": formSet.Versions[0].PFMEA.FormatVersionID, "cpSheetId": formSet.Versions[0].CP.FormatVersionID, "formatFieldId": pfmeaVersion.Fields[0].ID,
 		"freeProcessId": reflow.ID, "processVersionId": iqcVersion.ID, "processTemplateId": iqcVersion.TemplateID, "subprocessId": iqcVersion.Subprocesses[0].ID,
@@ -314,6 +354,13 @@ func TestPermissionsPerOperation(t *testing.T) {
 		{http.MethodPut, "/api/v1/format-template-versions/{formatVersionId}/fields/{formatFieldId}", `{"label":"Process or Line"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
 		{http.MethodPut, "/api/v1/format-template-versions/{formatVersionId}/rating-criteria", `{"items":[{"scale":"severity","value":1,"criteria":""}]}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
 		{http.MethodPut, "/api/v1/format-template-versions/{formatVersionId}/symbols", `{"items":[{"key":"critical_process","name":"Critical Process"},{"key":"revision","name":"Revision"},{"key":"important_character","name":"Important Character"},{"key":"regulation","name":"Regulation"}]}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		// Dokumen (M4.1): melihat draft lewat L-4, mengubah lewat E-2. Admin tidak memegang keduanya.
+		{http.MethodGet, "/api/v1/documents?customer_id={customerId}", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		{http.MethodPost, "/api/v1/documents", `{"document_number_id":"{freeNumberId}","model_ids":["{modelId}"]}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
+		{http.MethodGet, "/api/v1/documents/{documentId}", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		{http.MethodPut, "/api/v1/documents/{documentId}/header", `{"header":{}}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		{http.MethodPost, "/api/v1/documents/{documentId}/rows", `{"content":{}}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
+		{http.MethodPut, "/api/v1/documents/{documentId}/rows/{rowId}", `{"content":{}}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		// Form set (langkah D): melihat lewat L-2, menyusun lewat A-2, menerbitkan lewat V-3 (D-139).
 		// Engineer memegang V-3, tetapi format di dalam set masih draft, jadi jawabannya 409, bukan 403.
 		{http.MethodGet, "/api/v1/form-sets", "", http.StatusOK, http.StatusOK, http.StatusOK},

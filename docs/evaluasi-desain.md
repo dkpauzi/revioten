@@ -111,6 +111,7 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-87 | Menerbitkan versi template: perlu orang kedua atau tidak | Celah | M3.4, form set | Tidak | Diputuskan (D-143) |
 | E-88 | Label kembar di form asli, sedangkan label harus unik per area | Kontradiksi | M3.1, Tahap 6 | Tidak (perlu sebelum Tahap 6) | Diputuskan (D-147) |
 | E-89 | Nama proses di PFMEA AIAG-VDA: diketik atau diisi dari master proses | Kontradiksi | M4.1, M4.5 | Tidak (perlu sebelum M4.1) | Diputuskan (D-144) |
+| E-90 | Batas isian dokumen, dan dokumen umum (kode ZZ) tanpa model | Celah | M4.1 | Tidak | Terbuka |
 
 ## Keputusan 4 November 2026
 
@@ -1632,6 +1633,22 @@ Salin blok ini untuk setiap temuan baru.
 - **Menghambat milestone?** Tidak (perlu sebelum M4.1 memakai form ini)
 - **Status:** Diputuskan
 - **Keputusan pemilik (12 November 2026, D-144):** (a). Kutipan: "E-89 ok".
+### E-90 · Batas isian dokumen, dan dokumen umum tanpa model
+
+- **Tanggal dan milestone:** 12 November 2026, M4.1.
+- **Jenis:** Celah
+- **Rujukan:** R-DOC-08, R-NUM-01, kode khusus ZZ dan HSE (M1.6).
+- **Temuan:** brief tidak menyebut batas panjang nomor operasi, banyaknya baris per dokumen, atau apakah dokumen umum (kode ZZ, misalnya ESD control plan SC-ESD-K001) tanpa model diizinkan. M4.1 mewajibkan minimal satu model.
+- **Dampak bila dibiarkan:** dokumen umum tidak bisa dibuat, dan dokumen sangat besar tidak terbatas.
+- **Opsi:**
+  - (a) Tetap minimal satu model untuk customer biasa; dokumen kode khusus boleh tanpa model. Batas seperti ASUMSI E-90.
+  - (b) Model selalu wajib.
+- **Rekomendasi Claude Code (usulan):** (a).
+- **Asumsi sementara di kode (ASUMSI E-90):** nomor operasi 20 karakter, alasan rute 500 karakter, 1.000 baris per dokumen, minimal satu model.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
 ## Usulan desain UI (UX-01 sampai UX-07): dampak ke M0 sampai M3 dan saran
 
 - **Sumber:** `docs/uml/usulan-desain-ui.md` (UML draft 0.12, 3 November 2026) dan kanvas desain UI "Desain UI Sistem PFD PFMEA CP" (18 artboard, baris v2 disarankan).

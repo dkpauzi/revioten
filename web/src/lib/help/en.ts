@@ -228,6 +228,25 @@ export const helpEn: HelpContent = {
 			]
 		},
 		{
+			id: 'documents',
+			title: 'Documents',
+			who: 'Author',
+			intro: 'A document is one PFD, PFMEA, or Control Plan with its own number. It uses the published form set of its customer, so the publish steps under Form sets come first.',
+			steps: [
+				'Register the number first under {navNumbers}. A document needs a number with the status {numberStatusReserved}.',
+				'Open {navGroupDocuments}, then {navDocuments}, and choose the {documentCustomer}.',
+				'Under {documentCreateTitle}, choose the {documentNumber}, tick the {documentModels} the document covers, and press {documentCreate}. The number becomes In use.',
+				'Open the document from the list. Fill in the header fields and press {documentHeaderSave}.',
+				'Under {documentRowAddTitle}, fill in the {documentOperationNumber}, choose the {documentProcess}, fill in the columns, and press {documentRowAdd}.',
+				'Press {formatEdit} on a row to change it, then {documentRowSave}. The row keeps its place.'
+			],
+			tips: [
+				'The operation number and the process name are columns filled from the row; they are never typed in the column itself.',
+				'RPN and Action Priority are calculated and cannot be typed.',
+				'A spreadsheet-like workbook with sheet tabs comes in a later step (D-145).'
+			]
+		},
+		{
 			id: 'document-control',
 			title: 'Void, obsolete, and legacy numbers',
 			who: 'Document control',

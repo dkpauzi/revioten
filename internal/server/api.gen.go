@@ -179,6 +179,21 @@ func (e ChangeTypeKey) Valid() bool {
 	}
 }
 
+// Defines values for DocumentStatus.
+const (
+	DocumentStatusDraft DocumentStatus = "draft"
+)
+
+// Valid indicates whether the value is a known member of the DocumentStatus enum.
+func (e DocumentStatus) Valid() bool {
+	switch e {
+	case DocumentStatusDraft:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for DocumentNumberOrigin.
 const (
 	DocumentNumberOriginImport DocumentNumberOrigin = "import"
@@ -224,6 +239,21 @@ func (e DocumentNumberStatus) Valid() bool {
 	case DocumentNumberStatusSkipped:
 		return true
 	case DocumentNumberStatusVoid:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DocumentSummaryStatus.
+const (
+	DocumentSummaryStatusDraft DocumentSummaryStatus = "draft"
+)
+
+// Valid indicates whether the value is a known member of the DocumentSummaryStatus enum.
+func (e DocumentSummaryStatus) Valid() bool {
+	switch e {
+	case DocumentSummaryStatusDraft:
 		return true
 	default:
 		return false
@@ -1490,6 +1520,46 @@ type CustomerUpdate struct {
 	ProjectGroupId string `json:"project_group_id"`
 }
 
+// Document defines model for Document.
+type Document struct {
+	CreatedAt        time.Time       `json:"created_at"`
+	CustomerCode     string          `json:"customer_code"`
+	CustomerId       string          `json:"customer_id"`
+	DocumentNumberId string          `json:"document_number_id"`
+	DocumentType     DocumentTypeRef `json:"document_type"`
+	FormSetName      string          `json:"form_set_name"`
+	FormSetVersionId string          `json:"form_set_version_id"`
+
+	// FormatVersionId The format template version of the sheet of this document.
+	FormatVersionId string `json:"format_version_id"`
+
+	// Header Header content keyed by header field ID.
+	Header      map[string]interface{} `json:"header"`
+	Id          string                 `json:"id"`
+	Models      []NamedRef             `json:"models"`
+	Number      string                 `json:"number"`
+	PartNumbers []DocumentPartNumber   `json:"part_numbers"`
+	Revision    int                    `json:"revision"`
+	Route       *NamedRef              `json:"route,omitempty"`
+	RouteReason *string                `json:"route_reason,omitempty"`
+	Rows        []DocumentRow          `json:"rows"`
+	Status      DocumentStatus         `json:"status"`
+	UpdatedAt   time.Time              `json:"updated_at"`
+}
+
+// DocumentStatus defines model for Document.Status.
+type DocumentStatus string
+
+// DocumentHeader defines model for DocumentHeader.
+type DocumentHeader struct {
+	Header map[string]interface{} `json:"header"`
+}
+
+// DocumentList defines model for DocumentList.
+type DocumentList struct {
+	Items []DocumentSummary `json:"items"`
+}
+
 // DocumentNumber One number in the register (R-NUM-04). Numbers are never deleted or reused; only the status changes.
 type DocumentNumber struct {
 	BatchId   string      `json:"batch_id"`
@@ -1536,6 +1606,48 @@ type DocumentNumberList struct {
 	// NextBefore Give this as `before` to read the next page. Missing on the last page.
 	NextBefore *string `json:"next_before,omitempty"`
 }
+
+// DocumentPartNumber defines model for DocumentPartNumber.
+type DocumentPartNumber struct {
+	Id     string  `json:"id"`
+	Name   *string `json:"name,omitempty"`
+	Number string  `json:"number"`
+}
+
+// DocumentRow defines model for DocumentRow.
+type DocumentRow struct {
+	// Content Row content keyed by column field ID.
+	Content map[string]interface{} `json:"content"`
+
+	// Id Fixed for the life of the row (R-DOC-02).
+	Id              string  `json:"id"`
+	OperationNumber *string `json:"operation_number,omitempty"`
+	Position        int     `json:"position"`
+	ProcessId       *string `json:"process_id,omitempty"`
+	ProcessName     *string `json:"process_name,omitempty"`
+}
+
+// DocumentRowInput defines model for DocumentRowInput.
+type DocumentRowInput struct {
+	Content         map[string]interface{} `json:"content"`
+	OperationNumber *string                `json:"operation_number,omitempty"`
+	ProcessId       *string                `json:"process_id,omitempty"`
+}
+
+// DocumentSummary defines model for DocumentSummary.
+type DocumentSummary struct {
+	DocumentType DocumentTypeRef       `json:"document_type"`
+	FormSetName  string                `json:"form_set_name"`
+	Id           string                `json:"id"`
+	Number       string                `json:"number"`
+	Revision     int                   `json:"revision"`
+	RowCount     int                   `json:"row_count"`
+	Status       DocumentSummaryStatus `json:"status"`
+	UpdatedAt    time.Time             `json:"updated_at"`
+}
+
+// DocumentSummaryStatus defines model for DocumentSummary.Status.
+type DocumentSummaryStatus string
 
 // DocumentType defines model for DocumentType.
 type DocumentType struct {
@@ -1921,6 +2033,12 @@ type NameUpdate struct {
 	Name string `json:"name"`
 }
 
+// NamedRef defines model for NamedRef.
+type NamedRef struct {
+	Id   string `json:"id"`
+	Name string `json:"name"`
+}
+
 // NewAccount Give `person_id` for a person who already has an account (for example
 // an admin account for the PPAP Staff, D-72), or `person_name` for a
 // new person, not both.
@@ -1954,6 +2072,19 @@ type NewCustomer struct {
 
 	// ProjectGroupId Each customer is allocated to one project group (D-54).
 	ProjectGroupId string `json:"project_group_id"`
+}
+
+// NewDocument defines model for NewDocument.
+type NewDocument struct {
+	DocumentNumberId string    `json:"document_number_id"`
+	ModelIds         []string  `json:"model_ids"`
+	PartNumberIds    *[]string `json:"part_number_ids,omitempty"`
+
+	// RouteId Leave it out to use the default route of the customer.
+	RouteId *string `json:"route_id,omitempty"`
+
+	// RouteReason Required when route_id is not the default route of the customer (D-47).
+	RouteReason *string `json:"route_reason,omitempty"`
 }
 
 // NewDocumentNumber defines model for NewDocumentNumber.
@@ -2735,6 +2866,9 @@ type CustomerId = string
 // CustomerIdQuery defines model for CustomerIdQuery.
 type CustomerIdQuery = string
 
+// DocumentId defines model for DocumentId.
+type DocumentId = string
+
 // DocumentNumberId defines model for DocumentNumberId.
 type DocumentNumberId = string
 
@@ -2794,6 +2928,9 @@ type ProcessVersionId = string
 
 // ProjectGroupId defines model for ProjectGroupId.
 type ProjectGroupId = string
+
+// RowId defines model for RowId.
+type RowId = string
 
 // SpecialCodeId defines model for SpecialCodeId.
 type SpecialCodeId = string
@@ -2855,6 +2992,11 @@ type RegisterDocumentNumberSetParams struct {
 	// 1 to 100 characters - letters, digits, `.`, `:`, `_`, `-` - for example a UUID.
 	// It is kept per account.
 	IdempotencyKey *IdempotencyKey `json:"Idempotency-Key,omitempty"`
+}
+
+// ListDocumentsParams defines parameters for ListDocuments.
+type ListDocumentsParams struct {
+	CustomerId string `form:"customer_id" json:"customer_id"`
 }
 
 // GetActionPriorityParams defines parameters for GetActionPriority.
@@ -2949,6 +3091,18 @@ type CreateDocumentTypeJSONRequestBody = DocumentTypeInput
 
 // UpdateDocumentTypeJSONRequestBody defines body for UpdateDocumentType for application/json ContentType.
 type UpdateDocumentTypeJSONRequestBody = DocumentTypeInput
+
+// CreateDocumentJSONRequestBody defines body for CreateDocument for application/json ContentType.
+type CreateDocumentJSONRequestBody = NewDocument
+
+// SetDocumentHeaderJSONRequestBody defines body for SetDocumentHeader for application/json ContentType.
+type SetDocumentHeaderJSONRequestBody = DocumentHeader
+
+// AddDocumentRowJSONRequestBody defines body for AddDocumentRow for application/json ContentType.
+type AddDocumentRowJSONRequestBody = DocumentRowInput
+
+// UpdateDocumentRowJSONRequestBody defines body for UpdateDocumentRow for application/json ContentType.
+type UpdateDocumentRowJSONRequestBody = DocumentRowInput
 
 // SetFormSetSheetsJSONRequestBody defines body for SetFormSetSheets for application/json ContentType.
 type SetFormSetSheetsJSONRequestBody = FormSetSheets
@@ -3159,6 +3313,24 @@ type ServerInterface interface {
 	// UpdateDocumentType Change the name and letter of a document type (A-2)
 	// (PUT /api/v1/document-types/{documentTypeId})
 	UpdateDocumentType(w http.ResponseWriter, r *http.Request, documentTypeId DocumentTypeId)
+	// ListDocuments Documents of one customer (L-4, M4.1)
+	// (GET /api/v1/documents)
+	ListDocuments(w http.ResponseWriter, r *http.Request, params ListDocumentsParams)
+	// CreateDocument Make a draft document from a Reserved document number (E-2, M4.1)
+	// (POST /api/v1/documents)
+	CreateDocument(w http.ResponseWriter, r *http.Request)
+	// GetDocument One document with its header and rows (L-4)
+	// (GET /api/v1/documents/{documentId})
+	GetDocument(w http.ResponseWriter, r *http.Request, documentId DocumentId)
+	// SetDocumentHeader Replace the header content of a draft document (E-2)
+	// (PUT /api/v1/documents/{documentId}/header)
+	SetDocumentHeader(w http.ResponseWriter, r *http.Request, documentId DocumentId)
+	// AddDocumentRow Add a row at the end of a draft document (E-2)
+	// (POST /api/v1/documents/{documentId}/rows)
+	AddDocumentRow(w http.ResponseWriter, r *http.Request, documentId DocumentId)
+	// UpdateDocumentRow Replace the process, operation number, and content of one row (E-2)
+	// (PUT /api/v1/documents/{documentId}/rows/{rowId})
+	UpdateDocumentRow(w http.ResponseWriter, r *http.Request, documentId DocumentId, rowId RowId)
 	// SetFormSetSheets Choose the format template versions of the sheets of a draft form set version (A-2)
 	// (PUT /api/v1/form-set-versions/{formSetVersionId})
 	SetFormSetSheets(w http.ResponseWriter, r *http.Request, formSetVersionId FormSetVersionId)
@@ -4211,6 +4383,166 @@ func (siw *ServerInterfaceWrapper) UpdateDocumentType(w http.ResponseWriter, r *
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UpdateDocumentType(w, r, documentTypeId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListDocuments operation middleware
+func (siw *ServerInterfaceWrapper) ListDocuments(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListDocumentsParams
+
+	// ------------- Required query parameter "customer_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "customer_id", r.URL.Query(), &params.CustomerId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "customer_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customer_id", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListDocuments(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateDocument operation middleware
+func (siw *ServerInterfaceWrapper) CreateDocument(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateDocument(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetDocument operation middleware
+func (siw *ServerInterfaceWrapper) GetDocument(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", r.PathValue("documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetDocument(w, r, documentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetDocumentHeader operation middleware
+func (siw *ServerInterfaceWrapper) SetDocumentHeader(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", r.PathValue("documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetDocumentHeader(w, r, documentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AddDocumentRow operation middleware
+func (siw *ServerInterfaceWrapper) AddDocumentRow(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", r.PathValue("documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AddDocumentRow(w, r, documentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateDocumentRow operation middleware
+func (siw *ServerInterfaceWrapper) UpdateDocumentRow(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", r.PathValue("documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "rowId" -------------
+	var rowId RowId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "rowId", r.PathValue("rowId"), &rowId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "rowId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateDocumentRow(w, r, documentId, rowId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -5901,6 +6233,12 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/format-template-versions/{formatVersionId}/fields/{formatFieldId}", wrapper.UpdateFormatField)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/format-template-versions/{formatVersionId}/rating-criteria", wrapper.SetFormatRatingCriteria)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/format-template-versions/{formatVersionId}/symbols", wrapper.SaveFormatSymbols)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/documents", wrapper.ListDocuments)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents", wrapper.CreateDocument)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/documents/{documentId}", wrapper.GetDocument)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/documents/{documentId}/header", wrapper.SetDocumentHeader)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/rows", wrapper.AddDocumentRow)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/documents/{documentId}/rows/{rowId}", wrapper.UpdateDocumentRow)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/form-sets", wrapper.ListFormSets)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/form-sets", wrapper.CreateFormSet)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/form-sets/{formSetId}/versions", wrapper.CreateFormSetVersion)
@@ -7345,6 +7683,244 @@ type UpdateDocumentTypedefaultJSONResponse struct {
 }
 
 func (response UpdateDocumentTypedefaultJSONResponse) VisitUpdateDocumentTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDocumentsRequestObject struct {
+	Params ListDocumentsParams
+}
+
+type ListDocumentsResponseObject interface {
+	VisitListDocumentsResponse(w http.ResponseWriter) error
+}
+
+type ListDocuments200JSONResponse DocumentList
+
+func (response ListDocuments200JSONResponse) VisitListDocumentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDocumentsdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ListDocumentsdefaultJSONResponse) VisitListDocumentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDocumentRequestObject struct {
+	Body *CreateDocumentJSONRequestBody
+}
+
+type CreateDocumentResponseObject interface {
+	VisitCreateDocumentResponse(w http.ResponseWriter) error
+}
+
+type CreateDocument201JSONResponse Document
+
+func (response CreateDocument201JSONResponse) VisitCreateDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateDocumentdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response CreateDocumentdefaultJSONResponse) VisitCreateDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDocumentRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+}
+
+type GetDocumentResponseObject interface {
+	VisitGetDocumentResponse(w http.ResponseWriter) error
+}
+
+type GetDocument200JSONResponse Document
+
+func (response GetDocument200JSONResponse) VisitGetDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDocumentdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response GetDocumentdefaultJSONResponse) VisitGetDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetDocumentHeaderRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+	Body       *SetDocumentHeaderJSONRequestBody
+}
+
+type SetDocumentHeaderResponseObject interface {
+	VisitSetDocumentHeaderResponse(w http.ResponseWriter) error
+}
+
+type SetDocumentHeader200JSONResponse Document
+
+func (response SetDocumentHeader200JSONResponse) VisitSetDocumentHeaderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetDocumentHeaderdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response SetDocumentHeaderdefaultJSONResponse) VisitSetDocumentHeaderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddDocumentRowRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+	Body       *AddDocumentRowJSONRequestBody
+}
+
+type AddDocumentRowResponseObject interface {
+	VisitAddDocumentRowResponse(w http.ResponseWriter) error
+}
+
+type AddDocumentRow201JSONResponse Document
+
+func (response AddDocumentRow201JSONResponse) VisitAddDocumentRowResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddDocumentRowdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response AddDocumentRowdefaultJSONResponse) VisitAddDocumentRowResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDocumentRowRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+	RowId      RowId      `json:"rowId"`
+	Body       *UpdateDocumentRowJSONRequestBody
+}
+
+type UpdateDocumentRowResponseObject interface {
+	VisitUpdateDocumentRowResponse(w http.ResponseWriter) error
+}
+
+type UpdateDocumentRow200JSONResponse Document
+
+func (response UpdateDocumentRow200JSONResponse) VisitUpdateDocumentRowResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDocumentRowdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response UpdateDocumentRowdefaultJSONResponse) VisitUpdateDocumentRowResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -10004,6 +10580,24 @@ type StrictServerInterface interface {
 	// UpdateDocumentType Change the name and letter of a document type (A-2)
 	// (PUT /api/v1/document-types/{documentTypeId})
 	UpdateDocumentType(ctx context.Context, request UpdateDocumentTypeRequestObject) (UpdateDocumentTypeResponseObject, error)
+	// ListDocuments Documents of one customer (L-4, M4.1)
+	// (GET /api/v1/documents)
+	ListDocuments(ctx context.Context, request ListDocumentsRequestObject) (ListDocumentsResponseObject, error)
+	// CreateDocument Make a draft document from a Reserved document number (E-2, M4.1)
+	// (POST /api/v1/documents)
+	CreateDocument(ctx context.Context, request CreateDocumentRequestObject) (CreateDocumentResponseObject, error)
+	// GetDocument One document with its header and rows (L-4)
+	// (GET /api/v1/documents/{documentId})
+	GetDocument(ctx context.Context, request GetDocumentRequestObject) (GetDocumentResponseObject, error)
+	// SetDocumentHeader Replace the header content of a draft document (E-2)
+	// (PUT /api/v1/documents/{documentId}/header)
+	SetDocumentHeader(ctx context.Context, request SetDocumentHeaderRequestObject) (SetDocumentHeaderResponseObject, error)
+	// AddDocumentRow Add a row at the end of a draft document (E-2)
+	// (POST /api/v1/documents/{documentId}/rows)
+	AddDocumentRow(ctx context.Context, request AddDocumentRowRequestObject) (AddDocumentRowResponseObject, error)
+	// UpdateDocumentRow Replace the process, operation number, and content of one row (E-2)
+	// (PUT /api/v1/documents/{documentId}/rows/{rowId})
+	UpdateDocumentRow(ctx context.Context, request UpdateDocumentRowRequestObject) (UpdateDocumentRowResponseObject, error)
 	// SetFormSetSheets Choose the format template versions of the sheets of a draft form set version (A-2)
 	// (PUT /api/v1/form-set-versions/{formSetVersionId})
 	SetFormSetSheets(ctx context.Context, request SetFormSetSheetsRequestObject) (SetFormSetSheetsResponseObject, error)
@@ -11233,6 +11827,189 @@ func (sh *strictHandler) UpdateDocumentType(w http.ResponseWriter, r *http.Reque
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UpdateDocumentTypeResponseObject); ok {
 		if err := validResponse.VisitUpdateDocumentTypeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListDocuments operation middleware
+func (sh *strictHandler) ListDocuments(w http.ResponseWriter, r *http.Request, params ListDocumentsParams) {
+	var request ListDocumentsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListDocuments(ctx, request.(ListDocumentsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListDocuments")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListDocumentsResponseObject); ok {
+		if err := validResponse.VisitListDocumentsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateDocument operation middleware
+func (sh *strictHandler) CreateDocument(w http.ResponseWriter, r *http.Request) {
+	var request CreateDocumentRequestObject
+
+	var body CreateDocumentJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateDocument(ctx, request.(CreateDocumentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateDocument")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateDocumentResponseObject); ok {
+		if err := validResponse.VisitCreateDocumentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetDocument operation middleware
+func (sh *strictHandler) GetDocument(w http.ResponseWriter, r *http.Request, documentId DocumentId) {
+	var request GetDocumentRequestObject
+
+	request.DocumentId = documentId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetDocument(ctx, request.(GetDocumentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetDocument")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetDocumentResponseObject); ok {
+		if err := validResponse.VisitGetDocumentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SetDocumentHeader operation middleware
+func (sh *strictHandler) SetDocumentHeader(w http.ResponseWriter, r *http.Request, documentId DocumentId) {
+	var request SetDocumentHeaderRequestObject
+
+	request.DocumentId = documentId
+
+	var body SetDocumentHeaderJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetDocumentHeader(ctx, request.(SetDocumentHeaderRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetDocumentHeader")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetDocumentHeaderResponseObject); ok {
+		if err := validResponse.VisitSetDocumentHeaderResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AddDocumentRow operation middleware
+func (sh *strictHandler) AddDocumentRow(w http.ResponseWriter, r *http.Request, documentId DocumentId) {
+	var request AddDocumentRowRequestObject
+
+	request.DocumentId = documentId
+
+	var body AddDocumentRowJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.AddDocumentRow(ctx, request.(AddDocumentRowRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AddDocumentRow")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AddDocumentRowResponseObject); ok {
+		if err := validResponse.VisitAddDocumentRowResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateDocumentRow operation middleware
+func (sh *strictHandler) UpdateDocumentRow(w http.ResponseWriter, r *http.Request, documentId DocumentId, rowId RowId) {
+	var request UpdateDocumentRowRequestObject
+
+	request.DocumentId = documentId
+	request.RowId = rowId
+
+	var body UpdateDocumentRowJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateDocumentRow(ctx, request.(UpdateDocumentRowRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateDocumentRow")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateDocumentRowResponseObject); ok {
+		if err := validResponse.VisitUpdateDocumentRowResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
