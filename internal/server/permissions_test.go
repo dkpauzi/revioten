@@ -360,6 +360,9 @@ func TestPermissionsPerOperation(t *testing.T) {
 		{http.MethodGet, "/api/v1/documents/{documentId}", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodPut, "/api/v1/documents/{documentId}/header", `{"header":{},"header_version":1}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodPost, "/api/v1/documents/{documentId}/rows", `{"content":{}}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
+		{http.MethodGet, "/api/v1/documents/{documentId}/composition?process_template_version_id={processVersionId}", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		// Versi IQC sudah diterbitkan oleh baris publish di atas.
+		{http.MethodPut, "/api/v1/documents/{documentId}/composition", `{"process_template_version_id":"{processVersionId}"}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodPost, "/api/v1/documents/{documentId}/rows/batch", `{"rows":[{"content":{}}]}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
 		{http.MethodPut, "/api/v1/documents/{documentId}/rows/{rowId}", `{"content":{},"version":1}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodDelete, "/api/v1/documents/{documentId}/rows/{rowId}", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},

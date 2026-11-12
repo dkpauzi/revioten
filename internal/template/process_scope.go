@@ -62,23 +62,26 @@ type ScopeInput struct {
 // Variant adalah isi satu poin untuk cakupan yang lebih sempit. ID-nya tetap
 // lintas versi, sama seperti poin.
 type Variant struct {
-	ID     string
-	Scope  Scope
-	Text   string
-	Hidden bool
+	ID      string
+	Scope   Scope
+	Text    string
+	Hidden  bool
+	Content map[string]any // isi per kolom (D-146); tidak pernah nil
 }
 
 // NewVariant adalah isian varian baru. Cakupannya tetap setelah dibuat.
 type NewVariant struct {
-	Scope ScopeInput
-	Text  string
+	Scope   ScopeInput
+	Text    string
+	Content map[string]any // boleh nil (D-146)
 }
 
 // VariantUpdate adalah isian perubahan varian. Teks wajib dikirim; isian nil
 // berarti tetap (D-111).
 type VariantUpdate struct {
-	Text   string
-	Hidden *bool
+	Text    string
+	Hidden  *bool
+	Content *map[string]any // nil berarti isi tetap (D-146)
 }
 
 // modelScope adalah letak satu model: dirinya, customer-nya, dan group
@@ -107,6 +110,7 @@ type ResolvedPoint struct {
 	DocumentType DocumentTypeRef
 	Text         string
 	Scope        Scope
+	Content      map[string]any // isi per kolom milik poin atau varian yang terpilih (D-146)
 }
 
 // ResolvedSubprocess adalah sub-proses beserta poin yang berlaku untuk satu model.
@@ -154,12 +158,12 @@ func resolve(v ProcessVersion, m modelScope) []ResolvedSubprocess {
 			if p.Hidden || !appliesTo(p.Scope, m) {
 				continue
 			}
-			best := ResolvedPoint{PointID: p.ID, OriginID: p.ID, DocumentType: p.DocumentType, Text: p.Text, Scope: p.Scope}
+			best := ResolvedPoint{PointID: p.ID, OriginID: p.ID, DocumentType: p.DocumentType, Text: p.Text, Scope: p.Scope, Content: p.Content}
 			for _, variant := range p.Variants {
 				if variant.Hidden || !appliesTo(variant.Scope, m) || scopeRank(variant.Scope.Level) <= scopeRank(best.Scope.Level) {
 					continue
 				}
-				best.PointID, best.Text, best.Scope = variant.ID, variant.Text, variant.Scope
+				best.PointID, best.Text, best.Scope, best.Content = variant.ID, variant.Text, variant.Scope, variant.Content
 			}
 			points = append(points, best)
 		}
@@ -168,6 +172,13 @@ func resolve(v ProcessVersion, m modelScope) []ResolvedSubprocess {
 		}
 	}
 	return out
+}
+
+// ResolveFor memilih poin satu versi yang berlaku untuk satu model, seperti
+// ResolvePoints tetapi tanpa database. groupID kosong untuk model tanpa
+// group. Dipakai perakitan dokumen (M4.5).
+func ResolveFor(v ProcessVersion, modelID, customerID, groupID string) []ResolvedSubprocess {
+	return resolve(v, modelScope{ID: modelID, CustomerID: customerID, GroupID: groupID})
 }
 
 // scopeTarget adalah cakupan yang sudah diperiksa, beserta letaknya: customer

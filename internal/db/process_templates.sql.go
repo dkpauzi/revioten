@@ -11,8 +11,8 @@ import (
 )
 
 const addVersionPoint = `-- name: AddVersionPoint :exec
-INSERT INTO process_template_points (version_id, subprocess_id, document_type_id, point_id, text, position)
-VALUES ($1, $2, $3, $4, $5, $6)
+INSERT INTO process_template_points (version_id, subprocess_id, document_type_id, point_id, text, position, content)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
 `
 
 type AddVersionPointParams struct {
@@ -22,6 +22,7 @@ type AddVersionPointParams struct {
 	PointID        string
 	Text           string
 	Position       int16
+	Content        []byte
 }
 
 func (q *Queries) AddVersionPoint(ctx context.Context, arg AddVersionPointParams) error {
@@ -32,6 +33,7 @@ func (q *Queries) AddVersionPoint(ctx context.Context, arg AddVersionPointParams
 		arg.PointID,
 		arg.Text,
 		arg.Position,
+		arg.Content,
 	)
 	return err
 }
@@ -61,8 +63,8 @@ func (q *Queries) AddVersionSubprocess(ctx context.Context, arg AddVersionSubpro
 }
 
 const addVersionVariant = `-- name: AddVersionVariant :exec
-INSERT INTO process_template_variants (version_id, point_id, origin_point_id, text)
-VALUES ($1, $2, $3, $4)
+INSERT INTO process_template_variants (version_id, point_id, origin_point_id, text, content)
+VALUES ($1, $2, $3, $4, $5)
 `
 
 type AddVersionVariantParams struct {
@@ -70,6 +72,7 @@ type AddVersionVariantParams struct {
 	PointID       string
 	OriginPointID string
 	Text          string
+	Content       []byte
 }
 
 func (q *Queries) AddVersionVariant(ctx context.Context, arg AddVersionVariantParams) error {
@@ -78,13 +81,14 @@ func (q *Queries) AddVersionVariant(ctx context.Context, arg AddVersionVariantPa
 		arg.PointID,
 		arg.OriginPointID,
 		arg.Text,
+		arg.Content,
 	)
 	return err
 }
 
 const copyProcessVersionPoints = `-- name: CopyProcessVersionPoints :exec
-INSERT INTO process_template_points (version_id, subprocess_id, document_type_id, point_id, text, position, hidden)
-SELECT $1::uuid, s.subprocess_id, s.document_type_id, s.point_id, s.text, s.position, s.hidden
+INSERT INTO process_template_points (version_id, subprocess_id, document_type_id, point_id, text, position, hidden, content)
+SELECT $1::uuid, s.subprocess_id, s.document_type_id, s.point_id, s.text, s.position, s.hidden, s.content
 FROM process_template_points s
 WHERE s.version_id = $2
 `
@@ -119,8 +123,8 @@ func (q *Queries) CopyProcessVersionSubprocesses(ctx context.Context, arg CopyPr
 }
 
 const copyProcessVersionVariants = `-- name: CopyProcessVersionVariants :exec
-INSERT INTO process_template_variants (version_id, point_id, origin_point_id, text, hidden)
-SELECT $1::uuid, s.point_id, s.origin_point_id, s.text, s.hidden
+INSERT INTO process_template_variants (version_id, point_id, origin_point_id, text, hidden, content)
+SELECT $1::uuid, s.point_id, s.origin_point_id, s.text, s.hidden, s.content
 FROM process_template_variants s
 WHERE s.version_id = $2
 `
@@ -396,7 +400,7 @@ func (q *Queries) ListProcessVersionsOfTemplate(ctx context.Context, templateID 
 
 const listVersionPoints = `-- name: ListVersionPoints :many
 SELECT vp.point_id, vp.subprocess_id, vp.document_type_id, d.key AS document_type_key,
-       d.name AS document_type_name, vp.text, vp.position, vp.hidden,
+       d.name AS document_type_name, vp.text, vp.position, vp.hidden, vp.content,
        tp.scope, tp.customer_id, tp.model_group_id, tp.model_id,
        c.code AS customer_code, g.name AS model_group_name, m.name AS model_name
 FROM process_template_points vp
@@ -420,6 +424,7 @@ type ListVersionPointsRow struct {
 	Text             string
 	Position         int16
 	Hidden           bool
+	Content          []byte
 	Scope            string
 	CustomerID       *string
 	ModelGroupID     *string
@@ -452,6 +457,7 @@ func (q *Queries) ListVersionPoints(ctx context.Context, versionID string) ([]Li
 			&i.Text,
 			&i.Position,
 			&i.Hidden,
+			&i.Content,
 			&i.Scope,
 			&i.CustomerID,
 			&i.ModelGroupID,
@@ -511,7 +517,7 @@ func (q *Queries) ListVersionSubprocesses(ctx context.Context, versionID string)
 }
 
 const listVersionVariants = `-- name: ListVersionVariants :many
-SELECT pv.point_id, pv.origin_point_id, pv.text, pv.hidden,
+SELECT pv.point_id, pv.origin_point_id, pv.text, pv.hidden, pv.content,
        tp.scope, tp.customer_id, tp.model_group_id, tp.model_id,
        c.code AS customer_code, g.name AS model_group_name, m.name AS model_name
 FROM process_template_variants pv
@@ -530,6 +536,7 @@ type ListVersionVariantsRow struct {
 	OriginPointID  string
 	Text           string
 	Hidden         bool
+	Content        []byte
 	Scope          string
 	CustomerID     *string
 	ModelGroupID   *string
@@ -555,6 +562,7 @@ func (q *Queries) ListVersionVariants(ctx context.Context, versionID string) ([]
 			&i.OriginPointID,
 			&i.Text,
 			&i.Hidden,
+			&i.Content,
 			&i.Scope,
 			&i.CustomerID,
 			&i.ModelGroupID,
@@ -693,7 +701,7 @@ func (q *Queries) ShiftSubprocessPositions(ctx context.Context, arg ShiftSubproc
 
 const updateVersionPoint = `-- name: UpdateVersionPoint :exec
 UPDATE process_template_points
-SET text = $3, hidden = $4
+SET text = $3, hidden = $4, content = $5
 WHERE version_id = $1 AND point_id = $2
 `
 
@@ -702,6 +710,7 @@ type UpdateVersionPointParams struct {
 	PointID   string
 	Text      string
 	Hidden    bool
+	Content   []byte
 }
 
 func (q *Queries) UpdateVersionPoint(ctx context.Context, arg UpdateVersionPointParams) error {
@@ -710,6 +719,7 @@ func (q *Queries) UpdateVersionPoint(ctx context.Context, arg UpdateVersionPoint
 		arg.PointID,
 		arg.Text,
 		arg.Hidden,
+		arg.Content,
 	)
 	return err
 }
@@ -739,7 +749,7 @@ func (q *Queries) UpdateVersionSubprocess(ctx context.Context, arg UpdateVersion
 
 const updateVersionVariant = `-- name: UpdateVersionVariant :exec
 UPDATE process_template_variants
-SET text = $3, hidden = $4
+SET text = $3, hidden = $4, content = $5
 WHERE version_id = $1 AND point_id = $2
 `
 
@@ -748,6 +758,7 @@ type UpdateVersionVariantParams struct {
 	PointID   string
 	Text      string
 	Hidden    bool
+	Content   []byte
 }
 
 func (q *Queries) UpdateVersionVariant(ctx context.Context, arg UpdateVersionVariantParams) error {
@@ -756,6 +767,7 @@ func (q *Queries) UpdateVersionVariant(ctx context.Context, arg UpdateVersionVar
 		arg.PointID,
 		arg.Text,
 		arg.Hidden,
+		arg.Content,
 	)
 	return err
 }

@@ -1061,6 +1061,10 @@ export type DocumentRow = {
     content: {
         [key: string]: unknown;
     };
+    /**
+     * The process template point this row was composed from; left out for a typed or pasted row (R-CMP-04).
+     */
+    template_point_id?: string;
 };
 
 export type DocumentRowInput = {
@@ -1073,6 +1077,51 @@ export type DocumentRowInput = {
      * The version of the row that was read. Required when changing a row, ignored when adding one. When the row was changed by someone else in the meantime the answer is 409 with code changed, and nothing is saved (optimistic locking, R-DOC-07).
      */
     version?: number;
+};
+
+export type Composition = {
+    process_template_version_id: string;
+    version: number;
+    process: NamedRef;
+    subprocesses: Array<ComposedSubprocess>;
+};
+
+export type ComposedSubprocess = {
+    id: string;
+    name: string;
+    points: Array<ComposedPoint>;
+};
+
+export type ComposedPoint = {
+    /**
+     * The origin point; rows are linked to this ID.
+     */
+    point_id: string;
+    document_type: DocumentTypeRef;
+    /**
+     * The text of the point, or of the variant that applies to the model.
+     */
+    text: string;
+    /**
+     * The document of the set that receives this point.
+     */
+    document_id: string;
+    state: 'included' | 'excluded' | 'undecided';
+    /**
+     * Why the point is excluded, when a reason was given.
+     */
+    reason?: string;
+};
+
+export type ComposeInput = {
+    process_template_version_id: string;
+    include?: Array<string>;
+    exclude?: Array<PointExclusion>;
+};
+
+export type PointExclusion = {
+    point_id: string;
+    reason?: string;
 };
 
 export type DocumentRowBatch = {
@@ -1409,9 +1458,10 @@ export type Subprocess = {
 
 export type TemplatePoint = {
     /**
-     * Fixed across versions; document rows will point to this ID.
+     * Fixed across versions; document rows point to this ID (R-CMP-04).
      */
     id: string;
+    content: PointContent;
     document_type: DocumentTypeRef;
     text: string;
     /**
@@ -1424,6 +1474,13 @@ export type TemplatePoint = {
      * From the broadest scope to the narrowest, hidden ones included (M3.3).
      */
     variants: Array<PointVariant>;
+};
+
+/**
+ * The content of a point per column of the format, keyed by the fixed field key, for example failure_mode or product_characteristic (D-146). A value is text, or a whole number from 1 to 10 for a rating column. One point serves every form that has a column with the same key.
+ */
+export type PointContent = {
+    [key: string]: unknown;
 };
 
 /**
@@ -1446,6 +1503,7 @@ export type PointVariant = {
      * Fixed across versions, like a point ID.
      */
     id: string;
+    content: PointContent;
     scope: PointScope;
     text: string;
     hidden: boolean;
@@ -1458,10 +1516,12 @@ export type NewPointVariant = {
     scope_level: string;
     scope_target_id: string;
     text: string;
+    content?: PointContent;
 };
 
 export type PointVariantUpdate = {
     text: string;
+    content?: PointContent;
     hidden?: boolean;
 };
 
@@ -1492,6 +1552,7 @@ export type ResolvedSubprocess = {
 };
 
 export type ResolvedPoint = {
+    content: PointContent;
     /**
      * The point or the variant that won.
      */
@@ -1523,6 +1584,7 @@ export type NewTemplatePoint = {
      * general (when left out), customer, model_group, or model (M3.3, D-129).
      */
     scope_level?: string;
+    content?: PointContent;
     /**
      * The customer, model group, or model. Left out for general.
      */
@@ -1531,6 +1593,7 @@ export type NewTemplatePoint = {
 
 export type TemplatePointUpdate = {
     text: string;
+    content?: PointContent;
     position?: number;
     hidden?: boolean;
 };
@@ -4576,6 +4639,78 @@ export type SetDocumentHeaderResponses = {
 };
 
 export type SetDocumentHeaderResponse = SetDocumentHeaderResponses[keyof SetDocumentHeaderResponses];
+
+export type GetDocumentCompositionData = {
+    body?: never;
+    path: {
+        documentId: string;
+    };
+    query: {
+        process_template_version_id: string;
+    };
+    url: '/api/v1/documents/{documentId}/composition';
+};
+
+export type GetDocumentCompositionErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type GetDocumentCompositionError = GetDocumentCompositionErrors[keyof GetDocumentCompositionErrors];
+
+export type GetDocumentCompositionResponses = {
+    /**
+     * The composition view.
+     */
+    200: Composition;
+};
+
+export type GetDocumentCompositionResponse = GetDocumentCompositionResponses[keyof GetDocumentCompositionResponses];
+
+export type ComposeDocumentData = {
+    body: ComposeInput;
+    path: {
+        documentId: string;
+    };
+    query?: never;
+    url: '/api/v1/documents/{documentId}/composition';
+};
+
+export type ComposeDocumentErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ComposeDocumentError = ComposeDocumentErrors[keyof ComposeDocumentErrors];
+
+export type ComposeDocumentResponses = {
+    /**
+     * The document after the change.
+     */
+    200: Document;
+};
+
+export type ComposeDocumentResponse = ComposeDocumentResponses[keyof ComposeDocumentResponses];
 
 export type AddDocumentRowData = {
     body: DocumentRowInput;

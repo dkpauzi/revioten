@@ -1,0 +1,159 @@
+// Test E2E M4.5: perakitan dua panel dari process template (R-CMP-01 sampai
+// R-CMP-04, D-146). Kriteria selesai: IQC General, MSD, dan PCB dengan
+// sebagian poin dicoret menghasilkan dokumen yang benar.
+//
+// Nama file diawali m4- supaya berjalan sesudah formsets.test.ts, yang
+// menerbitkan form set AIAG 4th; dokumen hanya memakai form set yang terbit.
+import { expect, test } from '@playwright/test';
+import { en } from '../src/lib/i18n/en.ts';
+import { createWorkAccount, ensureProjectGroup, logIn, logInFirstTime, logOut, openFromMenu } from './helpers.ts';
+
+test('penyusun merakit CP, PFMEA, dan PFD dari process template IQC', async ({ page }) => {
+	// Test ini panjang (menyiapkan template, merakit dua kali), jadi batas waktunya dilonggarkan.
+	test.slow();
+	await logIn(page);
+	await ensureProjectGroup(page, 'GR1');
+	await page.evaluate(async () => {
+		const post = (path: string, body: object) =>
+			fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then((r) => r.json());
+		const groups = await (await fetch('/api/v1/project-groups')).json();
+		const group = groups.items.find((g: { code: string }) => g.code === 'GR1');
+		const customer = await post('/api/v1/customers', { code: 'KM', name: 'Customer KM', project_group_id: group.id });
+		await post('/api/v1/models', { customer_id: customer.id, name: 'M-45' });
+	});
+	const temporary = await createWorkAccount(page, 'Perakit dokumen', 'perakit.e2e', ['author', 'template_maintainer']);
+	await logOut(page);
+	await logInFirstTime(page, 'perakit.e2e', temporary, 'baris dirakit dari process template');
+
+	// Process template "Incoming QC" dengan tiga sub-proses dan poinnya, lalu
+	// satu set nomor PFD, PFMEA, dan CP untuk model M-45, semuanya lewat API.
+	const setup = await page.evaluate(async () => {
+		const post = (path: string, body: object, headers: Record<string, string> = {}) =>
+			fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, body: JSON.stringify(body) }).then((r) => r.json());
+		const process = await post('/api/v1/processes', { name: 'Incoming QC', aliases: [] });
+		const template = await post('/api/v1/process-templates', { process_id: process.id });
+		const versionId = template.versions[0].id as string;
+		const types = (await (await fetch('/api/v1/document-types')).json()).items as { id: string; key?: string }[];
+		const typeId = (key: string) => types.find((d) => d.key === key)!.id;
+		const tree: [string, [string, string, Record<string, unknown>][]][] = [
+			[
+				'IQC General',
+				[
+					['pfd', 'Incoming inspection', {}],
+					['pfmea', 'Wrong part received', { failure_mode: 'Wrong part received', severity: 7 }],
+					['cp', 'Check part number', { product_characteristic: 'Part number', control_method: 'Visual' }]
+				]
+			],
+			[
+				'IQC MSD',
+				[
+					['cp', 'Check MSL label', {}],
+					['cp', 'Check HIC', { product_characteristic: 'Humidity indicator card' }]
+				]
+			],
+			[
+				'IQC PCB',
+				[
+					['pfmea', 'Warped PCB', { failure_mode: 'Warped PCB' }],
+					['cp', 'Check warpage', { product_characteristic: 'Warpage' }]
+				]
+			]
+		];
+		for (const [name, points] of tree) {
+			const version = await post(`/api/v1/process-template-versions/${versionId}/subprocesses`, { name });
+			const sub = version.subprocesses.at(-1);
+			for (const [key, text, content] of points) {
+				await post(`/api/v1/process-template-versions/${versionId}/points`, { subprocess_id: sub.id, document_type_id: typeId(key), text, content });
+			}
+		}
+		const customers = await (await fetch('/api/v1/customers')).json();
+		const customer = customers.items.find((c: { code: string }) => c.code === 'KM');
+		const models = await (await fetch(`/api/v1/models?customer_id=${customer.id}`)).json();
+		const set = await post('/api/v1/document-numbers/sets', { customer_id: customer.id }, { 'Idempotency-Key': crypto.randomUUID() });
+		let cpNumber = '';
+		for (const n of set.items as { id: string; number: string; status: string }[]) {
+			if (n.status !== 'reserved') continue;
+			const doc = await post('/api/v1/documents', { document_number_id: n.id, model_ids: [models.items[0].id] });
+			if (doc.document_type.key === 'cp') cpNumber = n.number;
+		}
+		return { versionId, cpNumber };
+	});
+	expect(setup.cpNumber).not.toBe('');
+
+	// D-146: isi per kolom satu poin diisi di layar Process templates.
+	await openFromMenu(page, en.navGroupTemplates, en.navProcessTemplates);
+	await page.getByLabel(en.processTemplateChoose).selectOption({ label: 'Incoming QC' });
+	await page.getByRole('button', { name: en.subprocessShowPointsOf.replace('{name}', 'IQC MSD') }).click();
+	await page.getByRole('button', { name: en.pointContentFor.replace('{text}', 'Check MSL label') }).click();
+	await page.getByLabel(/^Product (Characteristics|control)$/).fill('MSL label');
+	await page.getByRole('button', { name: en.pointContentSave.replace('{text}', 'Check MSL label') }).click();
+	await expect(page.getByRole('status')).toHaveText(en.pointContentSaved);
+	await expect(page.getByRole('row', { name: /Check MSL label/ }).first()).toContainText(en.pointContentFilled.replace('{n}', '1'));
+
+	// Versi template diterbitkan: hanya versi terbit yang dipakai merakit.
+	page.once('dialog', (dialog) => dialog.accept());
+	await page.getByRole('button', { name: en.versionPublish.replace('{version}', '1') }).click();
+	await expect(page.getByRole('status')).toBeVisible();
+
+	// Buka dokumen CP, lalu rakit.
+	await openFromMenu(page, en.navGroupDocuments, en.navDocuments);
+	await page.getByLabel(en.documentCustomer, { exact: true }).selectOption({ label: 'KM · Customer KM' });
+	await page.getByRole('link', { name: setup.cpNumber }).click();
+	await expect(page.getByRole('heading', { name: setup.cpNumber, level: 1 })).toBeVisible();
+
+	await page.getByRole('button', { name: en.composeOpen }).click();
+	await page.getByLabel(en.composeProcess).selectOption({ label: `Incoming QC · ${en.composeVersion.replace('{version}', '1')}` });
+	const all = (name: string) => page.getByRole('checkbox', { name: en.composeAll.replace('{name}', name) });
+	await all('IQC General').check();
+	await all('IQC MSD').check();
+	await all('IQC PCB').check();
+	// Satu poin dicoret, dengan alasan.
+	await page.getByRole('checkbox', { name: 'CP Check HIC' }).uncheck();
+	await page.getByLabel(en.composeReason.replace('{text}', 'Check HIC')).fill('No HIC for this part');
+
+	// Panel kanan: baris yang akan ada di setiap dokumen set.
+	const result = (key: string) => page.getByTestId(`compose-result-${key}`).getByRole('listitem');
+	await expect(result('cp')).toHaveCount(3);
+	await expect(result('pfmea')).toHaveCount(2);
+	await expect(result('pfd')).toHaveCount(1);
+	await expect(result('cp').first()).toContainText(en.composeWillAdd);
+
+	await page.getByRole('button', { name: en.composeApply }).click();
+	await expect(page.getByRole('status')).toHaveText(en.composeDone.replace('{process}', 'Incoming QC'));
+
+	// CP: tiga baris menurut urutan template, proses terisi dari template.
+	const grid = page.locator('.workbook');
+	const rows = grid.locator('.tabulator-row');
+	const fieldOf = async (title: string) =>
+		(await grid.locator('.tabulator-col', { hasText: new RegExp(`^${title}$`) }).first().getAttribute('tabulator-field')) ?? '';
+	const cell = (row: number, field: string) => rows.nth(row).locator(`.tabulator-cell[tabulator-field="${field}"]`);
+	await expect(rows).toHaveCount(3);
+	const product = await fieldOf('Product Characteristics');
+	await expect(cell(0, product)).toHaveText('Part number');
+	await expect(cell(0, await fieldOf('Method'))).toHaveText('Visual');
+	await expect(cell(1, product)).toHaveText('MSL label');
+	await expect(cell(2, product)).toHaveText('Warpage');
+	await expect(cell(0, '_process')).toHaveText('Incoming QC');
+
+	// PFMEA di set yang sama ikut terisi (R-CMP-02). Label kolomnya bisa
+	// sudah diganti formats.test.ts menjadi "Failure Mode"; key kolom tetap.
+	await page.getByRole('link', { name: 'PFMEA', exact: true }).click();
+	await expect(rows).toHaveCount(2);
+	await expect(cell(0, await fieldOf('(Potential )?Failure Mode'))).toHaveText('Wrong part received');
+	await expect(cell(0, await fieldOf('Severity'))).toHaveText('7');
+
+	// Kembali ke CP: keadaan poin tersimpan. Mencoret satu poin lagi menghapus barisnya.
+	await page.getByRole('link', { name: 'CP', exact: true }).click();
+	await expect(rows).toHaveCount(3);
+	await page.getByRole('button', { name: en.composeOpen }).click();
+	await page.getByLabel(en.composeProcess).selectOption({ label: `Incoming QC · ${en.composeVersion.replace('{version}', '1')}` });
+	await expect(page.getByRole('checkbox', { name: 'CP Check HIC' })).not.toBeChecked();
+	await expect(page.getByLabel(en.composeReason.replace('{text}', 'Check HIC'))).toHaveValue('No HIC for this part');
+	await expect(page.getByRole('checkbox', { name: 'CP Check MSL label' })).toBeChecked();
+	await page.getByRole('checkbox', { name: 'CP Check MSL label' }).uncheck();
+	await expect(result('cp').nth(1)).toContainText(en.composeWillRemove);
+	await page.getByRole('button', { name: en.composeApply }).click();
+	await expect(page.getByRole('status')).toHaveText(en.composeDone.replace('{process}', 'Incoming QC'));
+	await expect(rows).toHaveCount(2);
+	await expect(cell(1, product)).toHaveText('Warpage');
+});

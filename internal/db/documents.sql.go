@@ -10,6 +10,43 @@ import (
 	"time"
 )
 
+const addComposedRow = `-- name: AddComposedRow :one
+
+
+INSERT INTO document_rows (document_id, position, process_id, content, template_point_id, template_version_id)
+VALUES ($1, (SELECT coalesce(max(position), 0) + 1 FROM document_rows WHERE document_id = $1), $2, $3, $4, $5)
+RETURNING id, position
+`
+
+type AddComposedRowParams struct {
+	DocumentID        string
+	ProcessID         *string
+	Content           []byte
+	TemplatePointID   *string
+	TemplateVersionID *string
+}
+
+type AddComposedRowRow struct {
+	ID       string
+	Position int32
+}
+
+// M4.5: perakitan dari process template (R-CMP-01 sampai R-CMP-04).
+// AddComposedRow menambah baris hasil perakitan di akhir dokumen, tertaut ke
+// poin asalnya dan versi template yang dipakai (R-CMP-04).
+func (q *Queries) AddComposedRow(ctx context.Context, arg AddComposedRowParams) (AddComposedRowRow, error) {
+	row := q.db.QueryRow(ctx, addComposedRow,
+		arg.DocumentID,
+		arg.ProcessID,
+		arg.Content,
+		arg.TemplatePointID,
+		arg.TemplateVersionID,
+	)
+	var i AddComposedRowRow
+	err := row.Scan(&i.ID, &i.Position)
+	return i, err
+}
+
 const addDocumentModel = `-- name: AddDocumentModel :exec
 INSERT INTO document_models (document_id, model_id) VALUES ($1, $2)
 `
@@ -68,6 +105,20 @@ func (q *Queries) AddDocumentRow(ctx context.Context, arg AddDocumentRowParams) 
 	return i, err
 }
 
+const clearPointExclusion = `-- name: ClearPointExclusion :exec
+DELETE FROM document_point_exclusions WHERE document_id = $1 AND point_id = $2
+`
+
+type ClearPointExclusionParams struct {
+	DocumentID string
+	PointID    string
+}
+
+func (q *Queries) ClearPointExclusion(ctx context.Context, arg ClearPointExclusionParams) error {
+	_, err := q.db.Exec(ctx, clearPointExclusion, arg.DocumentID, arg.PointID)
+	return err
+}
+
 const createDocument = `-- name: CreateDocument :one
 INSERT INTO documents (document_number_id, customer_id, document_type_id, revision, form_set_version_id,
                        format_version_id, approval_route_id, route_reason, created_by_person_id)
@@ -107,7 +158,7 @@ func (q *Queries) CreateDocument(ctx context.Context, arg CreateDocumentParams) 
 const deleteDocumentRow = `-- name: DeleteDocumentRow :one
 
 DELETE FROM document_rows WHERE id = $1 AND document_id = $2
-RETURNING position, operation_number
+RETURNING position, operation_number, template_point_id
 `
 
 type DeleteDocumentRowParams struct {
@@ -118,13 +169,14 @@ type DeleteDocumentRowParams struct {
 type DeleteDocumentRowRow struct {
 	Position        int32
 	OperationNumber *string
+	TemplatePointID *string
 }
 
 // M4.2 · Editor tabel.
 func (q *Queries) DeleteDocumentRow(ctx context.Context, arg DeleteDocumentRowParams) (DeleteDocumentRowRow, error) {
 	row := q.db.QueryRow(ctx, deleteDocumentRow, arg.ID, arg.DocumentID)
 	var i DeleteDocumentRowRow
-	err := row.Scan(&i.Position, &i.OperationNumber)
+	err := row.Scan(&i.Position, &i.OperationNumber, &i.TemplatePointID)
 	return i, err
 }
 
@@ -137,6 +189,25 @@ func (q *Queries) DocumentExistsForNumber(ctx context.Context, documentNumberID 
 	var exists bool
 	err := row.Scan(&exists)
 	return exists, err
+}
+
+const excludePoint = `-- name: ExcludePoint :exec
+INSERT INTO document_point_exclusions (document_id, point_id, reason)
+VALUES ($1, $2, $3)
+ON CONFLICT (document_id, point_id) DO UPDATE SET reason = EXCLUDED.reason, excluded_at = now()
+`
+
+type ExcludePointParams struct {
+	DocumentID string
+	PointID    string
+	Reason     *string
+}
+
+// ExcludePoint mencatat poin yang dikecualikan dari satu dokumen (R-CMP-03).
+// Mengecualikan lagi mengganti alasannya.
+func (q *Queries) ExcludePoint(ctx context.Context, arg ExcludePointParams) error {
+	_, err := q.db.Exec(ctx, excludePoint, arg.DocumentID, arg.PointID, arg.Reason)
+	return err
 }
 
 const getCustomerForDocument = `-- name: GetCustomerForDocument :one
@@ -382,7 +453,8 @@ func (q *Queries) ListDocumentPartNumbers(ctx context.Context, documentID string
 }
 
 const listDocumentRows = `-- name: ListDocumentRows :many
-SELECT r.id, r.position, r.process_id, n.name AS process_name, r.operation_number, r.content, r.version
+SELECT r.id, r.position, r.process_id, n.name AS process_name, r.operation_number, r.content, r.version,
+       r.template_point_id, r.template_version_id
 FROM document_rows r
 LEFT JOIN process_names n ON n.process_id = r.process_id AND n.kind = 'display'
 WHERE r.document_id = $1
@@ -390,13 +462,15 @@ ORDER BY r.position
 `
 
 type ListDocumentRowsRow struct {
-	ID              string
-	Position        int32
-	ProcessID       *string
-	ProcessName     *string
-	OperationNumber *string
-	Content         []byte
-	Version         int32
+	ID                string
+	Position          int32
+	ProcessID         *string
+	ProcessName       *string
+	OperationNumber   *string
+	Content           []byte
+	Version           int32
+	TemplatePointID   *string
+	TemplateVersionID *string
 }
 
 func (q *Queries) ListDocumentRows(ctx context.Context, documentID string) ([]ListDocumentRowsRow, error) {
@@ -416,6 +490,8 @@ func (q *Queries) ListDocumentRows(ctx context.Context, documentID string) ([]Li
 			&i.OperationNumber,
 			&i.Content,
 			&i.Version,
+			&i.TemplatePointID,
+			&i.TemplateVersionID,
 		); err != nil {
 			return nil, err
 		}
@@ -517,6 +593,35 @@ func (q *Queries) ListDocuments(ctx context.Context, customerID string) ([]ListD
 			&i.UpdatedAt,
 			&i.RowCount,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPointExclusions = `-- name: ListPointExclusions :many
+SELECT point_id, reason FROM document_point_exclusions WHERE document_id = $1
+`
+
+type ListPointExclusionsRow struct {
+	PointID string
+	Reason  *string
+}
+
+func (q *Queries) ListPointExclusions(ctx context.Context, documentID string) ([]ListPointExclusionsRow, error) {
+	rows, err := q.db.Query(ctx, listPointExclusions, documentID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListPointExclusionsRow{}
+	for rows.Next() {
+		var i ListPointExclusionsRow
+		if err := rows.Scan(&i.PointID, &i.Reason); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

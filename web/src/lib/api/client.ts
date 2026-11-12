@@ -37,6 +37,8 @@ import type {
 	ApRule,
 	Document,
 	DocumentList,
+	ComposeInput,
+	Composition,
 	DocumentRowInput,
 	NewDocument,
 	FormSet,
@@ -552,6 +554,17 @@ export function addDocumentRow(id: string, input: DocumentRowInput, fetchFn: typ
 // addDocumentRows memanggil POST /api/v1/documents/{id}/rows/batch (E-2, M4.4).
 export function addDocumentRows(id: string, rows: DocumentRowInput[], fetchFn: typeof fetch = fetch): Promise<ApiResult<Document>> {
 	return call<Document>(fetchFn, itemPath('documents', id) + '/rows/batch', jsonRequest('POST', { rows }));
+}
+
+// getDocumentComposition memanggil GET /api/v1/documents/{id}/composition (L-4, M4.5).
+export function getDocumentComposition(id: string, versionId: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<Composition>> {
+	const path = itemPath('documents', id) + '/composition?process_template_version_id=' + encodeURIComponent(versionId);
+	return call<Composition>(fetchFn, path, { method: 'GET' });
+}
+
+// composeDocument memanggil PUT /api/v1/documents/{id}/composition (E-2, M4.5).
+export function composeDocument(id: string, input: ComposeInput, fetchFn: typeof fetch = fetch): Promise<ApiResult<Document>> {
+	return call<Document>(fetchFn, itemPath('documents', id) + '/composition', jsonRequest('PUT', input));
 }
 
 // updateDocumentRow memanggil PUT /api/v1/documents/{id}/rows/{rowId} (E-2).

@@ -1,10 +1,15 @@
 package template
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
+	"slices"
 	"strconv"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -195,7 +200,12 @@ func (s *ProcessService) AddPoint(ctx context.Context, actor access.Actor, versi
 		if err != nil {
 			return nil, err
 		}
-		if err := problems(textProblem, subProblem, typeProblem, scopeProblem); err != nil {
+		content, contentProblem := cleanPointContent(in.Content)
+		if err := problems(textProblem, subProblem, typeProblem, scopeProblem, contentProblem); err != nil {
+			return nil, err
+		}
+		contentJSON, err := json.Marshal(content)
+		if err != nil {
 			return nil, err
 		}
 		documentType, err := q.GetDocumentType(ctx, in.DocumentTypeID)
@@ -209,7 +219,7 @@ func (s *ProcessService) AddPoint(ctx context.Context, actor access.Actor, versi
 		position := count + 1
 		err = q.AddVersionPoint(ctx, db.AddVersionPointParams{
 			VersionID: v.ID, SubprocessID: sub.ID, DocumentTypeID: in.DocumentTypeID, PointID: pointID,
-			Text: text, Position: int16(position),
+			Text: text, Position: int16(position), Content: contentJSON,
 		})
 		details := map[string]string{
 			"subprocess": sub.Name, "document_type": documentType.Name, "text": text, "position": strconv.Itoa(position),
@@ -233,7 +243,17 @@ func (s *ProcessService) UpdatePoint(ctx context.Context, actor access.Actor, ve
 		old := itemChange{Text: point.Text, Position: point.Position, Hidden: point.Hidden}
 		count := countPoints(sub, point.DocumentType.ID)
 		change, list := cleanItemUpdate("text", in.Text, maxPointText, in.Position, in.Hidden, old, count)
+		content, contentChanged := point.Content, false
+		if in.Content != nil {
+			cleaned, p := cleanPointContent(*in.Content)
+			list = append(list, p)
+			content, contentChanged = cleaned, !sameContent(cleaned, point.Content)
+		}
 		if err := problems(list...); err != nil {
+			return nil, err
+		}
+		contentJSON, err := json.Marshal(content)
+		if err != nil {
 			return nil, err
 		}
 		if change.Position != old.Position {
@@ -250,13 +270,17 @@ func (s *ProcessService) UpdatePoint(ctx context.Context, actor access.Actor, ve
 				return nil, err
 			}
 		}
-		err := q.UpdateVersionPoint(ctx, db.UpdateVersionPointParams{
-			VersionID: v.ID, PointID: point.ID, Text: change.Text, Hidden: change.Hidden,
+		err = q.UpdateVersionPoint(ctx, db.UpdateVersionPointParams{
+			VersionID: v.ID, PointID: point.ID, Text: change.Text, Hidden: change.Hidden, Content: contentJSON,
 		})
 		if err != nil {
 			return nil, err
 		}
 		details := changeDetails("text", old, change)
+		if contentChanged {
+			// Isi kolom tidak ditulis ke audit log; cukup kolom mana yang kini terisi.
+			details["content"] = strings.Join(slices.Sorted(maps.Keys(content)), ", ")
+		}
 		if len(details) > 0 {
 			details["subprocess"] = sub.Name
 			details["document_type"] = point.DocumentType.Name
@@ -291,14 +315,19 @@ func (s *ProcessService) AddVariant(ctx context.Context, actor access.Actor, ver
 				scopeProblem = withinOrigin(origin.Scope, target)
 			}
 		}
-		if err := problems(textProblem, scopeProblem); err != nil {
+		content, contentProblem := cleanPointContent(in.Content)
+		if err := problems(textProblem, scopeProblem, contentProblem); err != nil {
+			return nil, err
+		}
+		contentJSON, err := json.Marshal(content)
+		if err != nil {
 			return nil, err
 		}
 		variantID, err := q.CreateTemplatePoint(ctx, target.params(sub.ID, origin.DocumentType.ID, &origin.ID))
 		if err != nil {
 			return nil, err
 		}
-		err = q.AddVersionVariant(ctx, db.AddVersionVariantParams{VersionID: v.ID, PointID: variantID, OriginPointID: origin.ID, Text: text})
+		err = q.AddVersionVariant(ctx, db.AddVersionVariantParams{VersionID: v.ID, PointID: variantID, OriginPointID: origin.ID, Text: text, Content: contentJSON})
 		return map[string]string{
 			"subprocess": sub.Name, "document_type": origin.DocumentType.Name, "point": origin.Text,
 			"scope": target.describe(), "text": text,
@@ -315,17 +344,30 @@ func (s *ProcessService) UpdateVariant(ctx context.Context, actor access.Actor, 
 			return nil, problem.ErrNotFound
 		}
 		text, textProblem := problem.Text("text", in.Text, true, maxPointText)
-		if err := problems(textProblem); err != nil {
+		content, contentChanged := variant.Content, false
+		var contentProblem *problem.Problem
+		if in.Content != nil {
+			content, contentProblem = cleanPointContent(*in.Content)
+			contentChanged = content != nil && !sameContent(content, variant.Content)
+		}
+		if err := problems(textProblem, contentProblem); err != nil {
+			return nil, err
+		}
+		contentJSON, err := json.Marshal(content)
+		if err != nil {
 			return nil, err
 		}
 		hidden := variant.Hidden
 		if in.Hidden != nil {
 			hidden = *in.Hidden
 		}
-		if err := q.UpdateVersionVariant(ctx, db.UpdateVersionVariantParams{VersionID: v.ID, PointID: variant.ID, Text: text, Hidden: hidden}); err != nil {
+		if err := q.UpdateVersionVariant(ctx, db.UpdateVersionVariantParams{VersionID: v.ID, PointID: variant.ID, Text: text, Hidden: hidden, Content: contentJSON}); err != nil {
 			return nil, err
 		}
 		details := changeDetails("text", itemChange{Text: variant.Text, Hidden: variant.Hidden}, itemChange{Text: text, Hidden: hidden})
+		if contentChanged {
+			details["content"] = strings.Join(slices.Sorted(maps.Keys(content)), ", ")
+		}
 		if len(details) > 0 {
 			details["subprocess"] = sub.Name
 			details["point"] = origin.Text
@@ -457,6 +499,15 @@ func getProcessTemplate(ctx context.Context, q *db.Queries, id string) (ProcessT
 	}, nil
 }
 
+// LoadProcessVersion membaca satu versi process template di dalam transaksi
+// pemanggil. Dipakai perakitan dokumen (M4.5).
+func LoadProcessVersion(ctx context.Context, q *db.Queries, id string) (ProcessVersion, error) {
+	if !db.IsUUID(id) {
+		return ProcessVersion{}, problem.ErrNotFound
+	}
+	return getProcessVersion(ctx, q, id)
+}
+
 // getProcessVersion membaca satu versi beserta sub-proses dan poinnya.
 func getProcessVersion(ctx context.Context, q *db.Queries, id string) (ProcessVersion, error) {
 	r, err := q.GetProcessVersion(ctx, id)
@@ -482,7 +533,7 @@ func getProcessVersion(ctx context.Context, q *db.Queries, id string) (ProcessVe
 	variants := make(map[string][]Variant)
 	for _, r := range variantRows {
 		variants[r.OriginPointID] = append(variants[r.OriginPointID], Variant{
-			ID: r.PointID, Text: r.Text, Hidden: r.Hidden,
+			ID: r.PointID, Text: r.Text, Hidden: r.Hidden, Content: pointContent(r.Content),
 			Scope: scopeFromColumns(r.Scope, r.CustomerID, r.ModelGroupID, r.ModelID, r.CustomerCode, r.ModelGroupName, r.ModelName),
 		})
 	}
@@ -492,7 +543,7 @@ func getProcessVersion(ctx context.Context, q *db.Queries, id string) (ProcessVe
 		points[p.SubprocessID] = append(points[p.SubprocessID], Point{
 			ID:           p.PointID,
 			DocumentType: DocumentTypeRef{ID: p.DocumentTypeID, Key: derefText(p.DocumentTypeKey), Name: p.DocumentTypeName},
-			Text:         p.Text, Position: int(p.Position), Hidden: p.Hidden,
+			Text:         p.Text, Position: int(p.Position), Hidden: p.Hidden, Content: pointContent(p.Content),
 			Scope:    scopeFromColumns(p.Scope, p.CustomerID, p.ModelGroupID, p.ModelID, p.CustomerCode, p.ModelGroupName, p.ModelName),
 			Variants: orNone(variants[p.PointID]),
 		})
@@ -534,6 +585,14 @@ func changeDetails(field string, old, change itemChange) map[string]string {
 		details["hidden"] = audit.Change(strconv.FormatBool(old.Hidden), strconv.FormatBool(change.Hidden))
 	}
 	return details
+}
+
+// sameContent membandingkan dua isi poin lewat bentuk JSON-nya, supaya angka
+// 7 dan 7.0 (hasil baca dari database) dianggap sama.
+func sameContent(a, b map[string]any) bool {
+	x, _ := json.Marshal(a)
+	y, _ := json.Marshal(b)
+	return bytes.Equal(x, y)
 }
 
 // orNone mengganti daftar nil dengan daftar kosong, supaya JSON-nya [] dan

@@ -158,6 +158,7 @@ export const helpEn: HelpContent = {
 				'Press {subprocessShowPoints} on a sub-process to see and add its points.',
 				'Choose the {pointDocumentType}, fill in {pointText}, and choose {pointScope}: {scopeGeneral} if the point is for every model, or a customer, model group, or model. Then press {pointAdd}.',
 				'When one customer or model needs different text, press {variantAdd} on the point, choose the narrower scope, fill in {variantText}, and press {variantAdd} again.',
+'Press {pointContent} on a point or a variant to fill in what it writes into each column of the form, for example the failure mode, its effect, and the severity for a PFMEA point. A column that two forms share is filled once and serves both. These are the values a document row starts with when the point is used in a document.',
 				'Under {previewTitle}, choose a customer and a model to see which points that model gets.'
 			],
 			image: 'process-templates',
@@ -239,6 +240,7 @@ export const helpEn: HelpContent = {
 				'Open the document from the list. Fill in the header fields and press {documentHeaderSave}.',
 				'Press {documentRowAdd} to add an empty row at the end of the sheet.',
 'To bring rows from an Excel file, press {pasteOpen}. Copy the cells in Excel, paste them in the box, and press {pastePreview}. Tick {pasteHasHeader} when you copied the title row too; the columns are then matched by title. Above each column you choose where it goes. A cell that does not fit its column, such as a severity that is not a number, is marked and left empty; the row is still added. Nothing is saved until you press the Import button.',
+'To build the rows from the process library instead of typing them, press {composeOpen}. Choose a process on the left and tick the sub-processes and points this model uses; the right side shows the rows each document of the set will get. Press {composeApply}. A ticked point becomes a row in the PFD, PFMEA, or CP that stays linked to the template. A point you leave unticked is recorded as left out, and you may write the reason next to it. A point that a newer template version added shows {composeUndecided} until you decide.',
 'Two people can work in the same document. When someone else saved the same row before you, your change is not saved: a message appears, the latest content is shown, and you enter your change again.',
 				'Click a cell and type, like in Excel. Press Enter or click elsewhere, and the row is saved. In the operation number and process columns you choose the values of the row itself.',
 				'Press {documentRowDelete} on a row to remove it. The rows after it move up.',

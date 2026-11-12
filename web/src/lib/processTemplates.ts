@@ -1,6 +1,7 @@
 // Bantuan layar process template atau pustaka proses (M3.2, R-TPL-01, R-TPL-04).
 import type {
 	DocumentType,
+	FormatVersion,
 	PointScope,
 	ProcessTemplate,
 	ProcessTemplateVersion,
@@ -71,4 +72,45 @@ export function versionText(v: Pick<ProcessTemplateVersion, 'version' | 'status'
 		version: String(v.version),
 		status: v.status === 'draft' ? t('processTemplateDraft') : t('processTemplatePublished')
 	});
+}
+
+// PointColumn adalah satu kolom yang bisa diisi di poin (D-146): key tetap
+// kolom itu, dan nama form yang memilikinya.
+export type PointColumn = { key: string; kind: 'text' | 'rating'; label: string; forms: string[] };
+
+// pointColumns menggabungkan kolom ber-key dari form satu jenis dokumen.
+// Kolom dengan key yang sama di dua form muncul sekali, dengan label form
+// pertama. Hanya kolom teks dan rating yang diisi di poin; pilihan, simbol,
+// dan tanggal diisi di dokumen (ASUMSI E-92).
+export function pointColumns(forms: { name: string; version: Pick<FormatVersion, 'fields'> }[]): PointColumn[] {
+	const out: PointColumn[] = [];
+	for (const form of forms) {
+		for (const f of form.version.fields) {
+			if (f.area !== 'row' || f.hidden || !f.key || (f.kind !== 'text' && f.kind !== 'rating')) {
+				continue;
+			}
+			const known = out.find((c) => c.key === f.key);
+			if (known) {
+				known.forms.push(form.name);
+			} else {
+				out.push({ key: f.key, kind: f.kind, label: f.label, forms: [form.name] });
+			}
+		}
+	}
+	return out;
+}
+
+// contentInput menyiapkan isi poin untuk server: isian kosong dibuang, rating
+// dikirim sebagai angka. Isi lama dengan key di luar daftar kolom (misalnya
+// kolom form yang sedang disembunyikan) dibawa apa adanya.
+export function contentInput(columns: PointColumn[], values: Record<string, string>, old: Record<string, unknown>): Record<string, unknown> {
+	const keys = new Set(columns.map((c) => c.key));
+	const out: Record<string, unknown> = Object.fromEntries(Object.entries(old).filter(([key]) => !keys.has(key)));
+	for (const c of columns) {
+		const value = (values[c.key] ?? '').trim();
+		if (value !== '') {
+			out[c.key] = c.kind === 'rating' ? Number(value) : value;
+		}
+	}
+	return out;
 }

@@ -1574,6 +1574,54 @@ paths:
                 $ref: '#/components/schemas/Document'
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/documents/{documentId}/composition:
+    get:
+      operationId: getDocumentComposition
+      summary: The points of one process template version and their state in this document set (L-4, M4.5)
+      description: >-
+        Shows the points that apply to the first model of the document, the most specific variant winning. A point is
+        included (a row is linked to it), excluded, or undecided (R-CMP-03). Points for a document type that the set
+        does not have are left out.
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+        - name: process_template_version_id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The composition view.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Composition'
+        default:
+          $ref: '#/components/responses/Error'
+    put:
+      operationId: composeDocument
+      summary: Use or leave out points of a published process template version (E-2, M4.5)
+      description: >-
+        A point in include gets a row linked to it in the document of its type, unless it already has one (R-CMP-04).
+        A point in exclude loses its row and is recorded as excluded, with an optional reason (R-CMP-03). Points not
+        named stay as they are. One call fills PFD, PFMEA, and CP of the same set (R-CMP-02).
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ComposeInput'
+      responses:
+        '200':
+          description: The document after the change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/documents/{documentId}/rows:
     post:
       operationId: addDocumentRow
@@ -3740,6 +3788,9 @@ components:
           type: object
           additionalProperties: true
           description: Row content keyed by column field ID.
+        template_point_id:
+          type: string
+          description: The process template point this row was composed from; left out for a typed or pasted row (R-CMP-04).
     DocumentRowInput:
       type: object
       required: [content]
@@ -3757,6 +3808,75 @@ components:
             The version of the row that was read. Required when changing a row, ignored when adding one. When the row
             was changed by someone else in the meantime the answer is 409 with code changed, and nothing is saved
             (optimistic locking, R-DOC-07).
+    Composition:
+      type: object
+      required: [process_template_version_id, version, process, subprocesses]
+      properties:
+        process_template_version_id:
+          type: string
+        version:
+          type: integer
+        process:
+          $ref: '#/components/schemas/NamedRef'
+        subprocesses:
+          type: array
+          items:
+            $ref: '#/components/schemas/ComposedSubprocess'
+    ComposedSubprocess:
+      type: object
+      required: [id, name, points]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        points:
+          type: array
+          items:
+            $ref: '#/components/schemas/ComposedPoint'
+    ComposedPoint:
+      type: object
+      required: [point_id, document_type, text, document_id, state]
+      properties:
+        point_id:
+          type: string
+          description: The origin point; rows are linked to this ID.
+        document_type:
+          $ref: '#/components/schemas/DocumentTypeRef'
+        text:
+          type: string
+          description: The text of the point, or of the variant that applies to the model.
+        document_id:
+          type: string
+          description: The document of the set that receives this point.
+        state:
+          type: string
+          enum: [included, excluded, undecided]
+        reason:
+          type: string
+          description: Why the point is excluded, when a reason was given.
+    ComposeInput:
+      type: object
+      required: [process_template_version_id]
+      properties:
+        process_template_version_id:
+          type: string
+        include:
+          type: array
+          items:
+            type: string
+        exclude:
+          type: array
+          items:
+            $ref: '#/components/schemas/PointExclusion'
+    PointExclusion:
+      type: object
+      required: [point_id]
+      properties:
+        point_id:
+          type: string
+        reason:
+          type: string
     DocumentRowBatch:
       type: object
       required: [rows]
@@ -4243,11 +4363,13 @@ components:
             $ref: '#/components/schemas/TemplatePoint'
     TemplatePoint:
       type: object
-      required: [id, document_type, text, position, hidden, scope, variants]
+      required: [id, document_type, text, content, position, hidden, scope, variants]
       properties:
         id:
           type: string
-          description: Fixed across versions; document rows will point to this ID.
+          description: Fixed across versions; document rows point to this ID (R-CMP-04).
+        content:
+          $ref: '#/components/schemas/PointContent'
         document_type:
           $ref: '#/components/schemas/DocumentTypeRef'
         text:
@@ -4264,6 +4386,13 @@ components:
           description: From the broadest scope to the narrowest, hidden ones included (M3.3).
           items:
             $ref: '#/components/schemas/PointVariant'
+    PointContent:
+      type: object
+      additionalProperties: true
+      description: >-
+        The content of a point per column of the format, keyed by the fixed field key, for example failure_mode or
+        product_characteristic (D-146). A value is text, or a whole number from 1 to 10 for a rating column. One point
+        serves every form that has a column with the same key.
     PointScope:
       type: object
       description: What a point or variant is usually used for (M3.3, D-129). Fixed after it is made.
@@ -4280,11 +4409,13 @@ components:
           description: Customer code, model group name, or model name. Left out for general.
     PointVariant:
       type: object
-      required: [id, scope, text, hidden]
+      required: [id, scope, text, content, hidden]
       properties:
         id:
           type: string
           description: Fixed across versions, like a point ID.
+        content:
+          $ref: '#/components/schemas/PointContent'
         scope:
           $ref: '#/components/schemas/PointScope'
         text:
@@ -4302,12 +4433,16 @@ components:
           type: string
         text:
           type: string
+        content:
+          $ref: '#/components/schemas/PointContent'
     PointVariantUpdate:
       type: object
       required: [text]
       properties:
         text:
           type: string
+        content:
+          $ref: '#/components/schemas/PointContent'
         hidden:
           type: boolean
     ResolvedPoints:
@@ -4352,8 +4487,10 @@ components:
             $ref: '#/components/schemas/ResolvedPoint'
     ResolvedPoint:
       type: object
-      required: [point_id, origin_id, document_type, text, scope]
+      required: [point_id, origin_id, document_type, text, content, scope]
       properties:
+        content:
+          $ref: '#/components/schemas/PointContent'
         point_id:
           type: string
           description: The point or the variant that won.
@@ -4395,6 +4532,8 @@ components:
         scope_level:
           type: string
           description: general (when left out), customer, model_group, or model (M3.3, D-129).
+        content:
+          $ref: '#/components/schemas/PointContent'
         scope_target_id:
           type: string
           description: The customer, model group, or model. Left out for general.
@@ -4404,6 +4543,8 @@ components:
       properties:
         text:
           type: string
+        content:
+          $ref: '#/components/schemas/PointContent'
         position:
           type: integer
         hidden:

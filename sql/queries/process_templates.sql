@@ -84,8 +84,8 @@ VALUES ($1, $2, $3, $4, $5, $6, $7)
 RETURNING id;
 
 -- name: AddVersionPoint :exec
-INSERT INTO process_template_points (version_id, subprocess_id, document_type_id, point_id, text, position)
-VALUES ($1, $2, $3, $4, $5, $6);
+INSERT INTO process_template_points (version_id, subprocess_id, document_type_id, point_id, text, position, content)
+VALUES ($1, $2, $3, $4, $5, $6, $7);
 
 -- name: ListVersionPoints :many
 -- ListVersionPoints mengambil poin satu versi: menurut urutan sub-proses,
@@ -94,7 +94,7 @@ VALUES ($1, $2, $3, $4, $5, $6);
 -- customer, nama group model, atau nama model). Kolom sasaran dibiarkan
 -- terpisah supaya sqlc tahu nilainya boleh NULL (cakupan umum).
 SELECT vp.point_id, vp.subprocess_id, vp.document_type_id, d.key AS document_type_key,
-       d.name AS document_type_name, vp.text, vp.position, vp.hidden,
+       d.name AS document_type_name, vp.text, vp.position, vp.hidden, vp.content,
        tp.scope, tp.customer_id, tp.model_group_id, tp.model_id,
        c.code AS customer_code, g.name AS model_group_name, m.name AS model_name
 FROM process_template_points vp
@@ -109,13 +109,13 @@ WHERE vp.version_id = $1
 ORDER BY vs.position, d.position, vp.position;
 
 -- name: AddVersionVariant :exec
-INSERT INTO process_template_variants (version_id, point_id, origin_point_id, text)
-VALUES ($1, $2, $3, $4);
+INSERT INTO process_template_variants (version_id, point_id, origin_point_id, text, content)
+VALUES ($1, $2, $3, $4, $5);
 
 -- name: ListVersionVariants :many
 -- ListVersionVariants mengambil varian satu versi beserta cakupannya: per
 -- poin asal, dari cakupan terluas ke tersempit, lalu nama sasarannya.
-SELECT pv.point_id, pv.origin_point_id, pv.text, pv.hidden,
+SELECT pv.point_id, pv.origin_point_id, pv.text, pv.hidden, pv.content,
        tp.scope, tp.customer_id, tp.model_group_id, tp.model_id,
        c.code AS customer_code, g.name AS model_group_name, m.name AS model_name
 FROM process_template_variants pv
@@ -130,12 +130,12 @@ ORDER BY pv.origin_point_id,
 
 -- name: UpdateVersionVariant :exec
 UPDATE process_template_variants
-SET text = $3, hidden = $4
+SET text = $3, hidden = $4, content = $5
 WHERE version_id = $1 AND point_id = $2;
 
 -- name: UpdateVersionPoint :exec
 UPDATE process_template_points
-SET text = $3, hidden = $4
+SET text = $3, hidden = $4, content = $5
 WHERE version_id = $1 AND point_id = $2;
 
 -- name: ShiftPointPositions :exec
@@ -172,14 +172,14 @@ WHERE s.version_id = sqlc.arg(source_id);
 
 
 -- name: CopyProcessVersionPoints :exec
-INSERT INTO process_template_points (version_id, subprocess_id, document_type_id, point_id, text, position, hidden)
-SELECT sqlc.arg(target_id)::uuid, s.subprocess_id, s.document_type_id, s.point_id, s.text, s.position, s.hidden
+INSERT INTO process_template_points (version_id, subprocess_id, document_type_id, point_id, text, position, hidden, content)
+SELECT sqlc.arg(target_id)::uuid, s.subprocess_id, s.document_type_id, s.point_id, s.text, s.position, s.hidden, s.content
 FROM process_template_points s
 WHERE s.version_id = sqlc.arg(source_id);
 
 
 -- name: CopyProcessVersionVariants :exec
-INSERT INTO process_template_variants (version_id, point_id, origin_point_id, text, hidden)
-SELECT sqlc.arg(target_id)::uuid, s.point_id, s.origin_point_id, s.text, s.hidden
+INSERT INTO process_template_variants (version_id, point_id, origin_point_id, text, hidden, content)
+SELECT sqlc.arg(target_id)::uuid, s.point_id, s.origin_point_id, s.text, s.hidden, s.content
 FROM process_template_variants s
 WHERE s.version_id = sqlc.arg(source_id);

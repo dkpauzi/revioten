@@ -2,6 +2,7 @@ package template
 
 import (
 	"errors"
+	"reflect"
 	"slices"
 	"testing"
 
@@ -282,7 +283,7 @@ func TestNewProcessVersion(t *testing.T) {
 			if p1.ID != p2.ID || p1.Text != p2.Text || p1.Position != p2.Position || p1.Scope != p2.Scope {
 				t.Errorf("poin %d.%d berbeda", i, j)
 			}
-			if !slices.Equal(p1.Variants, p2.Variants) {
+			if !reflect.DeepEqual(p1.Variants, p2.Variants) || !reflect.DeepEqual(p1.Content, p2.Content) {
 				t.Errorf("varian poin %d.%d berbeda: %+v dan %+v", i, j, p1.Variants, p2.Variants)
 			}
 		}

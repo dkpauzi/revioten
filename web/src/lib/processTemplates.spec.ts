@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import type { DocumentType, ProcessTemplate, Subprocess, TemplatePoint } from './api/gen/index.ts';
+import type { DocumentType, FormatVersion, ProcessTemplate, Subprocess, TemplatePoint } from './api/gen/index.ts';
 import { en } from './i18n/en.ts';
-import { pointSummary, pointTypes, pointsOf, scopeText, templateOf, variantLevels, versionText } from './processTemplates.ts';
+import { contentInput, pointColumns, pointSummary, pointTypes, pointsOf, scopeText, templateOf, variantLevels, versionText } from './processTemplates.ts';
 
 const types: DocumentType[] = [
 	{ id: 'd-pfd', key: 'pfd', name: 'PFD', letter: 'H', prefix: 'SH' },
@@ -16,6 +16,7 @@ function point(id: string, type: DocumentType, position: number): TemplatePoint 
 		id,
 		document_type: { id: type.id, key: type.key ?? 'pfd', name: type.name },
 		text: `Point ${id}`,
+		content: {},
 		position,
 		hidden: false,
 		scope: { level: 'general' },
@@ -71,5 +72,52 @@ describe('process template di layar', () => {
 		expect(versionText({ version: 1, status: 'draft' })).toBe(
 			en.processTemplateVersion.replace('{version}', '1').replace('{status}', en.processTemplateDraft)
 		);
+	});
+});
+
+describe('pointColumns (D-146)', () => {
+	const field = (id: string, kind: string, key: string | undefined, label: string, hidden = false) => ({ id, area: 'row', kind, key, label, position: 1, required: false, hidden });
+	const forms = [
+		{
+			name: 'PFMEA AIAG 4th',
+			version: {
+				fields: [
+					field('a', 'process', undefined, 'Process Step'),
+					field('b', 'text', 'failure_mode', 'Potential Failure Mode'),
+					field('c', 'rating', 'severity', 'Severity'),
+					field('d', 'text', undefined, 'Added by admin'),
+					field('e', 'rpn', 'rpn', 'RPN'),
+					{ ...field('h', 'text', 'core_team', 'Core Team'), area: 'header' }
+				]
+			} as unknown as FormatVersion
+		},
+		{
+			name: 'PFMEA AIAG-VDA 2019',
+			version: {
+				fields: [
+					field('f', 'text', 'failure_mode', '2. Failure Mode (FM)'),
+					field('g', 'select', 'work_element', '3. Process Work Element (4M)'),
+					field('i', 'text', 'function_process_item', '1. Function of the Process Item'),
+					field('j', 'text', 'note', 'Note', true)
+				]
+			} as unknown as FormatVersion
+		}
+	];
+
+	it('menggabungkan kolom ber-key dari semua form; kolom yang sama muncul sekali', () => {
+		expect(pointColumns(forms)).toEqual([
+			{ key: 'failure_mode', kind: 'text', label: 'Potential Failure Mode', forms: ['PFMEA AIAG 4th', 'PFMEA AIAG-VDA 2019'] },
+			{ key: 'severity', kind: 'rating', label: 'Severity', forms: ['PFMEA AIAG 4th'] },
+			{ key: 'function_process_item', kind: 'text', label: '1. Function of the Process Item', forms: ['PFMEA AIAG-VDA 2019'] }
+		]);
+	});
+
+	it('contentInput membuang isian kosong dan mengirim rating sebagai angka', () => {
+		const columns = pointColumns(forms);
+		expect(contentInput(columns, { failure_mode: ' Wrong part ', severity: '7', function_process_item: ' ' }, { other_key: 'kept' })).toEqual({
+			failure_mode: 'Wrong part',
+			severity: 7,
+			other_key: 'kept'
+		});
 	});
 });

@@ -113,6 +113,8 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-89 | Nama proses di PFMEA AIAG-VDA: diketik atau diisi dari master proses | Kontradiksi | M4.1, M4.5 | Tidak (perlu sebelum M4.1) | Diputuskan (D-144) |
 | E-90 | Batas isian dokumen, dan dokumen umum (kode ZZ) tanpa model | Celah | M4.1 | Tidak | Terbuka |
 | E-91 | Tempel dari Excel: ke mana isi sel janggal | Ambigu | M4.4 | Tidak | Terbuka |
+| E-92 | Isi poin per kolom: kolom mana yang dianggap sama di dua form set | Celah | M4.5 | Tidak | Terbuka |
+| E-93 | Perakitan: dokumen dengan beberapa model, dan pasangan poin | Celah | M4.5 | Tidak | Terbuka |
 
 ## Keputusan 4 November 2026
 
@@ -1663,6 +1665,39 @@ Salin blok ini untuk setiap temuan baru.
   - (c) Isi asli sel janggal disimpan sebagai catatan baris.
 - **Rekomendasi Claude Code (usulan):** (a) sekarang; (b) bila dalam pemakaian ternyata tanda di pratinjau saja kurang.
 - **Asumsi sementara di kode (ASUMSI E-91):** opsi (a). Tanggal hanya diterima sebagai 2026-11-13 atau 13-Nov-26, karena bentuk 03/04/2026 bisa tertukar hari dan bulannya.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-92 · Isi poin per kolom: kolom mana yang dianggap sama di dua form set
+
+- **Tanggal dan milestone:** 13 November 2026, M4.5.
+- **Jenis:** Celah
+- **Rujukan:** D-146, D-133, R-TPL-04.
+- **Temuan:** D-146 menyebut kolom yang ada di kedua form set dipakai bersama lewat key yang sama, tetapi tidak mendaftar pasangannya. Kolom form AIAG 4th (isi awal) belum punya key. Beberapa pasangan jelas (Potential Failure Mode dan Failure Mode), beberapa perlu penilaian: di CP, "Equipment" disamakan dengan "Evaluation / Measurement technique", "Method" dengan "Control Method", "Frequency" dengan "Sample Freq", dan "PIC" dengan "Owner". Dua kolom spesifikasi CP lama (produk dan proses) tidak punya pasangan tunggal di CP 2024, jadi diberi key sendiri. D-146 juga tidak menyebut jenis kolom mana yang diisi di poin.
+- **Dampak bila dibiarkan:** poin yang diisi untuk satu form set bisa masuk ke kolom yang kurang tepat di form set lain.
+- **Opsi:**
+  - (a) Pakai pasangan di migrasi 00024 (ASUMSI E-92) dan perbaiki bila pemilik menemukan yang salah.
+  - (b) Pemilik menetapkan tabel pasangan kolom sebelum poin diisi massal.
+- **Rekomendasi Claude Code (usulan):** (b) untuk CP, karena empat pasangan di atas adalah tafsiran; pasangan PFMEA cukup jelas.
+- **Asumsi sementara di kode (ASUMSI E-92):** pasangan di migrasi 00024. Poin hanya mengisi kolom teks dan rating; kolom pilihan, simbol, dan tanggal diisi di dokumen. Nilai poin yang tidak cocok dengan kolom form dokumen dilewati saat perakitan.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-93 · Perakitan: dokumen dengan beberapa model, dan pasangan poin
+
+- **Tanggal dan milestone:** 13 November 2026, M4.5.
+- **Jenis:** Celah
+- **Rujukan:** R-CMP-02, R-CMP-03, R-TPL-03, R-TPL-04, R-DOC-08.
+- **Temuan:** (1) Varian poin dipilih per model (R-TPL-03), tetapi satu dokumen boleh mencakup beberapa model (R-DOC-08). Brief tidak menyebut varian mana yang dipakai bila model-modelnya punya varian berbeda. (2) R-CMP-02 meminta tawaran mencoret pasangan poin (misalnya kontrol PFMEA dan baris CP-nya), tetapi tautan pasangan antar-poin (R-TPL-04) belum ada di process template.
+- **Dampak bila dibiarkan:** dokumen multi-model bisa memuat teks varian model pertama saja; tawaran mencoret pasangan belum ada.
+- **Opsi:**
+  - (a) Dokumen multi-model memakai varian model pertama, dan penyusun menyesuaikan barisnya (perbedaan lokal, M4.8). Tautan pasangan dibuat nanti bersama R-DOC-05.
+  - (b) Perakitan menolak dokumen multi-model yang variannya berbeda, dan meminta dokumen dipisah.
+  - (c) Satu baris per varian yang berbeda.
+- **Rekomendasi Claude Code (usulan):** (a).
+- **Asumsi sementara di kode (ASUMSI E-93):** opsi (a). Tawaran mencoret pasangan belum dibangun.
 - **Menghambat milestone?** Tidak
 - **Status:** Terbuka
 - **Keputusan pemilik:**

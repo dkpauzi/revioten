@@ -74,4 +74,23 @@ func TestDocumentEndpoints(t *testing.T) {
 	if rec.Code != http.StatusOK || fake.got != (called{method: "List", id: "c-1"}) {
 		t.Errorf("daftar: status %d, %+v", rec.Code, fake.got)
 	}
+
+	// M4.5: tampilan perakitan dan keputusan penyusun.
+	fake.composition = document.Composition{
+		VersionID: "pv-1", Version: 2, Process: document.Ref{ID: "p-1", Name: "IQC"},
+		Subprocesses: []document.ComposedSubprocess{{ID: "s-1", Name: "IQC MSD", Points: []document.ComposedPoint{
+			{PointID: "pp-1", DocumentType: document.TypeRef{ID: "dt-3", Key: "cp", Name: "CP"}, Text: "Check MSL label", DocumentID: "d-1", State: document.StateExcluded, Reason: "No MSD parts"},
+		}}},
+	}
+	rec = srv.do(http.MethodGet, "/api/v1/documents/d-1/composition?process_template_version_id=pv-1", "")
+	wantView := `{"process_template_version_id":"pv-1","version":2,"process":{"id":"p-1","name":"IQC"},"subprocesses":[{"id":"s-1","name":"IQC MSD",` +
+		`"points":[{"point_id":"pp-1","document_type":{"id":"dt-3","key":"cp","name":"CP"},"text":"Check MSL label","document_id":"d-1","state":"excluded","reason":"No MSD parts"}]}]}`
+	if rec.Code != http.StatusOK || fake.got != (called{method: "Composition", id: "d-1", input: "pv-1"}) || !sameJSON(t, rec.Body.String(), wantView) {
+		t.Errorf("perakitan: status %d\n%s", rec.Code, rec.Body.String())
+	}
+	rec = srv.do(http.MethodPut, "/api/v1/documents/d-1/composition", `{"process_template_version_id":"pv-1","include":["pp-2"],"exclude":[{"point_id":"pp-1","reason":"No MSD parts"}]}`)
+	wantCompose := document.Compose{VersionID: "pv-1", Include: []string{"pp-2"}, Exclude: []document.Exclusion{{PointID: "pp-1", Reason: "No MSD parts"}}}
+	if rec.Code != http.StatusOK || !reflect.DeepEqual(fake.gotCompose, wantCompose) {
+		t.Errorf("rakit: status %d, %+v", rec.Code, fake.gotCompose)
+	}
 }

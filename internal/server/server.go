@@ -170,6 +170,8 @@ type DocumentService interface {
 	SetHeader(ctx context.Context, actor access.Actor, id string, header map[string]any, version int) (document.Document, error)
 	AddRow(ctx context.Context, actor access.Actor, id string, in document.NewRow) (document.Document, error)
 	AddRows(ctx context.Context, actor access.Actor, id string, rows []document.NewRow) (document.Document, error)
+	Composition(ctx context.Context, actor access.Actor, id, versionID string) (document.Composition, error)
+	Compose(ctx context.Context, actor access.Actor, id string, in document.Compose) (document.Document, error)
 	UpdateRow(ctx context.Context, actor access.Actor, id, rowID string, in document.RowUpdate) (document.Document, error)
 	DeleteRow(ctx context.Context, actor access.Actor, id, rowID string) (document.Document, error)
 }

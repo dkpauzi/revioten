@@ -82,6 +82,7 @@ const (
 	ActionDocumentHeaderChanged  = "document.header_changed"
 	ActionDocumentRowAdded       = "document.row_added"
 	ActionDocumentRowsPasted     = "document.rows_pasted" // M4.4
+	ActionDocumentComposed       = "document.composed"    // M4.5
 	ActionDocumentRowChanged     = "document.row_changed"
 	ActionDocumentRowRemoved     = "document.row_removed"
 	ActionChangeTypeRouteChanged = "change_type.route_changed"

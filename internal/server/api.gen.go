@@ -179,6 +179,27 @@ func (e ChangeTypeKey) Valid() bool {
 	}
 }
 
+// Defines values for ComposedPointState.
+const (
+	ComposedPointStateExcluded  ComposedPointState = "excluded"
+	ComposedPointStateIncluded  ComposedPointState = "included"
+	ComposedPointStateUndecided ComposedPointState = "undecided"
+)
+
+// Valid indicates whether the value is a known member of the ComposedPointState enum.
+func (e ComposedPointState) Valid() bool {
+	switch e {
+	case ComposedPointStateExcluded:
+		return true
+	case ComposedPointStateIncluded:
+		return true
+	case ComposedPointStateUndecided:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for DocumentStatus.
 const (
 	DocumentStatusDraft DocumentStatus = "draft"
@@ -1430,6 +1451,48 @@ type ChangeTypeRouteChoice struct {
 	RouteId *string `json:"route_id,omitempty"`
 }
 
+// ComposeInput defines model for ComposeInput.
+type ComposeInput struct {
+	Exclude                  *[]PointExclusion `json:"exclude,omitempty"`
+	Include                  *[]string         `json:"include,omitempty"`
+	ProcessTemplateVersionId string            `json:"process_template_version_id"`
+}
+
+// ComposedPoint defines model for ComposedPoint.
+type ComposedPoint struct {
+	// DocumentId The document of the set that receives this point.
+	DocumentId   string          `json:"document_id"`
+	DocumentType DocumentTypeRef `json:"document_type"`
+
+	// PointId The origin point; rows are linked to this ID.
+	PointId string `json:"point_id"`
+
+	// Reason Why the point is excluded, when a reason was given.
+	Reason *string            `json:"reason,omitempty"`
+	State  ComposedPointState `json:"state"`
+
+	// Text The text of the point, or of the variant that applies to the model.
+	Text string `json:"text"`
+}
+
+// ComposedPointState defines model for ComposedPoint.State.
+type ComposedPointState string
+
+// ComposedSubprocess defines model for ComposedSubprocess.
+type ComposedSubprocess struct {
+	Id     string          `json:"id"`
+	Name   string          `json:"name"`
+	Points []ComposedPoint `json:"points"`
+}
+
+// Composition defines model for Composition.
+type Composition struct {
+	Process                  NamedRef             `json:"process"`
+	ProcessTemplateVersionId string               `json:"process_template_version_id"`
+	Subprocesses             []ComposedSubprocess `json:"subprocesses"`
+	Version                  int                  `json:"version"`
+}
+
 // CreatedAccount defines model for CreatedAccount.
 type CreatedAccount struct {
 	Account AccountInfo `json:"account"`
@@ -1637,6 +1700,9 @@ type DocumentRow struct {
 	Position        int     `json:"position"`
 	ProcessId       *string `json:"process_id,omitempty"`
 	ProcessName     *string `json:"process_name,omitempty"`
+
+	// TemplatePointId The process template point this row was composed from; left out for a typed or pasted row (R-CMP-04).
+	TemplatePointId *string `json:"template_point_id,omitempty"`
 
 	// Version Goes up by one each time the row is saved. Send it back when changing the row (R-DOC-07).
 	Version int `json:"version"`
@@ -2216,6 +2282,9 @@ type NewPartNumber struct {
 
 // NewPointVariant defines model for NewPointVariant.
 type NewPointVariant struct {
+	// Content The content of a point per column of the format, keyed by the fixed field key, for example failure_mode or product_characteristic (D-146). A value is text, or a whole number from 1 to 10 for a rating column. One point serves every form that has a column with the same key.
+	Content *PointContent `json:"content,omitempty"`
+
 	// ScopeLevel customer, model_group, or model.
 	ScopeLevel    string `json:"scope_level"`
 	ScopeTargetId string `json:"scope_target_id"`
@@ -2259,7 +2328,9 @@ type NewSubprocess struct {
 
 // NewTemplatePoint defines model for NewTemplatePoint.
 type NewTemplatePoint struct {
-	DocumentTypeId string `json:"document_type_id"`
+	// Content The content of a point per column of the format, keyed by the fixed field key, for example failure_mode or product_characteristic (D-146). A value is text, or a whole number from 1 to 10 for a rating column. One point serves every form that has a column with the same key.
+	Content        *PointContent `json:"content,omitempty"`
+	DocumentTypeId string        `json:"document_type_id"`
 
 	// ScopeLevel general (when left out), customer, model_group, or model (M3.3, D-129).
 	ScopeLevel *string `json:"scope_level,omitempty"`
@@ -2446,6 +2517,15 @@ type PersonInfo struct {
 	Name string `json:"name"`
 }
 
+// PointContent The content of a point per column of the format, keyed by the fixed field key, for example failure_mode or product_characteristic (D-146). A value is text, or a whole number from 1 to 10 for a rating column. One point serves every form that has a column with the same key.
+type PointContent map[string]interface{}
+
+// PointExclusion defines model for PointExclusion.
+type PointExclusion struct {
+	PointId string  `json:"point_id"`
+	Reason  *string `json:"reason,omitempty"`
+}
+
 // PointScope What a point or variant is usually used for (M3.3, D-129). Fixed after it is made.
 type PointScope struct {
 	// Label Customer code, model group name, or model name. Left out for general.
@@ -2461,7 +2541,9 @@ type PointScopeLevel string
 
 // PointVariant defines model for PointVariant.
 type PointVariant struct {
-	Hidden bool `json:"hidden"`
+	// Content The content of a point per column of the format, keyed by the fixed field key, for example failure_mode or product_characteristic (D-146). A value is text, or a whole number from 1 to 10 for a rating column. One point serves every form that has a column with the same key.
+	Content PointContent `json:"content"`
+	Hidden  bool         `json:"hidden"`
 
 	// Id Fixed across versions, like a point ID.
 	Id string `json:"id"`
@@ -2473,8 +2555,10 @@ type PointVariant struct {
 
 // PointVariantUpdate defines model for PointVariantUpdate.
 type PointVariantUpdate struct {
-	Hidden *bool  `json:"hidden,omitempty"`
-	Text   string `json:"text"`
+	// Content The content of a point per column of the format, keyed by the fixed field key, for example failure_mode or product_characteristic (D-146). A value is text, or a whole number from 1 to 10 for a rating column. One point serves every form that has a column with the same key.
+	Content *PointContent `json:"content,omitempty"`
+	Hidden  *bool         `json:"hidden,omitempty"`
+	Text    string        `json:"text"`
 }
 
 // Position A job title in the approval workflow (D-54). The key never changes; the name may (D-58).
@@ -2662,6 +2746,8 @@ type ResolvedModel struct {
 
 // ResolvedPoint defines model for ResolvedPoint.
 type ResolvedPoint struct {
+	// Content The content of a point per column of the format, keyed by the fixed field key, for example failure_mode or product_characteristic (D-146). A value is text, or a whole number from 1 to 10 for a rating column. One point serves every form that has a column with the same key.
+	Content      PointContent    `json:"content"`
 	DocumentType DocumentTypeRef `json:"document_type"`
 
 	// OriginId The point the variant belongs to; the same as point_id when no variant won.
@@ -2848,10 +2934,12 @@ type SystemSettingsUpdateFormApprovalMode string
 
 // TemplatePoint defines model for TemplatePoint.
 type TemplatePoint struct {
+	// Content The content of a point per column of the format, keyed by the fixed field key, for example failure_mode or product_characteristic (D-146). A value is text, or a whole number from 1 to 10 for a rating column. One point serves every form that has a column with the same key.
+	Content      PointContent    `json:"content"`
 	DocumentType DocumentTypeRef `json:"document_type"`
 	Hidden       bool            `json:"hidden"`
 
-	// Id Fixed across versions; document rows will point to this ID.
+	// Id Fixed across versions; document rows point to this ID (R-CMP-04).
 	Id string `json:"id"`
 
 	// Position Order within the sub-process for the same document type, from 1.
@@ -2867,9 +2955,11 @@ type TemplatePoint struct {
 
 // TemplatePointUpdate defines model for TemplatePointUpdate.
 type TemplatePointUpdate struct {
-	Hidden   *bool  `json:"hidden,omitempty"`
-	Position *int   `json:"position,omitempty"`
-	Text     string `json:"text"`
+	// Content The content of a point per column of the format, keyed by the fixed field key, for example failure_mode or product_characteristic (D-146). A value is text, or a whole number from 1 to 10 for a rating column. One point serves every form that has a column with the same key.
+	Content  *PointContent `json:"content,omitempty"`
+	Hidden   *bool         `json:"hidden,omitempty"`
+	Position *int          `json:"position,omitempty"`
+	Text     string        `json:"text"`
 }
 
 // TemporaryPassword defines model for TemporaryPassword.
@@ -3029,6 +3119,11 @@ type ListDocumentsParams struct {
 	CustomerId string `form:"customer_id" json:"customer_id"`
 }
 
+// GetDocumentCompositionParams defines parameters for GetDocumentComposition.
+type GetDocumentCompositionParams struct {
+	ProcessTemplateVersionId string `form:"process_template_version_id" json:"process_template_version_id"`
+}
+
 // GetActionPriorityParams defines parameters for GetActionPriority.
 type GetActionPriorityParams struct {
 	Severity   int `form:"severity" json:"severity"`
@@ -3124,6 +3219,9 @@ type UpdateDocumentTypeJSONRequestBody = DocumentTypeInput
 
 // CreateDocumentJSONRequestBody defines body for CreateDocument for application/json ContentType.
 type CreateDocumentJSONRequestBody = NewDocument
+
+// ComposeDocumentJSONRequestBody defines body for ComposeDocument for application/json ContentType.
+type ComposeDocumentJSONRequestBody = ComposeInput
 
 // SetDocumentHeaderJSONRequestBody defines body for SetDocumentHeader for application/json ContentType.
 type SetDocumentHeaderJSONRequestBody = DocumentHeader
@@ -3355,6 +3453,12 @@ type ServerInterface interface {
 	// GetDocument One document with its header and rows (L-4)
 	// (GET /api/v1/documents/{documentId})
 	GetDocument(w http.ResponseWriter, r *http.Request, documentId DocumentId)
+	// GetDocumentComposition The points of one process template version and their state in this document set (L-4, M4.5)
+	// (GET /api/v1/documents/{documentId}/composition)
+	GetDocumentComposition(w http.ResponseWriter, r *http.Request, documentId DocumentId, params GetDocumentCompositionParams)
+	// ComposeDocument Use or leave out points of a published process template version (E-2, M4.5)
+	// (PUT /api/v1/documents/{documentId}/composition)
+	ComposeDocument(w http.ResponseWriter, r *http.Request, documentId DocumentId)
 	// SetDocumentHeader Replace the header content of a draft document (E-2)
 	// (PUT /api/v1/documents/{documentId}/header)
 	SetDocumentHeader(w http.ResponseWriter, r *http.Request, documentId DocumentId)
@@ -4495,6 +4599,74 @@ func (siw *ServerInterfaceWrapper) GetDocument(w http.ResponseWriter, r *http.Re
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetDocument(w, r, documentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetDocumentComposition operation middleware
+func (siw *ServerInterfaceWrapper) GetDocumentComposition(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", r.PathValue("documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetDocumentCompositionParams
+
+	// ------------- Required query parameter "process_template_version_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "process_template_version_id", r.URL.Query(), &params.ProcessTemplateVersionId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "process_template_version_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "process_template_version_id", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetDocumentComposition(w, r, documentId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ComposeDocument operation middleware
+func (siw *ServerInterfaceWrapper) ComposeDocument(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", r.PathValue("documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ComposeDocument(w, r, documentId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -6337,6 +6509,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents", wrapper.CreateDocument)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/documents/{documentId}", wrapper.GetDocument)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/documents/{documentId}/header", wrapper.SetDocumentHeader)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/documents/{documentId}/composition", wrapper.GetDocumentComposition)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/documents/{documentId}/composition", wrapper.ComposeDocument)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/rows", wrapper.AddDocumentRow)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/rows/batch", wrapper.AddDocumentRows)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/documents/{documentId}/rows/{rowId}", wrapper.DeleteDocumentRow)
@@ -7902,6 +8076,86 @@ type GetDocumentdefaultJSONResponse struct {
 }
 
 func (response GetDocumentdefaultJSONResponse) VisitGetDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDocumentCompositionRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+	Params     GetDocumentCompositionParams
+}
+
+type GetDocumentCompositionResponseObject interface {
+	VisitGetDocumentCompositionResponse(w http.ResponseWriter) error
+}
+
+type GetDocumentComposition200JSONResponse Composition
+
+func (response GetDocumentComposition200JSONResponse) VisitGetDocumentCompositionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDocumentCompositiondefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response GetDocumentCompositiondefaultJSONResponse) VisitGetDocumentCompositionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ComposeDocumentRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+	Body       *ComposeDocumentJSONRequestBody
+}
+
+type ComposeDocumentResponseObject interface {
+	VisitComposeDocumentResponse(w http.ResponseWriter) error
+}
+
+type ComposeDocument200JSONResponse Document
+
+func (response ComposeDocument200JSONResponse) VisitComposeDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ComposeDocumentdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ComposeDocumentdefaultJSONResponse) VisitComposeDocumentResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -10771,6 +11025,12 @@ type StrictServerInterface interface {
 	// GetDocument One document with its header and rows (L-4)
 	// (GET /api/v1/documents/{documentId})
 	GetDocument(ctx context.Context, request GetDocumentRequestObject) (GetDocumentResponseObject, error)
+	// GetDocumentComposition The points of one process template version and their state in this document set (L-4, M4.5)
+	// (GET /api/v1/documents/{documentId}/composition)
+	GetDocumentComposition(ctx context.Context, request GetDocumentCompositionRequestObject) (GetDocumentCompositionResponseObject, error)
+	// ComposeDocument Use or leave out points of a published process template version (E-2, M4.5)
+	// (PUT /api/v1/documents/{documentId}/composition)
+	ComposeDocument(ctx context.Context, request ComposeDocumentRequestObject) (ComposeDocumentResponseObject, error)
 	// SetDocumentHeader Replace the header content of a draft document (E-2)
 	// (PUT /api/v1/documents/{documentId}/header)
 	SetDocumentHeader(ctx context.Context, request SetDocumentHeaderRequestObject) (SetDocumentHeaderResponseObject, error)
@@ -12098,6 +12358,66 @@ func (sh *strictHandler) GetDocument(w http.ResponseWriter, r *http.Request, doc
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetDocumentResponseObject); ok {
 		if err := validResponse.VisitGetDocumentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetDocumentComposition operation middleware
+func (sh *strictHandler) GetDocumentComposition(w http.ResponseWriter, r *http.Request, documentId DocumentId, params GetDocumentCompositionParams) {
+	var request GetDocumentCompositionRequestObject
+
+	request.DocumentId = documentId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetDocumentComposition(ctx, request.(GetDocumentCompositionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetDocumentComposition")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetDocumentCompositionResponseObject); ok {
+		if err := validResponse.VisitGetDocumentCompositionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ComposeDocument operation middleware
+func (sh *strictHandler) ComposeDocument(w http.ResponseWriter, r *http.Request, documentId DocumentId) {
+	var request ComposeDocumentRequestObject
+
+	request.DocumentId = documentId
+
+	var body ComposeDocumentJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ComposeDocument(ctx, request.(ComposeDocumentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ComposeDocument")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ComposeDocumentResponseObject); ok {
+		if err := validResponse.VisitComposeDocumentResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

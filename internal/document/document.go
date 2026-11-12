@@ -78,6 +78,10 @@ type Row struct {
 	Content         map[string]any // per ID kolom format
 	// Version naik setiap kali baris disimpan (penguncian optimistik, M4.3).
 	Version int
+	// TemplatePointID adalah poin process template asal baris ini; "" untuk
+	// baris yang diketik atau ditempel sendiri (R-CMP-04, M4.5).
+	TemplatePointID   string
+	TemplateVersionID string
 }
 
 // Document adalah satu dokumen lengkap dengan header dan barisnya.
@@ -528,6 +532,12 @@ func (s *Service) DeleteRow(ctx context.Context, actor access.Actor, id, rowID s
 		if err := q.ShiftRowsUp(ctx, db.ShiftRowsUpParams{DocumentID: d.ID, Position: gone.Position}); err != nil {
 			return "", nil, err
 		}
+		// Baris tertaut yang dihapus berarti poinnya dikecualikan (R-CMP-03).
+		if gone.TemplatePointID != nil {
+			if err := q.ExcludePoint(ctx, db.ExcludePointParams{DocumentID: d.ID, PointID: *gone.TemplatePointID}); err != nil {
+				return "", nil, err
+			}
+		}
 		details := map[string]string{"position": strconv.Itoa(int(gone.Position))}
 		if gone.OperationNumber != nil {
 			details["operation_number"] = *gone.OperationNumber
@@ -660,7 +670,8 @@ func getDocument(ctx context.Context, q *db.Queries, id string) (Document, error
 		return Document{}, err
 	}
 	for _, row := range rows {
-		item := Row{ID: row.ID, Position: int(row.Position), ProcessID: deref(row.ProcessID), ProcessName: deref(row.ProcessName), OperationNumber: deref(row.OperationNumber), Version: int(row.Version)}
+		item := Row{ID: row.ID, Position: int(row.Position), ProcessID: deref(row.ProcessID), ProcessName: deref(row.ProcessName), OperationNumber: deref(row.OperationNumber), Version: int(row.Version),
+			TemplatePointID: deref(row.TemplatePointID), TemplateVersionID: deref(row.TemplateVersionID)}
 		if err := json.Unmarshal(row.Content, &item.Content); err != nil {
 			return Document{}, fmt.Errorf("membaca baris: %w", err)
 		}

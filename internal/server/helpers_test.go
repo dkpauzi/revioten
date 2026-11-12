@@ -570,7 +570,10 @@ type fakeDocuments struct {
 	gotUpd document.RowUpdate
 	// gotRows adalah blok baris pada AddRows (M4.4).
 	gotRows []document.NewRow
-	header  map[string]any
+	// composition dan gotCompose: perakitan (M4.5).
+	composition document.Composition
+	gotCompose  document.Compose
+	header      map[string]any
 	// headerVersion adalah versi header yang dikirim klien (M4.3).
 	headerVersion int
 }
@@ -602,6 +605,16 @@ func (f *fakeDocuments) AddRow(_ context.Context, _ access.Actor, id string, in 
 
 func (f *fakeDocuments) AddRows(_ context.Context, _ access.Actor, id string, rows []document.NewRow) (document.Document, error) {
 	f.got, f.gotRows = called{method: "AddRows", id: id}, rows
+	return f.doc, f.err
+}
+
+func (f *fakeDocuments) Composition(_ context.Context, _ access.Actor, id, versionID string) (document.Composition, error) {
+	f.got = called{method: "Composition", id: id, input: versionID}
+	return f.composition, f.err
+}
+
+func (f *fakeDocuments) Compose(_ context.Context, _ access.Actor, id string, in document.Compose) (document.Document, error) {
+	f.got, f.gotCompose = called{method: "Compose", id: id}, in
 	return f.doc, f.err
 }
 

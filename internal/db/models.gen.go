@@ -127,16 +127,25 @@ type DocumentPartNumber struct {
 	PartNumberID string
 }
 
+type DocumentPointExclusion struct {
+	DocumentID string
+	PointID    string
+	Reason     *string
+	ExcludedAt time.Time
+}
+
 type DocumentRow struct {
-	ID              string
-	DocumentID      string
-	Position        int32
-	ProcessID       *string
-	OperationNumber *string
-	Content         []byte
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
-	Version         int32
+	ID                string
+	DocumentID        string
+	Position          int32
+	ProcessID         *string
+	OperationNumber   *string
+	Content           []byte
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
+	Version           int32
+	TemplatePointID   *string
+	TemplateVersionID *string
 }
 
 type DocumentType struct {
@@ -353,6 +362,7 @@ type ProcessTemplatePoint struct {
 	Text           string
 	Position       int16
 	Hidden         bool
+	Content        []byte
 }
 
 type ProcessTemplateSubprocess struct {
@@ -370,6 +380,7 @@ type ProcessTemplateVariant struct {
 	OriginPointID string
 	Text          string
 	Hidden        bool
+	Content       []byte
 }
 
 type ProcessTemplateVersion struct {

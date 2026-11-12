@@ -10,9 +10,13 @@ package template
 // poin untuk PFD, PFMEA, dan CP.
 
 import (
+	"encoding/json"
 	"fmt"
+	"regexp"
 	"slices"
+	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/dkpauzi/revioten/internal/problem"
 )
@@ -88,8 +92,11 @@ type Point struct {
 	Text         string
 	Position     int // urutan dalam sub-proses untuk jenis dokumen yang sama, mulai 1
 	Hidden       bool
-	Scope        Scope     // biasanya dipakai untuk: umum, customer, group model, atau model
-	Variants     []Variant // dari cakupan terluas ke tersempit, tidak pernah nil
+	Scope        Scope // biasanya dipakai untuk: umum, customer, group model, atau model
+	// Content adalah isi poin per kolom format, dengan key tetap kolom sebagai
+	// kuncinya (D-146); tidak pernah nil. Text tetap menjadi judul poin.
+	Content  map[string]any
+	Variants []Variant // dari cakupan terluas ke tersempit, tidak pernah nil
 }
 
 // SubprocessUpdate adalah isian perubahan sub-proses. Nama wajib dikirim;
@@ -107,6 +114,7 @@ type NewPoint struct {
 	DocumentTypeID string
 	Text           string
 	Scope          ScopeInput
+	Content        map[string]any // boleh nil (D-146)
 }
 
 // PointUpdate adalah isian perubahan poin. Teks wajib dikirim; isian nil
@@ -115,6 +123,7 @@ type PointUpdate struct {
 	Text     string
 	Position *int
 	Hidden   *bool
+	Content  *map[string]any // nil berarti isi tetap (D-146)
 }
 
 // itemChange adalah hasil gabungan perubahan sub-proses atau poin dengan
@@ -192,4 +201,56 @@ func countPoints(s Subprocess, documentTypeID string) int {
 		}
 	}
 	return n
+}
+
+// Batas isi poin per kolom (D-146).
+const maxPointColumns = 60
+
+var pointKeyPattern = regexp.MustCompile(`^[a-z][a-z0-9_]{0,49}$`)
+
+// cleanPointContent merapikan isi poin per kolom (D-146). Kuncinya key tetap
+// kolom format. Nilainya teks, atau bilangan bulat 1 sampai 10 untuk kolom
+// rating. Teks kosong dibuang. Isi tidak diperiksa terhadap satu format
+// tertentu, karena satu poin melayani beberapa form; nilai yang tidak cocok
+// dengan kolom form dokumen dilewati saat perakitan (M4.5).
+func cleanPointContent(content map[string]any) (map[string]any, *problem.Problem) {
+	bad := &problem.Problem{Field: "content", Code: problem.InvalidFormat,
+		Message: "Content is keyed by the column key, with text or a whole number from 1 to 10 as value."}
+	out := map[string]any{}
+	if len(content) > maxPointColumns {
+		return nil, bad
+	}
+	for key, value := range content {
+		if !pointKeyPattern.MatchString(key) {
+			return nil, bad
+		}
+		switch v := value.(type) {
+		case nil:
+			continue
+		case string:
+			v = strings.TrimSpace(v)
+			if utf8.RuneCountInString(v) > MaxTextLength {
+				return nil, bad
+			}
+			if v != "" {
+				out[key] = v
+			}
+		default:
+			n, ok := whole(value)
+			if !ok || n < 1 || n > maxRating {
+				return nil, bad
+			}
+			out[key] = n
+		}
+	}
+	return out, nil
+}
+
+// pointContent membaca isi poin dari database; isi kosong menjadi map kosong.
+func pointContent(data []byte) map[string]any {
+	out := map[string]any{}
+	if len(data) > 0 {
+		_ = json.Unmarshal(data, &out)
+	}
+	return out
 }

@@ -158,6 +158,7 @@ export const helpId: HelpContent = {
 				'Tekan {subprocessShowPoints} pada satu sub-proses untuk melihat dan menambah poinnya.',
 				'Pilih {pointDocumentType}, isi {pointText}, dan pilih {pointScope}: {scopeGeneral} bila poin berlaku untuk semua model, atau customer, group model, atau model tertentu. Lalu tekan {pointAdd}.',
 				'Bila satu customer atau model butuh teks berbeda, tekan {variantAdd} pada poinnya, pilih cakupan yang lebih sempit, isi {variantText}, dan tekan {variantAdd} lagi.',
+'Tekan {pointContent} pada poin atau varian untuk mengisi apa yang ditulisnya ke setiap kolom form, misalnya failure mode, akibatnya, dan severity untuk poin PFMEA. Kolom yang dimiliki dua form cukup diisi sekali dan berlaku untuk keduanya. Nilai inilah yang menjadi isi awal baris dokumen saat poin dipakai di dokumen.',
 				'Di bagian {previewTitle}, pilih customer dan model untuk melihat poin yang didapat model itu.'
 			],
 			image: 'process-templates',
@@ -239,6 +240,7 @@ export const helpId: HelpContent = {
 				'Buka dokumen itu dari daftar. Isi field header dan tekan {documentHeaderSave}.',
 				'Tekan {documentRowAdd} untuk menambah baris kosong di akhir sheet.',
 'Untuk membawa baris dari file Excel, tekan {pasteOpen}. Salin sel di Excel, tempel di kotaknya, lalu tekan {pastePreview}. Centang {pasteHasHeader} bila baris judul ikut disalin; kolom lalu dicocokkan menurut judulnya. Di atas setiap kolom Anda memilih ke mana kolom itu masuk. Sel yang tidak cocok dengan kolomnya, misalnya severity yang bukan angka, ditandai dan dikosongkan; barisnya tetap ditambahkan. Belum ada yang disimpan sampai Anda menekan tombol Impor.',
+'Untuk menyusun baris dari pustaka proses tanpa mengetiknya, tekan {composeOpen}. Pilih proses di sebelah kiri dan centang sub-proses serta poin yang dipakai model ini; sebelah kanan menampilkan baris yang akan didapat setiap dokumen di set. Tekan {composeApply}. Poin yang dicentang menjadi baris di PFD, PFMEA, atau CP yang tetap tertaut ke template. Poin tanpa centang dicatat sebagai tidak dipakai, dan alasannya boleh ditulis di sebelahnya. Poin yang ditambahkan versi template yang lebih baru bertanda {composeUndecided} sampai Anda memutuskannya.',
 'Dua orang bisa bekerja di dokumen yang sama. Bila orang lain lebih dulu menyimpan baris yang sama, perubahan Anda tidak disimpan: pesan muncul, isi terbaru ditampilkan, dan Anda memasukkan lagi perubahan Anda.',
 				'Klik satu sel lalu ketik, seperti di Excel. Tekan Enter atau klik di tempat lain, dan barisnya tersimpan. Di kolom nomor operasi dan proses, Anda memilih nilai milik baris itu sendiri.',
 				'Tekan {documentRowDelete} pada satu baris untuk menghapusnya. Baris sesudahnya bergeser naik.',

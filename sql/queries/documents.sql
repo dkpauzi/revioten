@@ -101,7 +101,8 @@ ORDER BY p.number;
 
 
 -- name: ListDocumentRows :many
-SELECT r.id, r.position, r.process_id, n.name AS process_name, r.operation_number, r.content, r.version
+SELECT r.id, r.position, r.process_id, n.name AS process_name, r.operation_number, r.content, r.version,
+       r.template_point_id, r.template_version_id
 FROM document_rows r
 LEFT JOIN process_names n ON n.process_id = r.process_id AND n.kind = 'display'
 WHERE r.document_id = $1
@@ -138,7 +139,7 @@ SELECT EXISTS (SELECT 1 FROM processes WHERE id = $1);
 
 -- name: DeleteDocumentRow :one
 DELETE FROM document_rows WHERE id = $1 AND document_id = $2
-RETURNING position, operation_number;
+RETURNING position, operation_number, template_point_id;
 
 
 -- name: ShiftRowsUp :exec
@@ -156,3 +157,29 @@ JOIN document_numbers n ON n.id = d.document_number_id
 JOIN document_types t ON t.id = d.document_type_id
 WHERE n.batch_id = (SELECT n2.batch_id FROM documents d2 JOIN document_numbers n2 ON n2.id = d2.document_number_id WHERE d2.id = $1)
 ORDER BY t.position, n.number;
+
+-- M4.5: perakitan dari process template (R-CMP-01 sampai R-CMP-04).
+
+
+-- name: AddComposedRow :one
+-- AddComposedRow menambah baris hasil perakitan di akhir dokumen, tertaut ke
+-- poin asalnya dan versi template yang dipakai (R-CMP-04).
+INSERT INTO document_rows (document_id, position, process_id, content, template_point_id, template_version_id)
+VALUES ($1, (SELECT coalesce(max(position), 0) + 1 FROM document_rows WHERE document_id = $1), $2, $3, $4, $5)
+RETURNING id, position;
+
+
+-- name: ListPointExclusions :many
+SELECT point_id, reason FROM document_point_exclusions WHERE document_id = $1;
+
+
+-- name: ExcludePoint :exec
+-- ExcludePoint mencatat poin yang dikecualikan dari satu dokumen (R-CMP-03).
+-- Mengecualikan lagi mengganti alasannya.
+INSERT INTO document_point_exclusions (document_id, point_id, reason)
+VALUES ($1, $2, $3)
+ON CONFLICT (document_id, point_id) DO UPDATE SET reason = EXCLUDED.reason, excluded_at = now();
+
+
+-- name: ClearPointExclusion :exec
+DELETE FROM document_point_exclusions WHERE document_id = $1 AND point_id = $2;

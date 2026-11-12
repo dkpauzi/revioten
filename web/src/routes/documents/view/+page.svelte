@@ -3,10 +3,11 @@
 	// Excel (D-145) dengan tab sheet untuk dokumen satu set. Kolom terisi
 	// otomatis (nomor operasi, proses) diambil dari atribut baris (D-122,
 	// D-123); kolom yang dihitung tidak diketik.
-	import { onMount } from 'svelte';
+	import { untrack } from 'svelte';
 	import { page } from '$app/state';
 	import { addDocumentRow, addDocumentRows, deleteDocumentRow, getDocument, getFormatVersion, listProcesses, setDocumentHeader, updateDocumentRow, type ApiFailure } from '#lib/api/client.ts';
 	import type { Document, DocumentRow, DocumentRowInput, FormatVersion, Process } from '#lib/api/gen/index.ts';
+	import ComposePanel from '#lib/documents/ComposePanel.svelte';
 	import PastePanel from '#lib/documents/PastePanel.svelte';
 	import Workbook from '#lib/documents/Workbook.svelte';
 	import { cleanContent, typedFields } from '#lib/documents.ts';
@@ -27,14 +28,28 @@
 
 	// pasting: panel Tempel dari Excel sedang dibuka (M4.4).
 	let pasting = $state(false);
+	// composing: panel perakitan dari process template sedang dibuka (M4.5).
+	let composing = $state(false);
 
 	// Isian header.
 	let header = $state<Record<string, string>>({});
 
-	onMount(load);
+	// Dokumen mengikuti ?id= di alamat. Tab sheet adalah tautan biasa ke
+	// dokumen lain di set yang sama; SvelteKit mengganti alamat tanpa memuat
+	// ulang halaman, lalu efek ini memuat dokumennya (juga saat tombol Back).
+	let currentId = $derived(page.url.searchParams.get('id') ?? '');
+	$effect(() => {
+		const id = currentId;
+		untrack(() => {
+			reset();
+			doc = null;
+			pasting = false;
+			composing = false;
+			load(id);
+		});
+	});
 
-	async function load() {
-		const id = page.url.searchParams.get('id') ?? '';
+	async function load(id: string) {
 		const result = await getDocument(id);
 		if (!result.ok) {
 			loadError = failureText(result.error);
@@ -164,6 +179,14 @@
 		return true;
 	}
 
+	// composed menerima dokumen sesudah perakitan (M4.5).
+	function composed(d: Document, process: string) {
+		reset();
+		use(d);
+		composing = false;
+		message = t('composeDone', { process });
+	}
+
 	async function removeRow(rowId: string) {
 		reset();
 		if (!doc) {
@@ -181,18 +204,7 @@
 		use(result.data);
 		message = t('documentRowRemoved', { position: String(position) });
 	}
-
-	// openSheet berpindah ke dokumen lain di set yang sama tanpa memuat ulang halaman.
-	async function openSheet(event: MouseEvent, id: string) {
-		event.preventDefault();
-		if (doc && id === doc.id) {
-			return;
-		}
-		history.pushState({}, '', `/documents/view?id=${id}`);
-		reset();
-		doc = null;
-		await load();
-	}</script>
+</script>
 
 {#if loadError}
 	<h1>{t('documentsTitle')}</h1>
@@ -251,7 +263,7 @@
 		<!-- Tab sheet workbook (D-145): dokumen satu set PFD, PFMEA, dan CP. Tab Check menyusul di M4.9. -->
 		<nav class="sheets" aria-label={t('documentSheets')}>
 			{#each doc.set as m (m.id)}
-				<a href="/documents/view?id={m.id}" aria-current={m.id === doc.id ? 'page' : undefined} onclick={(e) => openSheet(e, m.id)}>{m.document_type.name}</a>
+				<a href="/documents/view?id={m.id}" data-sveltekit-noscroll aria-current={m.id === doc.id ? 'page' : undefined}>{m.document_type.name}</a>
 			{/each}
 		</nav>
 		<h2>{t('documentRowsTitle')}</h2>
@@ -263,9 +275,18 @@
 			<p class="row-actions">
 				<button type="button" onclick={addRow}>{t('documentRowAdd')}</button>
 				{#if !pasting}<button type="button" onclick={() => (pasting = true)}>{t('pasteOpen')}</button>{/if}
+				{#if !composing}<button type="button" onclick={() => (composing = true)}>{t('composeOpen')}</button>{/if}
 			</p>
 		{/if}
 	</section>
+
+	{#if canEdit && composing}
+		<section>
+			{#key doc.id}
+				<ComposePanel {doc} oncomposed={composed} oncancel={() => (composing = false)} />
+			{/key}
+		</section>
+	{/if}
 
 	{#if canEdit && pasting}
 		<section>

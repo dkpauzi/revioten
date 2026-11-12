@@ -83,6 +83,9 @@ func (a *apiServer) AddTemplatePoint(ctx context.Context, req AddTemplatePointRe
 		SubprocessID: b.SubprocessId, DocumentTypeID: b.DocumentTypeId, Text: b.Text,
 		Scope: template.ScopeInput{Level: deref(b.ScopeLevel), TargetID: deref(b.ScopeTargetId)},
 	}
+	if b.Content != nil {
+		in.Content = *b.Content
+	}
 	v, err := a.processTemplates.AddPoint(ctx, actorFrom(ctx), req.ProcessVersionId, in)
 	if err != nil {
 		return nil, err
@@ -94,7 +97,7 @@ func (a *apiServer) AddTemplatePoint(ctx context.Context, req AddTemplatePointRe
 // Isian yang tidak dikirim tetap (D-111).
 func (a *apiServer) UpdateTemplatePoint(ctx context.Context, req UpdateTemplatePointRequestObject) (UpdateTemplatePointResponseObject, error) {
 	b := req.Body
-	in := template.PointUpdate{Text: b.Text, Position: b.Position, Hidden: b.Hidden}
+	in := template.PointUpdate{Text: b.Text, Position: b.Position, Hidden: b.Hidden, Content: (*map[string]any)(b.Content)}
 	v, err := a.processTemplates.UpdatePoint(ctx, actorFrom(ctx), req.ProcessVersionId, req.PointId, in)
 	if err != nil {
 		return nil, err
@@ -106,6 +109,9 @@ func (a *apiServer) UpdateTemplatePoint(ctx context.Context, req UpdateTemplateP
 func (a *apiServer) AddPointVariant(ctx context.Context, req AddPointVariantRequestObject) (AddPointVariantResponseObject, error) {
 	b := req.Body
 	in := template.NewVariant{Scope: template.ScopeInput{Level: b.ScopeLevel, TargetID: b.ScopeTargetId}, Text: b.Text}
+	if b.Content != nil {
+		in.Content = *b.Content
+	}
 	v, err := a.processTemplates.AddVariant(ctx, actorFrom(ctx), req.ProcessVersionId, req.PointId, in)
 	if err != nil {
 		return nil, err
@@ -116,7 +122,7 @@ func (a *apiServer) AddPointVariant(ctx context.Context, req AddPointVariantRequ
 // UpdatePointVariant menjawab PUT /api/v1/process-template-versions/{processVersionId}/variants/{variantId}.
 // Isian yang tidak dikirim tetap (D-111).
 func (a *apiServer) UpdatePointVariant(ctx context.Context, req UpdatePointVariantRequestObject) (UpdatePointVariantResponseObject, error) {
-	in := template.VariantUpdate{Text: req.Body.Text, Hidden: req.Body.Hidden}
+	in := template.VariantUpdate{Text: req.Body.Text, Hidden: req.Body.Hidden, Content: (*map[string]any)(req.Body.Content)}
 	v, err := a.processTemplates.UpdateVariant(ctx, actorFrom(ctx), req.ProcessVersionId, req.VariantId, in)
 	if err != nil {
 		return nil, err
@@ -141,7 +147,7 @@ func (a *apiServer) ResolveProcessTemplatePoints(ctx context.Context, req Resolv
 		sub := ResolvedSubprocess{Id: s.ID, Name: s.Name, Points: make([]ResolvedPoint, 0, len(s.Points))}
 		for _, p := range s.Points {
 			sub.Points = append(sub.Points, ResolvedPoint{
-				PointId: p.PointID, OriginId: p.OriginID, Text: p.Text, Scope: toAPIScope(p.Scope),
+				PointId: p.PointID, OriginId: p.OriginID, Text: p.Text, Scope: toAPIScope(p.Scope), Content: apiContent(p.Content),
 				DocumentType: DocumentTypeRef{Id: p.DocumentType.ID, Key: DocumentTypeRefKey(p.DocumentType.Key), Name: p.DocumentType.Name},
 			})
 		}
@@ -181,10 +187,10 @@ func toAPIProcessVersion(v template.ProcessVersion) ProcessTemplateVersion {
 		for _, p := range s.Points {
 			variants := make([]PointVariant, 0, len(p.Variants))
 			for _, variant := range p.Variants {
-				variants = append(variants, PointVariant{Id: variant.ID, Scope: toAPIScope(variant.Scope), Text: variant.Text, Hidden: variant.Hidden})
+				variants = append(variants, PointVariant{Id: variant.ID, Scope: toAPIScope(variant.Scope), Text: variant.Text, Hidden: variant.Hidden, Content: apiContent(variant.Content)})
 			}
 			sub.Points = append(sub.Points, TemplatePoint{
-				Id: p.ID, Text: p.Text, Position: p.Position, Hidden: p.Hidden,
+				Id: p.ID, Text: p.Text, Position: p.Position, Hidden: p.Hidden, Content: apiContent(p.Content),
 				DocumentType: DocumentTypeRef{Id: p.DocumentType.ID, Key: DocumentTypeRefKey(p.DocumentType.Key), Name: p.DocumentType.Name},
 				Scope:        toAPIScope(p.Scope), Variants: variants,
 			})
@@ -192,4 +198,12 @@ func toAPIProcessVersion(v template.ProcessVersion) ProcessTemplateVersion {
 		out.Subprocesses = append(out.Subprocesses, sub)
 	}
 	return out
+}
+
+// apiContent memberi isi poin untuk JSON: map kosong, bukan null (D-146).
+func apiContent(c map[string]any) PointContent {
+	if c == nil {
+		return PointContent{}
+	}
+	return c
 }

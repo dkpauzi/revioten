@@ -16,9 +16,11 @@
 		addTemplatePoint,
 		createProcessTemplate,
 		createProcessTemplateVersion,
+		getFormatVersion,
 		getProcessTemplateVersion,
 		listCustomers,
 		listDocumentTypes,
+		listFormatTemplates,
 		listModels,
 		listProcessTemplates,
 		listProcesses,
@@ -29,6 +31,7 @@
 	import type {
 		Customer,
 		DocumentType,
+		FormatVersion,
 		Model,
 		Process,
 		ProcessTemplate,
@@ -40,7 +43,7 @@
 	import PointTable from '#lib/processTemplates/PointTable.svelte';
 	import ScopePicker from '#lib/processTemplates/ScopePicker.svelte';
 	import SubprocessTable from '#lib/processTemplates/SubprocessTable.svelte';
-	import { pointTypes, pointsOf, scopeLevels, scopeText, templateOf, type ScopeLevel } from '#lib/processTemplates.ts';
+	import { pointColumns, pointTypes, pointsOf, scopeLevels, scopeText, templateOf, type PointColumn, type ScopeLevel } from '#lib/processTemplates.ts';
 	import { can } from '#lib/session.svelte.ts';
 	import VersionBar from '#lib/templates/VersionBar.svelte';
 	import { isDraft, latestVersion } from '#lib/versions.ts';
@@ -51,6 +54,8 @@
 	let types = $state<DocumentType[]>([]);
 	let customers = $state<Customer[]>([]);
 	let loadError = $state('');
+	// Kolom form yang bisa diisi poin, per ID jenis dokumen (D-146).
+	let columnsByType = $state<Record<string, PointColumn[]>>({});
 	let canEdit = $derived(can('E-6'));
 
 	// Proses yang dipilih, template dan versinya, dan sub-proses yang poinnya dilihat.
@@ -110,6 +115,26 @@
 		// Hanya PFD, PFMEA, dan CP yang punya poin (R-TPL-01).
 		types = pointTypes(typeResult.data.items);
 		loadError = '';
+		loadColumns();
+	}
+
+	// loadColumns membaca versi terakhir setiap format template, lalu menyusun
+	// kolom yang bisa diisi poin per jenis dokumen (D-146). Bila gagal, halaman
+	// tetap bisa dipakai; hanya isi per kolom yang kosong.
+	async function loadColumns() {
+		const formats = await listFormatTemplates();
+		if (!formats.ok) {
+			return;
+		}
+		const byType: Record<string, { name: string; version: FormatVersion }[]> = {};
+		for (const f of formats.data.items) {
+			const latest = latestVersion(f.versions);
+			const loaded = latest ? await getFormatVersion(latest.id) : null;
+			if (loaded?.ok) {
+				(byType[f.document_type.id] ??= []).push({ name: f.name, version: loaded.data });
+			}
+		}
+		columnsByType = Object.fromEntries(Object.entries(byType).map(([id, forms]) => [id, pointColumns(forms)]));
 	}
 
 	// show memuat versi terakhir template proses yang dipilih: draft yang
@@ -366,7 +391,7 @@
 				<p class="hint">{t('pointsIntro')}</p>
 				{#each types as d (d.id)}
 					<h3>{d.name}</h3>
-					<PointTable {version} points={pointsOf(subprocess, d.id)} {customers} canEdit={editable} onsaved={saved} />
+					<PointTable {version} points={pointsOf(subprocess, d.id)} columns={columnsByType[d.id] ?? []} {customers} canEdit={editable} onsaved={saved} />
 				{/each}
 				{#if editable}
 					<h3>{t('pointAddTitle', { name: subprocess.name })}</h3>

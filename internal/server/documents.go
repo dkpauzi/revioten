@@ -144,8 +144,50 @@ func toAPIDocument(d document.Document) Document {
 		}
 		out.Rows = append(out.Rows, DocumentRow{
 			Id: r.ID, Position: r.Position, Version: r.Version, ProcessId: optional(r.ProcessID), ProcessName: optional(r.ProcessName),
-			OperationNumber: optional(r.OperationNumber), Content: content,
+			OperationNumber: optional(r.OperationNumber), Content: content, TemplatePointId: optional(r.TemplatePointID),
 		})
 	}
 	return out
+}
+
+// GetDocumentComposition menjawab GET /api/v1/documents/{documentId}/composition (M4.5).
+func (a *apiServer) GetDocumentComposition(ctx context.Context, req GetDocumentCompositionRequestObject) (GetDocumentCompositionResponseObject, error) {
+	c, err := a.documents.Composition(ctx, actorFrom(ctx), req.DocumentId, req.Params.ProcessTemplateVersionId)
+	if err != nil {
+		return nil, err
+	}
+	out := Composition{
+		ProcessTemplateVersionId: c.VersionID, Version: c.Version, Process: NamedRef{Id: c.Process.ID, Name: c.Process.Name},
+		Subprocesses: make([]ComposedSubprocess, 0, len(c.Subprocesses)),
+	}
+	for _, s := range c.Subprocesses {
+		sub := ComposedSubprocess{Id: s.ID, Name: s.Name, Points: make([]ComposedPoint, 0, len(s.Points))}
+		for _, p := range s.Points {
+			sub.Points = append(sub.Points, ComposedPoint{
+				PointId: p.PointID, Text: p.Text, DocumentId: p.DocumentID, State: ComposedPointState(p.State), Reason: optional(p.Reason),
+				DocumentType: DocumentTypeRef{Id: p.DocumentType.ID, Key: DocumentTypeRefKey(p.DocumentType.Key), Name: p.DocumentType.Name},
+			})
+		}
+		out.Subprocesses = append(out.Subprocesses, sub)
+	}
+	return GetDocumentComposition200JSONResponse(out), nil
+}
+
+// ComposeDocument menjawab PUT /api/v1/documents/{documentId}/composition (M4.5).
+func (a *apiServer) ComposeDocument(ctx context.Context, req ComposeDocumentRequestObject) (ComposeDocumentResponseObject, error) {
+	b := req.Body
+	in := document.Compose{VersionID: b.ProcessTemplateVersionId}
+	if b.Include != nil {
+		in.Include = *b.Include
+	}
+	if b.Exclude != nil {
+		for _, e := range *b.Exclude {
+			in.Exclude = append(in.Exclude, document.Exclusion{PointID: e.PointId, Reason: deref(e.Reason)})
+		}
+	}
+	d, err := a.documents.Compose(ctx, actorFrom(ctx), req.DocumentId, in)
+	if err != nil {
+		return nil, err
+	}
+	return ComposeDocument200JSONResponse(toAPIDocument(d)), nil
 }
