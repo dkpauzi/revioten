@@ -46,11 +46,12 @@ export function cellText(field: FormatField, row: Pick<DocumentRow, 'process_nam
 
 // GridData adalah satu baris di tabel workbook (M4.2): isi per ID kolom,
 // ditambah proses dan nomor operasi milik baris.
-export type GridData = Record<string, unknown> & { id: string; position: number; _process?: string; _operation?: string };
+// _version adalah versi baris yang dibaca dari server (M4.3).
+export type GridData = Record<string, unknown> & { id: string; position: number; _version?: number; _process?: string; _operation?: string };
 
 // gridRow mengubah baris dokumen menjadi data tabel workbook.
-export function gridRow(row: Pick<DocumentRow, 'id' | 'position' | 'process_id' | 'operation_number' | 'content'>): GridData {
-	return { id: row.id, position: row.position, _process: row.process_id ?? '', _operation: row.operation_number ?? '', ...row.content };
+export function gridRow(row: Pick<DocumentRow, 'id' | 'position' | 'version' | 'process_id' | 'operation_number' | 'content'>): GridData {
+	return { id: row.id, position: row.position, _version: row.version, _process: row.process_id ?? '', _operation: row.operation_number ?? '', ...row.content };
 }
 
 // rowInputFrom mengubah data tabel kembali menjadi isian baris untuk server:
@@ -66,6 +67,10 @@ export function rowInputFrom(format: Pick<FormatVersion, 'fields'>, data: Record
 	}
 	if (operation !== '') {
 		input.operation_number = operation;
+	}
+	// Versi yang dibaca ikut dikirim; server menolak bila baris sudah berubah (R-DOC-07).
+	if (typeof data._version === 'number') {
+		input.version = data._version;
 	}
 	return input;
 }

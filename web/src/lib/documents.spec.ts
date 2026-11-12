@@ -43,12 +43,14 @@ describe('cellText', () => {
 describe('gridRow dan rowInputFrom', () => {
 	const format = { fields } as unknown as Parameters<typeof rowInputFrom>[0];
 	it('mengubah baris menjadi data tabel dan kembali menjadi isian baris', () => {
-		const data = gridRow({ id: 'r', position: 2, process_id: 'p-1', operation_number: '10', content: { txt: 'Paste', sev: 8 } });
-		expect(data).toEqual({ id: 'r', position: 2, _process: 'p-1', _operation: '10', txt: 'Paste', sev: 8 });
+		const data = gridRow({ id: 'r', position: 2, version: 3, process_id: 'p-1', operation_number: '10', content: { txt: 'Paste', sev: 8 } });
+		expect(data).toEqual({ id: 'r', position: 2, _version: 3, _process: 'p-1', _operation: '10', txt: 'Paste', sev: 8 });
 		expect(rowInputFrom(format, { ...data, txt: ' Paste height ', sel: '' })).toEqual({
 			process_id: 'p-1',
 			operation_number: '10',
-			content: { txt: 'Paste height', sev: 8 }
+			content: { txt: 'Paste height', sev: 8 },
+			// Versi yang dibaca ikut dikirim (penguncian optimistik, M4.3).
+			version: 3
 		});
 	});
 

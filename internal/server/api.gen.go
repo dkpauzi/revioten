@@ -346,6 +346,7 @@ func (e ErrorCode) Valid() bool {
 
 // Defines values for ErrorDetailCode.
 const (
+	ErrorDetailCodeChanged       ErrorDetailCode = "changed"
 	ErrorDetailCodeIncorrect     ErrorDetailCode = "incorrect"
 	ErrorDetailCodeInvalidFormat ErrorDetailCode = "invalid_format"
 	ErrorDetailCodeNotAllowed    ErrorDetailCode = "not_allowed"
@@ -360,6 +361,8 @@ const (
 // Valid indicates whether the value is a known member of the ErrorDetailCode enum.
 func (e ErrorDetailCode) Valid() bool {
 	switch e {
+	case ErrorDetailCodeChanged:
+		return true
 	case ErrorDetailCodeIncorrect:
 		return true
 	case ErrorDetailCodeInvalidFormat:
@@ -1534,15 +1537,18 @@ type Document struct {
 	FormatVersionId string `json:"format_version_id"`
 
 	// Header Header content keyed by header field ID.
-	Header      map[string]interface{} `json:"header"`
-	Id          string                 `json:"id"`
-	Models      []NamedRef             `json:"models"`
-	Number      string                 `json:"number"`
-	PartNumbers []DocumentPartNumber   `json:"part_numbers"`
-	Revision    int                    `json:"revision"`
-	Route       *NamedRef              `json:"route,omitempty"`
-	RouteReason *string                `json:"route_reason,omitempty"`
-	Rows        []DocumentRow          `json:"rows"`
+	Header map[string]interface{} `json:"header"`
+
+	// HeaderVersion Goes up by one each time the header is saved. Send it back when saving the header (R-DOC-07).
+	HeaderVersion int                  `json:"header_version"`
+	Id            string               `json:"id"`
+	Models        []NamedRef           `json:"models"`
+	Number        string               `json:"number"`
+	PartNumbers   []DocumentPartNumber `json:"part_numbers"`
+	Revision      int                  `json:"revision"`
+	Route         *NamedRef            `json:"route,omitempty"`
+	RouteReason   *string              `json:"route_reason,omitempty"`
+	Rows          []DocumentRow        `json:"rows"`
 
 	// Set The documents of the same set, this one included, by document type (M4.2). Documents from numbers registered as a set of PFD, PFMEA, and CP know each other; a single number gives only this document.
 	Set       []DocumentSetMember `json:"set"`
@@ -1556,6 +1562,9 @@ type DocumentStatus string
 // DocumentHeader defines model for DocumentHeader.
 type DocumentHeader struct {
 	Header map[string]interface{} `json:"header"`
+
+	// HeaderVersion The header_version that was read. A different value on the server gives 409 with code changed (R-DOC-07).
+	HeaderVersion int `json:"header_version"`
 }
 
 // DocumentList defines model for DocumentList.
@@ -1628,6 +1637,9 @@ type DocumentRow struct {
 	Position        int     `json:"position"`
 	ProcessId       *string `json:"process_id,omitempty"`
 	ProcessName     *string `json:"process_name,omitempty"`
+
+	// Version Goes up by one each time the row is saved. Send it back when changing the row (R-DOC-07).
+	Version int `json:"version"`
 }
 
 // DocumentRowInput defines model for DocumentRowInput.
@@ -1635,6 +1647,9 @@ type DocumentRowInput struct {
 	Content         map[string]interface{} `json:"content"`
 	OperationNumber *string                `json:"operation_number,omitempty"`
 	ProcessId       *string                `json:"process_id,omitempty"`
+
+	// Version The version of the row that was read. Required when changing a row, ignored when adding one. When the row was changed by someone else in the meantime the answer is 409 with code changed, and nothing is saved (optimistic locking, R-DOC-07).
+	Version *int `json:"version,omitempty"`
 }
 
 // DocumentSetMember defines model for DocumentSetMember.

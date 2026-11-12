@@ -21,11 +21,14 @@ const (
 	Taken         = "taken"
 	Incorrect     = "incorrect"
 	NotAllowed    = "not_allowed"
+	// Changed: isinya sudah diubah orang lain sejak dibaca (penguncian
+	// optimistik, M4.3). Pemanggil memuat isi terbaru lalu mencoba lagi.
+	Changed = "changed"
 )
 
 // Codes berisi semua kode masalah. Dipakai test untuk memastikan setiap kode
 // ada di kontrak API.
-var Codes = []string{Required, InvalidFormat, TooShort, TooLong, TooCommon, Reserved, Taken, Incorrect, NotAllowed}
+var Codes = []string{Required, InvalidFormat, TooShort, TooLong, TooCommon, Reserved, Taken, Incorrect, NotAllowed, Changed}
 
 // ErrNotFound berarti data yang diminta tidak ada. API menjawabnya 404.
 var ErrNotFound = errors.New("data tidak ditemukan")

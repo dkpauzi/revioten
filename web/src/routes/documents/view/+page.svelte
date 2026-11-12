@@ -6,7 +6,7 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { addDocumentRow, deleteDocumentRow, getDocument, getFormatVersion, listProcesses, setDocumentHeader, updateDocumentRow, type ApiFailure } from '#lib/api/client.ts';
-	import type { Document, DocumentRowInput, FormatVersion, Process } from '#lib/api/gen/index.ts';
+	import type { Document, DocumentRow, DocumentRowInput, FormatVersion, Process } from '#lib/api/gen/index.ts';
 	import Workbook from '#lib/documents/Workbook.svelte';
 	import { cleanContent, typedFields } from '#lib/documents.ts';
 	import { failureText, problemText } from '#lib/errors.ts';
@@ -46,9 +46,33 @@
 		use(result.data);
 	}
 
+	// use memakai dokumen terbaru dari server. Isian header hanya diganti bila
+	// header di server memang berubah, supaya ketikan yang belum disimpan tidak
+	// hilang saat baris ditambah atau dimuat ulang.
 	function use(d: Document) {
+		const sameHeader = doc !== null && doc.id === d.id && doc.header_version === d.header_version;
 		doc = d;
-		header = Object.fromEntries(Object.entries(d.header).map(([k, v]) => [k, String(v ?? '')]));
+		if (!sameHeader) {
+			header = Object.fromEntries(Object.entries(d.header).map(([k, v]) => [k, String(v ?? '')]));
+		}
+	}
+
+	// changedByOther: server menolak karena isinya sudah diubah orang lain
+	// sejak dibaca (penguncian optimistik, M4.3, R-DOC-07).
+	function changedByOther(error: ApiFailure): boolean {
+		return error.status === 409 && (error.body?.details ?? []).some((d) => d.code === 'changed');
+	}
+
+	// reloadAfterConflict memuat isi terbaru dan menampilkan pesan konflik.
+	async function reloadAfterConflict(text: string) {
+		if (!doc) {
+			return;
+		}
+		const latest = await getDocument(doc.id);
+		if (latest.ok) {
+			use(latest.data);
+		}
+		failure = text;
 	}
 
 	function showErrors(error: ApiFailure) {
@@ -69,8 +93,12 @@
 		if (!doc) {
 			return;
 		}
-		const result = await setDocumentHeader(doc.id, cleanContent(typedHeader, header));
+		const result = await setDocumentHeader(doc.id, cleanContent(typedHeader, header), doc.header_version);
 		if (!result.ok) {
+			if (changedByOther(result.error)) {
+				await reloadAfterConflict(t('documentHeaderChanged'));
+				return;
+			}
 			showErrors(result.error);
 			return;
 		}
@@ -79,19 +107,25 @@
 	}
 
 	// saveCell menyimpan satu baris dari tabel workbook (M4.2). Dokumen tidak
-	// dimuat ulang, supaya posisi kursor di tabel tidak hilang.
-	async function saveCell(rowId: string, input: DocumentRowInput): Promise<boolean> {
+	// dimuat ulang, supaya posisi kursor di tabel tidak hilang. Jawabannya:
+	// baris yang tersimpan (dengan versi barunya), 'reloaded' bila baris sudah
+	// diubah orang lain dan isi terbaru dimuat (M4.3), atau null bila ditolak.
+	async function saveCell(rowId: string, input: DocumentRowInput): Promise<DocumentRow | 'reloaded' | null> {
 		reset();
 		if (!doc) {
-			return false;
+			return null;
 		}
 		const result = await updateDocumentRow(doc.id, rowId, input);
 		if (!result.ok) {
+			if (changedByOther(result.error)) {
+				await reloadAfterConflict(t('documentRowChanged'));
+				return 'reloaded';
+			}
 			showErrors(result.error);
-			return false;
+			return null;
 		}
 		message = t('documentRowSaved');
-		return true;
+		return result.data.rows.find((r) => r.id === rowId) ?? null;
 	}
 
 	// addRow menambah baris kosong di akhir; isinya diketik langsung di tabel.

@@ -7,7 +7,7 @@
 	import { onDestroy, onMount } from 'svelte';
 	import { TabulatorFull as Tabulator, type CellComponent, type ColumnDefinition } from 'tabulator-tables';
 	import 'tabulator-tables/dist/css/tabulator_simple.min.css';
-	import type { Document, DocumentRowInput, FormatVersion, Process } from '#lib/api/gen/index.ts';
+	import type { Document, DocumentRow, DocumentRowInput, FormatVersion, Process } from '#lib/api/gen/index.ts';
 	import { cellText, gridRow, rowInputFrom } from '#lib/documents.ts';
 	import { t } from '#lib/i18n/index.ts';
 
@@ -23,13 +23,52 @@
 		format: FormatVersion;
 		processes: Process[];
 		canEdit: boolean;
-		// onsave menyimpan satu baris; false bila server menolaknya.
-		onsave: (rowId: string, input: DocumentRowInput) => Promise<boolean>;
+		// onsave menyimpan satu baris. Jawabannya baris yang tersimpan, 'reloaded'
+		// bila halaman memuat ulang isi terbaru karena konflik (M4.3), atau null
+		// bila server menolaknya.
+		onsave: (rowId: string, input: DocumentRowInput) => Promise<DocumentRow | 'reloaded' | null>;
 		ondelete: (rowId: string) => void;
 	} = $props();
 
 	let element: HTMLDivElement;
 	let table: Tabulator | null = null;
+	// Antrean simpan: penyimpanan berjalan satu per satu, supaya perubahan
+	// kedua pada baris yang sama memakai versi hasil penyimpanan pertama.
+	let queue: Promise<void> = Promise.resolve();
+	// built: Tabulator selesai dibangun. Sebelum itu isi tabel tidak boleh
+	// diganti; pending menyimpan isi terbaru yang datang terlalu awal.
+	let built = false;
+	let pending: ReturnType<typeof gridRow>[] | null = null;
+	// shown: daftar baris dari server yang sedang tampil di tabel. Tabel hanya
+	// diisi ulang bila daftarnya berganti, karena mengisi ulang membatalkan sel
+	// yang sedang diketik.
+	let shown: Document['rows'] | null = null;
+	// Lebar tabel bisa berubah saat sel dibuka (scrollbar halaman muncul).
+	// Menggambar ulang saat itu membuang sel yang sedang diketik, jadi gambar
+	// ulang otomatis Tabulator dimatikan dan diurus di sini: ditunda selama
+	// ada sel yang diedit.
+	let editing = false;
+	let redrawWaiting = false;
+	let lastWidth = 0;
+	let observer: ResizeObserver | null = null;
+
+	function redrawWhenIdle() {
+		if (editing) {
+			redrawWaiting = true;
+			return;
+		}
+		redrawWaiting = false;
+		if (built) {
+			table?.redraw();
+		}
+	}
+
+	function editEnded() {
+		editing = false;
+		if (redrawWaiting) {
+			redrawWhenIdle();
+		}
+	}
 
 	const typed = ['text', 'date', 'select', 'symbol', 'rating'];
 
@@ -86,31 +125,75 @@
 	}
 
 	onMount(() => {
+		shown = doc.rows;
 		table = new Tabulator(element, {
 			data: doc.rows.map(gridRow),
 			columns: columns(),
 			layout: 'fitDataStretch',
 			index: 'id',
 			height: 'auto',
+			autoResize: false,
 			placeholder: t('documentRowsEmpty')
 		});
 		// Setiap sel yang berubah menyimpan barisnya. Bila server menolak, sel
 		// kembali ke nilai lama, dan pesannya tampil di halaman.
-		table.on('cellEdited', async (cell: CellComponent) => {
-			const data = cell.getRow().getData();
-			const ok = await onsave(data.id as string, rowInputFrom(format, data));
-			if (!ok) {
-				cell.restoreOldValue();
+		table.on('tableBuilt', () => {
+			built = true;
+			if (pending) {
+				table?.replaceData(pending);
+				pending = null;
 			}
+		});
+		table.on('cellEditing', () => {
+			editing = true;
+		});
+		table.on('cellEditCancelled', editEnded);
+		lastWidth = element.clientWidth;
+		observer = new ResizeObserver(() => {
+			if (element.clientWidth !== lastWidth) {
+				lastWidth = element.clientWidth;
+				redrawWhenIdle();
+			}
+		});
+		observer.observe(element);
+		table.on('cellEdited', (cell: CellComponent) => {
+			editEnded();
+			// catch: satu penyimpanan yang gagal tidak menghentikan antrean.
+			queue = queue.catch(() => {}).then(async () => {
+				const row = cell.getRow();
+				const data = row.getData();
+				const saved = await onsave(data.id as string, rowInputFrom(format, data));
+				if (saved === 'reloaded') {
+					return; // isi tabel sudah diganti dengan isi terbaru dari server
+				}
+				if (saved === null) {
+					cell.restoreOldValue();
+					return;
+				}
+				// Versi baru dicatat di baris, untuk penyimpanan berikutnya (R-DOC-07).
+				await row.update({ _version: saved.version });
+			});
 		});
 	});
 
-	onDestroy(() => table?.destroy());
+	onDestroy(() => {
+		observer?.disconnect();
+		table?.destroy();
+	});
 
 	// Isi tabel mengikuti dokumen terbaru dari server (sesudah tambah atau hapus baris).
 	$effect(() => {
-		const rows = doc.rows.map(gridRow);
-		table?.replaceData(rows);
+		const source = doc.rows;
+		if (!table || source === shown) {
+			return; // tabel belum dibuat, atau isinya sudah tampil
+		}
+		shown = source;
+		const rows = source.map(gridRow);
+		if (built) {
+			table.replaceData(rows);
+		} else {
+			pending = rows;
+		}
 	});
 </script>
 

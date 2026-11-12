@@ -58,7 +58,7 @@ INSERT INTO document_part_numbers (document_id, part_number_id) VALUES ($1, $2);
 SELECT d.id, d.document_number_id, n.number, d.customer_id, c.code AS customer_code, d.document_type_id,
        t.key AS document_type_key, t.name AS document_type_name, d.revision, d.status,
        d.form_set_version_id, s.name AS form_set_name, d.format_version_id,
-       d.approval_route_id, r.name AS route_name, d.route_reason, d.header, d.created_at, d.updated_at
+       d.approval_route_id, r.name AS route_name, d.route_reason, d.header, d.header_version, d.created_at, d.updated_at
 FROM documents d
 JOIN document_numbers n ON n.id = d.document_number_id
 JOIN customers c ON c.id = d.customer_id
@@ -101,7 +101,7 @@ ORDER BY p.number;
 
 
 -- name: ListDocumentRows :many
-SELECT r.id, r.position, r.process_id, n.name AS process_name, r.operation_number, r.content
+SELECT r.id, r.position, r.process_id, n.name AS process_name, r.operation_number, r.content, r.version
 FROM document_rows r
 LEFT JOIN process_names n ON n.process_id = r.process_id AND n.kind = 'display'
 WHERE r.document_id = $1
@@ -115,13 +115,16 @@ RETURNING id, position;
 
 
 -- name: UpdateDocumentRow :execrows
+-- UpdateDocumentRow hanya berhasil bila versi baris masih sama dengan yang
+-- dibaca penyusun (M4.3); versinya lalu naik satu.
 UPDATE document_rows
-SET process_id = $3, operation_number = $4, content = $5, updated_at = now()
-WHERE id = $1 AND document_id = $2;
+SET process_id = $3, operation_number = $4, content = $5, version = version + 1, updated_at = now()
+WHERE id = $1 AND document_id = $2 AND version = sqlc.arg(expected_version);
 
 
--- name: SetDocumentHeader :exec
-UPDATE documents SET header = $2, updated_at = now() WHERE id = $1;
+-- name: SetDocumentHeader :execrows
+UPDATE documents SET header = $2, header_version = header_version + 1, updated_at = now()
+WHERE id = $1 AND header_version = sqlc.arg(expected_version);
 
 
 -- name: TouchDocument :exec

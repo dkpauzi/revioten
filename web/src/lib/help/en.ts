@@ -238,6 +238,7 @@ export const helpEn: HelpContent = {
 				'Under {documentCreateTitle}, choose the {documentNumber}, tick the {documentModels} the document covers, and press {documentCreate}. The number becomes In use.',
 				'Open the document from the list. Fill in the header fields and press {documentHeaderSave}.',
 				'Press {documentRowAdd} to add an empty row at the end of the sheet.',
+'Two people can work in the same document. When someone else saved the same row before you, your change is not saved: a message appears, the latest content is shown, and you enter your change again.',
 				'Click a cell and type, like in Excel. Press Enter or click elsewhere, and the row is saved. In the operation number and process columns you choose the values of the row itself.',
 				'Press {documentRowDelete} on a row to remove it. The rows after it move up.',
 				'The tabs above the table open the other documents of the same set: PFD, PFMEA, and Control Plan.'

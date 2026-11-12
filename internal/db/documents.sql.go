@@ -160,7 +160,7 @@ const getDocument = `-- name: GetDocument :one
 SELECT d.id, d.document_number_id, n.number, d.customer_id, c.code AS customer_code, d.document_type_id,
        t.key AS document_type_key, t.name AS document_type_name, d.revision, d.status,
        d.form_set_version_id, s.name AS form_set_name, d.format_version_id,
-       d.approval_route_id, r.name AS route_name, d.route_reason, d.header, d.created_at, d.updated_at
+       d.approval_route_id, r.name AS route_name, d.route_reason, d.header, d.header_version, d.created_at, d.updated_at
 FROM documents d
 JOIN document_numbers n ON n.id = d.document_number_id
 JOIN customers c ON c.id = d.customer_id
@@ -189,6 +189,7 @@ type GetDocumentRow struct {
 	RouteName        *string
 	RouteReason      *string
 	Header           []byte
+	HeaderVersion    int32
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
 }
@@ -214,6 +215,7 @@ func (q *Queries) GetDocument(ctx context.Context, id string) (GetDocumentRow, e
 		&i.RouteName,
 		&i.RouteReason,
 		&i.Header,
+		&i.HeaderVersion,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -380,7 +382,7 @@ func (q *Queries) ListDocumentPartNumbers(ctx context.Context, documentID string
 }
 
 const listDocumentRows = `-- name: ListDocumentRows :many
-SELECT r.id, r.position, r.process_id, n.name AS process_name, r.operation_number, r.content
+SELECT r.id, r.position, r.process_id, n.name AS process_name, r.operation_number, r.content, r.version
 FROM document_rows r
 LEFT JOIN process_names n ON n.process_id = r.process_id AND n.kind = 'display'
 WHERE r.document_id = $1
@@ -394,6 +396,7 @@ type ListDocumentRowsRow struct {
 	ProcessName     *string
 	OperationNumber *string
 	Content         []byte
+	Version         int32
 }
 
 func (q *Queries) ListDocumentRows(ctx context.Context, documentID string) ([]ListDocumentRowsRow, error) {
@@ -412,6 +415,7 @@ func (q *Queries) ListDocumentRows(ctx context.Context, documentID string) ([]Li
 			&i.ProcessName,
 			&i.OperationNumber,
 			&i.Content,
+			&i.Version,
 		); err != nil {
 			return nil, err
 		}
@@ -554,18 +558,23 @@ func (q *Queries) RouteExists(ctx context.Context, id string) (bool, error) {
 	return exists, err
 }
 
-const setDocumentHeader = `-- name: SetDocumentHeader :exec
-UPDATE documents SET header = $2, updated_at = now() WHERE id = $1
+const setDocumentHeader = `-- name: SetDocumentHeader :execrows
+UPDATE documents SET header = $2, header_version = header_version + 1, updated_at = now()
+WHERE id = $1 AND header_version = $3
 `
 
 type SetDocumentHeaderParams struct {
-	ID     string
-	Header []byte
+	ID              string
+	Header          []byte
+	ExpectedVersion int32
 }
 
-func (q *Queries) SetDocumentHeader(ctx context.Context, arg SetDocumentHeaderParams) error {
-	_, err := q.db.Exec(ctx, setDocumentHeader, arg.ID, arg.Header)
-	return err
+func (q *Queries) SetDocumentHeader(ctx context.Context, arg SetDocumentHeaderParams) (int64, error) {
+	result, err := q.db.Exec(ctx, setDocumentHeader, arg.ID, arg.Header, arg.ExpectedVersion)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const shiftRowsUp = `-- name: ShiftRowsUp :exec
@@ -595,8 +604,8 @@ func (q *Queries) TouchDocument(ctx context.Context, id string) error {
 
 const updateDocumentRow = `-- name: UpdateDocumentRow :execrows
 UPDATE document_rows
-SET process_id = $3, operation_number = $4, content = $5, updated_at = now()
-WHERE id = $1 AND document_id = $2
+SET process_id = $3, operation_number = $4, content = $5, version = version + 1, updated_at = now()
+WHERE id = $1 AND document_id = $2 AND version = $6
 `
 
 type UpdateDocumentRowParams struct {
@@ -605,8 +614,11 @@ type UpdateDocumentRowParams struct {
 	ProcessID       *string
 	OperationNumber *string
 	Content         []byte
+	ExpectedVersion int32
 }
 
+// UpdateDocumentRow hanya berhasil bila versi baris masih sama dengan yang
+// dibaca penyusun (M4.3); versinya lalu naik satu.
 func (q *Queries) UpdateDocumentRow(ctx context.Context, arg UpdateDocumentRowParams) (int64, error) {
 	result, err := q.db.Exec(ctx, updateDocumentRow,
 		arg.ID,
@@ -614,6 +626,7 @@ func (q *Queries) UpdateDocumentRow(ctx context.Context, arg UpdateDocumentRowPa
 		arg.ProcessID,
 		arg.OperationNumber,
 		arg.Content,
+		arg.ExpectedVersion,
 	)
 	if err != nil {
 		return 0, err

@@ -167,7 +167,7 @@ type DocumentService interface {
 	List(ctx context.Context, actor access.Actor, customerID string) ([]document.Summary, error)
 	Create(ctx context.Context, actor access.Actor, in document.NewDocument) (document.Document, error)
 	Get(ctx context.Context, actor access.Actor, id string) (document.Document, error)
-	SetHeader(ctx context.Context, actor access.Actor, id string, header map[string]any) (document.Document, error)
+	SetHeader(ctx context.Context, actor access.Actor, id string, header map[string]any, version int) (document.Document, error)
 	AddRow(ctx context.Context, actor access.Actor, id string, in document.NewRow) (document.Document, error)
 	UpdateRow(ctx context.Context, actor access.Actor, id, rowID string, in document.RowUpdate) (document.Document, error)
 	DeleteRow(ctx context.Context, actor access.Actor, id, rowID string) (document.Document, error)

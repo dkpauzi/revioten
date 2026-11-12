@@ -539,8 +539,9 @@ export function getDocument(id: string, fetchFn: typeof fetch = fetch): Promise<
 }
 
 // setDocumentHeader memanggil PUT /api/v1/documents/{id}/header (E-2).
-export function setDocumentHeader(id: string, header: Record<string, unknown>, fetchFn: typeof fetch = fetch): Promise<ApiResult<Document>> {
-	return call<Document>(fetchFn, itemPath('documents', id) + '/header', jsonRequest('PUT', { header }));
+// headerVersion adalah versi header yang dibaca (M4.3).
+export function setDocumentHeader(id: string, header: Record<string, unknown>, headerVersion: number, fetchFn: typeof fetch = fetch): Promise<ApiResult<Document>> {
+	return call<Document>(fetchFn, itemPath('documents', id) + '/header', jsonRequest('PUT', { header, header_version: headerVersion }));
 }
 
 // addDocumentRow memanggil POST /api/v1/documents/{id}/rows (E-2).

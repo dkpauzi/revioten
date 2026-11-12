@@ -1012,6 +1012,10 @@ export type Document = {
     header: {
         [key: string]: unknown;
     };
+    /**
+     * Goes up by one each time the header is saved. Send it back when saving the header (R-DOC-07).
+     */
+    header_version: number;
     rows: Array<DocumentRow>;
     /**
      * The documents of the same set, this one included, by document type (M4.2). Documents from numbers registered as a set of PFD, PFMEA, and CP know each other; a single number gives only this document.
@@ -1044,6 +1048,10 @@ export type DocumentRow = {
      */
     id: string;
     position: number;
+    /**
+     * Goes up by one each time the row is saved. Send it back when changing the row (R-DOC-07).
+     */
+    version: number;
     process_id?: string;
     process_name?: string;
     operation_number?: string;
@@ -1061,12 +1069,20 @@ export type DocumentRowInput = {
     content: {
         [key: string]: unknown;
     };
+    /**
+     * The version of the row that was read. Required when changing a row, ignored when adding one. When the row was changed by someone else in the meantime the answer is 409 with code changed, and nothing is saved (optimistic locking, R-DOC-07).
+     */
+    version?: number;
 };
 
 export type DocumentHeader = {
     header: {
         [key: string]: unknown;
     };
+    /**
+     * The header_version that was read. A different value on the server gives 409 with code changed (R-DOC-07).
+     */
+    header_version: number;
 };
 
 export type FormSetList = {
@@ -1559,7 +1575,7 @@ export type ErrorDetail = {
      * Name of the field in the request body, for example code.
      */
     field: string;
-    code: 'required' | 'invalid_format' | 'too_short' | 'too_long' | 'too_common' | 'reserved' | 'taken' | 'incorrect' | 'not_allowed';
+    code: 'required' | 'invalid_format' | 'too_short' | 'too_long' | 'too_common' | 'reserved' | 'taken' | 'incorrect' | 'not_allowed' | 'changed';
     message: string;
 };
 

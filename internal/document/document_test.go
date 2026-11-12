@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"slices"
+	"strconv"
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgconn"
@@ -362,7 +363,7 @@ func TestRows(t *testing.T) {
 	first := d.Rows[0].ID
 
 	// Ubah isi: ID tetap.
-	d, err = f.s.UpdateRow(ctx, f.author, d.ID, first, RowUpdate{ProcessID: f.process, OperationNumber: "20", Content: map[string]any{product: "Paste height 120 µm"}})
+	d, err = f.s.UpdateRow(ctx, f.author, d.ID, first, RowUpdate{ProcessID: f.process, OperationNumber: "20", Content: map[string]any{product: "Paste height 120 µm"}, Version: d.Rows[0].Version})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -380,7 +381,7 @@ func TestRows(t *testing.T) {
 
 	// Header.
 	line := fieldID(t, f.cpFormat, template.AreaHeader, "Core Team")
-	d, err = f.s.SetHeader(ctx, f.author, d.ID, map[string]any{line: "Process Engineer"})
+	d, err = f.s.SetHeader(ctx, f.author, d.ID, map[string]any{line: "Process Engineer"}, d.HeaderVersion)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -492,5 +493,100 @@ func TestDocumentSet(t *testing.T) {
 	}
 	if len(single.Set) != 1 || single.Set[0].ID != single.ID {
 		t.Errorf("set dokumen tunggal: %+v", single.Set)
+	}
+}
+
+// TestOptimisticLocking (M4.3, R-DOC-07): dua penyusun membaca baris yang
+// sama; yang menyimpan kedua dengan versi lama ditolak, dan isinya tidak
+// menimpa isi yang pertama. Header dijaga dengan cara yang sama.
+func TestOptimisticLocking(t *testing.T) {
+	f := newFixture(t)
+	ctx := t.Context()
+	other := newActor(t, f.pool, "penyusun.dua", access.AccountWork, all(access.RoleAuthor))
+	d, err := f.s.Create(ctx, f.author, NewDocument{NumberID: f.cpNumber.ID, ModelIDs: []string{f.k125}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if d, err = f.s.AddRow(ctx, f.author, d.ID, NewRow{OperationNumber: "10"}); err != nil {
+		t.Fatal(err)
+	}
+	row := d.Rows[0]
+	if row.Version != 1 || d.HeaderVersion != 1 {
+		t.Fatalf("versi awal: baris %d, header %d", row.Version, d.HeaderVersion)
+	}
+
+	// Penyusun pertama menyimpan; versinya naik.
+	d, err = f.s.UpdateRow(ctx, f.author, d.ID, row.ID, RowUpdate{OperationNumber: "20", Version: row.Version})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if d.Rows[0].Version != 2 || d.Rows[0].OperationNumber != "20" {
+		t.Fatalf("sesudah simpan pertama: %+v", d.Rows[0])
+	}
+	// Penyusun kedua masih memegang versi 1: ditolak.
+	if _, err := f.s.UpdateRow(ctx, other, d.ID, row.ID, RowUpdate{OperationNumber: "30", Version: row.Version}); !slices.Equal(codes(t, err), []string{"version:changed"}) {
+		t.Errorf("simpan dengan versi lama: %v", err)
+	}
+	again, _ := f.s.Get(ctx, f.author, d.ID)
+	if again.Rows[0].OperationNumber != "20" {
+		t.Errorf("isi tertimpa: %+v", again.Rows[0])
+	}
+	// Tanpa versi ditolak.
+	if _, err := f.s.UpdateRow(ctx, other, d.ID, row.ID, RowUpdate{OperationNumber: "30"}); !slices.Equal(codes(t, err), []string{"version:required"}) {
+		t.Errorf("simpan tanpa versi: %v", err)
+	}
+
+	// Header.
+	if d, err = f.s.SetHeader(ctx, f.author, d.ID, map[string]any{}, 1); err != nil {
+		t.Fatal(err)
+	}
+	if d.HeaderVersion != 2 {
+		t.Errorf("versi header: %d", d.HeaderVersion)
+	}
+	if _, err := f.s.SetHeader(ctx, other, d.ID, map[string]any{}, 1); !slices.Equal(codes(t, err), []string{"header_version:changed"}) {
+		t.Errorf("header dengan versi lama: %v", err)
+	}
+}
+
+// TestConcurrentRowUpdates (M4.3): sepuluh penyimpanan bersamaan dengan versi
+// yang sama; tepat satu yang berhasil, sisanya mendapat konflik.
+func TestConcurrentRowUpdates(t *testing.T) {
+	f := newFixture(t)
+	ctx := t.Context()
+	d, err := f.s.Create(ctx, f.author, NewDocument{NumberID: f.cpNumber.ID, ModelIDs: []string{f.k125}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if d, err = f.s.AddRow(ctx, f.author, d.ID, NewRow{}); err != nil {
+		t.Fatal(err)
+	}
+	row := d.Rows[0]
+	const n = 10
+	results := make(chan error, n)
+	for i := range n {
+		go func() {
+			_, err := f.s.UpdateRow(ctx, f.author, d.ID, row.ID, RowUpdate{OperationNumber: strconv.Itoa(i + 1), Version: row.Version})
+			results <- err
+		}()
+	}
+	ok, conflicts := 0, 0
+	for range n {
+		err := <-results
+		var conflict *problem.ConflictError
+		switch {
+		case err == nil:
+			ok++
+		case errors.As(err, &conflict):
+			conflicts++
+		default:
+			t.Errorf("galat lain: %v", err)
+		}
+	}
+	if ok != 1 || conflicts != n-1 {
+		t.Errorf("berhasil %d, konflik %d; ingin 1 dan %d", ok, conflicts, n-1)
+	}
+	final, _ := f.s.Get(ctx, f.author, d.ID)
+	if final.Rows[0].Version != 2 {
+		t.Errorf("versi akhir %d, ingin 2", final.Rows[0].Version)
 	}
 }

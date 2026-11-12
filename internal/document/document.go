@@ -76,6 +76,8 @@ type Row struct {
 	ProcessName     string // nama tampilan proses yang berlaku sekarang (D-06)
 	OperationNumber string
 	Content         map[string]any // per ID kolom format
+	// Version naik setiap kali baris disimpan (penguncian optimistik, M4.3).
+	Version int
 }
 
 // Document adalah satu dokumen lengkap dengan header dan barisnya.
@@ -96,6 +98,7 @@ type Document struct {
 	Route            *Ref   // nil bila belum ada rute
 	RouteReason      string // "" bila memakai rute bawaan
 	Header           map[string]any
+	HeaderVersion    int   // naik setiap kali header disimpan (M4.3)
 	Rows             []Row // menurut urutan, tidak pernah nil
 	// Set berisi dokumen satu set, termasuk dokumen ini, menurut urutan jenis
 	// dokumen (M4.2). Dokumen dari nomor tunggal hanya berisi dirinya sendiri.
@@ -142,11 +145,18 @@ type NewRow struct {
 	Content         map[string]any
 }
 
-// RowUpdate adalah isi baru satu baris. Semua isian dikirim utuh.
+// RowUpdate adalah isi baru satu baris. Semua isian dikirim utuh, bersama
+// versi baris yang dibaca penyusun (M4.3).
 type RowUpdate struct {
 	ProcessID       string
 	OperationNumber string
 	Content         map[string]any
+	Version         int
+}
+
+// conflict adalah penolakan karena isi sudah diubah orang lain (M4.3, R-DOC-07).
+func conflict(field, message string) error {
+	return &problem.ConflictError{Problems: []problem.Problem{{Field: field, Code: problem.Changed, Message: message}}}
 }
 
 // Service membuat, membaca, dan mengubah dokumen.
@@ -382,7 +392,8 @@ func (s *Service) load(ctx context.Context, id string) (Document, error) {
 }
 
 // SetHeader mengganti isi header dokumen (E-2).
-func (s *Service) SetHeader(ctx context.Context, actor access.Actor, id string, header map[string]any) (Document, error) {
+// version adalah versi header yang dibaca penyusun (M4.3).
+func (s *Service) SetHeader(ctx context.Context, actor access.Actor, id string, header map[string]any, version int) (Document, error) {
 	return s.edit(ctx, actor, id, func(q *db.Queries, d Document, format template.FormatVersion) (string, map[string]string, error) {
 		if header == nil {
 			header = map[string]any{}
@@ -394,8 +405,12 @@ func (s *Service) SetHeader(ctx context.Context, actor access.Actor, id string, 
 		if err != nil {
 			return "", nil, err
 		}
-		if err := q.SetDocumentHeader(ctx, db.SetDocumentHeaderParams{ID: d.ID, Header: data}); err != nil {
+		changed, err := q.SetDocumentHeader(ctx, db.SetDocumentHeaderParams{ID: d.ID, Header: data, ExpectedVersion: int32(version)})
+		if err != nil {
 			return "", nil, err
+		}
+		if changed == 0 {
+			return "", nil, conflict("header_version", "Someone else changed the header. The latest header is shown; enter your change again.")
 		}
 		return audit.ActionDocumentHeaderChanged, map[string]string{"fields": strconv.Itoa(len(header))}, nil
 	})
@@ -426,13 +441,27 @@ func (s *Service) UpdateRow(ctx context.Context, actor access.Actor, id, rowID s
 		if i < 0 {
 			return "", nil, problem.ErrNotFound
 		}
+		if in.Version < 1 {
+			return "", nil, problems(invalid("version", problem.Required, "Send the version of the row that was read."))
+		}
+		changedMessage := "Someone else changed this row. The latest row is shown; enter your change again."
+		if d.Rows[i].Version != in.Version {
+			return "", nil, conflict("version", changedMessage)
+		}
 		operation, content, err := checkRow(ctx, q, format, in.ProcessID, in.OperationNumber, in.Content)
 		if err != nil {
 			return "", nil, err
 		}
-		_, err = q.UpdateDocumentRow(ctx, db.UpdateDocumentRowParams{ID: rowID, DocumentID: d.ID, ProcessID: optional(in.ProcessID), OperationNumber: optional(operation), Content: content})
+		changed, err := q.UpdateDocumentRow(ctx, db.UpdateDocumentRowParams{
+			ID: rowID, DocumentID: d.ID, ProcessID: optional(in.ProcessID), OperationNumber: optional(operation), Content: content,
+			ExpectedVersion: int32(in.Version),
+		})
 		if err != nil {
 			return "", nil, err
+		}
+		// Penjaga kedua di database: versi diperiksa juga di perintah UPDATE.
+		if changed == 0 {
+			return "", nil, conflict("version", changedMessage)
 		}
 		return audit.ActionDocumentRowChanged, map[string]string{"position": strconv.Itoa(d.Rows[i].Position)}, nil
 	})
@@ -549,6 +578,7 @@ func getDocument(ctx context.Context, q *db.Queries, id string) (Document, error
 		Revision:     int(r.Revision), Status: r.Status, FormSetVersionID: r.FormSetVersionID, FormSetName: r.FormSetName,
 		FormatVersionID: r.FormatVersionID, RouteReason: deref(r.RouteReason),
 		Models: []Ref{}, PartNumbers: []PartRef{}, Rows: []Row{}, CreatedAt: r.CreatedAt.UTC(), UpdatedAt: r.UpdatedAt.UTC(),
+		HeaderVersion: int(r.HeaderVersion),
 	}
 	if r.ApprovalRouteID != nil {
 		d.Route = &Ref{ID: *r.ApprovalRouteID, Name: deref(r.RouteName)}
@@ -583,7 +613,7 @@ func getDocument(ctx context.Context, q *db.Queries, id string) (Document, error
 		return Document{}, err
 	}
 	for _, row := range rows {
-		item := Row{ID: row.ID, Position: int(row.Position), ProcessID: deref(row.ProcessID), ProcessName: deref(row.ProcessName), OperationNumber: deref(row.OperationNumber)}
+		item := Row{ID: row.ID, Position: int(row.Position), ProcessID: deref(row.ProcessID), ProcessName: deref(row.ProcessName), OperationNumber: deref(row.OperationNumber), Version: int(row.Version)}
 		if err := json.Unmarshal(row.Content, &item.Content); err != nil {
 			return Document{}, fmt.Errorf("membaca baris: %w", err)
 		}

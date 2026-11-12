@@ -99,6 +99,7 @@ type Document struct {
 	CreatedByPersonID string
 	CreatedAt         time.Time
 	UpdatedAt         time.Time
+	HeaderVersion     int32
 }
 
 type DocumentModel struct {
@@ -135,6 +136,7 @@ type DocumentRow struct {
 	Content         []byte
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
+	Version         int32
 }
 
 type DocumentType struct {

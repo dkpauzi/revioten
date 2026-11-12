@@ -3604,7 +3604,7 @@ components:
           description: Required when route_id is not the default route of the customer (D-47).
     Document:
       type: object
-      required: [id, document_number_id, number, customer_id, customer_code, document_type, revision, status, form_set_version_id, form_set_name, format_version_id, models, part_numbers, header, rows, set, created_at, updated_at]
+      required: [id, document_number_id, number, customer_id, customer_code, document_type, revision, status, form_set_version_id, form_set_name, format_version_id, models, part_numbers, header, header_version, rows, set, created_at, updated_at]
       properties:
         id:
           type: string
@@ -3646,6 +3646,9 @@ components:
           type: object
           additionalProperties: true
           description: Header content keyed by header field ID.
+        header_version:
+          type: integer
+          description: Goes up by one each time the header is saved. Send it back when saving the header (R-DOC-07).
         rows:
           type: array
           items:
@@ -3693,13 +3696,16 @@ components:
           type: string
     DocumentRow:
       type: object
-      required: [id, position, content]
+      required: [id, position, version, content]
       properties:
         id:
           type: string
           description: Fixed for the life of the row (R-DOC-02).
         position:
           type: integer
+        version:
+          type: integer
+          description: Goes up by one each time the row is saved. Send it back when changing the row (R-DOC-07).
         process_id:
           type: string
         process_name:
@@ -3721,13 +3727,22 @@ components:
         content:
           type: object
           additionalProperties: true
+        version:
+          type: integer
+          description: >-
+            The version of the row that was read. Required when changing a row, ignored when adding one. When the row
+            was changed by someone else in the meantime the answer is 409 with code changed, and nothing is saved
+            (optimistic locking, R-DOC-07).
     DocumentHeader:
       type: object
-      required: [header]
+      required: [header, header_version]
       properties:
         header:
           type: object
           additionalProperties: true
+        header_version:
+          type: integer
+          description: The header_version that was read. A different value on the server gives 409 with code changed (R-DOC-07).
     FormSetList:
       type: object
       required: [items, customer_defaults]
@@ -4430,6 +4445,6 @@ components:
           description: Name of the field in the request body, for example code.
         code:
           type: string
-          enum: [required, invalid_format, too_short, too_long, too_common, reserved, taken, incorrect, not_allowed]
+          enum: [required, invalid_format, too_short, too_long, too_common, reserved, taken, incorrect, not_allowed, changed]
         message:
           type: string

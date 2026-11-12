@@ -569,6 +569,8 @@ type fakeDocuments struct {
 	gotRow document.NewRow
 	gotUpd document.RowUpdate
 	header map[string]any
+	// headerVersion adalah versi header yang dikirim klien (M4.3).
+	headerVersion int
 }
 
 func (f *fakeDocuments) List(_ context.Context, _ access.Actor, customerID string) ([]document.Summary, error) {
@@ -586,8 +588,8 @@ func (f *fakeDocuments) Get(_ context.Context, _ access.Actor, id string) (docum
 	return f.doc, f.err
 }
 
-func (f *fakeDocuments) SetHeader(_ context.Context, _ access.Actor, id string, header map[string]any) (document.Document, error) {
-	f.got, f.header = called{method: "SetHeader", id: id}, header
+func (f *fakeDocuments) SetHeader(_ context.Context, _ access.Actor, id string, header map[string]any, version int) (document.Document, error) {
+	f.got, f.header, f.headerVersion = called{method: "SetHeader", id: id}, header, version
 	return f.doc, f.err
 }
 

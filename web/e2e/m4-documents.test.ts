@@ -108,4 +108,53 @@ test('penyusun membuat dokumen CP, lalu baris dan header tersimpan', async ({ pa
 	await expect(cell(1, '_operation')).toHaveText('20');
 	await expect(cell(1, method)).toHaveText('Visual 100%');
 	await expect(page.getByLabel('Core Team', { exact: true })).toHaveValue('PE, QA, Production');
+
+	// M4.3 (R-DOC-07): orang lain mengubah baris kedua sesudah halaman ini
+	// dimuat. Di sini "orang lain" adalah panggilan API langsung
+	// dengan versi terbaru; halaman masih memegang versi lama.
+	await page.evaluate(
+		async ({ method }) => {
+			const id = new URL(location.href).searchParams.get('id');
+			const doc = await (await fetch(`/api/v1/documents/${id}`)).json();
+			const put = (path: string, body: object) =>
+				fetch(path, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+			const row = doc.rows[1];
+			await put(`/api/v1/documents/${id}/rows/${row.id}`, {
+				operation_number: row.operation_number,
+				content: { ...row.content, [method]: 'AOI 100%' },
+				version: row.version
+			});
+		},
+		{ method }
+	);
+
+	// Konflik baris terdeteksi dan ditampilkan; isi terbaru dimuat dan ketikan
+	// yang kalah tidak tersimpan.
+	await cell(1, product).click();
+	await page.keyboard.type('Bridging');
+	await page.getByRole('heading', { name: en.documentRowsTitle }).click();
+	await expect(page.getByRole('alert')).toHaveText(en.documentRowChanged);
+	await expect(cell(1, method)).toHaveText('AOI 100%');
+	await expect(cell(1, product)).toHaveText('');
+	// Dicoba lagi di atas isi terbaru: tersimpan.
+	await type(1, product, 'Bridging');
+	await expect(cell(1, method)).toHaveText('AOI 100%');
+
+	// Konflik header: orang lain menyimpan header lebih dulu. Pesan tampil,
+	// lalu simpan kedua berhasil.
+	await page.evaluate(async () => {
+		const id = new URL(location.href).searchParams.get('id');
+		const doc = await (await fetch(`/api/v1/documents/${id}`)).json();
+		await fetch(`/api/v1/documents/${id}/header`, {
+			method: 'PUT',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ header: doc.header, header_version: doc.header_version })
+		});
+	});
+	await page.getByLabel('Core Team', { exact: true }).fill('PE, QA');
+	await page.getByRole('button', { name: en.documentHeaderSave }).click();
+	await expect(page.getByRole('alert')).toHaveText(en.documentHeaderChanged);
+	await page.getByLabel('Core Team', { exact: true }).fill('PE, QA');
+	await page.getByRole('button', { name: en.documentHeaderSave }).click();
+	await expect(page.getByRole('status')).toHaveText(en.documentHeaderSaved);
 });
