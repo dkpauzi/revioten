@@ -285,6 +285,7 @@ export const helpEn: HelpContent = {
 				'Fill in {changeTrigger} (for example Customer claim), {changeType}, and, when it applies, {changeFourM} and {changeReference}.',
 				'Write the {changeReason}, tick every affected document under {changeDocuments}, and press {changeSubmit}.',
 				'The change gets a number such as [[CHG-0001]]. Open it to add or remove affected documents while it is still submitted.',
+				'For a new SQAM revision that applies to existing documents, choose the customer and press {sqamOpen}: write the SQAM revision, the effective date, the change type, and the reason. The change covers every active document of the customer.',
 				'Under {changeAttachments}, choose a file in {changeAttachmentAdd} and press {changeAttachmentUpload}, for example the 8D report or a photo of the defect. Press the file name to download it.',
 				'Under {impactTitle}, record for each related document (PFD, PFMEA, CP, WI, inspection standard) whether it is affected, with a reason when it is not, and press {impactSave}. The checklist can still be completed after the change is accepted.',
 				'A verifier (the Project Engineer or the Project Leader of the customer’s project group, or the APQP/PPAP Controller) opens the change, writes a {changeVerifyNote}, and presses {changeAccept} or {changeReject}. The requester cannot verify their own change.'

@@ -1081,6 +1081,7 @@ type fakeChangeRequests struct {
 	gotPropagation change.Propagation
 	yokoten        change.Yokoten
 	gotYokoten     change.NewYokoten
+	gotSQAM        change.SQAMChange
 }
 
 func (f *fakeChangeRequests) List(_ context.Context, _ access.Actor, customerID string) ([]change.Change, error) {
@@ -1162,6 +1163,11 @@ func (f *fakeChangeRequests) ListYokotens(_ context.Context, _ access.Actor) ([]
 func (f *fakeChangeRequests) Decide(_ context.Context, _ access.Actor, yokotenID, targetID, decision, reason string) (change.Yokoten, error) {
 	f.got = called{method: "Decide", id: yokotenID, input: targetID + ":" + decision + ":" + reason}
 	return f.yokoten, f.err
+}
+
+func (f *fakeChangeRequests) SubmitSQAM(_ context.Context, _ access.Actor, in change.SQAMChange) (change.Change, error) {
+	f.got, f.gotSQAM = called{method: "SubmitSQAM", id: in.CustomerID, input: in.SQAMReference}, in
+	return f.c, f.err
 }
 
 // OpenAttachment membuka berkas sementara berisi f.file.

@@ -396,6 +396,8 @@ func TestPermissionsPerOperation(t *testing.T) {
 		// jadi aturan pencatat bukan penyusun menolaknya (R-APR-02).
 		{http.MethodPost, "/api/v1/documents/{documentId}/release", "", http.StatusForbidden, http.StatusUnprocessableEntity, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/documents/{documentId}/revisions", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		// Perubahan surut SQAM (M5.10) lewat E-3: engineer mengajukannya untuk semua dokumen aktif customer uji.
+		{http.MethodPost, "/api/v1/sqam-changes", `{"customer_id":"{customerId}","change_type_id":"{contentTypeId}","reason":"Uji SQAM","sqam_reference":"SQAM rev 1","effective_date":"2026-12-01"}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
 		// Yokoten (M5.9). Daftar disaring per customer, jadi semua akun mendapat 200.
 		// Perubahan uji masih diajukan, jadi tidak bisa disebarkan (422) sesudah haknya lolos.
 		// ID yokoten palsu: 404 sebelum hak diperiksa, karena hak bergantung pada customer-nya.

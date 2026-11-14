@@ -210,6 +210,7 @@ type ChangeRequestService interface {
 	Preview(ctx context.Context, actor access.Actor, versionID, scope string) ([]change.PreviewItem, error)
 	Propagate(ctx context.Context, actor access.Actor, in change.Propagation) ([]change.Change, error)
 	CreateYokoten(ctx context.Context, actor access.Actor, in change.NewYokoten) (change.Yokoten, error)
+	SubmitSQAM(ctx context.Context, actor access.Actor, in change.SQAMChange) (change.Change, error)
 	GetYokoten(ctx context.Context, actor access.Actor, id string) (change.Yokoten, error)
 	ListYokotens(ctx context.Context, actor access.Actor) ([]change.Yokoten, error)
 	Decide(ctx context.Context, actor access.Actor, yokotenID, targetID, decision, reason string) (change.Yokoten, error)

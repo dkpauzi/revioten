@@ -285,6 +285,7 @@ export const helpId: HelpContent = {
 				'Isi {changeTrigger} (misalnya Customer claim), {changeType}, dan bila perlu {changeFourM} serta {changeReference}.',
 				'Tulis {changeReason}, centang setiap dokumen terdampak di {changeDocuments}, lalu tekan {changeSubmit}.',
 				'Perubahan mendapat nomor seperti [[CHG-0001]]. Buka perubahan itu untuk menambah atau melepas dokumen terdampak selama masih diajukan.',
+				'Untuk revisi SQAM baru yang berlaku juga bagi dokumen yang sudah ada, pilih customer lalu tekan {sqamOpen}: tulis revisi SQAM, tanggal berlaku, jenis perubahan, dan alasannya. Perubahan ini mencakup semua dokumen aktif customer.',
 				'Di {changeAttachments}, pilih berkas di {changeAttachmentAdd} lalu tekan {changeAttachmentUpload}, misalnya laporan 8D atau foto NG. Tekan nama berkas untuk mengunduhnya.',
 				'Di {impactTitle}, catat untuk setiap dokumen terkait (PFD, PFMEA, CP, WI, standar inspeksi) apakah terdampak, dengan alasan bila tidak, lalu tekan {impactSave}. Daftar ini masih bisa dilengkapi sesudah perubahan diterima.',
 				'Verifikator (Project Engineer atau Project Leader dari Project Group customer, atau APQP/PPAP Controller) membuka perubahan, menulis {changeVerifyNote}, lalu menekan {changeAccept} atau {changeReject}. Pemohon tidak bisa memverifikasi perubahannya sendiri.'

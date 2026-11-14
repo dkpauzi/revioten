@@ -143,6 +143,40 @@ func (q *Queries) CreateChange(ctx context.Context, arg CreateChangeParams) (str
 	return id, err
 }
 
+const createSQAMChange = `-- name: CreateSQAMChange :one
+INSERT INTO changes (customer_id, mechanism, change_type_id, four_m_category_id, reason, source_reference, effective_date,
+                     requested_by_person_id, requested_by_account_id)
+VALUES ($1, 'sqam', $2, $3, $4, $5, $6, $7, $8)
+RETURNING id
+`
+
+type CreateSQAMChangeParams struct {
+	CustomerID           string
+	ChangeTypeID         string
+	FourMCategoryID      *string
+	Reason               string
+	SourceReference      *string
+	EffectiveDate        pgtype.Date
+	RequestedByPersonID  string
+	RequestedByAccountID string
+}
+
+func (q *Queries) CreateSQAMChange(ctx context.Context, arg CreateSQAMChangeParams) (string, error) {
+	row := q.db.QueryRow(ctx, createSQAMChange,
+		arg.CustomerID,
+		arg.ChangeTypeID,
+		arg.FourMCategoryID,
+		arg.Reason,
+		arg.SourceReference,
+		arg.EffectiveDate,
+		arg.RequestedByPersonID,
+		arg.RequestedByAccountID,
+	)
+	var id string
+	err := row.Scan(&id)
+	return id, err
+}
+
 const createTemplateChange = `-- name: CreateTemplateChange :one
 
 INSERT INTO changes (customer_id, mechanism, change_type_id, reason, source_reference, requested_by_person_id, requested_by_account_id,
@@ -375,6 +409,44 @@ func (q *Queries) IsChangeVerifier(ctx context.Context, arg IsChangeVerifierPara
 	var exists bool
 	err := row.Scan(&exists)
 	return exists, err
+}
+
+const listActiveCustomerDocuments = `-- name: ListActiveCustomerDocuments :many
+
+SELECT d.id, n.number
+FROM documents d
+JOIN document_numbers n ON n.id = d.document_number_id
+JOIN document_types t ON t.id = d.document_type_id
+WHERE d.customer_id = $1 AND n.status NOT IN ('obsolete', 'void')
+ORDER BY t.position, n.number
+`
+
+type ListActiveCustomerDocumentsRow struct {
+	ID     string
+	Number string
+}
+
+// M5.10: perubahan surut SQAM (R-CHG-01, R-TPL-07).
+// ListActiveCustomerDocuments memberi semua dokumen customer yang nomornya
+// belum dibatalkan atau usang, menurut jenis dokumen lalu nomor.
+func (q *Queries) ListActiveCustomerDocuments(ctx context.Context, customerID string) ([]ListActiveCustomerDocumentsRow, error) {
+	rows, err := q.db.Query(ctx, listActiveCustomerDocuments, customerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListActiveCustomerDocumentsRow{}
+	for rows.Next() {
+		var i ListActiveCustomerDocumentsRow
+		if err := rows.Scan(&i.ID, &i.Number); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listChangeAttachments = `-- name: ListChangeAttachments :many

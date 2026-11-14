@@ -92,7 +92,9 @@ const problemKeys: Record<string, MessageKey> = {
 	'impact.document_reference:too_long': 'impactReferenceTooLong',
 	'impact.reason:too_long': 'impactReasonTooLong',
 	'items:too_long': 'impactTooMany',
-	'targets:required': 'yokotenNoTargets'
+	'targets:required': 'yokotenNoTargets',
+	'sqam_reference:required': 'sqamReferenceRequired',
+	'effective_date:required': 'sqamDateRequired'
 };
 
 // ProblemScope adalah formulir tempat masalah ditampilkan. Field yang sama bisa

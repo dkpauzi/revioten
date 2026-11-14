@@ -1950,6 +1950,28 @@ paths:
                 $ref: '#/components/schemas/Change'
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/sqam-changes:
+    post:
+      operationId: submitSQAMChange
+      summary: Submit a retroactive SQAM change for every active document of a customer (E-3, M5.10)
+      description: >-
+        When the change is accepted, every document gets a new draft; released revisions are never rewritten
+        (R-TPL-07). Documents whose number is obsolete or void are left out.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SQAMChangeInput'
+      responses:
+        '201':
+          description: The change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Change'
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/yokotens:
     get:
       operationId: listYokotens
@@ -4919,6 +4941,10 @@ components:
           $ref: '#/components/schemas/ChangeTemplate'
         source_change:
           $ref: '#/components/schemas/ChangeRef'
+        effective_date:
+          type: string
+          format: date
+          description: When the SQAM revision or the propagation with scope all takes effect.
         impacts:
           type: array
           description: The impact checklist (R-CHG-05, M5.7).
@@ -4930,6 +4956,25 @@ components:
         updated_at:
           type: string
           format: date-time
+    SQAMChangeInput:
+      type: object
+      required: [customer_id, change_type_id, reason, sqam_reference]
+      properties:
+        customer_id:
+          type: string
+        change_type_id:
+          type: string
+        four_m_category_id:
+          type: string
+        reason:
+          type: string
+        sqam_reference:
+          type: string
+          description: The SQAM revision, for example SQAM-KT rev 7, at most 200 characters.
+        effective_date:
+          type: string
+          format: date
+          description: Required; checked by the server so a missing date gets a clear message.
     YokotenTargetFilter:
       type: object
       description: One of customer_id, model_group_id (D-40), or model_ids; process_id and text narrow the documents.

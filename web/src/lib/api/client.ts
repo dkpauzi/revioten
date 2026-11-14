@@ -46,6 +46,7 @@ import type {
 	ChangeVerificationInput,
 	ChangeImpactsInput,
 	YokotenList,
+	SqamChangeInput,
 	Yokoten,
 	NewYokoten,
 	YokotenSearch,
@@ -745,6 +746,11 @@ export function setDocumentTemplateMode(
 	fetchFn: typeof fetch = fetch
 ): Promise<ApiResult<DocumentTemplateList>> {
 	return call<DocumentTemplateList>(fetchFn, `${itemPath('documents', id)}/templates/${encodeURIComponent(templateId)}`, jsonRequest('PUT', input));
+}
+
+// submitSQAMChange memanggil POST /api/v1/sqam-changes (E-3, M5.10).
+export function submitSQAMChange(input: SqamChangeInput, fetchFn: typeof fetch = fetch): Promise<ApiResult<Change>> {
+	return call<Change>(fetchFn, '/api/v1/sqam-changes', jsonRequest('POST', input));
 }
 
 // listYokotens memanggil GET /api/v1/yokotens (L-4, M5.9).

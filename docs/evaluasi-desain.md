@@ -1937,6 +1937,22 @@ Salin blok ini untuk setiap temuan baru.
 - **Status:** Terbuka
 - **Keputusan pemilik:**
 
+## E-107 · Cakupan perubahan surut SQAM dan hubungannya dengan format template
+
+- **Tanggal dan milestone:** 14 November 2026, M5.10.
+- **Jenis:** Celah
+- **Rujukan:** R-CHG-01, R-TPL-02, R-TPL-07, Q-07 (format SQAM customer dan aturan surutnya belum dikumpulkan).
+- **Temuan:** (1) "Semua dokumen aktif" belum didefinisikan: semua jenis dokumen, atau hanya jenis yang disebut revisi SQAM (misalnya hanya CP). (2) Revisi SQAM sering mengubah format (kolom baru, R-TPL-02), bukan hanya isi; perpindahan dokumen ke versi format baru belum ada. (3) Siapa yang mengajukan: penyusun, dokumen kontrol, atau PPAP Engineer.
+- **Opsi:**
+  - (1a) Semua dokumen yang nomornya tidak usang atau dibatalkan. (1b) Dipilih jenis dokumennya saat mengajukan.
+  - (2a) Perubahan SQAM hanya membuka draft; penyusun mengubah isi sendiri. (2b) Perubahan SQAM juga memindahkan dokumen ke versi format atau form set baru customer, dengan pratinjau seperti propagasi template (M5.8).
+  - (3a) Hak E-3 untuk customer itu. (3b) Hak khusus.
+- **Rekomendasi Claude Code (usulan):** (1b), (2b) sesudah Q-07 terjawab, dan (3a).
+- **Asumsi sementara di kode (ASUMSI E-107):** (1a), (2a), dan (3a). Rujukan revisi SQAM dan tanggal berlaku wajib, dijaga juga CHECK di database.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
 
 ## Usulan desain UI (UX-01 sampai UX-07): dampak ke M0 sampai M3 dan saran
 

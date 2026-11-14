@@ -68,6 +68,7 @@ type Change struct {
 	Impacts         []Impact           // daftar periksa dampak menurut urutan; tidak pernah nil (M5.7)
 	Template        *TemplateInfo      // terisi untuk mekanisme template (M5.8)
 	Source          *Ref               // perubahan sumber untuk mekanisme yokoten (M5.9); Name berisi nomornya
+	EffectiveDate   *time.Time         // tanggal berlaku untuk SQAM dan propagasi bercakupan all (M5.8, M5.10)
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 }
@@ -332,6 +333,10 @@ func getChange(ctx context.Context, q *db.Queries, id string) (Change, error) {
 		c.Verification = &Verification{
 			VerifiedBy: deref(r.VerifiedBy), VerifiedByID: *r.VerifiedByPersonID, VerifiedAt: r.VerifiedAt.UTC(), Note: deref(r.VerificationNote),
 		}
+	}
+	if r.EffectiveDate.Valid {
+		at := r.EffectiveDate.Time
+		c.EffectiveDate = &at
 	}
 	if r.SourceChangeID != nil {
 		c.Source = &Ref{ID: *r.SourceChangeID, Name: changeRef(r.SourceChangeSeq)}

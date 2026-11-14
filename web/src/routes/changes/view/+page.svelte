@@ -195,6 +195,10 @@
 			<dt>{t('changeFourM')}</dt>
 			<dd>{change.four_m.name}</dd>
 		{/if}
+		{#if change.effective_date}
+			<dt>{t('propagationEffectiveDate')}</dt>
+			<dd>{change.effective_date}</dd>
+		{/if}
 		{#if change.source_reference}
 			<dt>{t('changeReference')}</dt>
 			<dd>{change.source_reference}</dd>

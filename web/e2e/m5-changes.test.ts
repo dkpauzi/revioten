@@ -358,3 +358,46 @@ test('M5.9: perbaikan CHG-0001 disebarkan ke model C-2, dan statusnya terlihat p
 	await expect(row.locator('[data-yokoten="waiting_verification"]')).toBeVisible();
 	await expect(row.getByRole('link', { name: /^CHG-/ })).toBeVisible();
 });
+
+test('M5.10: perubahan surut SQAM mencakup semua dokumen aktif, dan semuanya mendapat draft', async ({ page }) => {
+	await page.goto('/login');
+	await page.getByLabel(en.loginName, { exact: true }).fill('pemohon.e2e');
+	await page.getByLabel(en.loginPassword, { exact: true }).fill('perubahan selalu punya alasan');
+	await page.getByRole('button', { name: en.loginSubmit }).click();
+	await expect(page.getByRole('button', { name: en.logout })).toBeVisible();
+	await openFromMenu(page, en.navGroupDocuments, en.navChanges);
+	await page.getByLabel(en.documentCustomer, { exact: true }).selectOption({ label: 'CH · Customer CH' });
+	await page.getByRole('button', { name: en.sqamOpen }).click();
+	// Tanpa rujukan dan tanggal ditolak.
+	await page.getByRole('button', { name: en.sqamSubmit }).click();
+	await expect(page.getByRole('alert')).toContainText(en.sqamReferenceRequired);
+	await page.getByLabel(en.propagationSqam).fill('SQAM-CH rev 3');
+	await page.getByLabel(en.propagationEffectiveDate).fill('2026-12-01');
+	await page.locator('#sqam-type').selectOption({ index: 1 });
+	await page.locator('#sqam-reason').fill('SQAM rev 3 asks for the reaction plan owner');
+	await page.getByRole('button', { name: en.sqamSubmit }).click();
+	// CH punya dua set (C-1 dan C-2): enam dokumen aktif.
+	const status = page.getByRole('status');
+	await expect(status).toContainText('CHG-');
+	const ref = (await status.textContent())?.match(/CHG-\d{4}/)?.[0] ?? '';
+	expect(ref).not.toBe('');
+	await expect(status).toHaveText(en.sqamSubmitted.replace('{ref}', ref).replace('{count}', '6'));
+	await logOut(page);
+
+	const docs = await asUser(page, 'verifikator.e2e', 'verifikasi selalu dengan catatan', async () => {
+		const customers = await (await fetch('/api/v1/customers')).json();
+		const customer = customers.items.find((c: { code: string }) => c.code === 'CH');
+		const list = await (await fetch(`/api/v1/changes?customer_id=${customer.id}`)).json();
+		const change = list.items.find((c: { mechanism: string }) => c.mechanism === 'sqam');
+		const accepted = await (
+			await fetch(`/api/v1/changes/${change.id}/verification`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ decision: 'accept', note: 'SQAM rev 3 applies' })
+			})
+		).json();
+		return accepted.documents as { number: string; draft_revision?: number }[];
+	});
+	expect(docs).toHaveLength(6);
+	for (const d of docs) expect(d.draft_revision, d.number).toBeDefined();
+});

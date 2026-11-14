@@ -106,6 +106,9 @@ func toAPIChange(c change.Change) Change {
 	if c.Source != nil {
 		out.SourceChange = &ChangeRef{Id: c.Source.ID, Name: c.Source.Name}
 	}
+	if c.EffectiveDate != nil {
+		out.EffectiveDate = &openapi_types.Date{Time: *c.EffectiveDate}
+	}
 	if tpl := c.Template; tpl != nil {
 		out.Template = &ChangeTemplate{VersionId: tpl.VersionID, Scope: ChangeTemplateScope(tpl.Scope), ConflictPolicy: ChangeTemplateConflictPolicy(tpl.ConflictPolicy)}
 		if tpl.EffectiveDate != nil {
@@ -256,4 +259,22 @@ func (a *apiServer) PropagateTemplate(ctx context.Context, req PropagateTemplate
 		return nil, err
 	}
 	return PropagateTemplate201JSONResponse(toAPIChangeList(list)), nil
+}
+
+// SubmitSQAMChange menjawab POST /api/v1/sqam-changes (M5.10).
+func (a *apiServer) SubmitSQAMChange(ctx context.Context, req SubmitSQAMChangeRequestObject) (SubmitSQAMChangeResponseObject, error) {
+	b := req.Body
+	in := change.SQAMChange{
+		CustomerID: b.CustomerId, ChangeTypeID: b.ChangeTypeId, FourMCategoryID: deref(b.FourMCategoryId), Reason: b.Reason,
+		SQAMReference: b.SqamReference,
+	}
+	if b.EffectiveDate != nil {
+		date := b.EffectiveDate.Time
+		in.EffectiveDate = &date
+	}
+	c, err := a.changeRequests.SubmitSQAM(ctx, actorFrom(ctx), in)
+	if err != nil {
+		return nil, err
+	}
+	return SubmitSQAMChange201JSONResponse(toAPIChange(c)), nil
 }

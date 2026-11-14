@@ -1302,11 +1302,30 @@ export type Change = {
     template?: ChangeTemplate;
     source_change?: ChangeRef;
     /**
+     * When the SQAM revision or the propagation with scope all takes effect.
+     */
+    effective_date?: string;
+    /**
      * The impact checklist (R-CHG-05, M5.7).
      */
     impacts: Array<ChangeImpact>;
     created_at: string;
     updated_at: string;
+};
+
+export type SqamChangeInput = {
+    customer_id: string;
+    change_type_id: string;
+    four_m_category_id?: string;
+    reason: string;
+    /**
+     * The SQAM revision, for example SQAM-KT rev 7, at most 200 characters.
+     */
+    sqam_reference: string;
+    /**
+     * Required; checked by the server so a missing date gets a clear message.
+     */
+    effective_date?: string;
 };
 
 /**
@@ -5897,6 +5916,39 @@ export type RemoveChangeDocumentResponses = {
 };
 
 export type RemoveChangeDocumentResponse = RemoveChangeDocumentResponses[keyof RemoveChangeDocumentResponses];
+
+export type SubmitSqamChangeData = {
+    body: SqamChangeInput;
+    path?: never;
+    query?: never;
+    url: '/api/v1/sqam-changes';
+};
+
+export type SubmitSqamChangeErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type SubmitSqamChangeError = SubmitSqamChangeErrors[keyof SubmitSqamChangeErrors];
+
+export type SubmitSqamChangeResponses = {
+    /**
+     * The change.
+     */
+    201: Change;
+};
+
+export type SubmitSqamChangeResponse = SubmitSqamChangeResponses[keyof SubmitSqamChangeResponses];
 
 export type ListYokotensData = {
     body?: never;

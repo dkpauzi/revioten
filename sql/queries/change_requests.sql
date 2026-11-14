@@ -157,3 +157,21 @@ SELECT EXISTS (
     SELECT 1 FROM change_documents cd JOIN changes c ON c.id = cd.change_id
     WHERE cd.document_id = $1 AND c.template_version_id = $2 AND c.status <> 'rejected'
 );
+
+-- M5.10: perubahan surut SQAM (R-CHG-01, R-TPL-07).
+
+-- name: ListActiveCustomerDocuments :many
+-- ListActiveCustomerDocuments memberi semua dokumen customer yang nomornya
+-- belum dibatalkan atau usang, menurut jenis dokumen lalu nomor.
+SELECT d.id, n.number
+FROM documents d
+JOIN document_numbers n ON n.id = d.document_number_id
+JOIN document_types t ON t.id = d.document_type_id
+WHERE d.customer_id = $1 AND n.status NOT IN ('obsolete', 'void')
+ORDER BY t.position, n.number;
+
+-- name: CreateSQAMChange :one
+INSERT INTO changes (customer_id, mechanism, change_type_id, four_m_category_id, reason, source_reference, effective_date,
+                     requested_by_person_id, requested_by_account_id)
+VALUES ($1, 'sqam', $2, $3, $4, $5, $6, $7, $8)
+RETURNING id;

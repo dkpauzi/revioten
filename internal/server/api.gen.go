@@ -1798,8 +1798,11 @@ type Change struct {
 	CustomerCode string             `json:"customer_code"`
 	CustomerId   string             `json:"customer_id"`
 	Documents    []AffectedDocument `json:"documents"`
-	FourM        *ChangeRef         `json:"four_m,omitempty"`
-	Id           string             `json:"id"`
+
+	// EffectiveDate When the SQAM revision or the propagation with scope all takes effect.
+	EffectiveDate *openapi_types.Date `json:"effective_date,omitempty"`
+	FourM         *ChangeRef          `json:"four_m,omitempty"`
+	Id            string              `json:"id"`
 
 	// Impacts The impact checklist (R-CHG-05, M5.7).
 	Impacts []ChangeImpact `json:"impacts"`
@@ -3763,6 +3766,20 @@ type RowDifferenceList struct {
 	Items []RowDifference `json:"items"`
 }
 
+// SQAMChangeInput defines model for SQAMChangeInput.
+type SQAMChangeInput struct {
+	ChangeTypeId string `json:"change_type_id"`
+	CustomerId   string `json:"customer_id"`
+
+	// EffectiveDate Required; checked by the server so a missing date gets a clear message.
+	EffectiveDate   *openapi_types.Date `json:"effective_date,omitempty"`
+	FourMCategoryId *string             `json:"four_m_category_id,omitempty"`
+	Reason          string              `json:"reason"`
+
+	// SqamReference The SQAM revision, for example SQAM-KT rev 7, at most 200 characters.
+	SqamReference string `json:"sqam_reference"`
+}
+
 // SequenceRange defines model for SequenceRange.
 type SequenceRange struct {
 	// First Example: 003
@@ -4442,6 +4459,9 @@ type CreateSpecialCodeJSONRequestBody = NewSpecialCode
 // UpdateSpecialCodeJSONRequestBody defines body for UpdateSpecialCode for application/json ContentType.
 type UpdateSpecialCodeJSONRequestBody = NameUpdate
 
+// SubmitSQAMChangeJSONRequestBody defines body for SubmitSQAMChange for application/json ContentType.
+type SubmitSQAMChangeJSONRequestBody = SQAMChangeInput
+
 // UpdateSystemSettingsJSONRequestBody defines body for UpdateSystemSettings for application/json ContentType.
 type UpdateSystemSettingsJSONRequestBody = SystemSettingsUpdate
 
@@ -4870,6 +4890,9 @@ type ServerInterface interface {
 	// UpdateSpecialCode Rename a special code. The code itself never changes (A-2)
 	// (PUT /api/v1/special-codes/{specialCodeId})
 	UpdateSpecialCode(w http.ResponseWriter, r *http.Request, specialCodeId SpecialCodeId)
+	// SubmitSQAMChange Submit a retroactive SQAM change for every active document of a customer (E-3, M5.10)
+	// (POST /api/v1/sqam-changes)
+	SubmitSQAMChange(w http.ResponseWriter, r *http.Request)
 	// GetSystemSettings System settings, today the sign date switch (D-52)
 	// (GET /api/v1/system-settings)
 	GetSystemSettings(w http.ResponseWriter, r *http.Request)
@@ -8467,6 +8490,20 @@ func (siw *ServerInterfaceWrapper) UpdateSpecialCode(w http.ResponseWriter, r *h
 	handler.ServeHTTP(w, r)
 }
 
+// SubmitSQAMChange operation middleware
+func (siw *ServerInterfaceWrapper) SubmitSQAMChange(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SubmitSQAMChange(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetSystemSettings operation middleware
 func (siw *ServerInterfaceWrapper) GetSystemSettings(w http.ResponseWriter, r *http.Request) {
 
@@ -8830,6 +8867,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/changes/{changeId}", wrapper.GetChange)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/changes/{changeId}/documents", wrapper.AddChangeDocument)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/changes/{changeId}/documents/{documentId}", wrapper.RemoveChangeDocument)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/sqam-changes", wrapper.SubmitSQAMChange)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/yokotens", wrapper.ListYokotens)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/yokotens", wrapper.CreateYokoten)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/yokoten-targets/search", wrapper.SearchYokotenTargets)
@@ -14465,6 +14503,45 @@ func (response UpdateSpecialCodedefaultJSONResponse) VisitUpdateSpecialCodeRespo
 	return err
 }
 
+type SubmitSQAMChangeRequestObject struct {
+	Body *SubmitSQAMChangeJSONRequestBody
+}
+
+type SubmitSQAMChangeResponseObject interface {
+	VisitSubmitSQAMChangeResponse(w http.ResponseWriter) error
+}
+
+type SubmitSQAMChange201JSONResponse Change
+
+func (response SubmitSQAMChange201JSONResponse) VisitSubmitSQAMChangeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitSQAMChangedefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response SubmitSQAMChangedefaultJSONResponse) VisitSubmitSQAMChangeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetSystemSettingsRequestObject struct {
 }
 
@@ -15189,6 +15266,9 @@ type StrictServerInterface interface {
 	// UpdateSpecialCode Rename a special code. The code itself never changes (A-2)
 	// (PUT /api/v1/special-codes/{specialCodeId})
 	UpdateSpecialCode(ctx context.Context, request UpdateSpecialCodeRequestObject) (UpdateSpecialCodeResponseObject, error)
+	// SubmitSQAMChange Submit a retroactive SQAM change for every active document of a customer (E-3, M5.10)
+	// (POST /api/v1/sqam-changes)
+	SubmitSQAMChange(ctx context.Context, request SubmitSQAMChangeRequestObject) (SubmitSQAMChangeResponseObject, error)
 	// GetSystemSettings System settings, today the sign date switch (D-52)
 	// (GET /api/v1/system-settings)
 	GetSystemSettings(ctx context.Context, request GetSystemSettingsRequestObject) (GetSystemSettingsResponseObject, error)
@@ -19313,6 +19393,37 @@ func (sh *strictHandler) UpdateSpecialCode(w http.ResponseWriter, r *http.Reques
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UpdateSpecialCodeResponseObject); ok {
 		if err := validResponse.VisitUpdateSpecialCodeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SubmitSQAMChange operation middleware
+func (sh *strictHandler) SubmitSQAMChange(w http.ResponseWriter, r *http.Request) {
+	var request SubmitSQAMChangeRequestObject
+
+	var body SubmitSQAMChangeJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SubmitSQAMChange(ctx, request.(SubmitSQAMChangeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SubmitSQAMChange")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SubmitSQAMChangeResponseObject); ok {
+		if err := validResponse.VisitSubmitSQAMChangeResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

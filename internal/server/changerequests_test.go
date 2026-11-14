@@ -129,3 +129,16 @@ func TestYokotenEndpoints(t *testing.T) {
 		t.Errorf("putus: status %d, %+v", rec.Code, fake.got)
 	}
 }
+
+// TestSQAMEndpoint: perubahan surut SQAM (M5.10) meneruskan rujukan dan tanggal berlaku.
+func TestSQAMEndpoint(t *testing.T) {
+	date := time.Date(2026, 12, 1, 0, 0, 0, 0, time.UTC)
+	fake := &fakeChangeRequests{c: change.Change{ID: "c-9", Ref: "CHG-0009", Mechanism: change.MechanismSQAM, Status: change.StatusSubmitted, EffectiveDate: &date}}
+	srv := newTestServer(t, nil, Deps{ChangeRequests: fake})
+	rec := srv.do(http.MethodPost, "/api/v1/sqam-changes", `{"customer_id":"cu-1","change_type_id":"t-1","reason":"SQAM rev 7","sqam_reference":"SQAM-AB rev 7","effective_date":"2026-12-01"}`)
+	got := fake.gotSQAM
+	if rec.Code != http.StatusCreated || got.CustomerID != "cu-1" || got.SQAMReference != "SQAM-AB rev 7" || got.EffectiveDate == nil || !got.EffectiveDate.Equal(date) ||
+		!strings.Contains(rec.Body.String(), `"effective_date":"2026-12-01"`) {
+		t.Errorf("SQAM: status %d, %+v\n%s", rec.Code, got, rec.Body.String())
+	}
+}
