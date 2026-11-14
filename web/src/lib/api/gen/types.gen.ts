@@ -971,7 +971,10 @@ export type DocumentSummary = {
     number: string;
     document_type: DocumentTypeRef;
     revision: number;
-    status: 'draft';
+    /**
+     * Draft while a draft revision is open; released when there is none (M5.4).
+     */
+    status: 'draft' | 'released';
     form_set_name: string;
     row_count: number;
     updated_at: string;
@@ -999,7 +1002,14 @@ export type Document = {
     customer_code: string;
     document_type: DocumentTypeRef;
     revision: number;
-    status: 'draft';
+    /**
+     * Draft while a draft revision is open; released when there is none (M5.4).
+     */
+    status: 'draft' | 'released';
+    /**
+     * The revision in force. Missing until the first release.
+     */
+    released_revision?: number;
     form_set_version_id: string;
     form_set_name: string;
     /**
@@ -1338,6 +1348,18 @@ export type AffectedDocument = {
     document_type: ChangeRef;
     revision: number;
     status: string;
+    /**
+     * The revision in force. Missing until the first release.
+     */
+    released_revision?: number;
+    /**
+     * The draft revision this change produced, once the change is accepted (M5.4).
+     */
+    draft_revision?: number;
+    /**
+     * True when the change went into a draft that was already open (R-CHG-03).
+     */
+    merged?: boolean;
 };
 
 export type NewChange = {

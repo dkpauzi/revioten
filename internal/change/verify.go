@@ -7,6 +7,9 @@ package change
 
 import (
 	"context"
+	"errors"
+	"slices"
+	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -72,10 +75,62 @@ func (s *RequestService) Verify(ctx context.Context, actor access.Actor, id stri
 		if n == 0 {
 			return problems(invalid("status", problem.NotAllowed, "Only a submitted change can be verified."))
 		}
+		if accept {
+			if err := openDrafts(ctx, q, actor, c); err != nil {
+				return err
+			}
+		}
 		return audit.Record(ctx, q, actor, audit.Event{Action: action, TargetType: audit.TargetChange, TargetID: id, Details: map[string]string{"note": note}})
 	})
 	if err != nil {
 		return Change{}, result(err, "memverifikasi perubahan")
 	}
 	return s.load(ctx, id)
+}
+
+// openDrafts memberi setiap dokumen terdampak satu draft revisi (M5.4,
+// R-CHG-03). Bila dokumen sudah punya draft terbuka, perubahan masuk ke draft
+// itu (merged). Bila tidak, revisi berikutnya dibuka sebagai draft; revisi yang
+// berlaku tidak berubah. Dokumen dikunci menurut urutan ID supaya dua
+// verifikasi bersamaan tidak saling menunggu.
+func openDrafts(ctx context.Context, q *db.Queries, actor access.Actor, c Change) error {
+	ids := make([]string, 0, len(c.Documents))
+	for _, d := range c.Documents {
+		ids = append(ids, d.ID)
+	}
+	slices.Sort(ids)
+	for _, docID := range ids {
+		if err := q.LockDocument(ctx, docID); err != nil {
+			return err
+		}
+		merged := true
+		draft, err := q.GetOpenDraftRevision(ctx, docID)
+		switch {
+		case errors.Is(err, pgx.ErrNoRows):
+			merged = false
+			last, err := q.MaxDocumentRevision(ctx, docID)
+			if err != nil {
+				return err
+			}
+			draft.Revision = last + 1
+			if draft.ID, err = q.CreateDocumentRevision(ctx, db.CreateDocumentRevisionParams{
+				DocumentID: docID, Revision: draft.Revision, CreatedByPersonID: actor.PersonID,
+			}); err != nil {
+				return err
+			}
+			if err := q.OpenDocumentDraft(ctx, db.OpenDocumentDraftParams{ID: docID, Revision: draft.Revision}); err != nil {
+				return err
+			}
+		case err != nil:
+			return err
+		}
+		if err := q.LinkChangeDraft(ctx, db.LinkChangeDraftParams{ChangeID: c.ID, DocumentID: docID, DraftRevisionID: &draft.ID, Merged: merged}); err != nil {
+			return err
+		}
+		details := map[string]string{"change": c.Ref, "revision": strconv.Itoa(int(draft.Revision)), "merged": strconv.FormatBool(merged)}
+		if err := audit.Record(ctx, q, actor, audit.Event{Action: audit.ActionDocumentDraftOpened, TargetType: audit.TargetDocument, TargetID: docID, Details: details}); err != nil {
+			return err
+		}
+	}
+	return nil
 }

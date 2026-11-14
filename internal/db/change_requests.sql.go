@@ -309,9 +309,11 @@ func (q *Queries) ListChangeAttachments(ctx context.Context, changeID string) ([
 }
 
 const listChangeDocuments = `-- name: ListChangeDocuments :many
-SELECT d.id, n.number, t.id AS document_type_id, t.key AS document_type_key, t.name AS document_type_name, d.revision, d.status
+SELECT d.id, n.number, t.id AS document_type_id, t.key AS document_type_key, t.name AS document_type_name, d.revision, d.status,
+       d.released_revision, dr.revision AS draft_revision, cd.merged
 FROM change_documents cd
 JOIN documents d ON d.id = cd.document_id
+LEFT JOIN document_revisions dr ON dr.id = cd.draft_revision_id
 JOIN document_numbers n ON n.id = d.document_number_id
 JOIN document_types t ON t.id = d.document_type_id
 WHERE cd.change_id = $1
@@ -326,6 +328,9 @@ type ListChangeDocumentsRow struct {
 	DocumentTypeName string
 	Revision         int16
 	Status           string
+	ReleasedRevision *int16
+	DraftRevision    *int16
+	Merged           bool
 }
 
 // ListChangeDocuments memberi dokumen terdampak menurut urutan jenis dokumen
@@ -347,6 +352,9 @@ func (q *Queries) ListChangeDocuments(ctx context.Context, changeID string) ([]L
 			&i.DocumentTypeName,
 			&i.Revision,
 			&i.Status,
+			&i.ReleasedRevision,
+			&i.DraftRevision,
+			&i.Merged,
 		); err != nil {
 			return nil, err
 		}

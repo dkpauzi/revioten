@@ -37,8 +37,12 @@ import (
 	"github.com/dkpauzi/revioten/internal/template"
 )
 
-// StatusDraft adalah satu-satunya status dokumen sampai Tahap 5.
-const StatusDraft = "draft"
+// Status dokumen (M5.4): draft bila ada draft revisi terbuka, released bila
+// tidak ada; dokumen released hanya bisa diubah lewat perubahan yang diterima.
+const (
+	StatusDraft    = "draft"
+	StatusReleased = "released"
+)
 
 // Batas isian. ASUMSI E-90 (Terbuka): nomor operasi paling banyak 20 karakter, alasan
 // rute 500 karakter, dan paling banyak 1.000 baris per dokumen.
@@ -100,7 +104,8 @@ type Document struct {
 	CustomerID       string
 	CustomerCode     string
 	DocumentType     TypeRef
-	Revision         int
+	Revision         int  // revisi yang dikerjakan, atau revisi terakhir yang terbit
+	ReleasedRevision *int // revisi yang berlaku; nil bila belum pernah terbit (M5.4)
 	Status           string
 	FormSetVersionID string
 	FormSetName      string
@@ -277,6 +282,10 @@ func (s *Service) Create(ctx context.Context, actor access.Actor, in NewDocument
 			ApprovalRouteID: route, RouteReason: optional(reason), CreatedByPersonID: actor.PersonID,
 		})
 		if err != nil {
+			return err
+		}
+		// Dokumen baru adalah draft revisi awalnya (M5.4).
+		if _, err := q.CreateDocumentRevision(ctx, db.CreateDocumentRevisionParams{DocumentID: id, Revision: number.InitialRevision, CreatedByPersonID: actor.PersonID}); err != nil {
 			return err
 		}
 		for _, m := range in.ModelIDs {
@@ -588,6 +597,9 @@ func (s *Service) edit(ctx context.Context, actor access.Actor, id string,
 		if err != nil {
 			return err
 		}
+		if err := requireDraft(d); err != nil {
+			return err
+		}
 		format, err := template.LoadFormatVersion(ctx, q, d.FormatVersionID)
 		if err != nil {
 			return err
@@ -659,6 +671,10 @@ func getDocument(ctx context.Context, q *db.Queries, id string) (Document, error
 		Models: []Ref{}, PartNumbers: []PartRef{}, Rows: []Row{}, CreatedAt: r.CreatedAt.UTC(), UpdatedAt: r.UpdatedAt.UTC(),
 		HeaderVersion: int(r.HeaderVersion),
 	}
+	if r.ReleasedRevision != nil {
+		v := int(*r.ReleasedRevision)
+		d.ReleasedRevision = &v
+	}
 	if r.ApprovalRouteID != nil {
 		d.Route = &Ref{ID: *r.ApprovalRouteID, Name: deref(r.RouteName)}
 	}
@@ -724,4 +740,15 @@ func result(err error, doing string) error {
 		return err
 	}
 	return fmt.Errorf("%s: %w", doing, err)
+}
+
+// requireDraft menolak perubahan isi dokumen yang tidak punya draft terbuka
+// (M5.4). Revisi yang terbit hanya berubah lewat perubahan yang diterima,
+// yang membuka draft revisi berikutnya (R-CHG-03, R-REV-02).
+func requireDraft(d Document) error {
+	if d.Status != StatusDraft {
+		return problems(invalid("status", problem.NotAllowed,
+			fmt.Sprintf("%s has no open draft. Submit a change; when it is accepted, the next revision opens as a draft.", d.Number)))
+	}
+	return nil
 }

@@ -116,7 +116,7 @@ func toAPIDocument(d document.Document) Document {
 	out := Document{
 		Id: d.ID, DocumentNumberId: d.NumberID, Number: d.Number, CustomerId: d.CustomerID, CustomerCode: d.CustomerCode,
 		DocumentType: DocumentTypeRef{Id: d.DocumentType.ID, Key: DocumentTypeRefKey(d.DocumentType.Key), Name: d.DocumentType.Name},
-		Revision:     d.Revision, Status: DocumentStatus(d.Status), FormSetVersionId: d.FormSetVersionID, FormSetName: d.FormSetName,
+		Revision:     d.Revision, ReleasedRevision: d.ReleasedRevision, Status: DocumentStatus(d.Status), FormSetVersionId: d.FormSetVersionID, FormSetName: d.FormSetName,
 		FormatVersionId: d.FormatVersionID, Header: d.Header, HeaderVersion: d.HeaderVersion, CreatedAt: d.CreatedAt, UpdatedAt: d.UpdatedAt,
 		Models: make([]NamedRef, 0, len(d.Models)), PartNumbers: make([]DocumentPartNumber, 0, len(d.PartNumbers)),
 		Rows: make([]DocumentRow, 0, len(d.Rows)), RouteReason: optional(d.RouteReason),

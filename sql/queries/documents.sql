@@ -56,7 +56,7 @@ INSERT INTO document_part_numbers (document_id, part_number_id) VALUES ($1, $2);
 
 -- name: GetDocument :one
 SELECT d.id, d.document_number_id, n.number, d.customer_id, c.code AS customer_code, d.document_type_id,
-       t.key AS document_type_key, t.name AS document_type_name, d.revision, d.status,
+       t.key AS document_type_key, t.name AS document_type_name, d.revision, d.status, d.released_revision,
        d.form_set_version_id, s.name AS form_set_name, d.format_version_id,
        d.approval_route_id, r.name AS route_name, d.route_reason, d.header, d.header_version, d.created_at, d.updated_at
 FROM documents d

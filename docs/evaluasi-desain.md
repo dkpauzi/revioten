@@ -1840,6 +1840,21 @@ Salin blok ini untuk setiap temuan baru.
 - **Status:** Terbuka
 - **Keputusan pemilik:**
 
+## E-101 · Arti "versi baris" dan konflik saat perubahan masuk ke draft terbuka
+
+- **Tanggal dan milestone:** 14 November 2026, M5.4.
+- **Jenis:** Ambigu
+- **Rujukan:** milestone M5.4 ("Draft revisi dan versi baris"), R-CHG-03, R-REV-02, R-REV-03, U5 `document_row`.
+- **Temuan:** (1) "Versi baris" bisa berarti tabel versi untuk setiap baris (setiap simpan membuat versi baru), atau isi baris yang dibekukan per revisi. (2) R-CHG-03 meminta konflik ditampilkan bila perubahan masuk ke draft yang terbuka. Perubahan manual tidak membawa isi baris, jadi belum ada yang bisa berkonflik; konflik baru nyata untuk propagasi template (M5.8) dan yokoten (M5.9).
+- **Opsi:**
+  - (1a) Baris yang dikerjakan adalah draft; isi revisi terbit dibekukan sebagai snapshot di M5.5, dan diff (M5.6) membandingkan snapshot. (1b) Tabel `document_row_versions` dengan satu versi per baris per revisi.
+  - (2a) Untuk perubahan manual cukup ditandai "masuk ke draft terbuka" beserta perubahan mana saja yang masuk; konflik isi ditangani di M5.8 dan M5.9. (2b) Bangun deteksi konflik umum sekarang.
+- **Rekomendasi Claude Code (usulan):** (1a) dan (2a).
+- **Asumsi sementara di kode (ASUMSI E-101):** (1a) dan (2a). Tabel `document_revisions` mencatat setiap revisi; `documents.status` released berarti tidak ada draft terbuka, dan trigger menolak perubahan baris dan header dokumen seperti itu.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
 ## Usulan desain UI (UX-01 sampai UX-07): dampak ke M0 sampai M3 dan saran
 
 - **Sumber:** `docs/uml/usulan-desain-ui.md` (UML draft 0.12, 3 November 2026) dan kanvas desain UI "Desain UI Sistem PFD PFMEA CP" (18 artboard, baris v2 disarankan).

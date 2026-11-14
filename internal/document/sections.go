@@ -351,6 +351,9 @@ func (s *Service) editSet(ctx context.Context, actor access.Actor, id string,
 			if err != nil {
 				return err
 			}
+			if err := requireDraft(doc); err != nil {
+				return err
+			}
 			if docID == id {
 				current = doc
 			}

@@ -86,9 +86,11 @@ type ChangeAttachment struct {
 }
 
 type ChangeDocument struct {
-	ChangeID   string
-	DocumentID string
-	AddedAt    time.Time
+	ChangeID        string
+	DocumentID      string
+	AddedAt         time.Time
+	DraftRevisionID *string
+	Merged          bool
 }
 
 type ChangeSource struct {
@@ -141,6 +143,7 @@ type Document struct {
 	CreatedAt         time.Time
 	UpdatedAt         time.Time
 	HeaderVersion     int32
+	ReleasedRevision  *int16
 }
 
 type DocumentModel struct {
@@ -174,6 +177,16 @@ type DocumentPointExclusion struct {
 	Reason     *string
 	ExcludedAt time.Time
 	SectionID  *string
+}
+
+type DocumentRevision struct {
+	ID                string
+	DocumentID        string
+	Revision          int16
+	Status            string
+	CreatedByPersonID string
+	CreatedAt         time.Time
+	ReleasedAt        *time.Time
 }
 
 type DocumentRow struct {

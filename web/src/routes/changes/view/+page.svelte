@@ -226,6 +226,7 @@
 					<th>{t('documentNumber')}</th>
 					<th>{t('numberColumnType')}</th>
 					<th>{t('changeRevision')}</th>
+					<th>{t('changeDraft')}</th>
 					{#if editable}<th>{t('masterActions')}</th>{/if}
 				</tr>
 			</thead>
@@ -235,6 +236,7 @@
 						<td class="mono"><a href="/documents/view?id={d.id}">{d.number}</a></td>
 						<td>{d.document_type.name}</td>
 						<td>{d.revision}</td>
+						<td>{d.draft_revision === undefined ? '' : t(d.merged ? 'changeDraftMerged' : 'changeDraftOpened', { revision: String(d.draft_revision) })}</td>
 						{#if editable}
 							<td>
 								<button type="button" aria-label={t('changeDocumentRemoveFor', { number: d.number })} onclick={() => remove(d.id, d.number)}>{t('changeDocumentRemove')}</button>

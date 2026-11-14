@@ -202,6 +202,15 @@ func (s *Service) Compose(ctx context.Context, actor access.Actor, id string, in
 		if err != nil {
 			return err
 		}
+		for _, docID := range ids {
+			m, err := getDocument(ctx, q, docID)
+			if err != nil {
+				return err
+			}
+			if err := requireDraft(m); err != nil {
+				return err
+			}
+		}
 		if !db.IsUUID(in.VersionID) {
 			return problems(invalid("process_template_version_id", problem.InvalidFormat, "Choose a process template version."))
 		}

@@ -127,6 +127,8 @@ test('M5.3: APQP/PPAP Controller menerima perubahan dengan catatan wajib', async
 	await expect(page.getByRole('status')).toHaveText(en.changeAccepted.replace('{ref}', 'CHG-0001'));
 	await expect(page.locator('[data-change-status="accepted"]')).toHaveText(en.changeStatus_accepted);
 	await expect(page.getByText('APQP PPAP Controller E2E ·')).toBeVisible();
+	// M5.4: kedua dokumen terdampak masih draft revisi 0, jadi perubahan masuk ke draft itu.
+	await expect(page.getByRole('cell', { name: en.changeDraftMerged.replace('{revision}', '0') })).toHaveCount(2);
 	// Sesudah diterima, tidak ada tombol verifikasi lagi.
 	await expect(page.getByRole('heading', { name: en.changeVerify })).toHaveCount(0);
 });

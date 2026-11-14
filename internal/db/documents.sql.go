@@ -482,7 +482,7 @@ func (q *Queries) GetCustomerForDocument(ctx context.Context, id string) (GetCus
 
 const getDocument = `-- name: GetDocument :one
 SELECT d.id, d.document_number_id, n.number, d.customer_id, c.code AS customer_code, d.document_type_id,
-       t.key AS document_type_key, t.name AS document_type_name, d.revision, d.status,
+       t.key AS document_type_key, t.name AS document_type_name, d.revision, d.status, d.released_revision,
        d.form_set_version_id, s.name AS form_set_name, d.format_version_id,
        d.approval_route_id, r.name AS route_name, d.route_reason, d.header, d.header_version, d.created_at, d.updated_at
 FROM documents d
@@ -506,6 +506,7 @@ type GetDocumentRow struct {
 	DocumentTypeName string
 	Revision         int16
 	Status           string
+	ReleasedRevision *int16
 	FormSetVersionID string
 	FormSetName      string
 	FormatVersionID  string
@@ -532,6 +533,7 @@ func (q *Queries) GetDocument(ctx context.Context, id string) (GetDocumentRow, e
 		&i.DocumentTypeName,
 		&i.Revision,
 		&i.Status,
+		&i.ReleasedRevision,
 		&i.FormSetVersionID,
 		&i.FormSetName,
 		&i.FormatVersionID,

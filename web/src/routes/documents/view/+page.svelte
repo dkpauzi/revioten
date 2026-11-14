@@ -316,8 +316,19 @@
 		<dt>{t('documentRoute')}</dt>
 		<dd>{doc.route?.name ?? t('documentNoRoute')}{doc.route_reason ? ` · ${doc.route_reason}` : ''}</dd>
 		<dt>{t('numberColumnStatus')}</dt>
-		<dd><span class="badge" data-status="draft">{t('versionStatusDraft')}</span></dd>
+		<dd>
+			<span class="badge" data-status={doc.status}>{t(doc.status === 'released' ? 'documentStatusReleased' : 'versionStatusDraft')}</span>
+		</dd>
+		<dt>{t(doc.status === 'draft' ? 'documentDraftRevision' : 'documentReleasedRevision')}</dt>
+		<dd>{doc.revision}</dd>
+		{#if doc.status === 'draft' && doc.released_revision !== undefined}
+			<dt>{t('documentReleasedRevision')}</dt>
+			<dd>{doc.released_revision}</dd>
+		{/if}
 	</dl>
+	{#if doc.status === 'released'}
+		<p class="hint">{t('documentNoDraft')}</p>
+	{/if}
 
 	{#if message}<p role="status">{message}</p>{/if}
 	{#if failure}<p class="error" role="alert">{failure}</p>{/if}

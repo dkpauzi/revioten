@@ -75,6 +75,9 @@ func (s *Service) CopyFrom(ctx context.Context, actor access.Actor, id, sourceID
 			if err != nil {
 				return err
 			}
+			if err := requireDraft(target); err != nil {
+				return err
+			}
 			from, ok := sources[target.DocumentType.Key]
 			if !ok {
 				continue // sumber tidak punya dokumen jenis itu

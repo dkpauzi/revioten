@@ -4199,7 +4199,8 @@ components:
           type: integer
         status:
           type: string
-          enum: [draft]
+          enum: [draft, released]
+          description: Draft while a draft revision is open; released when there is none (M5.4).
         form_set_name:
           type: string
         row_count:
@@ -4247,7 +4248,11 @@ components:
           type: integer
         status:
           type: string
-          enum: [draft]
+          enum: [draft, released]
+          description: Draft while a draft revision is open; released when there is none (M5.4).
+        released_revision:
+          type: integer
+          description: The revision in force. Missing until the first release.
         form_set_version_id:
           type: string
         form_set_name:
@@ -4713,6 +4718,15 @@ components:
           type: integer
         status:
           type: string
+        released_revision:
+          type: integer
+          description: The revision in force. Missing until the first release.
+        draft_revision:
+          type: integer
+          description: The draft revision this change produced, once the change is accepted (M5.4).
+        merged:
+          type: boolean
+          description: True when the change went into a draft that was already open (R-CHG-03).
     NewChange:
       type: object
       required: [customer_id, trigger_id, change_type_id, reason, document_ids]

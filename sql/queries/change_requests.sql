@@ -37,9 +37,11 @@ SELECT id FROM changes WHERE id = $1 FOR NO KEY UPDATE;
 -- name: ListChangeDocuments :many
 -- ListChangeDocuments memberi dokumen terdampak menurut urutan jenis dokumen
 -- (PFD, PFMEA, CP), lalu nomornya.
-SELECT d.id, n.number, t.id AS document_type_id, t.key AS document_type_key, t.name AS document_type_name, d.revision, d.status
+SELECT d.id, n.number, t.id AS document_type_id, t.key AS document_type_key, t.name AS document_type_name, d.revision, d.status,
+       d.released_revision, dr.revision AS draft_revision, cd.merged
 FROM change_documents cd
 JOIN documents d ON d.id = cd.document_id
+LEFT JOIN document_revisions dr ON dr.id = cd.draft_revision_id
 JOIN document_numbers n ON n.id = d.document_number_id
 JOIN document_types t ON t.id = d.document_type_id
 WHERE cd.change_id = $1

@@ -287,7 +287,7 @@ export const helpEn: HelpContent = {
 				'Under {changeAttachments}, choose a file in {changeAttachmentAdd} and press {changeAttachmentUpload}, for example the 8D report or a photo of the defect. Press the file name to download it.',
 				'A verifier (the Project Engineer or the Project Leader of the customer’s project group, or the APQP/PPAP Controller) opens the change, writes a {changeVerifyNote}, and presses {changeAccept} or {changeReject}. The requester cannot verify their own change.'
 			],
-			tips: ['A change always affects at least one document, so the last one cannot be removed.', 'An attachment can be at most 20 MB. A removed attachment stays in the audit log.']
+			tips: ['A change always affects at least one document, so the last one cannot be removed.', 'An attachment can be at most 20 MB. A removed attachment stays in the audit log.', 'When a change is accepted, every affected document gets a draft: a document that already has an open draft takes the change into it, and a released document opens the next revision. The revision in force stays as it is until the draft is released.']
 		},
 		{
 			id: 'audit',

@@ -268,13 +268,16 @@ func (e ComposedPointState) Valid() bool {
 
 // Defines values for DocumentStatus.
 const (
-	DocumentStatusDraft DocumentStatus = "draft"
+	DocumentStatusDraft    DocumentStatus = "draft"
+	DocumentStatusReleased DocumentStatus = "released"
 )
 
 // Valid indicates whether the value is a known member of the DocumentStatus enum.
 func (e DocumentStatus) Valid() bool {
 	switch e {
 	case DocumentStatusDraft:
+		return true
+	case DocumentStatusReleased:
 		return true
 	default:
 		return false
@@ -334,13 +337,16 @@ func (e DocumentNumberStatus) Valid() bool {
 
 // Defines values for DocumentSummaryStatus.
 const (
-	DocumentSummaryStatusDraft DocumentSummaryStatus = "draft"
+	DocumentSummaryStatusDraft    DocumentSummaryStatus = "draft"
+	DocumentSummaryStatusReleased DocumentSummaryStatus = "released"
 )
 
 // Valid indicates whether the value is a known member of the DocumentSummaryStatus enum.
 func (e DocumentSummaryStatus) Valid() bool {
 	switch e {
 	case DocumentSummaryStatusDraft:
+		return true
+	case DocumentSummaryStatusReleased:
 		return true
 	default:
 		return false
@@ -1359,10 +1365,19 @@ type ActionPriorityResultPriority string
 // AffectedDocument defines model for AffectedDocument.
 type AffectedDocument struct {
 	DocumentType ChangeRef `json:"document_type"`
-	Id           string    `json:"id"`
-	Number       string    `json:"number"`
-	Revision     int       `json:"revision"`
-	Status       string    `json:"status"`
+
+	// DraftRevision The draft revision this change produced, once the change is accepted (M5.4).
+	DraftRevision *int   `json:"draft_revision,omitempty"`
+	Id            string `json:"id"`
+
+	// Merged True when the change went into a draft that was already open (R-CHG-03).
+	Merged *bool  `json:"merged,omitempty"`
+	Number string `json:"number"`
+
+	// ReleasedRevision The revision in force. Missing until the first release.
+	ReleasedRevision *int   `json:"released_revision,omitempty"`
+	Revision         int    `json:"revision"`
+	Status           string `json:"status"`
 }
 
 // ApRule One Action Priority for a box of severity, occurrence, and detection ranges; both ends included.
@@ -1796,21 +1811,26 @@ type Document struct {
 	Models        []NamedRef           `json:"models"`
 	Number        string               `json:"number"`
 	PartNumbers   []DocumentPartNumber `json:"part_numbers"`
-	Revision      int                  `json:"revision"`
-	Route         *NamedRef            `json:"route,omitempty"`
-	RouteReason   *string              `json:"route_reason,omitempty"`
-	Rows          []DocumentRow        `json:"rows"`
+
+	// ReleasedRevision The revision in force. Missing until the first release.
+	ReleasedRevision *int          `json:"released_revision,omitempty"`
+	Revision         int           `json:"revision"`
+	Route            *NamedRef     `json:"route,omitempty"`
+	RouteReason      *string       `json:"route_reason,omitempty"`
+	Rows             []DocumentRow `json:"rows"`
 
 	// Sections The sections of the document, one per PCB of the model (D-155), in order. Empty for a document without sections.
 	Sections []DocumentSection `json:"sections"`
 
 	// Set The documents of the same set, this one included, by document type (M4.2). Documents from numbers registered as a set of PFD, PFMEA, and CP know each other; a single number gives only this document.
-	Set       []DocumentSetMember `json:"set"`
-	Status    DocumentStatus      `json:"status"`
-	UpdatedAt time.Time           `json:"updated_at"`
+	Set []DocumentSetMember `json:"set"`
+
+	// Status Draft while a draft revision is open; released when there is none (M5.4).
+	Status    DocumentStatus `json:"status"`
+	UpdatedAt time.Time      `json:"updated_at"`
 }
 
-// DocumentStatus defines model for Document.Status.
+// DocumentStatus Draft while a draft revision is open; released when there is none (M5.4).
 type DocumentStatus string
 
 // DocumentCopy defines model for DocumentCopy.
@@ -1977,15 +1997,17 @@ type DocumentSummary struct {
 	Id           string          `json:"id"`
 
 	// Models The names of the models of the document, in alphabetical order (M4.7).
-	Models    []string              `json:"models"`
-	Number    string                `json:"number"`
-	Revision  int                   `json:"revision"`
-	RowCount  int                   `json:"row_count"`
+	Models   []string `json:"models"`
+	Number   string   `json:"number"`
+	Revision int      `json:"revision"`
+	RowCount int      `json:"row_count"`
+
+	// Status Draft while a draft revision is open; released when there is none (M5.4).
 	Status    DocumentSummaryStatus `json:"status"`
 	UpdatedAt time.Time             `json:"updated_at"`
 }
 
-// DocumentSummaryStatus defines model for DocumentSummary.Status.
+// DocumentSummaryStatus Draft while a draft revision is open; released when there is none (M5.4).
 type DocumentSummaryStatus string
 
 // DocumentType defines model for DocumentType.

@@ -76,6 +76,11 @@ type AffectedDocument struct {
 	DocumentType Ref
 	Revision     int
 	Status       string
+	// M5.4: revisi yang berlaku, draft yang dihasilkan perubahan ini, dan
+	// apakah perubahan masuk ke draft yang sudah terbuka (R-CHG-03).
+	ReleasedRevision *int
+	DraftRevision    *int
+	Merged           bool
 }
 
 // NewChange adalah isian perubahan manual baru.
@@ -324,7 +329,8 @@ func getChange(ctx context.Context, q *db.Queries, id string) (Change, error) {
 	}
 	for _, d := range docs {
 		c.Documents = append(c.Documents, AffectedDocument{
-			ID: d.ID, Number: d.Number, Revision: int(d.Revision), Status: d.Status,
+			ID: d.ID, Number: d.Number, Revision: int(d.Revision), Status: d.Status, Merged: d.Merged,
+			ReleasedRevision: intPtr(d.ReleasedRevision), DraftRevision: intPtr(d.DraftRevision),
 			DocumentType: Ref{ID: d.DocumentTypeID, Key: deref(d.DocumentTypeKey), Name: d.DocumentTypeName},
 		})
 	}
@@ -460,4 +466,12 @@ func optional(s string) *string {
 		return nil
 	}
 	return &s
+}
+
+func intPtr(v *int16) *int {
+	if v == nil {
+		return nil
+	}
+	n := int(*v)
+	return &n
 }

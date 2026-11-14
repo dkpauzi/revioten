@@ -106,7 +106,12 @@ func toAPIChange(c change.Change) Change {
 		out.FourM = &f
 	}
 	for _, d := range c.Documents {
-		out.Documents = append(out.Documents, AffectedDocument{Id: d.ID, Number: d.Number, DocumentType: ref(d.DocumentType), Revision: d.Revision, Status: d.Status})
+		item := AffectedDocument{Id: d.ID, Number: d.Number, DocumentType: ref(d.DocumentType), Revision: d.Revision, Status: d.Status,
+			ReleasedRevision: d.ReleasedRevision, DraftRevision: d.DraftRevision}
+		if d.DraftRevision != nil {
+			item.Merged = &d.Merged
+		}
+		out.Documents = append(out.Documents, item)
 	}
 	return out
 }
