@@ -1499,6 +1499,60 @@ func (e SystemSettingsUpdateFormApprovalMode) Valid() bool {
 	}
 }
 
+// Defines values for YokotenTargetDecision.
+const (
+	YokotenTargetDecisionAdapt         YokotenTargetDecision = "adapt"
+	YokotenTargetDecisionApply         YokotenTargetDecision = "apply"
+	YokotenTargetDecisionNotApplicable YokotenTargetDecision = "not_applicable"
+	YokotenTargetDecisionPending       YokotenTargetDecision = "pending"
+)
+
+// Valid indicates whether the value is a known member of the YokotenTargetDecision enum.
+func (e YokotenTargetDecision) Valid() bool {
+	switch e {
+	case YokotenTargetDecisionAdapt:
+		return true
+	case YokotenTargetDecisionApply:
+		return true
+	case YokotenTargetDecisionNotApplicable:
+		return true
+	case YokotenTargetDecisionPending:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for YokotenTargetProgress.
+const (
+	YokotenTargetProgressInDraft             YokotenTargetProgress = "in_draft"
+	YokotenTargetProgressNotApplicable       YokotenTargetProgress = "not_applicable"
+	YokotenTargetProgressRejected            YokotenTargetProgress = "rejected"
+	YokotenTargetProgressReleased            YokotenTargetProgress = "released"
+	YokotenTargetProgressUndecided           YokotenTargetProgress = "undecided"
+	YokotenTargetProgressWaitingVerification YokotenTargetProgress = "waiting_verification"
+)
+
+// Valid indicates whether the value is a known member of the YokotenTargetProgress enum.
+func (e YokotenTargetProgress) Valid() bool {
+	switch e {
+	case YokotenTargetProgressInDraft:
+		return true
+	case YokotenTargetProgressNotApplicable:
+		return true
+	case YokotenTargetProgressRejected:
+		return true
+	case YokotenTargetProgressReleased:
+		return true
+	case YokotenTargetProgressUndecided:
+		return true
+	case YokotenTargetProgressWaitingVerification:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListDocumentNumbersParamsStatus.
 const (
 	ListDocumentNumbersParamsStatusInUse    ListDocumentNumbersParamsStatus = "in_use"
@@ -1758,7 +1812,8 @@ type Change struct {
 	Ref string `json:"ref"`
 
 	// RequestedBy The name of the person who submitted the change.
-	RequestedBy string `json:"requested_by"`
+	RequestedBy  string     `json:"requested_by"`
+	SourceChange *ChangeRef `json:"source_change,omitempty"`
 
 	// SourceReference For example a complaint number, an 8D number, an audit finding, or an SQAM revision.
 	SourceReference *string `json:"source_reference,omitempty"`
@@ -3024,6 +3079,15 @@ type NewTemplatePoint struct {
 	Text          string  `json:"text"`
 }
 
+// NewYokoten defines model for NewYokoten.
+type NewYokoten struct {
+	Reason         string `json:"reason"`
+	SourceChangeId string `json:"source_change_id"`
+
+	// Targets One of customer_id, model_group_id (D-40), or model_ids; process_id and text narrow the documents.
+	Targets YokotenTargetFilter `json:"targets"`
+}
+
 // NextDocumentNumber defines model for NextDocumentNumber.
 type NextDocumentNumber struct {
 	// Number Example: SC-AB-001
@@ -3823,6 +3887,93 @@ type TemporaryPassword struct {
 	TemporaryPassword string `json:"temporary_password"`
 }
 
+// Yokoten defines model for Yokoten.
+type Yokoten struct {
+	CreatedAt     time.Time `json:"created_at"`
+	CreatedBy     string    `json:"created_by"`
+	Id            string    `json:"id"`
+	ProcessFilter *string   `json:"process_filter,omitempty"`
+	Reason        string    `json:"reason"`
+
+	// Ref For example YKT-0001.
+	Ref          string          `json:"ref"`
+	SourceChange ChangeRef       `json:"source_change"`
+	Targets      []YokotenTarget `json:"targets"`
+	TextFilter   *string         `json:"text_filter,omitempty"`
+}
+
+// YokotenDecision defines model for YokotenDecision.
+type YokotenDecision struct {
+	// Decision apply, adapt, or not_applicable.
+	Decision string `json:"decision"`
+
+	// Reason Required for not_applicable.
+	Reason *string `json:"reason,omitempty"`
+}
+
+// YokotenDocument defines model for YokotenDocument.
+type YokotenDocument struct {
+	DocumentType     string `json:"document_type"`
+	Id               string `json:"id"`
+	Number           string `json:"number"`
+	ReleasedRevision *int   `json:"released_revision,omitempty"`
+	Revision         int    `json:"revision"`
+	Status           string `json:"status"`
+}
+
+// YokotenList defines model for YokotenList.
+type YokotenList struct {
+	Items []Yokoten `json:"items"`
+}
+
+// YokotenSearch defines model for YokotenSearch.
+type YokotenSearch struct {
+	SourceChangeId string `json:"source_change_id"`
+
+	// Targets One of customer_id, model_group_id (D-40), or model_ids; process_id and text narrow the documents.
+	Targets YokotenTargetFilter `json:"targets"`
+}
+
+// YokotenTarget defines model for YokotenTarget.
+type YokotenTarget struct {
+	Change       *ChangeRef            `json:"change,omitempty"`
+	CustomerCode string                `json:"customer_code"`
+	CustomerId   string                `json:"customer_id"`
+	DecidedAt    *time.Time            `json:"decided_at,omitempty"`
+	DecidedBy    *string               `json:"decided_by,omitempty"`
+	Decision     YokotenTargetDecision `json:"decision"`
+	Documents    []YokotenDocument     `json:"documents"`
+
+	// Id Missing in a search, before the yokoten is saved.
+	Id        *string               `json:"id,omitempty"`
+	ModelId   string                `json:"model_id"`
+	ModelName string                `json:"model_name"`
+	Progress  YokotenTargetProgress `json:"progress"`
+	Reason    *string               `json:"reason,omitempty"`
+}
+
+// YokotenTargetDecision defines model for YokotenTarget.Decision.
+type YokotenTargetDecision string
+
+// YokotenTargetProgress defines model for YokotenTarget.Progress.
+type YokotenTargetProgress string
+
+// YokotenTargetFilter One of customer_id, model_group_id (D-40), or model_ids; process_id and text narrow the documents.
+type YokotenTargetFilter struct {
+	CustomerId   *string   `json:"customer_id,omitempty"`
+	ModelGroupId *string   `json:"model_group_id,omitempty"`
+	ModelIds     *[]string `json:"model_ids,omitempty"`
+	ProcessId    *string   `json:"process_id,omitempty"`
+
+	// Text Searched in the row content of the documents, at most 200 characters.
+	Text *string `json:"text,omitempty"`
+}
+
+// YokotenTargetList defines model for YokotenTargetList.
+type YokotenTargetList struct {
+	Items []YokotenTarget `json:"items"`
+}
+
 // AccountId defines model for AccountId.
 type AccountId = string
 
@@ -3928,8 +4079,14 @@ type SpecialCodeId = string
 // SubprocessId defines model for SubprocessId.
 type SubprocessId = string
 
+// TargetId defines model for TargetId.
+type TargetId = string
+
 // VariantId defines model for VariantId.
 type VariantId = string
+
+// YokotenId defines model for YokotenId.
+type YokotenId = string
 
 // ListAuditLogParams defines parameters for ListAuditLog.
 type ListAuditLogParams struct {
@@ -4287,6 +4444,15 @@ type UpdateSpecialCodeJSONRequestBody = NameUpdate
 
 // UpdateSystemSettingsJSONRequestBody defines body for UpdateSystemSettings for application/json ContentType.
 type UpdateSystemSettingsJSONRequestBody = SystemSettingsUpdate
+
+// SearchYokotenTargetsJSONRequestBody defines body for SearchYokotenTargets for application/json ContentType.
+type SearchYokotenTargetsJSONRequestBody = YokotenSearch
+
+// CreateYokotenJSONRequestBody defines body for CreateYokoten for application/json ContentType.
+type CreateYokotenJSONRequestBody = NewYokoten
+
+// DecideYokotenTargetJSONRequestBody defines body for DecideYokotenTarget for application/json ContentType.
+type DecideYokotenTargetJSONRequestBody = YokotenDecision
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
@@ -4710,6 +4876,21 @@ type ServerInterface interface {
 	// UpdateSystemSettings Change the system settings (A-3, UC-07)
 	// (PUT /api/v1/system-settings)
 	UpdateSystemSettings(w http.ResponseWriter, r *http.Request)
+	// SearchYokotenTargets Find the yokoten targets for a filter without saving anything (E-3, M5.9)
+	// (POST /api/v1/yokoten-targets/search)
+	SearchYokotenTargets(w http.ResponseWriter, r *http.Request)
+	// ListYokotens Yokoten whose source change the account can view, newest first (L-4, M5.9)
+	// (GET /api/v1/yokotens)
+	ListYokotens(w http.ResponseWriter, r *http.Request)
+	// CreateYokoten Spread an accepted change to other models (E-3, M5.9, R-CHG-04)
+	// (POST /api/v1/yokotens)
+	CreateYokoten(w http.ResponseWriter, r *http.Request)
+	// GetYokoten One yokoten with its status board per model (L-4, M5.9)
+	// (GET /api/v1/yokotens/{yokotenId})
+	GetYokoten(w http.ResponseWriter, r *http.Request, yokotenId YokotenId)
+	// DecideYokotenTarget Apply, adapt, or mark one target not applicable (E-3 for the target customer, M5.9)
+	// (POST /api/v1/yokotens/{yokotenId}/targets/{targetId}/decision)
+	DecideYokotenTarget(w http.ResponseWriter, r *http.Request, yokotenId YokotenId, targetId TargetId)
 	// GetHealth Server and database status
 	// (GET /health)
 	GetHealth(w http.ResponseWriter, r *http.Request)
@@ -8314,6 +8495,109 @@ func (siw *ServerInterfaceWrapper) UpdateSystemSettings(w http.ResponseWriter, r
 	handler.ServeHTTP(w, r)
 }
 
+// SearchYokotenTargets operation middleware
+func (siw *ServerInterfaceWrapper) SearchYokotenTargets(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SearchYokotenTargets(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListYokotens operation middleware
+func (siw *ServerInterfaceWrapper) ListYokotens(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListYokotens(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateYokoten operation middleware
+func (siw *ServerInterfaceWrapper) CreateYokoten(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateYokoten(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetYokoten operation middleware
+func (siw *ServerInterfaceWrapper) GetYokoten(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "yokotenId" -------------
+	var yokotenId YokotenId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "yokotenId", r.PathValue("yokotenId"), &yokotenId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "yokotenId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetYokoten(w, r, yokotenId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DecideYokotenTarget operation middleware
+func (siw *ServerInterfaceWrapper) DecideYokotenTarget(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "yokotenId" -------------
+	var yokotenId YokotenId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "yokotenId", r.PathValue("yokotenId"), &yokotenId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "yokotenId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "targetId" -------------
+	var targetId TargetId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "targetId", r.PathValue("targetId"), &targetId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "targetId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DecideYokotenTarget(w, r, yokotenId, targetId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetHealth operation middleware
 func (siw *ServerInterfaceWrapper) GetHealth(w http.ResponseWriter, r *http.Request) {
 
@@ -8546,6 +8830,11 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/changes/{changeId}", wrapper.GetChange)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/changes/{changeId}/documents", wrapper.AddChangeDocument)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/changes/{changeId}/documents/{documentId}", wrapper.RemoveChangeDocument)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/yokotens", wrapper.ListYokotens)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/yokotens", wrapper.CreateYokoten)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/yokoten-targets/search", wrapper.SearchYokotenTargets)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/yokotens/{yokotenId}", wrapper.GetYokoten)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/yokotens/{yokotenId}/targets/{targetId}/decision", wrapper.DecideYokotenTarget)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/changes/{changeId}/impacts", wrapper.SaveChangeImpacts)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/changes/{changeId}/verification", wrapper.VerifyChange)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/changes/{changeId}/attachments", wrapper.AddChangeAttachment)
@@ -14253,6 +14542,202 @@ func (response UpdateSystemSettingsdefaultJSONResponse) VisitUpdateSystemSetting
 	return err
 }
 
+type SearchYokotenTargetsRequestObject struct {
+	Body *SearchYokotenTargetsJSONRequestBody
+}
+
+type SearchYokotenTargetsResponseObject interface {
+	VisitSearchYokotenTargetsResponse(w http.ResponseWriter) error
+}
+
+type SearchYokotenTargets200JSONResponse YokotenTargetList
+
+func (response SearchYokotenTargets200JSONResponse) VisitSearchYokotenTargetsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SearchYokotenTargetsdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response SearchYokotenTargetsdefaultJSONResponse) VisitSearchYokotenTargetsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListYokotensRequestObject struct {
+}
+
+type ListYokotensResponseObject interface {
+	VisitListYokotensResponse(w http.ResponseWriter) error
+}
+
+type ListYokotens200JSONResponse YokotenList
+
+func (response ListYokotens200JSONResponse) VisitListYokotensResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListYokotensdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ListYokotensdefaultJSONResponse) VisitListYokotensResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateYokotenRequestObject struct {
+	Body *CreateYokotenJSONRequestBody
+}
+
+type CreateYokotenResponseObject interface {
+	VisitCreateYokotenResponse(w http.ResponseWriter) error
+}
+
+type CreateYokoten201JSONResponse Yokoten
+
+func (response CreateYokoten201JSONResponse) VisitCreateYokotenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateYokotendefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response CreateYokotendefaultJSONResponse) VisitCreateYokotenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetYokotenRequestObject struct {
+	YokotenId YokotenId `json:"yokotenId"`
+}
+
+type GetYokotenResponseObject interface {
+	VisitGetYokotenResponse(w http.ResponseWriter) error
+}
+
+type GetYokoten200JSONResponse Yokoten
+
+func (response GetYokoten200JSONResponse) VisitGetYokotenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetYokotendefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response GetYokotendefaultJSONResponse) VisitGetYokotenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DecideYokotenTargetRequestObject struct {
+	YokotenId YokotenId `json:"yokotenId"`
+	TargetId  TargetId  `json:"targetId"`
+	Body      *DecideYokotenTargetJSONRequestBody
+}
+
+type DecideYokotenTargetResponseObject interface {
+	VisitDecideYokotenTargetResponse(w http.ResponseWriter) error
+}
+
+type DecideYokotenTarget200JSONResponse Yokoten
+
+func (response DecideYokotenTarget200JSONResponse) VisitDecideYokotenTargetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DecideYokotenTargetdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response DecideYokotenTargetdefaultJSONResponse) VisitDecideYokotenTargetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetHealthRequestObject struct {
 }
 
@@ -14710,6 +15195,21 @@ type StrictServerInterface interface {
 	// UpdateSystemSettings Change the system settings (A-3, UC-07)
 	// (PUT /api/v1/system-settings)
 	UpdateSystemSettings(ctx context.Context, request UpdateSystemSettingsRequestObject) (UpdateSystemSettingsResponseObject, error)
+	// SearchYokotenTargets Find the yokoten targets for a filter without saving anything (E-3, M5.9)
+	// (POST /api/v1/yokoten-targets/search)
+	SearchYokotenTargets(ctx context.Context, request SearchYokotenTargetsRequestObject) (SearchYokotenTargetsResponseObject, error)
+	// ListYokotens Yokoten whose source change the account can view, newest first (L-4, M5.9)
+	// (GET /api/v1/yokotens)
+	ListYokotens(ctx context.Context, request ListYokotensRequestObject) (ListYokotensResponseObject, error)
+	// CreateYokoten Spread an accepted change to other models (E-3, M5.9, R-CHG-04)
+	// (POST /api/v1/yokotens)
+	CreateYokoten(ctx context.Context, request CreateYokotenRequestObject) (CreateYokotenResponseObject, error)
+	// GetYokoten One yokoten with its status board per model (L-4, M5.9)
+	// (GET /api/v1/yokotens/{yokotenId})
+	GetYokoten(ctx context.Context, request GetYokotenRequestObject) (GetYokotenResponseObject, error)
+	// DecideYokotenTarget Apply, adapt, or mark one target not applicable (E-3 for the target customer, M5.9)
+	// (POST /api/v1/yokotens/{yokotenId}/targets/{targetId}/decision)
+	DecideYokotenTarget(ctx context.Context, request DecideYokotenTargetRequestObject) (DecideYokotenTargetResponseObject, error)
 	// GetHealth Server and database status
 	// (GET /health)
 	GetHealth(ctx context.Context, request GetHealthRequestObject) (GetHealthResponseObject, error)
@@ -18868,6 +19368,152 @@ func (sh *strictHandler) UpdateSystemSettings(w http.ResponseWriter, r *http.Req
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UpdateSystemSettingsResponseObject); ok {
 		if err := validResponse.VisitUpdateSystemSettingsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SearchYokotenTargets operation middleware
+func (sh *strictHandler) SearchYokotenTargets(w http.ResponseWriter, r *http.Request) {
+	var request SearchYokotenTargetsRequestObject
+
+	var body SearchYokotenTargetsJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SearchYokotenTargets(ctx, request.(SearchYokotenTargetsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SearchYokotenTargets")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SearchYokotenTargetsResponseObject); ok {
+		if err := validResponse.VisitSearchYokotenTargetsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListYokotens operation middleware
+func (sh *strictHandler) ListYokotens(w http.ResponseWriter, r *http.Request) {
+	var request ListYokotensRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListYokotens(ctx, request.(ListYokotensRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListYokotens")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListYokotensResponseObject); ok {
+		if err := validResponse.VisitListYokotensResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateYokoten operation middleware
+func (sh *strictHandler) CreateYokoten(w http.ResponseWriter, r *http.Request) {
+	var request CreateYokotenRequestObject
+
+	var body CreateYokotenJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateYokoten(ctx, request.(CreateYokotenRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateYokoten")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateYokotenResponseObject); ok {
+		if err := validResponse.VisitCreateYokotenResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetYokoten operation middleware
+func (sh *strictHandler) GetYokoten(w http.ResponseWriter, r *http.Request, yokotenId YokotenId) {
+	var request GetYokotenRequestObject
+
+	request.YokotenId = yokotenId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetYokoten(ctx, request.(GetYokotenRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetYokoten")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetYokotenResponseObject); ok {
+		if err := validResponse.VisitGetYokotenResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DecideYokotenTarget operation middleware
+func (sh *strictHandler) DecideYokotenTarget(w http.ResponseWriter, r *http.Request, yokotenId YokotenId, targetId TargetId) {
+	var request DecideYokotenTargetRequestObject
+
+	request.YokotenId = yokotenId
+	request.TargetId = targetId
+
+	var body DecideYokotenTargetJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DecideYokotenTarget(ctx, request.(DecideYokotenTargetRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DecideYokotenTarget")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DecideYokotenTargetResponseObject); ok {
+		if err := validResponse.VisitDecideYokotenTargetResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

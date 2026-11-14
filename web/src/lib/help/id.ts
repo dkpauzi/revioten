@@ -292,6 +292,20 @@ export const helpId: HelpContent = {
 			tips: ['Perubahan selalu menunjuk paling sedikit satu dokumen, jadi dokumen terakhir tidak bisa dilepas.', 'Lampiran paling besar 20 MB. Lampiran yang dilepas tetap tercatat di audit log.', 'Saat perubahan diterima, setiap dokumen terdampak mendapat draft: dokumen yang sudah punya draft terbuka menerima perubahan itu ke draft-nya, dan dokumen yang sudah terbit membuka revisi berikutnya. Revisi yang berlaku tetap sampai draft itu terbit.', 'Sesudah revisi ditandatangani di kertas, pemegang dokumen kontrol membuka dokumen dan mencatat rilisnya di bagian Revisi. Isinya dibekukan dengan hash SHA-256; orang yang menyusun draft tidak bisa mencatat rilisnya.', 'Di Bandingkan revisi, pilih revisi terbit dan draft terbuka atau revisi terbit lain, dan bila perlu satu proses, untuk melihat setiap baris yang ditambah, dihapus, diubah, atau dipindah beserta isi sel sebelum dan sesudahnya.']
 		},
 		{
+			id: 'yokoten',
+			title: 'Yokoten',
+			who: 'Penyusun, Project Engineer, Project Leader',
+			intro: 'Yokoten menyebarkan perbaikan yang sudah diterima ke model lain, dengan keputusan per model dan papan status.',
+			steps: [
+				'Buka perubahan yang sudah diterima, lalu tekan {yokotenSpread}.',
+				'Pilih {yokotenTargets}: semua model customer, satu group model, atau model pilihan. Persempit dengan proses atau teks di baris, lalu tekan {yokotenSearch}.',
+				'Periksa model dan dokumen yang ditemukan, tulis alasannya, lalu buat yokoten.',
+				'Di papan status, pemilik setiap target menekan {yokotenDecision_apply}, {yokotenDecision_adapt}, atau {yokotenDecision_not_applicable} dengan alasan. Terapkan dan sesuaikan membuat perubahan untuk dokumen model itu, yang diverifikasi seperti perubahan lain.',
+				'Ikuti kemajuan per model: menunggu verifikasi, dalam draft, terbit, atau tidak berlaku.'
+			],
+			tips: ['Model yang dokumennya sudah ada di perubahan sumber tidak ikut.', 'Setiap target hanya tampil untuk akun yang boleh melihat customer-nya.']
+		},
+		{
 			id: 'audit',
 			title: 'Audit log',
 			who: 'Admin',

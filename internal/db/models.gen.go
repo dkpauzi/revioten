@@ -75,6 +75,7 @@ type Change struct {
 	PropagationScope     *string
 	ConflictPolicy       *string
 	EffectiveDate        pgtype.Date
+	SourceChangeID       *string
 }
 
 type ChangeAttachment struct {
@@ -604,4 +605,33 @@ type TemplatePoint struct {
 	ModelGroupID   *string
 	ModelID        *string
 	VariantOf      *string
+}
+
+type Yokoten struct {
+	ID                 string
+	Seq                *int64
+	SourceChangeID     string
+	Reason             string
+	FilterProcessID    *string
+	FilterText         *string
+	CreatedByPersonID  string
+	CreatedByAccountID string
+	CreatedAt          time.Time
+}
+
+type YokotenTarget struct {
+	ID                string
+	YokotenID         string
+	ModelID           string
+	CustomerID        string
+	Decision          string
+	Reason            *string
+	DecidedByPersonID *string
+	DecidedAt         *time.Time
+	ChangeID          *string
+}
+
+type YokotenTargetDocument struct {
+	TargetID   string
+	DocumentID string
 }

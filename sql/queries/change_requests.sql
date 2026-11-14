@@ -14,7 +14,8 @@ SELECT c.id, c.seq, c.customer_id, cu.code AS customer_code, c.mechanism,
        c.reason, c.source_reference, c.status, p.name AS requested_by, c.requested_by_person_id,
        c.created_at, c.updated_at,
        c.verified_by_person_id, v.name AS verified_by, c.verified_at, c.verification_note,
-       c.template_version_id, c.propagation_scope, c.conflict_policy, c.effective_date
+       c.template_version_id, c.propagation_scope, c.conflict_policy, c.effective_date,
+       c.source_change_id, src.seq AS source_change_seq
 FROM changes c
 JOIN customers cu ON cu.id = c.customer_id
 JOIN change_types t ON t.id = c.change_type_id
@@ -22,6 +23,7 @@ JOIN people p ON p.id = c.requested_by_person_id
 LEFT JOIN change_sources s ON s.id = c.trigger_source_id
 LEFT JOIN four_m_categories f ON f.id = c.four_m_category_id
 LEFT JOIN people v ON v.id = c.verified_by_person_id
+LEFT JOIN changes src ON src.id = c.source_change_id
 WHERE c.id = $1;
 
 -- name: ListChangeIDs :many

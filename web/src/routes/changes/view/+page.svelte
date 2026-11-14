@@ -230,6 +230,13 @@
 	{#if message}<p role="status">{message}</p>{/if}
 	{#if failure}<p class="error" role="alert">{failure}</p>{/if}
 
+	{#if change.source_change}
+		<p>{t('changeYokotenFrom')} <a class="mono" href="/changes/view?id={change.source_change.id}">{change.source_change.name}</a></p>
+	{/if}
+	{#if canPropose && change.status === 'accepted'}
+		<p><a href="/yokoten?change={change.id}">{t('yokotenSpread')}</a></p>
+	{/if}
+
 	<section>
 		<h2>{t('changeDocuments')}</h2>
 		<table>

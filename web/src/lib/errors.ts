@@ -91,7 +91,8 @@ const problemKeys: Record<string, MessageKey> = {
 	'impact.kind:invalid_format': 'impactKindInvalid',
 	'impact.document_reference:too_long': 'impactReferenceTooLong',
 	'impact.reason:too_long': 'impactReasonTooLong',
-	'items:too_long': 'impactTooMany'
+	'items:too_long': 'impactTooMany',
+	'targets:required': 'yokotenNoTargets'
 };
 
 // ProblemScope adalah formulir tempat masalah ditampilkan. Field yang sama bisa

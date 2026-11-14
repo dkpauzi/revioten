@@ -313,7 +313,7 @@ func TestPermissionsPerOperation(t *testing.T) {
 		"processId": proc.ID, "documentTypeId": docTypes[0].ID, "cpTypeId": docTypes[2].ID, "documentNumberId": reg.Numbers[0].ID, "documentId": doc.ID, "rowId": doc.Rows[0].ID, "freeNumberId": reserved[1], "specialCodeId": specialCodes[0].ID,
 		"changeTypeId": changeTypes[0].ID, "changeSourceId": sources[0].ID, "fourMCategoryId": categories[0].ID,
 		"formatTemplateId": pfmeaFormat.ID, "formatVersionId": pfmeaVersion.ID, "formSetId": formSet.ID, "formSetVersionId": formSet.Versions[0].ID, "pfdSheetId": formSet.Versions[0].PFD.FormatVersionID, "pfmeaSheetId": formSet.Versions[0].PFMEA.FormatVersionID, "cpSheetId": formSet.Versions[0].CP.FormatVersionID, "formatFieldId": pfmeaVersion.Fields[0].ID,
-		"freeProcessId": reflow.ID, "refDocId": refDoc.ID, "linkId": refDoc.Links[0].ID, "changeId": changeReq.ID, "triggerId": triggerID, "contentTypeId": contentTypeID, "sectionId": "01900000-0000-7000-8000-000000000000", "attachmentId": "01900000-0000-7000-8000-000000000000", "processVersionId": iqcVersion.ID, "processTemplateId": iqcVersion.TemplateID, "subprocessId": iqcVersion.Subprocesses[0].ID,
+		"freeProcessId": reflow.ID, "refDocId": refDoc.ID, "linkId": refDoc.Links[0].ID, "changeId": changeReq.ID, "triggerId": triggerID, "contentTypeId": contentTypeID, "sectionId": "01900000-0000-7000-8000-000000000000", "attachmentId": "01900000-0000-7000-8000-000000000000", "yokotenId": "01900000-0000-7000-8000-000000000000", "targetId": "01900000-0000-7000-8000-000000000000", "processVersionId": iqcVersion.ID, "processTemplateId": iqcVersion.TemplateID, "subprocessId": iqcVersion.Subprocesses[0].ID,
 		"pointId": iqcVersion.Subprocesses[0].Points[0].ID, "variantId": iqcVersion.Subprocesses[0].Points[0].Variants[0].ID,
 	}
 
@@ -396,6 +396,14 @@ func TestPermissionsPerOperation(t *testing.T) {
 		// jadi aturan pencatat bukan penyusun menolaknya (R-APR-02).
 		{http.MethodPost, "/api/v1/documents/{documentId}/release", "", http.StatusForbidden, http.StatusUnprocessableEntity, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/documents/{documentId}/revisions", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		// Yokoten (M5.9). Daftar disaring per customer, jadi semua akun mendapat 200.
+		// Perubahan uji masih diajukan, jadi tidak bisa disebarkan (422) sesudah haknya lolos.
+		// ID yokoten palsu: 404 sebelum hak diperiksa, karena hak bergantung pada customer-nya.
+		{http.MethodGet, "/api/v1/yokotens", "", http.StatusOK, http.StatusOK, http.StatusOK},
+		{http.MethodPost, "/api/v1/yokotens", `{"source_change_id":"{changeId}","reason":"Uji","targets":{"customer_id":"{customerId}"}}`, http.StatusForbidden, http.StatusUnprocessableEntity, http.StatusForbidden},
+		{http.MethodPost, "/api/v1/yokoten-targets/search", `{"source_change_id":"{changeId}","targets":{"customer_id":"{customerId}"}}`, http.StatusForbidden, http.StatusUnprocessableEntity, http.StatusForbidden},
+		{http.MethodGet, "/api/v1/yokotens/{yokotenId}", "", http.StatusNotFound, http.StatusNotFound, http.StatusNotFound},
+		{http.MethodPost, "/api/v1/yokotens/{yokotenId}/targets/{targetId}/decision", `{"decision":"apply"}`, http.StatusNotFound, http.StatusNotFound, http.StatusNotFound},
 		// Propagasi template (M5.8) lewat E-6; engineer juga Pengelola template. Belum ada
 		// dokumen yang dirakit dari template uji, jadi tidak ada yang dipropagasikan (422).
 		{http.MethodGet, "/api/v1/process-template-versions/{processVersionId}/propagation?scope=following", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},

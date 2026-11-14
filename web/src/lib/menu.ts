@@ -30,6 +30,7 @@ const groups: { id: MenuGroup['id']; label: MessageKey; entries: Entry[] }[] = [
 			// Dokumen draft (M4.1): butuh L-4, jadi viewer dan admin tidak melihatnya.
 			{ href: '/documents', label: 'navDocuments', permission: 'L-4' },
 			{ href: '/changes', label: 'navChanges', permission: 'L-4' },
+			{ href: '/yokoten', label: 'navYokoten', permission: 'L-4' },
 			{ href: '/numbers', label: 'navNumbers' },
 			// Impor nomor lama hanya untuk document control (E-8, M2.5).
 			{ href: '/numbers/import', label: 'numberImportLink', permission: 'E-8' }

@@ -1079,6 +1079,8 @@ type fakeChangeRequests struct {
 	file           string // isi berkas OpenAttachment
 	preview        []change.PreviewItem
 	gotPropagation change.Propagation
+	yokoten        change.Yokoten
+	gotYokoten     change.NewYokoten
 }
 
 func (f *fakeChangeRequests) List(_ context.Context, _ access.Actor, customerID string) ([]change.Change, error) {
@@ -1140,6 +1142,26 @@ func (f *fakeChangeRequests) Preview(_ context.Context, _ access.Actor, versionI
 func (f *fakeChangeRequests) Propagate(_ context.Context, _ access.Actor, in change.Propagation) ([]change.Change, error) {
 	f.got, f.gotPropagation = called{method: "Propagate", id: in.VersionID, input: in.Scope}, in
 	return f.list, f.err
+}
+
+func (f *fakeChangeRequests) CreateYokoten(_ context.Context, _ access.Actor, in change.NewYokoten) (change.Yokoten, error) {
+	f.got, f.gotYokoten = called{method: "CreateYokoten", id: in.SourceChangeID, input: fmt.Sprint(in.DryRun)}, in
+	return f.yokoten, f.err
+}
+
+func (f *fakeChangeRequests) GetYokoten(_ context.Context, _ access.Actor, id string) (change.Yokoten, error) {
+	f.got = called{method: "GetYokoten", id: id}
+	return f.yokoten, f.err
+}
+
+func (f *fakeChangeRequests) ListYokotens(_ context.Context, _ access.Actor) ([]change.Yokoten, error) {
+	f.got = called{method: "ListYokotens"}
+	return []change.Yokoten{f.yokoten}, f.err
+}
+
+func (f *fakeChangeRequests) Decide(_ context.Context, _ access.Actor, yokotenID, targetID, decision, reason string) (change.Yokoten, error) {
+	f.got = called{method: "Decide", id: yokotenID, input: targetID + ":" + decision + ":" + reason}
+	return f.yokoten, f.err
 }
 
 // OpenAttachment membuka berkas sementara berisi f.file.

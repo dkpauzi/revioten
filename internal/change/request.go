@@ -67,6 +67,7 @@ type Change struct {
 	Verification    *Verification      // terisi sesudah diterima atau ditolak (M5.3)
 	Impacts         []Impact           // daftar periksa dampak menurut urutan; tidak pernah nil (M5.7)
 	Template        *TemplateInfo      // terisi untuk mekanisme template (M5.8)
+	Source          *Ref               // perubahan sumber untuk mekanisme yokoten (M5.9); Name berisi nomornya
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 }
@@ -331,6 +332,9 @@ func getChange(ctx context.Context, q *db.Queries, id string) (Change, error) {
 		c.Verification = &Verification{
 			VerifiedBy: deref(r.VerifiedBy), VerifiedByID: *r.VerifiedByPersonID, VerifiedAt: r.VerifiedAt.UTC(), Note: deref(r.VerificationNote),
 		}
+	}
+	if r.SourceChangeID != nil {
+		c.Source = &Ref{ID: *r.SourceChangeID, Name: changeRef(r.SourceChangeSeq)}
 	}
 	if r.TemplateVersionID != nil {
 		c.Template = &TemplateInfo{VersionID: *r.TemplateVersionID, Scope: deref(r.PropagationScope), ConflictPolicy: deref(r.ConflictPolicy)}

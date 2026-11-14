@@ -97,3 +97,35 @@ func TestChangeAttachmentEndpoints(t *testing.T) {
 		t.Errorf("lepas: status %d, %+v", rec.Code, fake.got)
 	}
 }
+
+// TestYokotenEndpoints: yokoten (M5.9) diteruskan ke layanan dan ditulis
+// sesuai kontrak; pencarian target tidak menyimpan.
+func TestYokotenEndpoints(t *testing.T) {
+	at := time.Date(2026, 11, 14, 8, 0, 0, 0, time.UTC)
+	fake := &fakeChangeRequests{yokoten: change.Yokoten{
+		ID: "y-1", Ref: "YKT-0001", SourceID: "c-1", SourceChange: "CHG-0001", Reason: "Spread AOI fix", CreatedBy: "PPAP Engineer", CreatedAt: at,
+		Targets: []change.YokotenTarget{{ID: "t-1", ModelID: "m-1", ModelName: "K-200", CustomerID: "cu-1", CustomerCode: "AB", Decision: "apply",
+			ChangeID: "c-2", ChangeRef: "CHG-0002", Progress: "waiting_verification",
+			Documents: []change.TargetDocument{{ID: "d-1", Number: "SC-AB-002", DocumentType: "cp", Status: "draft"}}}},
+	}}
+	srv := newTestServer(t, nil, Deps{ChangeRequests: fake})
+	rec := srv.do(http.MethodGet, "/api/v1/yokotens/y-1", "")
+	want := `{"id":"y-1","ref":"YKT-0001","source_change":{"id":"c-1","name":"CHG-0001"},"reason":"Spread AOI fix","created_by":"PPAP Engineer","created_at":"2026-11-14T08:00:00Z",` +
+		`"targets":[{"id":"t-1","model_id":"m-1","model_name":"K-200","customer_id":"cu-1","customer_code":"AB","decision":"apply","change":{"id":"c-2","name":"CHG-0002"},` +
+		`"progress":"waiting_verification","documents":[{"id":"d-1","number":"SC-AB-002","document_type":"cp","revision":0,"status":"draft"}]}]}`
+	if rec.Code != http.StatusOK || !sameJSON(t, rec.Body.String(), want) {
+		t.Errorf("baca: status %d\n%s", rec.Code, rec.Body.String())
+	}
+	rec = srv.do(http.MethodPost, "/api/v1/yokoten-targets/search", `{"source_change_id":"c-1","targets":{"model_group_id":"g-1","text":"aoi"}}`)
+	if rec.Code != http.StatusOK || !fake.gotYokoten.DryRun || fake.gotYokoten.Targets.ModelGroupID != "g-1" || fake.gotYokoten.Targets.Text != "aoi" {
+		t.Errorf("cari: status %d, %+v", rec.Code, fake.gotYokoten)
+	}
+	rec = srv.do(http.MethodPost, "/api/v1/yokotens", `{"source_change_id":"c-1","reason":"Spread","targets":{"model_ids":["m-1","m-2"]}}`)
+	if rec.Code != http.StatusCreated || fake.gotYokoten.DryRun || !reflect.DeepEqual(fake.gotYokoten.Targets.ModelIDs, []string{"m-1", "m-2"}) {
+		t.Errorf("buat: status %d, %+v", rec.Code, fake.gotYokoten)
+	}
+	rec = srv.do(http.MethodPost, "/api/v1/yokotens/y-1/targets/t-1/decision", `{"decision":"not_applicable","reason":"No AOI"}`)
+	if rec.Code != http.StatusOK || fake.got != (called{method: "Decide", id: "y-1", input: "t-1:not_applicable:No AOI"}) {
+		t.Errorf("putus: status %d, %+v", rec.Code, fake.got)
+	}
+}

@@ -1300,12 +1300,99 @@ export type Change = {
     documents: Array<AffectedDocument>;
     attachments: Array<ChangeAttachment>;
     template?: ChangeTemplate;
+    source_change?: ChangeRef;
     /**
      * The impact checklist (R-CHG-05, M5.7).
      */
     impacts: Array<ChangeImpact>;
     created_at: string;
     updated_at: string;
+};
+
+/**
+ * One of customer_id, model_group_id (D-40), or model_ids; process_id and text narrow the documents.
+ */
+export type YokotenTargetFilter = {
+    customer_id?: string;
+    model_group_id?: string;
+    model_ids?: Array<string>;
+    process_id?: string;
+    /**
+     * Searched in the row content of the documents, at most 200 characters.
+     */
+    text?: string;
+};
+
+export type YokotenSearch = {
+    source_change_id: string;
+    targets: YokotenTargetFilter;
+};
+
+export type NewYokoten = {
+    source_change_id: string;
+    reason: string;
+    targets: YokotenTargetFilter;
+};
+
+export type Yokoten = {
+    id: string;
+    /**
+     * For example YKT-0001.
+     */
+    ref: string;
+    source_change: ChangeRef;
+    reason: string;
+    process_filter?: string;
+    text_filter?: string;
+    created_by: string;
+    created_at: string;
+    targets: Array<YokotenTarget>;
+};
+
+export type YokotenList = {
+    items: Array<Yokoten>;
+};
+
+export type YokotenTargetList = {
+    items: Array<YokotenTarget>;
+};
+
+export type YokotenTarget = {
+    /**
+     * Missing in a search, before the yokoten is saved.
+     */
+    id?: string;
+    model_id: string;
+    model_name: string;
+    customer_id: string;
+    customer_code: string;
+    decision: 'pending' | 'apply' | 'adapt' | 'not_applicable';
+    reason?: string;
+    decided_by?: string;
+    decided_at?: string;
+    change?: ChangeRef;
+    progress: 'undecided' | 'not_applicable' | 'waiting_verification' | 'rejected' | 'in_draft' | 'released';
+    documents: Array<YokotenDocument>;
+};
+
+export type YokotenDocument = {
+    id: string;
+    number: string;
+    document_type: string;
+    revision: number;
+    status: string;
+    released_revision?: number;
+};
+
+export type YokotenDecision = {
+    /**
+     * apply, adapt, or not_applicable.
+     */
+    decision: string;
+    /**
+     * Required for not_applicable.
+     */
+    reason?: string;
 };
 
 /**
@@ -2297,6 +2384,10 @@ export type RowId = string;
 export type FormSetId = string;
 
 export type FormSetVersionId = string;
+
+export type YokotenId = string;
+
+export type TargetId = string;
 
 export type ProcessTemplateId = string;
 
@@ -5806,6 +5897,176 @@ export type RemoveChangeDocumentResponses = {
 };
 
 export type RemoveChangeDocumentResponse = RemoveChangeDocumentResponses[keyof RemoveChangeDocumentResponses];
+
+export type ListYokotensData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/yokotens';
+};
+
+export type ListYokotensErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ListYokotensError = ListYokotensErrors[keyof ListYokotensErrors];
+
+export type ListYokotensResponses = {
+    /**
+     * The yokoten with their status boards.
+     */
+    200: YokotenList;
+};
+
+export type ListYokotensResponse = ListYokotensResponses[keyof ListYokotensResponses];
+
+export type CreateYokotenData = {
+    body: NewYokoten;
+    path?: never;
+    query?: never;
+    url: '/api/v1/yokotens';
+};
+
+export type CreateYokotenErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type CreateYokotenError = CreateYokotenErrors[keyof CreateYokotenErrors];
+
+export type CreateYokotenResponses = {
+    /**
+     * The yokoten with its targets.
+     */
+    201: Yokoten;
+};
+
+export type CreateYokotenResponse = CreateYokotenResponses[keyof CreateYokotenResponses];
+
+export type SearchYokotenTargetsData = {
+    body: YokotenSearch;
+    path?: never;
+    query?: never;
+    url: '/api/v1/yokoten-targets/search';
+};
+
+export type SearchYokotenTargetsErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type SearchYokotenTargetsError = SearchYokotenTargetsErrors[keyof SearchYokotenTargetsErrors];
+
+export type SearchYokotenTargetsResponses = {
+    /**
+     * The models and documents that would become targets.
+     */
+    200: YokotenTargetList;
+};
+
+export type SearchYokotenTargetsResponse = SearchYokotenTargetsResponses[keyof SearchYokotenTargetsResponses];
+
+export type GetYokotenData = {
+    body?: never;
+    path: {
+        yokotenId: string;
+    };
+    query?: never;
+    url: '/api/v1/yokotens/{yokotenId}';
+};
+
+export type GetYokotenErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type GetYokotenError = GetYokotenErrors[keyof GetYokotenErrors];
+
+export type GetYokotenResponses = {
+    /**
+     * The yokoten.
+     */
+    200: Yokoten;
+};
+
+export type GetYokotenResponse = GetYokotenResponses[keyof GetYokotenResponses];
+
+export type DecideYokotenTargetData = {
+    body: YokotenDecision;
+    path: {
+        yokotenId: string;
+        targetId: string;
+    };
+    query?: never;
+    url: '/api/v1/yokotens/{yokotenId}/targets/{targetId}/decision';
+};
+
+export type DecideYokotenTargetErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type DecideYokotenTargetError = DecideYokotenTargetErrors[keyof DecideYokotenTargetErrors];
+
+export type DecideYokotenTargetResponses = {
+    /**
+     * The yokoten after the decision.
+     */
+    200: Yokoten;
+};
+
+export type DecideYokotenTargetResponse = DecideYokotenTargetResponses[keyof DecideYokotenTargetResponses];
 
 export type SaveChangeImpactsData = {
     body: ChangeImpactsInput;

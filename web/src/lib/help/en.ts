@@ -292,6 +292,20 @@ export const helpEn: HelpContent = {
 			tips: ['A change always affects at least one document, so the last one cannot be removed.', 'An attachment can be at most 20 MB. A removed attachment stays in the audit log.', 'When a change is accepted, every affected document gets a draft: a document that already has an open draft takes the change into it, and a released document opens the next revision. The revision in force stays as it is until the draft is released.', 'After the revision is signed on paper, a document control holder opens the document and records the release under Revisions. The content is frozen with a SHA-256 hash; the person who prepared the draft cannot record its release.', 'Under Compare revisions, choose a released revision and the open draft or another released revision, and optionally one process, to see every added, removed, changed, or moved row with the cells before and after.']
 		},
 		{
+			id: 'yokoten',
+			title: 'Yokoten',
+			who: 'Author, Project Engineer, Project Leader',
+			intro: 'Yokoten spreads an accepted improvement to other models, with a decision per model and a status board.',
+			steps: [
+				'Open an accepted change and press {yokotenSpread}.',
+				'Choose the {yokotenTargets}: every model of the customer, a model group, or chosen models. Narrow them with a process or a text in the rows, and press {yokotenSearch}.',
+				'Check the models and documents found, write the reason, and make the yokoten.',
+				'On the status board, the owner of each target presses {yokotenDecision_apply}, {yokotenDecision_adapt}, or {yokotenDecision_not_applicable} with a reason. Apply and adapt make a change for the documents of that model, which is verified like any other change.',
+				'Follow the progress per model: waiting for verification, in draft, released, or not applicable.'
+			],
+			tips: ['Models whose documents are already in the source change are left out.', 'Each target only shows for accounts that may view its customer.']
+		},
+		{
 			id: 'audit',
 			title: 'Audit log',
 			who: 'Admin',

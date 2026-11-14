@@ -313,3 +313,48 @@ test('M5.8: versi template baru dipropagasikan, dan isinya masuk ke draft saat p
 		expect((d.rows_updated ?? 0) + (d.rows_conflict ?? 0)).toBeGreaterThan(0);
 	}
 });
+
+test('M5.9: perbaikan CHG-0001 disebarkan ke model C-2, dan statusnya terlihat per model', async ({ page }) => {
+	// Model kedua customer CH dengan satu set dokumen.
+	await logIn(page);
+	await page.evaluate(async () => {
+		const customers = await (await fetch('/api/v1/customers')).json();
+		const customer = customers.items.find((c: { code: string }) => c.code === 'CH');
+		await fetch('/api/v1/models', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customer_id: customer.id, name: 'C-2' }) });
+	});
+	await logOut(page);
+	await page.getByLabel(en.loginName, { exact: true }).fill('pemohon.e2e');
+	await page.getByLabel(en.loginPassword, { exact: true }).fill('perubahan selalu punya alasan');
+	await page.getByRole('button', { name: en.loginSubmit }).click();
+	await expect(page.getByRole('button', { name: en.logout })).toBeVisible();
+	await page.evaluate(async () => {
+		const post = (path: string, body: object, headers: Record<string, string> = {}) =>
+			fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, body: JSON.stringify(body) }).then((r) => r.json());
+		const customers = await (await fetch('/api/v1/customers')).json();
+		const customer = customers.items.find((c: { code: string }) => c.code === 'CH');
+		const models = await (await fetch(`/api/v1/models?customer_id=${customer.id}`)).json();
+		const c2 = models.items.find((m: { name: string }) => m.name === 'C-2');
+		const set = await post('/api/v1/document-numbers/sets', { customer_id: customer.id }, { 'Idempotency-Key': crypto.randomUUID() });
+		for (const n of set.items as { id: string; status: string }[]) {
+			if (n.status === 'reserved') await post('/api/v1/documents', { document_number_id: n.id, model_ids: [c2.id] });
+		}
+	});
+
+	await openFromMenu(page, en.navGroupDocuments, en.navChanges);
+	await page.getByLabel(en.documentCustomer, { exact: true }).selectOption({ label: 'CH · Customer CH' });
+	await page.getByRole('row', { name: /CHG-0001/ }).getByRole('link', { name: 'CHG-0001' }).click();
+	await page.getByRole('link', { name: en.yokotenSpread }).click();
+	await expect(page.getByRole('heading', { name: en.yokotenNew })).toBeVisible();
+	// Semua model CH: C-1 sudah di perubahan sumber, jadi hanya C-2.
+	await page.getByRole('button', { name: en.yokotenSearch }).click();
+	await expect(page.getByRole('row', { name: /C-2/ })).toBeVisible();
+	await expect(page.getByRole('row', { name: /C-1/ })).toHaveCount(0);
+	await page.getByRole('button', { name: en.yokotenCreate.replace('{count}', '1') }).click();
+	await expect(page.getByRole('heading', { name: 'YKT-0001', level: 1 })).toBeVisible();
+	const row = page.getByRole('row', { name: /C-2/ });
+	await expect(row.locator('[data-yokoten="undecided"]')).toBeVisible();
+	await page.getByRole('button', { name: en.yokotenApplyFor.replace('{model}', 'C-2') }).click();
+	await expect(page.getByRole('status')).toHaveText(`C-2: ${en.yokotenDecision_apply}.`);
+	await expect(row.locator('[data-yokoten="waiting_verification"]')).toBeVisible();
+	await expect(row.getByRole('link', { name: /^CHG-/ })).toBeVisible();
+});

@@ -45,6 +45,12 @@ import type {
 	ChangeList,
 	ChangeVerificationInput,
 	ChangeImpactsInput,
+	YokotenList,
+	Yokoten,
+	NewYokoten,
+	YokotenSearch,
+	YokotenTargetList,
+	YokotenDecision,
 	PropagationPreview,
 	PropagationInput,
 	DocumentTemplateList,
@@ -739,6 +745,31 @@ export function setDocumentTemplateMode(
 	fetchFn: typeof fetch = fetch
 ): Promise<ApiResult<DocumentTemplateList>> {
 	return call<DocumentTemplateList>(fetchFn, `${itemPath('documents', id)}/templates/${encodeURIComponent(templateId)}`, jsonRequest('PUT', input));
+}
+
+// listYokotens memanggil GET /api/v1/yokotens (L-4, M5.9).
+export function listYokotens(fetchFn: typeof fetch = fetch): Promise<ApiResult<YokotenList>> {
+	return call<YokotenList>(fetchFn, '/api/v1/yokotens', { method: 'GET' });
+}
+
+// getYokoten memanggil GET /api/v1/yokotens/{id} (L-4, M5.9).
+export function getYokoten(id: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<Yokoten>> {
+	return call<Yokoten>(fetchFn, itemPath('yokotens', id), { method: 'GET' });
+}
+
+// createYokoten memanggil POST /api/v1/yokotens (E-3, M5.9).
+export function createYokoten(input: NewYokoten, fetchFn: typeof fetch = fetch): Promise<ApiResult<Yokoten>> {
+	return call<Yokoten>(fetchFn, '/api/v1/yokotens', jsonRequest('POST', input));
+}
+
+// searchYokotenTargets memanggil POST /api/v1/yokoten-targets/search (E-3, M5.9); tidak menyimpan.
+export function searchYokotenTargets(input: YokotenSearch, fetchFn: typeof fetch = fetch): Promise<ApiResult<YokotenTargetList>> {
+	return call<YokotenTargetList>(fetchFn, '/api/v1/yokoten-targets/search', jsonRequest('POST', input));
+}
+
+// decideYokotenTarget memanggil POST /api/v1/yokotens/{id}/targets/{targetId}/decision (E-3, M5.9).
+export function decideYokotenTarget(id: string, targetId: string, input: YokotenDecision, fetchFn: typeof fetch = fetch): Promise<ApiResult<Yokoten>> {
+	return call<Yokoten>(fetchFn, `${itemPath('yokotens', id)}/targets/${encodeURIComponent(targetId)}/decision`, jsonRequest('POST', input));
 }
 
 // verifyChange memanggil POST /api/v1/changes/{id}/verification (V-1, M5.3).

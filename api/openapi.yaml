@@ -1950,6 +1950,97 @@ paths:
                 $ref: '#/components/schemas/Change'
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/yokotens:
+    get:
+      operationId: listYokotens
+      summary: Yokoten whose source change the account can view, newest first (L-4, M5.9)
+      responses:
+        '200':
+          description: The yokoten with their status boards.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/YokotenList'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: createYokoten
+      summary: Spread an accepted change to other models (E-3, M5.9, R-CHG-04)
+      description: >-
+        One target per model. Models whose documents are already in the source change are left out, and only
+        customers the account may propose changes for are searched (D-118).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewYokoten'
+      responses:
+        '201':
+          description: The yokoten with its targets.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Yokoten'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/yokoten-targets/search:
+    post:
+      operationId: searchYokotenTargets
+      summary: Find the yokoten targets for a filter without saving anything (E-3, M5.9)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/YokotenSearch'
+      responses:
+        '200':
+          description: The models and documents that would become targets.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/YokotenTargetList'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/yokotens/{yokotenId}:
+    get:
+      operationId: getYokoten
+      summary: One yokoten with its status board per model (L-4, M5.9)
+      parameters:
+        - $ref: '#/components/parameters/YokotenId'
+      responses:
+        '200':
+          description: The yokoten.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Yokoten'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/yokotens/{yokotenId}/targets/{targetId}/decision:
+    post:
+      operationId: decideYokotenTarget
+      summary: Apply, adapt, or mark one target not applicable (E-3 for the target customer, M5.9)
+      description: Apply and adapt make a change with mechanism yokoten for the documents of the model.
+      parameters:
+        - $ref: '#/components/parameters/YokotenId'
+        - $ref: '#/components/parameters/TargetId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/YokotenDecision'
+      responses:
+        '200':
+          description: The yokoten after the decision.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Yokoten'
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/changes/{changeId}/impacts:
     put:
       operationId: saveChangeImpacts
@@ -3016,6 +3107,18 @@ components:
         type: string
     FormSetVersionId:
       name: formSetVersionId
+      in: path
+      required: true
+      schema:
+        type: string
+    YokotenId:
+      name: yokotenId
+      in: path
+      required: true
+      schema:
+        type: string
+    TargetId:
+      name: targetId
       in: path
       required: true
       schema:
@@ -4814,6 +4917,8 @@ components:
             $ref: '#/components/schemas/ChangeAttachment'
         template:
           $ref: '#/components/schemas/ChangeTemplate'
+        source_change:
+          $ref: '#/components/schemas/ChangeRef'
         impacts:
           type: array
           description: The impact checklist (R-CHG-05, M5.7).
@@ -4825,6 +4930,143 @@ components:
         updated_at:
           type: string
           format: date-time
+    YokotenTargetFilter:
+      type: object
+      description: One of customer_id, model_group_id (D-40), or model_ids; process_id and text narrow the documents.
+      properties:
+        customer_id:
+          type: string
+        model_group_id:
+          type: string
+        model_ids:
+          type: array
+          items:
+            type: string
+        process_id:
+          type: string
+        text:
+          type: string
+          description: Searched in the row content of the documents, at most 200 characters.
+    YokotenSearch:
+      type: object
+      required: [source_change_id, targets]
+      properties:
+        source_change_id:
+          type: string
+        targets:
+          $ref: '#/components/schemas/YokotenTargetFilter'
+    NewYokoten:
+      type: object
+      required: [source_change_id, reason, targets]
+      properties:
+        source_change_id:
+          type: string
+        reason:
+          type: string
+        targets:
+          $ref: '#/components/schemas/YokotenTargetFilter'
+    Yokoten:
+      type: object
+      required: [id, ref, source_change, reason, created_by, created_at, targets]
+      properties:
+        id:
+          type: string
+        ref:
+          type: string
+          description: For example YKT-0001.
+        source_change:
+          $ref: '#/components/schemas/ChangeRef'
+        reason:
+          type: string
+        process_filter:
+          type: string
+        text_filter:
+          type: string
+        created_by:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        targets:
+          type: array
+          items:
+            $ref: '#/components/schemas/YokotenTarget'
+    YokotenList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Yokoten'
+    YokotenTargetList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/YokotenTarget'
+    YokotenTarget:
+      type: object
+      required: [model_id, model_name, customer_id, customer_code, decision, progress, documents]
+      properties:
+        id:
+          type: string
+          description: Missing in a search, before the yokoten is saved.
+        model_id:
+          type: string
+        model_name:
+          type: string
+        customer_id:
+          type: string
+        customer_code:
+          type: string
+        decision:
+          type: string
+          enum: [pending, apply, adapt, not_applicable]
+        reason:
+          type: string
+        decided_by:
+          type: string
+        decided_at:
+          type: string
+          format: date-time
+        change:
+          $ref: '#/components/schemas/ChangeRef'
+        progress:
+          type: string
+          enum: [undecided, not_applicable, waiting_verification, rejected, in_draft, released]
+        documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/YokotenDocument'
+    YokotenDocument:
+      type: object
+      required: [id, number, document_type, revision, status]
+      properties:
+        id:
+          type: string
+        number:
+          type: string
+        document_type:
+          type: string
+        revision:
+          type: integer
+        status:
+          type: string
+        released_revision:
+          type: integer
+    YokotenDecision:
+      type: object
+      required: [decision]
+      properties:
+        decision:
+          type: string
+          description: apply, adapt, or not_applicable.
+        reason:
+          type: string
+          description: Required for not_applicable.
     ChangeTemplate:
       type: object
       description: The template propagation behind a change with mechanism template (M5.8).

@@ -344,7 +344,9 @@ kbd {
 /* Versi template (M3.4): draft seperti Reserved, terbit seperti Released. */
 .badge[data-status='reserved'],
 .badge[data-status='draft'],
-.badge[data-change-status='submitted'] {
+.badge[data-change-status='submitted'],
+.badge[data-yokoten='waiting_verification'],
+.badge[data-yokoten='in_draft'] {
 	background: var(--info-weak);
 	color: var(--info);
 }
@@ -356,18 +358,22 @@ kbd {
 
 .badge[data-status='released'],
 .badge[data-status='published'],
-.badge[data-change-status='accepted'] {
+.badge[data-change-status='accepted'],
+.badge[data-yokoten='released'] {
 	background: var(--success-weak);
 	color: var(--success);
 }
 
-.badge[data-status='obsolete'] {
+.badge[data-status='obsolete'],
+.badge[data-yokoten='undecided'],
+.badge[data-yokoten='not_applicable'] {
 	background: #f2f4f7;
 	color: var(--text-3);
 }
 
 .badge[data-status='void'],
-.badge[data-change-status='rejected'] {
+.badge[data-change-status='rejected'],
+.badge[data-yokoten='rejected'] {
 	background: var(--danger-weak);
 	color: var(--danger);
 }

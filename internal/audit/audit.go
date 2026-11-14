@@ -100,6 +100,8 @@ const (
 	ActionChangeImpactsSaved          = "change.impacts_saved"           // M5.7
 	ActionDocumentTemplateModeChanged = "document.template_mode_changed" // M5.8
 	ActionChangeTemplateApplied       = "change.template_applied"        // M5.8
+	ActionYokotenCreated              = "yokoten.created"                // M5.9
+	ActionYokotenDecided              = "yokoten.decided"                // M5.9
 	ActionDocumentCopied              = "document.copied"                // M4.7
 	ActionDocumentComposed            = "document.composed"              // M4.5
 	ActionRefDocCreated               = "referenced_document.created"    // D-130

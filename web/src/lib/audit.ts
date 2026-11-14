@@ -85,6 +85,8 @@ const actionKeys: Record<string, MessageKey> = {
 	'change.rejected': 'auditActionChangeRejected',
 	'change.impacts_saved': 'auditActionChangeImpactsSaved',
 	'change.template_applied': 'auditActionChangeTemplateApplied',
+	'yokoten.created': 'auditActionYokotenCreated',
+	'yokoten.decided': 'auditActionYokotenDecided',
 	'document.template_mode_changed': 'auditActionDocumentTemplateModeChanged',
 	'document.draft_opened': 'auditActionDocumentDraftOpened',
 	'document.released': 'auditActionDocumentReleased',

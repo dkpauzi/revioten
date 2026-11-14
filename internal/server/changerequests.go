@@ -103,6 +103,9 @@ func toAPIChange(c change.Change) Change {
 			Id: x.ID, FileName: x.FileName, ContentType: x.ContentType, Size: x.Size, Sha256: x.SHA256, UploadedBy: x.UploadedBy, UploadedAt: x.UploadedAt,
 		})
 	}
+	if c.Source != nil {
+		out.SourceChange = &ChangeRef{Id: c.Source.ID, Name: c.Source.Name}
+	}
 	if tpl := c.Template; tpl != nil {
 		out.Template = &ChangeTemplate{VersionId: tpl.VersionID, Scope: ChangeTemplateScope(tpl.Scope), ConflictPolicy: ChangeTemplateConflictPolicy(tpl.ConflictPolicy)}
 		if tpl.EffectiveDate != nil {

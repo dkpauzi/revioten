@@ -1918,6 +1918,25 @@ Salin blok ini untuk setiap temuan baru.
 - **Status:** Terbuka
 - **Keputusan pemilik:**
 
+## E-106 · Rincian yokoten: sumber, target, keputusan, dan isi
+
+- **Tanggal dan milestone:** 14 November 2026, M5.9.
+- **Jenis:** Celah
+- **Rujukan:** R-CHG-04 (DECIDED prinsip), D-40, D-118, R-DOC-02 ("copied rows record where they came from"), G1.
+- **Temuan:** R-CHG-04 menyebut pilihan target, keputusan per target, dan papan status, tetapi tidak menyebut: (1) perubahan sumber harus dalam status apa; (2) satuan target (model, dokumen, atau bagian per PCB, D-136/D-155); (3) apakah keputusan bisa diubah; (4) beda apply dan adapt; (5) apakah isi baris sumber disalin ke target; (6) nomor rujukan yokoten.
+- **Asumsi sementara di kode (ASUMSI E-106):**
+  - (1) Sumber adalah perubahan yang sudah diterima (Accepted).
+  - (2) Satu target per model, dengan semua dokumen model itu yang cocok dengan saringan. Model yang dokumennya sudah di perubahan sumber tidak ikut. Bagian per PCB belum menjadi target sendiri.
+  - (3) Keputusan tidak bisa diubah; bila salah, buat yokoten baru.
+  - (4) Apply dan adapt sama-sama membuat perubahan bermekanisme yokoten untuk dokumen model itu (pemohonnya orang yang memutuskan); bedanya hanya dicatat. Not applicable wajib alasan.
+  - (5) Isi baris tidak disalin otomatis: perubahan manual tidak membawa isi baris. Penyusun mengubah draft target sendiri.
+  - (6) Nomor YKT-0001 dari kolom identity, seperti CHG (E-98).
+  - Kemajuan: belum diputuskan, tidak berlaku, menunggu verifikasi, ditolak, dalam draft (ada dokumen target yang belum terbit), terbit (semua dokumen target terbit).
+- **Rekomendasi Claude Code (usulan):** terima (1) sampai (4) dan (6); untuk (5) pertimbangkan "salin baris dari sumber" sebagai pilihan di adapt, dengan asal baris tercatat (R-DOC-02).
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
 
 ## Usulan desain UI (UX-01 sampai UX-07): dampak ke M0 sampai M3 dan saran
 
