@@ -120,6 +120,15 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-96 | Siapa yang mengubah master dokumen terkait | Celah | D-130 | Tidak | Diputuskan (D-157) |
 | E-97 | Bagian per PCB: berlaku untuk seluruh set, dan cetakan | Celah | D-155 | Tidak | Diputuskan (D-160) |
 | E-98 | Nomor rujukan perubahan | Celah | M5.1 | Tidak | Terbuka |
+| E-99 | Batas dan jenis berkas lampiran, tanpa antivirus | Celah | M5.2 | Tidak | Terbuka |
+| E-100 | Perubahan yang ditolak, dan hak V-1 tanpa jabatan | Celah | M5.3 | Tidak | Terbuka |
+| E-101 | Arti "versi baris" dan konflik saat perubahan masuk ke draft terbuka | Ambigu | M5.4 | Tidak | Terbuka |
+| E-102 | Siapa "penyusun" draft, dan status perubahan sesudah rilis | Celah | M5.5 | Tidak | Terbuka |
+| E-103 | Riwayat "per proses" dan label kolom di diff | Ambigu | M5.6 | Tidak | Terbuka |
+| E-104 | Isi daftar periksa dampak: nomor bebas atau dari master, alasan, dan kapan diisi | Celah | M5.7 | Tidak | Terbuka |
+| E-105 | Rincian propagasi template yang belum diputuskan | Celah | M5.8 | Tidak | Terbuka |
+| E-106 | Rincian yokoten: sumber, target, keputusan, dan isi | Celah | M5.9 | Tidak | Terbuka |
+| E-107 | Cakupan perubahan surut SQAM dan hubungannya dengan format template | Celah | M5.10 | Tidak | Terbuka |
 
 ## Keputusan 4 November 2026
 
@@ -1809,7 +1818,7 @@ Salin blok ini untuk setiap temuan baru.
 - **Status:** Terbuka
 - **Keputusan pemilik:**
 
-## E-99 · Batas dan jenis berkas lampiran, tanpa antivirus
+### E-99 · Batas dan jenis berkas lampiran, tanpa antivirus
 
 - **Tanggal dan milestone:** 14 November 2026, M5.2.
 - **Jenis:** Celah
@@ -1825,7 +1834,7 @@ Salin blok ini untuk setiap temuan baru.
 - **Status:** Terbuka
 - **Keputusan pemilik:**
 
-## E-100 · Perubahan yang ditolak, dan hak V-1 tanpa jabatan
+### E-100 · Perubahan yang ditolak, dan hak V-1 tanpa jabatan
 
 - **Tanggal dan milestone:** 14 November 2026, M5.3.
 - **Jenis:** Celah
@@ -1840,7 +1849,7 @@ Salin blok ini untuk setiap temuan baru.
 - **Status:** Terbuka
 - **Keputusan pemilik:**
 
-## E-101 · Arti "versi baris" dan konflik saat perubahan masuk ke draft terbuka
+### E-101 · Arti "versi baris" dan konflik saat perubahan masuk ke draft terbuka
 
 - **Tanggal dan milestone:** 14 November 2026, M5.4.
 - **Jenis:** Ambigu
@@ -1855,7 +1864,7 @@ Salin blok ini untuk setiap temuan baru.
 - **Status:** Terbuka
 - **Keputusan pemilik:**
 
-## E-102 · Siapa "penyusun" draft, dan status perubahan sesudah rilis
+### E-102 · Siapa "penyusun" draft, dan status perubahan sesudah rilis
 
 - **Tanggal dan milestone:** 14 November 2026, M5.5.
 - **Jenis:** Celah
@@ -1870,7 +1879,7 @@ Salin blok ini untuk setiap temuan baru.
 - **Status:** Terbuka
 - **Keputusan pemilik:**
 
-## E-103 Â· Riwayat "per proses" dan label kolom di diff
+### E-103 · Riwayat "per proses" dan label kolom di diff
 
 - **Tanggal dan milestone:** 14 November 2026, M5.6.
 - **Jenis:** Ambigu
@@ -1885,7 +1894,7 @@ Salin blok ini untuk setiap temuan baru.
 - **Status:** Terbuka
 - **Keputusan pemilik:**
 
-## E-104 · Isi daftar periksa dampak: nomor bebas atau dari master, alasan, dan kapan diisi
+### E-104 · Isi daftar periksa dampak: nomor bebas atau dari master, alasan, dan kapan diisi
 
 - **Tanggal dan milestone:** 14 November 2026, M5.7.
 - **Jenis:** Celah
@@ -1900,7 +1909,7 @@ Salin blok ini untuk setiap temuan baru.
 - **Status:** Terbuka
 - **Keputusan pemilik:**
 
-## E-105 · Rincian propagasi template yang belum diputuskan
+### E-105 · Rincian propagasi template yang belum diputuskan
 
 - **Tanggal dan milestone:** 14 November 2026, M5.8.
 - **Jenis:** Celah
@@ -1918,7 +1927,7 @@ Salin blok ini untuk setiap temuan baru.
 - **Status:** Terbuka
 - **Keputusan pemilik:**
 
-## E-106 · Rincian yokoten: sumber, target, keputusan, dan isi
+### E-106 · Rincian yokoten: sumber, target, keputusan, dan isi
 
 - **Tanggal dan milestone:** 14 November 2026, M5.9.
 - **Jenis:** Celah
@@ -1937,7 +1946,7 @@ Salin blok ini untuk setiap temuan baru.
 - **Status:** Terbuka
 - **Keputusan pemilik:**
 
-## E-107 · Cakupan perubahan surut SQAM dan hubungannya dengan format template
+### E-107 · Cakupan perubahan surut SQAM dan hubungannya dengan format template
 
 - **Tanggal dan milestone:** 14 November 2026, M5.10.
 - **Jenis:** Celah
