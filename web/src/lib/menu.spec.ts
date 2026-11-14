@@ -18,7 +18,7 @@ describe('buildMenu', () => {
 		expect(hrefs(['L-1', 'E-1'])).toEqual({
 			home: ['/'],
 			documents: ['/numbers'],
-			templates: ['/format-templates', '/process-templates', '/form-sets', '/processes'],
+			templates: ['/format-templates', '/process-templates', '/form-sets', '/processes', '/referenced-documents'],
 			master: [
 				'/customers',
 				'/models',

@@ -221,7 +221,8 @@ func cleanPointContent(content map[string]any) (map[string]any, *problem.Problem
 		return nil, bad
 	}
 	for key, value := range content {
-		if !pointKeyPattern.MatchString(key) {
+		// Relevant Document diisi dari master dokumen terkait, bukan dari poin (D-130).
+		if !pointKeyPattern.MatchString(key) || key == KeyRelevantDocument {
 			return nil, bad
 		}
 		switch v := value.(type) {

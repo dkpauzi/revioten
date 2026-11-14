@@ -178,8 +178,19 @@ type DocumentService interface {
 	Comparison(ctx context.Context, actor access.Actor, id string) (document.Comparison, error)
 	MarkChecked(ctx context.Context, actor access.Actor, id, processID string, checked bool) (document.Comparison, error)
 	Detach(ctx context.Context, actor access.Actor, id, rowID, reason string) (document.Document, error)
+	FillReferences(ctx context.Context, actor access.Actor, id string) (document.Document, error)
 	UpdateRow(ctx context.Context, actor access.Actor, id, rowID string, in document.RowUpdate) (document.Document, error)
 	DeleteRow(ctx context.Context, actor access.Actor, id, rowID string) (document.Document, error)
+}
+
+// RefDocService adalah operasi master dokumen terkait (D-130, D-156).
+// *template.RefDocService memenuhinya; test memakai versi palsu.
+type RefDocService interface {
+	List(ctx context.Context, actor access.Actor) ([]template.RefDocument, error)
+	Create(ctx context.Context, actor access.Actor, in template.NewRefDocument) (template.RefDocument, error)
+	Update(ctx context.Context, actor access.Actor, id string, in template.RefDocumentUpdate) (template.RefDocument, error)
+	AddLink(ctx context.Context, actor access.Actor, id string, in template.NewRefLink) (template.RefDocument, error)
+	RemoveLink(ctx context.Context, actor access.Actor, id, linkID string) (template.RefDocument, error)
 }
 
 // SettingsService adalah operasi pengaturan sistem yang dipakai API (M1.8).
@@ -237,6 +248,8 @@ type Deps struct {
 	ProcessTemplates ProcessTemplateService
 	// Documents adalah dokumen dan barisnya (M4.1).
 	Documents DocumentService
+	// RefDocs adalah master dokumen terkait (D-130).
+	RefDocs RefDocService
 	// Logger untuk log server. Bila nil, dipakai slog.Default().
 	Logger *slog.Logger
 }
@@ -256,7 +269,7 @@ func NewHandler(ui fs.FS, deps Deps) http.Handler {
 		db: deps.DB, customers: deps.Customers, auth: deps.Auth, access: deps.Access,
 		audit: deps.Audit, products: deps.Products, processes: deps.Processes,
 		numbering: deps.Numbering, changes: deps.Changes, approval: deps.Approval, settings: deps.Settings,
-		templates: deps.Templates, processTemplates: deps.ProcessTemplates, documents: deps.Documents, log: log,
+		templates: deps.Templates, processTemplates: deps.ProcessTemplates, documents: deps.Documents, refDocs: deps.RefDocs, log: log,
 	}
 
 	// Route dari kontrak didaftarkan oleh kode hasil generate ke mux khusus API.
@@ -313,5 +326,6 @@ type apiServer struct {
 	// processTemplates adalah pustaka proses (M3.2).
 	processTemplates ProcessTemplateService
 	documents        DocumentService
+	refDocs          RefDocService
 	log              *slog.Logger
 }

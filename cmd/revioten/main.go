@@ -106,6 +106,7 @@ func runServer(args []string) error {
 			Templates:        template.NewService(pool, checker),
 			ProcessTemplates: template.NewProcessService(pool, checker),
 			Documents:        document.NewService(pool, checker),
+			RefDocs:          template.NewRefDocService(pool, checker),
 		}),
 		// Batas waktu membaca header permintaan. Tanpa batas ini, klien yang
 		// sangat lambat bisa menahan koneksi selamanya (pengaman dasar, G9).

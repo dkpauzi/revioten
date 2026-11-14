@@ -60,7 +60,7 @@ func TestPermissionsPerOperation(t *testing.T) {
 		Audit: audit.NewService(pool, checker), Products: products, Processes: processes,
 		Numbering: numbers, Changes: changes, Approval: approvals, Settings: settings.NewService(pool, checker),
 		Templates: template.NewService(pool, checker), ProcessTemplates: template.NewProcessService(pool, checker),
-		Documents: document.NewService(pool, checker),
+		Documents: document.NewService(pool, checker), RefDocs: template.NewRefDocService(pool, checker),
 	})
 
 	// Admin pertama, satu akun kerja tanpa peran (hanya hak dasar Viewer), dan
@@ -268,6 +268,15 @@ func TestPermissionsPerOperation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// Satu dokumen terkait dengan satu tautan ke IQC (D-130), untuk operasi ubah dan lepas tautan.
+	refDocs := template.NewRefDocService(pool, checker)
+	refDoc, err := refDocs.Create(ctx, engineer, template.NewRefDocument{Number: "SW-ZZ-103", Title: "Material Receiving"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if refDoc, err = refDocs.AddLink(ctx, engineer, refDoc.ID, template.NewRefLink{ProcessID: proc.ID}); err != nil {
+		t.Fatal(err)
+	}
 	reflow, err := processes.Create(ctx, engineer, process.Input{Name: "Reflow"})
 	if err != nil {
 		t.Fatal(err)
@@ -281,7 +290,7 @@ func TestPermissionsPerOperation(t *testing.T) {
 		"processId": proc.ID, "documentTypeId": docTypes[0].ID, "cpTypeId": docTypes[2].ID, "documentNumberId": reg.Numbers[0].ID, "documentId": doc.ID, "rowId": doc.Rows[0].ID, "freeNumberId": reserved[1], "specialCodeId": specialCodes[0].ID,
 		"changeTypeId": changeTypes[0].ID, "changeSourceId": sources[0].ID, "fourMCategoryId": categories[0].ID,
 		"formatTemplateId": pfmeaFormat.ID, "formatVersionId": pfmeaVersion.ID, "formSetId": formSet.ID, "formSetVersionId": formSet.Versions[0].ID, "pfdSheetId": formSet.Versions[0].PFD.FormatVersionID, "pfmeaSheetId": formSet.Versions[0].PFMEA.FormatVersionID, "cpSheetId": formSet.Versions[0].CP.FormatVersionID, "formatFieldId": pfmeaVersion.Fields[0].ID,
-		"freeProcessId": reflow.ID, "processVersionId": iqcVersion.ID, "processTemplateId": iqcVersion.TemplateID, "subprocessId": iqcVersion.Subprocesses[0].ID,
+		"freeProcessId": reflow.ID, "refDocId": refDoc.ID, "linkId": refDoc.Links[0].ID, "processVersionId": iqcVersion.ID, "processTemplateId": iqcVersion.TemplateID, "subprocessId": iqcVersion.Subprocesses[0].ID,
 		"pointId": iqcVersion.Subprocesses[0].Points[0].ID, "variantId": iqcVersion.Subprocesses[0].Points[0].Variants[0].ID,
 	}
 
@@ -370,6 +379,14 @@ func TestPermissionsPerOperation(t *testing.T) {
 		// Menyalin dari dirinya sendiri ditolak aturan (422), sesudah haknya lolos.
 		{http.MethodPost, "/api/v1/documents/{documentId}/copy", `{"source_document_id":"{documentId}"}`, http.StatusForbidden, http.StatusUnprocessableEntity, http.StatusForbidden},
 		// Dokumen uji adalah dokumen tunggal tanpa pasangan PFMEA dan CP, jadi akun yang berhak mendapat 422 sesudah haknya lolos.
+		// Master dokumen terkait (D-130): semua melihat, Pengelola template (E-6) mengubah.
+		{http.MethodGet, "/api/v1/referenced-documents", "", http.StatusOK, http.StatusOK, http.StatusOK},
+		{http.MethodPost, "/api/v1/referenced-documents", `{"number":"SW-ZZ-318","title":"Incoming SAP System Barcode"}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
+		{http.MethodPut, "/api/v1/referenced-documents/{refDocId}", `{"title":"Material Receiving","revision":"19"}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		{http.MethodPost, "/api/v1/referenced-documents/{refDocId}/links", `{"process_id":"{freeProcessId}"}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
+		{http.MethodDelete, "/api/v1/referenced-documents/{refDocId}/links/{linkId}", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		// Dokumen uji memakai form AIAG-VDA (CP tanpa kolom Relevant Document), jadi akun yang berhak mendapat 422.
+		{http.MethodPost, "/api/v1/documents/{documentId}/references", "", http.StatusForbidden, http.StatusUnprocessableEntity, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/documents/{documentId}/pfmea-cp", "", http.StatusForbidden, http.StatusUnprocessableEntity, http.StatusForbidden},
 		{http.MethodPut, "/api/v1/documents/{documentId}/pfmea-cp", `{"process_id":"{processId}","checked":true}`, http.StatusForbidden, http.StatusUnprocessableEntity, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/documents/{documentId}/differences", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},

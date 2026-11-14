@@ -6,6 +6,8 @@ package db
 
 import (
 	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Account struct {
@@ -412,6 +414,29 @@ type ProjectGroup struct {
 	Code      string
 	Name      string
 	CreatedAt time.Time
+}
+
+type ReferencedDocument struct {
+	ID           string
+	Number       string
+	Title        string
+	Level        *string
+	Revision     *string
+	RevisionDate pgtype.Date
+	Active       bool
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+}
+
+type ReferencedDocumentLink struct {
+	ID           string
+	DocumentID   string
+	ProcessID    string
+	Scope        string
+	CustomerID   *string
+	ModelGroupID *string
+	ModelID      *string
+	CreatedAt    time.Time
 }
 
 type Role struct {

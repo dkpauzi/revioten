@@ -81,13 +81,18 @@ const (
 	ActionDocumentCreated        = "document.created"
 	ActionDocumentHeaderChanged  = "document.header_changed"
 	ActionDocumentRowAdded       = "document.row_added"
-	ActionDocumentRowsPasted     = "document.rows_pasted"        // M4.4
-	ActionDocumentRowDetached    = "document.row_detached"       // M4.8
-	ActionPFMEACPChecked         = "document.pfmea_cp_checked"   // M4.9
-	ActionPFMEACPUnchecked       = "document.pfmea_cp_unchecked" // M4.9
-	ActionDocumentCopied         = "document.copied"             // M4.7
-	ActionDocumentComposed       = "document.composed"           // M4.5
-	ActionDocumentRowsReordered  = "document.rows_reordered"     // M4.6
+	ActionDocumentRowsPasted     = "document.rows_pasted"         // M4.4
+	ActionDocumentRowDetached    = "document.row_detached"        // M4.8
+	ActionPFMEACPChecked         = "document.pfmea_cp_checked"    // M4.9
+	ActionPFMEACPUnchecked       = "document.pfmea_cp_unchecked"  // M4.9
+	ActionDocumentCopied         = "document.copied"              // M4.7
+	ActionDocumentComposed       = "document.composed"            // M4.5
+	ActionRefDocCreated          = "referenced_document.created"  // D-130
+	ActionRefDocUpdated          = "referenced_document.updated"  // D-130
+	ActionRefDocLinked           = "referenced_document.linked"   // D-130
+	ActionRefDocUnlinked         = "referenced_document.unlinked" // D-130
+	ActionDocumentRefsFilled     = "document.references_filled"   // D-130
+	ActionDocumentRowsReordered  = "document.rows_reordered"      // M4.6
 	ActionDocumentRowChanged     = "document.row_changed"
 	ActionDocumentRowRemoved     = "document.row_removed"
 	ActionChangeTypeRouteChanged = "change_type.route_changed"
@@ -146,6 +151,7 @@ const (
 	TargetFormatTemplate  = "format_template"
 	TargetProcessTemplate = "process_template"
 	TargetFormSet         = "form_set"
+	TargetReferencedDoc   = "referenced_document" // D-130
 	TargetDocument        = "document"
 )
 

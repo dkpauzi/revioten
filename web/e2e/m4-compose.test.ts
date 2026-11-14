@@ -96,6 +96,20 @@ test('penyusun merakit CP, PFMEA, dan PFD dari process template IQC', async ({ p
 	await page.getByRole('button', { name: en.versionPublish.replace('{version}', '1') }).click();
 	await expect(page.getByRole('status')).toBeVisible();
 
+	// D-130, D-156: SW-ZZ-103 dicatat di master dokumen terkait dan menjadi
+	// bawaan proses Incoming QC untuk semua model.
+	await openFromMenu(page, en.navGroupTemplates, en.navReferencedDocuments);
+	await page.getByLabel(en.refDocNumber, { exact: true }).fill('sw-zz-103');
+	await page.getByLabel(en.refDocDocTitle, { exact: true }).fill('Material Receiving');
+	await page.getByLabel(en.refDocRevision, { exact: true }).fill('19');
+	await page.getByRole('button', { name: en.refDocAdd }).click();
+	await expect(page.getByRole('status')).toHaveText(en.refDocSaved.replace('{number}', 'SW-ZZ-103'));
+	await page.getByRole('button', { name: en.refDocLinksFor.replace('{number}', 'SW-ZZ-103') }).click();
+	await page.getByLabel(en.refDocProcess, { exact: true }).selectOption({ label: 'Incoming QC' });
+	await page.getByRole('button', { name: en.refDocLink }).click();
+	await expect(page.getByRole('status')).toHaveText(en.refDocLinked.replace('{number}', 'SW-ZZ-103'));
+	await expect(page.getByRole('row', { name: /^SW-ZZ-103 / })).toContainText('Incoming QC');
+
 	// Buka dokumen CP, lalu rakit.
 	await openFromMenu(page, en.navGroupDocuments, en.navDocuments);
 	await page.getByLabel(en.documentCustomer, { exact: true }).selectOption({ label: 'KM · Customer KM' });
@@ -135,6 +149,9 @@ test('penyusun merakit CP, PFMEA, dan PFD dari process template IQC', async ({ p
 	await expect(cell(1, product)).toHaveText('MSL label');
 	await expect(cell(2, product)).toHaveText('Warpage');
 	await expect(cell(0, '_process')).toHaveText('Incoming QC');
+	// Kolom Relevant Document baris pertama proses terisi dari master (D-130).
+	await expect(cell(0, await fieldOf('Relevant Document'))).toHaveText('SW-ZZ-103');
+	await expect(cell(1, await fieldOf('Relevant Document'))).toHaveText('');
 
 	// PFMEA di set yang sama ikut terisi (R-CMP-02). Label kolomnya bisa
 	// sudah diganti formats.test.ts menjadi "Failure Mode"; key kolom tetap.

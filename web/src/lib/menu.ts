@@ -42,7 +42,8 @@ const groups: { id: MenuGroup['id']; label: MessageKey; entries: Entry[] }[] = [
 			{ href: '/process-templates', label: 'navProcessTemplates' },
 			// Form set (langkah D, D-133): semua akun melihat; admin mengubah, penyetuju form menerbitkan.
 			{ href: '/form-sets', label: 'navFormSets' },
-			{ href: '/processes', label: 'navProcesses' }
+			{ href: '/processes', label: 'navProcesses' },
+			{ href: '/referenced-documents', label: 'navReferencedDocuments' }
 		]
 	},
 	{

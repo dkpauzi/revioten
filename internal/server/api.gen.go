@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/oapi-codegen/runtime"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
 // Defines values for AccountKind.
@@ -2371,6 +2372,26 @@ type NewProcessTemplate struct {
 	ProcessId string `json:"process_id"`
 }
 
+// NewReferencedDocument defines model for NewReferencedDocument.
+type NewReferencedDocument struct {
+	Level    *string `json:"level,omitempty"`
+	Number   string  `json:"number"`
+	Revision *string `json:"revision,omitempty"`
+
+	// RevisionDate YYYY-MM-DD, or empty.
+	RevisionDate *string `json:"revision_date,omitempty"`
+	Title        string  `json:"title"`
+}
+
+// NewReferencedDocumentLink defines model for NewReferencedDocumentLink.
+type NewReferencedDocumentLink struct {
+	ProcessId string `json:"process_id"`
+
+	// ScopeLevel general (when left out), customer, model_group, or model.
+	ScopeLevel    *string `json:"scope_level,omitempty"`
+	ScopeTargetId *string `json:"scope_target_id,omitempty"`
+}
+
 // NewSpecialCode defines model for NewSpecialCode.
 type NewSpecialCode struct {
 	Code string `json:"code"`
@@ -2825,6 +2846,48 @@ type RatingCriterionInput struct {
 // RatingCriterionInputScale defines model for RatingCriterionInput.Scale.
 type RatingCriterionInputScale string
 
+// ReferencedDocument defines model for ReferencedDocument.
+type ReferencedDocument struct {
+	Active    bool      `json:"active"`
+	CreatedAt time.Time `json:"created_at"`
+	Id        string    `json:"id"`
+
+	// Level For example "WI (Level 3)" or "Procedure (Level 2)".
+	Level *string `json:"level,omitempty"`
+
+	// Links By process name, then scope.
+	Links []ReferencedDocumentLink `json:"links"`
+
+	// Number Example: SW-ZZ-103
+	Number       string              `json:"number"`
+	Revision     *string             `json:"revision,omitempty"`
+	RevisionDate *openapi_types.Date `json:"revision_date,omitempty"`
+	Title        string              `json:"title"`
+}
+
+// ReferencedDocumentLink defines model for ReferencedDocumentLink.
+type ReferencedDocumentLink struct {
+	Id      string     `json:"id"`
+	Process ProcessRef `json:"process"`
+
+	// Scope What a point or variant is usually used for (M3.3, D-129). Fixed after it is made.
+	Scope PointScope `json:"scope"`
+}
+
+// ReferencedDocumentList defines model for ReferencedDocumentList.
+type ReferencedDocumentList struct {
+	Items []ReferencedDocument `json:"items"`
+}
+
+// ReferencedDocumentUpdate defines model for ReferencedDocumentUpdate.
+type ReferencedDocumentUpdate struct {
+	Active       *bool   `json:"active,omitempty"`
+	Level        *string `json:"level,omitempty"`
+	Revision     *string `json:"revision,omitempty"`
+	RevisionDate *string `json:"revision_date,omitempty"`
+	Title        string  `json:"title"`
+}
+
 // ResolvedModel defines model for ResolvedModel.
 type ResolvedModel struct {
 	CustomerCode string `json:"customer_code"`
@@ -3143,6 +3206,9 @@ type HolderId = string
 // IdempotencyKey defines model for IdempotencyKey.
 type IdempotencyKey = string
 
+// LinkId defines model for LinkId.
+type LinkId = string
+
 // ModelGroupId defines model for ModelGroupId.
 type ModelGroupId = string
 
@@ -3169,6 +3235,9 @@ type ProcessVersionId = string
 
 // ProjectGroupId defines model for ProjectGroupId.
 type ProjectGroupId = string
+
+// RefDocId defines model for RefDocId.
+type RefDocId = string
 
 // RowId defines model for RowId.
 type RowId = string
@@ -3461,6 +3530,15 @@ type CreateProjectGroupJSONRequestBody = ProjectGroupInput
 // UpdateProjectGroupJSONRequestBody defines body for UpdateProjectGroup for application/json ContentType.
 type UpdateProjectGroupJSONRequestBody = ProjectGroupInput
 
+// CreateReferencedDocumentJSONRequestBody defines body for CreateReferencedDocument for application/json ContentType.
+type CreateReferencedDocumentJSONRequestBody = NewReferencedDocument
+
+// UpdateReferencedDocumentJSONRequestBody defines body for UpdateReferencedDocument for application/json ContentType.
+type UpdateReferencedDocumentJSONRequestBody = ReferencedDocumentUpdate
+
+// AddReferencedDocumentLinkJSONRequestBody defines body for AddReferencedDocumentLink for application/json ContentType.
+type AddReferencedDocumentLinkJSONRequestBody = NewReferencedDocumentLink
+
 // LoginJSONRequestBody defines body for Login for application/json ContentType.
 type LoginJSONRequestBody = Credentials
 
@@ -3610,6 +3688,9 @@ type ServerInterface interface {
 	// MarkPfmeaCpChecked Set or clear the "checked by, date" mark of one process (V-2, D-65)
 	// (PUT /api/v1/documents/{documentId}/pfmea-cp)
 	MarkPfmeaCpChecked(w http.ResponseWriter, r *http.Request, documentId DocumentId)
+	// FillDocumentReferences Fill the empty Relevant Document cells from the master list (E-2, D-130)
+	// (POST /api/v1/documents/{documentId}/references)
+	FillDocumentReferences(w http.ResponseWriter, r *http.Request, documentId DocumentId)
 	// AddDocumentRow Add a row at the end of a draft document (E-2)
 	// (POST /api/v1/documents/{documentId}/rows)
 	AddDocumentRow(w http.ResponseWriter, r *http.Request, documentId DocumentId)
@@ -3787,6 +3868,21 @@ type ServerInterface interface {
 	// UpdateProjectGroup Change the code and name of a project group (A-2)
 	// (PUT /api/v1/project-groups/{projectGroupId})
 	UpdateProjectGroup(w http.ResponseWriter, r *http.Request, projectGroupId ProjectGroupId)
+	// ListReferencedDocuments The master list of referenced documents with their process links (L-2, D-130, D-156)
+	// (GET /api/v1/referenced-documents)
+	ListReferencedDocuments(w http.ResponseWriter, r *http.Request)
+	// CreateReferencedDocument Add a referenced document such as a WI, SOP, or QEP (E-6)
+	// (POST /api/v1/referenced-documents)
+	CreateReferencedDocument(w http.ResponseWriter, r *http.Request)
+	// UpdateReferencedDocument Change the title, level, revision, revision date, or active state of a referenced document (E-6)
+	// (PUT /api/v1/referenced-documents/{refDocId})
+	UpdateReferencedDocument(w http.ResponseWriter, r *http.Request, refDocId RefDocId)
+	// AddReferencedDocumentLink Make a document a default of one process, for a scope (E-6)
+	// (POST /api/v1/referenced-documents/{refDocId}/links)
+	AddReferencedDocumentLink(w http.ResponseWriter, r *http.Request, refDocId RefDocId)
+	// RemoveReferencedDocumentLink Remove one process link of a referenced document (E-6)
+	// (DELETE /api/v1/referenced-documents/{refDocId}/links/{linkId})
+	RemoveReferencedDocumentLink(w http.ResponseWriter, r *http.Request, refDocId RefDocId, linkId LinkId)
 	// ListRoles The role catalog with the rights of each role (A-1)
 	// (GET /api/v1/roles)
 	ListRoles(w http.ResponseWriter, r *http.Request)
@@ -4974,6 +5070,32 @@ func (siw *ServerInterfaceWrapper) MarkPfmeaCpChecked(w http.ResponseWriter, r *
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.MarkPfmeaCpChecked(w, r, documentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// FillDocumentReferences operation middleware
+func (siw *ServerInterfaceWrapper) FillDocumentReferences(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", r.PathValue("documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.FillDocumentReferences(w, r, documentId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -6473,6 +6595,121 @@ func (siw *ServerInterfaceWrapper) UpdateProjectGroup(w http.ResponseWriter, r *
 	handler.ServeHTTP(w, r)
 }
 
+// ListReferencedDocuments operation middleware
+func (siw *ServerInterfaceWrapper) ListReferencedDocuments(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListReferencedDocuments(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateReferencedDocument operation middleware
+func (siw *ServerInterfaceWrapper) CreateReferencedDocument(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateReferencedDocument(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateReferencedDocument operation middleware
+func (siw *ServerInterfaceWrapper) UpdateReferencedDocument(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "refDocId" -------------
+	var refDocId RefDocId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "refDocId", r.PathValue("refDocId"), &refDocId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "refDocId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateReferencedDocument(w, r, refDocId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AddReferencedDocumentLink operation middleware
+func (siw *ServerInterfaceWrapper) AddReferencedDocumentLink(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "refDocId" -------------
+	var refDocId RefDocId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "refDocId", r.PathValue("refDocId"), &refDocId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "refDocId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AddReferencedDocumentLink(w, r, refDocId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RemoveReferencedDocumentLink operation middleware
+func (siw *ServerInterfaceWrapper) RemoveReferencedDocumentLink(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "refDocId" -------------
+	var refDocId RefDocId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "refDocId", r.PathValue("refDocId"), &refDocId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "refDocId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "linkId" -------------
+	var linkId LinkId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "linkId", r.PathValue("linkId"), &linkId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "linkId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RemoveReferencedDocumentLink(w, r, refDocId, linkId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListRoles operation middleware
 func (siw *ServerInterfaceWrapper) ListRoles(w http.ResponseWriter, r *http.Request) {
 
@@ -6833,6 +7070,12 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/rows/{rowId}/detach", wrapper.DetachDocumentRow)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/copy", wrapper.CopyDocumentComposition)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/documents/{documentId}/order", wrapper.ReorderDocumentRows)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/referenced-documents", wrapper.ListReferencedDocuments)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/referenced-documents", wrapper.CreateReferencedDocument)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/referenced-documents/{refDocId}", wrapper.UpdateReferencedDocument)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/referenced-documents/{refDocId}/links", wrapper.AddReferencedDocumentLink)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/referenced-documents/{refDocId}/links/{linkId}", wrapper.RemoveReferencedDocumentLink)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/references", wrapper.FillDocumentReferences)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/rows", wrapper.AddDocumentRow)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/rows/batch", wrapper.AddDocumentRows)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/documents/{documentId}/rows/{rowId}", wrapper.DeleteDocumentRow)
@@ -8716,6 +8959,45 @@ type MarkPfmeaCpCheckeddefaultJSONResponse struct {
 }
 
 func (response MarkPfmeaCpCheckeddefaultJSONResponse) VisitMarkPfmeaCpCheckedResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type FillDocumentReferencesRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+}
+
+type FillDocumentReferencesResponseObject interface {
+	VisitFillDocumentReferencesResponse(w http.ResponseWriter) error
+}
+
+type FillDocumentReferences200JSONResponse Document
+
+func (response FillDocumentReferences200JSONResponse) VisitFillDocumentReferencesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type FillDocumentReferencesdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response FillDocumentReferencesdefaultJSONResponse) VisitFillDocumentReferencesResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -11051,6 +11333,203 @@ func (response UpdateProjectGroupdefaultJSONResponse) VisitUpdateProjectGroupRes
 	return err
 }
 
+type ListReferencedDocumentsRequestObject struct {
+}
+
+type ListReferencedDocumentsResponseObject interface {
+	VisitListReferencedDocumentsResponse(w http.ResponseWriter) error
+}
+
+type ListReferencedDocuments200JSONResponse ReferencedDocumentList
+
+func (response ListReferencedDocuments200JSONResponse) VisitListReferencedDocumentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListReferencedDocumentsdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ListReferencedDocumentsdefaultJSONResponse) VisitListReferencedDocumentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateReferencedDocumentRequestObject struct {
+	Body *CreateReferencedDocumentJSONRequestBody
+}
+
+type CreateReferencedDocumentResponseObject interface {
+	VisitCreateReferencedDocumentResponse(w http.ResponseWriter) error
+}
+
+type CreateReferencedDocument201JSONResponse ReferencedDocument
+
+func (response CreateReferencedDocument201JSONResponse) VisitCreateReferencedDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateReferencedDocumentdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response CreateReferencedDocumentdefaultJSONResponse) VisitCreateReferencedDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateReferencedDocumentRequestObject struct {
+	RefDocId RefDocId `json:"refDocId"`
+	Body     *UpdateReferencedDocumentJSONRequestBody
+}
+
+type UpdateReferencedDocumentResponseObject interface {
+	VisitUpdateReferencedDocumentResponse(w http.ResponseWriter) error
+}
+
+type UpdateReferencedDocument200JSONResponse ReferencedDocument
+
+func (response UpdateReferencedDocument200JSONResponse) VisitUpdateReferencedDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateReferencedDocumentdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response UpdateReferencedDocumentdefaultJSONResponse) VisitUpdateReferencedDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddReferencedDocumentLinkRequestObject struct {
+	RefDocId RefDocId `json:"refDocId"`
+	Body     *AddReferencedDocumentLinkJSONRequestBody
+}
+
+type AddReferencedDocumentLinkResponseObject interface {
+	VisitAddReferencedDocumentLinkResponse(w http.ResponseWriter) error
+}
+
+type AddReferencedDocumentLink201JSONResponse ReferencedDocument
+
+func (response AddReferencedDocumentLink201JSONResponse) VisitAddReferencedDocumentLinkResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddReferencedDocumentLinkdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response AddReferencedDocumentLinkdefaultJSONResponse) VisitAddReferencedDocumentLinkResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RemoveReferencedDocumentLinkRequestObject struct {
+	RefDocId RefDocId `json:"refDocId"`
+	LinkId   LinkId   `json:"linkId"`
+}
+
+type RemoveReferencedDocumentLinkResponseObject interface {
+	VisitRemoveReferencedDocumentLinkResponse(w http.ResponseWriter) error
+}
+
+type RemoveReferencedDocumentLink200JSONResponse ReferencedDocument
+
+func (response RemoveReferencedDocumentLink200JSONResponse) VisitRemoveReferencedDocumentLinkResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RemoveReferencedDocumentLinkdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response RemoveReferencedDocumentLinkdefaultJSONResponse) VisitRemoveReferencedDocumentLinkResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListRolesRequestObject struct {
 }
 
@@ -11610,6 +12089,9 @@ type StrictServerInterface interface {
 	// MarkPfmeaCpChecked Set or clear the "checked by, date" mark of one process (V-2, D-65)
 	// (PUT /api/v1/documents/{documentId}/pfmea-cp)
 	MarkPfmeaCpChecked(ctx context.Context, request MarkPfmeaCpCheckedRequestObject) (MarkPfmeaCpCheckedResponseObject, error)
+	// FillDocumentReferences Fill the empty Relevant Document cells from the master list (E-2, D-130)
+	// (POST /api/v1/documents/{documentId}/references)
+	FillDocumentReferences(ctx context.Context, request FillDocumentReferencesRequestObject) (FillDocumentReferencesResponseObject, error)
 	// AddDocumentRow Add a row at the end of a draft document (E-2)
 	// (POST /api/v1/documents/{documentId}/rows)
 	AddDocumentRow(ctx context.Context, request AddDocumentRowRequestObject) (AddDocumentRowResponseObject, error)
@@ -11787,6 +12269,21 @@ type StrictServerInterface interface {
 	// UpdateProjectGroup Change the code and name of a project group (A-2)
 	// (PUT /api/v1/project-groups/{projectGroupId})
 	UpdateProjectGroup(ctx context.Context, request UpdateProjectGroupRequestObject) (UpdateProjectGroupResponseObject, error)
+	// ListReferencedDocuments The master list of referenced documents with their process links (L-2, D-130, D-156)
+	// (GET /api/v1/referenced-documents)
+	ListReferencedDocuments(ctx context.Context, request ListReferencedDocumentsRequestObject) (ListReferencedDocumentsResponseObject, error)
+	// CreateReferencedDocument Add a referenced document such as a WI, SOP, or QEP (E-6)
+	// (POST /api/v1/referenced-documents)
+	CreateReferencedDocument(ctx context.Context, request CreateReferencedDocumentRequestObject) (CreateReferencedDocumentResponseObject, error)
+	// UpdateReferencedDocument Change the title, level, revision, revision date, or active state of a referenced document (E-6)
+	// (PUT /api/v1/referenced-documents/{refDocId})
+	UpdateReferencedDocument(ctx context.Context, request UpdateReferencedDocumentRequestObject) (UpdateReferencedDocumentResponseObject, error)
+	// AddReferencedDocumentLink Make a document a default of one process, for a scope (E-6)
+	// (POST /api/v1/referenced-documents/{refDocId}/links)
+	AddReferencedDocumentLink(ctx context.Context, request AddReferencedDocumentLinkRequestObject) (AddReferencedDocumentLinkResponseObject, error)
+	// RemoveReferencedDocumentLink Remove one process link of a referenced document (E-6)
+	// (DELETE /api/v1/referenced-documents/{refDocId}/links/{linkId})
+	RemoveReferencedDocumentLink(ctx context.Context, request RemoveReferencedDocumentLinkRequestObject) (RemoveReferencedDocumentLinkResponseObject, error)
 	// ListRoles The role catalog with the rights of each role (A-1)
 	// (GET /api/v1/roles)
 	ListRoles(ctx context.Context, request ListRolesRequestObject) (ListRolesResponseObject, error)
@@ -13181,6 +13678,32 @@ func (sh *strictHandler) MarkPfmeaCpChecked(w http.ResponseWriter, r *http.Reque
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(MarkPfmeaCpCheckedResponseObject); ok {
 		if err := validResponse.VisitMarkPfmeaCpCheckedResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// FillDocumentReferences operation middleware
+func (sh *strictHandler) FillDocumentReferences(w http.ResponseWriter, r *http.Request, documentId DocumentId) {
+	var request FillDocumentReferencesRequestObject
+
+	request.DocumentId = documentId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.FillDocumentReferences(ctx, request.(FillDocumentReferencesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "FillDocumentReferences")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(FillDocumentReferencesResponseObject); ok {
+		if err := validResponse.VisitFillDocumentReferencesResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -14937,6 +15460,154 @@ func (sh *strictHandler) UpdateProjectGroup(w http.ResponseWriter, r *http.Reque
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UpdateProjectGroupResponseObject); ok {
 		if err := validResponse.VisitUpdateProjectGroupResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListReferencedDocuments operation middleware
+func (sh *strictHandler) ListReferencedDocuments(w http.ResponseWriter, r *http.Request) {
+	var request ListReferencedDocumentsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListReferencedDocuments(ctx, request.(ListReferencedDocumentsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListReferencedDocuments")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListReferencedDocumentsResponseObject); ok {
+		if err := validResponse.VisitListReferencedDocumentsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateReferencedDocument operation middleware
+func (sh *strictHandler) CreateReferencedDocument(w http.ResponseWriter, r *http.Request) {
+	var request CreateReferencedDocumentRequestObject
+
+	var body CreateReferencedDocumentJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateReferencedDocument(ctx, request.(CreateReferencedDocumentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateReferencedDocument")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateReferencedDocumentResponseObject); ok {
+		if err := validResponse.VisitCreateReferencedDocumentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateReferencedDocument operation middleware
+func (sh *strictHandler) UpdateReferencedDocument(w http.ResponseWriter, r *http.Request, refDocId RefDocId) {
+	var request UpdateReferencedDocumentRequestObject
+
+	request.RefDocId = refDocId
+
+	var body UpdateReferencedDocumentJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateReferencedDocument(ctx, request.(UpdateReferencedDocumentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateReferencedDocument")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateReferencedDocumentResponseObject); ok {
+		if err := validResponse.VisitUpdateReferencedDocumentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AddReferencedDocumentLink operation middleware
+func (sh *strictHandler) AddReferencedDocumentLink(w http.ResponseWriter, r *http.Request, refDocId RefDocId) {
+	var request AddReferencedDocumentLinkRequestObject
+
+	request.RefDocId = refDocId
+
+	var body AddReferencedDocumentLinkJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.AddReferencedDocumentLink(ctx, request.(AddReferencedDocumentLinkRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AddReferencedDocumentLink")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AddReferencedDocumentLinkResponseObject); ok {
+		if err := validResponse.VisitAddReferencedDocumentLinkResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RemoveReferencedDocumentLink operation middleware
+func (sh *strictHandler) RemoveReferencedDocumentLink(w http.ResponseWriter, r *http.Request, refDocId RefDocId, linkId LinkId) {
+	var request RemoveReferencedDocumentLinkRequestObject
+
+	request.RefDocId = refDocId
+	request.LinkId = linkId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RemoveReferencedDocumentLink(ctx, request.(RemoveReferencedDocumentLinkRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RemoveReferencedDocumentLink")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RemoveReferencedDocumentLinkResponseObject); ok {
+		if err := validResponse.VisitRemoveReferencedDocumentLinkResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

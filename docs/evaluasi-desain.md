@@ -114,9 +114,10 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-90 | Batas isian dokumen, dan dokumen umum (kode ZZ) tanpa model | Celah | M4.1 | Tidak | Terbuka |
 | E-91 | Tempel dari Excel: ke mana isi sel janggal | Ambigu | M4.4 | Tidak | Diputuskan (D-149) |
 | E-92 | Isi poin per kolom: kolom mana yang dianggap sama di dua form set | Celah | M4.5 | Tidak | Diputuskan (D-150) |
-| E-93 | Perakitan: dokumen dengan beberapa model, dan pasangan poin | Celah | M4.5 | Tidak | Terbuka |
+| E-93 | Perakitan: dokumen dengan beberapa model, dan pasangan poin | Celah | M4.5 | Tidak | Diputuskan (D-155) |
 | E-94 | Urutan langkah: per dokumen, proses yang berulang, dan jarak nomor operasi | Celah | M4.6 | Tidak | Diputuskan (D-153) |
 | E-95 | Diagram PFD: cabang keputusan, rework, dan konektor halaman | Celah | M4.10 | Tidak | Terbuka |
+| E-96 | Siapa yang mengubah master dokumen terkait | Celah | D-130 | Tidak | Terbuka |
 
 ## Keputusan 4 November 2026
 
@@ -1708,8 +1709,8 @@ Salin blok ini untuk setiap temuan baru.
   - Pola 1 sudah cukup dengan asumsi sekarang (varian model pertama). Tambahan kecil: bila model-model di satu dokumen ternyata punya varian berbeda, layar perakitan memberi peringatan.
   - Pola 2 butuh **bagian per PCB** di dalam satu dokumen: setiap baris milik satu PCB (part number dokumen, yang sudah ada sejak M4.1). Perakitan, urutan, nomor operasi, tab Check, dan diagram berjalan per PCB, tetapi nomor, revisi, dan tanda tangan tetap satu. Pilihan lain, tiga dokumen dengan satu nomor, melanggar aturan satu nomor satu dokumen (R-NUM).
   - Pertanyaan untuk pemilik: di kertas, apakah ketiga PCB dicetak berurutan dalam satu CP (dengan judul per PCB), atau tiap PCB punya halaman sampul sendiri?
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan (D-155)
+- **Keputusan pemilik:** 14 November 2026: dua pola (lihat jawaban di atas), dan untuk pola 2 "dicetak berurutan dalam satu CP dengan judul per PCB". Bagian per PCB belum dibangun. Tawaran mencoret pasangan poin (bagian kedua temuan ini) tetap menunggu tautan pasangan (R-DOC-05).
 
 ### E-94 · Urutan langkah: per dokumen, proses yang berulang, dan jarak nomor operasi
 
@@ -1749,6 +1750,22 @@ Salin blok ini untuk setiap temuan baru.
   4. **Panah lain selain urutan**, masing-masing dengan asal, tujuan, dan label. Contoh dari referensi: P010 ke P030 (reel berlabel otomatis tanpa IQC), P120 ke P130 (AOI NG), P135 ke P060 (baru satu sisi), P090 ke P080 (NG). Ini yang membuat cabang Decision dan putaran Rework bisa digambar.
   5. **Disposisi NG** tetap seperti sekarang (Scrap, NCP, Rework), dengan teks alur NG bebas untuk keterangan.
 - **Opsi baru:** (d) tambah kolom 1 sampai 3 di form PFD, dan tabel "panah lain" per dokumen PFD untuk butir 4. Opsi ini menggantikan (a) karena lebih umum.
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-96 · Siapa yang mengubah master dokumen terkait
+
+- **Tanggal dan milestone:** 14 November 2026, D-130 dan D-156.
+- **Jenis:** Celah
+- **Rujukan:** D-130, D-156, R-DOC-11, D-64 (master proses diubah Pengelola template), D-68 (PPAP Engineer juga memegang dokumen kontrol).
+- **Temuan:** brief tidak menyebut siapa yang mengubah master dokumen terkait. Nomor dan revisi WI biasanya dikelola dokumen kontrol, sedangkan tautan ke proses dekat dengan pustaka proses.
+- **Opsi:**
+  - (a) Pengelola template (E-6), seperti master proses. Menu di Template library.
+  - (b) Dokumen kontrol mengubah nomor, judul, dan revisi; Pengelola template mengubah tautan proses.
+  - (c) Admin, seperti master data lain.
+- **Rekomendasi Claude Code (usulan):** (a) sekarang, karena keduanya dipegang PPAP Engineer (D-68); (b) bila nanti dipegang orang berbeda.
+- **Asumsi sementara di kode (ASUMSI E-96):** opsi (a).
+- **Menghambat milestone?** Tidak
 - **Status:** Terbuka
 - **Keputusan pemilik:**
 

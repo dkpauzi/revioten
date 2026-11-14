@@ -1225,6 +1225,62 @@ export type DocumentOrder = {
     renumber?: boolean;
 };
 
+export type ReferencedDocumentList = {
+    items: Array<ReferencedDocument>;
+};
+
+export type ReferencedDocument = {
+    id: string;
+    number: string;
+    title: string;
+    /**
+     * For example "WI (Level 3)" or "Procedure (Level 2)".
+     */
+    level?: string;
+    revision?: string;
+    revision_date?: string;
+    active: boolean;
+    /**
+     * By process name, then scope.
+     */
+    links: Array<ReferencedDocumentLink>;
+    created_at: string;
+};
+
+export type ReferencedDocumentLink = {
+    id: string;
+    process: ProcessRef;
+    scope: PointScope;
+};
+
+export type NewReferencedDocument = {
+    number: string;
+    title: string;
+    level?: string;
+    revision?: string;
+    /**
+     * YYYY-MM-DD, or empty.
+     */
+    revision_date?: string;
+};
+
+export type ReferencedDocumentUpdate = {
+    title: string;
+    level?: string;
+    revision?: string;
+    revision_date?: string;
+    active?: boolean;
+};
+
+export type NewReferencedDocumentLink = {
+    process_id: string;
+    /**
+     * general (when left out), customer, model_group, or model.
+     */
+    scope_level?: string;
+    scope_target_id?: string;
+};
+
 export type DocumentRowBatch = {
     rows: Array<DocumentRowInput>;
 };
@@ -1856,6 +1912,10 @@ export type FormatTemplateId = string;
 export type FormatVersionId = string;
 
 export type FormatFieldId = string;
+
+export type RefDocId = string;
+
+export type LinkId = string;
 
 export type DocumentId = string;
 
@@ -5023,6 +5083,213 @@ export type ReorderDocumentRowsResponses = {
 };
 
 export type ReorderDocumentRowsResponse = ReorderDocumentRowsResponses[keyof ReorderDocumentRowsResponses];
+
+export type ListReferencedDocumentsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/referenced-documents';
+};
+
+export type ListReferencedDocumentsErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ListReferencedDocumentsError = ListReferencedDocumentsErrors[keyof ListReferencedDocumentsErrors];
+
+export type ListReferencedDocumentsResponses = {
+    /**
+     * All referenced documents by number, inactive ones included.
+     */
+    200: ReferencedDocumentList;
+};
+
+export type ListReferencedDocumentsResponse = ListReferencedDocumentsResponses[keyof ListReferencedDocumentsResponses];
+
+export type CreateReferencedDocumentData = {
+    body: NewReferencedDocument;
+    path?: never;
+    query?: never;
+    url: '/api/v1/referenced-documents';
+};
+
+export type CreateReferencedDocumentErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type CreateReferencedDocumentError = CreateReferencedDocumentErrors[keyof CreateReferencedDocumentErrors];
+
+export type CreateReferencedDocumentResponses = {
+    /**
+     * The new document.
+     */
+    201: ReferencedDocument;
+};
+
+export type CreateReferencedDocumentResponse = CreateReferencedDocumentResponses[keyof CreateReferencedDocumentResponses];
+
+export type UpdateReferencedDocumentData = {
+    body: ReferencedDocumentUpdate;
+    path: {
+        refDocId: string;
+    };
+    query?: never;
+    url: '/api/v1/referenced-documents/{refDocId}';
+};
+
+export type UpdateReferencedDocumentErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type UpdateReferencedDocumentError = UpdateReferencedDocumentErrors[keyof UpdateReferencedDocumentErrors];
+
+export type UpdateReferencedDocumentResponses = {
+    /**
+     * The document after the change.
+     */
+    200: ReferencedDocument;
+};
+
+export type UpdateReferencedDocumentResponse = UpdateReferencedDocumentResponses[keyof UpdateReferencedDocumentResponses];
+
+export type AddReferencedDocumentLinkData = {
+    body: NewReferencedDocumentLink;
+    path: {
+        refDocId: string;
+    };
+    query?: never;
+    url: '/api/v1/referenced-documents/{refDocId}/links';
+};
+
+export type AddReferencedDocumentLinkErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type AddReferencedDocumentLinkError = AddReferencedDocumentLinkErrors[keyof AddReferencedDocumentLinkErrors];
+
+export type AddReferencedDocumentLinkResponses = {
+    /**
+     * The document after the change.
+     */
+    201: ReferencedDocument;
+};
+
+export type AddReferencedDocumentLinkResponse = AddReferencedDocumentLinkResponses[keyof AddReferencedDocumentLinkResponses];
+
+export type RemoveReferencedDocumentLinkData = {
+    body?: never;
+    path: {
+        refDocId: string;
+        linkId: string;
+    };
+    query?: never;
+    url: '/api/v1/referenced-documents/{refDocId}/links/{linkId}';
+};
+
+export type RemoveReferencedDocumentLinkErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type RemoveReferencedDocumentLinkError = RemoveReferencedDocumentLinkErrors[keyof RemoveReferencedDocumentLinkErrors];
+
+export type RemoveReferencedDocumentLinkResponses = {
+    /**
+     * The document after the change.
+     */
+    200: ReferencedDocument;
+};
+
+export type RemoveReferencedDocumentLinkResponse = RemoveReferencedDocumentLinkResponses[keyof RemoveReferencedDocumentLinkResponses];
+
+export type FillDocumentReferencesData = {
+    body?: never;
+    path: {
+        documentId: string;
+    };
+    query?: never;
+    url: '/api/v1/documents/{documentId}/references';
+};
+
+export type FillDocumentReferencesErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type FillDocumentReferencesError = FillDocumentReferencesErrors[keyof FillDocumentReferencesErrors];
+
+export type FillDocumentReferencesResponses = {
+    /**
+     * The document after the change.
+     */
+    200: Document;
+};
+
+export type FillDocumentReferencesResponse = FillDocumentReferencesResponses[keyof FillDocumentReferencesResponses];
 
 export type AddDocumentRowData = {
     body: DocumentRowInput;

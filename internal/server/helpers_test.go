@@ -655,6 +655,11 @@ func (f *fakeDocuments) MarkChecked(_ context.Context, _ access.Actor, id, proce
 	return f.comparison, f.err
 }
 
+func (f *fakeDocuments) FillReferences(_ context.Context, _ access.Actor, id string) (document.Document, error) {
+	f.got = called{method: "FillReferences", id: id}
+	return f.doc, f.err
+}
+
 func (f *fakeDocuments) DeleteRow(_ context.Context, _ access.Actor, id, rowID string) (document.Document, error) {
 	f.got = called{method: "DeleteRow", id: id, input: rowID}
 	return f.doc, f.err
@@ -978,4 +983,40 @@ func decodeError(t *testing.T, rec *httptest.ResponseRecorder) Error {
 		t.Errorf("request_id %q, ingin sama dengan header X-Request-Id %q", body.RequestId, id)
 	}
 	return body
+}
+
+// fakeRefDocs meniru template.RefDocService (D-130).
+type fakeRefDocs struct {
+	list    []template.RefDocument
+	doc     template.RefDocument
+	err     error
+	got     called
+	gotNew  template.NewRefDocument
+	gotUpd  template.RefDocumentUpdate
+	gotLink template.NewRefLink
+}
+
+func (f *fakeRefDocs) List(_ context.Context, _ access.Actor) ([]template.RefDocument, error) {
+	f.got = called{method: "List"}
+	return f.list, f.err
+}
+
+func (f *fakeRefDocs) Create(_ context.Context, _ access.Actor, in template.NewRefDocument) (template.RefDocument, error) {
+	f.got, f.gotNew = called{method: "Create"}, in
+	return f.doc, f.err
+}
+
+func (f *fakeRefDocs) Update(_ context.Context, _ access.Actor, id string, in template.RefDocumentUpdate) (template.RefDocument, error) {
+	f.got, f.gotUpd = called{method: "Update", id: id}, in
+	return f.doc, f.err
+}
+
+func (f *fakeRefDocs) AddLink(_ context.Context, _ access.Actor, id string, in template.NewRefLink) (template.RefDocument, error) {
+	f.got, f.gotLink = called{method: "AddLink", id: id}, in
+	return f.doc, f.err
+}
+
+func (f *fakeRefDocs) RemoveLink(_ context.Context, _ access.Actor, id, linkID string) (template.RefDocument, error) {
+	f.got = called{method: "RemoveLink", id: id, input: linkID}
+	return f.doc, f.err
 }

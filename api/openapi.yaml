@@ -1757,6 +1757,119 @@ paths:
                 $ref: '#/components/schemas/Document'
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/referenced-documents:
+    get:
+      operationId: listReferencedDocuments
+      summary: The master list of referenced documents with their process links (L-2, D-130, D-156)
+      responses:
+        '200':
+          description: All referenced documents by number, inactive ones included.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReferencedDocumentList'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: createReferencedDocument
+      summary: Add a referenced document such as a WI, SOP, or QEP (E-6)
+      description: The number is stored in capitals and stays fixed. A number already in the list gives 409 with code taken.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewReferencedDocument'
+      responses:
+        '201':
+          description: The new document.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReferencedDocument'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/referenced-documents/{refDocId}:
+    put:
+      operationId: updateReferencedDocument
+      summary: Change the title, level, revision, revision date, or active state of a referenced document (E-6)
+      description: Fields left out stay as they are, except the title, which is required (D-111). Documents are never deleted; an inactive one is no longer used as a default.
+      parameters:
+        - $ref: '#/components/parameters/RefDocId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReferencedDocumentUpdate'
+      responses:
+        '200':
+          description: The document after the change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReferencedDocument'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/referenced-documents/{refDocId}/links:
+    post:
+      operationId: addReferencedDocumentLink
+      summary: Make a document a default of one process, for a scope (E-6)
+      description: >-
+        The scope works like the scope of a template point (D-129): general when left out, or a customer, model group,
+        or model. For one model all links that apply are added together.
+      parameters:
+        - $ref: '#/components/parameters/RefDocId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewReferencedDocumentLink'
+      responses:
+        '201':
+          description: The document after the change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReferencedDocument'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/referenced-documents/{refDocId}/links/{linkId}:
+    delete:
+      operationId: removeReferencedDocumentLink
+      summary: Remove one process link of a referenced document (E-6)
+      parameters:
+        - $ref: '#/components/parameters/RefDocId'
+        - $ref: '#/components/parameters/LinkId'
+      responses:
+        '200':
+          description: The document after the change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReferencedDocument'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/documents/{documentId}/references:
+    post:
+      operationId: fillDocumentReferences
+      summary: Fill the empty Relevant Document cells from the master list (E-2, D-130)
+      description: >-
+        The first row of each process gets the numbers of the documents linked to that process for the model of the
+        document, one per line. Cells that already hold text are left as they are. Composing a document does the same.
+        A form without a Relevant Document column gives 422 with code not_allowed on field format.
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      responses:
+        '200':
+          description: The document after the change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/documents/{documentId}/rows:
     post:
       operationId: addDocumentRow
@@ -2411,6 +2524,18 @@ components:
         type: string
     FormatFieldId:
       name: formatFieldId
+      in: path
+      required: true
+      schema:
+        type: string
+    RefDocId:
+      name: refDocId
+      in: path
+      required: true
+      schema:
+        type: string
+    LinkId:
+      name: linkId
       in: path
       required: true
       schema:
@@ -4148,6 +4273,93 @@ components:
         renumber:
           type: boolean
           description: Number the operations automatically after ordering. Default false.
+    ReferencedDocumentList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReferencedDocument'
+    ReferencedDocument:
+      type: object
+      required: [id, number, title, active, links, created_at]
+      properties:
+        id:
+          type: string
+        number:
+          type: string
+          example: SW-ZZ-103
+        title:
+          type: string
+        level:
+          type: string
+          description: For example "WI (Level 3)" or "Procedure (Level 2)".
+        revision:
+          type: string
+        revision_date:
+          type: string
+          format: date
+        active:
+          type: boolean
+        links:
+          type: array
+          description: By process name, then scope.
+          items:
+            $ref: '#/components/schemas/ReferencedDocumentLink'
+        created_at:
+          type: string
+          format: date-time
+    ReferencedDocumentLink:
+      type: object
+      required: [id, process, scope]
+      properties:
+        id:
+          type: string
+        process:
+          $ref: '#/components/schemas/ProcessRef'
+        scope:
+          $ref: '#/components/schemas/PointScope'
+    NewReferencedDocument:
+      type: object
+      required: [number, title]
+      properties:
+        number:
+          type: string
+        title:
+          type: string
+        level:
+          type: string
+        revision:
+          type: string
+        revision_date:
+          type: string
+          description: YYYY-MM-DD, or empty.
+    ReferencedDocumentUpdate:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+        level:
+          type: string
+        revision:
+          type: string
+        revision_date:
+          type: string
+        active:
+          type: boolean
+    NewReferencedDocumentLink:
+      type: object
+      required: [process_id]
+      properties:
+        process_id:
+          type: string
+        scope_level:
+          type: string
+          description: general (when left out), customer, model_group, or model.
+        scope_target_id:
+          type: string
     DocumentRowBatch:
       type: object
       required: [rows]

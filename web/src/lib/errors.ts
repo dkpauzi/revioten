@@ -97,7 +97,8 @@ export type ProblemScope =
 	| 'route'
 	| 'formatTemplate'
 	| 'processTemplate'
-	| 'formSet';
+	| 'formSet'
+	| 'refDoc';
 
 // scopedKeys memetakan "formulir.field:kode masalah" ke kunci teks layar.
 const scopedKeys: Record<string, MessageKey> = {
@@ -151,6 +152,10 @@ const scopedKeys: Record<string, MessageKey> = {
 	// Form set (langkah D, D-139).
 	'formSet.name:required': 'formSetNameRequired',
 	'formSet.name:taken': 'formSetNameTaken',
+	// Master dokumen terkait (D-130).
+	'refDoc.number:taken': 'refDocNumberTaken',
+	'refDoc.number:invalid_format': 'refDocNumberInvalid',
+	'refDoc.process_id:taken': 'refDocLinkTaken',
 	'formSet.pfd_format_version_id:required': 'formSetSheetRequired',
 	'formSet.pfmea_format_version_id:required': 'formSetSheetRequired',
 	'formSet.cp_format_version_id:required': 'formSetSheetRequired',

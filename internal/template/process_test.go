@@ -9,6 +9,8 @@ import (
 
 	"github.com/jackc/pgx/v5/pgconn"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/dkpauzi/revioten/internal/access"
 	"github.com/dkpauzi/revioten/internal/db"
 	"github.com/dkpauzi/revioten/internal/db/dbtest"
@@ -20,6 +22,7 @@ import (
 type processFixture struct {
 	s          *ProcessService
 	q          *db.Queries
+	pool       *pgxpool.Pool // untuk layanan lain di test yang sama (D-130)
 	maintainer access.Actor
 	admin      access.Actor
 	author     access.Actor
@@ -30,7 +33,7 @@ func newProcessFixture(t *testing.T) processFixture {
 	t.Helper()
 	pool := dbtest.NewPool(t)
 	f := processFixture{
-		s: NewProcessService(pool, access.NewChecker(pool)), q: db.New(pool),
+		s: NewProcessService(pool, access.NewChecker(pool)), q: db.New(pool), pool: pool,
 		maintainer: newActor(t, pool, "ppap.uji", access.AccountWork, access.RoleTemplateMaintainer),
 		admin:      newActor(t, pool, "admin.uji", access.AccountAdmin, access.RoleAdmin),
 		author:     newActor(t, pool, "penyusun.uji", access.AccountWork, access.RoleAuthor),

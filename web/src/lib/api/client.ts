@@ -41,6 +41,11 @@ import type {
 	Composition,
 	DocumentRowInput,
 	RowDifferenceList,
+	NewReferencedDocument,
+	NewReferencedDocumentLink,
+	ReferencedDocument,
+	ReferencedDocumentList,
+	ReferencedDocumentUpdate,
 	PfmeaCpComparison,
 	NewDocument,
 	FormSet,
@@ -597,6 +602,38 @@ export function getPfmeaCpComparison(id: string, fetchFn: typeof fetch = fetch):
 // markPfmeaCpChecked memanggil PUT /api/v1/documents/{id}/pfmea-cp (V-2, D-65).
 export function markPfmeaCpChecked(id: string, processId: string, checked: boolean, fetchFn: typeof fetch = fetch): Promise<ApiResult<PfmeaCpComparison>> {
 	return call<PfmeaCpComparison>(fetchFn, itemPath('documents', id) + '/pfmea-cp', jsonRequest('PUT', { process_id: processId, checked }));
+}
+
+// Master dokumen terkait (D-130, D-156).
+
+// listReferencedDocuments memanggil GET /api/v1/referenced-documents (L-2).
+export function listReferencedDocuments(fetchFn: typeof fetch = fetch): Promise<ApiResult<ReferencedDocumentList>> {
+	return call<ReferencedDocumentList>(fetchFn, '/api/v1/referenced-documents', { method: 'GET' });
+}
+
+// createReferencedDocument memanggil POST /api/v1/referenced-documents (E-6).
+export function createReferencedDocument(input: NewReferencedDocument, fetchFn: typeof fetch = fetch): Promise<ApiResult<ReferencedDocument>> {
+	return call<ReferencedDocument>(fetchFn, '/api/v1/referenced-documents', jsonRequest('POST', input));
+}
+
+// updateReferencedDocument memanggil PUT /api/v1/referenced-documents/{id} (E-6).
+export function updateReferencedDocument(id: string, input: ReferencedDocumentUpdate, fetchFn: typeof fetch = fetch): Promise<ApiResult<ReferencedDocument>> {
+	return call<ReferencedDocument>(fetchFn, itemPath('referenced-documents', id), jsonRequest('PUT', input));
+}
+
+// addReferencedDocumentLink memanggil POST /api/v1/referenced-documents/{id}/links (E-6).
+export function addReferencedDocumentLink(id: string, input: NewReferencedDocumentLink, fetchFn: typeof fetch = fetch): Promise<ApiResult<ReferencedDocument>> {
+	return call<ReferencedDocument>(fetchFn, itemPath('referenced-documents', id) + '/links', jsonRequest('POST', input));
+}
+
+// removeReferencedDocumentLink memanggil DELETE /api/v1/referenced-documents/{id}/links/{linkId} (E-6).
+export function removeReferencedDocumentLink(id: string, linkId: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<ReferencedDocument>> {
+	return call<ReferencedDocument>(fetchFn, `${itemPath('referenced-documents', id)}/links/${encodeURIComponent(linkId)}`, { method: 'DELETE' });
+}
+
+// fillDocumentReferences memanggil POST /api/v1/documents/{id}/references (E-2, D-130).
+export function fillDocumentReferences(id: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<Document>> {
+	return call<Document>(fetchFn, itemPath('documents', id) + '/references', { method: 'POST' });
 }
 
 // updateDocumentRow memanggil PUT /api/v1/documents/{id}/rows/{rowId} (E-2).

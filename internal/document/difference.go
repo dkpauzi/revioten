@@ -124,7 +124,8 @@ func compare(format template.FormatVersion, process template.ProcessRef, point t
 	}
 	expected := rowContent(format, point.Content)
 	for _, f := range format.Fields {
-		if f.Area != template.AreaRow || f.Key == "" || f.Hidden {
+		// Relevant Document diisi dari master dokumen terkait, bukan dari template (D-130).
+		if f.Area != template.AreaRow || f.Key == "" || f.Hidden || f.Key == template.KeyRelevantDocument {
 			continue
 		}
 		want, got := shown(expected[f.ID]), shown(r.Content[f.ID])

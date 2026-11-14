@@ -5,7 +5,7 @@
 	// D-123); kolom yang dihitung tidak diketik.
 	import { untrack } from 'svelte';
 	import { page } from '$app/state';
-	import { addDocumentRow, addDocumentRows, deleteDocumentRow, reorderDocumentRows, getDocument, getFormatVersion, listProcesses, setDocumentHeader, updateDocumentRow, type ApiFailure } from '#lib/api/client.ts';
+	import { addDocumentRow, addDocumentRows, deleteDocumentRow, fillDocumentReferences, reorderDocumentRows, getDocument, getFormatVersion, listProcesses, setDocumentHeader, updateDocumentRow, type ApiFailure } from '#lib/api/client.ts';
 	import type { Document, DocumentRow, DocumentRowInput, FormatVersion, Process } from '#lib/api/gen/index.ts';
 	import ComposePanel from '#lib/documents/ComposePanel.svelte';
 	import ComparePanel from '#lib/documents/ComparePanel.svelte';
@@ -222,6 +222,23 @@
 		message = t('compareDetachDone', { position: String(position) });
 	}
 
+	// Tombol isi dokumen terkait hanya untuk form yang punya kolom Relevant Document (D-130).
+	let hasRelevant = $derived(format?.fields.some((f) => f.area === 'row' && !f.hidden && f.key === 'relevant_document') ?? false);
+
+	async function fillReferences() {
+		reset();
+		if (!doc) {
+			return;
+		}
+		const result = await fillDocumentReferences(doc.id);
+		if (!result.ok) {
+			showErrors(result.error);
+			return;
+		}
+		use(result.data);
+		message = t('refFillDone');
+	}
+
 	// saveOrder menyimpan urutan baris dan, bila diminta, nomor operasi otomatis (M4.6).
 	async function saveOrder(rowIds: string[], renumber: boolean): Promise<boolean> {
 		reset();
@@ -349,6 +366,7 @@
 				{#if !pasting}<button type="button" onclick={() => (pasting = true)}>{t('pasteOpen')}</button>{/if}
 				{#if !composing}<button type="button" onclick={() => (composing = true)}>{t('composeOpen')}</button>{/if}
 				{#if !ordering}<button type="button" onclick={() => (ordering = true)}>{t('orderOpen')}</button>{/if}
+				{#if hasRelevant && doc.rows.length > 0}<button type="button" onclick={fillReferences}>{t('refFill')}</button>{/if}
 				<!-- Menyalin hanya untuk dokumen yang masih kosong (R-CMP-05). -->
 				{#if !copying && doc.rows.length === 0}<button type="button" onclick={() => (copying = true)}>{t('copyOpen')}</button>{/if}
 			</p>

@@ -86,7 +86,8 @@ export function pointColumns(forms: { name: string; version: Pick<FormatVersion,
 	const out: PointColumn[] = [];
 	for (const form of forms) {
 		for (const f of form.version.fields) {
-			if (f.area !== 'row' || f.hidden || !f.key || (f.kind !== 'text' && f.kind !== 'rating')) {
+			// Relevant Document diisi dari master dokumen terkait, bukan dari poin (D-130).
+			if (f.area !== 'row' || f.hidden || !f.key || f.key === 'relevant_document' || (f.kind !== 'text' && f.kind !== 'rating')) {
 				continue;
 			}
 			const known = out.find((c) => c.key === f.key);

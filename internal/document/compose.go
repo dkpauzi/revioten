@@ -285,6 +285,14 @@ func (s *Service) Compose(ctx context.Context, actor access.Actor, id string, in
 		}
 
 		for docID := range touched {
+			// Kolom Relevant Document baris pertama setiap proses (D-130, D-156).
+			current, err := getDocument(ctx, q, docID)
+			if err != nil {
+				return err
+			}
+			if _, err := fillReferences(ctx, q, current, formats[docID]); err != nil {
+				return err
+			}
 			if err := q.TouchDocument(ctx, docID); err != nil {
 				return err
 			}
