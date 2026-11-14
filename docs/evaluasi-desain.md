@@ -1870,6 +1870,22 @@ Salin blok ini untuk setiap temuan baru.
 - **Status:** Terbuka
 - **Keputusan pemilik:**
 
+## E-103 Â· Riwayat "per proses" dan label kolom di diff
+
+- **Tanggal dan milestone:** 14 November 2026, M5.6.
+- **Jenis:** Ambigu
+- **Rujukan:** R-REV-03, milestone M5.6 ("tampilan riwayat per dokumen dan per proses"), D-06.
+- **Temuan:** (1) "Riwayat per proses" bisa berarti saringan satu proses di dalam satu dokumen, atau daftar lintas dokumen: semua revisi semua dokumen yang mengubah baris proses itu (misalnya semua perubahan SMT Printing di semua customer). (2) Dua revisi bisa memakai versi format berbeda; label kolom bisa berbeda di keduanya.
+- **Opsi:**
+  - (1a) Saringan proses di diff satu dokumen. (1b) Halaman riwayat lintas dokumen per proses. (1c) Keduanya.
+  - (2a) Label dari versi format revisi "ke". (2b) Tampilkan kedua label bila berbeda.
+- **Rekomendasi Claude Code (usulan):** (1a) sekarang, (1b) bersama yokoten (M5.9) bila dibutuhkan; (2a).
+- **Asumsi sementara di kode (ASUMSI E-103):** (1a) dan (2a). Baris dicocokkan lewat ID tetap; baris yang dipindah dicari dengan LCS, jadi baris yang hanya bergeser karena baris lain tidak dianggap dipindah. Teks kosong dianggap sama dengan sel kosong.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+
 ## Usulan desain UI (UX-01 sampai UX-07): dampak ke M0 sampai M3 dan saran
 
 - **Sumber:** `docs/uml/usulan-desain-ui.md` (UML draft 0.12, 3 November 2026) dan kanvas desain UI "Desain UI Sistem PFD PFMEA CP" (18 artboard, baris v2 disarankan).
