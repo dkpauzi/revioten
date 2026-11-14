@@ -326,3 +326,28 @@ func (a *apiServer) RemoveDocumentSection(ctx context.Context, req RemoveDocumen
 	}
 	return RemoveDocumentSection200JSONResponse(toAPIDocument(d)), nil
 }
+
+// ReleaseDocument menjawab POST /api/v1/documents/{documentId}/release (M5.5).
+func (a *apiServer) ReleaseDocument(ctx context.Context, req ReleaseDocumentRequestObject) (ReleaseDocumentResponseObject, error) {
+	d, err := a.documents.Release(ctx, actorFrom(ctx), req.DocumentId)
+	if err != nil {
+		return nil, err
+	}
+	return ReleaseDocument200JSONResponse(toAPIDocument(d)), nil
+}
+
+// ListDocumentRevisions menjawab GET /api/v1/documents/{documentId}/revisions (M5.5).
+func (a *apiServer) ListDocumentRevisions(ctx context.Context, req ListDocumentRevisionsRequestObject) (ListDocumentRevisionsResponseObject, error) {
+	list, err := a.documents.Revisions(ctx, actorFrom(ctx), req.DocumentId)
+	if err != nil {
+		return nil, err
+	}
+	out := DocumentRevisionList{Items: make([]DocumentRevision, 0, len(list))}
+	for _, r := range list {
+		out.Items = append(out.Items, DocumentRevision{
+			Id: r.ID, Revision: r.Revision, Status: DocumentRevisionStatus(r.Status), CreatedBy: r.CreatedBy, CreatedAt: r.CreatedAt,
+			ReleasedBy: optional(r.ReleasedBy), ReleasedAt: r.ReleasedAt, Sha256: optional(r.SHA256),
+		})
+	}
+	return ListDocumentRevisions200JSONResponse(out), nil
+}

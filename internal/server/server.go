@@ -183,6 +183,8 @@ type DocumentService interface {
 	UpdateSection(ctx context.Context, actor access.Actor, id, sectionID string, in document.SectionUpdate) (document.Document, error)
 	RemoveSection(ctx context.Context, actor access.Actor, id, sectionID string) (document.Document, error)
 	Detach(ctx context.Context, actor access.Actor, id, rowID, reason string) (document.Document, error)
+	Release(ctx context.Context, actor access.Actor, id string) (document.Document, error)
+	Revisions(ctx context.Context, actor access.Actor, id string) ([]document.Revision, error)
 	FillReferences(ctx context.Context, actor access.Actor, id string) (document.Document, error)
 	UpdateRow(ctx context.Context, actor access.Actor, id, rowID string, in document.RowUpdate) (document.Document, error)
 	DeleteRow(ctx context.Context, actor access.Actor, id, rowID string) (document.Document, error)

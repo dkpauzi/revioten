@@ -44,6 +44,7 @@ import type {
 	Change,
 	ChangeList,
 	ChangeVerificationInput,
+	DocumentRevisionList,
 	NewChange,
 	NewDocumentSection,
 	DocumentSectionUpdate,
@@ -712,6 +713,16 @@ export function verifyChange(id: string, input: ChangeVerificationInput, fetchFn
 // changeAttachmentUrl adalah alamat unduhan satu lampiran (L-4).
 export function changeAttachmentUrl(id: string, attachmentId: string): string {
 	return `${itemPath('changes', id)}/attachments/${encodeURIComponent(attachmentId)}`;
+}
+
+// releaseDocument memanggil POST /api/v1/documents/{id}/release (E-7, M5.5).
+export function releaseDocument(id: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<Document>> {
+	return call<Document>(fetchFn, itemPath('documents', id) + '/release', { method: 'POST' });
+}
+
+// listDocumentRevisions memanggil GET /api/v1/documents/{id}/revisions (L-4, M5.5).
+export function listDocumentRevisions(id: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<DocumentRevisionList>> {
+	return call<DocumentRevisionList>(fetchFn, itemPath('documents', id) + '/revisions', { method: 'GET' });
 }
 
 // listDocumentChanges memanggil GET /api/v1/documents/{id}/changes (L-4).

@@ -563,13 +563,14 @@ func (f *fakeProcessTemplates) UpdatePoint(_ context.Context, _ access.Actor, ve
 
 // fakeDocuments meniru document.Service.
 type fakeDocuments struct {
-	list   []document.Summary
-	doc    document.Document
-	err    error
-	got    called
-	gotNew document.NewDocument
-	gotRow document.NewRow
-	gotUpd document.RowUpdate
+	revisions []document.Revision
+	list      []document.Summary
+	doc       document.Document
+	err       error
+	got       called
+	gotNew    document.NewDocument
+	gotRow    document.NewRow
+	gotUpd    document.RowUpdate
 	// gotRows adalah blok baris pada AddRows (M4.4).
 	gotRows []document.NewRow
 	// composition dan gotCompose: perakitan (M4.5).
@@ -648,6 +649,16 @@ func (f *fakeDocuments) Differences(_ context.Context, _ access.Actor, id string
 func (f *fakeDocuments) Detach(_ context.Context, _ access.Actor, id, rowID, reason string) (document.Document, error) {
 	f.got, f.gotReason = called{method: "Detach", id: id, input: rowID}, reason
 	return f.doc, f.err
+}
+
+func (f *fakeDocuments) Release(_ context.Context, _ access.Actor, id string) (document.Document, error) {
+	f.got = called{method: "Release", id: id}
+	return f.doc, f.err
+}
+
+func (f *fakeDocuments) Revisions(_ context.Context, _ access.Actor, id string) ([]document.Revision, error) {
+	f.got = called{method: "Revisions", id: id}
+	return f.revisions, f.err
 }
 
 func (f *fakeDocuments) Comparison(_ context.Context, _ access.Actor, id string) (document.Comparison, error) {

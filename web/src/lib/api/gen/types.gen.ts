@@ -1342,6 +1342,27 @@ export type ChangeRef = {
     name: string;
 };
 
+export type DocumentRevision = {
+    id: string;
+    revision: number;
+    status: 'draft' | 'released';
+    created_by: string;
+    created_at: string;
+    /**
+     * The person who recorded the release.
+     */
+    released_by?: string;
+    released_at?: string;
+    /**
+     * SHA-256 of the frozen snapshot (snapshot_hash, R-REV-07).
+     */
+    sha256?: string;
+};
+
+export type DocumentRevisionList = {
+    items: Array<DocumentRevision>;
+};
+
 export type AffectedDocument = {
     id: string;
     number: string;
@@ -5794,6 +5815,76 @@ export type ListDocumentChangesResponses = {
 };
 
 export type ListDocumentChangesResponse = ListDocumentChangesResponses[keyof ListDocumentChangesResponses];
+
+export type ReleaseDocumentData = {
+    body?: never;
+    path: {
+        documentId: string;
+    };
+    query?: never;
+    url: '/api/v1/documents/{documentId}/release';
+};
+
+export type ReleaseDocumentErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ReleaseDocumentError = ReleaseDocumentErrors[keyof ReleaseDocumentErrors];
+
+export type ReleaseDocumentResponses = {
+    /**
+     * The document after the release.
+     */
+    200: Document;
+};
+
+export type ReleaseDocumentResponse = ReleaseDocumentResponses[keyof ReleaseDocumentResponses];
+
+export type ListDocumentRevisionsData = {
+    body?: never;
+    path: {
+        documentId: string;
+    };
+    query?: never;
+    url: '/api/v1/documents/{documentId}/revisions';
+};
+
+export type ListDocumentRevisionsErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ListDocumentRevisionsError = ListDocumentRevisionsErrors[keyof ListDocumentRevisionsErrors];
+
+export type ListDocumentRevisionsResponses = {
+    /**
+     * The revisions.
+     */
+    200: DocumentRevisionList;
+};
+
+export type ListDocumentRevisionsResponse = ListDocumentRevisionsResponses[keyof ListDocumentRevisionsResponses];
 
 export type AddDocumentSectionData = {
     body: NewDocumentSection;

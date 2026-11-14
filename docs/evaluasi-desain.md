@@ -1855,6 +1855,21 @@ Salin blok ini untuk setiap temuan baru.
 - **Status:** Terbuka
 - **Keputusan pemilik:**
 
+## E-102 · Siapa "penyusun" draft, dan status perubahan sesudah rilis
+
+- **Tanggal dan milestone:** 14 November 2026, M5.5.
+- **Jenis:** Celah
+- **Rujukan:** R-APR-02, R-SEC-11, D-68, RK-62, diagram status perubahan (brief bagian 4: Implementing → Released → Closed).
+- **Temuan:** (1) Aturan "pencatat rilis berbeda dari penyusun" butuh definisi penyusun. Slot Prepared di rute approval belum dicatat di sistem (M6.1), dan satu draft bisa disusun beberapa orang. (2) Diagram status perubahan punya Implementing, Released, dan Closed, tetapi belum ada aturan kapan perubahan pindah ke status itu.
+- **Opsi:**
+  - (1a) Penyusun adalah setiap orang yang mengubah isi dokumen itu sejak rilis terakhirnya (dari audit log). (1b) Penyusun adalah orang di slot Prepared rute approval (sesudah M6.1). (1c) Gabungan keduanya.
+  - (2a) Perubahan otomatis Released bila semua draft hasilnya terbit, lalu Closed oleh pemohon. (2b) Tetap Accepted; riwayat cukup dilihat lewat revisi.
+- **Rekomendasi Claude Code (usulan):** (1a) sekarang, (1c) sesudah M6.1; (2a) di M5.6 atau M6.7.
+- **Asumsi sementara di kode (ASUMSI E-102):** (1a): entri audit `document.*` oleh orang itu pada dokumen itu sesudah `document.released` terakhir, kecuali `document.draft_opened`. Operasi satu set (rakit, urut) tercatat pada dokumen yang dibuka saja. Status perubahan tetap Accepted (2b).
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
 ## Usulan desain UI (UX-01 sampai UX-07): dampak ke M0 sampai M3 dan saran
 
 - **Sumber:** `docs/uml/usulan-desain-ui.md` (UML draft 0.12, 3 November 2026) dan kanvas desain UI "Desain UI Sistem PFD PFMEA CP" (18 artboard, baris v2 disarankan).

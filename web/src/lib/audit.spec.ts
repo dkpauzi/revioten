@@ -21,7 +21,7 @@ describe('teks audit log', () => {
 	it('memberi nama peristiwa, atau kodenya bila belum dikenal', () => {
 		expect(actionLabel('account.created')).toBe(en.auditActionAccountCreated);
 		expect(actionLabel('customer.created')).toBe(en.auditActionCustomerCreated);
-		expect(actionLabel('document.released')).toBe('document.released');
+		expect(actionLabel('portal.published')).toBe('portal.published');
 		expect(actionLabel('customer.code_changed')).toBe(en.auditActionCustomerCodeChanged);
 		expect(actionLabel('part_number.updated')).toBe(en.auditActionPartNumberUpdated);
 		expect(actionLabel('process.created')).toBe(en.auditActionProcessCreated);

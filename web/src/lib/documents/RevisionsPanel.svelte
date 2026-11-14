@@ -1,0 +1,90 @@
+<script lang="ts">
+	// Revisi dokumen (M5.4, M5.5): daftar revisi dengan status, pencatat rilis,
+	// dan SHA-256 snapshot. Pemegang E-7 (Dokumen kontrol) mencatat rilis draft
+	// yang terbuka; isinya dibekukan dan tidak bisa diubah lagi (R-REV-02).
+	import { listDocumentRevisions, releaseDocument } from '#lib/api/client.ts';
+	import type { Document, DocumentRevision } from '#lib/api/gen/index.ts';
+	import { failureText, problemText } from '#lib/errors.ts';
+	import { formatDateTime } from '#lib/format.ts';
+	import { t } from '#lib/i18n/index.ts';
+	import { can } from '#lib/session.svelte.ts';
+
+	let { doc, onreleased }: { doc: Document; onreleased: (doc: Document) => void } = $props();
+
+	let items = $state<DocumentRevision[]>([]);
+	let message = $state('');
+	let failure = $state('');
+	let canRelease = $derived(can('E-7') && doc.status === 'draft');
+
+	// Daftar dimuat ulang setiap kali revisi atau status dokumen berubah.
+	$effect(() => {
+		void doc.revision;
+		void doc.status;
+		load(doc.id);
+	});
+
+	async function load(id: string) {
+		const result = await listDocumentRevisions(id);
+		items = result.ok ? result.data.items : [];
+	}
+
+	async function release() {
+		message = '';
+		failure = '';
+		if (!confirm(t('revisionReleaseConfirm', { number: doc.number, revision: String(doc.revision) }))) {
+			return;
+		}
+		const result = await releaseDocument(doc.id);
+		if (!result.ok) {
+			const details = result.error.body?.details ?? [];
+			failure = details.length > 0 ? problemText(details[0]) : failureText(result.error);
+			return;
+		}
+		message = t('revisionReleased', { number: result.data.number, revision: String(result.data.revision) });
+		onreleased(result.data);
+	}
+</script>
+
+<section>
+	<h2>{t('revisions')}</h2>
+	{#if message}<p role="status">{message}</p>{/if}
+	{#if failure}<p class="error" role="alert">{failure}</p>{/if}
+	<table>
+		<thead>
+			<tr>
+				<th>{t('changeRevision')}</th>
+				<th>{t('numberColumnStatus')}</th>
+				<th>{t('revisionCreatedBy')}</th>
+				<th>{t('revisionReleasedBy')}</th>
+				<th>SHA-256</th>
+			</tr>
+		</thead>
+		<tbody>
+			{#each items as r (r.id)}
+				<tr>
+					<td>{r.revision}</td>
+					<td>
+						<span class="badge" data-status={r.status}>{t(r.status === 'released' ? 'documentStatusReleased' : 'versionStatusDraft')}</span>
+					</td>
+					<td>{r.created_by} · {formatDateTime(r.created_at)}</td>
+					<td>{r.released_by && r.released_at ? `${r.released_by} · ${formatDateTime(r.released_at)}` : ''}</td>
+					<td class="mono hash" title={r.sha256 ?? ''}>{r.sha256 ? `${r.sha256.slice(0, 12)}…` : ''}</td>
+				</tr>
+			{/each}
+		</tbody>
+	</table>
+	{#if canRelease}
+		<p class="hint">{t('revisionReleaseHint')}</p>
+		<button type="button" class="primary" onclick={release}>{t('revisionRelease', { revision: String(doc.revision) })}</button>
+	{/if}
+</section>
+
+<style>
+	.mono {
+		font-family: 'Geist Mono Variable', monospace;
+	}
+
+	.hash {
+		color: var(--text-3);
+	}
+</style>

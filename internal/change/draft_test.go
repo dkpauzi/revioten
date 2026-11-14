@@ -57,11 +57,9 @@ func TestDraftRevisions(t *testing.T) {
 		t.Errorf("revisi: %v", got)
 	}
 
-	// Anggap revisi 0 terbit (rilis sungguhan datang di M5.5).
-	if _, err := e.Pool.Exec(ctx, `UPDATE document_revisions SET status = 'released', released_at = now() WHERE document_id = $1`, cp.ID); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := e.Pool.Exec(ctx, `UPDATE documents SET status = 'released', released_revision = 0 WHERE id = $1`, cp.ID); err != nil {
+	// Revisi 0 dicatat terbit oleh dokumen kontrol (M5.5).
+	recorder := doctest.NewActor(t, e.Pool, "dcc.uji", "work", doctest.All(access.RoleDocumentControl))
+	if _, err := e.Docs.Release(ctx, recorder, cp.ID); err != nil {
 		t.Fatal(err)
 	}
 	// Tanpa draft terbuka, isi dokumen tidak bisa diubah: lewat aplikasi...

@@ -96,6 +96,7 @@ const (
 	ActionChangeAccepted          = "change.accepted"              // M5.3
 	ActionChangeRejected          = "change.rejected"              // M5.3
 	ActionDocumentDraftOpened     = "document.draft_opened"        // M5.4
+	ActionDocumentReleased        = "document.released"            // M5.5
 	ActionDocumentCopied          = "document.copied"              // M4.7
 	ActionDocumentComposed        = "document.composed"            // M4.5
 	ActionRefDocCreated           = "referenced_document.created"  // D-130

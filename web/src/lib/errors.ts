@@ -83,7 +83,8 @@ const problemKeys: Record<string, MessageKey> = {
 	'file:too_long': 'changeAttachmentTooLarge',
 	'verifier:not_allowed': 'changeVerifierNotAllowed',
 	'note:required': 'changeVerifyNoteRequired',
-	'note:too_long': 'changeNoteTooLong'
+	'note:too_long': 'changeNoteTooLong',
+	'recorder:not_allowed': 'revisionRecorderNotAllowed'
 };
 
 // ProblemScope adalah formulir tempat masalah ditampilkan. Field yang sama bisa

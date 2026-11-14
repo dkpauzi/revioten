@@ -18,8 +18,10 @@ SELECT max(revision)::smallint AS revision FROM document_revisions WHERE documen
 UPDATE documents SET revision = $2, status = 'draft', updated_at = now() WHERE id = $1;
 
 -- name: ListDocumentRevisions :many
-SELECT r.id, r.revision, r.status, p.name AS created_by, r.created_at, r.released_at
+SELECT r.id, r.revision, r.status, p.name AS created_by, r.created_at, r.released_at,
+       r.snapshot_sha256, rp.name AS released_by
 FROM document_revisions r JOIN people p ON p.id = r.created_by_person_id
+LEFT JOIN people rp ON rp.id = r.released_by_person_id
 WHERE r.document_id = $1
 ORDER BY r.revision DESC;
 
@@ -32,3 +34,30 @@ SELECT c.id, c.seq, cd.merged
 FROM change_documents cd JOIN changes c ON c.id = cd.change_id
 WHERE cd.draft_revision_id = $1
 ORDER BY c.seq;
+
+-- M5.5: rilis dengan snapshot (R-REV-02).
+
+-- name: ReleaseDocumentRevision :execrows
+UPDATE document_revisions
+SET status = 'released', released_at = now(), snapshot = sqlc.arg(snapshot), snapshot_sha256 = sqlc.arg(sha256),
+    released_by_person_id = sqlc.arg(person_id), released_by_account_id = sqlc.arg(account_id)
+WHERE id = sqlc.arg(id) AND status = 'draft';
+
+-- name: MarkDocumentReleased :exec
+UPDATE documents SET status = 'released', released_revision = $2, updated_at = now() WHERE id = $1;
+
+-- name: PreparedDraft :one
+-- PreparedDraft melaporkan apakah orang itu ikut menyusun draft yang
+-- terbuka: ada entri audit perubahan isi dokumen olehnya sesudah rilis
+-- terakhir dokumen itu (R-APR-02, ASUMSI E-102). Membuka draft lewat
+-- verifikasi tidak dihitung sebagai menyusun.
+SELECT EXISTS (
+    SELECT 1 FROM audit_log a
+    WHERE a.target_id = sqlc.arg(document_id) AND a.actor_person_id = sqlc.arg(person_id)
+      AND a.action LIKE 'document.%' AND a.action NOT IN ('document.draft_opened', 'document.released')
+      AND a.seq > coalesce((SELECT max(r.seq) FROM audit_log r WHERE r.target_id = sqlc.arg(document_id) AND r.action = 'document.released'), 0)
+);
+
+-- name: GetDocumentRevision :one
+SELECT r.id, r.revision, r.status, r.released_at, r.snapshot, r.snapshot_sha256
+FROM document_revisions r WHERE r.document_id = $1 AND r.revision = $2;

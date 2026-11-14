@@ -132,3 +132,24 @@ test('M5.3: APQP/PPAP Controller menerima perubahan dengan catatan wajib', async
 	// Sesudah diterima, tidak ada tombol verifikasi lagi.
 	await expect(page.getByRole('heading', { name: en.changeVerify })).toHaveCount(0);
 });
+
+test('M5.5: dokumen kontrol mencatat rilis, dan revisi terbit tidak bisa diubah', async ({ page }) => {
+	await logIn(page);
+	const temporary = await createWorkAccount(page, 'Dokumen kontrol E2E', 'dcc.e2e', ['document_control']);
+	await logOut(page);
+	await logInFirstTime(page, 'dcc.e2e', temporary, 'rilis selalu dibekukan');
+
+	await openFromMenu(page, en.navGroupDocuments, en.navChanges);
+	await page.getByLabel(en.documentCustomer, { exact: true }).selectOption({ label: 'CH · Customer CH' });
+	await page.getByRole('row', { name: /CHG-0001/ }).getByRole('link', { name: 'CHG-0001' }).click();
+	await page.getByRole('row', { name: / CP / }).getByRole('link').click();
+	await expect(page.getByRole('heading', { name: en.revisions })).toBeVisible();
+
+	page.once('dialog', (dialog) => dialog.accept());
+	await page.getByRole('button', { name: en.revisionRelease.replace('{revision}', '0') }).click();
+	await expect(page.getByRole('status')).toContainText('0');
+	await expect(page.getByText(en.documentNoDraft)).toBeVisible();
+	const row = page.getByRole('row', { name: new RegExp(`Dokumen kontrol E2E`) });
+	await expect(row.locator('[data-status="released"]')).toBeVisible();
+	await expect(page.getByRole('button', { name: en.revisionRelease.replace('{revision}', '0') })).toHaveCount(0);
+});

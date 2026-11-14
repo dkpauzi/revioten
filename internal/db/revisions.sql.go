@@ -31,6 +31,39 @@ func (q *Queries) CreateDocumentRevision(ctx context.Context, arg CreateDocument
 	return id, err
 }
 
+const getDocumentRevision = `-- name: GetDocumentRevision :one
+SELECT r.id, r.revision, r.status, r.released_at, r.snapshot, r.snapshot_sha256
+FROM document_revisions r WHERE r.document_id = $1 AND r.revision = $2
+`
+
+type GetDocumentRevisionParams struct {
+	DocumentID string
+	Revision   int16
+}
+
+type GetDocumentRevisionRow struct {
+	ID             string
+	Revision       int16
+	Status         string
+	ReleasedAt     *time.Time
+	Snapshot       *string
+	SnapshotSha256 *string
+}
+
+func (q *Queries) GetDocumentRevision(ctx context.Context, arg GetDocumentRevisionParams) (GetDocumentRevisionRow, error) {
+	row := q.db.QueryRow(ctx, getDocumentRevision, arg.DocumentID, arg.Revision)
+	var i GetDocumentRevisionRow
+	err := row.Scan(
+		&i.ID,
+		&i.Revision,
+		&i.Status,
+		&i.ReleasedAt,
+		&i.Snapshot,
+		&i.SnapshotSha256,
+	)
+	return i, err
+}
+
 const getOpenDraftRevision = `-- name: GetOpenDraftRevision :one
 SELECT id, revision FROM document_revisions WHERE document_id = $1 AND status = 'draft'
 `
@@ -70,19 +103,23 @@ func (q *Queries) LinkChangeDraft(ctx context.Context, arg LinkChangeDraftParams
 }
 
 const listDocumentRevisions = `-- name: ListDocumentRevisions :many
-SELECT r.id, r.revision, r.status, p.name AS created_by, r.created_at, r.released_at
+SELECT r.id, r.revision, r.status, p.name AS created_by, r.created_at, r.released_at,
+       r.snapshot_sha256, rp.name AS released_by
 FROM document_revisions r JOIN people p ON p.id = r.created_by_person_id
+LEFT JOIN people rp ON rp.id = r.released_by_person_id
 WHERE r.document_id = $1
 ORDER BY r.revision DESC
 `
 
 type ListDocumentRevisionsRow struct {
-	ID         string
-	Revision   int16
-	Status     string
-	CreatedBy  string
-	CreatedAt  time.Time
-	ReleasedAt *time.Time
+	ID             string
+	Revision       int16
+	Status         string
+	CreatedBy      string
+	CreatedAt      time.Time
+	ReleasedAt     *time.Time
+	SnapshotSha256 *string
+	ReleasedBy     *string
 }
 
 func (q *Queries) ListDocumentRevisions(ctx context.Context, documentID string) ([]ListDocumentRevisionsRow, error) {
@@ -101,6 +138,8 @@ func (q *Queries) ListDocumentRevisions(ctx context.Context, documentID string) 
 			&i.CreatedBy,
 			&i.CreatedAt,
 			&i.ReleasedAt,
+			&i.SnapshotSha256,
+			&i.ReleasedBy,
 		); err != nil {
 			return nil, err
 		}
@@ -146,6 +185,20 @@ func (q *Queries) ListRevisionChanges(ctx context.Context, draftRevisionID *stri
 	return items, nil
 }
 
+const markDocumentReleased = `-- name: MarkDocumentReleased :exec
+UPDATE documents SET status = 'released', released_revision = $2, updated_at = now() WHERE id = $1
+`
+
+type MarkDocumentReleasedParams struct {
+	ID               string
+	ReleasedRevision *int16
+}
+
+func (q *Queries) MarkDocumentReleased(ctx context.Context, arg MarkDocumentReleasedParams) error {
+	_, err := q.db.Exec(ctx, markDocumentReleased, arg.ID, arg.ReleasedRevision)
+	return err
+}
+
 const maxDocumentRevision = `-- name: MaxDocumentRevision :one
 SELECT max(revision)::smallint AS revision FROM document_revisions WHERE document_id = $1
 `
@@ -171,4 +224,60 @@ type OpenDocumentDraftParams struct {
 func (q *Queries) OpenDocumentDraft(ctx context.Context, arg OpenDocumentDraftParams) error {
 	_, err := q.db.Exec(ctx, openDocumentDraft, arg.ID, arg.Revision)
 	return err
+}
+
+const preparedDraft = `-- name: PreparedDraft :one
+SELECT EXISTS (
+    SELECT 1 FROM audit_log a
+    WHERE a.target_id = $1 AND a.actor_person_id = $2
+      AND a.action LIKE 'document.%' AND a.action NOT IN ('document.draft_opened', 'document.released')
+      AND a.seq > coalesce((SELECT max(r.seq) FROM audit_log r WHERE r.target_id = $1 AND r.action = 'document.released'), 0)
+)
+`
+
+type PreparedDraftParams struct {
+	DocumentID *string
+	PersonID   *string
+}
+
+// PreparedDraft melaporkan apakah orang itu ikut menyusun draft yang
+// terbuka: ada entri audit perubahan isi dokumen olehnya sesudah rilis
+// terakhir dokumen itu (R-APR-02, ASUMSI E-102). Membuka draft lewat
+// verifikasi tidak dihitung sebagai menyusun.
+func (q *Queries) PreparedDraft(ctx context.Context, arg PreparedDraftParams) (bool, error) {
+	row := q.db.QueryRow(ctx, preparedDraft, arg.DocumentID, arg.PersonID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
+const releaseDocumentRevision = `-- name: ReleaseDocumentRevision :execrows
+
+UPDATE document_revisions
+SET status = 'released', released_at = now(), snapshot = $1, snapshot_sha256 = $2,
+    released_by_person_id = $3, released_by_account_id = $4
+WHERE id = $5 AND status = 'draft'
+`
+
+type ReleaseDocumentRevisionParams struct {
+	Snapshot  *string
+	Sha256    *string
+	PersonID  *string
+	AccountID *string
+	ID        string
+}
+
+// M5.5: rilis dengan snapshot (R-REV-02).
+func (q *Queries) ReleaseDocumentRevision(ctx context.Context, arg ReleaseDocumentRevisionParams) (int64, error) {
+	result, err := q.db.Exec(ctx, releaseDocumentRevision,
+		arg.Snapshot,
+		arg.Sha256,
+		arg.PersonID,
+		arg.AccountID,
+		arg.ID,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }

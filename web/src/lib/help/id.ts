@@ -287,7 +287,7 @@ export const helpId: HelpContent = {
 				'Di {changeAttachments}, pilih berkas di {changeAttachmentAdd} lalu tekan {changeAttachmentUpload}, misalnya laporan 8D atau foto NG. Tekan nama berkas untuk mengunduhnya.',
 				'Verifikator (Project Engineer atau Project Leader dari Project Group customer, atau APQP/PPAP Controller) membuka perubahan, menulis {changeVerifyNote}, lalu menekan {changeAccept} atau {changeReject}. Pemohon tidak bisa memverifikasi perubahannya sendiri.'
 			],
-			tips: ['Perubahan selalu menunjuk paling sedikit satu dokumen, jadi dokumen terakhir tidak bisa dilepas.', 'Lampiran paling besar 20 MB. Lampiran yang dilepas tetap tercatat di audit log.', 'Saat perubahan diterima, setiap dokumen terdampak mendapat draft: dokumen yang sudah punya draft terbuka menerima perubahan itu ke draft-nya, dan dokumen yang sudah terbit membuka revisi berikutnya. Revisi yang berlaku tetap sampai draft itu terbit.']
+			tips: ['Perubahan selalu menunjuk paling sedikit satu dokumen, jadi dokumen terakhir tidak bisa dilepas.', 'Lampiran paling besar 20 MB. Lampiran yang dilepas tetap tercatat di audit log.', 'Saat perubahan diterima, setiap dokumen terdampak mendapat draft: dokumen yang sudah punya draft terbuka menerima perubahan itu ke draft-nya, dan dokumen yang sudah terbit membuka revisi berikutnya. Revisi yang berlaku tetap sampai draft itu terbit.', 'Sesudah revisi ditandatangani di kertas, pemegang dokumen kontrol membuka dokumen dan mencatat rilisnya di bagian Revisi. Isinya dibekukan dengan hash SHA-256; orang yang menyusun draft tidak bisa mencatat rilisnya.']
 		},
 		{
 			id: 'audit',

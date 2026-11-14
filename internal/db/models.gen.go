@@ -180,13 +180,19 @@ type DocumentPointExclusion struct {
 }
 
 type DocumentRevision struct {
-	ID                string
-	DocumentID        string
-	Revision          int16
-	Status            string
-	CreatedByPersonID string
-	CreatedAt         time.Time
-	ReleasedAt        *time.Time
+	ID                  string
+	DocumentID          string
+	Revision            int16
+	Status              string
+	CreatedByPersonID   string
+	CreatedAt           time.Time
+	ReleasedAt          *time.Time
+	Snapshot            *string
+	SnapshotSha256      *string
+	ReleasedByPersonID  *string
+	ReleasedByAccountID *string
+	CustomerVisible     bool
+	PortalPublishedAt   *time.Time
 }
 
 type DocumentRow struct {

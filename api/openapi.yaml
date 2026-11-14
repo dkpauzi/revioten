@@ -2055,6 +2055,39 @@ paths:
                 $ref: '#/components/schemas/ChangeList'
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/documents/{documentId}/release:
+    post:
+      operationId: releaseDocument
+      summary: Record the open draft as a released revision (E-7, M5.5)
+      description: >-
+        The content is frozen as a snapshot with a SHA-256 hash, and the released revision never changes
+        again (R-REV-02). The person who prepared the draft cannot record its release (R-APR-02).
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      responses:
+        '200':
+          description: The document after the release.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/documents/{documentId}/revisions:
+    get:
+      operationId: listDocumentRevisions
+      summary: The revisions of one document, newest first (L-4, M5.5)
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      responses:
+        '200':
+          description: The revisions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentRevisionList'
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/documents/{documentId}/sections:
     post:
       operationId: addDocumentSection
@@ -4704,6 +4737,39 @@ components:
           type: string
         name:
           type: string
+    DocumentRevision:
+      type: object
+      required: [id, revision, status, created_by, created_at]
+      properties:
+        id:
+          type: string
+        revision:
+          type: integer
+        status:
+          type: string
+          enum: [draft, released]
+        created_by:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        released_by:
+          type: string
+          description: The person who recorded the release.
+        released_at:
+          type: string
+          format: date-time
+        sha256:
+          type: string
+          description: SHA-256 of the frozen snapshot (snapshot_hash, R-REV-07).
+    DocumentRevisionList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentRevision'
     AffectedDocument:
       type: object
       required: [id, number, document_type, revision, status]

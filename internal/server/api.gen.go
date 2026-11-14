@@ -335,6 +335,24 @@ func (e DocumentNumberStatus) Valid() bool {
 	}
 }
 
+// Defines values for DocumentRevisionStatus.
+const (
+	DocumentRevisionStatusDraft    DocumentRevisionStatus = "draft"
+	DocumentRevisionStatusReleased DocumentRevisionStatus = "released"
+)
+
+// Valid indicates whether the value is a known member of the DocumentRevisionStatus enum.
+func (e DocumentRevisionStatus) Valid() bool {
+	switch e {
+	case DocumentRevisionStatusDraft:
+		return true
+	case DocumentRevisionStatusReleased:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for DocumentSummaryStatus.
 const (
 	DocumentSummaryStatusDraft    DocumentSummaryStatus = "draft"
@@ -1913,6 +1931,30 @@ type DocumentPartNumber struct {
 	Id     string  `json:"id"`
 	Name   *string `json:"name,omitempty"`
 	Number string  `json:"number"`
+}
+
+// DocumentRevision defines model for DocumentRevision.
+type DocumentRevision struct {
+	CreatedAt  time.Time  `json:"created_at"`
+	CreatedBy  string     `json:"created_by"`
+	Id         string     `json:"id"`
+	ReleasedAt *time.Time `json:"released_at,omitempty"`
+
+	// ReleasedBy The person who recorded the release.
+	ReleasedBy *string `json:"released_by,omitempty"`
+	Revision   int     `json:"revision"`
+
+	// Sha256 SHA-256 of the frozen snapshot (snapshot_hash, R-REV-07).
+	Sha256 *string                `json:"sha256,omitempty"`
+	Status DocumentRevisionStatus `json:"status"`
+}
+
+// DocumentRevisionStatus defines model for DocumentRevision.Status.
+type DocumentRevisionStatus string
+
+// DocumentRevisionList defines model for DocumentRevisionList.
+type DocumentRevisionList struct {
+	Items []DocumentRevision `json:"items"`
 }
 
 // DocumentRow defines model for DocumentRow.
@@ -4006,6 +4048,12 @@ type ServerInterface interface {
 	// FillDocumentReferences Fill the empty Relevant Document cells from the master list (E-2, D-130)
 	// (POST /api/v1/documents/{documentId}/references)
 	FillDocumentReferences(w http.ResponseWriter, r *http.Request, documentId DocumentId)
+	// ReleaseDocument Record the open draft as a released revision (E-7, M5.5)
+	// (POST /api/v1/documents/{documentId}/release)
+	ReleaseDocument(w http.ResponseWriter, r *http.Request, documentId DocumentId)
+	// ListDocumentRevisions The revisions of one document, newest first (L-4, M5.5)
+	// (GET /api/v1/documents/{documentId}/revisions)
+	ListDocumentRevisions(w http.ResponseWriter, r *http.Request, documentId DocumentId)
 	// AddDocumentRow Add a row at the end of a draft document (E-2)
 	// (POST /api/v1/documents/{documentId}/rows)
 	AddDocumentRow(w http.ResponseWriter, r *http.Request, documentId DocumentId)
@@ -5715,6 +5763,58 @@ func (siw *ServerInterfaceWrapper) FillDocumentReferences(w http.ResponseWriter,
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.FillDocumentReferences(w, r, documentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReleaseDocument operation middleware
+func (siw *ServerInterfaceWrapper) ReleaseDocument(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", r.PathValue("documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReleaseDocument(w, r, documentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListDocumentRevisions operation middleware
+func (siw *ServerInterfaceWrapper) ListDocumentRevisions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", r.PathValue("documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListDocumentRevisions(w, r, documentId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -7800,6 +7900,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/changes/{changeId}/attachments/{attachmentId}", wrapper.RemoveChangeAttachment)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/changes/{changeId}/attachments/{attachmentId}", wrapper.GetChangeAttachment)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/documents/{documentId}/changes", wrapper.ListDocumentChanges)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/release", wrapper.ReleaseDocument)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/documents/{documentId}/revisions", wrapper.ListDocumentRevisions)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/sections", wrapper.AddDocumentSection)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/documents/{documentId}/sections/{sectionId}", wrapper.RemoveDocumentSection)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/documents/{documentId}/sections/{sectionId}", wrapper.UpdateDocumentSection)
@@ -10136,6 +10238,84 @@ type FillDocumentReferencesdefaultJSONResponse struct {
 }
 
 func (response FillDocumentReferencesdefaultJSONResponse) VisitFillDocumentReferencesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReleaseDocumentRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+}
+
+type ReleaseDocumentResponseObject interface {
+	VisitReleaseDocumentResponse(w http.ResponseWriter) error
+}
+
+type ReleaseDocument200JSONResponse Document
+
+func (response ReleaseDocument200JSONResponse) VisitReleaseDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReleaseDocumentdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ReleaseDocumentdefaultJSONResponse) VisitReleaseDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDocumentRevisionsRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+}
+
+type ListDocumentRevisionsResponseObject interface {
+	VisitListDocumentRevisionsResponse(w http.ResponseWriter) error
+}
+
+type ListDocumentRevisions200JSONResponse DocumentRevisionList
+
+func (response ListDocumentRevisions200JSONResponse) VisitListDocumentRevisionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDocumentRevisionsdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ListDocumentRevisionsdefaultJSONResponse) VisitListDocumentRevisionsResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -13381,6 +13561,12 @@ type StrictServerInterface interface {
 	// FillDocumentReferences Fill the empty Relevant Document cells from the master list (E-2, D-130)
 	// (POST /api/v1/documents/{documentId}/references)
 	FillDocumentReferences(ctx context.Context, request FillDocumentReferencesRequestObject) (FillDocumentReferencesResponseObject, error)
+	// ReleaseDocument Record the open draft as a released revision (E-7, M5.5)
+	// (POST /api/v1/documents/{documentId}/release)
+	ReleaseDocument(ctx context.Context, request ReleaseDocumentRequestObject) (ReleaseDocumentResponseObject, error)
+	// ListDocumentRevisions The revisions of one document, newest first (L-4, M5.5)
+	// (GET /api/v1/documents/{documentId}/revisions)
+	ListDocumentRevisions(ctx context.Context, request ListDocumentRevisionsRequestObject) (ListDocumentRevisionsResponseObject, error)
 	// AddDocumentRow Add a row at the end of a draft document (E-2)
 	// (POST /api/v1/documents/{documentId}/rows)
 	AddDocumentRow(ctx context.Context, request AddDocumentRowRequestObject) (AddDocumentRowResponseObject, error)
@@ -15291,6 +15477,58 @@ func (sh *strictHandler) FillDocumentReferences(w http.ResponseWriter, r *http.R
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(FillDocumentReferencesResponseObject); ok {
 		if err := validResponse.VisitFillDocumentReferencesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ReleaseDocument operation middleware
+func (sh *strictHandler) ReleaseDocument(w http.ResponseWriter, r *http.Request, documentId DocumentId) {
+	var request ReleaseDocumentRequestObject
+
+	request.DocumentId = documentId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReleaseDocument(ctx, request.(ReleaseDocumentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReleaseDocument")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReleaseDocumentResponseObject); ok {
+		if err := validResponse.VisitReleaseDocumentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListDocumentRevisions operation middleware
+func (sh *strictHandler) ListDocumentRevisions(w http.ResponseWriter, r *http.Request, documentId DocumentId) {
+	var request ListDocumentRevisionsRequestObject
+
+	request.DocumentId = documentId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListDocumentRevisions(ctx, request.(ListDocumentRevisionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListDocumentRevisions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListDocumentRevisionsResponseObject); ok {
+		if err := validResponse.VisitListDocumentRevisionsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
