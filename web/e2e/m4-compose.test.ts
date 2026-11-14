@@ -254,4 +254,17 @@ test('penyusun merakit CP, PFMEA, dan PFD dari process template IQC', async ({ p
 	await expect(iqc.getByTestId('check-mark')).toContainText(en.checkStale.split('{by}')[0].trim());
 	await iqc.getByRole('button', { name: en.checkMarkFor.replace('{process}', 'Incoming QC') }).click();
 	await expect(iqc.getByTestId('check-mark')).toContainText(en.checkDone.split('{by}')[0].trim());
+
+	// M4.10: diagram PFD terbentuk otomatis dari daftar proses, dan ikut
+	// berubah saat baris ditambah.
+	await page.getByRole('link', { name: 'PFD', exact: true }).click();
+	await expect(rows).toHaveCount(1);
+	await page.getByRole('button', { name: en.diagramOpen }).click();
+	const diagram = page.getByTestId('pfd-diagram');
+	await expect(diagram.locator('.svelte-flow__node')).toHaveCount(1);
+	await expect(diagram.locator('.svelte-flow__node').first()).toContainText('Incoming QC');
+	await page.getByRole('button', { name: en.documentRowAdd }).click();
+	await expect(rows).toHaveCount(2);
+	await expect(diagram.locator('.svelte-flow__node')).toHaveCount(2);
+	await expect(diagram.locator('.svelte-flow__edge')).toHaveCount(1);
 });

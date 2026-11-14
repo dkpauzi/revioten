@@ -41,6 +41,8 @@
 	let comparing = $state(false);
 	// compareRound naik setiap tautan diputus, supaya panel banding memuat ulang perbandingannya.
 	let compareRound = $state(0);
+	// showDiagram: diagram PFD sedang ditampilkan (M4.10). Hanya untuk dokumen PFD.
+	let showDiagram = $state(false);
 	// Tombol banding hanya untuk dokumen yang punya baris tertaut ke template.
 	let hasLinkedRows = $derived(doc?.rows.some((r) => r.template_point_id) ?? false);
 
@@ -325,6 +327,19 @@
 		{#key doc.id}
 			<Workbook {doc} {format} {processes} {canEdit} onsave={saveCell} ondelete={removeRow} />
 		{/key}
+		{#if doc.document_type.key === 'pfd'}
+			<p><button type="button" aria-expanded={showDiagram} onclick={() => (showDiagram = !showDiagram)}>{showDiagram ? t('diagramClose') : t('diagramOpen')}</button></p>
+			{#if showDiagram}
+				<h3>{t('diagramTitle')}</h3>
+				<p class="hint">{t('diagramHint')}</p>
+				<!-- Dimuat hanya saat dibuka: Svelte Flow dan ELK cukup besar (M4.10). -->
+				{#await import('#lib/documents/PfdDiagram.svelte')}
+					<p>{t('formatLoading')}</p>
+				{:then diagram}
+					<diagram.default rows={doc.rows} {format} />
+				{/await}
+			{/if}
+		{/if}
 		{#if hasLinkedRows && !comparing}
 			<p><button type="button" onclick={() => (comparing = true)}>{t('compareOpen')}</button></p>
 		{/if}

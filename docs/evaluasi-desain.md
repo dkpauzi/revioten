@@ -116,6 +116,7 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-92 | Isi poin per kolom: kolom mana yang dianggap sama di dua form set | Celah | M4.5 | Tidak | Diputuskan (D-150) |
 | E-93 | Perakitan: dokumen dengan beberapa model, dan pasangan poin | Celah | M4.5 | Tidak | Terbuka |
 | E-94 | Urutan langkah: per dokumen, proses yang berulang, dan jarak nomor operasi | Celah | M4.6 | Tidak | Terbuka |
+| E-95 | Diagram PFD: cabang keputusan, rework, dan konektor halaman | Celah | M4.10 | Tidak | Terbuka |
 
 ## Keputusan 4 November 2026
 
@@ -1716,6 +1717,23 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (a) sekarang, (b) saat PFD menjadi sumber alur.
 - **Asumsi sementara di kode (ASUMSI E-94):** opsi (a).
 - **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-95 · Diagram PFD: cabang keputusan, rework, dan konektor halaman
+
+- **Tanggal dan milestone:** 14 November 2026, M4.10.
+- **Jenis:** Celah
+- **Rujukan:** M4.10, D-122 (Process Flow di CP dari PFD), G11 (penyesuaian alur, terutama konektor perpindahan halaman), usulan simbol TR-020 di milestone.
+- **Temuan:** baris PFD hanya menyimpan simbol dan disposisi NG per langkah. Belum ada data untuk ke mana cabang Decision mengarah (OK ke langkah berikutnya, NG ke mana), ke langkah mana Rework kembali, dan di mana konektor perpindahan halaman diletakkan. Akibatnya diagram M4.10 selalu lurus dari atas ke bawah, dengan disposisi NG sebagai simbol di samping langkah.
+- **Dampak bila dibiarkan:** diagram cukup untuk alur lurus, tetapi belum bisa menggantikan gambar PFD yang punya cabang dan putaran rework, dan belum membantu G11.
+- **Opsi:**
+  - (a) Tambah kolom baris "lanjut ke" untuk cabang NG dan Rework (nomor operasi tujuan), lalu diagram menggambar panahnya.
+  - (b) Alur menjadi data sendiri (langkah dan panah), dengan PFD, PFMEA, dan CP mengikutinya; sejalan dengan E-94 opsi (b).
+  - (c) Biarkan lurus; cabang hanya ditulis sebagai teks.
+- **Rekomendasi Claude Code (usulan):** (a) sebagai langkah kecil berikutnya, lalu (b) bersama E-94 bila alur memang menjadi sumber utama.
+- **Asumsi sementara di kode (ASUMSI E-95):** alur lurus menurut urutan baris; baris tanpa Flow Symbol digambar sebagai Process; disposisi NG digambar sebagai simbol bergaris putus di samping langkah.
+- **Menghambat milestone?** Tidak (M4.10 opsional; kriterianya diagram terbentuk otomatis dari daftar proses)
 - **Status:** Terbuka
 - **Keputusan pemilik:**
 

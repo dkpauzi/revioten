@@ -88,6 +88,8 @@ Hasil `npm audit` setelah M0.5: 8 temuan (4 rendah, 4 tinggi). Yang rendah masih
 | `@fontsource-variable/geist-mono` | 5.3.0 | 2026-07-19 | 2026-11-08 | npm | Terbaru. Huruf Geist Mono untuk nomor, kode, dan nilai yang perlu rata (D-127). Lisensi OFL-1.1. Tanpa peer dependency. |
 | tabulator-tables | 6.7.1 | 2026-10-22 | 2026-11-12 | npm | Terbaru. Dipasang di M4.2 untuk tabel workbook. Lisensi MIT. Tanpa peer dependency. |
 | `@types/tabulator-tables` | 6.3.6 | 2026-07-12 | 2026-11-12 | npm | Terbaru. Tipe TypeScript untuk Tabulator (pustakanya tidak membawa tipe sendiri). Lisensi MIT. |
+| `@xyflow/svelte` | 1.7.1 | 2026-11-02 | 2026-11-14 | npm | Terbaru (dist-tag `latest`; `next` 2.0.0-next.7 tidak dipakai, R-VER-01). Dipasang di M4.10 untuk diagram PFD. Peer `svelte ^5.25.0` cocok dengan 5.57.3. Line 1.x sudah punya banyak rilis, jadi tanpa masa tunggu. Lisensi MIT. |
+| elkjs | 0.12.1 | 2026-10-28 | 2026-11-14 | npm | Terbaru. Paket 0.x, jadi ikut masa tunggu 14 hari (E-14): lewat pada 11 November 2026. Penata letak diagram PFD (M4.10). Tanpa peer dependency. Lisensi EPL-2.0 OR GPL-3.0-or-later (dicek di `package.json` paketnya). Dimuat hanya saat diagram dibuka. |
 | `@xyflow/svelte` (Svelte Flow) | 1.7.0 | 2026-09-24 | 2026-10-27 | npm | Terbaru. Peer svelte ^5.25.0. Dipakai di M4.10 (opsional). |
 | elkjs | 0.12.0 | 2026-07-17 | 2026-10-27 | npm | Terbaru. |
 | openapi-typescript | 7.13.0 | 2026-02-11 | 2026-10-28 | npm | Tidak dipakai. Uji M0.5: `npm install` gagal dengan ERESOLVE karena peer `typescript ^5.x` bentrok dengan TypeScript 6.0.3 (R-VER-03). Lihat Q-47 di `docs/evaluasi-desain.md`. |
