@@ -353,6 +353,30 @@ func (e DocumentRevisionStatus) Valid() bool {
 	}
 }
 
+// Defines values for DocumentRowChangeStatus.
+const (
+	DocumentRowChangeStatusAdded   DocumentRowChangeStatus = "added"
+	DocumentRowChangeStatusChanged DocumentRowChangeStatus = "changed"
+	DocumentRowChangeStatusMoved   DocumentRowChangeStatus = "moved"
+	DocumentRowChangeStatusRemoved DocumentRowChangeStatus = "removed"
+)
+
+// Valid indicates whether the value is a known member of the DocumentRowChangeStatus enum.
+func (e DocumentRowChangeStatus) Valid() bool {
+	switch e {
+	case DocumentRowChangeStatusAdded:
+		return true
+	case DocumentRowChangeStatusChanged:
+		return true
+	case DocumentRowChangeStatusMoved:
+		return true
+	case DocumentRowChangeStatusRemoved:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for DocumentSummaryStatus.
 const (
 	DocumentSummaryStatusDraft    DocumentSummaryStatus = "draft"
@@ -1851,9 +1875,33 @@ type Document struct {
 // DocumentStatus Draft while a draft revision is open; released when there is none (M5.4).
 type DocumentStatus string
 
+// DocumentCellChange defines model for DocumentCellChange.
+type DocumentCellChange struct {
+	FieldId string `json:"field_id"`
+	Label   string `json:"label"`
+
+	// New The value after; missing when the cell is empty.
+	New interface{} `json:"new,omitempty"`
+
+	// Old The value before; missing when the cell was empty.
+	Old interface{} `json:"old,omitempty"`
+}
+
 // DocumentCopy defines model for DocumentCopy.
 type DocumentCopy struct {
 	SourceDocumentId string `json:"source_document_id"`
+}
+
+// DocumentDiff The changes between two revisions, row by row and cell by cell (R-REV-03).
+type DocumentDiff struct {
+	From      int                  `json:"from"`
+	Header    []DocumentCellChange `json:"header"`
+	ProcessId *string              `json:"process_id,omitempty"`
+	Rows      []DocumentRowChange  `json:"rows"`
+
+	// To Missing when the comparison is with the open draft.
+	To      *int `json:"to,omitempty"`
+	ToDraft bool `json:"to_draft"`
 }
 
 // DocumentHeader defines model for DocumentHeader.
@@ -1935,6 +1983,8 @@ type DocumentPartNumber struct {
 
 // DocumentRevision defines model for DocumentRevision.
 type DocumentRevision struct {
+	// Changes Reference numbers of the changes that went into this revision (M5.6).
+	Changes    []string   `json:"changes"`
 	CreatedAt  time.Time  `json:"created_at"`
 	CreatedBy  string     `json:"created_by"`
 	Id         string     `json:"id"`
@@ -1990,6 +2040,21 @@ type DocumentRow struct {
 type DocumentRowBatch struct {
 	Rows []DocumentRowInput `json:"rows"`
 }
+
+// DocumentRowChange defines model for DocumentRowChange.
+type DocumentRowChange struct {
+	Cells           []DocumentCellChange    `json:"cells"`
+	NewPosition     *int                    `json:"new_position,omitempty"`
+	OldPosition     *int                    `json:"old_position,omitempty"`
+	OperationNumber *string                 `json:"operation_number,omitempty"`
+	ProcessId       *string                 `json:"process_id,omitempty"`
+	ProcessName     *string                 `json:"process_name,omitempty"`
+	RowId           string                  `json:"row_id"`
+	Status          DocumentRowChangeStatus `json:"status"`
+}
+
+// DocumentRowChangeStatus defines model for DocumentRowChange.Status.
+type DocumentRowChangeStatus string
 
 // DocumentRowInput defines model for DocumentRowInput.
 type DocumentRowInput struct {
@@ -3623,6 +3688,18 @@ type GetDocumentCompositionParams struct {
 	SectionKey *string `form:"section_key,omitempty" json:"section_key,omitempty"`
 }
 
+// GetDocumentDiffParams defines parameters for GetDocumentDiff.
+type GetDocumentDiffParams struct {
+	// From A released revision.
+	From int `form:"from" json:"from"`
+
+	// To A released revision. Leave out to compare with the open draft.
+	To *int `form:"to,omitempty" json:"to,omitempty"`
+
+	// ProcessId Only rows of this process, for the history per process.
+	ProcessId *string `form:"process_id,omitempty" json:"process_id,omitempty"`
+}
+
 // GetActionPriorityParams defines parameters for GetActionPriority.
 type GetActionPriorityParams struct {
 	Severity   int `form:"severity" json:"severity"`
@@ -4030,6 +4107,9 @@ type ServerInterface interface {
 	// CopyDocumentComposition Start a document set from the rows of another model's documents (E-2, M4.7)
 	// (POST /api/v1/documents/{documentId}/copy)
 	CopyDocumentComposition(w http.ResponseWriter, r *http.Request, documentId DocumentId)
+	// GetDocumentDiff Compare two revisions of one document row by row and cell by cell (L-4, M5.6)
+	// (GET /api/v1/documents/{documentId}/diff)
+	GetDocumentDiff(w http.ResponseWriter, r *http.Request, documentId DocumentId, params GetDocumentDiffParams)
 	// GetDocumentDifferences Compare each linked row with its process template point (L-4, M4.8)
 	// (GET /api/v1/documents/{documentId}/differences)
 	GetDocumentDifferences(w http.ResponseWriter, r *http.Request, documentId DocumentId)
@@ -5607,6 +5687,74 @@ func (siw *ServerInterfaceWrapper) CopyDocumentComposition(w http.ResponseWriter
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CopyDocumentComposition(w, r, documentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetDocumentDiff operation middleware
+func (siw *ServerInterfaceWrapper) GetDocumentDiff(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", r.PathValue("documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetDocumentDiffParams
+
+	// ------------- Required query parameter "from" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "from", r.URL.Query(), &params.From, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "from"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "from", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "to" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "to", r.URL.Query(), &params.To, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "to"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "to", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "process_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "process_id", r.URL.Query(), &params.ProcessId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "process_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "process_id", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetDocumentDiff(w, r, documentId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -7901,6 +8049,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/changes/{changeId}/attachments/{attachmentId}", wrapper.GetChangeAttachment)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/documents/{documentId}/changes", wrapper.ListDocumentChanges)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/release", wrapper.ReleaseDocument)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/documents/{documentId}/diff", wrapper.GetDocumentDiff)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/documents/{documentId}/revisions", wrapper.ListDocumentRevisions)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/sections", wrapper.AddDocumentSection)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/documents/{documentId}/sections/{sectionId}", wrapper.RemoveDocumentSection)
@@ -10001,6 +10150,46 @@ type CopyDocumentCompositiondefaultJSONResponse struct {
 }
 
 func (response CopyDocumentCompositiondefaultJSONResponse) VisitCopyDocumentCompositionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDocumentDiffRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+	Params     GetDocumentDiffParams
+}
+
+type GetDocumentDiffResponseObject interface {
+	VisitGetDocumentDiffResponse(w http.ResponseWriter) error
+}
+
+type GetDocumentDiff200JSONResponse DocumentDiff
+
+func (response GetDocumentDiff200JSONResponse) VisitGetDocumentDiffResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDocumentDiffdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response GetDocumentDiffdefaultJSONResponse) VisitGetDocumentDiffResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -13543,6 +13732,9 @@ type StrictServerInterface interface {
 	// CopyDocumentComposition Start a document set from the rows of another model's documents (E-2, M4.7)
 	// (POST /api/v1/documents/{documentId}/copy)
 	CopyDocumentComposition(ctx context.Context, request CopyDocumentCompositionRequestObject) (CopyDocumentCompositionResponseObject, error)
+	// GetDocumentDiff Compare two revisions of one document row by row and cell by cell (L-4, M5.6)
+	// (GET /api/v1/documents/{documentId}/diff)
+	GetDocumentDiff(ctx context.Context, request GetDocumentDiffRequestObject) (GetDocumentDiffResponseObject, error)
 	// GetDocumentDifferences Compare each linked row with its process template point (L-4, M4.8)
 	// (GET /api/v1/documents/{documentId}/differences)
 	GetDocumentDifferences(ctx context.Context, request GetDocumentDifferencesRequestObject) (GetDocumentDifferencesResponseObject, error)
@@ -15300,6 +15492,33 @@ func (sh *strictHandler) CopyDocumentComposition(w http.ResponseWriter, r *http.
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(CopyDocumentCompositionResponseObject); ok {
 		if err := validResponse.VisitCopyDocumentCompositionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetDocumentDiff operation middleware
+func (sh *strictHandler) GetDocumentDiff(w http.ResponseWriter, r *http.Request, documentId DocumentId, params GetDocumentDiffParams) {
+	var request GetDocumentDiffRequestObject
+
+	request.DocumentId = documentId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetDocumentDiff(ctx, request.(GetDocumentDiffRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetDocumentDiff")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetDocumentDiffResponseObject); ok {
+		if err := validResponse.VisitGetDocumentDiffResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

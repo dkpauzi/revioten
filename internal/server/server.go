@@ -185,6 +185,7 @@ type DocumentService interface {
 	Detach(ctx context.Context, actor access.Actor, id, rowID, reason string) (document.Document, error)
 	Release(ctx context.Context, actor access.Actor, id string) (document.Document, error)
 	Revisions(ctx context.Context, actor access.Actor, id string) ([]document.Revision, error)
+	Diff(ctx context.Context, actor access.Actor, id string, from int, to *int, processID string) (document.Diff, error)
 	FillReferences(ctx context.Context, actor access.Actor, id string) (document.Document, error)
 	UpdateRow(ctx context.Context, actor access.Actor, id, rowID string, in document.RowUpdate) (document.Document, error)
 	DeleteRow(ctx context.Context, actor access.Actor, id, rowID string) (document.Document, error)

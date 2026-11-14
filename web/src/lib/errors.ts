@@ -84,7 +84,8 @@ const problemKeys: Record<string, MessageKey> = {
 	'verifier:not_allowed': 'changeVerifierNotAllowed',
 	'note:required': 'changeVerifyNoteRequired',
 	'note:too_long': 'changeNoteTooLong',
-	'recorder:not_allowed': 'revisionRecorderNotAllowed'
+	'recorder:not_allowed': 'revisionRecorderNotAllowed',
+	'to:required': 'diffNoRelease'
 };
 
 // ProblemScope adalah formulir tempat masalah ditampilkan. Field yang sama bisa

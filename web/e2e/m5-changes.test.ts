@@ -143,7 +143,7 @@ test('M5.5: dokumen kontrol mencatat rilis, dan revisi terbit tidak bisa diubah'
 	await page.getByLabel(en.documentCustomer, { exact: true }).selectOption({ label: 'CH · Customer CH' });
 	await page.getByRole('row', { name: /CHG-0001/ }).getByRole('link', { name: 'CHG-0001' }).click();
 	await page.getByRole('row', { name: / CP / }).getByRole('link').click();
-	await expect(page.getByRole('heading', { name: en.revisions })).toBeVisible();
+	await expect(page.getByRole('heading', { name: en.revisions, exact: true })).toBeVisible();
 
 	page.once('dialog', (dialog) => dialog.accept());
 	await page.getByRole('button', { name: en.revisionRelease.replace('{revision}', '0') }).click();
@@ -152,4 +152,72 @@ test('M5.5: dokumen kontrol mencatat rilis, dan revisi terbit tidak bisa diubah'
 	const row = page.getByRole('row', { name: new RegExp(`Dokumen kontrol E2E`) });
 	await expect(row.locator('[data-status="released"]')).toBeVisible();
 	await expect(page.getByRole('button', { name: en.revisionRelease.replace('{revision}', '0') })).toHaveCount(0);
+});
+
+// asUser masuk sebagai akun lain lewat API, menjalankan isi fungsi di
+// halaman, lalu keluar lagi.
+async function asUser<T>(page: Page, login: string, password: string, run: () => Promise<T>): Promise<T> {
+	await page.evaluate(
+		({ login, password }) =>
+			fetch('/api/v1/session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ login, password }) }),
+		{ login, password }
+	);
+	const out = await page.evaluate(run);
+	await page.evaluate(() => fetch('/api/v1/session', { method: 'DELETE' }));
+	return out;
+}
+
+test('M5.4 dan M5.6: perubahan kedua membuka revisi 1, lalu revisi 0 dibandingkan dengan draft', async ({ page }) => {
+	await page.goto('/login');
+	// Pemohon mengajukan CHG-0002 untuk CP yang sudah terbit (M5.5).
+	const cpId = await asUser(page, 'pemohon.e2e', 'perubahan selalu punya alasan', async () => {
+		const customers = await (await fetch('/api/v1/customers')).json();
+		const customer = customers.items.find((c: { code: string }) => c.code === 'CH');
+		const list = await (await fetch(`/api/v1/changes?customer_id=${customer.id}`)).json();
+		const first = list.items.find((c: { ref: string }) => c.ref === 'CHG-0001');
+		const cp = first.documents.find((d: { document_type: { key: string } }) => d.document_type.key === 'cp');
+		const sources = await (await fetch('/api/v1/change-sources')).json();
+		const types = await (await fetch('/api/v1/change-types')).json();
+		await fetch('/api/v1/changes', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({
+				customer_id: customer.id,
+				trigger_id: sources.items.find((s: { name: string; mechanism?: string }) => s.name === 'Customer claim').id,
+				change_type_id: types.items[0].id,
+				reason: 'Add label check',
+				document_ids: [cp.id]
+			})
+		});
+		return cp.id as string;
+	});
+	await asUser(page, 'verifikator.e2e', 'verifikasi selalu dengan catatan', async () => {
+		const customers = await (await fetch('/api/v1/customers')).json();
+		const customer = customers.items.find((c: { code: string }) => c.code === 'CH');
+		const list = await (await fetch(`/api/v1/changes?customer_id=${customer.id}`)).json();
+		const second = list.items.find((c: { ref: string }) => c.ref === 'CHG-0002');
+		await fetch(`/api/v1/changes/${second.id}/verification`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ decision: 'accept', note: 'Label check is needed' })
+		});
+	});
+
+	await page.goto('/login');
+	await page.getByLabel(en.loginName, { exact: true }).fill('pemohon.e2e');
+	await page.getByLabel(en.loginPassword, { exact: true }).fill('perubahan selalu punya alasan');
+	await page.getByRole('button', { name: en.loginSubmit }).click();
+	await expect(page.getByRole('button', { name: en.logout })).toBeVisible();
+	await page.evaluate(
+		(id) =>
+			fetch(`/api/v1/documents/${id}/rows`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: {} }) }),
+		cpId
+	);
+	await page.goto(`/documents/view?id=${cpId}`);
+	// M5.4: draft revisi 1 terbuka, revisi 0 tetap berlaku.
+	await expect(page.getByRole('row', { name: /CHG-0002/ })).toBeVisible();
+	await page.getByLabel(en.diffFrom).selectOption('0');
+	await page.getByLabel(en.diffTo).selectOption('draft');
+	await page.getByRole('button', { name: en.diffCompare }).click();
+	await expect(page.locator('table.diff [data-diff="added"]')).toHaveCount(1);
 });

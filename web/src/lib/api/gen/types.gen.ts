@@ -1357,6 +1357,49 @@ export type DocumentRevision = {
      * SHA-256 of the frozen snapshot (snapshot_hash, R-REV-07).
      */
     sha256?: string;
+    /**
+     * Reference numbers of the changes that went into this revision (M5.6).
+     */
+    changes: Array<string>;
+};
+
+/**
+ * The changes between two revisions, row by row and cell by cell (R-REV-03).
+ */
+export type DocumentDiff = {
+    from: number;
+    /**
+     * Missing when the comparison is with the open draft.
+     */
+    to?: number;
+    to_draft: boolean;
+    process_id?: string;
+    header: Array<DocumentCellChange>;
+    rows: Array<DocumentRowChange>;
+};
+
+export type DocumentRowChange = {
+    row_id: string;
+    status: 'added' | 'removed' | 'changed' | 'moved';
+    old_position?: number;
+    new_position?: number;
+    process_id?: string;
+    process_name?: string;
+    operation_number?: string;
+    cells: Array<DocumentCellChange>;
+};
+
+export type DocumentCellChange = {
+    field_id: string;
+    label: string;
+    /**
+     * The value before; missing when the cell was empty.
+     */
+    old?: unknown;
+    /**
+     * The value after; missing when the cell is empty.
+     */
+    new?: unknown;
 };
 
 export type DocumentRevisionList = {
@@ -5850,6 +5893,54 @@ export type ReleaseDocumentResponses = {
 };
 
 export type ReleaseDocumentResponse = ReleaseDocumentResponses[keyof ReleaseDocumentResponses];
+
+export type GetDocumentDiffData = {
+    body?: never;
+    path: {
+        documentId: string;
+    };
+    query: {
+        /**
+         * A released revision.
+         */
+        from: number;
+        /**
+         * A released revision. Leave out to compare with the open draft.
+         */
+        to?: number;
+        /**
+         * Only rows of this process, for the history per process.
+         */
+        process_id?: string;
+    };
+    url: '/api/v1/documents/{documentId}/diff';
+};
+
+export type GetDocumentDiffErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type GetDocumentDiffError = GetDocumentDiffErrors[keyof GetDocumentDiffErrors];
+
+export type GetDocumentDiffResponses = {
+    /**
+     * The differences.
+     */
+    200: DocumentDiff;
+};
+
+export type GetDocumentDiffResponse = GetDocumentDiffResponses[keyof GetDocumentDiffResponses];
 
 export type ListDocumentRevisionsData = {
     body?: never;

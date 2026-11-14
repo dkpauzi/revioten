@@ -564,6 +564,7 @@ func (f *fakeProcessTemplates) UpdatePoint(_ context.Context, _ access.Actor, ve
 // fakeDocuments meniru document.Service.
 type fakeDocuments struct {
 	revisions []document.Revision
+	diff      document.Diff
 	list      []document.Summary
 	doc       document.Document
 	err       error
@@ -654,6 +655,11 @@ func (f *fakeDocuments) Detach(_ context.Context, _ access.Actor, id, rowID, rea
 func (f *fakeDocuments) Release(_ context.Context, _ access.Actor, id string) (document.Document, error) {
 	f.got = called{method: "Release", id: id}
 	return f.doc, f.err
+}
+
+func (f *fakeDocuments) Diff(_ context.Context, _ access.Actor, id string, from int, to *int, processID string) (document.Diff, error) {
+	f.got = called{method: "Diff", id: id, input: fmt.Sprint(from, ":", to != nil, ":", processID)}
+	return f.diff, f.err
 }
 
 func (f *fakeDocuments) Revisions(_ context.Context, _ access.Actor, id string) ([]document.Revision, error) {

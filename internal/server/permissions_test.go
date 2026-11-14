@@ -396,6 +396,8 @@ func TestPermissionsPerOperation(t *testing.T) {
 		// jadi aturan pencatat bukan penyusun menolaknya (R-APR-02).
 		{http.MethodPost, "/api/v1/documents/{documentId}/release", "", http.StatusForbidden, http.StatusUnprocessableEntity, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/documents/{documentId}/revisions", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		// Diff (M5.6): dokumen uji belum pernah terbit, jadi revisi 0 ditolak sesudah haknya lolos.
+		{http.MethodGet, "/api/v1/documents/{documentId}/diff?from=0", "", http.StatusForbidden, http.StatusUnprocessableEntity, http.StatusForbidden},
 		{http.MethodPut, "/api/v1/documents/{documentId}/header", `{"header":{},"header_version":1}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodPost, "/api/v1/documents/{documentId}/rows", `{"content":{}}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/documents/{documentId}/composition?process_template_version_id={processVersionId}", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},

@@ -2073,6 +2073,37 @@ paths:
                 $ref: '#/components/schemas/Document'
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/documents/{documentId}/diff:
+    get:
+      operationId: getDocumentDiff
+      summary: Compare two revisions of one document row by row and cell by cell (L-4, M5.6)
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: A released revision.
+        - name: to
+          in: query
+          schema:
+            type: integer
+          description: A released revision. Leave out to compare with the open draft.
+        - name: process_id
+          in: query
+          schema:
+            type: string
+          description: Only rows of this process, for the history per process.
+      responses:
+        '200':
+          description: The differences.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentDiff'
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/documents/{documentId}/revisions:
     get:
       operationId: listDocumentRevisions
@@ -4739,7 +4770,7 @@ components:
           type: string
     DocumentRevision:
       type: object
-      required: [id, revision, status, created_by, created_at]
+      required: [id, revision, status, created_by, created_at, changes]
       properties:
         id:
           type: string
@@ -4762,6 +4793,68 @@ components:
         sha256:
           type: string
           description: SHA-256 of the frozen snapshot (snapshot_hash, R-REV-07).
+        changes:
+          type: array
+          description: Reference numbers of the changes that went into this revision (M5.6).
+          items:
+            type: string
+    DocumentDiff:
+      type: object
+      description: The changes between two revisions, row by row and cell by cell (R-REV-03).
+      required: [from, to_draft, header, rows]
+      properties:
+        from:
+          type: integer
+        to:
+          type: integer
+          description: Missing when the comparison is with the open draft.
+        to_draft:
+          type: boolean
+        process_id:
+          type: string
+        header:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentCellChange'
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentRowChange'
+    DocumentRowChange:
+      type: object
+      required: [row_id, status, cells]
+      properties:
+        row_id:
+          type: string
+        status:
+          type: string
+          enum: [added, removed, changed, moved]
+        old_position:
+          type: integer
+        new_position:
+          type: integer
+        process_id:
+          type: string
+        process_name:
+          type: string
+        operation_number:
+          type: string
+        cells:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentCellChange'
+    DocumentCellChange:
+      type: object
+      required: [field_id, label]
+      properties:
+        field_id:
+          type: string
+        label:
+          type: string
+        old:
+          description: The value before; missing when the cell was empty.
+        new:
+          description: The value after; missing when the cell is empty.
     DocumentRevisionList:
       type: object
       required: [items]

@@ -3,6 +3,7 @@
 	// dan SHA-256 snapshot. Pemegang E-7 (Dokumen kontrol) mencatat rilis draft
 	// yang terbuka; isinya dibekukan dan tidak bisa diubah lagi (R-REV-02).
 	import { listDocumentRevisions, releaseDocument } from '#lib/api/client.ts';
+	import DiffPanel from '#lib/documents/DiffPanel.svelte';
 	import type { Document, DocumentRevision } from '#lib/api/gen/index.ts';
 	import { failureText, problemText } from '#lib/errors.ts';
 	import { formatDateTime } from '#lib/format.ts';
@@ -57,6 +58,7 @@
 				<th>{t('revisionCreatedBy')}</th>
 				<th>{t('revisionReleasedBy')}</th>
 				<th>SHA-256</th>
+				<th>{t('revisionChanges')}</th>
 			</tr>
 		</thead>
 		<tbody>
@@ -69,6 +71,7 @@
 					<td>{r.created_by} · {formatDateTime(r.created_at)}</td>
 					<td>{r.released_by && r.released_at ? `${r.released_by} · ${formatDateTime(r.released_at)}` : ''}</td>
 					<td class="mono hash" title={r.sha256 ?? ''}>{r.sha256 ? `${r.sha256.slice(0, 12)}…` : ''}</td>
+					<td class="mono">{r.changes.join(', ')}</td>
 				</tr>
 			{/each}
 		</tbody>
@@ -76,6 +79,13 @@
 	{#if canRelease}
 		<p class="hint">{t('revisionReleaseHint')}</p>
 		<button type="button" class="primary" onclick={release}>{t('revisionRelease', { revision: String(doc.revision) })}</button>
+	{/if}
+
+	<h3>{t('diffTitle')}</h3>
+	{#if items.some((r) => r.status === 'released')}
+		<DiffPanel {doc} revisions={items} />
+	{:else}
+		<p class="hint">{t('diffNoRelease')}</p>
 	{/if}
 </section>
 

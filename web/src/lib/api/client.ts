@@ -45,6 +45,7 @@ import type {
 	ChangeList,
 	ChangeVerificationInput,
 	DocumentRevisionList,
+	DocumentDiff,
 	NewChange,
 	NewDocumentSection,
 	DocumentSectionUpdate,
@@ -723,6 +724,21 @@ export function releaseDocument(id: string, fetchFn: typeof fetch = fetch): Prom
 // listDocumentRevisions memanggil GET /api/v1/documents/{id}/revisions (L-4, M5.5).
 export function listDocumentRevisions(id: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<DocumentRevisionList>> {
 	return call<DocumentRevisionList>(fetchFn, itemPath('documents', id) + '/revisions', { method: 'GET' });
+}
+
+// getDocumentDiff memanggil GET /api/v1/documents/{id}/diff (L-4, M5.6). to
+// kosong berarti draft yang sedang dikerjakan.
+export function getDocumentDiff(
+	id: string,
+	from: number,
+	to?: number,
+	processId?: string,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<DocumentDiff>> {
+	const query = new URLSearchParams({ from: String(from) });
+	if (to !== undefined) query.set('to', String(to));
+	if (processId) query.set('process_id', processId);
+	return call<DocumentDiff>(fetchFn, `${itemPath('documents', id)}/diff?${query}`, { method: 'GET' });
 }
 
 // listDocumentChanges memanggil GET /api/v1/documents/{id}/changes (L-4).

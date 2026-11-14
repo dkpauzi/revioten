@@ -346,8 +346,39 @@ func (a *apiServer) ListDocumentRevisions(ctx context.Context, req ListDocumentR
 	for _, r := range list {
 		out.Items = append(out.Items, DocumentRevision{
 			Id: r.ID, Revision: r.Revision, Status: DocumentRevisionStatus(r.Status), CreatedBy: r.CreatedBy, CreatedAt: r.CreatedAt,
-			ReleasedBy: optional(r.ReleasedBy), ReleasedAt: r.ReleasedAt, Sha256: optional(r.SHA256),
+			ReleasedBy: optional(r.ReleasedBy), ReleasedAt: r.ReleasedAt, Sha256: optional(r.SHA256), Changes: r.Changes,
 		})
 	}
 	return ListDocumentRevisions200JSONResponse(out), nil
+}
+
+// GetDocumentDiff menjawab GET /api/v1/documents/{documentId}/diff (M5.6).
+func (a *apiServer) GetDocumentDiff(ctx context.Context, req GetDocumentDiffRequestObject) (GetDocumentDiffResponseObject, error) {
+	p := req.Params
+	d, err := a.documents.Diff(ctx, actorFrom(ctx), req.DocumentId, p.From, p.To, deref(p.ProcessId))
+	if err != nil {
+		return nil, err
+	}
+	cells := func(list []document.CellChange) []DocumentCellChange {
+		out := make([]DocumentCellChange, 0, len(list))
+		for _, c := range list {
+			out = append(out, DocumentCellChange{FieldId: c.FieldID, Label: c.Label, Old: c.Old, New: c.New})
+		}
+		return out
+	}
+	out := DocumentDiff{From: d.From, To: d.To, ToDraft: d.ToDraft, ProcessId: optional(d.ProcessID), Header: cells(d.Header), Rows: make([]DocumentRowChange, 0, len(d.Rows))}
+	for _, r := range d.Rows {
+		item := DocumentRowChange{
+			RowId: r.RowID, Status: DocumentRowChangeStatus(r.Status), ProcessId: optional(r.ProcessID), ProcessName: optional(r.ProcessName),
+			OperationNumber: optional(r.OperationNumber), Cells: cells(r.Cells),
+		}
+		if r.OldPosition > 0 {
+			item.OldPosition = &r.OldPosition
+		}
+		if r.NewPosition > 0 {
+			item.NewPosition = &r.NewPosition
+		}
+		out.Rows = append(out.Rows, item)
+	}
+	return GetDocumentDiff200JSONResponse(out), nil
 }

@@ -32,6 +32,9 @@ type Revision struct {
 	ReleasedBy string     // "" untuk draft
 	ReleasedAt *time.Time // nil untuk draft
 	SHA256     string     // SHA-256 snapshot; "" untuk draft
+	// Changes adalah nomor rujukan perubahan yang masuk ke revisi ini (M5.6),
+	// misalnya CHG-0001; tidak pernah nil.
+	Changes []string
 }
 
 // Snapshot adalah isi satu revisi terbit. Bentuknya tetap, supaya hash bisa
@@ -76,6 +79,16 @@ type SnapshotRow struct {
 // makeSnapshot membekukan isi dokumen. json.Marshal menulis kunci map menurut
 // abjad, jadi isi yang sama selalu menghasilkan teks dan hash yang sama.
 func makeSnapshot(d Document) ([]byte, string, error) {
+	text, err := json.Marshal(buildSnapshot(d))
+	if err != nil {
+		return nil, "", fmt.Errorf("menulis snapshot: %w", err)
+	}
+	sum := sha256.Sum256(text)
+	return text, hex.EncodeToString(sum[:]), nil
+}
+
+// buildSnapshot menyusun isi dokumen dalam bentuk snapshot.
+func buildSnapshot(d Document) Snapshot {
 	s := Snapshot{
 		DocumentID: d.ID, Number: d.Number, DocumentType: d.DocumentType.Key, CustomerCode: d.CustomerCode, Revision: d.Revision,
 		FormSetVersionID: d.FormSetVersionID, FormatVersionID: d.FormatVersionID, Header: d.Header,
@@ -110,12 +123,7 @@ func makeSnapshot(d Document) ([]byte, string, error) {
 			OperationNumber: r.OperationNumber, TemplatePointID: r.TemplatePointID, Content: content,
 		})
 	}
-	text, err := json.Marshal(s)
-	if err != nil {
-		return nil, "", fmt.Errorf("menulis snapshot: %w", err)
-	}
-	sum := sha256.Sum256(text)
-	return text, hex.EncodeToString(sum[:]), nil
+	return s
 }
 
 // Release mencatat draft terbuka satu dokumen sebagai revisi terbit (E-7).
@@ -192,7 +200,17 @@ func (s *Service) Revisions(ctx context.Context, actor access.Actor, id string) 
 	for _, r := range rows {
 		item := Revision{
 			ID: r.ID, Revision: int(r.Revision), Status: r.Status, CreatedBy: r.CreatedBy, CreatedAt: r.CreatedAt.UTC(),
-			ReleasedBy: deref(r.ReleasedBy), SHA256: deref(r.SnapshotSha256),
+			ReleasedBy: deref(r.ReleasedBy), SHA256: deref(r.SnapshotSha256), Changes: []string{},
+		}
+		changes, err := s.q.ListRevisionChanges(ctx, &r.ID)
+		if err != nil {
+			return nil, fmt.Errorf("membaca perubahan revisi: %w", err)
+		}
+		for _, c := range changes {
+			// Bentuk nomor sama dengan internal/change (ASUMSI E-98).
+			if c.Seq != nil {
+				item.Changes = append(item.Changes, fmt.Sprintf("CHG-%04d", *c.Seq))
+			}
 		}
 		if r.ReleasedAt != nil {
 			at := r.ReleasedAt.UTC()
