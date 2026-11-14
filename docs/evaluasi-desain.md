@@ -129,10 +129,10 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-105 | Rincian propagasi template yang belum diputuskan | Celah | M5.8 | Tidak | Diputuskan (D-169) |
 | E-106 | Rincian yokoten: sumber, target, keputusan, dan isi | Celah | M5.9 | Tidak | Diputuskan (D-170) |
 | E-107 | Cakupan perubahan surut SQAM dan hubungannya dengan format template | Celah | M5.10 | Tidak | Diputuskan (D-171) |
-| E-108 | Mesin PDF: hasil uji S5 | Sulit dibangun | M6.3, R-PRT-03, Q-10 | Tidak | Terbuka |
-| E-109 | Scan bertanda tangan: jenis, ukuran, pengunggah, dan penggantian | Celah | M6.7 | Tidak | Terbuka |
-| E-110 | Rincian cetakan yang belum diputuskan | Celah | M6.1 sampai M6.9 | Tidak | Terbuka |
-| E-111 | Layout sebagai data: apa yang bisa diatur admin | Ambigu | M6.1, R-PRT-02 | Tidak | Terbuka |
+| E-108 | Mesin PDF: hasil uji S5 | Sulit dibangun | M6.3, R-PRT-03, Q-10 | Tidak | Diputuskan (D-172) |
+| E-109 | Scan bertanda tangan: jenis, ukuran, pengunggah, dan penggantian | Celah | M6.7 | Tidak | Diputuskan (D-173) |
+| E-110 | Rincian cetakan yang belum diputuskan | Celah | M6.1 sampai M6.9 | Tidak | Diputuskan (D-174) |
+| E-111 | Layout sebagai data: apa yang bisa diatur admin | Ambigu | M6.1, R-PRT-02 | Tidak | Diputuskan (D-175) |
 
 ## Keputusan 4 November 2026
 
@@ -1976,8 +1976,8 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (a) sekarang; (c) bila nomor halaman di PDF dibutuhkan.
 - **Asumsi sementara di kode (ASUMSI E-108):** (a). `PDF_BROWSER` bisa diisi; bila tidak ada browser, PDF ditolak dengan pesan dan Excel tetap bisa.
 - **Menghambat milestone?** Tidak
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan (D-172)
+- **Keputusan pemilik:** 14 November 2026, "Yes, accept all" (D-172).
 
 ### E-109 · Scan bertanda tangan: jenis, ukuran, pengunggah, dan penggantian
 
@@ -1988,8 +1988,8 @@ Salin blok ini untuk setiap temuan baru.
 - **Asumsi sementara di kode (ASUMSI E-109):** PDF, PNG, atau JPEG, paling besar 30 MB; diunggah pemegang E-7 (dokumen kontrol); scan boleh diganti selama draft belum dirilis (yang terakhir dipakai, yang lama tercatat di audit log); disimpan di folder lampiran dengan SHA-256 dan ikut backup (D-163). Revisi terbit selalu punya scan (CHECK, kecuali revisi lama sebelum M6.7).
 - **Rekomendasi Claude Code (usulan):** terima asumsi ini.
 - **Menghambat milestone?** Tidak
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan (D-173)
+- **Keputusan pemilik:** 14 November 2026, "Yes, accept all" (D-173).
 
 ### E-110 · Rincian cetakan yang belum diputuskan
 
@@ -2004,8 +2004,8 @@ Salin blok ini untuk setiap temuan baru.
   - Status di footer: DRAFT, EFFECTIVE, atau SUPERSEDED; hash: snapshot untuk revisi terbit, hash isi draft untuk draft.
 - **Rekomendasi Claude Code (usulan):** terima asumsi; putuskan R-APR-10 dan R-APR-11 sebelum Gerbang 6.
 - **Menghambat milestone?** Tidak
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan (D-174)
+- **Keputusan pemilik:** 14 November 2026, "Yes, accept all" (D-174).
 
 ### E-111 · Layout sebagai data: apa yang bisa diatur admin
 
@@ -2017,8 +2017,8 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (a) sampai Gerbang 6; (b) hanya bila customer SQAM meminta form yang susunannya sangat berbeda.
 - **Asumsi sementara di kode (ASUMSI E-111):** (a).
 - **Menghambat milestone?** Tidak
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan (D-175)
+- **Keputusan pemilik:** 14 November 2026, "Yes, accept all" (D-175).
 
 ## Usulan desain UI (UX-01 sampai UX-07): dampak ke M0 sampai M3 dan saran
 
