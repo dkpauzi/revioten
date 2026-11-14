@@ -2,7 +2,7 @@
 
 File ini dibaca Claude Code di awal setiap sesi. Isinya aturan kerja untuk menulis kode, diringkas dari brief desain. Bila file ini berbeda dengan brief, brief yang berlaku (brief bagian 0 dan bagian 15, butir 12).
 
-- Dibuat 27 Oktober 2026 dari brief desain v1.15 (D-77), diperbarui 30 Oktober 2026 mengikuti brief desain v1.16 (D-78 sampai D-120) dan v1.17 (kode Tahap 2), 3 November 2026 mengikuti brief v1.20 (tinjauan desain UI dan UML draft 0.12), 4 November 2026 mengikuti brief v1.21 (keputusan D-121 sampai D-126), dan 8 November 2026 mengikuti brief v1.22 (D-127, design system dan menu berkelompok; D-128, dua bahasa dan tampilan per perangkat), dan 11 November 2026 mengikuti brief v1.23 (D-132 sampai D-142, M3.4), dan 12 November 2026 mengikuti brief v1.24 (D-143 sampai D-147, form set), dan 14 November 2026 mengikuti brief v1.25 (D-149 sampai D-151, Tahap 4).
+- Dibuat 27 Oktober 2026 dari brief desain v1.15 (D-77), diperbarui 30 Oktober 2026 mengikuti brief desain v1.16 (D-78 sampai D-120) dan v1.17 (kode Tahap 2), 3 November 2026 mengikuti brief v1.20 (tinjauan desain UI dan UML draft 0.12), 4 November 2026 mengikuti brief v1.21 (keputusan D-121 sampai D-126), dan 8 November 2026 mengikuti brief v1.22 (D-127, design system dan menu berkelompok; D-128, dua bahasa dan tampilan per perangkat), dan 11 November 2026 mengikuti brief v1.23 (D-132 sampai D-142, M3.4), dan 12 November 2026 mengikuti brief v1.24 (D-143 sampai D-147, form set), dan 14 November 2026 mengikuti brief v1.25 (D-149 sampai D-151, Tahap 4) dan v1.26 (D-152 sampai D-154, data asli dan dokumen referensi).
 - Baris bertanda **(usulan)** adalah usulan Claude yang belum diputuskan pemilik. Ikuti sebagai rencana kerja, tapi bisa berubah.
 
 ## 1. Proyek ini
@@ -109,9 +109,10 @@ Kode sekarang punya dua tujuan: belajar, dan menguji apakah desain (brief, UML, 
 
 ## 7. Data asli dan keamanan
 
-- Dokumen asli perusahaan dan customer boleh dipakai dalam pengembangan (D-29), tapi hanya di repo private ini dan di komputer pemilik. Jangan pernah menyalinnya ke tempat lain: repo publik, gist, situs paste, atau layanan lain.
-- Sampai pemilik memutuskan R-SEC-08, simpan dokumen asli di folder `data/` yang masuk `.gitignore`, dan jangan di-commit. Opsi lainnya adalah repo data private terpisah (R-SEC-08, usulan).
-- Jangan menulis nama orang asli di kode, data awal (seed), test, atau contoh. Pakai nama jabatan atau nama contoh **(usulan)**.
+- Data asli perusahaan dan customer boleh dipakai dalam pengembangan dan boleh di-commit ke repo private ini (D-29, D-152, 14 November 2026: "web di jalankan di local komputer dan juga github private"). Itu termasuk dokumen referensi di `docs/referensi/` (D-154), data awal (seed), dan data test. R-SEC-08 (repo data terpisah) tidak berlaku lagi.
+- Jangan pernah menyalin data asli ke tempat lain: repo publik, gist, situs paste, atau layanan lain. Kode tetap tidak diserahkan ke IT (R-SEC-05).
+- Folder `data/` tetap ada di `.gitignore` untuk file yang memang tidak perlu di-commit, misalnya file besar atau sementara.
+- Nama orang asli: dokumen asli boleh memuatnya apa adanya, tetapi data awal, test, dan contoh tetap memakai nama jabatan atau nama contoh sampai Q-61 dijawab.
 - Password dan rahasia lain disimpan di `.env` yang tidak di-commit. Sediakan `.env.example`.
 - Password, token, kunci, dan alamat koneksi yang memuat password tidak pernah ditulis ke log, pesan error, atau audit log. Pesan error ke pengguna tidak memuat detail teknis internal; detailnya dicatat di log server bersama request ID (R-API-13). Aturan ini dibuktikan dengan test (R-SEC-14, D-95).
 

@@ -115,7 +115,7 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-91 | Tempel dari Excel: ke mana isi sel janggal | Ambigu | M4.4 | Tidak | Diputuskan (D-149) |
 | E-92 | Isi poin per kolom: kolom mana yang dianggap sama di dua form set | Celah | M4.5 | Tidak | Diputuskan (D-150) |
 | E-93 | Perakitan: dokumen dengan beberapa model, dan pasangan poin | Celah | M4.5 | Tidak | Terbuka |
-| E-94 | Urutan langkah: per dokumen, proses yang berulang, dan jarak nomor operasi | Celah | M4.6 | Tidak | Terbuka |
+| E-94 | Urutan langkah: per dokumen, proses yang berulang, dan jarak nomor operasi | Celah | M4.6 | Tidak | Diputuskan (D-153) |
 | E-95 | Diagram PFD: cabang keputusan, rework, dan konektor halaman | Celah | M4.10 | Tidak | Terbuka |
 
 ## Keputusan 4 November 2026
@@ -1701,6 +1701,13 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (a).
 - **Asumsi sementara di kode (ASUMSI E-93):** opsi (a). Tawaran mencoret pasangan belum dibangun.
 - **Menghambat milestone?** Tidak
+- **Jawaban pemilik (14 November 2026, belum keputusan):** ada dua pola satu dokumen untuk beberapa model.
+  1. **Model sama, target pasar beda** (lokal dan ekspor). Biasanya semua poin sama persis.
+  2. **Satu model, beberapa PCB**, misalnya satu lampu dengan 3 nama PCB dan 3 nomor PCB. Prosesnya berbeda per PCB, tetapi nomor dokumennya sama: "seperti membuat 3 dokumen namun dengan 1 set dokumen number".
+- **Usulan lanjutan Claude Code (usulan):**
+  - Pola 1 sudah cukup dengan asumsi sekarang (varian model pertama). Tambahan kecil: bila model-model di satu dokumen ternyata punya varian berbeda, layar perakitan memberi peringatan.
+  - Pola 2 butuh **bagian per PCB** di dalam satu dokumen: setiap baris milik satu PCB (part number dokumen, yang sudah ada sejak M4.1). Perakitan, urutan, nomor operasi, tab Check, dan diagram berjalan per PCB, tetapi nomor, revisi, dan tanda tangan tetap satu. Pilihan lain, tiga dokumen dengan satu nomor, melanggar aturan satu nomor satu dokumen (R-NUM).
+  - Pertanyaan untuk pemilik: di kertas, apakah ketiga PCB dicetak berurutan dalam satu CP (dengan judul per PCB), atau tiap PCB punya halaman sampul sendiri?
 - **Status:** Terbuka
 - **Keputusan pemilik:**
 
@@ -1717,8 +1724,8 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (a) sekarang, (b) saat PFD menjadi sumber alur.
 - **Asumsi sementara di kode (ASUMSI E-94):** opsi (a).
 - **Menghambat milestone?** Tidak
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan (D-153)
+- **Keputusan pemilik:** 14 November 2026: "bagaimana terbaik nya? kalau dari saya adalah per dokumen". Opsi (a), sesuai yang sudah dibangun. Referensi D-154 juga memakai ID proses berjarak 10 dengan sisipan (P135), jadi jarak 10 tetap.
 
 ### E-95 · Diagram PFD: cabang keputusan, rework, dan konektor halaman
 
@@ -1734,6 +1741,14 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (a) sebagai langkah kecil berikutnya, lalu (b) bersama E-94 bila alur memang menjadi sumber utama.
 - **Asumsi sementara di kode (ASUMSI E-95):** alur lurus menurut urutan baris; baris tanpa Flow Symbol digambar sebagai Process; disposisi NG digambar sebagai simbol bergaris putus di samping langkah.
 - **Menghambat milestone?** Tidak (M4.10 opsional; kriterianya diagram terbentuk otomatis dari daftar proses)
+- **Pertanyaan pemilik (14 November 2026):** "data seperti apa yang anda perlukan?"
+- **Jawaban Claude Code, dari referensi D-154 (usulan):** bentuknya sudah ada di `Process_Flow_PCBA_Generic.md` bagian 4 dan 6. Yang perlu menjadi data per baris PFD:
+  1. **Simbol** dengan set yang sama dengan referensi: Operation, Inspection, Storage, Transport (dan Decision di dalam langkah L2). Form PFD sekarang memakai set TR-020 (process, alternate process, decision, connector, merge, document). Perlu dipilih satu set, atau keduanya dipetakan (F-13).
+  2. **Tipe dan syarat**: Mandatory, Optional, Conditional (dengan teks syaratnya), Alternative (dengan nama grup OR, misalnya grup A Laser Marking atau Paste Label) (F-14).
+  3. **Tahap**: 1. Material, 2. SMT, 3. Post-SMT / Assembly, 4. Test & Final. Dipakai untuk kolom diagram dan konektor "continue to" (F-15, G11).
+  4. **Panah lain selain urutan**, masing-masing dengan asal, tujuan, dan label. Contoh dari referensi: P010 ke P030 (reel berlabel otomatis tanpa IQC), P120 ke P130 (AOI NG), P135 ke P060 (baru satu sisi), P090 ke P080 (NG). Ini yang membuat cabang Decision dan putaran Rework bisa digambar.
+  5. **Disposisi NG** tetap seperti sekarang (Scrap, NCP, Rework), dengan teks alur NG bebas untuk keterangan.
+- **Opsi baru:** (d) tambah kolom 1 sampai 3 di form PFD, dan tabel "panah lain" per dokumen PFD untuk butir 4. Opsi ini menggantikan (a) karena lebih umum.
 - **Status:** Terbuka
 - **Keputusan pemilik:**
 

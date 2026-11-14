@@ -1,5 +1,6 @@
-# Dokumen asli perusahaan dan customer (D-29). Sampai R-SEC-08 diputuskan,
-# dokumen asli hanya disimpan di folder data/ dan tidak pernah di-commit.
+# Sejak D-152 data asli boleh di-commit ke repo private ini (misalnya di
+# docs/referensi/). Folder data/ tetap tidak di-commit, untuk file besar atau
+# sementara yang memang tidak perlu ada di GitHub.
 /data/
 
 # Catatan belajar pribadi pemilik (panduan pemula, status, catatan sesi).
