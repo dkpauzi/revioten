@@ -83,6 +83,7 @@ const actionKeys: Record<string, MessageKey> = {
 	'change.attachment_removed': 'auditActionChangeAttachmentRemoved',
 	'change.accepted': 'auditActionChangeAccepted',
 	'change.rejected': 'auditActionChangeRejected',
+	'change.impacts_saved': 'auditActionChangeImpactsSaved',
 	'document.draft_opened': 'auditActionDocumentDraftOpened',
 	'document.released': 'auditActionDocumentReleased',
 	'document.section_added': 'auditActionDocumentSectionAdded',

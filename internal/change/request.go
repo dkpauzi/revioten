@@ -65,6 +65,7 @@ type Change struct {
 	Documents       []AffectedDocument // menurut jenis dokumen lalu nomor; tidak pernah nil
 	Attachments     []Attachment       // lampiran aktif menurut waktu unggah; tidak pernah nil (M5.2)
 	Verification    *Verification      // terisi sesudah diterima atau ditolak (M5.3)
+	Impacts         []Impact           // daftar periksa dampak menurut urutan; tidak pernah nil (M5.7)
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 }
@@ -243,6 +244,12 @@ func (s *RequestService) RemoveDocument(ctx context.Context, actor access.Actor,
 // dalam transaksi: hak E-3 untuk customer-nya, dikunci, lalu entri audit.
 func (s *RequestService) edit(ctx context.Context, actor access.Actor, id string,
 	change func(q *db.Queries, c Change) (string, map[string]string, error)) (Change, error) {
+	return s.update(ctx, actor, id, []string{StatusSubmitted}, change)
+}
+
+// update seperti edit, tetapi dengan daftar status yang boleh diubah (M5.7).
+func (s *RequestService) update(ctx context.Context, actor access.Actor, id string, statuses []string,
+	change func(q *db.Queries, c Change) (string, map[string]string, error)) (Change, error) {
 	c, err := s.load(ctx, id)
 	if err != nil {
 		return Change{}, err
@@ -259,8 +266,8 @@ func (s *RequestService) edit(ctx context.Context, actor access.Actor, id string
 		if err != nil {
 			return err
 		}
-		if c.Status != StatusSubmitted {
-			return problems(invalid("status", problem.NotAllowed, "Only a submitted change can be changed."))
+		if !contains(statuses, c.Status) {
+			return problems(invalid("status", problem.NotAllowed, "This change can no longer be changed."))
 		}
 		action, details, err := change(q, c)
 		if err != nil {
@@ -319,6 +326,9 @@ func getChange(ctx context.Context, q *db.Queries, id string) (Change, error) {
 		c.Verification = &Verification{
 			VerifiedBy: deref(r.VerifiedBy), VerifiedByID: *r.VerifiedByPersonID, VerifiedAt: r.VerifiedAt.UTC(), Note: deref(r.VerificationNote),
 		}
+	}
+	if c.Impacts, err = impacts(ctx, q, id); err != nil {
+		return Change{}, err
 	}
 	if c.Attachments, err = attachments(ctx, q, id); err != nil {
 		return Change{}, err

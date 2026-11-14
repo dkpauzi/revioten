@@ -108,3 +108,18 @@ SELECT EXISTS (
     WHERE h.person_id = sqlc.arg(person_id)
       AND (p.key = 'apqp_ppap_controller' OR (p.key IN ('project_leader', 'project_engineer') AND c.id IS NOT NULL))
 );
+
+-- M5.7: daftar periksa dampak (R-CHG-05).
+
+-- name: ListChangeImpacts :many
+SELECT i.id, i.kind, i.document_reference, i.decision, i.reason, p.name AS updated_by, i.updated_at
+FROM change_impacts i JOIN people p ON p.id = i.updated_by_person_id
+WHERE i.change_id = $1
+ORDER BY i.position;
+
+-- name: ClearChangeImpacts :exec
+DELETE FROM change_impacts WHERE change_id = $1;
+
+-- name: AddChangeImpact :exec
+INSERT INTO change_impacts (change_id, position, kind, document_reference, decision, reason, updated_by_person_id)
+VALUES ($1, $2, $3, $4, $5, $6, $7);

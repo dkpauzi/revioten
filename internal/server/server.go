@@ -204,6 +204,7 @@ type ChangeRequestService interface {
 	RemoveAttachment(ctx context.Context, actor access.Actor, id, attachmentID string) (change.Change, error)
 	OpenAttachment(ctx context.Context, actor access.Actor, id, attachmentID string) (change.Attachment, *os.File, error)
 	Verify(ctx context.Context, actor access.Actor, id string, accept bool, note string) (change.Change, error)
+	SaveImpacts(ctx context.Context, actor access.Actor, id string, items []change.ImpactInput) (change.Change, error)
 }
 
 // RefDocService adalah operasi master dokumen terkait (D-130, D-156).

@@ -185,6 +185,54 @@ func (e ChangeStatus) Valid() bool {
 	}
 }
 
+// Defines values for ChangeImpactDecision.
+const (
+	ChangeImpactDecisionAffected    ChangeImpactDecision = "affected"
+	ChangeImpactDecisionNotAffected ChangeImpactDecision = "not_affected"
+)
+
+// Valid indicates whether the value is a known member of the ChangeImpactDecision enum.
+func (e ChangeImpactDecision) Valid() bool {
+	switch e {
+	case ChangeImpactDecisionAffected:
+		return true
+	case ChangeImpactDecisionNotAffected:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ChangeImpactKind.
+const (
+	ChangeImpactKindCp                 ChangeImpactKind = "cp"
+	ChangeImpactKindInspectionStandard ChangeImpactKind = "inspection_standard"
+	ChangeImpactKindOther              ChangeImpactKind = "other"
+	ChangeImpactKindPfd                ChangeImpactKind = "pfd"
+	ChangeImpactKindPfmea              ChangeImpactKind = "pfmea"
+	ChangeImpactKindWi                 ChangeImpactKind = "wi"
+)
+
+// Valid indicates whether the value is a known member of the ChangeImpactKind enum.
+func (e ChangeImpactKind) Valid() bool {
+	switch e {
+	case ChangeImpactKindCp:
+		return true
+	case ChangeImpactKindInspectionStandard:
+		return true
+	case ChangeImpactKindOther:
+		return true
+	case ChangeImpactKindPfd:
+		return true
+	case ChangeImpactKindPfmea:
+		return true
+	case ChangeImpactKindWi:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ChangeSourceMechanism.
 const (
 	ChangeSourceMechanismSqam     ChangeSourceMechanism = "sqam"
@@ -1567,6 +1615,9 @@ type Change struct {
 	FourM        *ChangeRef         `json:"four_m,omitempty"`
 	Id           string             `json:"id"`
 
+	// Impacts The impact checklist (R-CHG-05, M5.7).
+	Impacts []ChangeImpact `json:"impacts"`
+
 	// Mechanism How the change started (D-113). Manual changes are submitted on screen.
 	Mechanism ChangeMechanism `json:"mechanism"`
 	Reason    string          `json:"reason"`
@@ -1611,6 +1662,40 @@ type ChangeAttachment struct {
 // ChangeDocumentInput defines model for ChangeDocumentInput.
 type ChangeDocumentInput struct {
 	DocumentId string `json:"document_id"`
+}
+
+// ChangeImpact defines model for ChangeImpact.
+type ChangeImpact struct {
+	Decision ChangeImpactDecision `json:"decision"`
+
+	// DocumentReference The number or name of the related document, for example SW-ZZ-116.
+	DocumentReference *string          `json:"document_reference,omitempty"`
+	Id                string           `json:"id"`
+	Kind              ChangeImpactKind `json:"kind"`
+	Reason            *string          `json:"reason,omitempty"`
+	UpdatedAt         time.Time        `json:"updated_at"`
+	UpdatedBy         string           `json:"updated_by"`
+}
+
+// ChangeImpactDecision defines model for ChangeImpact.Decision.
+type ChangeImpactDecision string
+
+// ChangeImpactKind defines model for ChangeImpact.Kind.
+type ChangeImpactKind string
+
+// ChangeImpactInput defines model for ChangeImpactInput.
+type ChangeImpactInput struct {
+	Decision          string  `json:"decision"`
+	DocumentReference *string `json:"document_reference,omitempty"`
+	Kind              string  `json:"kind"`
+
+	// Reason Required when the document is not affected.
+	Reason *string `json:"reason,omitempty"`
+}
+
+// ChangeImpactsInput defines model for ChangeImpactsInput.
+type ChangeImpactsInput struct {
+	Items []ChangeImpactInput `json:"items"`
 }
 
 // ChangeList defines model for ChangeList.
@@ -3766,6 +3851,9 @@ type AddChangeAttachmentMultipartRequestBody AddChangeAttachmentMultipartBody
 // AddChangeDocumentJSONRequestBody defines body for AddChangeDocument for application/json ContentType.
 type AddChangeDocumentJSONRequestBody = ChangeDocumentInput
 
+// SaveChangeImpactsJSONRequestBody defines body for SaveChangeImpacts for application/json ContentType.
+type SaveChangeImpactsJSONRequestBody = ChangeImpactsInput
+
 // VerifyChangeJSONRequestBody defines body for VerifyChange for application/json ContentType.
 type VerifyChangeJSONRequestBody = ChangeVerificationInput
 
@@ -4035,6 +4123,9 @@ type ServerInterface interface {
 	// RemoveChangeDocument Remove one affected document from a submitted change (E-3)
 	// (DELETE /api/v1/changes/{changeId}/documents/{documentId})
 	RemoveChangeDocument(w http.ResponseWriter, r *http.Request, changeId ChangeId, documentId DocumentId)
+	// SaveChangeImpacts Save the whole impact checklist of a change (E-3, M5.7)
+	// (PUT /api/v1/changes/{changeId}/impacts)
+	SaveChangeImpacts(w http.ResponseWriter, r *http.Request, changeId ChangeId)
 	// VerifyChange Accept or reject a submitted change with a note (V-1, M5.3)
 	// (POST /api/v1/changes/{changeId}/verification)
 	VerifyChange(w http.ResponseWriter, r *http.Request, changeId ChangeId)
@@ -4977,6 +5068,32 @@ func (siw *ServerInterfaceWrapper) RemoveChangeDocument(w http.ResponseWriter, r
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.RemoveChangeDocument(w, r, changeId, documentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SaveChangeImpacts operation middleware
+func (siw *ServerInterfaceWrapper) SaveChangeImpacts(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "changeId" -------------
+	var changeId ChangeId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "changeId", r.PathValue("changeId"), &changeId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "changeId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SaveChangeImpacts(w, r, changeId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -8043,6 +8160,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/changes/{changeId}", wrapper.GetChange)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/changes/{changeId}/documents", wrapper.AddChangeDocument)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/changes/{changeId}/documents/{documentId}", wrapper.RemoveChangeDocument)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/changes/{changeId}/impacts", wrapper.SaveChangeImpacts)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/changes/{changeId}/verification", wrapper.VerifyChange)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/changes/{changeId}/attachments", wrapper.AddChangeAttachment)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/changes/{changeId}/attachments/{attachmentId}", wrapper.RemoveChangeAttachment)
@@ -9139,6 +9257,46 @@ type RemoveChangeDocumentdefaultJSONResponse struct {
 }
 
 func (response RemoveChangeDocumentdefaultJSONResponse) VisitRemoveChangeDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SaveChangeImpactsRequestObject struct {
+	ChangeId ChangeId `json:"changeId"`
+	Body     *SaveChangeImpactsJSONRequestBody
+}
+
+type SaveChangeImpactsResponseObject interface {
+	VisitSaveChangeImpactsResponse(w http.ResponseWriter) error
+}
+
+type SaveChangeImpacts200JSONResponse Change
+
+func (response SaveChangeImpacts200JSONResponse) VisitSaveChangeImpactsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SaveChangeImpactsdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response SaveChangeImpactsdefaultJSONResponse) VisitSaveChangeImpactsResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -13660,6 +13818,9 @@ type StrictServerInterface interface {
 	// RemoveChangeDocument Remove one affected document from a submitted change (E-3)
 	// (DELETE /api/v1/changes/{changeId}/documents/{documentId})
 	RemoveChangeDocument(ctx context.Context, request RemoveChangeDocumentRequestObject) (RemoveChangeDocumentResponseObject, error)
+	// SaveChangeImpacts Save the whole impact checklist of a change (E-3, M5.7)
+	// (PUT /api/v1/changes/{changeId}/impacts)
+	SaveChangeImpacts(ctx context.Context, request SaveChangeImpactsRequestObject) (SaveChangeImpactsResponseObject, error)
 	// VerifyChange Accept or reject a submitted change with a note (V-1, M5.3)
 	// (POST /api/v1/changes/{changeId}/verification)
 	VerifyChange(ctx context.Context, request VerifyChangeRequestObject) (VerifyChangeResponseObject, error)
@@ -14767,6 +14928,39 @@ func (sh *strictHandler) RemoveChangeDocument(w http.ResponseWriter, r *http.Req
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(RemoveChangeDocumentResponseObject); ok {
 		if err := validResponse.VisitRemoveChangeDocumentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SaveChangeImpacts operation middleware
+func (sh *strictHandler) SaveChangeImpacts(w http.ResponseWriter, r *http.Request, changeId ChangeId) {
+	var request SaveChangeImpactsRequestObject
+
+	request.ChangeId = changeId
+
+	var body SaveChangeImpactsJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SaveChangeImpacts(ctx, request.(SaveChangeImpactsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SaveChangeImpacts")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SaveChangeImpactsResponseObject); ok {
+		if err := validResponse.VisitSaveChangeImpactsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

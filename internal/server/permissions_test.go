@@ -474,6 +474,8 @@ func TestPermissionsPerOperation(t *testing.T) {
 		{http.MethodGet, "/api/v1/changes/{changeId}", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodPost, "/api/v1/changes/{changeId}/documents", `{"document_id":"{documentId}"}`, http.StatusForbidden, http.StatusConflict, http.StatusForbidden},
 		{http.MethodDelete, "/api/v1/changes/{changeId}/documents/{documentId}", "", http.StatusForbidden, http.StatusUnprocessableEntity, http.StatusForbidden},
+		// Daftar periksa dampak (M5.7) lewat E-3; engineer (Penyusun) boleh selama perubahan diajukan.
+		{http.MethodPut, "/api/v1/changes/{changeId}/impacts", `{"items":[{"kind":"wi","document_reference":"SW-ZZ-116","decision":"affected"}]}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		// Verifikasi (M5.3): engineer (Penyusun) tanpa V-1 ditolak, seperti admin dan viewer.
 		{http.MethodPost, "/api/v1/changes/{changeId}/verification", `{"decision":"accept","note":"OK"}`, http.StatusForbidden, http.StatusForbidden, http.StatusForbidden},
 		// Lampiran (M5.2): body multipart ditandai awalan --revioten. ID lampiran palsu: 404.

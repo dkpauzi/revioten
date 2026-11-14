@@ -44,6 +44,7 @@ import type {
 	Change,
 	ChangeList,
 	ChangeVerificationInput,
+	ChangeImpactsInput,
 	DocumentRevisionList,
 	DocumentDiff,
 	NewChange,
@@ -704,6 +705,11 @@ export function addChangeAttachment(id: string, file: File, fetchFn: typeof fetc
 // removeChangeAttachment memanggil DELETE /api/v1/changes/{id}/attachments/{attachmentId} (E-3).
 export function removeChangeAttachment(id: string, attachmentId: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<Change>> {
 	return call<Change>(fetchFn, changeAttachmentUrl(id, attachmentId), { method: 'DELETE' });
+}
+
+// saveChangeImpacts memanggil PUT /api/v1/changes/{id}/impacts (E-3, M5.7).
+export function saveChangeImpacts(id: string, input: ChangeImpactsInput, fetchFn: typeof fetch = fetch): Promise<ApiResult<Change>> {
+	return call<Change>(fetchFn, itemPath('changes', id) + '/impacts', jsonRequest('PUT', input));
 }
 
 // verifyChange memanggil POST /api/v1/changes/{id}/verification (V-1, M5.3).

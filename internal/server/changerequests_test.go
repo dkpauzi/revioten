@@ -31,7 +31,7 @@ func TestChangeEndpoints(t *testing.T) {
 		`"trigger":{"id":"s-1","name":"Customer claim"},"change_type":{"id":"t-1","key":"content","name":"Content"},` +
 		`"reason":"Add AOI check","status":"submitted","requested_by":"PPAP Engineer",` +
 		`"documents":[{"id":"d-1","number":"SC-AB-001","document_type":{"id":"dt-3","key":"cp","name":"CP"},"revision":0,"status":"draft"}],` +
-		`"attachments":[],"created_at":"2026-11-14T08:00:00Z","updated_at":"2026-11-14T08:00:00Z"}`
+		`"attachments":[],"impacts":[],"created_at":"2026-11-14T08:00:00Z","updated_at":"2026-11-14T08:00:00Z"}`
 	if rec.Code != http.StatusOK || !sameJSON(t, rec.Body.String(), want) {
 		t.Errorf("baca: status %d\n%s", rec.Code, rec.Body.String())
 	}
@@ -48,6 +48,7 @@ func TestChangeEndpoints(t *testing.T) {
 		{http.MethodPost, "/api/v1/changes/c-1/documents", `{"document_id":"d-2"}`, called{method: "AddDocument", id: "c-1", input: "d-2"}},
 		{http.MethodDelete, "/api/v1/changes/c-1/documents/d-2", "", called{method: "RemoveDocument", id: "c-1", input: "d-2"}},
 		{http.MethodGet, "/api/v1/documents/d-1/changes", "", called{method: "ForDocument", id: "d-1"}},
+		{http.MethodPut, "/api/v1/changes/c-1/impacts", `{"items":[{"kind":"cp","decision":"not_affected","reason":"Same method"}]}`, called{method: "SaveImpacts", id: "c-1", input: "[{cp  not_affected Same method}]"}},
 		{http.MethodPost, "/api/v1/changes/c-1/verification", `{"decision":"reject","note":"No 8D"}`, called{method: "Verify", id: "c-1", input: "false:No 8D"}},
 	} {
 		rec := srv.do(c.method, c.path, c.body)

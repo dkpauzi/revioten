@@ -88,6 +88,13 @@ func toAPIChange(c change.Change) Change {
 		ChangeType: ref(c.ChangeType), Reason: c.Reason, SourceReference: optional(c.SourceReference), Status: ChangeStatus(c.Status),
 		RequestedBy: c.RequestedBy, Documents: make([]AffectedDocument, 0, len(c.Documents)), CreatedAt: c.CreatedAt, UpdatedAt: c.UpdatedAt,
 		Attachments: make([]ChangeAttachment, 0, len(c.Attachments)),
+		Impacts:     make([]ChangeImpact, 0, len(c.Impacts)),
+	}
+	for _, x := range c.Impacts {
+		out.Impacts = append(out.Impacts, ChangeImpact{
+			Id: x.ID, Kind: ChangeImpactKind(x.Kind), DocumentReference: optional(x.DocumentReference), Decision: ChangeImpactDecision(x.Decision),
+			Reason: optional(x.Reason), UpdatedBy: x.UpdatedBy, UpdatedAt: x.UpdatedAt,
+		})
 	}
 	for _, x := range c.Attachments {
 		out.Attachments = append(out.Attachments, ChangeAttachment{
@@ -178,4 +185,17 @@ func (a *apiServer) VerifyChange(ctx context.Context, req VerifyChangeRequestObj
 		return nil, err
 	}
 	return VerifyChange200JSONResponse(toAPIChange(c)), nil
+}
+
+// SaveChangeImpacts menjawab PUT /api/v1/changes/{changeId}/impacts (M5.7).
+func (a *apiServer) SaveChangeImpacts(ctx context.Context, req SaveChangeImpactsRequestObject) (SaveChangeImpactsResponseObject, error) {
+	items := make([]change.ImpactInput, 0, len(req.Body.Items))
+	for _, x := range req.Body.Items {
+		items = append(items, change.ImpactInput{Kind: x.Kind, DocumentReference: deref(x.DocumentReference), Decision: x.Decision, Reason: deref(x.Reason)})
+	}
+	c, err := a.changeRequests.SaveImpacts(ctx, actorFrom(ctx), req.ChangeId, items)
+	if err != nil {
+		return nil, err
+	}
+	return SaveChangeImpacts200JSONResponse(toAPIChange(c)), nil
 }

@@ -71,7 +71,8 @@ test('M5.1 dan M5.2: penyusun mengajukan perubahan dengan beberapa dokumen dan l
 	await expect(page.getByRole('status')).toHaveText(en.changeDocumentAdded.replace('{number}', numbers.pfd));
 	await page.getByRole('button', { name: en.changeDocumentRemoveFor.replace('{number}', numbers.pfmea) }).click();
 	await expect(page.getByRole('status')).toHaveText(en.changeDocumentRemoved.replace('{number}', numbers.pfmea));
-	await expect(page.locator('table tbody tr')).toHaveCount(2);
+	const affected = page.locator('section', { has: page.getByRole('heading', { name: en.changeDocuments, exact: true }) });
+	await expect(affected.locator('tbody tr')).toHaveCount(2);
 
 	// M5.2: berkas yang tidak diizinkan ditolak, PDF diterima lalu diunduh utuh.
 	const fileInput = page.getByLabel(en.changeAttachmentAdd);
@@ -220,4 +221,36 @@ test('M5.4 dan M5.6: perubahan kedua membuka revisi 1, lalu revisi 0 dibandingka
 	await page.getByLabel(en.diffTo).selectOption('draft');
 	await page.getByRole('button', { name: en.diffCompare }).click();
 	await expect(page.locator('table.diff [data-diff="added"]')).toHaveCount(1);
+});
+
+test('M5.7: pemohon menyimpan daftar periksa dampak dengan alasan', async ({ page }) => {
+	await page.goto('/login');
+	await page.getByLabel(en.loginName, { exact: true }).fill('pemohon.e2e');
+	await page.getByLabel(en.loginPassword, { exact: true }).fill('perubahan selalu punya alasan');
+	await page.getByRole('button', { name: en.loginSubmit }).click();
+	await expect(page.getByRole('button', { name: en.logout })).toBeVisible();
+	await openFromMenu(page, en.navGroupDocuments, en.navChanges);
+	await page.getByLabel(en.documentCustomer, { exact: true }).selectOption({ label: 'CH · Customer CH' });
+	await page.getByRole('row', { name: /CHG-0002/ }).getByRole('link', { name: 'CHG-0002' }).click();
+	await expect(page.getByRole('heading', { name: en.impactTitle })).toBeVisible();
+
+	// Saran awal: CP terdampak (dokumen terdampak CHG-0002), lainnya belum diputuskan.
+	await expect(page.getByLabel(en.impactDecisionFor.replace('{line}', '3'))).toHaveValue('affected');
+	await page.getByLabel(en.impactDecisionFor.replace('{line}', '1')).selectOption('not_affected');
+	await page.getByLabel(en.impactDecisionFor.replace('{line}', '2')).selectOption('not_affected');
+	await page.getByLabel(en.impactReasonFor.replace('{line}', '2')).fill('Failure mode stays the same');
+	await page.getByLabel(en.impactDecisionFor.replace('{line}', '4')).selectOption('affected');
+	await page.getByLabel(en.impactDocumentFor.replace('{line}', '4')).fill('SW-ZZ-116');
+	await page.getByLabel(en.impactDecisionFor.replace('{line}', '5')).selectOption('not_affected');
+	await page.getByLabel(en.impactReasonFor.replace('{line}', '5')).fill('No new inspection item');
+	// Baris 1 tidak terdampak tanpa alasan: ditolak dengan nomor barisnya.
+	await page.getByRole('button', { name: en.impactSave }).click();
+	await expect(page.getByRole('alert')).toHaveText(`${en.impactLine.replace('{line}', '1')}: ${en.impactReasonRequired}`);
+	await page.getByLabel(en.impactReasonFor.replace('{line}', '1')).fill('Flow stays the same');
+	await page.getByRole('button', { name: en.impactSave }).click();
+	await expect(page.getByRole('status')).toHaveText(en.impactSaved.replace('{ref}', 'CHG-0002'));
+	// Tersimpan: dimuat ulang dengan isi yang sama.
+	await page.reload();
+	await expect(page.getByLabel(en.impactDocumentFor.replace('{line}', '4'))).toHaveValue('SW-ZZ-116');
+	await expect(page.getByLabel(en.impactReasonFor.replace('{line}', '2'))).toHaveValue('Failure mode stays the same');
 });

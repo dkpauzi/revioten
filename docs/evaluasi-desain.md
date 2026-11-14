@@ -1885,6 +1885,21 @@ Salin blok ini untuk setiap temuan baru.
 - **Status:** Terbuka
 - **Keputusan pemilik:**
 
+## E-104 · Isi daftar periksa dampak: nomor bebas atau dari master, alasan, dan kapan diisi
+
+- **Tanggal dan milestone:** 14 November 2026, M5.7.
+- **Jenis:** Celah
+- **Rujukan:** R-CHG-05 (PROPOSED), R-DOC-11 (bagian master DECIDED lewat D-156, bagian daftar periksa masih PROPOSED), milestone M5.7 ("Usulan: dokumen terdampak, termasuk WI, dipilih dari master dokumen terkait").
+- **Temuan:** (1) Usulan milestone memilih WI dari master dokumen terkait supaya nomornya sama dengan sumbernya; usulan ini belum diputuskan. (2) Brief tidak menyebut apakah alasan wajib untuk dokumen yang terdampak, dan kapan daftar ini diisi (sebelum verifikasi, atau juga sesudahnya).
+- **Opsi:**
+  - (1a) Nomor ditulis bebas. (1b) Dipilih dari master dokumen terkait, dengan pilihan "lainnya" untuk nomor yang belum ada di master. (1c) Dipilih dari master saja.
+  - (2a) Alasan wajib hanya bila tidak terdampak; daftar bisa diisi selama diajukan dan sesudah diterima. (2b) Alasan wajib untuk semua baris; daftar wajib lengkap sebelum verifikasi.
+- **Rekomendasi Claude Code (usulan):** (1b) dan (2a), dengan catatan verifikator bisa melihat daftar sebelum memutuskan.
+- **Asumsi sementara di kode (ASUMSI E-104):** (1a) dan (2a). Layar menyarankan satu baris per jenis dokumen, dan dokumen terdampak perubahan sudah ditandai terdampak. Kategori 4M tetap isian perubahan (M5.1).
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
 
 ## Usulan desain UI (UX-01 sampai UX-07): dampak ke M0 sampai M3 dan saran
 

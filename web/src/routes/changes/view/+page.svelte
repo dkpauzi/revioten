@@ -19,6 +19,7 @@
 	} from '#lib/api/client.ts';
 	import type { Change, DocumentSummary } from '#lib/api/gen/index.ts';
 	import { failureText, problemText } from '#lib/errors.ts';
+	import ImpactChecklist from '#lib/changes/ImpactChecklist.svelte';
 	import { formatDateTime } from '#lib/format.ts';
 	import { t } from '#lib/i18n/index.ts';
 	import { can } from '#lib/session.svelte.ts';
@@ -36,6 +37,8 @@
 	let canVerify = $derived(can('V-1') && change?.status === 'submitted');
 	let canPropose = $derived(can('E-3'));
 	let editable = $derived(canPropose && change?.status === 'submitted');
+	// Daftar periksa dampak masih bisa diisi sesudah diterima (M5.7, ASUMSI E-104).
+	let impactsEditable = $derived(canPropose && (change?.status === 'submitted' || change?.status === 'accepted'));
 	let addable = $derived(documents.filter((d) => !change?.documents.some((x) => x.id === d.id)));
 
 	let currentId = $derived(page.url.searchParams.get('id') ?? '');
@@ -259,6 +262,10 @@
 			</form>
 		{/if}
 	</section>
+
+	{#key change.id}
+		<ImpactChecklist {change} editable={impactsEditable} onsaved={(c) => (change = c)} />
+	{/key}
 
 	<section>
 		<h2>{t('changeAttachments')}</h2>

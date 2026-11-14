@@ -1950,6 +1950,30 @@ paths:
                 $ref: '#/components/schemas/Change'
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/changes/{changeId}/impacts:
+    put:
+      operationId: saveChangeImpacts
+      summary: Save the whole impact checklist of a change (E-3, M5.7)
+      description: >-
+        Which related documents (PFD, PFMEA, CP, WI, inspection standard) are affected, the decision, and the
+        reason (R-CHG-05). The list replaces the saved one. Possible while the change is submitted or accepted.
+      parameters:
+        - $ref: '#/components/parameters/ChangeId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeImpactsInput'
+      responses:
+        '200':
+          description: The change with the saved checklist.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Change'
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/changes/{changeId}/verification:
     post:
       operationId: verifyChange
@@ -4665,7 +4689,7 @@ components:
             $ref: '#/components/schemas/Change'
     Change:
       type: object
-      required: [id, ref, customer_id, customer_code, mechanism, change_type, reason, status, requested_by, documents, attachments, created_at, updated_at]
+      required: [id, ref, customer_id, customer_code, mechanism, change_type, reason, status, requested_by, documents, attachments, impacts, created_at, updated_at]
       properties:
         id:
           type: string
@@ -4708,12 +4732,60 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ChangeAttachment'
+        impacts:
+          type: array
+          description: The impact checklist (R-CHG-05, M5.7).
+          items:
+            $ref: '#/components/schemas/ChangeImpact'
         created_at:
           type: string
           format: date-time
         updated_at:
           type: string
           format: date-time
+    ChangeImpact:
+      type: object
+      required: [id, kind, decision, updated_by, updated_at]
+      properties:
+        id:
+          type: string
+        kind:
+          type: string
+          enum: [pfd, pfmea, cp, wi, inspection_standard, other]
+        document_reference:
+          type: string
+          description: The number or name of the related document, for example SW-ZZ-116.
+        decision:
+          type: string
+          enum: [affected, not_affected]
+        reason:
+          type: string
+        updated_by:
+          type: string
+        updated_at:
+          type: string
+          format: date-time
+    ChangeImpactInput:
+      type: object
+      required: [kind, decision]
+      properties:
+        kind:
+          type: string
+        document_reference:
+          type: string
+        decision:
+          type: string
+        reason:
+          type: string
+          description: Required when the document is not affected.
+    ChangeImpactsInput:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChangeImpactInput'
     ChangeVerification:
       type: object
       description: Who accepted or rejected the change, when, and why (R-CHG-02).

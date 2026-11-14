@@ -93,6 +93,18 @@ type ChangeDocument struct {
 	Merged          bool
 }
 
+type ChangeImpact struct {
+	ID                string
+	ChangeID          string
+	Position          int32
+	Kind              string
+	DocumentReference *string
+	Decision          string
+	Reason            *string
+	UpdatedByPersonID string
+	UpdatedAt         time.Time
+}
+
 type ChangeSource struct {
 	ID        string
 	Name      string

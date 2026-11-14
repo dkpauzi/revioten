@@ -85,7 +85,13 @@ const problemKeys: Record<string, MessageKey> = {
 	'note:required': 'changeVerifyNoteRequired',
 	'note:too_long': 'changeNoteTooLong',
 	'recorder:not_allowed': 'revisionRecorderNotAllowed',
-	'to:required': 'diffNoRelease'
+	'to:required': 'diffNoRelease',
+	'impact.reason:required': 'impactReasonRequired',
+	'impact.decision:required': 'impactDecisionRequired',
+	'impact.kind:invalid_format': 'impactKindInvalid',
+	'impact.document_reference:too_long': 'impactReferenceTooLong',
+	'impact.reason:too_long': 'impactReasonTooLong',
+	'items:too_long': 'impactTooMany'
 };
 
 // ProblemScope adalah formulir tempat masalah ditampilkan. Field yang sama bisa

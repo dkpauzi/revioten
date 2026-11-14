@@ -55,6 +55,34 @@ func (q *Queries) AddChangeDocument(ctx context.Context, arg AddChangeDocumentPa
 	return err
 }
 
+const addChangeImpact = `-- name: AddChangeImpact :exec
+INSERT INTO change_impacts (change_id, position, kind, document_reference, decision, reason, updated_by_person_id)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+`
+
+type AddChangeImpactParams struct {
+	ChangeID          string
+	Position          int32
+	Kind              string
+	DocumentReference *string
+	Decision          string
+	Reason            *string
+	UpdatedByPersonID string
+}
+
+func (q *Queries) AddChangeImpact(ctx context.Context, arg AddChangeImpactParams) error {
+	_, err := q.db.Exec(ctx, addChangeImpact,
+		arg.ChangeID,
+		arg.Position,
+		arg.Kind,
+		arg.DocumentReference,
+		arg.Decision,
+		arg.Reason,
+		arg.UpdatedByPersonID,
+	)
+	return err
+}
+
 const changeTypeExists = `-- name: ChangeTypeExists :one
 SELECT EXISTS (SELECT 1 FROM change_types WHERE id = $1)
 `
@@ -64,6 +92,15 @@ func (q *Queries) ChangeTypeExists(ctx context.Context, id string) (bool, error)
 	var exists bool
 	err := row.Scan(&exists)
 	return exists, err
+}
+
+const clearChangeImpacts = `-- name: ClearChangeImpacts :exec
+DELETE FROM change_impacts WHERE change_id = $1
+`
+
+func (q *Queries) ClearChangeImpacts(ctx context.Context, changeID string) error {
+	_, err := q.db.Exec(ctx, clearChangeImpacts, changeID)
+	return err
 }
 
 const createChange = `-- name: CreateChange :one
@@ -409,6 +446,53 @@ func (q *Queries) ListChangeIDsForDocument(ctx context.Context, documentID strin
 			return nil, err
 		}
 		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listChangeImpacts = `-- name: ListChangeImpacts :many
+
+SELECT i.id, i.kind, i.document_reference, i.decision, i.reason, p.name AS updated_by, i.updated_at
+FROM change_impacts i JOIN people p ON p.id = i.updated_by_person_id
+WHERE i.change_id = $1
+ORDER BY i.position
+`
+
+type ListChangeImpactsRow struct {
+	ID                string
+	Kind              string
+	DocumentReference *string
+	Decision          string
+	Reason            *string
+	UpdatedBy         string
+	UpdatedAt         time.Time
+}
+
+// M5.7: daftar periksa dampak (R-CHG-05).
+func (q *Queries) ListChangeImpacts(ctx context.Context, changeID string) ([]ListChangeImpactsRow, error) {
+	rows, err := q.db.Query(ctx, listChangeImpacts, changeID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListChangeImpactsRow{}
+	for rows.Next() {
+		var i ListChangeImpactsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Kind,
+			&i.DocumentReference,
+			&i.Decision,
+			&i.Reason,
+			&i.UpdatedBy,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
