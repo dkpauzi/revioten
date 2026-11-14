@@ -51,14 +51,18 @@ func runBackup(args []string, out io.Writer) error {
 	if err != nil {
 		return err
 	}
-	m, err := backup.Create(ctx, composeDumper{user: cfg.OwnerUser, database: info.Database},
-		cfg.BackupDir, cfg.BackupPassphrase, info, time.Now())
+	// Folder lampiran ikut terarsip terenkripsi (D-163).
+	m, err := backup.CreateWithFiles(ctx, composeDumper{user: cfg.OwnerUser, database: info.Database},
+		cfg.BackupDir, cfg.BackupPassphrase, info, time.Now(), cfg.AttachmentDir)
 	if err != nil {
 		return err
 	}
 	fmt.Fprintf(out, "Backup dibuat: %s (%d byte)\n", filepath.Join(cfg.BackupDir, m.File), m.Size)
 	fmt.Fprintf(out, "SHA-256: %s\n", m.SHA256)
 	fmt.Fprintf(out, "Versi skema %d, ujung rantai audit: entri %d\n", m.SchemaVersion, m.AuditLastSeq)
+	if m.Files != "" {
+		fmt.Fprintf(out, "Lampiran: %s (%d berkas)\n", filepath.Join(cfg.BackupDir, m.Files), m.FilesCount)
+	}
 	return nil
 }
 
@@ -67,6 +71,7 @@ type restoreOptions struct {
 	file     string
 	database string
 	envFile  string
+	files    string // folder baru untuk lampiran hasil restore; "" berarti tidak
 }
 
 // parseRestoreFlags membaca flag perintah restore. Nama database bawaannya
@@ -78,8 +83,9 @@ func parseRestoreFlags(args []string, out io.Writer) (restoreOptions, error) {
 	fs.StringVar(&opts.file, "file", "", "file backup berakhiran .dump.age (wajib)")
 	fs.StringVar(&opts.database, "db", "revioten_restore", "nama database baru untuk hasil restore")
 	fs.StringVar(&opts.envFile, "env", ".env", "file berisi pengaturan database dan backup")
+	fs.StringVar(&opts.files, "files", "", "folder baru (kosong) untuk lampiran hasil restore (D-163)")
 	if err := fs.Parse(args); err != nil {
-		return restoreOptions{}, errors.New("flag restore tidak dikenal; yang tersedia: -file, -db, -env")
+		return restoreOptions{}, errors.New("flag restore tidak dikenal; yang tersedia: -file, -db, -env, -files")
 	}
 	if opts.file == "" {
 		return restoreOptions{}, errors.New("isi -file, contoh: revioten restore -file D:/backup-revioten/revioten-20261030-134500.dump.age")
@@ -132,6 +138,13 @@ func runRestore(args []string, out io.Writer) error {
 		fmt.Fprintf(out, "Rantai audit utuh: %d entri. Ujung rantai yang dicatat manifest (entri %d) cocok.\n", result.Chain.Entries, m.AuditLastSeq)
 	}
 	fmt.Fprintf(out, "Database yang sedang dipakai (%s) tidak diubah.\n", cfg.Database)
+	if opts.files != "" {
+		n, err := backup.RestoreFiles(opts.file, cfg.BackupPassphrase, opts.files)
+		if err != nil {
+			return err
+		}
+		fmt.Fprintf(out, "Lampiran dipulihkan ke %s: %d berkas.\n", opts.files, n)
+	}
 	return nil
 }
 

@@ -83,6 +83,11 @@ type Manifest struct {
 	SchemaVersion int64     `json:"schema_version"`
 	AuditLastSeq  int64     `json:"audit_last_seq"`
 	AuditLastHash string    `json:"audit_last_hash"`
+	// Arsip folder lampiran (D-163); kosong bila backup tanpa lampiran.
+	Files       string `json:"files,omitempty"`
+	FilesSHA256 string `json:"files_sha256,omitempty"`
+	FilesSize   int64  `json:"files_size,omitempty"`
+	FilesCount  int    `json:"files_count,omitempty"`
 }
 
 // Dumper menulis isi satu database dalam format custom pg_dump ke w.
@@ -171,6 +176,13 @@ func ReadInfo(ctx context.Context, owner *pgxpool.Pool) (Info, error) {
 // ASUMSI E-60: backup lama tidak pernah dihapus otomatis, dan jadwal harian
 // diatur di luar program (Task Scheduler di Windows, cron di Linux).
 func Create(ctx context.Context, dumper Dumper, dir, passphrase string, info Info, now time.Time) (Manifest, error) {
+	return CreateWithFiles(ctx, dumper, dir, passphrase, info, now, "")
+}
+
+// CreateWithFiles seperti Create, dan juga mengarsipkan folder filesDir
+// (folder lampiran, D-163) dengan passphrase yang sama. filesDir kosong atau
+// tidak ada berarti tanpa arsip lampiran.
+func CreateWithFiles(ctx context.Context, dumper Dumper, dir, passphrase string, info Info, now time.Time, filesDir string) (Manifest, error) {
 	if err := CheckPassphrase(passphrase); err != nil {
 		return Manifest{}, err
 	}
@@ -202,6 +214,26 @@ func Create(ctx context.Context, dumper Dumper, dir, passphrase string, info Inf
 		return Manifest{}, err
 	}
 	m.SHA256, m.Size = sum, size
+
+	if st, statErr := os.Stat(filesDir); filesDir != "" && statErr == nil && st.IsDir() {
+		m.Files = base + filesSuffix
+		count := 0
+		fsum, fsize, err := writeAtomic(dir, filepath.Join(dir, m.Files), func(w io.Writer) error {
+			sealed, err := encryptTo(w, passphrase)
+			if err != nil {
+				return err
+			}
+			if count, err = archiveFiles(sealed, filesDir); err != nil {
+				return err
+			}
+			return sealed.Close()
+		})
+		if err != nil {
+			_ = os.Remove(final)
+			return Manifest{}, err
+		}
+		m.FilesSHA256, m.FilesSize, m.FilesCount = fsum, fsize, count
+	}
 
 	manifest, err := json.MarshalIndent(m, "", "  ")
 	if err == nil {
@@ -281,17 +313,11 @@ func ReadManifest(path string) (Manifest, error) {
 // manifest: ukuran dan hash SHA-256. File yang rusak atau diganti ketahuan di
 // sini, sebelum restore dimulai.
 func VerifyFile(path string, m Manifest) error {
-	f, err := os.Open(path)
+	sum, size, err := fileSum(path)
 	if err != nil {
-		return fmt.Errorf("membuka file backup: %w", err)
+		return err
 	}
-	defer f.Close()
-	h := sha256.New()
-	size, err := io.Copy(h, f)
-	if err != nil {
-		return fmt.Errorf("membaca file backup: %w", err)
-	}
-	if size != m.Size || hex.EncodeToString(h.Sum(nil)) != m.SHA256 {
+	if size != m.Size || sum != m.SHA256 {
 		return fmt.Errorf("file backup %s tidak sama dengan manifest-nya: file rusak atau diganti", filepath.Base(path))
 	}
 	return nil
@@ -404,4 +430,19 @@ func restoreInto(ctx context.Context, t Target, database string, plain io.Reader
 		return fmt.Errorf("memulihkan isi backup: %w", err)
 	}
 	return nil
+}
+
+// fileSum menghitung SHA-256 dan ukuran satu berkas.
+func fileSum(path string) (string, int64, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return "", 0, fmt.Errorf("membuka file backup: %w", err)
+	}
+	defer f.Close()
+	h := sha256.New()
+	size, err := io.Copy(h, f)
+	if err != nil {
+		return "", 0, fmt.Errorf("membaca file backup: %w", err)
+	}
+	return hex.EncodeToString(h.Sum(nil)), size, nil
 }
