@@ -23,6 +23,7 @@ func (a *apiServer) ListDocuments(ctx context.Context, req ListDocumentsRequestO
 		out.Items = append(out.Items, DocumentSummary{
 			Id: d.ID, Number: d.Number, DocumentType: DocumentTypeRef{Id: d.DocumentType.ID, Key: DocumentTypeRefKey(d.DocumentType.Key), Name: d.DocumentType.Name},
 			Revision: d.Revision, Status: DocumentSummaryStatus(d.Status), FormSetName: d.FormSetName, RowCount: d.RowCount, UpdatedAt: d.UpdatedAt, Models: orEmpty(d.Models),
+			Origin: DocumentSummaryOrigin(orNew(d.Origin)), ReleasedMigrated: d.ReleasedMigrated,
 		})
 	}
 	return ListDocuments200JSONResponse(out), nil
@@ -124,6 +125,7 @@ func toAPIDocument(d document.Document) Document {
 		Models: make([]NamedRef, 0, len(d.Models)), PartNumbers: make([]DocumentPartNumber, 0, len(d.PartNumbers)),
 		Rows: make([]DocumentRow, 0, len(d.Rows)), RouteReason: optional(d.RouteReason),
 		Set: make([]DocumentSetMember, 0, len(d.Set)), Sections: make([]DocumentSection, 0, len(d.Sections)),
+		Origin: DocumentOrigin(orNew(d.Origin)), ReleasedMigrated: d.ReleasedMigrated, Baseline: toAPIBaseline(d.Baseline),
 	}
 	for _, s := range d.Sections {
 		section := DocumentSection{Id: s.ID, Key: s.Key, Position: s.Position, Name: s.Name, PartNumbers: make([]DocumentPartNumber, 0, len(s.PartNumbers))}
@@ -350,7 +352,7 @@ func (a *apiServer) ListDocumentRevisions(ctx context.Context, req ListDocumentR
 		out.Items = append(out.Items, DocumentRevision{
 			Id: r.ID, Revision: r.Revision, Status: DocumentRevisionStatus(r.Status), CreatedBy: r.CreatedBy, CreatedAt: r.CreatedAt,
 			ReleasedBy: optional(r.ReleasedBy), ReleasedAt: r.ReleasedAt, Sha256: optional(r.SHA256), Changes: r.Changes,
-			ScanFileName: optional(r.ScanFileName), ReleaseDate: releaseDate(r.ReleaseDate),
+			ScanFileName: optional(r.ScanFileName), ReleaseDate: releaseDate(r.ReleaseDate), Migrated: &r.Migrated,
 		})
 	}
 	return ListDocumentRevisions200JSONResponse(out), nil
@@ -422,4 +424,12 @@ func releaseDate(s string) *openapi_types.Date {
 		return nil
 	}
 	return &openapi_types.Date{Time: t}
+}
+
+// orNew memberi asal dokumen; kosong berarti dokumen baru.
+func orNew(origin string) string {
+	if origin == "" {
+		return document.OriginNew
+	}
+	return origin
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/access"
 	"github.com/dkpauzi/revioten/internal/document"
 	"github.com/dkpauzi/revioten/internal/document/doctest"
+	"github.com/dkpauzi/revioten/internal/numbering"
 	"github.com/dkpauzi/revioten/internal/printout"
 	"github.com/dkpauzi/revioten/internal/problem"
 	"github.com/dkpauzi/revioten/internal/storage"
@@ -161,5 +162,75 @@ func TestPrintService(t *testing.T) {
 	}
 	if pageSize(t, f.Body, "CP") != 9 {
 		t.Error("layout customer tidak dipakai")
+	}
+}
+
+// TestPrintMigratedHistory: kriteria selesai M7.2. Riwayat revisi teks dokumen
+// migrasi tampil lengkap di cetakan, dan scan hardcopy diunggah petugas
+// migrasi (E-10) tanpa hak dokumen kontrol.
+func TestPrintMigratedHistory(t *testing.T) {
+	e := doctest.Setup(t)
+	ctx := t.Context()
+	store, err := storage.New(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := printout.NewService(e.Pool, e.Checker, e.Docs, store, "")
+	if _, err := e.Pool.Exec(ctx, "UPDATE system_settings SET migration_mode = true"); err != nil {
+		t.Fatal(err)
+	}
+	staff := doctest.NewActor(t, e.Pool, "ppap.staff", "work", doctest.All(access.RoleMigration), doctest.All(access.RoleAuthor))
+	if _, err := e.Numbers.RegisterSet(ctx, e.Author, numbering.NewSet{CustomerID: e.CustomerAB, IdempotencyKey: "mig-" + t.Name()}); err != nil {
+		t.Fatal(err)
+	}
+	numbers, err := e.Docs.MigratableNumbers(ctx, staff, e.CustomerAB)
+	if err != nil || len(numbers) == 0 {
+		t.Fatalf("nomor: %v", err)
+	}
+	d, err := e.Docs.Migrate(ctx, staff, document.LegacyDocument{
+		NewDocument: document.NewDocument{NumberID: numbers[len(numbers)-1].ID, ModelIDs: []string{e.ModelK125}},
+		Revision:    4, EffectiveDate: "2025-03-10", PreparedBy: "Budi Santoso", ApprovedBy: "Siti Aminah",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.Docs.SetHistory(ctx, staff, d.ID, []document.HistoryEntry{
+		{Revision: "-00", Date: "2023-01-05", Description: "Initial release of the old form"},
+		{Revision: "-04", Date: "2025-03-10", Description: "Add ICT step"},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	f, err := s.Print(ctx, staff, d.ID, printout.Request{Purpose: printout.PurposeDraft, Format: "xlsx"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(f.Name, "-04-draft.xlsx") {
+		t.Errorf("nama berkas: %s", f.Name)
+	}
+	book, err := excelize.OpenReader(bytes.NewReader(f.Body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer book.Close()
+	var cover strings.Builder
+	for _, sheet := range book.GetSheetList() {
+		rows, _ := book.GetRows(sheet)
+		for _, row := range rows {
+			cover.WriteString(strings.Join(row, "|") + "\n")
+		}
+	}
+	text := cover.String()
+	if !strings.Contains(text, "Initial release of the old form") || !strings.Contains(text, "Add ICT step") || strings.Contains(text, "Migrated baseline") {
+		t.Errorf("riwayat di cetakan:\n%s", text)
+	}
+	// Baris revisi baseline tidak digandakan sistem: -04 muncul sekali di tabel riwayat.
+	if n := strings.Count(text, "Add ICT step"); n != 1 {
+		t.Errorf("baris -04 muncul %d kali", n)
+	}
+	if _, err := s.UploadScan(ctx, staff, d.ID, "hardcopy.pdf", strings.NewReader("%PDF-1.4 hardcopy")); err != nil {
+		t.Errorf("petugas migrasi mengunggah scan: %v", err)
+	}
+	if _, err := s.UploadScan(ctx, e.Author, d.ID, "hardcopy.pdf", strings.NewReader("%PDF-1.4 hardcopy")); !errors.Is(err, access.ErrForbidden) {
+		t.Errorf("penyusun tanpa E-10 mengunggah scan baseline: %v", err)
 	}
 }

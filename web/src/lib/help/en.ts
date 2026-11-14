@@ -321,6 +321,34 @@ export const helpEn: HelpContent = {
 			tips: ['Drafts always print with UNCONTROLLED COPY.', 'Rows changed in the printed revision carry a triangle with the revision number.', 'PDF needs Chrome or Edge on the server computer; Excel always works.']
 		},
 		{
+			id: 'migration',
+			title: 'Legacy documents',
+			who: 'Migration, Admin for the switch',
+			intro: 'A document that already exists on paper enters at its current revision and is released after another person checks it against the signed hard copy. Nothing is cleaned up on the way in.',
+			steps: [
+				'The admin switches on {settingsMigration} under {navGroupAdmin}, then {navSettings}.',
+				'Open {navDocuments}, choose the customer, and fill in {migrateTitle}: the original number, the models, {migrateRevision}, {migrateEffectiveDate}, and the names on the hard copy. Press {migrateSubmit}.',
+				'Open the document. Type or compose the content until it equals the hard copy. Under {historyTitle}, press {historyAdd} for each line of the old history table, then {historySave}.',
+				'To check your typing, upload the old file under {excelCompareTitle} and press {excelCompareButton}. The file is only compared, never imported.',
+				'Under {linkTitle}, press {linkFind}, tick the pairs that are right, and press {linkConfirm}. Linked rows receive later template updates.',
+				'Upload the scan of the signed hard copy under {revisions}. Another migration officer opens the document, fills in {migrationEffort}, and presses {migrationVerify}. The status becomes {documentStatusReleasedMigrated}.'
+			],
+			tips: ['The person who entered a document cannot verify it.', 'After verification the baseline and its history cannot be changed; the next change goes through a normal change request.', 'Switch migration mode off when the migration is finished.']
+		},
+		{
+			id: 'dashboard',
+			title: 'Dashboard',
+			who: 'Everyone',
+			intro: 'The dashboard counts rows that follow a template, documents by status, yokoten targets, revision time, and migration effort. Every number comes from the data at that moment.',
+			steps: [
+				'Open {navGroupDocuments}, then {navDashboard}.',
+				'Choose a customer, or leave {dashboardAllCustomers}.',
+				'Read {dashboardRows}: the share of rows that are linked to a template point.',
+				'Read {dashboardRevision} and {dashboardMigration} for the time numbers.'
+			],
+			tips: ['Revision time counts only revisions opened by an accepted change.', 'Migration minutes are the ones typed in at verification.']
+		},
+		{
 			id: 'audit',
 			title: 'Audit log',
 			who: 'Admin',

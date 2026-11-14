@@ -97,6 +97,10 @@ const (
 	ActionChangeRejected              = "change.rejected"                // M5.3
 	ActionDocumentDraftOpened         = "document.draft_opened"          // M5.4
 	ActionDocumentReleased            = "document.released"              // M5.5
+	ActionDocumentMigrated            = "document.migrated"              // M7.1
+	ActionDocumentHistoryChanged      = "document.history_changed"       // M7.2
+	ActionDocumentRowsLinked          = "document.rows_linked"           // M7.4
+	ActionDocumentMigrationVerified   = "document.migration_verified"    // M7.5
 	ActionChangeImpactsSaved          = "change.impacts_saved"           // M5.7
 	ActionDocumentTemplateModeChanged = "document.template_mode_changed" // M5.8
 	ActionChangeTemplateApplied       = "change.template_applied"        // M5.8

@@ -171,6 +171,31 @@ type Document struct {
 	UpdatedAt         time.Time
 	HeaderVersion     int32
 	ReleasedRevision  *int16
+	Origin            string
+}
+
+type DocumentBaseline struct {
+	DocumentID         string
+	Revision           int16
+	EffectiveDate      pgtype.Date
+	PreparedBy         string
+	ApprovedBy         string
+	CreatedByPersonID  string
+	CreatedAt          time.Time
+	VerifiedByPersonID *string
+	VerifiedAt         *time.Time
+	EffortMinutes      *int32
+}
+
+type DocumentHistoryEntry struct {
+	ID                string
+	DocumentID        string
+	Position          int32
+	RevisionLabel     string
+	EntryDate         pgtype.Date
+	Description       string
+	CreatedByPersonID string
+	CreatedAt         time.Time
 }
 
 type DocumentModel struct {
@@ -227,6 +252,7 @@ type DocumentRevision struct {
 	ScanSha256             *string
 	ScanUploadedByPersonID *string
 	ScanUploadedAt         *time.Time
+	Migrated               bool
 }
 
 type DocumentRow struct {
@@ -633,6 +659,7 @@ type SystemSetting struct {
 	SignDatesEnabled bool
 	FormApprovalMode string
 	QrEnabled        bool
+	MigrationMode    bool
 }
 
 type TemplatePoint struct {

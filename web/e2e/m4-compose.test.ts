@@ -211,7 +211,7 @@ test('penyusun merakit CP, PFMEA, dan PFD dari process template IQC', async ({ p
 	await cell(0, product).click();
 	await page.keyboard.press('ControlOrMeta+a');
 	await page.keyboard.type('Part number M-46');
-	await page.getByRole('heading', { name: en.documentRowsTitle }).click();
+	await page.getByRole('heading', { name: en.documentRowsTitle, exact: true }).click();
 	await expect(page.getByRole('status')).toHaveText(en.documentRowSaved);
 	await page.getByRole('link', { name: 'PFMEA', exact: true }).click();
 	await expect(rows).toHaveCount(2);
@@ -265,7 +265,7 @@ test('penyusun merakit CP, PFMEA, dan PFD dari process template IQC', async ({ p
 	await cell(0, product).click();
 	await page.keyboard.press('ControlOrMeta+a');
 	await page.keyboard.type('Part number and revision');
-	await page.getByRole('heading', { name: en.documentRowsTitle }).click();
+	await page.getByRole('heading', { name: en.documentRowsTitle, exact: true }).click();
 	await expect(page.getByRole('status')).toHaveText(en.documentRowSaved);
 	await page.getByRole('link', { name: en.checkTab, exact: true }).click();
 	await expect(iqc.getByTestId('check-mark')).toContainText(en.checkStale.split('{by}')[0].trim());

@@ -2192,6 +2192,183 @@ paths:
                 $ref: '#/components/schemas/ChangeList'
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/migration/numbers:
+    get:
+      operationId: listMigratableNumbers
+      summary: Numbers of one customer that a legacy document can take (E-10, M7.1)
+      description: PFD, PFMEA, and CP numbers without a document that are Reserved, In use, or Released.
+      parameters:
+        - name: customer_id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The numbers, by number.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MigratableNumberList'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/migration/documents:
+    post:
+      operationId: migrateDocument
+      summary: Enter a legacy document as a migration baseline (E-10, M7.1)
+      description: >-
+        The document starts as a draft at the current revision of the signed hard copy, for example 4 for -04
+        (R-REV-01), with the effective date, the preparer, and the approvers as text. Refused while migration
+        mode is off (R-MIG-06).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LegacyDocument'
+      responses:
+        '201':
+          description: The document was made.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/documents/{documentId}/history:
+    put:
+      operationId: setDocumentHistory
+      summary: Replace the text revision history of a migrated document (E-10, M7.2)
+      description: The entries come from the history table of the legacy Excel (R-REV-05) and print in the given order.
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HistoryEntryList'
+      responses:
+        '200':
+          description: The document with the new history.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/documents/{documentId}/migration/verify:
+    post:
+      operationId: verifyMigration
+      summary: Confirm a migration baseline against the signed hard copy (E-10, M7.5)
+      description: >-
+        The revision is released as Released (migrated) with a snapshot and SHA-256. The scan of the signed hard
+        copy must be uploaded first, and the person who entered the document cannot verify it (R-MIG-06, R-SEC-11).
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MigrationVerification'
+      responses:
+        '200':
+          description: The document after the verification.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/documents/{documentId}/link-suggestions:
+    get:
+      operationId: listLinkSuggestions
+      summary: Suggested template points for rows without a link (L-4, M7.4)
+      description: >-
+        Suggestions come from text similarity between a row and the points of the latest published process template
+        of its process (R-MIG-05). A person confirms them; nothing is linked automatically.
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      responses:
+        '200':
+          description: The suggestions, by row order.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LinkSuggestionList'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/documents/{documentId}/links:
+    post:
+      operationId: linkDocumentRows
+      summary: Link rows to template points after a person confirmed them (E-2, M7.4)
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RowLinkList'
+      responses:
+        '200':
+          description: The document with the linked rows.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/documents/{documentId}/excel-comparison:
+    post:
+      operationId: compareDocumentWithExcel
+      summary: Compare a document with a legacy Excel sheet (L-4, M7.3)
+      description: >-
+        The Excel file is only compared, never imported or stored (R-MIG-04). Cell texts are compared as a set,
+        ignoring case and spaces. Leave sheet out to compare the sheet that matches best.
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                sheet:
+                  type: string
+      responses:
+        '200':
+          description: The differences.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExcelComparison'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/metrics:
+    get:
+      operationId: getMetrics
+      summary: The measurement dashboard (L-2, M7.7)
+      description: Every number is counted from the data when asked. Leave customer_id out for all customers.
+      parameters:
+        - name: customer_id
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The measurements.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Metrics'
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/documents/{documentId}/release:
     post:
       operationId: releaseDocument
@@ -4684,10 +4861,278 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/DocumentSummary'
+    MigratableNumber:
+      type: object
+      required: [id, number, status, document_type]
+      properties:
+        id:
+          type: string
+        number:
+          type: string
+        status:
+          type: string
+        document_type:
+          type: string
+    MigratableNumberList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/MigratableNumber'
+    LegacyDocument:
+      type: object
+      required: [document_number_id, model_ids, revision, effective_date, prepared_by, approved_by]
+      properties:
+        document_number_id:
+          type: string
+        model_ids:
+          type: array
+          items:
+            type: string
+        part_number_ids:
+          type: array
+          items:
+            type: string
+        route_id:
+          type: string
+        route_reason:
+          type: string
+        revision:
+          type: integer
+          description: The current revision on the signed hard copy, for example 4 for -04.
+        effective_date:
+          type: string
+          description: YYYY-MM-DD.
+        prepared_by:
+          type: string
+          description: The preparer as written on the hard copy.
+        approved_by:
+          type: string
+          description: The approvers as written on the hard copy.
+    HistoryEntry:
+      type: object
+      required: [revision, description]
+      properties:
+        revision:
+          type: string
+          description: The revision as written in the legacy table, for example -03.
+        date:
+          type: string
+          description: YYYY-MM-DD, or empty when the legacy table has no date.
+        description:
+          type: string
+    HistoryEntryList:
+      type: object
+      required: [entries]
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/HistoryEntry'
+    DocumentBaseline:
+      type: object
+      description: The hard copy data of a migrated document (R-MIG-03).
+      required: [revision, effective_date, prepared_by, approved_by, created_by, created_at, history]
+      properties:
+        revision:
+          type: integer
+        effective_date:
+          type: string
+        prepared_by:
+          type: string
+        approved_by:
+          type: string
+        created_by:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        verified_by:
+          type: string
+        verified_at:
+          type: string
+          format: date-time
+        effort_minutes:
+          type: integer
+          description: Minutes spent on migrating this document, entered at verification (M7.6).
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/HistoryEntry'
+    MigrationVerification:
+      type: object
+      properties:
+        effort_minutes:
+          type: integer
+          description: Minutes spent on migrating this document (M7.6). Leave it out when not measured.
+    LinkSuggestion:
+      type: object
+      required: [row_id, position, row_text, point_id, version_id, point_text, matched, score]
+      properties:
+        row_id:
+          type: string
+        position:
+          type: integer
+        row_text:
+          type: string
+          description: The row content that matches best.
+        point_id:
+          type: string
+        version_id:
+          type: string
+        point_text:
+          type: string
+        matched:
+          type: string
+          description: The text of the point that matches row_text.
+        score:
+          type: integer
+          description: Text similarity from 0 to 100.
+    LinkSuggestionList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/LinkSuggestion'
+    RowLink:
+      type: object
+      required: [row_id, point_id, version_id]
+      properties:
+        row_id:
+          type: string
+        point_id:
+          type: string
+        version_id:
+          type: string
+    RowLinkList:
+      type: object
+      required: [links]
+      properties:
+        links:
+          type: array
+          items:
+            $ref: '#/components/schemas/RowLink'
+    ExcelComparison:
+      type: object
+      required: [sheets, sheet, matched, missing_in_excel, missing_in_document, truncated]
+      properties:
+        sheets:
+          type: array
+          items:
+            type: string
+        sheet:
+          type: string
+        matched:
+          type: integer
+          description: Document cells whose text is in the Excel sheet.
+        missing_in_excel:
+          type: array
+          items:
+            type: object
+            required: [position, label, text]
+            properties:
+              position:
+                type: integer
+                description: The row order; 0 for the header.
+              label:
+                type: string
+              text:
+                type: string
+        missing_in_document:
+          type: array
+          items:
+            type: object
+            required: [cell, text]
+            properties:
+              cell:
+                type: string
+              text:
+                type: string
+        truncated:
+          type: boolean
+    Metrics:
+      type: object
+      required: [rows, documents, yokoten, revision, migration]
+      properties:
+        rows:
+          type: object
+          required: [total, linked, detached, free, linked_percent]
+          properties:
+            total:
+              type: integer
+            linked:
+              type: integer
+            detached:
+              type: integer
+            free:
+              type: integer
+            linked_percent:
+              type: number
+        documents:
+          type: array
+          items:
+            type: object
+            required: [document_type, document_type_name, status, count]
+            properties:
+              document_type:
+                type: string
+              document_type_name:
+                type: string
+              status:
+                type: string
+                enum: [draft, released, released_migrated]
+              count:
+                type: integer
+        yokoten:
+          type: array
+          items:
+            type: object
+            required: [decision, count]
+            properties:
+              decision:
+                type: string
+                enum: [pending, apply, adapt, not_applicable]
+              count:
+                type: integer
+        revision:
+          type: object
+          required: [count, average_hours, median_hours]
+          properties:
+            count:
+              type: integer
+            average_hours:
+              type: number
+            median_hours:
+              type: number
+        migration:
+          type: object
+          required: [documents, verified, measured, total_minutes, average_minutes]
+          properties:
+            documents:
+              type: integer
+            verified:
+              type: integer
+            measured:
+              type: integer
+            total_minutes:
+              type: integer
+            average_minutes:
+              type: number
     DocumentSummary:
       type: object
-      required: [id, number, document_type, revision, status, form_set_name, row_count, models, updated_at]
+      required: [id, number, document_type, revision, status, form_set_name, row_count, models, updated_at, origin, released_migrated]
       properties:
+        origin:
+          type: string
+          enum: [new, migrated]
+          description: Migrated for a legacy document entered as a migration baseline (stage 7).
+        released_migrated:
+          type: boolean
+          description: True when the revision in force is a migration baseline verified against the hard copy, shown as Released (migrated) (R-MIG-06).
         models:
           type: array
           description: The names of the models of the document, in alphabetical order (M4.7).
@@ -4734,8 +5179,17 @@ components:
           description: Required when route_id is not the default route of the customer (D-47).
     Document:
       type: object
-      required: [id, document_number_id, number, customer_id, customer_code, document_type, revision, status, form_set_version_id, form_set_name, format_version_id, models, part_numbers, header, header_version, rows, sections, set, created_at, updated_at]
+      required: [id, document_number_id, number, customer_id, customer_code, document_type, revision, status, form_set_version_id, form_set_name, format_version_id, models, part_numbers, header, header_version, rows, sections, set, created_at, updated_at, origin, released_migrated]
       properties:
+        origin:
+          type: string
+          enum: [new, migrated]
+          description: Migrated for a legacy document entered as a migration baseline (stage 7).
+        released_migrated:
+          type: boolean
+          description: True when the revision in force is a migration baseline verified against the hard copy, shown as Released (migrated) (R-MIG-06).
+        baseline:
+          $ref: '#/components/schemas/DocumentBaseline'
         id:
           type: string
         document_number_id:
@@ -5589,6 +6043,9 @@ components:
         scan_file_name:
           type: string
           description: The signed scan uploaded for this revision (M6.7).
+        migrated:
+          type: boolean
+          description: True when the revision was released by verification against the hard copy (M7.5).
         changes:
           type: array
           description: Reference numbers of the changes that went into this revision (M5.6).
@@ -6702,8 +7159,11 @@ components:
           type: boolean
     SystemSettings:
       type: object
-      required: [sign_dates_enabled, form_approval_mode, qr_enabled]
+      required: [sign_dates_enabled, form_approval_mode, qr_enabled, migration_mode]
       properties:
+        migration_mode:
+          type: boolean
+          description: When true, migration officers can enter and verify legacy documents (R-MIG-06). Off by default.
         qr_enabled:
           type: boolean
           description: When true, prints carry a QR code to the verification page (D-62, R-APR-16). Off by default.
@@ -6717,6 +7177,9 @@ components:
     SystemSettingsUpdate:
       type: object
       properties:
+        migration_mode:
+          type: boolean
+          description: Leave it out to keep the current value.
         qr_enabled:
           type: boolean
           description: Leave it out to keep the current value.

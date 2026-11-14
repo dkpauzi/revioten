@@ -32,7 +32,7 @@ func TestDocumentEndpoints(t *testing.T) {
 		`"form_set_name":"AIAG 4th set","format_version_id":"v-3","models":[{"id":"m-1","name":"K-125"}],"part_numbers":[],` +
 		`"route":{"id":"r-1","name":"Up to GM"},"header":{"f-1":"Line 1"},"header_version":4,` +
 		`"rows":[{"id":"row-1","position":1,"version":2,"operation_manual":false,"detached":false,"process_id":"p-1","process_name":"SMT","operation_number":"10","content":{"f-2":"Paste"}}],"sections":[],"set":[],` +
-		`"created_at":"2026-11-12T08:00:00Z","updated_at":"2026-11-12T08:00:00Z"}`
+		`"created_at":"2026-11-12T08:00:00Z","updated_at":"2026-11-12T08:00:00Z","origin":"new","released_migrated":false}`
 	if rec.Code != http.StatusOK || fake.got != (called{method: "Get", id: "d-1"}) || !sameJSON(t, rec.Body.String(), want) {
 		t.Errorf("baca: status %d\n%s\ningin\n%s", rec.Code, rec.Body.String(), want)
 	}

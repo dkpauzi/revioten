@@ -95,6 +95,8 @@ const problemKeys: Record<string, MessageKey> = {
 	'items:too_long': 'impactTooMany',
 	'targets:required': 'yokotenNoTargets',
 	'scan:required': 'scanRequired',
+	'migration_mode:not_allowed': 'migrationModeOff',
+	'migration_verifier:not_allowed': 'migrationVerifierNotAllowed',
 	'route:required': 'printRouteRequired',
 	'purpose:not_allowed': 'printPurposeNotAllowed',
 	'sqam_reference:required': 'sqamReferenceRequired',

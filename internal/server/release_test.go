@@ -18,9 +18,9 @@ func TestReleaseEndpoints(t *testing.T) {
 	}}
 	srv := newTestServer(t, nil, Deps{Documents: fake})
 	rec := srv.do(http.MethodGet, "/api/v1/documents/d-1/revisions", "")
-	want := `{"items":[{"id":"r-1","revision":1,"status":"draft","created_by":"Verifier","created_at":"2026-11-14T08:00:00Z","changes":["CHG-0002"]},` +
+	want := `{"items":[{"id":"r-1","revision":1,"status":"draft","created_by":"Verifier","created_at":"2026-11-14T08:00:00Z","changes":["CHG-0002"],"migrated":false},` +
 		`{"id":"r-0","revision":0,"status":"released","created_by":"Author","created_at":"2026-11-14T08:00:00Z",` +
-		`"released_by":"DCC","released_at":"2026-11-14T08:00:00Z","sha256":"ab12","changes":[]}]}`
+		`"released_by":"DCC","released_at":"2026-11-14T08:00:00Z","sha256":"ab12","changes":[],"migrated":false}]}`
 	if rec.Code != http.StatusOK || !sameJSON(t, rec.Body.String(), want) {
 		t.Errorf("revisi: status %d\n%s", rec.Code, rec.Body.String())
 	}

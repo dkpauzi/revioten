@@ -124,6 +124,13 @@ type Document struct {
 	// dokumen (M4.2). Dokumen dari nomor tunggal hanya berisi dirinya sendiri.
 	Set       []SetMember
 	CreatedAt time.Time
+	// Origin: new, atau migrated untuk dokumen lama (Tahap 7).
+	Origin string
+	// ReleasedMigrated: revisi yang berlaku adalah baseline migrasi yang
+	// sudah dicocokkan dengan hardcopy, "Released (migrated)" (R-MIG-06).
+	ReleasedMigrated bool
+	// Baseline adalah data hardcopy dokumen migrasi; nil untuk dokumen baru.
+	Baseline  *Baseline
 	UpdatedAt time.Time
 }
 
@@ -146,7 +153,10 @@ type Summary struct {
 	FormSetName  string
 	RowCount     int
 	Models       []string // nama model, menurut abjad (M4.7); tidak pernah nil
-	UpdatedAt    time.Time
+	Origin       string
+	// ReleasedMigrated: lihat Document.
+	ReleasedMigrated bool
+	UpdatedAt        time.Time
 }
 
 // NewDocument adalah isian dokumen baru.
@@ -279,7 +289,7 @@ func (s *Service) Create(ctx context.Context, actor access.Actor, in NewDocument
 		id, err = q.CreateDocument(ctx, db.CreateDocumentParams{
 			DocumentNumberID: number.ID, CustomerID: number.CustomerID, DocumentTypeID: number.DocumentTypeID,
 			Revision: number.InitialRevision, FormSetVersionID: set.ID, FormatVersionID: formatID,
-			ApprovalRouteID: route, RouteReason: optional(reason), CreatedByPersonID: actor.PersonID,
+			ApprovalRouteID: route, RouteReason: optional(reason), CreatedByPersonID: actor.PersonID, Origin: OriginNew,
 		})
 		if err != nil {
 			return err
@@ -393,6 +403,7 @@ func (s *Service) List(ctx context.Context, actor access.Actor, customerID strin
 		out = append(out, Summary{
 			ID: r.ID, Number: r.Number, DocumentType: TypeRef{Key: deref(r.DocumentTypeKey), Name: r.DocumentTypeName},
 			Revision: int(r.Revision), Status: r.Status, FormSetName: r.FormSetName, RowCount: int(r.RowCount), UpdatedAt: r.UpdatedAt.UTC(), Models: r.ModelNames,
+			Origin: r.Origin, ReleasedMigrated: r.ReleasedMigrated,
 		})
 	}
 	return out, nil
@@ -669,7 +680,12 @@ func getDocument(ctx context.Context, q *db.Queries, id string) (Document, error
 		Revision:     int(r.Revision), Status: r.Status, FormSetVersionID: r.FormSetVersionID, FormSetName: r.FormSetName,
 		FormatVersionID: r.FormatVersionID, RouteReason: deref(r.RouteReason),
 		Models: []Ref{}, PartNumbers: []PartRef{}, Rows: []Row{}, CreatedAt: r.CreatedAt.UTC(), UpdatedAt: r.UpdatedAt.UTC(),
-		HeaderVersion: int(r.HeaderVersion),
+		HeaderVersion: int(r.HeaderVersion), Origin: r.Origin, ReleasedMigrated: r.ReleasedMigrated,
+	}
+	if d.Origin == OriginMigrated {
+		if d.Baseline, err = loadBaseline(ctx, q, id); err != nil {
+			return Document{}, err
+		}
 	}
 	if r.ReleasedRevision != nil {
 		v := int(*r.ReleasedRevision)

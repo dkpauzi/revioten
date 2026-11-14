@@ -301,6 +301,9 @@ type Deps struct {
 	// ChangeRequests adalah perubahan (Tahap 5).
 	ChangeRequests ChangeRequestService
 	Printing       PrintService
+	// Migration dan Metrics adalah migrasi dokumen lama dan dasbor (Tahap 7).
+	Migration MigrationService
+	Metrics   MetricsService
 	// Logger untuk log server. Bila nil, dipakai slog.Default().
 	Logger *slog.Logger
 }
@@ -320,7 +323,8 @@ func NewHandler(ui fs.FS, deps Deps) http.Handler {
 		db: deps.DB, customers: deps.Customers, auth: deps.Auth, access: deps.Access,
 		audit: deps.Audit, products: deps.Products, processes: deps.Processes,
 		numbering: deps.Numbering, changes: deps.Changes, approval: deps.Approval, settings: deps.Settings,
-		templates: deps.Templates, processTemplates: deps.ProcessTemplates, documents: deps.Documents, refDocs: deps.RefDocs, changeRequests: deps.ChangeRequests, printing: deps.Printing, log: log,
+		templates: deps.Templates, processTemplates: deps.ProcessTemplates, documents: deps.Documents, refDocs: deps.RefDocs, changeRequests: deps.ChangeRequests, printing: deps.Printing,
+		migration: deps.Migration, metrics: deps.Metrics, log: log,
 	}
 
 	// Route dari kontrak didaftarkan oleh kode hasil generate ke mux khusus API.
@@ -380,5 +384,7 @@ type apiServer struct {
 	refDocs          RefDocService
 	changeRequests   ChangeRequestService
 	printing         PrintService
+	migration        MigrationService
+	metrics          MetricsService
 	log              *slog.Logger
 }

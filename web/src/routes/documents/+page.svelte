@@ -3,8 +3,18 @@
 	// dokumen baru dari nomor Reserved. Melihat butuh L-4, membuat butuh E-2;
 	// server tetap memeriksa setiap operasi.
 	import { onMount } from 'svelte';
-	import { createDocument, listCustomers, listDocumentNumbers, listDocuments, listModels, listPartNumbers } from '#lib/api/client.ts';
-	import type { Customer, DocumentNumber, DocumentSummary, Model, PartNumber } from '#lib/api/gen/index.ts';
+	import {
+		createDocument,
+		getSystemSettings,
+		listCustomers,
+		listDocumentNumbers,
+		listDocuments,
+		listMigratableNumbers,
+		listModels,
+		listPartNumbers,
+		migrateDocument
+	} from '#lib/api/client.ts';
+	import type { Customer, DocumentNumber, DocumentSummary, MigratableNumber, Model, PartNumber } from '#lib/api/gen/index.ts';
 	import { failureText, problemText } from '#lib/errors.ts';
 	import { formatDateTime } from '#lib/format.ts';
 	import { t } from '#lib/i18n/index.ts';
@@ -24,6 +34,14 @@
 	let message = $state('');
 	let failure = $state('');
 
+	// Dokumen lama (M7.1): butuh E-10 dan mode migrasi yang menyala (R-MIG-06).
+	let migrationMode = $state(false);
+	let canMigrate = $derived(can('E-10') && migrationMode);
+	let legacyNumbers = $state<MigratableNumber[]>([]);
+	const emptyLegacy = { numberId: '', modelIds: [] as string[], revision: null as number | string | null, effectiveDate: '', preparedBy: '', approvedBy: '' };
+	let legacy = $state({ ...emptyLegacy });
+	let legacyErrors = $state<Record<string, string>>({});
+
 	// Part number yang bisa dipilih: milik model yang sudah dicentang.
 	let partChoices = $derived(parts.filter((p) => draft.modelIds.includes(p.model.id)));
 
@@ -34,6 +52,8 @@
 			return;
 		}
 		customers = result.data.items.filter((c) => c.active);
+		const settings = await getSystemSettings();
+		migrationMode = settings.ok && settings.data.migration_mode;
 	});
 
 	async function chooseCustomer() {
@@ -63,6 +83,39 @@
 		numbers = numberResult.ok ? numberResult.data.items.filter((n) => n.document_type.key !== undefined) : [];
 		models = modelResult.ok ? modelResult.data.items : [];
 		parts = partResult.ok ? partResult.data.items : [];
+		legacy = { ...emptyLegacy };
+		legacyErrors = {};
+		if (canMigrate) {
+			const free = await listMigratableNumbers(customerId);
+			legacyNumbers = free.ok ? free.data.items : [];
+		}
+	}
+
+	async function migrate(event: SubmitEvent) {
+		event.preventDefault();
+		legacyErrors = {};
+		message = '';
+		failure = '';
+		const result = await migrateDocument({
+			document_number_id: legacy.numberId,
+			model_ids: legacy.modelIds,
+			// Revisi kosong dikirim sebagai -1, supaya server menolaknya dengan pesan yang jelas.
+			revision: legacy.revision === null || String(legacy.revision).trim() === '' ? -1 : Number(legacy.revision),
+			effective_date: legacy.effectiveDate,
+			prepared_by: legacy.preparedBy,
+			approved_by: legacy.approvedBy
+		});
+		if (!result.ok) {
+			const details = result.error.body?.details ?? [];
+			legacyErrors = Object.fromEntries(details.map((d) => [d.field, problemText(d)]));
+			if (details.length === 0 || legacyErrors.migration_mode) {
+				failure = legacyErrors.migration_mode ?? failureText(result.error);
+			}
+			return;
+		}
+		const created = result.data;
+		await chooseCustomer();
+		message = t('migrateDone', { number: created.number, revision: String(created.revision) });
 	}
 
 	async function create(event: SubmitEvent) {
@@ -131,7 +184,11 @@
 							<td>{d.document_type.name}</td>
 							<td>{d.form_set_name}</td>
 							<td>{d.row_count}</td>
-							<td><span class="badge" data-status="draft">{t('versionStatusDraft')}</span></td>
+							<td>
+								<span class="badge" data-status={d.status}>
+									{t(d.status !== 'released' ? 'versionStatusDraft' : d.released_migrated ? 'documentStatusReleasedMigrated' : 'documentStatusReleased')}
+								</span>
+							</td>
 							<td>{formatDateTime(d.updated_at)}</td>
 						</tr>
 					{/each}
@@ -177,6 +234,58 @@
 			</form>
 		</section>
 	{/if}
+
+	{#if canMigrate}
+		<section>
+			<h2>{t('migrateTitle')}</h2>
+			<p class="hint">{t('migrateHint')}</p>
+			<form onsubmit={migrate} novalidate>
+				<div class="field">
+					<label for="legacy-number">{t('migrateNumber')}</label>
+					<select id="legacy-number" bind:value={legacy.numberId}>
+						<option value="">{t('documentNumberChoose')}</option>
+						{#each legacyNumbers as n (n.id)}
+							<option value={n.id}>{n.number} · {n.document_type}</option>
+						{/each}
+					</select>
+					{#if legacyNumbers.length === 0}<p class="hint">{t('migrateNoNumbers')}</p>{/if}
+					{#if legacyErrors.document_number_id}<p class="error">{legacyErrors.document_number_id}</p>{/if}
+					{#if legacyErrors.form_set}<p class="error">{legacyErrors.form_set}</p>{/if}
+				</div>
+				<fieldset>
+					<legend>{t('documentModels')}</legend>
+					{#each models as m (m.id)}
+						<label><input type="checkbox" bind:group={legacy.modelIds} value={m.id} /> {m.name}</label>
+					{/each}
+					{#if legacyErrors.model_ids}<p class="error">{legacyErrors.model_ids}</p>{/if}
+				</fieldset>
+				<div class="legacy-grid">
+					<div class="field">
+						<label for="legacy-revision">{t('migrateRevision')}</label>
+						<input id="legacy-revision" type="number" min="0" bind:value={legacy.revision} aria-describedby="legacy-revision-hint" />
+						<p id="legacy-revision-hint" class="hint">{t('migrateRevisionHint')}</p>
+						{#if legacyErrors.revision}<p class="error">{legacyErrors.revision}</p>{/if}
+					</div>
+					<div class="field">
+						<label for="legacy-date">{t('migrateEffectiveDate')}</label>
+						<input id="legacy-date" type="date" bind:value={legacy.effectiveDate} />
+						{#if legacyErrors.effective_date}<p class="error">{legacyErrors.effective_date}</p>{/if}
+					</div>
+					<div class="field">
+						<label for="legacy-prepared">{t('migratePreparedBy')}</label>
+						<input id="legacy-prepared" type="text" bind:value={legacy.preparedBy} />
+						{#if legacyErrors.prepared_by}<p class="error">{legacyErrors.prepared_by}</p>{/if}
+					</div>
+					<div class="field">
+						<label for="legacy-approved">{t('migrateApprovedBy')}</label>
+						<input id="legacy-approved" type="text" bind:value={legacy.approvedBy} />
+						{#if legacyErrors.approved_by}<p class="error">{legacyErrors.approved_by}</p>{/if}
+					</div>
+				</div>
+				<p><button type="submit">{t('migrateSubmit')}</button></p>
+			</form>
+		</section>
+	{/if}
 {/if}
 
 <style>
@@ -190,6 +299,12 @@
 		flex-wrap: wrap;
 		gap: 0.5rem 1.25rem;
 		margin: 1rem 0;
+	}
+
+	.legacy-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+		gap: 0 1rem;
 	}
 
 	fieldset legend {

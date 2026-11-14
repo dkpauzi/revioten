@@ -124,7 +124,7 @@ func TestSystemSettingsEndpoints(t *testing.T) {
 	srv := newTestServer(t, nil, Deps{Settings: fake})
 
 	rec := srv.do(http.MethodGet, "/api/v1/system-settings", "")
-	if rec.Code != http.StatusOK || rec.Body.String() != `{"form_approval_mode":"all","qr_enabled":false,"sign_dates_enabled":false}`+"\n" {
+	if rec.Code != http.StatusOK || rec.Body.String() != `{"form_approval_mode":"all","migration_mode":false,"qr_enabled":false,"sign_dates_enabled":false}`+"\n" {
 		t.Errorf("baca: status %d: %s", rec.Code, rec.Body.String())
 	}
 	rec = srv.do(http.MethodPut, "/api/v1/system-settings", `{"sign_dates_enabled":true}`)
@@ -133,7 +133,7 @@ func TestSystemSettingsEndpoints(t *testing.T) {
 	}
 	// Saklar yang tidak dikirim diteruskan sebagai nil: tetap seperti sebelumnya.
 	rec = srv.do(http.MethodPut, "/api/v1/system-settings", `{}`)
-	if rec.Code != http.StatusOK || fake.got != nil || rec.Body.String() != `{"form_approval_mode":"all","qr_enabled":false,"sign_dates_enabled":true}`+"\n" {
+	if rec.Code != http.StatusOK || fake.got != nil || rec.Body.String() != `{"form_approval_mode":"all","migration_mode":false,"qr_enabled":false,"sign_dates_enabled":true}`+"\n" {
 		t.Errorf("tanpa saklar: status %d, %v: %s", rec.Code, fake.got, rec.Body.String())
 	}
 	// Aturan persetujuan form (D-139).

@@ -962,7 +962,180 @@ export type DocumentList = {
     items: Array<DocumentSummary>;
 };
 
+export type MigratableNumber = {
+    id: string;
+    number: string;
+    status: string;
+    document_type: string;
+};
+
+export type MigratableNumberList = {
+    items: Array<MigratableNumber>;
+};
+
+export type LegacyDocument = {
+    document_number_id: string;
+    model_ids: Array<string>;
+    part_number_ids?: Array<string>;
+    route_id?: string;
+    route_reason?: string;
+    /**
+     * The current revision on the signed hard copy, for example 4 for -04.
+     */
+    revision: number;
+    /**
+     * YYYY-MM-DD.
+     */
+    effective_date: string;
+    /**
+     * The preparer as written on the hard copy.
+     */
+    prepared_by: string;
+    /**
+     * The approvers as written on the hard copy.
+     */
+    approved_by: string;
+};
+
+export type HistoryEntry = {
+    /**
+     * The revision as written in the legacy table, for example -03.
+     */
+    revision: string;
+    /**
+     * YYYY-MM-DD, or empty when the legacy table has no date.
+     */
+    date?: string;
+    description: string;
+};
+
+export type HistoryEntryList = {
+    entries: Array<HistoryEntry>;
+};
+
+/**
+ * The hard copy data of a migrated document (R-MIG-03).
+ */
+export type DocumentBaseline = {
+    revision: number;
+    effective_date: string;
+    prepared_by: string;
+    approved_by: string;
+    created_by: string;
+    created_at: string;
+    verified_by?: string;
+    verified_at?: string;
+    /**
+     * Minutes spent on migrating this document, entered at verification (M7.6).
+     */
+    effort_minutes?: number;
+    history: Array<HistoryEntry>;
+};
+
+export type MigrationVerification = {
+    /**
+     * Minutes spent on migrating this document (M7.6). Leave it out when not measured.
+     */
+    effort_minutes?: number;
+};
+
+export type LinkSuggestion = {
+    row_id: string;
+    position: number;
+    /**
+     * The row content that matches best.
+     */
+    row_text: string;
+    point_id: string;
+    version_id: string;
+    point_text: string;
+    /**
+     * The text of the point that matches row_text.
+     */
+    matched: string;
+    /**
+     * Text similarity from 0 to 100.
+     */
+    score: number;
+};
+
+export type LinkSuggestionList = {
+    items: Array<LinkSuggestion>;
+};
+
+export type RowLink = {
+    row_id: string;
+    point_id: string;
+    version_id: string;
+};
+
+export type RowLinkList = {
+    links: Array<RowLink>;
+};
+
+export type ExcelComparison = {
+    sheets: Array<string>;
+    sheet: string;
+    /**
+     * Document cells whose text is in the Excel sheet.
+     */
+    matched: number;
+    missing_in_excel: Array<{
+        /**
+         * The row order; 0 for the header.
+         */
+        position: number;
+        label: string;
+        text: string;
+    }>;
+    missing_in_document: Array<{
+        cell: string;
+        text: string;
+    }>;
+    truncated: boolean;
+};
+
+export type Metrics = {
+    rows: {
+        total: number;
+        linked: number;
+        detached: number;
+        free: number;
+        linked_percent: number;
+    };
+    documents: Array<{
+        document_type: string;
+        document_type_name: string;
+        status: 'draft' | 'released' | 'released_migrated';
+        count: number;
+    }>;
+    yokoten: Array<{
+        decision: 'pending' | 'apply' | 'adapt' | 'not_applicable';
+        count: number;
+    }>;
+    revision: {
+        count: number;
+        average_hours: number;
+        median_hours: number;
+    };
+    migration: {
+        documents: number;
+        verified: number;
+        measured: number;
+        total_minutes: number;
+        average_minutes: number;
+    };
+};
+
 export type DocumentSummary = {
+    /**
+     * Migrated for a legacy document entered as a migration baseline (stage 7).
+     */
+    origin: 'new' | 'migrated';
+    /**
+     * True when the revision in force is a migration baseline verified against the hard copy, shown as Released (migrated) (R-MIG-06).
+     */
+    released_migrated: boolean;
     /**
      * The names of the models of the document, in alphabetical order (M4.7).
      */
@@ -995,6 +1168,15 @@ export type NewDocument = {
 };
 
 export type Document = {
+    /**
+     * Migrated for a legacy document entered as a migration baseline (stage 7).
+     */
+    origin: 'new' | 'migrated';
+    /**
+     * True when the revision in force is a migration baseline verified against the hard copy, shown as Released (migrated) (R-MIG-06).
+     */
+    released_migrated: boolean;
+    baseline?: DocumentBaseline;
     id: string;
     document_number_id: string;
     number: string;
@@ -1598,6 +1780,10 @@ export type DocumentRevision = {
      * The signed scan uploaded for this revision (M6.7).
      */
     scan_file_name?: string;
+    /**
+     * True when the revision was released by verification against the hard copy (M7.5).
+     */
+    migrated?: boolean;
     /**
      * Reference numbers of the changes that went into this revision (M5.6).
      */
@@ -2369,6 +2555,10 @@ export type TemplatePointUpdate = {
 
 export type SystemSettings = {
     /**
+     * When true, migration officers can enter and verify legacy documents (R-MIG-06). Off by default.
+     */
+    migration_mode: boolean;
+    /**
      * When true, prints carry a QR code to the verification page (D-62, R-APR-16). Off by default.
      */
     qr_enabled: boolean;
@@ -2383,6 +2573,10 @@ export type SystemSettings = {
 };
 
 export type SystemSettingsUpdate = {
+    /**
+     * Leave it out to keep the current value.
+     */
+    migration_mode?: boolean;
     /**
      * Leave it out to keep the current value.
      */
@@ -6480,6 +6674,287 @@ export type ListDocumentChangesResponses = {
 };
 
 export type ListDocumentChangesResponse = ListDocumentChangesResponses[keyof ListDocumentChangesResponses];
+
+export type ListMigratableNumbersData = {
+    body?: never;
+    path?: never;
+    query: {
+        customer_id: string;
+    };
+    url: '/api/v1/migration/numbers';
+};
+
+export type ListMigratableNumbersErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ListMigratableNumbersError = ListMigratableNumbersErrors[keyof ListMigratableNumbersErrors];
+
+export type ListMigratableNumbersResponses = {
+    /**
+     * The numbers, by number.
+     */
+    200: MigratableNumberList;
+};
+
+export type ListMigratableNumbersResponse = ListMigratableNumbersResponses[keyof ListMigratableNumbersResponses];
+
+export type MigrateDocumentData = {
+    body: LegacyDocument;
+    path?: never;
+    query?: never;
+    url: '/api/v1/migration/documents';
+};
+
+export type MigrateDocumentErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type MigrateDocumentError = MigrateDocumentErrors[keyof MigrateDocumentErrors];
+
+export type MigrateDocumentResponses = {
+    /**
+     * The document was made.
+     */
+    201: Document;
+};
+
+export type MigrateDocumentResponse = MigrateDocumentResponses[keyof MigrateDocumentResponses];
+
+export type SetDocumentHistoryData = {
+    body: HistoryEntryList;
+    path: {
+        documentId: string;
+    };
+    query?: never;
+    url: '/api/v1/documents/{documentId}/history';
+};
+
+export type SetDocumentHistoryErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type SetDocumentHistoryError = SetDocumentHistoryErrors[keyof SetDocumentHistoryErrors];
+
+export type SetDocumentHistoryResponses = {
+    /**
+     * The document with the new history.
+     */
+    200: Document;
+};
+
+export type SetDocumentHistoryResponse = SetDocumentHistoryResponses[keyof SetDocumentHistoryResponses];
+
+export type VerifyMigrationData = {
+    body: MigrationVerification;
+    path: {
+        documentId: string;
+    };
+    query?: never;
+    url: '/api/v1/documents/{documentId}/migration/verify';
+};
+
+export type VerifyMigrationErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type VerifyMigrationError = VerifyMigrationErrors[keyof VerifyMigrationErrors];
+
+export type VerifyMigrationResponses = {
+    /**
+     * The document after the verification.
+     */
+    200: Document;
+};
+
+export type VerifyMigrationResponse = VerifyMigrationResponses[keyof VerifyMigrationResponses];
+
+export type ListLinkSuggestionsData = {
+    body?: never;
+    path: {
+        documentId: string;
+    };
+    query?: never;
+    url: '/api/v1/documents/{documentId}/link-suggestions';
+};
+
+export type ListLinkSuggestionsErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ListLinkSuggestionsError = ListLinkSuggestionsErrors[keyof ListLinkSuggestionsErrors];
+
+export type ListLinkSuggestionsResponses = {
+    /**
+     * The suggestions, by row order.
+     */
+    200: LinkSuggestionList;
+};
+
+export type ListLinkSuggestionsResponse = ListLinkSuggestionsResponses[keyof ListLinkSuggestionsResponses];
+
+export type LinkDocumentRowsData = {
+    body: RowLinkList;
+    path: {
+        documentId: string;
+    };
+    query?: never;
+    url: '/api/v1/documents/{documentId}/links';
+};
+
+export type LinkDocumentRowsErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type LinkDocumentRowsError = LinkDocumentRowsErrors[keyof LinkDocumentRowsErrors];
+
+export type LinkDocumentRowsResponses = {
+    /**
+     * The document with the linked rows.
+     */
+    200: Document;
+};
+
+export type LinkDocumentRowsResponse = LinkDocumentRowsResponses[keyof LinkDocumentRowsResponses];
+
+export type CompareDocumentWithExcelData = {
+    body: {
+        file?: Blob | File;
+        sheet?: string;
+    };
+    path: {
+        documentId: string;
+    };
+    query?: never;
+    url: '/api/v1/documents/{documentId}/excel-comparison';
+};
+
+export type CompareDocumentWithExcelErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type CompareDocumentWithExcelError = CompareDocumentWithExcelErrors[keyof CompareDocumentWithExcelErrors];
+
+export type CompareDocumentWithExcelResponses = {
+    /**
+     * The differences.
+     */
+    200: ExcelComparison;
+};
+
+export type CompareDocumentWithExcelResponse = CompareDocumentWithExcelResponses[keyof CompareDocumentWithExcelResponses];
+
+export type GetMetricsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        customer_id?: string;
+    };
+    url: '/api/v1/metrics';
+};
+
+export type GetMetricsErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type GetMetricsError = GetMetricsErrors[keyof GetMetricsErrors];
+
+export type GetMetricsResponses = {
+    /**
+     * The measurements.
+     */
+    200: Metrics;
+};
+
+export type GetMetricsResponse = GetMetricsResponses[keyof GetMetricsResponses];
 
 export type ReleaseDocumentData = {
     body?: never;

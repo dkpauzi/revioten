@@ -17,7 +17,7 @@ describe('buildMenu', () => {
 	it('menyusun kelompok menu D-127 untuk akun kerja tanpa hak admin', () => {
 		expect(hrefs(['L-1', 'E-1'])).toEqual({
 			home: ['/'],
-			documents: ['/numbers'],
+			documents: ['/dashboard', '/numbers'],
 			templates: ['/format-templates', '/process-templates', '/form-sets', '/processes', '/referenced-documents', '/print-layouts'],
 			master: [
 				'/customers',
@@ -31,11 +31,11 @@ describe('buildMenu', () => {
 	});
 
 	it('menampilkan Documents hanya untuk akun yang melihat draft (L-4, M4.1)', () => {
-		expect(hrefs(['L-1', 'L-4']).documents).toEqual(['/documents', '/changes', '/yokoten', '/numbers']);
+		expect(hrefs(['L-1', 'L-4']).documents).toEqual(['/documents', '/changes', '/yokoten', '/dashboard', '/numbers']);
 	});
 
 	it('menampilkan impor nomor lama hanya untuk document control (E-8)', () => {
-		expect(hrefs(['L-1', 'E-8']).documents).toEqual(['/numbers', '/numbers/import']);
+		expect(hrefs(['L-1', 'E-8']).documents).toEqual(['/dashboard', '/numbers', '/numbers/import']);
 	});
 
 	it('menampilkan kelompok Admin sesuai hak admin yang dipegang', () => {

@@ -136,7 +136,14 @@ import type {
 	RoleGrant,
 	RoleList,
 	Session,
-	TemporaryPassword
+	TemporaryPassword,
+	ExcelComparison,
+	HistoryEntry,
+	LegacyDocument,
+	LinkSuggestionList,
+	Metrics,
+	MigratableNumberList,
+	RowLink
 } from './gen/index.ts';
 
 // ApiFailure menjelaskan panggilan yang gagal: status HTTP (0 bila server
@@ -568,6 +575,56 @@ export function listDocuments(customerId: string, fetchFn: typeof fetch = fetch)
 // createDocument memanggil POST /api/v1/documents (E-2).
 export function createDocument(input: NewDocument, fetchFn: typeof fetch = fetch): Promise<ApiResult<Document>> {
 	return call<Document>(fetchFn, '/api/v1/documents', jsonRequest('POST', input));
+}
+
+// Tahap 7: migrasi dokumen lama, penautan baris, pembanding Excel, dan dasbor.
+
+// listMigratableNumbers memanggil GET /api/v1/migration/numbers (E-10, M7.1).
+export function listMigratableNumbers(customerId: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<MigratableNumberList>> {
+	return call<MigratableNumberList>(fetchFn, `/api/v1/migration/numbers?customer_id=${encodeURIComponent(customerId)}`, { method: 'GET' });
+}
+
+// migrateDocument memanggil POST /api/v1/migration/documents (E-10, M7.1).
+export function migrateDocument(input: LegacyDocument, fetchFn: typeof fetch = fetch): Promise<ApiResult<Document>> {
+	return call<Document>(fetchFn, '/api/v1/migration/documents', jsonRequest('POST', input));
+}
+
+// setDocumentHistory memanggil PUT /api/v1/documents/{id}/history (E-10, M7.2).
+export function setDocumentHistory(id: string, entries: HistoryEntry[], fetchFn: typeof fetch = fetch): Promise<ApiResult<Document>> {
+	return call<Document>(fetchFn, itemPath('documents', id) + '/history', jsonRequest('PUT', { entries }));
+}
+
+// verifyMigration memanggil POST /api/v1/documents/{id}/migration/verify (E-10, M7.5).
+export function verifyMigration(id: string, effortMinutes: number | undefined, fetchFn: typeof fetch = fetch): Promise<ApiResult<Document>> {
+	return call<Document>(fetchFn, itemPath('documents', id) + '/migration/verify', jsonRequest('POST', { effort_minutes: effortMinutes }));
+}
+
+// listLinkSuggestions memanggil GET /api/v1/documents/{id}/link-suggestions (L-4, M7.4).
+export function listLinkSuggestions(id: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<LinkSuggestionList>> {
+	return call<LinkSuggestionList>(fetchFn, itemPath('documents', id) + '/link-suggestions', { method: 'GET' });
+}
+
+// linkDocumentRows memanggil POST /api/v1/documents/{id}/links (E-2, M7.4).
+export function linkDocumentRows(id: string, links: RowLink[], fetchFn: typeof fetch = fetch): Promise<ApiResult<Document>> {
+	return call<Document>(fetchFn, itemPath('documents', id) + '/links', jsonRequest('POST', { links }));
+}
+
+// compareDocumentWithExcel memanggil POST /api/v1/documents/{id}/excel-comparison
+// (L-4, M7.3). sheet dikirim sebelum file, karena server membaca berurutan.
+export function compareDocumentWithExcel(id: string, file: File, sheet: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<ExcelComparison>> {
+	const form = new FormData();
+	if (sheet !== '') {
+		form.append('sheet', sheet);
+	}
+	form.append('file', file);
+	return call<ExcelComparison>(fetchFn, itemPath('documents', id) + '/excel-comparison', { method: 'POST', body: form });
+}
+
+// getMetrics memanggil GET /api/v1/metrics (L-2, M7.7). customerId kosong
+// berarti semua customer.
+export function getMetrics(customerId: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<Metrics>> {
+	const query = customerId === '' ? '' : `?customer_id=${encodeURIComponent(customerId)}`;
+	return call<Metrics>(fetchFn, '/api/v1/metrics' + query, { method: 'GET' });
 }
 
 // getDocument memanggil GET /api/v1/documents/{id} (L-4).

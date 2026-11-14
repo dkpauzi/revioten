@@ -31,6 +31,8 @@ type Settings struct {
 	FormApprovalMode string
 	// QREnabled menyalakan QR di cetakan (D-62); bawaannya mati.
 	QREnabled bool
+	// MigrationMode membuka fitur migrasi dokumen lama (R-MIG-06); bawaannya mati.
+	MigrationMode bool
 }
 
 // Aturan persetujuan form (D-139). Nilainya sama dengan di internal/template.
@@ -62,7 +64,7 @@ func (s *Service) Get(ctx context.Context, actor access.Actor) (Settings, error)
 	if err != nil {
 		return Settings{}, fmt.Errorf("membaca pengaturan sistem: %w", err)
 	}
-	return Settings{SignDatesEnabled: row.SignDatesEnabled, FormApprovalMode: row.FormApprovalMode, QREnabled: row.QrEnabled}, nil
+	return Settings{SignDatesEnabled: row.SignDatesEnabled, FormApprovalMode: row.FormApprovalMode, QREnabled: row.QrEnabled, MigrationMode: row.MigrationMode}, nil
 }
 
 // Update adalah perubahan pengaturan. Saklar yang nil tetap seperti sebelumnya.
@@ -70,6 +72,7 @@ type Update struct {
 	SignDatesEnabled *bool
 	FormApprovalMode *string
 	QREnabled        *bool
+	MigrationMode    *bool
 }
 
 // Apply mengubah pengaturan sistem (A-3). Hak diperiksa dulu, juga bila
@@ -90,7 +93,10 @@ func (s *Service) Apply(ctx context.Context, actor access.Actor, in Update) (Set
 		if err != nil {
 			return err
 		}
-		after = Settings{SignDatesEnabled: before.SignDatesEnabled, FormApprovalMode: before.FormApprovalMode, QREnabled: before.QrEnabled}
+		after = Settings{SignDatesEnabled: before.SignDatesEnabled, FormApprovalMode: before.FormApprovalMode, QREnabled: before.QrEnabled, MigrationMode: before.MigrationMode}
+		if in.MigrationMode != nil {
+			after.MigrationMode = *in.MigrationMode
+		}
 		if in.QREnabled != nil {
 			after.QREnabled = *in.QREnabled
 		}
@@ -101,6 +107,12 @@ func (s *Service) Apply(ctx context.Context, actor access.Actor, in Update) (Set
 			after.FormApprovalMode = *in.FormApprovalMode
 		}
 		details := map[string]string{}
+		if after.MigrationMode != before.MigrationMode {
+			if err := q.SetMigrationMode(ctx, after.MigrationMode); err != nil {
+				return err
+			}
+			details["migration_mode"] = audit.Change(strconv.FormatBool(before.MigrationMode), strconv.FormatBool(after.MigrationMode))
+		}
 		if after.QREnabled != before.QrEnabled {
 			if err := q.SetQREnabled(ctx, after.QREnabled); err != nil {
 				return err

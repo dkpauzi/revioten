@@ -234,7 +234,7 @@ func (q *Queries) GetRevisionForVerify(ctx context.Context, id string) (GetRevis
 const getRevisionPrintInfo = `-- name: GetRevisionPrintInfo :one
 SELECT r.id, r.revision, r.status, r.released_at, r.release_date, r.snapshot, r.snapshot_sha256,
        r.scan_file_name, r.scan_content_type, r.scan_size_bytes, r.scan_sha256, sp.name AS scan_uploaded_by, r.scan_uploaded_at,
-       rp.name AS released_by
+       rp.name AS released_by, r.migrated
 FROM document_revisions r
 LEFT JOIN people sp ON sp.id = r.scan_uploaded_by_person_id
 LEFT JOIN people rp ON rp.id = r.released_by_person_id
@@ -261,6 +261,7 @@ type GetRevisionPrintInfoRow struct {
 	ScanUploadedBy  *string
 	ScanUploadedAt  *time.Time
 	ReleasedBy      *string
+	Migrated        bool
 }
 
 func (q *Queries) GetRevisionPrintInfo(ctx context.Context, arg GetRevisionPrintInfoParams) (GetRevisionPrintInfoRow, error) {
@@ -281,6 +282,7 @@ func (q *Queries) GetRevisionPrintInfo(ctx context.Context, arg GetRevisionPrint
 		&i.ScanUploadedBy,
 		&i.ScanUploadedAt,
 		&i.ReleasedBy,
+		&i.Migrated,
 	)
 	return i, err
 }

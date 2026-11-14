@@ -254,6 +254,9 @@ func (s *Service) input(ctx context.Context, d document.Document, snap document.
 		}
 		// Catatan rilis pengganti tanda tangan di cetakan sistem (M6.9, R-PUB-06).
 		in.ReleaseNote = fmt.Sprintf("Released %s, recorded by %s, record %s, signed scan on file", in.ReleaseDate, deref(info.ReleasedBy), info.ID[:8])
+		if info.Migrated {
+			in.ReleaseNote = fmt.Sprintf("Released (migrated) %s, verified against the signed hard copy by %s, record %s, scan on file", in.ReleaseDate, deref(info.ReleasedBy), info.ID[:8])
+		}
 	}
 	// Tanda revisi dibanding revisi terbit sebelumnya (R-REV-09).
 	for prev := revision - 1; prev >= 0; prev-- {
@@ -280,8 +283,20 @@ func (s *Service) input(ctx context.Context, d document.Document, snap document.
 	if err != nil {
 		return Input{}, err
 	}
+	// Riwayat sebelum baseline migrasi berasal dari teks tabel lama (M7.2,
+	// R-REV-05). Bila teks itu ada, baris revisi baseline sendiri tidak
+	// dibuat sistem, karena tabel lama sudah memuatnya.
+	baselineRevision := -1
+	if d.Baseline != nil {
+		for _, e := range d.Baseline.History {
+			in.History = append(in.History, HistoryRow{No: len(in.History) + 1, Date: e.Date, Revision: e.Revision, Description: e.Description})
+		}
+		if len(d.Baseline.History) > 0 {
+			baselineRevision = d.Baseline.Revision
+		}
+	}
 	for _, h := range history {
-		if int(h.Revision) > revision {
+		if int(h.Revision) > revision || int(h.Revision) <= baselineRevision {
 			continue
 		}
 		date := ""
@@ -292,6 +307,9 @@ func (s *Service) input(ctx context.Context, d document.Document, snap document.
 			date = h.ReleasedAt.Format(time.DateOnly)
 		}
 		desc := h.Description
+		if desc == "" && d.Baseline != nil && int(h.Revision) == d.Baseline.Revision {
+			desc = "Migrated baseline"
+		}
 		if desc == "" && len(in.History) == 0 {
 			desc = "Initial release"
 		}
@@ -341,7 +359,12 @@ func (s *Service) UploadScan(ctx context.Context, actor access.Actor, id, fileNa
 	if err != nil {
 		return Scan{}, err
 	}
-	if err := s.authz.Authorize(ctx, actor, access.RecordRelease, access.Resource{CustomerID: d.CustomerID}); err != nil {
+	// Scan hardcopy baseline migrasi diunggah petugas migrasi (E-10, M7.5).
+	permission := access.RecordRelease
+	if d.Origin == document.OriginMigrated && d.Baseline != nil && d.Baseline.VerifiedAt == nil {
+		permission = access.MigrateDocuments
+	}
+	if err := s.authz.Authorize(ctx, actor, permission, access.Resource{CustomerID: d.CustomerID}); err != nil {
 		return Scan{}, err
 	}
 	if d.Status != document.StatusDraft {

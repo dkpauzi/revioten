@@ -106,7 +106,7 @@ func (q *Queries) LinkChangeDraft(ctx context.Context, arg LinkChangeDraftParams
 
 const listDocumentRevisions = `-- name: ListDocumentRevisions :many
 SELECT r.id, r.revision, r.status, p.name AS created_by, r.created_at, r.released_at,
-       r.snapshot_sha256, rp.name AS released_by, r.release_date, r.scan_file_name
+       r.snapshot_sha256, rp.name AS released_by, r.release_date, r.scan_file_name, r.migrated
 FROM document_revisions r JOIN people p ON p.id = r.created_by_person_id
 LEFT JOIN people rp ON rp.id = r.released_by_person_id
 WHERE r.document_id = $1
@@ -124,6 +124,7 @@ type ListDocumentRevisionsRow struct {
 	ReleasedBy     *string
 	ReleaseDate    pgtype.Date
 	ScanFileName   *string
+	Migrated       bool
 }
 
 func (q *Queries) ListDocumentRevisions(ctx context.Context, documentID string) ([]ListDocumentRevisionsRow, error) {
@@ -146,6 +147,7 @@ func (q *Queries) ListDocumentRevisions(ctx context.Context, documentID string) 
 			&i.ReleasedBy,
 			&i.ReleaseDate,
 			&i.ScanFileName,
+			&i.Migrated,
 		); err != nil {
 			return nil, err
 		}
@@ -238,8 +240,8 @@ SELECT EXISTS (
     WHERE a.target_id = $1 AND a.actor_person_id = $2
       AND a.action LIKE 'document.%'
       -- Bukan perubahan isi: membuka draft, rilis, cetak, unggah scan, dan mode tautan template.
-      AND a.action NOT IN ('document.draft_opened', 'document.released', 'document.printed', 'document.scan_uploaded', 'document.template_mode_changed')
-      AND a.seq > coalesce((SELECT max(r.seq) FROM audit_log r WHERE r.target_id = $1 AND r.action = 'document.released'), 0)
+      AND a.action NOT IN ('document.draft_opened', 'document.released', 'document.printed', 'document.scan_uploaded', 'document.template_mode_changed', 'document.migration_verified')
+      AND a.seq > coalesce((SELECT max(r.seq) FROM audit_log r WHERE r.target_id = $1 AND r.action IN ('document.released', 'document.migration_verified')), 0)
 )
 `
 

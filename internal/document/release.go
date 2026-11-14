@@ -36,6 +36,8 @@ type Revision struct {
 	ReleaseDate string
 	// ScanFileName adalah scan bertanda tangan revisi ini (M6.7); "" bila belum.
 	ScanFileName string
+	// Migrated: revisi ini terbit lewat verifikasi hardcopy (M7.5).
+	Migrated bool
 	// Changes adalah nomor rujukan perubahan yang masuk ke revisi ini (M5.6),
 	// misalnya CHG-0001; tidak pernah nil.
 	Changes []string
@@ -151,6 +153,10 @@ func (s *Service) Release(ctx context.Context, actor access.Actor, id string) (D
 		if err := requireDraft(d); err != nil {
 			return err
 		}
+		// Baseline migrasi terbit lewat verifikasi hardcopy, bukan rilis biasa (R-MIG-06).
+		if d.Baseline != nil && d.Baseline.VerifiedAt == nil {
+			return problems(invalid("status", problem.NotAllowed, "A migration baseline is released by verifying it against the hard copy."))
+		}
 		// Aturan yang tidak bisa dimatikan: pencatat rilis bukan penyusun (R-SEC-11).
 		prepared, err := q.PreparedDraft(ctx, db.PreparedDraftParams{DocumentID: &id, PersonID: &actor.PersonID})
 		if err != nil {
@@ -212,7 +218,7 @@ func (s *Service) Revisions(ctx context.Context, actor access.Actor, id string) 
 	for _, r := range rows {
 		item := Revision{
 			ID: r.ID, Revision: int(r.Revision), Status: r.Status, CreatedBy: r.CreatedBy, CreatedAt: r.CreatedAt.UTC(),
-			ReleasedBy: deref(r.ReleasedBy), SHA256: deref(r.SnapshotSha256), Changes: []string{}, ScanFileName: deref(r.ScanFileName),
+			ReleasedBy: deref(r.ReleasedBy), SHA256: deref(r.SnapshotSha256), Changes: []string{}, ScanFileName: deref(r.ScanFileName), Migrated: r.Migrated,
 		}
 		if r.ReleaseDate.Valid {
 			item.ReleaseDate = r.ReleaseDate.Time.Format(time.DateOnly)

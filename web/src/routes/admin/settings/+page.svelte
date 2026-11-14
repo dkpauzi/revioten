@@ -20,6 +20,8 @@
 
 	// Saklar QR di cetakan (D-62); bawaannya mati.
 	let qrEnabled = $state(false);
+	// Saklar mode migrasi (R-MIG-06); bawaannya mati.
+	let migrationMode = $state(false);
 
 	async function load() {
 		const result = await getSystemSettings();
@@ -30,6 +32,7 @@
 		signDates = result.data.sign_dates_enabled;
 		approvalMode = result.data.form_approval_mode;
 		qrEnabled = result.data.qr_enabled;
+		migrationMode = result.data.migration_mode;
 		loaded = true;
 	}
 
@@ -37,7 +40,7 @@
 		event.preventDefault();
 		message = '';
 		failure = '';
-		const result = await updateSystemSettings({ sign_dates_enabled: signDates, form_approval_mode: approvalMode, qr_enabled: qrEnabled });
+		const result = await updateSystemSettings({ sign_dates_enabled: signDates, form_approval_mode: approvalMode, qr_enabled: qrEnabled, migration_mode: migrationMode });
 		if (!result.ok) {
 			failure = failureText(result.error);
 			return;
@@ -45,6 +48,7 @@
 		signDates = result.data.sign_dates_enabled;
 		approvalMode = result.data.form_approval_mode;
 		qrEnabled = result.data.qr_enabled;
+		migrationMode = result.data.migration_mode;
 		message = t('settingsSaved');
 	}
 
@@ -73,6 +77,11 @@
 			{t('settingsQr')}
 		</label>
 		<p id="qr-hint"><small>{t('settingsQrHint')}</small></p>
+		<label>
+			<input type="checkbox" bind:checked={migrationMode} disabled={!canEdit} aria-describedby="migration-hint" />
+			{t('settingsMigration')}
+		</label>
+		<p id="migration-hint"><small>{t('settingsMigrationHint')}</small></p>
 		<fieldset>
 			<legend>{t('settingsFormApproval')}</legend>
 			<label><input type="radio" bind:group={approvalMode} value="all" disabled={!canEdit} /> {t('settingsFormApprovalAll')}</label>

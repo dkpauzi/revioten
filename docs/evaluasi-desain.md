@@ -133,6 +133,12 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-109 | Scan bertanda tangan: jenis, ukuran, pengunggah, dan penggantian | Celah | M6.7 | Tidak | Diputuskan (D-173) |
 | E-110 | Rincian cetakan yang belum diputuskan | Celah | M6.1 sampai M6.9 | Tidak | Diputuskan (D-174) |
 | E-111 | Layout sebagai data: apa yang bisa diatur admin | Ambigu | M6.1, R-PRT-02 | Tidak | Diputuskan (D-175) |
+| E-112 | Pembanding Excel (M7.3) berhadapan dengan D-151 | Kontradiksi | M7.3 | Tidak | Terbuka |
+| E-113 | Verifikasi hardcopy: siapa pemeriksanya dan apa buktinya | Celah | M7.5 | Tidak | Terbuka |
+| E-114 | Penautan baris: metode dan ambang kemiripan | Celah | M7.4 | Tidak | Terbuka |
+| E-115 | Mode migrasi: bawaan dan cakupan saklarnya | Celah | M7.5, UC-07 | Tidak | Terbuka |
+| E-116 | Form dokumen lama dan riwayat teks: field dan aturannya | Celah | M7.1, M7.2 | Tidak | Terbuka |
+| E-117 | Dasbor ukuran: definisi setiap angka | Ambigu | M7.6, M7.7 | Tidak | Terbuka |
 
 ## Keputusan 4 November 2026
 
@@ -2019,6 +2025,84 @@ Salin blok ini untuk setiap temuan baru.
 - **Menghambat milestone?** Tidak
 - **Status:** Diputuskan (D-175)
 - **Keputusan pemilik:** 14 November 2026, "Yes, accept all" (D-175).
+
+### E-112 · Pembanding Excel (M7.3) berhadapan dengan D-151
+
+- **Tanggal dan milestone:** 15 November 2026, M7.3.
+- **Jenis:** Kontradiksi
+- **Rujukan:** R-MIG-04, D-151, UC-61.
+- **Temuan:** D-151 mengesampingkan impor dan tempel Excel, sedangkan M7.3 meminta Excel lama diunggah untuk dibandingkan. Yang dibangun hanya membandingkan: berkas `.xlsx` dibaca di memori, tidak diimpor, dan tidak disimpan. Karena form lama tidak seragam (sel gabung, judul bertingkat), pembanding tidak memetakan kolom. Isi sel dibandingkan sebagai kumpulan teks tanpa melihat huruf besar-kecil, spasi, dan letak; hasilnya dua daftar: ada di dokumen tetapi tidak di Excel, dan sebaliknya. Akibatnya salah kolom tidak terdeteksi, dan angka lepas hanya diperiksa dari sisi dokumen. Berkas `.xls` lama harus disimpan ulang sebagai `.xlsx`.
+- **Opsi:** (a) pembanding kumpulan teks seperti sekarang; (b) pemetaan kolom lalu selisih per sel; (c) tunda M7.3 sampai D-151 dibuka lagi.
+- **Rekomendasi Claude Code (usulan):** (a). Cukup untuk menangkap salah ketik dan baris yang terlewat, tanpa biaya pemetaan kolom. (b) baru layak bila pilot menunjukkan salah kolom sering terjadi.
+- **Asumsi sementara di kode (ASUMSI E-112):** (a).
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-113 · Verifikasi hardcopy: siapa pemeriksanya dan apa buktinya
+
+- **Tanggal dan milestone:** 15 November 2026, M7.5.
+- **Jenis:** Celah
+- **Rujukan:** R-MIG-06 [PROPOSED], R-SEC-11, D-69, D-173.
+- **Temuan:** R-MIG-06 menyebut verifikasi terhadap hardcopy bertanda tangan, tetapi tidak menyebut siapa yang boleh memeriksa dan bukti apa yang disimpan. Yang dibangun: pemeriksa adalah petugas migrasi (E-10) yang bukan orang yang memasukkan atau mengisi dokumen itu (dijaga di kode dan CHECK database); scan hardcopy bertanda tangan wajib diunggah dulu, seperti rilis biasa (D-173), dan diunggah petugas migrasi; revisi terbit dengan snapshot dan SHA-256, bertanda `migrated`, dan tampil sebagai Released (migrated); rilis biasa (E-7) ditolak untuk baseline yang belum diverifikasi; baseline dan riwayat teks tidak bisa diubah lagi sesudahnya.
+- **Opsi:** (a) seperti sekarang: dua orang dan scan wajib; (b) scan opsional, cukup pernyataan pemeriksa; (c) orang yang sama boleh memasukkan dan memverifikasi.
+- **Rekomendasi Claude Code (usulan):** (a). Baseline menjadi titik awal semua revisi berikutnya, jadi buktinya harus sekuat rilis biasa. Dua petugas migrasi yang ada (PPAP Staff dan PPAP Engineer, D-69) cukup untuk saling memeriksa.
+- **Asumsi sementara di kode (ASUMSI E-113):** (a).
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-114 · Penautan baris: metode dan ambang kemiripan
+
+- **Tanggal dan milestone:** 15 November 2026, M7.4.
+- **Jenis:** Celah
+- **Rujukan:** R-MIG-05, RK-12, UC-62.
+- **Temuan:** R-MIG-05 menyebut kemiripan teks tanpa metode, ambang, atau kandidatnya. Yang dibangun: koefisien Dice atas pasangan dua huruf (0 sampai 100), ambang usulan 60, kandidat hanya poin jenis dokumen yang sama di versi terbit terakhir process template milik proses baris itu, satu poin untuk satu baris per bagian, dan baris tanpa proses tidak mendapat usulan. Pasangan bernilai 100 dicentang lebih dulu; sisanya diputuskan orang. Menautkan memakai hak E-2 (isi baris tidak berubah, hanya tautannya). Ambang 60 belum diukur dengan data asli.
+- **Opsi:** (a) seperti sekarang; (b) ambang dijadikan pengaturan admin; (c) kandidat diperluas ke semua process template bila baris tidak punya proses.
+- **Rekomendasi Claude Code (usulan):** (a) untuk pilot, lalu ukur: berapa usulan yang dikonfirmasi dan berapa yang ditolak. (b) hanya bila angka pilot menunjukkan ambang perlu digeser.
+- **Asumsi sementara di kode (ASUMSI E-114):** (a).
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-115 · Mode migrasi: bawaan dan cakupan saklarnya
+
+- **Tanggal dan milestone:** 15 November 2026, M7.5, UC-07.
+- **Jenis:** Celah
+- **Rujukan:** R-MIG-06 [PROPOSED].
+- **Temuan:** Brief hanya menyebut mode migrasi bisa dimatikan admin. Yang dibangun: satu saklar global di Settings (A-3), bawaannya mati, perubahan tercatat di audit log. Saat mati, memasukkan dokumen lama, mengubah riwayat teks, dan verifikasi hardcopy ditolak, juga untuk petugas migrasi. Isi dokumen migrasi yang masih draft tetap bisa diketik (E-2), dan penautan baris tetap jalan, karena keduanya juga berlaku untuk dokumen baru.
+- **Opsi:** (a) saklar global, bawaan mati; (b) saklar per customer; (c) tanpa saklar, cukup peran.
+- **Rekomendasi Claude Code (usulan):** (a). Saklar global sederhana dan cocok dengan pilot satu customer. Per customer baru perlu bila migrasi berjalan bergelombang di versi perusahaan (R-MIG-08).
+- **Asumsi sementara di kode (ASUMSI E-115):** (a).
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-116 · Form dokumen lama dan riwayat teks: field dan aturannya
+
+- **Tanggal dan milestone:** 15 November 2026, M7.1, M7.2.
+- **Jenis:** Celah
+- **Rujukan:** R-MIG-02, R-MIG-03, R-REV-01, R-REV-05 [PROPOSED], Q-06.
+- **Temuan:** Milestone menyebut nomor asli, revisi saat ini, tanggal berlaku, penyusun, dan approver, tanpa aturan isinya. Yang dibangun: nomor dipilih dari register (nomor yang belum punya dokumen dan berstatus Reserved, In use, atau Released; nomor lama masuk lewat impor M2.5); revisi berupa angka 0 sampai 999; tanggal berlaku wajib dan menjadi tanggal rilis baseline; penyusun dan approver berupa teks bebas, karena orangnya belum tentu punya akun; dokumen memakai form set terbit customer saat ini, walau hardcopy lama mungkin memakai form lama. Riwayat: label revisi teks (misalnya -03 atau C), tanggal opsional, deskripsi wajib, paling banyak 200 baris, dicetak sebelum revisi buatan sistem, dan bila riwayat teks ada, baris revisi baseline tidak dibuat sistem lagi. Arsip berkas lama (R-REV-05 "optional archived files") tidak dibangun; scan hardcopy menggantikannya.
+- **Opsi:** (a) seperti sekarang; (b) penyusun dan approver dipilih dari daftar orang; (c) tambah unggahan arsip Excel lama per dokumen.
+- **Rekomendasi Claude Code (usulan):** (a). Teks bebas mengikuti R-MIG-01 (dokumen lama tidak dirapikan). (c) bisa ditambah bila auditor meminta berkas aslinya.
+- **Asumsi sementara di kode (ASUMSI E-116):** (a).
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-117 · Dasbor ukuran: definisi setiap angka
+
+- **Tanggal dan milestone:** 15 November 2026, M7.6, M7.7.
+- **Jenis:** Ambigu
+- **Rujukan:** M7.7, R-MIG-07, RK-50, Q-16, UC-64.
+- **Temuan:** M7.7 menyebut empat ukuran tanpa rumusnya. Yang dibangun: (1) baris mengikuti template = baris tertaut yang tidak diputus, dibagi semua baris; baris dengan perbedaan lokal tetap dihitung mengikuti; (2) dokumen per jenis dan status, dengan Released (migrated) dipisah; (3) target yokoten per keputusan; (4) waktu revisi = dari draft dibuka oleh perubahan yang diterima sampai rilisnya dicatat, rata-rata dan median dalam jam, tanpa revisi awal dan baseline migrasi; (5) usaha migrasi = menit yang diketik pemeriksa saat verifikasi, bukan stopwatch sistem. Dasbor dibuka semua akun (L-2), untuk semua customer atau satu customer, dan hanya memuat angka agregat. Angka "sebelum" (baseline Excel, S7) tidak ada di sistem dan tidak dikarang.
+- **Opsi:** (a) seperti sekarang; (b) waktu revisi dihitung dari perubahan diajukan; (c) stopwatch mulai dan selesai di layar migrasi.
+- **Rekomendasi Claude Code (usulan):** (a), dengan menit diketik tangan untuk pilot. Untuk QCC, pakai median (tahan terhadap satu dokumen yang lama terbengkalai) dan sebut sebagai hasil demo (RK-50).
+- **Asumsi sementara di kode (ASUMSI E-117):** (a).
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
 
 ## Usulan desain UI (UX-01 sampai UX-07): dampak ke M0 sampai M3 dan saran
 

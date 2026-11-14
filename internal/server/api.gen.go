@@ -350,6 +350,24 @@ func (e ComposedPointState) Valid() bool {
 	}
 }
 
+// Defines values for DocumentOrigin.
+const (
+	DocumentOriginMigrated DocumentOrigin = "migrated"
+	DocumentOriginNew      DocumentOrigin = "new"
+)
+
+// Valid indicates whether the value is a known member of the DocumentOrigin enum.
+func (e DocumentOrigin) Valid() bool {
+	switch e {
+	case DocumentOriginMigrated:
+		return true
+	case DocumentOriginNew:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for DocumentStatus.
 const (
 	DocumentStatusDraft    DocumentStatus = "draft"
@@ -455,6 +473,24 @@ func (e DocumentRowChangeStatus) Valid() bool {
 	case DocumentRowChangeStatusMoved:
 		return true
 	case DocumentRowChangeStatusRemoved:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DocumentSummaryOrigin.
+const (
+	DocumentSummaryOriginMigrated DocumentSummaryOrigin = "migrated"
+	DocumentSummaryOriginNew      DocumentSummaryOrigin = "new"
+)
+
+// Valid indicates whether the value is a known member of the DocumentSummaryOrigin enum.
+func (e DocumentSummaryOrigin) Valid() bool {
+	switch e {
+	case DocumentSummaryOriginMigrated:
+		return true
+	case DocumentSummaryOriginNew:
 		return true
 	default:
 		return false
@@ -902,6 +938,51 @@ func (e HealthStatus) Valid() bool {
 	case HealthStatusOk:
 		return true
 	case HealthStatusUnavailable:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MetricsDocumentsStatus.
+const (
+	MetricsDocumentsStatusDraft            MetricsDocumentsStatus = "draft"
+	MetricsDocumentsStatusReleased         MetricsDocumentsStatus = "released"
+	MetricsDocumentsStatusReleasedMigrated MetricsDocumentsStatus = "released_migrated"
+)
+
+// Valid indicates whether the value is a known member of the MetricsDocumentsStatus enum.
+func (e MetricsDocumentsStatus) Valid() bool {
+	switch e {
+	case MetricsDocumentsStatusDraft:
+		return true
+	case MetricsDocumentsStatusReleased:
+		return true
+	case MetricsDocumentsStatusReleasedMigrated:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MetricsYokotenDecision.
+const (
+	MetricsYokotenDecisionAdapt         MetricsYokotenDecision = "adapt"
+	MetricsYokotenDecisionApply         MetricsYokotenDecision = "apply"
+	MetricsYokotenDecisionNotApplicable MetricsYokotenDecision = "not_applicable"
+	MetricsYokotenDecisionPending       MetricsYokotenDecision = "pending"
+)
+
+// Valid indicates whether the value is a known member of the MetricsYokotenDecision enum.
+func (e MetricsYokotenDecision) Valid() bool {
+	switch e {
+	case MetricsYokotenDecisionAdapt:
+		return true
+	case MetricsYokotenDecisionApply:
+		return true
+	case MetricsYokotenDecisionNotApplicable:
+		return true
+	case MetricsYokotenDecisionPending:
 		return true
 	default:
 		return false
@@ -2253,13 +2334,15 @@ type CustomerUpdate struct {
 
 // Document defines model for Document.
 type Document struct {
-	CreatedAt        time.Time       `json:"created_at"`
-	CustomerCode     string          `json:"customer_code"`
-	CustomerId       string          `json:"customer_id"`
-	DocumentNumberId string          `json:"document_number_id"`
-	DocumentType     DocumentTypeRef `json:"document_type"`
-	FormSetName      string          `json:"form_set_name"`
-	FormSetVersionId string          `json:"form_set_version_id"`
+	// Baseline The hard copy data of a migrated document (R-MIG-03).
+	Baseline         *DocumentBaseline `json:"baseline,omitempty"`
+	CreatedAt        time.Time         `json:"created_at"`
+	CustomerCode     string            `json:"customer_code"`
+	CustomerId       string            `json:"customer_id"`
+	DocumentNumberId string            `json:"document_number_id"`
+	DocumentType     DocumentTypeRef   `json:"document_type"`
+	FormSetName      string            `json:"form_set_name"`
+	FormSetVersionId string            `json:"form_set_version_id"`
 
 	// FormatVersionId The format template version of the sheet of this document.
 	FormatVersionId string `json:"format_version_id"`
@@ -2268,11 +2351,17 @@ type Document struct {
 	Header map[string]interface{} `json:"header"`
 
 	// HeaderVersion Goes up by one each time the header is saved. Send it back when saving the header (R-DOC-07).
-	HeaderVersion int                  `json:"header_version"`
-	Id            string               `json:"id"`
-	Models        []NamedRef           `json:"models"`
-	Number        string               `json:"number"`
-	PartNumbers   []DocumentPartNumber `json:"part_numbers"`
+	HeaderVersion int        `json:"header_version"`
+	Id            string     `json:"id"`
+	Models        []NamedRef `json:"models"`
+	Number        string     `json:"number"`
+
+	// Origin Migrated for a legacy document entered as a migration baseline (stage 7).
+	Origin      DocumentOrigin       `json:"origin"`
+	PartNumbers []DocumentPartNumber `json:"part_numbers"`
+
+	// ReleasedMigrated True when the revision in force is a migration baseline verified against the hard copy, shown as Released (migrated) (R-MIG-06).
+	ReleasedMigrated bool `json:"released_migrated"`
 
 	// ReleasedRevision The revision in force. Missing until the first release.
 	ReleasedRevision *int          `json:"released_revision,omitempty"`
@@ -2292,8 +2381,27 @@ type Document struct {
 	UpdatedAt time.Time      `json:"updated_at"`
 }
 
+// DocumentOrigin Migrated for a legacy document entered as a migration baseline (stage 7).
+type DocumentOrigin string
+
 // DocumentStatus Draft while a draft revision is open; released when there is none (M5.4).
 type DocumentStatus string
+
+// DocumentBaseline The hard copy data of a migrated document (R-MIG-03).
+type DocumentBaseline struct {
+	ApprovedBy    string    `json:"approved_by"`
+	CreatedAt     time.Time `json:"created_at"`
+	CreatedBy     string    `json:"created_by"`
+	EffectiveDate string    `json:"effective_date"`
+
+	// EffortMinutes Minutes spent on migrating this document, entered at verification (M7.6).
+	EffortMinutes *int           `json:"effort_minutes,omitempty"`
+	History       []HistoryEntry `json:"history"`
+	PreparedBy    string         `json:"prepared_by"`
+	Revision      int            `json:"revision"`
+	VerifiedAt    *time.Time     `json:"verified_at,omitempty"`
+	VerifiedBy    *string        `json:"verified_by,omitempty"`
+}
 
 // DocumentCellChange defines model for DocumentCellChange.
 type DocumentCellChange struct {
@@ -2408,6 +2516,9 @@ type DocumentRevision struct {
 	CreatedAt time.Time `json:"created_at"`
 	CreatedBy string    `json:"created_by"`
 	Id        string    `json:"id"`
+
+	// Migrated True when the revision was released by verification against the hard copy (M7.5).
+	Migrated *bool `json:"migrated,omitempty"`
 
 	// ReleaseDate Filled when the revision is printed for signature (D-59).
 	ReleaseDate *openapi_types.Date `json:"release_date,omitempty"`
@@ -2530,15 +2641,24 @@ type DocumentSummary struct {
 	Id           string          `json:"id"`
 
 	// Models The names of the models of the document, in alphabetical order (M4.7).
-	Models   []string `json:"models"`
-	Number   string   `json:"number"`
-	Revision int      `json:"revision"`
-	RowCount int      `json:"row_count"`
+	Models []string `json:"models"`
+	Number string   `json:"number"`
+
+	// Origin Migrated for a legacy document entered as a migration baseline (stage 7).
+	Origin DocumentSummaryOrigin `json:"origin"`
+
+	// ReleasedMigrated True when the revision in force is a migration baseline verified against the hard copy, shown as Released (migrated) (R-MIG-06).
+	ReleasedMigrated bool `json:"released_migrated"`
+	Revision         int  `json:"revision"`
+	RowCount         int  `json:"row_count"`
 
 	// Status Draft while a draft revision is open; released when there is none (M5.4).
 	Status    DocumentSummaryStatus `json:"status"`
 	UpdatedAt time.Time             `json:"updated_at"`
 }
+
+// DocumentSummaryOrigin Migrated for a legacy document entered as a migration baseline (stage 7).
+type DocumentSummaryOrigin string
 
 // DocumentSummaryStatus Draft while a draft revision is open; released when there is none (M5.4).
 type DocumentSummaryStatus string
@@ -2637,6 +2757,26 @@ type ErrorDetail struct {
 
 // ErrorDetailCode defines model for ErrorDetail.Code.
 type ErrorDetailCode string
+
+// ExcelComparison defines model for ExcelComparison.
+type ExcelComparison struct {
+	// Matched Document cells whose text is in the Excel sheet.
+	Matched           int `json:"matched"`
+	MissingInDocument []struct {
+		Cell string `json:"cell"`
+		Text string `json:"text"`
+	} `json:"missing_in_document"`
+	MissingInExcel []struct {
+		Label string `json:"label"`
+
+		// Position The row order; 0 for the header.
+		Position int    `json:"position"`
+		Text     string `json:"text"`
+	} `json:"missing_in_excel"`
+	Sheet     string   `json:"sheet"`
+	Sheets    []string `json:"sheets"`
+	Truncated bool     `json:"truncated"`
+}
 
 // FieldDifference defines model for FieldDifference.
 type FieldDifference struct {
@@ -2907,6 +3047,121 @@ type HealthDatabase string
 
 // HealthStatus defines model for Health.Status.
 type HealthStatus string
+
+// HistoryEntry defines model for HistoryEntry.
+type HistoryEntry struct {
+	// Date YYYY-MM-DD, or empty when the legacy table has no date.
+	Date        *string `json:"date,omitempty"`
+	Description string  `json:"description"`
+
+	// Revision The revision as written in the legacy table, for example -03.
+	Revision string `json:"revision"`
+}
+
+// HistoryEntryList defines model for HistoryEntryList.
+type HistoryEntryList struct {
+	Entries []HistoryEntry `json:"entries"`
+}
+
+// LegacyDocument defines model for LegacyDocument.
+type LegacyDocument struct {
+	// ApprovedBy The approvers as written on the hard copy.
+	ApprovedBy       string `json:"approved_by"`
+	DocumentNumberId string `json:"document_number_id"`
+
+	// EffectiveDate YYYY-MM-DD.
+	EffectiveDate string    `json:"effective_date"`
+	ModelIds      []string  `json:"model_ids"`
+	PartNumberIds *[]string `json:"part_number_ids,omitempty"`
+
+	// PreparedBy The preparer as written on the hard copy.
+	PreparedBy string `json:"prepared_by"`
+
+	// Revision The current revision on the signed hard copy, for example 4 for -04.
+	Revision    int     `json:"revision"`
+	RouteId     *string `json:"route_id,omitempty"`
+	RouteReason *string `json:"route_reason,omitempty"`
+}
+
+// LinkSuggestion defines model for LinkSuggestion.
+type LinkSuggestion struct {
+	// Matched The text of the point that matches row_text.
+	Matched   string `json:"matched"`
+	PointId   string `json:"point_id"`
+	PointText string `json:"point_text"`
+	Position  int    `json:"position"`
+	RowId     string `json:"row_id"`
+
+	// RowText The row content that matches best.
+	RowText string `json:"row_text"`
+
+	// Score Text similarity from 0 to 100.
+	Score     int    `json:"score"`
+	VersionId string `json:"version_id"`
+}
+
+// LinkSuggestionList defines model for LinkSuggestionList.
+type LinkSuggestionList struct {
+	Items []LinkSuggestion `json:"items"`
+}
+
+// Metrics defines model for Metrics.
+type Metrics struct {
+	Documents []struct {
+		Count            int                    `json:"count"`
+		DocumentType     string                 `json:"document_type"`
+		DocumentTypeName string                 `json:"document_type_name"`
+		Status           MetricsDocumentsStatus `json:"status"`
+	} `json:"documents"`
+	Migration struct {
+		AverageMinutes float32 `json:"average_minutes"`
+		Documents      int     `json:"documents"`
+		Measured       int     `json:"measured"`
+		TotalMinutes   int     `json:"total_minutes"`
+		Verified       int     `json:"verified"`
+	} `json:"migration"`
+	Revision struct {
+		AverageHours float32 `json:"average_hours"`
+		Count        int     `json:"count"`
+		MedianHours  float32 `json:"median_hours"`
+	} `json:"revision"`
+	Rows struct {
+		Detached      int     `json:"detached"`
+		Free          int     `json:"free"`
+		Linked        int     `json:"linked"`
+		LinkedPercent float32 `json:"linked_percent"`
+		Total         int     `json:"total"`
+	} `json:"rows"`
+	Yokoten []struct {
+		Count    int                    `json:"count"`
+		Decision MetricsYokotenDecision `json:"decision"`
+	} `json:"yokoten"`
+}
+
+// MetricsDocumentsStatus defines model for Metrics.Documents.Status.
+type MetricsDocumentsStatus string
+
+// MetricsYokotenDecision defines model for Metrics.Yokoten.Decision.
+type MetricsYokotenDecision string
+
+// MigratableNumber defines model for MigratableNumber.
+type MigratableNumber struct {
+	DocumentType string `json:"document_type"`
+	Id           string `json:"id"`
+	Number       string `json:"number"`
+	Status       string `json:"status"`
+}
+
+// MigratableNumberList defines model for MigratableNumberList.
+type MigratableNumberList struct {
+	Items []MigratableNumber `json:"items"`
+}
+
+// MigrationVerification defines model for MigrationVerification.
+type MigrationVerification struct {
+	// EffortMinutes Minutes spent on migrating this document (M7.6). Leave it out when not measured.
+	EffortMinutes *int `json:"effort_minutes,omitempty"`
+}
 
 // Model defines model for Model.
 type Model struct {
@@ -4003,6 +4258,18 @@ type RowDifferenceList struct {
 	Items []RowDifference `json:"items"`
 }
 
+// RowLink defines model for RowLink.
+type RowLink struct {
+	PointId   string `json:"point_id"`
+	RowId     string `json:"row_id"`
+	VersionId string `json:"version_id"`
+}
+
+// RowLinkList defines model for RowLinkList.
+type RowLinkList struct {
+	Links []RowLink `json:"links"`
+}
+
 // SQAMChangeInput defines model for SQAMChangeInput.
 type SQAMChangeInput struct {
 	ChangeTypeId string `json:"change_type_id"`
@@ -4100,6 +4367,9 @@ type SystemSettings struct {
 	// FormApprovalMode How many form approvers must approve a form set or an AP table before it is published (D-139). all is the default.
 	FormApprovalMode SystemSettingsFormApprovalMode `json:"form_approval_mode"`
 
+	// MigrationMode When true, migration officers can enter and verify legacy documents (R-MIG-06). Off by default.
+	MigrationMode bool `json:"migration_mode"`
+
 	// QrEnabled When true, prints carry a QR code to the verification page (D-62, R-APR-16). Off by default.
 	QrEnabled bool `json:"qr_enabled"`
 
@@ -4114,6 +4384,9 @@ type SystemSettingsFormApprovalMode string
 type SystemSettingsUpdate struct {
 	// FormApprovalMode Leave it out to keep the current value.
 	FormApprovalMode *SystemSettingsUpdateFormApprovalMode `json:"form_approval_mode,omitempty"`
+
+	// MigrationMode Leave it out to keep the current value.
+	MigrationMode *bool `json:"migration_mode,omitempty"`
 
 	// QrEnabled Leave it out to keep the current value.
 	QrEnabled *bool `json:"qr_enabled,omitempty"`
@@ -4450,6 +4723,12 @@ type GetDocumentDiffParams struct {
 	ProcessId *string `form:"process_id,omitempty" json:"process_id,omitempty"`
 }
 
+// CompareDocumentWithExcelMultipartBody defines parameters for CompareDocumentWithExcel.
+type CompareDocumentWithExcelMultipartBody struct {
+	File  *openapi_types.File `json:"file,omitempty"`
+	Sheet *string             `json:"sheet,omitempty"`
+}
+
 // UploadSignedScanMultipartBody defines parameters for UploadSignedScan.
 type UploadSignedScanMultipartBody struct {
 	File *openapi_types.File `json:"file,omitempty"`
@@ -4460,6 +4739,16 @@ type GetActionPriorityParams struct {
 	Severity   int `form:"severity" json:"severity"`
 	Occurrence int `form:"occurrence" json:"occurrence"`
 	Detection  int `form:"detection" json:"detection"`
+}
+
+// GetMetricsParams defines parameters for GetMetrics.
+type GetMetricsParams struct {
+	CustomerId *string `form:"customer_id,omitempty" json:"customer_id,omitempty"`
+}
+
+// ListMigratableNumbersParams defines parameters for ListMigratableNumbers.
+type ListMigratableNumbersParams struct {
+	CustomerId string `form:"customer_id" json:"customer_id"`
 }
 
 // ListModelGroupsParams defines parameters for ListModelGroups.
@@ -4580,8 +4869,20 @@ type ComposeDocumentJSONRequestBody = ComposeInput
 // CopyDocumentCompositionJSONRequestBody defines body for CopyDocumentComposition for application/json ContentType.
 type CopyDocumentCompositionJSONRequestBody = DocumentCopy
 
+// CompareDocumentWithExcelMultipartRequestBody defines body for CompareDocumentWithExcel for multipart/form-data ContentType.
+type CompareDocumentWithExcelMultipartRequestBody CompareDocumentWithExcelMultipartBody
+
 // SetDocumentHeaderJSONRequestBody defines body for SetDocumentHeader for application/json ContentType.
 type SetDocumentHeaderJSONRequestBody = DocumentHeader
+
+// SetDocumentHistoryJSONRequestBody defines body for SetDocumentHistory for application/json ContentType.
+type SetDocumentHistoryJSONRequestBody = HistoryEntryList
+
+// LinkDocumentRowsJSONRequestBody defines body for LinkDocumentRows for application/json ContentType.
+type LinkDocumentRowsJSONRequestBody = RowLinkList
+
+// VerifyMigrationJSONRequestBody defines body for VerifyMigration for application/json ContentType.
+type VerifyMigrationJSONRequestBody = MigrationVerification
 
 // ReorderDocumentRowsJSONRequestBody defines body for ReorderDocumentRows for application/json ContentType.
 type ReorderDocumentRowsJSONRequestBody = DocumentOrder
@@ -4648,6 +4949,9 @@ type RenameFormatTemplateJSONRequestBody = FormatTemplateRename
 
 // UpdateFourMCategoryJSONRequestBody defines body for UpdateFourMCategory for application/json ContentType.
 type UpdateFourMCategoryJSONRequestBody = NameUpdate
+
+// MigrateDocumentJSONRequestBody defines body for MigrateDocument for application/json ContentType.
+type MigrateDocumentJSONRequestBody = LegacyDocument
 
 // CreateModelGroupJSONRequestBody defines body for CreateModelGroup for application/json ContentType.
 type CreateModelGroupJSONRequestBody = NewModelGroup
@@ -4918,9 +5222,24 @@ type ServerInterface interface {
 	// GetDocumentDifferences Compare each linked row with its process template point (L-4, M4.8)
 	// (GET /api/v1/documents/{documentId}/differences)
 	GetDocumentDifferences(w http.ResponseWriter, r *http.Request, documentId DocumentId)
+	// CompareDocumentWithExcel Compare a document with a legacy Excel sheet (L-4, M7.3)
+	// (POST /api/v1/documents/{documentId}/excel-comparison)
+	CompareDocumentWithExcel(w http.ResponseWriter, r *http.Request, documentId DocumentId)
 	// SetDocumentHeader Replace the header content of a draft document (E-2)
 	// (PUT /api/v1/documents/{documentId}/header)
 	SetDocumentHeader(w http.ResponseWriter, r *http.Request, documentId DocumentId)
+	// SetDocumentHistory Replace the text revision history of a migrated document (E-10, M7.2)
+	// (PUT /api/v1/documents/{documentId}/history)
+	SetDocumentHistory(w http.ResponseWriter, r *http.Request, documentId DocumentId)
+	// ListLinkSuggestions Suggested template points for rows without a link (L-4, M7.4)
+	// (GET /api/v1/documents/{documentId}/link-suggestions)
+	ListLinkSuggestions(w http.ResponseWriter, r *http.Request, documentId DocumentId)
+	// LinkDocumentRows Link rows to template points after a person confirmed them (E-2, M7.4)
+	// (POST /api/v1/documents/{documentId}/links)
+	LinkDocumentRows(w http.ResponseWriter, r *http.Request, documentId DocumentId)
+	// VerifyMigration Confirm a migration baseline against the signed hard copy (E-10, M7.5)
+	// (POST /api/v1/documents/{documentId}/migration/verify)
+	VerifyMigration(w http.ResponseWriter, r *http.Request, documentId DocumentId)
 	// ReorderDocumentRows Save a new order of the rows, and number the operations when asked (E-2, M4.6)
 	// (PUT /api/v1/documents/{documentId}/order)
 	ReorderDocumentRows(w http.ResponseWriter, r *http.Request, documentId DocumentId)
@@ -5041,6 +5360,15 @@ type ServerInterface interface {
 	// UpdateFourMCategory Rename a 4M category (A-2)
 	// (PUT /api/v1/four-m-categories/{fourMCategoryId})
 	UpdateFourMCategory(w http.ResponseWriter, r *http.Request, fourMCategoryId FourMCategoryId)
+	// GetMetrics The measurement dashboard (L-2, M7.7)
+	// (GET /api/v1/metrics)
+	GetMetrics(w http.ResponseWriter, r *http.Request, params GetMetricsParams)
+	// MigrateDocument Enter a legacy document as a migration baseline (E-10, M7.1)
+	// (POST /api/v1/migration/documents)
+	MigrateDocument(w http.ResponseWriter, r *http.Request)
+	// ListMigratableNumbers Numbers of one customer that a legacy document can take (E-10, M7.1)
+	// (GET /api/v1/migration/numbers)
+	ListMigratableNumbers(w http.ResponseWriter, r *http.Request, params ListMigratableNumbersParams)
 	// ListModelGroups The model groups of one customer, ordered by name
 	// (GET /api/v1/model-groups)
 	ListModelGroups(w http.ResponseWriter, r *http.Request, params ListModelGroupsParams)
@@ -6736,6 +7064,32 @@ func (siw *ServerInterfaceWrapper) GetDocumentDifferences(w http.ResponseWriter,
 	handler.ServeHTTP(w, r)
 }
 
+// CompareDocumentWithExcel operation middleware
+func (siw *ServerInterfaceWrapper) CompareDocumentWithExcel(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", r.PathValue("documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CompareDocumentWithExcel(w, r, documentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // SetDocumentHeader operation middleware
 func (siw *ServerInterfaceWrapper) SetDocumentHeader(w http.ResponseWriter, r *http.Request) {
 
@@ -6753,6 +7107,110 @@ func (siw *ServerInterfaceWrapper) SetDocumentHeader(w http.ResponseWriter, r *h
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.SetDocumentHeader(w, r, documentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetDocumentHistory operation middleware
+func (siw *ServerInterfaceWrapper) SetDocumentHistory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", r.PathValue("documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetDocumentHistory(w, r, documentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListLinkSuggestions operation middleware
+func (siw *ServerInterfaceWrapper) ListLinkSuggestions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", r.PathValue("documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListLinkSuggestions(w, r, documentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// LinkDocumentRows operation middleware
+func (siw *ServerInterfaceWrapper) LinkDocumentRows(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", r.PathValue("documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.LinkDocumentRows(w, r, documentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// VerifyMigration operation middleware
+func (siw *ServerInterfaceWrapper) VerifyMigration(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", r.PathValue("documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.VerifyMigration(w, r, documentId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -7847,6 +8305,86 @@ func (siw *ServerInterfaceWrapper) UpdateFourMCategory(w http.ResponseWriter, r 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UpdateFourMCategory(w, r, fourMCategoryId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetMetrics operation middleware
+func (siw *ServerInterfaceWrapper) GetMetrics(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetMetricsParams
+
+	// ------------- Optional query parameter "customer_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "customer_id", r.URL.Query(), &params.CustomerId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "customer_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customer_id", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMetrics(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// MigrateDocument operation middleware
+func (siw *ServerInterfaceWrapper) MigrateDocument(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.MigrateDocument(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListMigratableNumbers operation middleware
+func (siw *ServerInterfaceWrapper) ListMigratableNumbers(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListMigratableNumbersParams
+
+	// ------------- Required query parameter "customer_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "customer_id", r.URL.Query(), &params.CustomerId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "customer_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customer_id", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListMigratableNumbers(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -9440,6 +9978,14 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/changes/{changeId}/attachments/{attachmentId}", wrapper.RemoveChangeAttachment)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/changes/{changeId}/attachments/{attachmentId}", wrapper.GetChangeAttachment)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/documents/{documentId}/changes", wrapper.ListDocumentChanges)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/migration/numbers", wrapper.ListMigratableNumbers)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/migration/documents", wrapper.MigrateDocument)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/documents/{documentId}/history", wrapper.SetDocumentHistory)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/migration/verify", wrapper.VerifyMigration)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/documents/{documentId}/link-suggestions", wrapper.ListLinkSuggestions)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/links", wrapper.LinkDocumentRows)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/excel-comparison", wrapper.CompareDocumentWithExcel)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/metrics", wrapper.GetMetrics)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/release", wrapper.ReleaseDocument)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/print", wrapper.PrintDocument)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/documents/{documentId}/prints", wrapper.ListDocumentPrints)
@@ -11766,6 +12312,46 @@ func (response GetDocumentDifferencesdefaultJSONResponse) VisitGetDocumentDiffer
 	return err
 }
 
+type CompareDocumentWithExcelRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+	Body       *multipart.Reader
+}
+
+type CompareDocumentWithExcelResponseObject interface {
+	VisitCompareDocumentWithExcelResponse(w http.ResponseWriter) error
+}
+
+type CompareDocumentWithExcel200JSONResponse ExcelComparison
+
+func (response CompareDocumentWithExcel200JSONResponse) VisitCompareDocumentWithExcelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CompareDocumentWithExceldefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response CompareDocumentWithExceldefaultJSONResponse) VisitCompareDocumentWithExcelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type SetDocumentHeaderRequestObject struct {
 	DocumentId DocumentId `json:"documentId"`
 	Body       *SetDocumentHeaderJSONRequestBody
@@ -11795,6 +12381,165 @@ type SetDocumentHeaderdefaultJSONResponse struct {
 }
 
 func (response SetDocumentHeaderdefaultJSONResponse) VisitSetDocumentHeaderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetDocumentHistoryRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+	Body       *SetDocumentHistoryJSONRequestBody
+}
+
+type SetDocumentHistoryResponseObject interface {
+	VisitSetDocumentHistoryResponse(w http.ResponseWriter) error
+}
+
+type SetDocumentHistory200JSONResponse Document
+
+func (response SetDocumentHistory200JSONResponse) VisitSetDocumentHistoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetDocumentHistorydefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response SetDocumentHistorydefaultJSONResponse) VisitSetDocumentHistoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListLinkSuggestionsRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+}
+
+type ListLinkSuggestionsResponseObject interface {
+	VisitListLinkSuggestionsResponse(w http.ResponseWriter) error
+}
+
+type ListLinkSuggestions200JSONResponse LinkSuggestionList
+
+func (response ListLinkSuggestions200JSONResponse) VisitListLinkSuggestionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListLinkSuggestionsdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ListLinkSuggestionsdefaultJSONResponse) VisitListLinkSuggestionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type LinkDocumentRowsRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+	Body       *LinkDocumentRowsJSONRequestBody
+}
+
+type LinkDocumentRowsResponseObject interface {
+	VisitLinkDocumentRowsResponse(w http.ResponseWriter) error
+}
+
+type LinkDocumentRows200JSONResponse Document
+
+func (response LinkDocumentRows200JSONResponse) VisitLinkDocumentRowsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type LinkDocumentRowsdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response LinkDocumentRowsdefaultJSONResponse) VisitLinkDocumentRowsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VerifyMigrationRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+	Body       *VerifyMigrationJSONRequestBody
+}
+
+type VerifyMigrationResponseObject interface {
+	VisitVerifyMigrationResponse(w http.ResponseWriter) error
+}
+
+type VerifyMigration200JSONResponse Document
+
+func (response VerifyMigration200JSONResponse) VisitVerifyMigrationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VerifyMigrationdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response VerifyMigrationdefaultJSONResponse) VisitVerifyMigrationResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -13409,6 +14154,123 @@ type UpdateFourMCategorydefaultJSONResponse struct {
 }
 
 func (response UpdateFourMCategorydefaultJSONResponse) VisitUpdateFourMCategoryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMetricsRequestObject struct {
+	Params GetMetricsParams
+}
+
+type GetMetricsResponseObject interface {
+	VisitGetMetricsResponse(w http.ResponseWriter) error
+}
+
+type GetMetrics200JSONResponse Metrics
+
+func (response GetMetrics200JSONResponse) VisitGetMetricsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMetricsdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response GetMetricsdefaultJSONResponse) VisitGetMetricsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type MigrateDocumentRequestObject struct {
+	Body *MigrateDocumentJSONRequestBody
+}
+
+type MigrateDocumentResponseObject interface {
+	VisitMigrateDocumentResponse(w http.ResponseWriter) error
+}
+
+type MigrateDocument201JSONResponse Document
+
+func (response MigrateDocument201JSONResponse) VisitMigrateDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type MigrateDocumentdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response MigrateDocumentdefaultJSONResponse) VisitMigrateDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListMigratableNumbersRequestObject struct {
+	Params ListMigratableNumbersParams
+}
+
+type ListMigratableNumbersResponseObject interface {
+	VisitListMigratableNumbersResponse(w http.ResponseWriter) error
+}
+
+type ListMigratableNumbers200JSONResponse MigratableNumberList
+
+func (response ListMigratableNumbers200JSONResponse) VisitListMigratableNumbersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListMigratableNumbersdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ListMigratableNumbersdefaultJSONResponse) VisitListMigratableNumbersResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -16011,9 +16873,24 @@ type StrictServerInterface interface {
 	// GetDocumentDifferences Compare each linked row with its process template point (L-4, M4.8)
 	// (GET /api/v1/documents/{documentId}/differences)
 	GetDocumentDifferences(ctx context.Context, request GetDocumentDifferencesRequestObject) (GetDocumentDifferencesResponseObject, error)
+	// CompareDocumentWithExcel Compare a document with a legacy Excel sheet (L-4, M7.3)
+	// (POST /api/v1/documents/{documentId}/excel-comparison)
+	CompareDocumentWithExcel(ctx context.Context, request CompareDocumentWithExcelRequestObject) (CompareDocumentWithExcelResponseObject, error)
 	// SetDocumentHeader Replace the header content of a draft document (E-2)
 	// (PUT /api/v1/documents/{documentId}/header)
 	SetDocumentHeader(ctx context.Context, request SetDocumentHeaderRequestObject) (SetDocumentHeaderResponseObject, error)
+	// SetDocumentHistory Replace the text revision history of a migrated document (E-10, M7.2)
+	// (PUT /api/v1/documents/{documentId}/history)
+	SetDocumentHistory(ctx context.Context, request SetDocumentHistoryRequestObject) (SetDocumentHistoryResponseObject, error)
+	// ListLinkSuggestions Suggested template points for rows without a link (L-4, M7.4)
+	// (GET /api/v1/documents/{documentId}/link-suggestions)
+	ListLinkSuggestions(ctx context.Context, request ListLinkSuggestionsRequestObject) (ListLinkSuggestionsResponseObject, error)
+	// LinkDocumentRows Link rows to template points after a person confirmed them (E-2, M7.4)
+	// (POST /api/v1/documents/{documentId}/links)
+	LinkDocumentRows(ctx context.Context, request LinkDocumentRowsRequestObject) (LinkDocumentRowsResponseObject, error)
+	// VerifyMigration Confirm a migration baseline against the signed hard copy (E-10, M7.5)
+	// (POST /api/v1/documents/{documentId}/migration/verify)
+	VerifyMigration(ctx context.Context, request VerifyMigrationRequestObject) (VerifyMigrationResponseObject, error)
 	// ReorderDocumentRows Save a new order of the rows, and number the operations when asked (E-2, M4.6)
 	// (PUT /api/v1/documents/{documentId}/order)
 	ReorderDocumentRows(ctx context.Context, request ReorderDocumentRowsRequestObject) (ReorderDocumentRowsResponseObject, error)
@@ -16134,6 +17011,15 @@ type StrictServerInterface interface {
 	// UpdateFourMCategory Rename a 4M category (A-2)
 	// (PUT /api/v1/four-m-categories/{fourMCategoryId})
 	UpdateFourMCategory(ctx context.Context, request UpdateFourMCategoryRequestObject) (UpdateFourMCategoryResponseObject, error)
+	// GetMetrics The measurement dashboard (L-2, M7.7)
+	// (GET /api/v1/metrics)
+	GetMetrics(ctx context.Context, request GetMetricsRequestObject) (GetMetricsResponseObject, error)
+	// MigrateDocument Enter a legacy document as a migration baseline (E-10, M7.1)
+	// (POST /api/v1/migration/documents)
+	MigrateDocument(ctx context.Context, request MigrateDocumentRequestObject) (MigrateDocumentResponseObject, error)
+	// ListMigratableNumbers Numbers of one customer that a legacy document can take (E-10, M7.1)
+	// (GET /api/v1/migration/numbers)
+	ListMigratableNumbers(ctx context.Context, request ListMigratableNumbersRequestObject) (ListMigratableNumbersResponseObject, error)
 	// ListModelGroups The model groups of one customer, ordered by name
 	// (GET /api/v1/model-groups)
 	ListModelGroups(ctx context.Context, request ListModelGroupsRequestObject) (ListModelGroupsResponseObject, error)
@@ -17972,6 +18858,39 @@ func (sh *strictHandler) GetDocumentDifferences(w http.ResponseWriter, r *http.R
 	}
 }
 
+// CompareDocumentWithExcel operation middleware
+func (sh *strictHandler) CompareDocumentWithExcel(w http.ResponseWriter, r *http.Request, documentId DocumentId) {
+	var request CompareDocumentWithExcelRequestObject
+
+	request.DocumentId = documentId
+
+	if reader, err := r.MultipartReader(); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode multipart body: %w", err))
+		return
+	} else {
+		request.Body = reader
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CompareDocumentWithExcel(ctx, request.(CompareDocumentWithExcelRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CompareDocumentWithExcel")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CompareDocumentWithExcelResponseObject); ok {
+		if err := validResponse.VisitCompareDocumentWithExcelResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // SetDocumentHeader operation middleware
 func (sh *strictHandler) SetDocumentHeader(w http.ResponseWriter, r *http.Request, documentId DocumentId) {
 	var request SetDocumentHeaderRequestObject
@@ -17998,6 +18917,131 @@ func (sh *strictHandler) SetDocumentHeader(w http.ResponseWriter, r *http.Reques
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(SetDocumentHeaderResponseObject); ok {
 		if err := validResponse.VisitSetDocumentHeaderResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SetDocumentHistory operation middleware
+func (sh *strictHandler) SetDocumentHistory(w http.ResponseWriter, r *http.Request, documentId DocumentId) {
+	var request SetDocumentHistoryRequestObject
+
+	request.DocumentId = documentId
+
+	var body SetDocumentHistoryJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetDocumentHistory(ctx, request.(SetDocumentHistoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetDocumentHistory")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetDocumentHistoryResponseObject); ok {
+		if err := validResponse.VisitSetDocumentHistoryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListLinkSuggestions operation middleware
+func (sh *strictHandler) ListLinkSuggestions(w http.ResponseWriter, r *http.Request, documentId DocumentId) {
+	var request ListLinkSuggestionsRequestObject
+
+	request.DocumentId = documentId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListLinkSuggestions(ctx, request.(ListLinkSuggestionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListLinkSuggestions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListLinkSuggestionsResponseObject); ok {
+		if err := validResponse.VisitListLinkSuggestionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// LinkDocumentRows operation middleware
+func (sh *strictHandler) LinkDocumentRows(w http.ResponseWriter, r *http.Request, documentId DocumentId) {
+	var request LinkDocumentRowsRequestObject
+
+	request.DocumentId = documentId
+
+	var body LinkDocumentRowsJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.LinkDocumentRows(ctx, request.(LinkDocumentRowsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "LinkDocumentRows")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(LinkDocumentRowsResponseObject); ok {
+		if err := validResponse.VisitLinkDocumentRowsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// VerifyMigration operation middleware
+func (sh *strictHandler) VerifyMigration(w http.ResponseWriter, r *http.Request, documentId DocumentId) {
+	var request VerifyMigrationRequestObject
+
+	request.DocumentId = documentId
+
+	var body VerifyMigrationJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.VerifyMigration(ctx, request.(VerifyMigrationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "VerifyMigration")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(VerifyMigrationResponseObject); ok {
+		if err := validResponse.VisitVerifyMigrationResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -19191,6 +20235,89 @@ func (sh *strictHandler) UpdateFourMCategory(w http.ResponseWriter, r *http.Requ
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UpdateFourMCategoryResponseObject); ok {
 		if err := validResponse.VisitUpdateFourMCategoryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetMetrics operation middleware
+func (sh *strictHandler) GetMetrics(w http.ResponseWriter, r *http.Request, params GetMetricsParams) {
+	var request GetMetricsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetMetrics(ctx, request.(GetMetricsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetMetrics")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetMetricsResponseObject); ok {
+		if err := validResponse.VisitGetMetricsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// MigrateDocument operation middleware
+func (sh *strictHandler) MigrateDocument(w http.ResponseWriter, r *http.Request) {
+	var request MigrateDocumentRequestObject
+
+	var body MigrateDocumentJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.MigrateDocument(ctx, request.(MigrateDocumentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "MigrateDocument")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(MigrateDocumentResponseObject); ok {
+		if err := validResponse.VisitMigrateDocumentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListMigratableNumbers operation middleware
+func (sh *strictHandler) ListMigratableNumbers(w http.ResponseWriter, r *http.Request, params ListMigratableNumbersParams) {
+	var request ListMigratableNumbersRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListMigratableNumbers(ctx, request.(ListMigratableNumbersRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListMigratableNumbers")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListMigratableNumbersResponseObject); ok {
+		if err := validResponse.VisitListMigratableNumbersResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

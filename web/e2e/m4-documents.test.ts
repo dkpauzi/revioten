@@ -67,7 +67,7 @@ test('penyusun membuat dokumen CP, lalu baris dan header tersimpan', async ({ pa
 	const type = async (row: number, field: string, text: string) => {
 		await cell(row, field).click();
 		await page.keyboard.type(text);
-		await page.getByRole('heading', { name: en.documentRowsTitle }).click();
+		await page.getByRole('heading', { name: en.documentRowsTitle, exact: true }).click();
 		await expect(page.getByRole('status')).toHaveText(en.documentRowSaved);
 	};
 
@@ -80,7 +80,7 @@ test('penyusun membuat dokumen CP, lalu baris dan header tersimpan', async ({ pa
 	await type(0, '_operation', '10');
 	await cell(0, '_process').click();
 	await page.locator('.tabulator-edit-list-item', { hasText: 'Dokumen Reflow' }).click();
-	await page.getByRole('heading', { name: en.documentRowsTitle }).click();
+	await page.getByRole('heading', { name: en.documentRowsTitle, exact: true }).click();
 	await expect(cell(0, '_process')).toHaveText('Dokumen Reflow');
 	await type(0, product, 'Solder joint');
 	await type(1, '_operation', '20');
@@ -96,7 +96,7 @@ test('penyusun membuat dokumen CP, lalu baris dan header tersimpan', async ({ pa
 	await cell(0, product).click();
 	await page.keyboard.press('ControlOrMeta+a');
 	await page.keyboard.type('Solder joint fillet');
-	await page.getByRole('heading', { name: en.documentRowsTitle }).click();
+	await page.getByRole('heading', { name: en.documentRowsTitle, exact: true }).click();
 	await expect(page.getByRole('status')).toHaveText(en.documentRowSaved);
 	// Header.
 	await page.getByLabel('Core Team', { exact: true }).fill('PE, QA, Production');
@@ -134,7 +134,7 @@ test('penyusun membuat dokumen CP, lalu baris dan header tersimpan', async ({ pa
 	// yang kalah tidak tersimpan.
 	await cell(1, product).click();
 	await page.keyboard.type('Bridging');
-	await page.getByRole('heading', { name: en.documentRowsTitle }).click();
+	await page.getByRole('heading', { name: en.documentRowsTitle, exact: true }).click();
 	await expect(page.getByRole('alert')).toHaveText(en.documentRowChanged);
 	await expect(cell(1, method)).toHaveText('AOI 100%');
 	await expect(cell(1, product)).toHaveText('');

@@ -15,6 +15,9 @@
 	import RevisionsPanel from '#lib/documents/RevisionsPanel.svelte';
 	import PrintPanel from '#lib/documents/PrintPanel.svelte';
 	import TemplateLinksPanel from '#lib/documents/TemplateLinksPanel.svelte';
+	import MigrationPanel from '#lib/documents/MigrationPanel.svelte';
+	import ExcelComparePanel from '#lib/documents/ExcelComparePanel.svelte';
+	import LinkPanel from '#lib/documents/LinkPanel.svelte';
 	import SectionBar from '#lib/documents/SectionBar.svelte';
 	import Workbook from '#lib/documents/Workbook.svelte';
 	import { cleanContent, rowsOfSection, typedFields } from '#lib/documents.ts';
@@ -321,7 +324,9 @@
 		<dd>{doc.route?.name ?? t('documentNoRoute')}{doc.route_reason ? ` · ${doc.route_reason}` : ''}</dd>
 		<dt>{t('numberColumnStatus')}</dt>
 		<dd>
-			<span class="badge" data-status={doc.status}>{t(doc.status === 'released' ? 'documentStatusReleased' : 'versionStatusDraft')}</span>
+			<span class="badge" data-status={doc.status}>
+				{t(doc.status !== 'released' ? 'versionStatusDraft' : doc.released_migrated ? 'documentStatusReleasedMigrated' : 'documentStatusReleased')}
+			</span>
 		</dd>
 		<dt>{t(doc.status === 'draft' ? 'documentDraftRevision' : 'documentReleasedRevision')}</dt>
 		<dd>{doc.revision}</dd>
@@ -334,9 +339,18 @@
 		<p class="hint">{t('documentNoDraft')}</p>
 	{/if}
 
+	<MigrationPanel {doc} onchanged={(d) => (doc = d)} />
 	<RevisionsPanel {doc} onreleased={(d) => (doc = d)} />
 	<PrintPanel {doc} />
 	<TemplateLinksPanel {doc} />
+	<!-- Penautan (M7.4): hanya bila ada baris berproses yang belum tertaut. -->
+	{#if canEdit && doc.rows.some((r) => r.process_id && !r.template_point_id)}
+		<LinkPanel {doc} onlinked={(d) => (doc = d)} />
+	{/if}
+	<!-- Pembanding Excel (M7.3) untuk dokumen migrasi. -->
+	{#if doc.origin === 'migrated'}
+		<ExcelComparePanel {doc} />
+	{/if}
 
 	{#if message}<p role="status">{message}</p>{/if}
 	{#if failure}<p class="error" role="alert">{failure}</p>{/if}

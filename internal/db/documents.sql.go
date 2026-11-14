@@ -325,8 +325,8 @@ func (q *Queries) CountSectionRows(ctx context.Context, sectionKey string) (int3
 
 const createDocument = `-- name: CreateDocument :one
 INSERT INTO documents (document_number_id, customer_id, document_type_id, revision, form_set_version_id,
-                       format_version_id, approval_route_id, route_reason, created_by_person_id)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                       format_version_id, approval_route_id, route_reason, created_by_person_id, origin)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 RETURNING id
 `
 
@@ -340,6 +340,7 @@ type CreateDocumentParams struct {
 	ApprovalRouteID   *string
 	RouteReason       *string
 	CreatedByPersonID string
+	Origin            string
 }
 
 func (q *Queries) CreateDocument(ctx context.Context, arg CreateDocumentParams) (string, error) {
@@ -353,6 +354,7 @@ func (q *Queries) CreateDocument(ctx context.Context, arg CreateDocumentParams) 
 		arg.ApprovalRouteID,
 		arg.RouteReason,
 		arg.CreatedByPersonID,
+		arg.Origin,
 	)
 	var id string
 	err := row.Scan(&id)
@@ -484,7 +486,10 @@ const getDocument = `-- name: GetDocument :one
 SELECT d.id, d.document_number_id, n.number, d.customer_id, c.code AS customer_code, d.document_type_id,
        t.key AS document_type_key, t.name AS document_type_name, d.revision, d.status, d.released_revision,
        d.form_set_version_id, s.name AS form_set_name, d.format_version_id,
-       d.approval_route_id, r.name AS route_name, d.route_reason, d.header, d.header_version, d.created_at, d.updated_at
+       d.approval_route_id, r.name AS route_name, d.route_reason, d.header, d.header_version, d.created_at, d.updated_at,
+       d.origin,
+       -- Revisi yang berlaku terbit lewat verifikasi hardcopy (R-MIG-06).
+       coalesce((SELECT rr.migrated FROM document_revisions rr WHERE rr.document_id = d.id AND rr.revision = d.released_revision), false)::boolean AS released_migrated
 FROM documents d
 JOIN document_numbers n ON n.id = d.document_number_id
 JOIN customers c ON c.id = d.customer_id
@@ -517,6 +522,8 @@ type GetDocumentRow struct {
 	HeaderVersion    int32
 	CreatedAt        time.Time
 	UpdatedAt        time.Time
+	Origin           string
+	ReleasedMigrated bool
 }
 
 func (q *Queries) GetDocument(ctx context.Context, id string) (GetDocumentRow, error) {
@@ -544,6 +551,8 @@ func (q *Queries) GetDocument(ctx context.Context, id string) (GetDocumentRow, e
 		&i.HeaderVersion,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Origin,
+		&i.ReleasedMigrated,
 	)
 	return i, err
 }
@@ -884,7 +893,10 @@ SELECT d.id, n.number, t.key AS document_type_key, t.name AS document_type_name,
        (SELECT count(*) FROM document_rows r WHERE r.document_id = d.id)::int AS row_count,
        -- Nama model dokumen, menurut abjad (M4.7).
        (SELECT coalesce(array_agg(m.name ORDER BY m.name), '{}')::text[]
-        FROM document_models dm JOIN models m ON m.id = dm.model_id WHERE dm.document_id = d.id) AS model_names
+        FROM document_models dm JOIN models m ON m.id = dm.model_id WHERE dm.document_id = d.id) AS model_names,
+       d.origin,
+       -- Revisi yang berlaku terbit lewat verifikasi hardcopy (R-MIG-06).
+       coalesce((SELECT rr.migrated FROM document_revisions rr WHERE rr.document_id = d.id AND rr.revision = d.released_revision), false)::boolean AS released_migrated
 FROM documents d
 JOIN document_numbers n ON n.id = d.document_number_id
 JOIN document_types t ON t.id = d.document_type_id
@@ -905,6 +917,8 @@ type ListDocumentsRow struct {
 	UpdatedAt        time.Time
 	RowCount         int32
 	ModelNames       []string
+	Origin           string
+	ReleasedMigrated bool
 }
 
 func (q *Queries) ListDocuments(ctx context.Context, customerID string) ([]ListDocumentsRow, error) {
@@ -927,6 +941,8 @@ func (q *Queries) ListDocuments(ctx context.Context, customerID string) ([]ListD
 			&i.UpdatedAt,
 			&i.RowCount,
 			&i.ModelNames,
+			&i.Origin,
+			&i.ReleasedMigrated,
 		); err != nil {
 			return nil, err
 		}

@@ -321,6 +321,34 @@ export const helpId: HelpContent = {
 			tips: ['Draft selalu dicetak dengan UNCONTROLLED COPY.', 'Baris yang berubah di revisi yang dicetak diberi segitiga dengan nomor revisi.', 'PDF butuh Chrome atau Edge di komputer server; Excel selalu bisa.']
 		},
 		{
+			id: 'migration',
+			title: 'Dokumen lama',
+			who: 'Petugas migrasi, Admin untuk saklarnya',
+			intro: 'Dokumen yang sudah ada di kertas masuk di revisinya yang sekarang dan terbit setelah orang lain mencocokkannya dengan hardcopy bertanda tangan. Isinya tidak dirapikan saat masuk.',
+			steps: [
+				'Admin menyalakan {settingsMigration} di {navGroupAdmin}, lalu {navSettings}.',
+				'Buka {navDocuments}, pilih customer, lalu isi {migrateTitle}: nomor asli, model, {migrateRevision}, {migrateEffectiveDate}, dan nama di hardcopy. Tekan {migrateSubmit}.',
+				'Buka dokumennya. Ketik atau rakit isinya sampai sama dengan hardcopy. Di {historyTitle}, tekan {historyAdd} untuk setiap baris tabel riwayat lama, lalu {historySave}.',
+				'Untuk memeriksa ketikan, unggah berkas lama di {excelCompareTitle} dan tekan {excelCompareButton}. Berkas hanya dibandingkan, tidak pernah diimpor.',
+				'Di {linkTitle}, tekan {linkFind}, centang pasangan yang benar, lalu tekan {linkConfirm}. Baris yang tertaut menerima pembaruan template berikutnya.',
+				'Unggah scan hardcopy bertanda tangan di {revisions}. Petugas migrasi lain membuka dokumen itu, mengisi {migrationEffort}, lalu menekan {migrationVerify}. Statusnya menjadi {documentStatusReleasedMigrated}.'
+			],
+			tips: ['Orang yang memasukkan dokumen tidak bisa memverifikasinya.', 'Sesudah diverifikasi, baseline dan riwayatnya tidak bisa diubah; perubahan berikutnya lewat permintaan perubahan biasa.', 'Matikan mode migrasi setelah migrasi selesai.']
+		},
+		{
+			id: 'dashboard',
+			title: 'Dasbor',
+			who: 'Semua orang',
+			intro: 'Dasbor menghitung baris yang mengikuti template, dokumen per status, target yokoten, waktu revisi, dan usaha migrasi. Semua angka berasal dari data pada saat itu.',
+			steps: [
+				'Buka {navGroupDocuments}, lalu {navDashboard}.',
+				'Pilih customer, atau biarkan {dashboardAllCustomers}.',
+				'Baca {dashboardRows}: bagian baris yang tertaut ke poin template.',
+				'Baca {dashboardRevision} dan {dashboardMigration} untuk angka waktu.'
+			],
+			tips: ['Waktu revisi hanya menghitung revisi yang dibuka perubahan yang diterima.', 'Menit migrasi adalah angka yang diketik saat verifikasi.']
+		},
+		{
 			id: 'audit',
 			title: 'Audit log',
 			who: 'Admin',

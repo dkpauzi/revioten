@@ -19,6 +19,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/customer"
 	"github.com/dkpauzi/revioten/internal/db/dbtest"
 	"github.com/dkpauzi/revioten/internal/document"
+	"github.com/dkpauzi/revioten/internal/metrics"
 	"github.com/dkpauzi/revioten/internal/numbering"
 	"github.com/dkpauzi/revioten/internal/printout"
 	"github.com/dkpauzi/revioten/internal/process"
@@ -75,6 +76,7 @@ func TestPermissionsPerOperation(t *testing.T) {
 		Documents: document.NewService(pool, checker), RefDocs: template.NewRefDocService(pool, checker),
 		ChangeRequests: change.NewRequestService(pool, checker).WithStorage(attachmentStore),
 		Printing:       printout.NewService(pool, checker, document.NewService(pool, checker), attachmentStore, "missing-browser"),
+		Migration:      document.NewService(pool, checker), Metrics: metrics.NewService(pool, checker),
 	})
 
 	// Admin pertama, satu akun kerja tanpa peran (hanya hak dasar Viewer), dan
@@ -104,6 +106,7 @@ func TestPermissionsPerOperation(t *testing.T) {
 			{Role: access.RoleAuthor, Scope: access.ScopeAll},
 			{Role: access.RoleTemplateMaintainer, Scope: access.ScopeAll},
 			{Role: access.RoleDocumentControl, Scope: access.ScopeAll},
+			{Role: access.RoleMigration, Scope: access.ScopeAll},
 			// Penyetuju form (V-3, D-139), untuk operasi menerbitkan form set.
 			{Role: access.RoleFormApprover, Scope: access.ScopeAll},
 			// Pemeriksa PFMEA-CP (V-2, D-65), untuk tanda dicek (M4.9).
@@ -530,6 +533,18 @@ func TestPermissionsPerOperation(t *testing.T) {
 		{http.MethodGet, "/api/v1/changes/{changeId}/attachments/{attachmentId}", "", http.StatusForbidden, http.StatusNotFound, http.StatusForbidden},
 		{http.MethodDelete, "/api/v1/changes/{changeId}/attachments/{attachmentId}", "", http.StatusForbidden, http.StatusNotFound, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/documents/{documentId}/changes", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		// Tahap 7. Dasbor untuk semua akun (L-2). Migrasi lewat E-10, yang dipegang engineer (D-69);
+		// mode migrasi mati (bawaan), jadi sesudah haknya lolos operasinya ditolak 422 (R-MIG-06).
+		{http.MethodGet, "/api/v1/metrics", "", http.StatusOK, http.StatusOK, http.StatusOK},
+		{http.MethodGet, "/api/v1/migration/numbers?customer_id={customerId}", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		{http.MethodPost, "/api/v1/migration/documents", `{"document_number_id":"{documentNumberId}","model_ids":[],"revision":4,"effective_date":"2025-03-10","prepared_by":"A","approved_by":"B"}`, http.StatusForbidden, http.StatusUnprocessableEntity, http.StatusForbidden},
+		{http.MethodPut, "/api/v1/documents/{documentId}/history", `{"entries":[]}`, http.StatusForbidden, http.StatusUnprocessableEntity, http.StatusForbidden},
+		{http.MethodPost, "/api/v1/documents/{documentId}/migration/verify", `{}`, http.StatusForbidden, http.StatusUnprocessableEntity, http.StatusForbidden},
+		// Penautan (M7.4): usulan lewat L-4, menautkan lewat E-2 (daftar kosong ditolak 422).
+		{http.MethodGet, "/api/v1/documents/{documentId}/link-suggestions", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		{http.MethodPost, "/api/v1/documents/{documentId}/links", `{"links":[]}`, http.StatusForbidden, http.StatusUnprocessableEntity, http.StatusForbidden},
+		// Pembanding Excel (M7.3) lewat L-4; berkas uji bukan Excel, jadi 422 sesudah haknya lolos.
+		{http.MethodPost, "/api/v1/documents/{documentId}/excel-comparison", multipartBody, http.StatusForbidden, http.StatusUnprocessableEntity, http.StatusForbidden},
 		// Bagian per PCB (D-155), sengaja di akhir: sesudah dokumen punya bagian, baris baru wajib menyebut
 		// bagiannya. Dokumen uji tidak punya part number, jadi bagian dibuat tanpa part number.
 		{http.MethodPost, "/api/v1/documents/{documentId}/sections", `{"name":"PCB A"}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},

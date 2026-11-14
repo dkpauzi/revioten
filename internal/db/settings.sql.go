@@ -9,8 +9,19 @@ import (
 	"context"
 )
 
+const getMigrationMode = `-- name: GetMigrationMode :one
+SELECT migration_mode FROM system_settings
+`
+
+func (q *Queries) GetMigrationMode(ctx context.Context) (bool, error) {
+	row := q.db.QueryRow(ctx, getMigrationMode)
+	var migration_mode bool
+	err := row.Scan(&migration_mode)
+	return migration_mode, err
+}
+
 const getSystemSettings = `-- name: GetSystemSettings :one
-SELECT id, sign_dates_enabled, form_approval_mode, qr_enabled FROM system_settings
+SELECT id, sign_dates_enabled, form_approval_mode, qr_enabled, migration_mode FROM system_settings
 `
 
 func (q *Queries) GetSystemSettings(ctx context.Context) (SystemSetting, error) {
@@ -21,12 +32,13 @@ func (q *Queries) GetSystemSettings(ctx context.Context) (SystemSetting, error) 
 		&i.SignDatesEnabled,
 		&i.FormApprovalMode,
 		&i.QrEnabled,
+		&i.MigrationMode,
 	)
 	return i, err
 }
 
 const lockSystemSettings = `-- name: LockSystemSettings :one
-SELECT id, sign_dates_enabled, form_approval_mode, qr_enabled FROM system_settings FOR NO KEY UPDATE
+SELECT id, sign_dates_enabled, form_approval_mode, qr_enabled, migration_mode FROM system_settings FOR NO KEY UPDATE
 `
 
 func (q *Queries) LockSystemSettings(ctx context.Context) (SystemSetting, error) {
@@ -37,8 +49,19 @@ func (q *Queries) LockSystemSettings(ctx context.Context) (SystemSetting, error)
 		&i.SignDatesEnabled,
 		&i.FormApprovalMode,
 		&i.QrEnabled,
+		&i.MigrationMode,
 	)
 	return i, err
+}
+
+const setMigrationMode = `-- name: SetMigrationMode :exec
+UPDATE system_settings SET migration_mode = $1
+`
+
+// SetMigrationMode menyalakan atau mematikan mode migrasi (R-MIG-06).
+func (q *Queries) SetMigrationMode(ctx context.Context, migrationMode bool) error {
+	_, err := q.db.Exec(ctx, setMigrationMode, migrationMode)
+	return err
 }
 
 const setQREnabled = `-- name: SetQREnabled :exec
