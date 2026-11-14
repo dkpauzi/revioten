@@ -129,6 +129,10 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-105 | Rincian propagasi template yang belum diputuskan | Celah | M5.8 | Tidak | Diputuskan (D-169) |
 | E-106 | Rincian yokoten: sumber, target, keputusan, dan isi | Celah | M5.9 | Tidak | Diputuskan (D-170) |
 | E-107 | Cakupan perubahan surut SQAM dan hubungannya dengan format template | Celah | M5.10 | Tidak | Diputuskan (D-171) |
+| E-108 | Mesin PDF: hasil uji S5 | Sulit dibangun | M6.3, R-PRT-03, Q-10 | Tidak | Terbuka |
+| E-109 | Scan bertanda tangan: jenis, ukuran, pengunggah, dan penggantian | Celah | M6.7 | Tidak | Terbuka |
+| E-110 | Rincian cetakan yang belum diputuskan | Celah | M6.1 sampai M6.9 | Tidak | Terbuka |
+| E-111 | Layout sebagai data: apa yang bisa diatur admin | Ambigu | M6.1, R-PRT-02 | Tidak | Terbuka |
 
 ## Keputusan 4 November 2026
 
@@ -1962,6 +1966,59 @@ Salin blok ini untuk setiap temuan baru.
 - **Status:** Diputuskan (D-171)
 - **Keputusan pemilik:** 14 November 2026, "untuk saat ini saya menerima semua saran anda" (D-171).
 
+### E-108 · Mesin PDF: hasil uji S5
+
+- **Tanggal dan milestone:** 14 November 2026, M6.3, R-PRT-03, Q-10.
+- **Jenis:** Sulit dibangun
+- **Rujukan:** R-PRT-03, Q-10, RK-07, RK-58, catatan `docs/catatan/S5-uji-pdf.md`.
+- **Temuan:** uji S5 dijalankan di komputer pemilik tanpa mengunduh apa pun. Opsi B (HTML ke PDF lewat Edge/Chrome headless yang sudah terpasang) menghasilkan PDF A3 landscape dengan huruf Arial ter-embed, judul tabel berulang, dan watermark. Opsi A (LibreOffice/Gotenberg) butuh unduhan besar, jadi tidak diuji. Opsi D (Excel siap cetak) dibuat dengan excelize. Kekurangan opsi B lewat baris perintah: nomor halaman tidak bisa ditulis di footer PDF (Excel tetap punya); butuh Chrome atau Edge di komputer server, dan di Linux/Docker butuh Chromium.
+- **Opsi:** (a) B sebagai jalur utama, D cadangan; (b) A dengan Gotenberg di Docker; (c) B lewat protokol DevTools (chromedp) supaya footer bernomor halaman.
+- **Rekomendasi Claude Code (usulan):** (a) sekarang; (c) bila nomor halaman di PDF dibutuhkan.
+- **Asumsi sementara di kode (ASUMSI E-108):** (a). `PDF_BROWSER` bisa diisi; bila tidak ada browser, PDF ditolak dengan pesan dan Excel tetap bisa.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-109 · Scan bertanda tangan: jenis, ukuran, pengunggah, dan penggantian
+
+- **Tanggal dan milestone:** 14 November 2026, M6.7.
+- **Jenis:** Celah
+- **Rujukan:** R-APR-02, M6.7, D-60, D-68.
+- **Temuan:** brief tidak menyebut jenis dan ukuran scan, siapa yang mengunggah, dan apakah scan boleh diganti sebelum rilis.
+- **Asumsi sementara di kode (ASUMSI E-109):** PDF, PNG, atau JPEG, paling besar 30 MB; diunggah pemegang E-7 (dokumen kontrol); scan boleh diganti selama draft belum dirilis (yang terakhir dipakai, yang lama tercatat di audit log); disimpan di folder lampiran dengan SHA-256 dan ikut backup (D-163). Revisi terbit selalu punya scan (CHECK, kecuali revisi lama sebelum M6.7).
+- **Rekomendasi Claude Code (usulan):** terima asumsi ini.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-110 · Rincian cetakan yang belum diputuskan
+
+- **Tanggal dan milestone:** 14 November 2026, M6.1 sampai M6.9.
+- **Jenis:** Celah
+- **Rujukan:** R-PRT-04, R-PRT-07, R-APR-07, R-APR-10, R-APR-11, R-PRT-06, R-PUB-06, D-59, D-76.
+- **Temuan dan asumsi (ASUMSI E-110):**
+  - Nama di slot: dicetak bila jabatan slot punya tepat satu pemegang untuk customer itu; bila lebih (misalnya Prepared atau Checked), dibiarkan kosong untuk ditulis tangan.
+  - Cetak untuk tanda tangan tetap berwatermark UNCONTROLLED COPY, karena isinya draft (M6.4: draft selalu berwatermark). Tanggal rilis diisi ulang pada setiap cetak untuk tanda tangan (yang terakhir dipakai).
+  - Hak cetak: draft L-4, untuk tanda tangan E-5, referensi revisi terbit L-3, salinan terkendali E-9.
+  - Tidak dibangun karena masih usulan: konfirmasi slot saat rilis (R-APR-10), pembekuan rute saat dicetak (R-APR-11), daftar salinan terkendali yang ditarik (R-PRT-06), label PENDING (R-PUB-07), pembacaan QR dari scan.
+  - Status di footer: DRAFT, EFFECTIVE, atau SUPERSEDED; hash: snapshot untuk revisi terbit, hash isi draft untuk draft.
+- **Rekomendasi Claude Code (usulan):** terima asumsi; putuskan R-APR-10 dan R-APR-11 sebelum Gerbang 6.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-111 · Layout sebagai data: apa yang bisa diatur admin
+
+- **Tanggal dan milestone:** 14 November 2026, M6.1, R-PRT-02.
+- **Jenis:** Ambigu
+- **Rujukan:** R-PRT-02, M6.1, U5.
+- **Temuan:** R-PRT-02 menyebut "Excel template plus cell mapping". Yang dibangun: layout JSON (kertas, arah, ukuran huruf, margin, cover, tanda revisi, lebar kolom per key field) yang dipakai untuk Excel dan PDF sekaligus, tanpa berkas template Excel. Susunan header dan cover mengikuti TR-020 di kode. Tinggi baris Excel diperkirakan dari panjang teks, karena Excel tidak menghitungnya untuk berkas buatan program.
+- **Opsi:** (a) layout JSON seperti sekarang, diedit admin di layar; (b) berkas template Excel per customer dengan pemetaan sel.
+- **Rekomendasi Claude Code (usulan):** (a) sampai Gerbang 6; (b) hanya bila customer SQAM meminta form yang susunannya sangat berbeda.
+- **Asumsi sementara di kode (ASUMSI E-111):** (a).
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
 
 ## Usulan desain UI (UX-01 sampai UX-07): dampak ke M0 sampai M3 dan saran
 

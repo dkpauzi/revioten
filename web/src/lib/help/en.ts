@@ -307,6 +307,20 @@ export const helpEn: HelpContent = {
 			tips: ['Models whose documents are already in the source change are left out.', 'Each target only shows for accounts that may view its customer.']
 		},
 		{
+			id: 'printing',
+			title: 'Print and release',
+			who: 'Author, Document control, Admin for layouts',
+			intro: 'Prints come from the same content as the screen, in Excel or PDF, A3 or A4 as the layout says. Approval stays a wet signature on paper.',
+			steps: [
+				'Open the document. Under {printTitle}, choose the revision and the {printPurpose}, then press {printExcel} or {printPdf}.',
+				'For the paper approval, print {printPurpose_signature}. The release date is filled in, and the cover carries the approval slots of the route.',
+				'After every slot is signed, document control uploads the scan under {revisions} with {scanUploadButton}, then records the release. The release is refused without the scan.',
+				'Released revisions print as {printPurpose_reference} or {printPurpose_controlled}. Controlled copies are numbered, and every print shows in the {printLog}.',
+				'The admin changes paper, fonts, margins, and column widths under {navGroupTemplates}, then {navPrintLayouts}, and can give one customer another layout.'
+			],
+			tips: ['Drafts always print with UNCONTROLLED COPY.', 'Rows changed in the printed revision carry a triangle with the revision number.', 'PDF needs Chrome or Edge on the server computer; Excel always works.']
+		},
+		{
 			id: 'audit',
 			title: 'Audit log',
 			who: 'Admin',

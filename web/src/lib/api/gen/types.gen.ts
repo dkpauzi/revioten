@@ -1591,6 +1591,14 @@ export type DocumentRevision = {
      */
     sha256?: string;
     /**
+     * Filled when the revision is printed for signature (D-59).
+     */
+    release_date?: string;
+    /**
+     * The signed scan uploaded for this revision (M6.7).
+     */
+    scan_file_name?: string;
+    /**
      * Reference numbers of the changes that went into this revision (M5.6).
      */
     changes: Array<string>;
@@ -1633,6 +1641,125 @@ export type DocumentCellChange = {
      * The value after; missing when the cell is empty.
      */
     new?: unknown;
+};
+
+export type PrintRequest = {
+    /**
+     * draft, signature, reference, or controlled (R-PRT-04).
+     */
+    purpose: string;
+    /**
+     * xlsx or pdf.
+     */
+    format: string;
+    /**
+     * Leave out for the open draft, or the revision in force when there is no draft.
+     */
+    revision?: number;
+};
+
+export type PrintLog = {
+    id: string;
+    revision: number;
+    purpose: 'draft' | 'signature' | 'reference' | 'controlled';
+    format: 'xlsx' | 'pdf';
+    copy_number?: number;
+    /**
+     * SHA-256 of the printed content.
+     */
+    sha256: string;
+    printed_by: string;
+    printed_at: string;
+};
+
+export type PrintLogList = {
+    items: Array<PrintLog>;
+};
+
+export type SignedScan = {
+    revision: number;
+    file_name: string;
+    content_type: string;
+    size: number;
+    sha256: string;
+    uploaded_by: string;
+    uploaded_at: string;
+};
+
+export type RevisionVerification = {
+    revision_id: string;
+    document_id: string;
+    number: string;
+    document_type: string;
+    customer_code: string;
+    revision: number;
+    status: 'effective' | 'superseded' | 'draft' | 'void' | 'obsolete';
+    released_at?: string;
+    sha256?: string;
+};
+
+/**
+ * The layout as data (R-PRT-02). Widths are relative, per field key or field ID.
+ */
+export type PrintLayoutContent = {
+    paper: 'A3' | 'A4';
+    orientation: 'landscape' | 'portrait';
+    font_size: number;
+    margins_mm: {
+        top: number;
+        right: number;
+        bottom: number;
+        left: number;
+    };
+    cover: boolean;
+    revision_marks: boolean;
+    widths: {
+        [key: string]: number;
+    };
+};
+
+export type PrintLayout = {
+    id: string;
+    name: string;
+    document_type_id: string;
+    document_type_key: string;
+    is_default: boolean;
+    layout: PrintLayoutContent;
+    updated_at: string;
+};
+
+export type PrintLayoutList = {
+    items: Array<PrintLayout>;
+};
+
+export type PrintLayoutInput = {
+    name: string;
+    /**
+     * Only for a new layout.
+     */
+    document_type_id?: string;
+    /**
+     * The layout content; missing values take the defaults (A3 landscape, 8 pt, 10 mm).
+     */
+    layout: {
+        [key: string]: unknown;
+    };
+};
+
+export type CustomerPrintLayout = {
+    document_type_id: string;
+    layout_id: string;
+};
+
+export type CustomerPrintLayoutList = {
+    items: Array<CustomerPrintLayout>;
+};
+
+export type CustomerPrintLayoutInput = {
+    /**
+     * Leave out to go back to the default layout.
+     */
+    layout_id?: string;
 };
 
 export type DocumentRevisionList = {
@@ -2242,6 +2369,10 @@ export type TemplatePointUpdate = {
 
 export type SystemSettings = {
     /**
+     * When true, prints carry a QR code to the verification page (D-62, R-APR-16). Off by default.
+     */
+    qr_enabled: boolean;
+    /**
      * When false, signature slots have no sign date and the field is hidden (D-52).
      */
     sign_dates_enabled: boolean;
@@ -2252,6 +2383,10 @@ export type SystemSettings = {
 };
 
 export type SystemSettingsUpdate = {
+    /**
+     * Leave it out to keep the current value.
+     */
+    qr_enabled?: boolean;
     /**
      * Leave it out to keep the current value.
      */
@@ -6380,6 +6515,356 @@ export type ReleaseDocumentResponses = {
 };
 
 export type ReleaseDocumentResponse = ReleaseDocumentResponses[keyof ReleaseDocumentResponses];
+
+export type PrintDocumentData = {
+    body: PrintRequest;
+    path: {
+        documentId: string;
+    };
+    query?: never;
+    url: '/api/v1/documents/{documentId}/print';
+};
+
+export type PrintDocumentErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type PrintDocumentError = PrintDocumentErrors[keyof PrintDocumentErrors];
+
+export type PrintDocumentResponses = {
+    /**
+     * The printed file.
+     */
+    200: Blob | File;
+};
+
+export type PrintDocumentResponse = PrintDocumentResponses[keyof PrintDocumentResponses];
+
+export type ListDocumentPrintsData = {
+    body?: never;
+    path: {
+        documentId: string;
+    };
+    query?: never;
+    url: '/api/v1/documents/{documentId}/prints';
+};
+
+export type ListDocumentPrintsErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ListDocumentPrintsError = ListDocumentPrintsErrors[keyof ListDocumentPrintsErrors];
+
+export type ListDocumentPrintsResponses = {
+    /**
+     * The prints.
+     */
+    200: PrintLogList;
+};
+
+export type ListDocumentPrintsResponse = ListDocumentPrintsResponses[keyof ListDocumentPrintsResponses];
+
+export type UploadSignedScanData = {
+    body: {
+        file?: Blob | File;
+    };
+    path: {
+        documentId: string;
+    };
+    query?: never;
+    url: '/api/v1/documents/{documentId}/scan';
+};
+
+export type UploadSignedScanErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type UploadSignedScanError = UploadSignedScanErrors[keyof UploadSignedScanErrors];
+
+export type UploadSignedScanResponses = {
+    /**
+     * The scan.
+     */
+    201: SignedScan;
+};
+
+export type UploadSignedScanResponse = UploadSignedScanResponses[keyof UploadSignedScanResponses];
+
+export type GetSignedScanData = {
+    body?: never;
+    path: {
+        documentId: string;
+        revision: number;
+    };
+    query?: never;
+    url: '/api/v1/documents/{documentId}/revisions/{revision}/scan';
+};
+
+export type GetSignedScanErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type GetSignedScanError = GetSignedScanErrors[keyof GetSignedScanErrors];
+
+export type GetSignedScanResponses = {
+    /**
+     * The scan.
+     */
+    200: Blob | File;
+};
+
+export type GetSignedScanResponse = GetSignedScanResponses[keyof GetSignedScanResponses];
+
+export type VerifyRevisionData = {
+    body?: never;
+    path: {
+        revisionId: string;
+    };
+    query?: never;
+    url: '/api/v1/verify/{revisionId}';
+};
+
+export type VerifyRevisionErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type VerifyRevisionError = VerifyRevisionErrors[keyof VerifyRevisionErrors];
+
+export type VerifyRevisionResponses = {
+    /**
+     * The revision status.
+     */
+    200: RevisionVerification;
+};
+
+export type VerifyRevisionResponse = VerifyRevisionResponses[keyof VerifyRevisionResponses];
+
+export type ListPrintLayoutsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/print-layouts';
+};
+
+export type ListPrintLayoutsErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ListPrintLayoutsError = ListPrintLayoutsErrors[keyof ListPrintLayoutsErrors];
+
+export type ListPrintLayoutsResponses = {
+    /**
+     * The layouts.
+     */
+    200: PrintLayoutList;
+};
+
+export type ListPrintLayoutsResponse = ListPrintLayoutsResponses[keyof ListPrintLayoutsResponses];
+
+export type CreatePrintLayoutData = {
+    body: PrintLayoutInput;
+    path?: never;
+    query?: never;
+    url: '/api/v1/print-layouts';
+};
+
+export type CreatePrintLayoutErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type CreatePrintLayoutError = CreatePrintLayoutErrors[keyof CreatePrintLayoutErrors];
+
+export type CreatePrintLayoutResponses = {
+    /**
+     * The layout.
+     */
+    201: PrintLayout;
+};
+
+export type CreatePrintLayoutResponse = CreatePrintLayoutResponses[keyof CreatePrintLayoutResponses];
+
+export type UpdatePrintLayoutData = {
+    body: PrintLayoutInput;
+    path: {
+        layoutId: string;
+    };
+    query?: never;
+    url: '/api/v1/print-layouts/{layoutId}';
+};
+
+export type UpdatePrintLayoutErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type UpdatePrintLayoutError = UpdatePrintLayoutErrors[keyof UpdatePrintLayoutErrors];
+
+export type UpdatePrintLayoutResponses = {
+    /**
+     * The layout.
+     */
+    200: PrintLayout;
+};
+
+export type UpdatePrintLayoutResponse = UpdatePrintLayoutResponses[keyof UpdatePrintLayoutResponses];
+
+export type ListCustomerPrintLayoutsData = {
+    body?: never;
+    path: {
+        customerId: string;
+    };
+    query?: never;
+    url: '/api/v1/customers/{customerId}/print-layouts';
+};
+
+export type ListCustomerPrintLayoutsErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ListCustomerPrintLayoutsError = ListCustomerPrintLayoutsErrors[keyof ListCustomerPrintLayoutsErrors];
+
+export type ListCustomerPrintLayoutsResponses = {
+    /**
+     * The choices.
+     */
+    200: CustomerPrintLayoutList;
+};
+
+export type ListCustomerPrintLayoutsResponse = ListCustomerPrintLayoutsResponses[keyof ListCustomerPrintLayoutsResponses];
+
+export type SetCustomerPrintLayoutData = {
+    body: CustomerPrintLayoutInput;
+    path: {
+        customerId: string;
+        documentTypeId: string;
+    };
+    query?: never;
+    url: '/api/v1/customers/{customerId}/print-layouts/{documentTypeId}';
+};
+
+export type SetCustomerPrintLayoutErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type SetCustomerPrintLayoutError = SetCustomerPrintLayoutErrors[keyof SetCustomerPrintLayoutErrors];
+
+export type SetCustomerPrintLayoutResponses = {
+    /**
+     * The choices after the change.
+     */
+    200: CustomerPrintLayoutList;
+};
+
+export type SetCustomerPrintLayoutResponse = SetCustomerPrintLayoutResponses[keyof SetCustomerPrintLayoutResponses];
 
 export type ListDocumentTemplatesData = {
     body?: never;

@@ -5,6 +5,9 @@ package server
 
 import (
 	"context"
+	"time"
+
+	openapi_types "github.com/oapi-codegen/runtime/types"
 
 	"github.com/dkpauzi/revioten/internal/document"
 )
@@ -347,6 +350,7 @@ func (a *apiServer) ListDocumentRevisions(ctx context.Context, req ListDocumentR
 		out.Items = append(out.Items, DocumentRevision{
 			Id: r.ID, Revision: r.Revision, Status: DocumentRevisionStatus(r.Status), CreatedBy: r.CreatedBy, CreatedAt: r.CreatedAt,
 			ReleasedBy: optional(r.ReleasedBy), ReleasedAt: r.ReleasedAt, Sha256: optional(r.SHA256), Changes: r.Changes,
+			ScanFileName: optional(r.ScanFileName), ReleaseDate: releaseDate(r.ReleaseDate),
 		})
 	}
 	return ListDocumentRevisions200JSONResponse(out), nil
@@ -409,4 +413,13 @@ func toAPITemplateLinks(list []document.TemplateLink) DocumentTemplateList {
 		})
 	}
 	return out
+}
+
+// releaseDate mengubah tanggal YYYY-MM-DD menjadi tanggal kontrak; "" berarti tidak ada.
+func releaseDate(s string) *openapi_types.Date {
+	t, err := time.Parse(time.DateOnly, s)
+	if err != nil {
+		return nil
+	}
+	return &openapi_types.Date{Time: t}
 }

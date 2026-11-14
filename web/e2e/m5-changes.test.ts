@@ -146,6 +146,11 @@ test('M5.5: dokumen kontrol mencatat rilis, dan revisi terbit tidak bisa diubah'
 	await page.getByRole('row', { name: / CP / }).getByRole('link').click();
 	await expect(page.getByRole('heading', { name: en.revisions, exact: true })).toBeVisible();
 
+	// Sejak M6.7 rilis butuh scan bertanda tangan.
+	await expect(page.getByRole('button', { name: en.revisionRelease.replace('{revision}', '0') })).toBeDisabled();
+	await page.getByLabel(en.scanUpload).setInputFiles({ name: 'signed.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 signed') });
+	await page.getByRole('button', { name: en.scanUploadButton }).click();
+	await expect(page.getByRole('status')).toHaveText(en.scanUploaded.replace('{file}', 'signed.pdf'));
 	page.once('dialog', (dialog) => dialog.accept());
 	await page.getByRole('button', { name: en.revisionRelease.replace('{revision}', '0') }).click();
 	await expect(page.getByRole('status')).toContainText('0');

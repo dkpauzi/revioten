@@ -307,6 +307,20 @@ export const helpId: HelpContent = {
 			tips: ['Model yang dokumennya sudah ada di perubahan sumber tidak ikut.', 'Setiap target hanya tampil untuk akun yang boleh melihat customer-nya.']
 		},
 		{
+			id: 'printing',
+			title: 'Cetak dan rilis',
+			who: 'Penyusun, Dokumen kontrol, Admin untuk layout',
+			intro: 'Cetakan berasal dari isi yang sama dengan layar, dalam Excel atau PDF, A3 atau A4 sesuai layout. Approval tetap tanda tangan basah di kertas.',
+			steps: [
+				'Buka dokumen. Di {printTitle}, pilih revisi dan {printPurpose}, lalu tekan {printExcel} atau {printPdf}.',
+				'Untuk approval di kertas, cetak {printPurpose_signature}. Tanggal rilis terisi, dan cover memuat slot approval dari rute.',
+				'Setelah semua slot ditandatangani, dokumen kontrol mengunggah scan di {revisions} dengan {scanUploadButton}, lalu mencatat rilis. Rilis ditolak tanpa scan.',
+				'Revisi terbit dicetak sebagai {printPurpose_reference} atau {printPurpose_controlled}. Salinan terkendali bernomor, dan setiap cetakan tampil di {printLog}.',
+				'Admin mengubah kertas, huruf, margin, dan lebar kolom di {navGroupTemplates}, lalu {navPrintLayouts}, dan bisa memberi satu customer layout lain.'
+			],
+			tips: ['Draft selalu dicetak dengan UNCONTROLLED COPY.', 'Baris yang berubah di revisi yang dicetak diberi segitiga dengan nomor revisi.', 'PDF butuh Chrome atau Edge di komputer server; Excel selalu bisa.']
+		},
+		{
 			id: 'audit',
 			title: 'Audit log',
 			who: 'Admin',

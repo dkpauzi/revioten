@@ -18,6 +18,9 @@
 	let failure = $state('');
 	let canEdit = $derived(can('A-3'));
 
+	// Saklar QR di cetakan (D-62); bawaannya mati.
+	let qrEnabled = $state(false);
+
 	async function load() {
 		const result = await getSystemSettings();
 		if (!result.ok) {
@@ -26,6 +29,7 @@
 		}
 		signDates = result.data.sign_dates_enabled;
 		approvalMode = result.data.form_approval_mode;
+		qrEnabled = result.data.qr_enabled;
 		loaded = true;
 	}
 
@@ -33,13 +37,14 @@
 		event.preventDefault();
 		message = '';
 		failure = '';
-		const result = await updateSystemSettings({ sign_dates_enabled: signDates, form_approval_mode: approvalMode });
+		const result = await updateSystemSettings({ sign_dates_enabled: signDates, form_approval_mode: approvalMode, qr_enabled: qrEnabled });
 		if (!result.ok) {
 			failure = failureText(result.error);
 			return;
 		}
 		signDates = result.data.sign_dates_enabled;
 		approvalMode = result.data.form_approval_mode;
+		qrEnabled = result.data.qr_enabled;
 		message = t('settingsSaved');
 	}
 
@@ -63,6 +68,11 @@
 			{t('settingsSignDates')}
 		</label>
 		<p id="sign-dates-hint"><small>{t('settingsSignDatesHint')}</small></p>
+		<label>
+			<input type="checkbox" bind:checked={qrEnabled} disabled={!canEdit} aria-describedby="qr-hint" />
+			{t('settingsQr')}
+		</label>
+		<p id="qr-hint"><small>{t('settingsQrHint')}</small></p>
 		<fieldset>
 			<legend>{t('settingsFormApproval')}</legend>
 			<label><input type="radio" bind:group={approvalMode} value="all" disabled={!canEdit} /> {t('settingsFormApprovalAll')}</label>

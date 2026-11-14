@@ -45,7 +45,8 @@ const groups: { id: MenuGroup['id']; label: MessageKey; entries: Entry[] }[] = [
 			// Form set (langkah D, D-133): semua akun melihat; admin mengubah, penyetuju form menerbitkan.
 			{ href: '/form-sets', label: 'navFormSets' },
 			{ href: '/processes', label: 'navProcesses' },
-			{ href: '/referenced-documents', label: 'navReferencedDocuments' }
+			{ href: '/referenced-documents', label: 'navReferencedDocuments' },
+			{ href: '/print-layouts', label: 'navPrintLayouts' }
 		]
 	},
 	{

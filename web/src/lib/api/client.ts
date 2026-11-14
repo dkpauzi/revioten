@@ -46,6 +46,14 @@ import type {
 	ChangeVerificationInput,
 	ChangeImpactsInput,
 	YokotenList,
+	PrintRequest,
+	PrintLogList,
+	SignedScan,
+	RevisionVerification,
+	PrintLayout,
+	PrintLayoutList,
+	PrintLayoutInput,
+	CustomerPrintLayoutList,
 	SqamChangeInput,
 	Yokoten,
 	NewYokoten,
@@ -751,6 +759,97 @@ export function setDocumentTemplateMode(
 // submitSQAMChange memanggil POST /api/v1/sqam-changes (E-3, M5.10).
 export function submitSQAMChange(input: SqamChangeInput, fetchFn: typeof fetch = fetch): Promise<ApiResult<Change>> {
 	return call<Change>(fetchFn, '/api/v1/sqam-changes', jsonRequest('POST', input));
+}
+
+// PrintedFile adalah hasil cetak yang siap disimpan (Tahap 6).
+export type PrintedFile = { name: string; blob: Blob };
+
+// printDocument memanggil POST /api/v1/documents/{id}/print (M6.2 sampai M6.6).
+// Jawabannya berkas, bukan JSON; nama berkas diambil dari Content-Disposition.
+export async function printDocument(id: string, input: PrintRequest, fetchFn: typeof fetch = fetch): Promise<ApiResult<PrintedFile>> {
+	let response: Response;
+	try {
+		response = await fetchFn(itemPath('documents', id) + '/print', jsonRequest('POST', input));
+	} catch {
+		return { ok: false, error: { status: 0, body: null } };
+	}
+	if (!response.ok) {
+		if (response.status === 401) onUnauthenticated?.();
+		const body = (await response.json().catch(() => null)) as ApiError | null;
+		return { ok: false, error: { status: response.status, body } };
+	}
+	const disposition = response.headers.get('Content-Disposition') ?? '';
+	const match = /filename\*=UTF-8''([^;]+)/.exec(disposition);
+	const name = match ? decodeURIComponent(match[1]) : 'document';
+	return { ok: true, data: { name, blob: await response.blob() } };
+}
+
+// saveFile meminta browser menyimpan berkas hasil cetak.
+export function saveFile(file: PrintedFile): void {
+	const url = URL.createObjectURL(file.blob);
+	const a = document.createElement('a');
+	a.href = url;
+	a.download = file.name;
+	document.body.append(a);
+	a.click();
+	a.remove();
+	setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// listDocumentPrints memanggil GET /api/v1/documents/{id}/prints (L-4, M6.6).
+export function listDocumentPrints(id: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<PrintLogList>> {
+	return call<PrintLogList>(fetchFn, itemPath('documents', id) + '/prints', { method: 'GET' });
+}
+
+// uploadSignedScan memanggil POST /api/v1/documents/{id}/scan (E-7, M6.7).
+export function uploadSignedScan(id: string, file: File, fetchFn: typeof fetch = fetch): Promise<ApiResult<SignedScan>> {
+	const form = new FormData();
+	form.append('file', file);
+	return call<SignedScan>(fetchFn, itemPath('documents', id) + '/scan', { method: 'POST', body: form });
+}
+
+// signedScanUrl adalah alamat unduhan scan satu revisi (L-4, M6.7).
+export function signedScanUrl(id: string, revision: number): string {
+	return `${itemPath('documents', id)}/revisions/${revision}/scan`;
+}
+
+// verifyRevision memanggil GET /api/v1/verify/{revisionId} (L-1, M6.5).
+export function verifyRevision(revisionId: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<RevisionVerification>> {
+	return call<RevisionVerification>(fetchFn, itemPath('verify', revisionId), { method: 'GET' });
+}
+
+// listPrintLayouts memanggil GET /api/v1/print-layouts (L-2, M6.1).
+export function listPrintLayouts(fetchFn: typeof fetch = fetch): Promise<ApiResult<PrintLayoutList>> {
+	return call<PrintLayoutList>(fetchFn, '/api/v1/print-layouts', { method: 'GET' });
+}
+
+// createPrintLayout memanggil POST /api/v1/print-layouts (A-2, M6.1).
+export function createPrintLayout(input: PrintLayoutInput, fetchFn: typeof fetch = fetch): Promise<ApiResult<PrintLayout>> {
+	return call<PrintLayout>(fetchFn, '/api/v1/print-layouts', jsonRequest('POST', input));
+}
+
+// updatePrintLayout memanggil PUT /api/v1/print-layouts/{id} (A-2, M6.1).
+export function updatePrintLayout(id: string, input: PrintLayoutInput, fetchFn: typeof fetch = fetch): Promise<ApiResult<PrintLayout>> {
+	return call<PrintLayout>(fetchFn, itemPath('print-layouts', id), jsonRequest('PUT', input));
+}
+
+// listCustomerPrintLayouts memanggil GET /api/v1/customers/{id}/print-layouts (L-2, M6.1).
+export function listCustomerPrintLayouts(customerId: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<CustomerPrintLayoutList>> {
+	return call<CustomerPrintLayoutList>(fetchFn, itemPath('customers', customerId) + '/print-layouts', { method: 'GET' });
+}
+
+// setCustomerPrintLayout memanggil PUT /api/v1/customers/{id}/print-layouts/{typeId} (A-2, M6.1).
+export function setCustomerPrintLayout(
+	customerId: string,
+	documentTypeId: string,
+	layoutId: string | undefined,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<CustomerPrintLayoutList>> {
+	return call<CustomerPrintLayoutList>(
+		fetchFn,
+		`${itemPath('customers', customerId)}/print-layouts/${encodeURIComponent(documentTypeId)}`,
+		jsonRequest('PUT', { layout_id: layoutId })
+	);
 }
 
 // listYokotens memanggil GET /api/v1/yokotens (L-4, M5.9).
