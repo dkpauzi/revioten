@@ -118,7 +118,7 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-94 | Urutan langkah: per dokumen, proses yang berulang, dan jarak nomor operasi | Celah | M4.6 | Tidak | Diputuskan (D-153) |
 | E-95 | Diagram PFD: cabang keputusan, rework, dan konektor halaman | Celah | M4.10 | Tidak | Terbuka |
 | E-96 | Siapa yang mengubah master dokumen terkait | Celah | D-130 | Tidak | Diputuskan (D-157) |
-| E-97 | Bagian per PCB: berlaku untuk seluruh set, dan cetakan | Celah | D-155 | Tidak | Terbuka |
+| E-97 | Bagian per PCB: berlaku untuk seluruh set, dan cetakan | Celah | D-155 | Tidak | Diputuskan (D-160) |
 
 ## Keputusan 4 November 2026
 
@@ -1751,6 +1751,13 @@ Salin blok ini untuk setiap temuan baru.
   4. **Panah lain selain urutan**, masing-masing dengan asal, tujuan, dan label. Contoh dari referensi: P010 ke P030 (reel berlabel otomatis tanpa IQC), P120 ke P130 (AOI NG), P135 ke P060 (baru satu sisi), P090 ke P080 (NG). Ini yang membuat cabang Decision dan putaran Rework bisa digambar.
   5. **Disposisi NG** tetap seperti sekarang (Scrap, NCP, Rework), dengan teks alur NG bebas untuk keterangan.
 - **Opsi baru:** (d) tambah kolom 1 sampai 3 di form PFD, dan tabel "panah lain" per dokumen PFD untuk butir 4. Opsi ini menggantikan (a) karena lebih umum.
+- **Referensi baru (14 November 2026, D-161):** PFD stabil SH-TR-020-02 (D660A, tanpa rework). Dibaca dari gambar Excel-nya: IQC NG ke NCP; SPI, AOI, VMI, ICT, LED Lighting Test, dan FVI NG ke Scrap; OQC NG ke NCP; Router (simbol process) punya cabang NG ke Scrap tanpa label OK; konektor A ke kolom kedua; nomor langkah bertingkat (5.1, 5.7.1, 6.2). Legenda memakai simbol TR-020 (process, alternate process, decision, connector, merge, document) ditambah Rework, Scrap, dan NCP.
+- **Usulan rinci Claude Code sesudah referensi ini (usulan):**
+  1. Simbol tetap set TR-020 yang sudah ada di form PFD (sesuai referensi stabil), jadi pertanyaan simbol di butir 1 di atas selesai dengan set TR-020.
+  2. Per baris PFD: **tujuan NG** (Scrap, NCP, atau Rework). Untuk Rework, **kembali ke** nomor operasi pemeriksaan sebelumnya (D-161 butir 4); hasil rework NG selalu ke Scrap. Router cukup ditandai simbol process dengan tujuan NG Scrap.
+  3. Per model (atau per dokumen): **boleh rework atau tidak**. Ini menentukan isian bawaan: tidak boleh rework berarti semua keputusan NG ke Scrap (IQC dan OQC ke NCP); boleh rework berarti NG ke Rework, kecuali SPI dan Laser Marking ke Scrap.
+  4. **Konektor halaman**: baris tempat diagram pindah ke kolom atau halaman berikutnya (konektor A, B, …), dicetak di kedua sisi.
+- **Menunggu:** referensi model yang boleh rework (dijanjikan pemilik) untuk menguji butir 2 dan 3.
 - **Status:** Terbuka
 - **Keputusan pemilik:**
 
@@ -1782,8 +1789,8 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (a).
 - **Asumsi sementara di kode (ASUMSI E-97):** opsi (a). Cetakan per bagian dibangun di Tahap 6 mengikuti pola D-159.
 - **Menghambat milestone?** Tidak
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan (D-160)
+- **Keputusan pemilik:** 14 November 2026: "Bagian per PCB berlaku untuk PFD, PFMEA, dan CP satu set (E-97)" (opsi a). Cetakan per bagian tetap di Tahap 6.
 
 ## Usulan desain UI (UX-01 sampai UX-07): dampak ke M0 sampai M3 dan saran
 

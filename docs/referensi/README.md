@@ -32,3 +32,9 @@ Catatan baca: di `.md`, tipe langkah L2 ditulis `op`, `insp`, `dec`, `trans`, `s
 - **Diterima:** 14 November 2026 (D-159). Control plan nyata customer PT. Indonesia Koito, model 737D LED HL. **Isinya belum diperbarui; yang dijadikan acuan hanya polanya.**
 - **Pola:** lembar Cover (satu nomor, customer, model, daftar part name dan part number, satu riwayat revisi, satu persetujuan in-house dan customer), lalu satu lembar per bagian: PCB A (10029-8A15D), Heatsink Assy R/L (10067-8A1A8, 10167-8A1A8), Base Assy R/L (10063-8A1A8, 10163-8A1A8). Header tiap lembar mengulang data sampul dengan Product = nama bagian. Daftar proses tiap bagian mulai dari nomor 1 dan bisa berbeda (Router hanya di PCB A).
 - **Dipakai untuk:** bagian per PCB (D-155).
+
+## Set TR-020 stabil: `SH-TR-020-02`, `SF-TR-020-03`, `SC-TR-020-04` (75J081-7022)
+
+- **Diterima:** 14 November 2026 (D-161). PFD, PFMEA, dan CP customer PT. Tokairika Indonesia, model D660A, part PC BOARD CP LH 75J081-7022. Proses ini sudah cukup stabil; dipakai sebagai referensi isi dan pola. Model ini **tidak boleh rework**.
+- **PFD (SH-TR-020-02):** diagramnya berupa bentuk Excel (bukan isi sel). Alurnya: Part Receiving, IQC (NG ke NCP), Material Storage, Kitting, Loading PCB, Cleaning, Solder Paste Printing, SPI (NG ke Scrap), SMT, Reflow, AOI (NG ke Scrap), VMI (NG ke Scrap), Router (process dengan cabang NG ke Scrap, tanpa label OK), Dust removal, konektor A ke kolom kedua, ICT, LED Lighting Test, Final Visual Inspection (semua NG ke Scrap), OQC (NG ke NCP), Delivery. Nomor langkah bertingkat (5.1, 5.7.1, 6.1, 6.2). Revisi 02 (23 Oktober 2026): ganti format PFD.
+- **Dipakai untuk:** aturan alur NG (D-161) dan data diagram PFD (E-95).
