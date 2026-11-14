@@ -85,6 +85,9 @@ type Row struct {
 	// OperationManual: nomor operasi diketik atau ditempel penyusun, jadi
 	// penomoran otomatis tidak menimpanya (M4.6).
 	OperationManual bool
+	// Detached: tautan ke poin template diputus, dengan alasan (M4.8, R-CMP-04).
+	Detached     bool
+	DetachReason string
 }
 
 // Document adalah satu dokumen lengkap dengan header dan barisnya.
@@ -675,7 +678,8 @@ func getDocument(ctx context.Context, q *db.Queries, id string) (Document, error
 	}
 	for _, row := range rows {
 		item := Row{ID: row.ID, Position: int(row.Position), ProcessID: deref(row.ProcessID), ProcessName: deref(row.ProcessName), OperationNumber: deref(row.OperationNumber), Version: int(row.Version),
-			TemplatePointID: deref(row.TemplatePointID), TemplateVersionID: deref(row.TemplateVersionID), OperationManual: row.OperationManual}
+			TemplatePointID: deref(row.TemplatePointID), TemplateVersionID: deref(row.TemplateVersionID), OperationManual: row.OperationManual,
+			Detached: row.DetachedAt != nil, DetachReason: deref(row.DetachReason)}
 		if err := json.Unmarshal(row.Content, &item.Content); err != nil {
 			return Document{}, fmt.Errorf("membaca baris: %w", err)
 		}

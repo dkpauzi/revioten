@@ -31,7 +31,13 @@ export function mainMenu(page: Page) {
 export async function openFromMenu(page: Page, group: string, item: string): Promise<void> {
 	const menu = mainMenu(page);
 	await menu.getByRole('button', { name: group, exact: true }).click();
-	await menu.getByRole('link', { name: item, exact: true }).click();
+	const link = menu.getByRole('link', { name: item, exact: true });
+	const href = (await link.getAttribute('href')) ?? '';
+	await link.click();
+	// Tunggu sampai halaman tujuan benar-benar terbuka. Tanpa ini, langkah
+	// berikutnya bisa mengenai halaman lama yang punya label sama (misalnya
+	// pilihan Customer di Process templates dan di Documents).
+	await page.waitForURL((url) => url.pathname === href);
 }
 
 // ensureProjectGroup memastikan Project Group dengan kode itu ada, lewat API

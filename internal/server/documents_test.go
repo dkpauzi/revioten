@@ -31,7 +31,7 @@ func TestDocumentEndpoints(t *testing.T) {
 		`"document_type":{"id":"dt-3","key":"cp","name":"CP"},"revision":0,"status":"draft","form_set_version_id":"fsv-1",` +
 		`"form_set_name":"AIAG 4th set","format_version_id":"v-3","models":[{"id":"m-1","name":"K-125"}],"part_numbers":[],` +
 		`"route":{"id":"r-1","name":"Up to GM"},"header":{"f-1":"Line 1"},"header_version":4,` +
-		`"rows":[{"id":"row-1","position":1,"version":2,"operation_manual":false,"process_id":"p-1","process_name":"SMT","operation_number":"10","content":{"f-2":"Paste"}}],"set":[],` +
+		`"rows":[{"id":"row-1","position":1,"version":2,"operation_manual":false,"detached":false,"process_id":"p-1","process_name":"SMT","operation_number":"10","content":{"f-2":"Paste"}}],"set":[],` +
 		`"created_at":"2026-11-12T08:00:00Z","updated_at":"2026-11-12T08:00:00Z"}`
 	if rec.Code != http.StatusOK || fake.got != (called{method: "Get", id: "d-1"}) || !sameJSON(t, rec.Body.String(), want) {
 		t.Errorf("baca: status %d\n%s\ningin\n%s", rec.Code, rec.Body.String(), want)
@@ -104,5 +104,21 @@ func TestDocumentEndpoints(t *testing.T) {
 	rec = srv.do(http.MethodPost, "/api/v1/documents/d-1/copy", `{"source_document_id":"d-9"}`)
 	if rec.Code != http.StatusOK || fake.got != (called{method: "CopyFrom", id: "d-1", input: "d-9"}) {
 		t.Errorf("salin: status %d, %+v", rec.Code, fake.got)
+	}
+
+	// M4.8: perbandingan dengan template dan putus tautan.
+	fake.differences = []document.RowDifference{{
+		RowID: "row-1", Position: 1, PointID: "pp-1", PointText: "Check MSL label", Status: document.LinkDifferent,
+		Fields: []document.FieldDifference{{FieldID: "f-2", Label: "Product Characteristics", Template: "MSL label", Row: ""}},
+	}}
+	rec = srv.do(http.MethodGet, "/api/v1/documents/d-1/differences", "")
+	wantDiff := `{"items":[{"row_id":"row-1","position":1,"point_id":"pp-1","point_text":"Check MSL label","status":"different",` +
+		`"fields":[{"field_id":"f-2","label":"Product Characteristics","template":"MSL label","row":""}]}]}`
+	if rec.Code != http.StatusOK || !sameJSON(t, rec.Body.String(), wantDiff) {
+		t.Errorf("perbandingan: status %d\n%s", rec.Code, rec.Body.String())
+	}
+	rec = srv.do(http.MethodPost, "/api/v1/documents/d-1/rows/row-1/detach", `{"reason":"Customer drawing"}`)
+	if rec.Code != http.StatusOK || fake.got != (called{method: "Detach", id: "d-1", input: "row-1"}) || fake.gotReason != "Customer drawing" {
+		t.Errorf("putus tautan: status %d, %+v %q", rec.Code, fake.got, fake.gotReason)
 	}
 }

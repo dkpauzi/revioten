@@ -105,7 +105,7 @@ ORDER BY p.number;
 
 -- name: ListDocumentRows :many
 SELECT r.id, r.position, r.process_id, n.name AS process_name, r.operation_number, r.content, r.version,
-       r.template_point_id, r.template_version_id, r.operation_manual
+       r.template_point_id, r.template_version_id, r.operation_manual, r.detached_at, r.detach_reason
 FROM document_rows r
 LEFT JOIN process_names n ON n.process_id = r.process_id AND n.kind = 'display'
 WHERE r.document_id = $1
@@ -215,8 +215,8 @@ WHERE id = $1 AND document_id = $2;
 -- name: CopyDocumentRows :execrows
 -- CopyDocumentRows menyalin semua baris satu dokumen ke dokumen lain dengan
 -- ID baru. Urutan, proses, nomor operasi, isi, dan tautan template ikut.
-INSERT INTO document_rows (document_id, position, process_id, operation_number, operation_manual, content, template_point_id, template_version_id)
-SELECT sqlc.arg(target_id)::uuid, s.position, s.process_id, s.operation_number, s.operation_manual, s.content, s.template_point_id, s.template_version_id
+INSERT INTO document_rows (document_id, position, process_id, operation_number, operation_manual, content, template_point_id, template_version_id, detached_at, detach_reason)
+SELECT sqlc.arg(target_id)::uuid, s.position, s.process_id, s.operation_number, s.operation_manual, s.content, s.template_point_id, s.template_version_id, s.detached_at, s.detach_reason
 FROM document_rows s
 WHERE s.document_id = sqlc.arg(source_id);
 
@@ -227,3 +227,14 @@ SELECT sqlc.arg(target_id)::uuid, s.point_id, s.reason
 FROM document_point_exclusions s
 WHERE s.document_id = sqlc.arg(source_id)
 ON CONFLICT (document_id, point_id) DO NOTHING;
+
+
+-- M4.8: putus tautan.
+
+
+-- name: DetachDocumentRow :execrows
+-- DetachDocumentRow memutus satu baris dari poin template-nya, dengan alasan
+-- (R-CMP-04). Hasil 0 baris berarti baris itu tidak tertaut atau sudah putus.
+UPDATE document_rows
+SET detached_at = now(), detach_reason = $3, updated_at = now()
+WHERE id = $1 AND document_id = $2 AND template_point_id IS NOT NULL AND detached_at IS NULL;

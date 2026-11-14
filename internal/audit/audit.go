@@ -82,6 +82,7 @@ const (
 	ActionDocumentHeaderChanged  = "document.header_changed"
 	ActionDocumentRowAdded       = "document.row_added"
 	ActionDocumentRowsPasted     = "document.rows_pasted"    // M4.4
+	ActionDocumentRowDetached    = "document.row_detached"   // M4.8
 	ActionDocumentCopied         = "document.copied"         // M4.7
 	ActionDocumentComposed       = "document.composed"       // M4.5
 	ActionDocumentRowsReordered  = "document.rows_reordered" // M4.6

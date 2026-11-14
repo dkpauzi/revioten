@@ -125,8 +125,8 @@ func (q *Queries) ClearPointExclusion(ctx context.Context, arg ClearPointExclusi
 const copyDocumentRows = `-- name: CopyDocumentRows :execrows
 
 
-INSERT INTO document_rows (document_id, position, process_id, operation_number, operation_manual, content, template_point_id, template_version_id)
-SELECT $1::uuid, s.position, s.process_id, s.operation_number, s.operation_manual, s.content, s.template_point_id, s.template_version_id
+INSERT INTO document_rows (document_id, position, process_id, operation_number, operation_manual, content, template_point_id, template_version_id, detached_at, detach_reason)
+SELECT $1::uuid, s.position, s.process_id, s.operation_number, s.operation_manual, s.content, s.template_point_id, s.template_version_id, s.detached_at, s.detach_reason
 FROM document_rows s
 WHERE s.document_id = $2
 `
@@ -224,6 +224,31 @@ func (q *Queries) DeleteDocumentRow(ctx context.Context, arg DeleteDocumentRowPa
 	var i DeleteDocumentRowRow
 	err := row.Scan(&i.Position, &i.OperationNumber, &i.TemplatePointID)
 	return i, err
+}
+
+const detachDocumentRow = `-- name: DetachDocumentRow :execrows
+
+
+UPDATE document_rows
+SET detached_at = now(), detach_reason = $3, updated_at = now()
+WHERE id = $1 AND document_id = $2 AND template_point_id IS NOT NULL AND detached_at IS NULL
+`
+
+type DetachDocumentRowParams struct {
+	ID           string
+	DocumentID   string
+	DetachReason *string
+}
+
+// M4.8: putus tautan.
+// DetachDocumentRow memutus satu baris dari poin template-nya, dengan alasan
+// (R-CMP-04). Hasil 0 baris berarti baris itu tidak tertaut atau sudah putus.
+func (q *Queries) DetachDocumentRow(ctx context.Context, arg DetachDocumentRowParams) (int64, error) {
+	result, err := q.db.Exec(ctx, detachDocumentRow, arg.ID, arg.DocumentID, arg.DetachReason)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const documentExistsForNumber = `-- name: DocumentExistsForNumber :one
@@ -500,7 +525,7 @@ func (q *Queries) ListDocumentPartNumbers(ctx context.Context, documentID string
 
 const listDocumentRows = `-- name: ListDocumentRows :many
 SELECT r.id, r.position, r.process_id, n.name AS process_name, r.operation_number, r.content, r.version,
-       r.template_point_id, r.template_version_id, r.operation_manual
+       r.template_point_id, r.template_version_id, r.operation_manual, r.detached_at, r.detach_reason
 FROM document_rows r
 LEFT JOIN process_names n ON n.process_id = r.process_id AND n.kind = 'display'
 WHERE r.document_id = $1
@@ -518,6 +543,8 @@ type ListDocumentRowsRow struct {
 	TemplatePointID   *string
 	TemplateVersionID *string
 	OperationManual   bool
+	DetachedAt        *time.Time
+	DetachReason      *string
 }
 
 func (q *Queries) ListDocumentRows(ctx context.Context, documentID string) ([]ListDocumentRowsRow, error) {
@@ -540,6 +567,8 @@ func (q *Queries) ListDocumentRows(ctx context.Context, documentID string) ([]Li
 			&i.TemplatePointID,
 			&i.TemplateVersionID,
 			&i.OperationManual,
+			&i.DetachedAt,
+			&i.DetachReason,
 		); err != nil {
 			return nil, err
 		}

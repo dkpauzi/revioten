@@ -1064,6 +1064,11 @@ export type DocumentRow = {
      */
     operation_manual: boolean;
     /**
+     * The link to the template point was cut, with a reason (M4.8).
+     */
+    detached: boolean;
+    detach_reason?: string;
+    /**
      * Row content keyed by column field ID.
      */
     content: {
@@ -1130,6 +1135,46 @@ export type ComposeInput = {
 export type PointExclusion = {
     point_id: string;
     reason?: string;
+};
+
+export type RowDifferenceList = {
+    items: Array<RowDifference>;
+};
+
+export type RowDifference = {
+    row_id: string;
+    position: number;
+    point_id: string;
+    /**
+     * The text of the point, or of the variant that applies to the model.
+     */
+    point_text: string;
+    status: 'same' | 'different' | 'detached';
+    /**
+     * Why the row was detached.
+     */
+    reason?: string;
+    fields: Array<FieldDifference>;
+};
+
+export type FieldDifference = {
+    /**
+     * The column; left out for the process of the row.
+     */
+    field_id?: string;
+    label: string;
+    /**
+     * What the template point writes into this column; an empty string when it writes nothing.
+     */
+    template: unknown;
+    /**
+     * What the row holds now; an empty string when the cell is empty.
+     */
+    row: unknown;
+};
+
+export type RowDetach = {
+    reason: string;
 };
 
 export type DocumentCopy = {
@@ -4731,6 +4776,77 @@ export type ComposeDocumentResponses = {
 };
 
 export type ComposeDocumentResponse = ComposeDocumentResponses[keyof ComposeDocumentResponses];
+
+export type GetDocumentDifferencesData = {
+    body?: never;
+    path: {
+        documentId: string;
+    };
+    query?: never;
+    url: '/api/v1/documents/{documentId}/differences';
+};
+
+export type GetDocumentDifferencesErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type GetDocumentDifferencesError = GetDocumentDifferencesErrors[keyof GetDocumentDifferencesErrors];
+
+export type GetDocumentDifferencesResponses = {
+    /**
+     * The comparison.
+     */
+    200: RowDifferenceList;
+};
+
+export type GetDocumentDifferencesResponse = GetDocumentDifferencesResponses[keyof GetDocumentDifferencesResponses];
+
+export type DetachDocumentRowData = {
+    body: RowDetach;
+    path: {
+        documentId: string;
+        rowId: string;
+    };
+    query?: never;
+    url: '/api/v1/documents/{documentId}/rows/{rowId}/detach';
+};
+
+export type DetachDocumentRowErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type DetachDocumentRowError = DetachDocumentRowErrors[keyof DetachDocumentRowErrors];
+
+export type DetachDocumentRowResponses = {
+    /**
+     * The document after the change.
+     */
+    200: Document;
+};
+
+export type DetachDocumentRowResponse = DetachDocumentRowResponses[keyof DetachDocumentRowResponses];
 
 export type CopyDocumentCompositionData = {
     body: DocumentCopy;

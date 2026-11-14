@@ -8,6 +8,7 @@ const row = (id: string, process: string, operation = '', manual = false): Docum
 	position: 0,
 	version: 1,
 	operation_manual: manual,
+	detached: false,
 	process_id: process || undefined,
 	process_name: process ? `Process ${process}` : undefined,
 	operation_number: operation || undefined,

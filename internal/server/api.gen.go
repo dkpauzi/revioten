@@ -1157,6 +1157,27 @@ func (e RouteSlotInputStage) Valid() bool {
 	}
 }
 
+// Defines values for RowDifferenceStatus.
+const (
+	RowDifferenceStatusDetached  RowDifferenceStatus = "detached"
+	RowDifferenceStatusDifferent RowDifferenceStatus = "different"
+	RowDifferenceStatusSame      RowDifferenceStatus = "same"
+)
+
+// Valid indicates whether the value is a known member of the RowDifferenceStatus enum.
+func (e RowDifferenceStatus) Valid() bool {
+	switch e {
+	case RowDifferenceStatusDetached:
+		return true
+	case RowDifferenceStatusDifferent:
+		return true
+	case RowDifferenceStatusSame:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SystemSettingsFormApprovalMode.
 const (
 	SystemSettingsFormApprovalModeAll SystemSettingsFormApprovalMode = "all"
@@ -1704,7 +1725,11 @@ type DocumentPartNumber struct {
 // DocumentRow defines model for DocumentRow.
 type DocumentRow struct {
 	// Content Row content keyed by column field ID.
-	Content map[string]interface{} `json:"content"`
+	Content      map[string]interface{} `json:"content"`
+	DetachReason *string                `json:"detach_reason,omitempty"`
+
+	// Detached The link to the template point was cut, with a reason (M4.8).
+	Detached bool `json:"detached"`
 
 	// Id Fixed for the life of the row (R-DOC-02).
 	Id string `json:"id"`
@@ -1830,6 +1855,19 @@ type ErrorDetail struct {
 
 // ErrorDetailCode defines model for ErrorDetail.Code.
 type ErrorDetailCode string
+
+// FieldDifference defines model for FieldDifference.
+type FieldDifference struct {
+	// FieldId The column; left out for the process of the row.
+	FieldId *string `json:"field_id,omitempty"`
+	Label   string  `json:"label"`
+
+	// Row What the row holds now; an empty string when the cell is empty.
+	Row interface{} `json:"row"`
+
+	// Template What the template point writes into this column; an empty string when it writes nothing.
+	Template interface{} `json:"template"`
+}
 
 // FieldOption defines model for FieldOption.
 type FieldOption struct {
@@ -2862,6 +2900,34 @@ type RouteSlotInput struct {
 // RouteSlotInputStage defines model for RouteSlotInput.Stage.
 type RouteSlotInputStage string
 
+// RowDetach defines model for RowDetach.
+type RowDetach struct {
+	Reason string `json:"reason"`
+}
+
+// RowDifference defines model for RowDifference.
+type RowDifference struct {
+	Fields  []FieldDifference `json:"fields"`
+	PointId string            `json:"point_id"`
+
+	// PointText The text of the point, or of the variant that applies to the model.
+	PointText string `json:"point_text"`
+	Position  int    `json:"position"`
+
+	// Reason Why the row was detached.
+	Reason *string             `json:"reason,omitempty"`
+	RowId  string              `json:"row_id"`
+	Status RowDifferenceStatus `json:"status"`
+}
+
+// RowDifferenceStatus defines model for RowDifference.Status.
+type RowDifferenceStatus string
+
+// RowDifferenceList defines model for RowDifferenceList.
+type RowDifferenceList struct {
+	Items []RowDifference `json:"items"`
+}
+
 // SequenceRange defines model for SequenceRange.
 type SequenceRange struct {
 	// First Example: 003
@@ -3259,6 +3325,9 @@ type AddDocumentRowsJSONRequestBody = DocumentRowBatch
 // UpdateDocumentRowJSONRequestBody defines body for UpdateDocumentRow for application/json ContentType.
 type UpdateDocumentRowJSONRequestBody = DocumentRowInput
 
+// DetachDocumentRowJSONRequestBody defines body for DetachDocumentRow for application/json ContentType.
+type DetachDocumentRowJSONRequestBody = RowDetach
+
 // SetFormSetSheetsJSONRequestBody defines body for SetFormSetSheets for application/json ContentType.
 type SetFormSetSheetsJSONRequestBody = FormSetSheets
 
@@ -3486,6 +3555,9 @@ type ServerInterface interface {
 	// CopyDocumentComposition Start a document set from the rows of another model's documents (E-2, M4.7)
 	// (POST /api/v1/documents/{documentId}/copy)
 	CopyDocumentComposition(w http.ResponseWriter, r *http.Request, documentId DocumentId)
+	// GetDocumentDifferences Compare each linked row with its process template point (L-4, M4.8)
+	// (GET /api/v1/documents/{documentId}/differences)
+	GetDocumentDifferences(w http.ResponseWriter, r *http.Request, documentId DocumentId)
 	// SetDocumentHeader Replace the header content of a draft document (E-2)
 	// (PUT /api/v1/documents/{documentId}/header)
 	SetDocumentHeader(w http.ResponseWriter, r *http.Request, documentId DocumentId)
@@ -3504,6 +3576,9 @@ type ServerInterface interface {
 	// UpdateDocumentRow Replace the process, operation number, and content of one row (E-2)
 	// (PUT /api/v1/documents/{documentId}/rows/{rowId})
 	UpdateDocumentRow(w http.ResponseWriter, r *http.Request, documentId DocumentId, rowId RowId)
+	// DetachDocumentRow Detach one row from its process template point, with a reason (E-2, M4.8)
+	// (POST /api/v1/documents/{documentId}/rows/{rowId}/detach)
+	DetachDocumentRow(w http.ResponseWriter, r *http.Request, documentId DocumentId, rowId RowId)
 	// SetFormSetSheets Choose the format template versions of the sheets of a draft form set version (A-2)
 	// (PUT /api/v1/form-set-versions/{formSetVersionId})
 	SetFormSetSheets(w http.ResponseWriter, r *http.Request, formSetVersionId FormSetVersionId)
@@ -4732,6 +4807,32 @@ func (siw *ServerInterfaceWrapper) CopyDocumentComposition(w http.ResponseWriter
 	handler.ServeHTTP(w, r)
 }
 
+// GetDocumentDifferences operation middleware
+func (siw *ServerInterfaceWrapper) GetDocumentDifferences(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", r.PathValue("documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetDocumentDifferences(w, r, documentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // SetDocumentHeader operation middleware
 func (siw *ServerInterfaceWrapper) SetDocumentHeader(w http.ResponseWriter, r *http.Request) {
 
@@ -4897,6 +4998,41 @@ func (siw *ServerInterfaceWrapper) UpdateDocumentRow(w http.ResponseWriter, r *h
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UpdateDocumentRow(w, r, documentId, rowId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DetachDocumentRow operation middleware
+func (siw *ServerInterfaceWrapper) DetachDocumentRow(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", r.PathValue("documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "rowId" -------------
+	var rowId RowId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "rowId", r.PathValue("rowId"), &rowId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "rowId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DetachDocumentRow(w, r, documentId, rowId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -6593,6 +6729,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/documents/{documentId}/header", wrapper.SetDocumentHeader)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/documents/{documentId}/composition", wrapper.GetDocumentComposition)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/documents/{documentId}/composition", wrapper.ComposeDocument)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/documents/{documentId}/differences", wrapper.GetDocumentDifferences)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/rows/{rowId}/detach", wrapper.DetachDocumentRow)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/copy", wrapper.CopyDocumentComposition)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/documents/{documentId}/order", wrapper.ReorderDocumentRows)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/rows", wrapper.AddDocumentRow)
@@ -8291,6 +8429,45 @@ func (response CopyDocumentCompositiondefaultJSONResponse) VisitCopyDocumentComp
 	return err
 }
 
+type GetDocumentDifferencesRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+}
+
+type GetDocumentDifferencesResponseObject interface {
+	VisitGetDocumentDifferencesResponse(w http.ResponseWriter) error
+}
+
+type GetDocumentDifferences200JSONResponse RowDifferenceList
+
+func (response GetDocumentDifferences200JSONResponse) VisitGetDocumentDifferencesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDocumentDifferencesdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response GetDocumentDifferencesdefaultJSONResponse) VisitGetDocumentDifferencesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type SetDocumentHeaderRequestObject struct {
 	DocumentId DocumentId `json:"documentId"`
 	Body       *SetDocumentHeaderJSONRequestBody
@@ -8521,6 +8698,47 @@ type UpdateDocumentRowdefaultJSONResponse struct {
 }
 
 func (response UpdateDocumentRowdefaultJSONResponse) VisitUpdateDocumentRowResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DetachDocumentRowRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+	RowId      RowId      `json:"rowId"`
+	Body       *DetachDocumentRowJSONRequestBody
+}
+
+type DetachDocumentRowResponseObject interface {
+	VisitDetachDocumentRowResponse(w http.ResponseWriter) error
+}
+
+type DetachDocumentRow200JSONResponse Document
+
+func (response DetachDocumentRow200JSONResponse) VisitDetachDocumentRowResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DetachDocumentRowdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response DetachDocumentRowdefaultJSONResponse) VisitDetachDocumentRowResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -11198,6 +11416,9 @@ type StrictServerInterface interface {
 	// CopyDocumentComposition Start a document set from the rows of another model's documents (E-2, M4.7)
 	// (POST /api/v1/documents/{documentId}/copy)
 	CopyDocumentComposition(ctx context.Context, request CopyDocumentCompositionRequestObject) (CopyDocumentCompositionResponseObject, error)
+	// GetDocumentDifferences Compare each linked row with its process template point (L-4, M4.8)
+	// (GET /api/v1/documents/{documentId}/differences)
+	GetDocumentDifferences(ctx context.Context, request GetDocumentDifferencesRequestObject) (GetDocumentDifferencesResponseObject, error)
 	// SetDocumentHeader Replace the header content of a draft document (E-2)
 	// (PUT /api/v1/documents/{documentId}/header)
 	SetDocumentHeader(ctx context.Context, request SetDocumentHeaderRequestObject) (SetDocumentHeaderResponseObject, error)
@@ -11216,6 +11437,9 @@ type StrictServerInterface interface {
 	// UpdateDocumentRow Replace the process, operation number, and content of one row (E-2)
 	// (PUT /api/v1/documents/{documentId}/rows/{rowId})
 	UpdateDocumentRow(ctx context.Context, request UpdateDocumentRowRequestObject) (UpdateDocumentRowResponseObject, error)
+	// DetachDocumentRow Detach one row from its process template point, with a reason (E-2, M4.8)
+	// (POST /api/v1/documents/{documentId}/rows/{rowId}/detach)
+	DetachDocumentRow(ctx context.Context, request DetachDocumentRowRequestObject) (DetachDocumentRowResponseObject, error)
 	// SetFormSetSheets Choose the format template versions of the sheets of a draft form set version (A-2)
 	// (PUT /api/v1/form-set-versions/{formSetVersionId})
 	SetFormSetSheets(ctx context.Context, request SetFormSetSheetsRequestObject) (SetFormSetSheetsResponseObject, error)
@@ -12628,6 +12852,32 @@ func (sh *strictHandler) CopyDocumentComposition(w http.ResponseWriter, r *http.
 	}
 }
 
+// GetDocumentDifferences operation middleware
+func (sh *strictHandler) GetDocumentDifferences(w http.ResponseWriter, r *http.Request, documentId DocumentId) {
+	var request GetDocumentDifferencesRequestObject
+
+	request.DocumentId = documentId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetDocumentDifferences(ctx, request.(GetDocumentDifferencesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetDocumentDifferences")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetDocumentDifferencesResponseObject); ok {
+		if err := validResponse.VisitGetDocumentDifferencesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // SetDocumentHeader operation middleware
 func (sh *strictHandler) SetDocumentHeader(w http.ResponseWriter, r *http.Request, documentId DocumentId) {
 	var request SetDocumentHeaderRequestObject
@@ -12814,6 +13064,40 @@ func (sh *strictHandler) UpdateDocumentRow(w http.ResponseWriter, r *http.Reques
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UpdateDocumentRowResponseObject); ok {
 		if err := validResponse.VisitUpdateDocumentRowResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DetachDocumentRow operation middleware
+func (sh *strictHandler) DetachDocumentRow(w http.ResponseWriter, r *http.Request, documentId DocumentId, rowId RowId) {
+	var request DetachDocumentRowRequestObject
+
+	request.DocumentId = documentId
+	request.RowId = rowId
+
+	var body DetachDocumentRowJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DetachDocumentRow(ctx, request.(DetachDocumentRowRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DetachDocumentRow")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DetachDocumentRowResponseObject); ok {
+		if err := validResponse.VisitDetachDocumentRowResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

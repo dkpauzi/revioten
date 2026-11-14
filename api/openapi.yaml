@@ -1622,6 +1622,48 @@ paths:
                 $ref: '#/components/schemas/Document'
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/documents/{documentId}/differences:
+    get:
+      operationId: getDocumentDifferences
+      summary: Compare each linked row with its process template point (L-4, M4.8)
+      description: >-
+        A row composed from a process template stays linked to its point. The answer lists every linked row: the same
+        as the template, different (with the columns that differ), or detached with its reason (R-CMP-04). Typed and
+        pasted rows are left out. Differences are computed when asked; nothing is stored.
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      responses:
+        '200':
+          description: The comparison.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RowDifferenceList'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/documents/{documentId}/rows/{rowId}/detach:
+    post:
+      operationId: detachDocumentRow
+      summary: Detach one row from its process template point, with a reason (E-2, M4.8)
+      description: The row stays and keeps its origin point, but is no longer compared with the template (R-CMP-04).
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+        - $ref: '#/components/parameters/RowId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RowDetach'
+      responses:
+        '200':
+          description: The document after the change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/documents/{documentId}/copy:
     post:
       operationId: copyDocumentComposition
@@ -3824,7 +3866,7 @@ components:
           type: string
     DocumentRow:
       type: object
-      required: [id, position, version, operation_manual, content]
+      required: [id, position, version, operation_manual, detached, content]
       properties:
         id:
           type: string
@@ -3843,6 +3885,11 @@ components:
         operation_manual:
           type: boolean
           description: The operation number was typed or pasted, so automatic numbering keeps it (M4.6).
+        detached:
+          type: boolean
+          description: The link to the template point was cut, with a reason (M4.8).
+        detach_reason:
+          type: string
         content:
           type: object
           additionalProperties: true
@@ -3934,6 +3981,56 @@ components:
       properties:
         point_id:
           type: string
+        reason:
+          type: string
+    RowDifferenceList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RowDifference'
+    RowDifference:
+      type: object
+      required: [row_id, position, point_id, point_text, status, fields]
+      properties:
+        row_id:
+          type: string
+        position:
+          type: integer
+        point_id:
+          type: string
+        point_text:
+          type: string
+          description: The text of the point, or of the variant that applies to the model.
+        status:
+          type: string
+          enum: [same, different, detached]
+        reason:
+          type: string
+          description: Why the row was detached.
+        fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldDifference'
+    FieldDifference:
+      type: object
+      required: [label, template, row]
+      properties:
+        field_id:
+          type: string
+          description: The column; left out for the process of the row.
+        label:
+          type: string
+        template:
+          description: What the template point writes into this column; an empty string when it writes nothing.
+        row:
+          description: What the row holds now; an empty string when the cell is empty.
+    RowDetach:
+      type: object
+      required: [reason]
+      properties:
         reason:
           type: string
     DocumentCopy:

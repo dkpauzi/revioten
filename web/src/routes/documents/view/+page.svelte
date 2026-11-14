@@ -8,6 +8,7 @@
 	import { addDocumentRow, addDocumentRows, deleteDocumentRow, reorderDocumentRows, getDocument, getFormatVersion, listProcesses, setDocumentHeader, updateDocumentRow, type ApiFailure } from '#lib/api/client.ts';
 	import type { Document, DocumentRow, DocumentRowInput, FormatVersion, Process } from '#lib/api/gen/index.ts';
 	import ComposePanel from '#lib/documents/ComposePanel.svelte';
+	import ComparePanel from '#lib/documents/ComparePanel.svelte';
 	import CopyPanel from '#lib/documents/CopyPanel.svelte';
 	import OrderPanel from '#lib/documents/OrderPanel.svelte';
 	import PastePanel from '#lib/documents/PastePanel.svelte';
@@ -36,6 +37,12 @@
 	let ordering = $state(false);
 	// copying: panel salin dari model lain sedang dibuka (M4.7).
 	let copying = $state(false);
+	// comparing: tampilan banding dengan template sedang dibuka (M4.8).
+	let comparing = $state(false);
+	// compareRound naik setiap tautan diputus, supaya panel banding memuat ulang perbandingannya.
+	let compareRound = $state(0);
+	// Tombol banding hanya untuk dokumen yang punya baris tertaut ke template.
+	let hasLinkedRows = $derived(doc?.rows.some((r) => r.template_point_id) ?? false);
 
 	// Isian header.
 	let header = $state<Record<string, string>>({});
@@ -53,6 +60,7 @@
 			composing = false;
 			ordering = false;
 			copying = false;
+			comparing = false;
 			load(id);
 		});
 	});
@@ -203,6 +211,15 @@
 		message = t('copyDone', { number: source });
 	}
 
+	// detached menerima dokumen sesudah tautan satu baris diputus (M4.8).
+	// Panel banding dimuat ulang supaya keadaannya terbaru.
+	function detached(d: Document, position: number) {
+		reset();
+		use(d);
+		compareRound++;
+		message = t('compareDetachDone', { position: String(position) });
+	}
+
 	// saveOrder menyimpan urutan baris dan, bila diminta, nomor operasi otomatis (M4.6).
 	async function saveOrder(rowIds: string[], renumber: boolean): Promise<boolean> {
 		reset();
@@ -304,6 +321,9 @@
 		{#key doc.id}
 			<Workbook {doc} {format} {processes} {canEdit} onsave={saveCell} ondelete={removeRow} />
 		{/key}
+		{#if hasLinkedRows && !comparing}
+			<p><button type="button" onclick={() => (comparing = true)}>{t('compareOpen')}</button></p>
+		{/if}
 		{#if canEdit}
 			<p class="row-actions">
 				<button type="button" onclick={addRow}>{t('documentRowAdd')}</button>
@@ -320,6 +340,14 @@
 		<section>
 			{#key doc.id}
 				<ComposePanel {doc} oncomposed={composed} oncancel={() => (composing = false)} />
+			{/key}
+		</section>
+	{/if}
+
+	{#if comparing}
+		<section>
+			{#key compareRound}
+				<ComparePanel {doc} candetach={canEdit} ondetached={detached} oncancel={() => (comparing = false)} />
 			{/key}
 		</section>
 	{/if}

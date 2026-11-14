@@ -147,6 +147,8 @@ type DocumentRow struct {
 	TemplatePointID   *string
 	TemplateVersionID *string
 	OperationManual   bool
+	DetachedAt        *time.Time
+	DetachReason      *string
 }
 
 type DocumentType struct {

@@ -76,6 +76,7 @@ const actionKeys: Record<string, MessageKey> = {
 	'document.rows_pasted': 'auditActionDocumentRowsPasted',
 	'document.composed': 'auditActionDocumentComposed',
 	'document.copied': 'auditActionDocumentCopied',
+	'document.row_detached': 'auditActionDocumentRowDetached',
 	'document.rows_reordered': 'auditActionDocumentRowsReordered',
 	'document.row_changed': 'auditActionDocumentRowChanged',
 	'document.row_removed': 'auditActionDocumentRowRemoved',

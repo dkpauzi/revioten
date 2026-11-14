@@ -40,6 +40,7 @@ import type {
 	ComposeInput,
 	Composition,
 	DocumentRowInput,
+	RowDifferenceList,
 	NewDocument,
 	FormSet,
 	FormSetList,
@@ -575,6 +576,16 @@ export function reorderDocumentRows(id: string, rowIds: string[], renumber: bool
 // copyDocumentComposition memanggil POST /api/v1/documents/{id}/copy (E-2, M4.7).
 export function copyDocumentComposition(id: string, sourceId: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<Document>> {
 	return call<Document>(fetchFn, itemPath('documents', id) + '/copy', jsonRequest('POST', { source_document_id: sourceId }));
+}
+
+// getDocumentDifferences memanggil GET /api/v1/documents/{id}/differences (L-4, M4.8).
+export function getDocumentDifferences(id: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<RowDifferenceList>> {
+	return call<RowDifferenceList>(fetchFn, itemPath('documents', id) + '/differences', { method: 'GET' });
+}
+
+// detachDocumentRow memanggil POST /api/v1/documents/{id}/rows/{rowId}/detach (E-2, M4.8).
+export function detachDocumentRow(id: string, rowId: string, reason: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<Document>> {
+	return call<Document>(fetchFn, `${itemPath('documents', id)}/rows/${encodeURIComponent(rowId)}/detach`, jsonRequest('POST', { reason }));
 }
 
 // updateDocumentRow memanggil PUT /api/v1/documents/{id}/rows/{rowId} (E-2).

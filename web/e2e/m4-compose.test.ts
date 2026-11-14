@@ -202,4 +202,29 @@ test('penyusun merakit CP, PFMEA, dan PFD dari process template IQC', async ({ p
 	await page.getByLabel(en.documentCustomer, { exact: true }).selectOption({ label: 'KM · Customer KM' });
 	await page.getByRole('link', { name: setup.cpNumber }).click();
 	await expect(cell(0, product)).toHaveText('Part number');
+
+	// M4.8 (R-CMP-04): baris yang diubah ditandai berbeda di tampilan banding,
+	// lalu tautannya diputus dengan alasan. Di CP M-46 baris pertama sudah
+	// diubah menjadi "Part number M-46".
+	await openFromMenu(page, en.navGroupDocuments, en.navDocuments);
+	await page.getByLabel(en.documentCustomer, { exact: true }).selectOption({ label: 'KM · Customer KM' });
+	await page.getByRole('link', { name: copyNumber }).click();
+	await expect(page.getByRole('heading', { name: copyNumber, level: 1 })).toBeVisible();
+	await page.getByRole('button', { name: en.compareOpen }).click();
+	await expect(page.getByTestId('compare-summary')).toHaveText(en.compareSummary.replace('{rows}', '2').replace('{different}', '1'));
+	const firstRow = page.locator('.compare tbody tr').first();
+	await expect(firstRow).toContainText(en.compareDifferent);
+	await expect(firstRow).toContainText(en.compareTemplate.replace('{value}', 'Part number'));
+	await expect(firstRow).toContainText(en.compareRow.replace('{value}', 'Part number M-46'));
+	await expect(page.locator('.compare tbody tr').nth(1)).toContainText(en.compareSame);
+
+	// Putus tautan tanpa alasan ditolak; dengan alasan tersimpan.
+	await page.getByRole('button', { name: en.compareDetachFor.replace('{position}', '1') }).click();
+	await page.getByRole('button', { name: en.compareDetach, exact: true }).click();
+	await expect(page.locator('.compare .error')).toBeVisible();
+	await page.getByLabel(en.compareDetachReasonLabel).fill('Customer drawing for M-46');
+	await page.getByRole('button', { name: en.compareDetach, exact: true }).click();
+	await expect(page.getByRole('status')).toHaveText(en.compareDetachDone.replace('{position}', '1'));
+	await expect(page.getByTestId('compare-summary')).toHaveText(en.compareSummary.replace('{rows}', '2').replace('{different}', '0'));
+	await expect(page.locator('.compare tbody tr').first()).toContainText(en.compareDetachReason.replace('{reason}', 'Customer drawing for M-46'));
 });

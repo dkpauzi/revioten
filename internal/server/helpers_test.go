@@ -574,6 +574,9 @@ type fakeDocuments struct {
 	composition document.Composition
 	gotCompose  document.Compose
 	gotOrder    document.Order // M4.6
+	// differences dan gotReason: perbandingan dan putus tautan (M4.8).
+	differences []document.RowDifference
+	gotReason   string
 	header      map[string]any
 	// headerVersion adalah versi header yang dikirim klien (M4.3).
 	headerVersion int
@@ -626,6 +629,16 @@ func (f *fakeDocuments) Reorder(_ context.Context, _ access.Actor, id string, in
 
 func (f *fakeDocuments) CopyFrom(_ context.Context, _ access.Actor, id, sourceID string) (document.Document, error) {
 	f.got = called{method: "CopyFrom", id: id, input: sourceID}
+	return f.doc, f.err
+}
+
+func (f *fakeDocuments) Differences(_ context.Context, _ access.Actor, id string) ([]document.RowDifference, error) {
+	f.got = called{method: "Differences", id: id}
+	return f.differences, f.err
+}
+
+func (f *fakeDocuments) Detach(_ context.Context, _ access.Actor, id, rowID, reason string) (document.Document, error) {
+	f.got, f.gotReason = called{method: "Detach", id: id, input: rowID}, reason
 	return f.doc, f.err
 }
 

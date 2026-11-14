@@ -144,7 +144,7 @@ func toAPIDocument(d document.Document) Document {
 		}
 		out.Rows = append(out.Rows, DocumentRow{
 			Id: r.ID, Position: r.Position, Version: r.Version, ProcessId: optional(r.ProcessID), ProcessName: optional(r.ProcessName),
-			OperationNumber: optional(r.OperationNumber), Content: content, TemplatePointId: optional(r.TemplatePointID), OperationManual: r.OperationManual,
+			OperationNumber: optional(r.OperationNumber), Content: content, TemplatePointId: optional(r.TemplatePointID), OperationManual: r.OperationManual, Detached: r.Detached, DetachReason: optional(r.DetachReason),
 		})
 	}
 	return out
@@ -217,4 +217,33 @@ func orEmpty(list []string) []string {
 		return []string{}
 	}
 	return list
+}
+
+// GetDocumentDifferences menjawab GET /api/v1/documents/{documentId}/differences (M4.8).
+func (a *apiServer) GetDocumentDifferences(ctx context.Context, req GetDocumentDifferencesRequestObject) (GetDocumentDifferencesResponseObject, error) {
+	list, err := a.documents.Differences(ctx, actorFrom(ctx), req.DocumentId)
+	if err != nil {
+		return nil, err
+	}
+	out := RowDifferenceList{Items: make([]RowDifference, 0, len(list))}
+	for _, d := range list {
+		item := RowDifference{
+			RowId: d.RowID, Position: d.Position, PointId: d.PointID, PointText: d.PointText,
+			Status: RowDifferenceStatus(d.Status), Reason: optional(d.Reason), Fields: make([]FieldDifference, 0, len(d.Fields)),
+		}
+		for _, f := range d.Fields {
+			item.Fields = append(item.Fields, FieldDifference{FieldId: optional(f.FieldID), Label: f.Label, Template: f.Template, Row: f.Row})
+		}
+		out.Items = append(out.Items, item)
+	}
+	return GetDocumentDifferences200JSONResponse(out), nil
+}
+
+// DetachDocumentRow menjawab POST /api/v1/documents/{documentId}/rows/{rowId}/detach (M4.8).
+func (a *apiServer) DetachDocumentRow(ctx context.Context, req DetachDocumentRowRequestObject) (DetachDocumentRowResponseObject, error) {
+	d, err := a.documents.Detach(ctx, actorFrom(ctx), req.DocumentId, req.RowId, req.Body.Reason)
+	if err != nil {
+		return nil, err
+	}
+	return DetachDocumentRow200JSONResponse(toAPIDocument(d)), nil
 }
