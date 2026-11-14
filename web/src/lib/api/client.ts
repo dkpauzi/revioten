@@ -45,6 +45,10 @@ import type {
 	ChangeList,
 	ChangeVerificationInput,
 	ChangeImpactsInput,
+	PropagationPreview,
+	PropagationInput,
+	DocumentTemplateList,
+	DocumentTemplateModeInput,
 	DocumentRevisionList,
 	DocumentDiff,
 	NewChange,
@@ -710,6 +714,31 @@ export function removeChangeAttachment(id: string, attachmentId: string, fetchFn
 // saveChangeImpacts memanggil PUT /api/v1/changes/{id}/impacts (E-3, M5.7).
 export function saveChangeImpacts(id: string, input: ChangeImpactsInput, fetchFn: typeof fetch = fetch): Promise<ApiResult<Change>> {
 	return call<Change>(fetchFn, itemPath('changes', id) + '/impacts', jsonRequest('PUT', input));
+}
+
+// previewPropagation memanggil GET /api/v1/process-template-versions/{id}/propagation (E-6, M5.8).
+export function previewPropagation(versionId: string, scope: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<PropagationPreview>> {
+	return call<PropagationPreview>(fetchFn, `${itemPath('process-template-versions', versionId)}/propagation?scope=${encodeURIComponent(scope)}`, { method: 'GET' });
+}
+
+// propagateTemplate memanggil POST /api/v1/process-template-versions/{id}/propagation (E-6, M5.8).
+export function propagateTemplate(versionId: string, input: PropagationInput, fetchFn: typeof fetch = fetch): Promise<ApiResult<ChangeList>> {
+	return call<ChangeList>(fetchFn, itemPath('process-template-versions', versionId) + '/propagation', jsonRequest('POST', input));
+}
+
+// listDocumentTemplates memanggil GET /api/v1/documents/{id}/templates (L-4, M5.8).
+export function listDocumentTemplates(id: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<DocumentTemplateList>> {
+	return call<DocumentTemplateList>(fetchFn, itemPath('documents', id) + '/templates', { method: 'GET' });
+}
+
+// setDocumentTemplateMode memanggil PUT /api/v1/documents/{id}/templates/{templateId} (E-2, M5.8).
+export function setDocumentTemplateMode(
+	id: string,
+	templateId: string,
+	input: DocumentTemplateModeInput,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<DocumentTemplateList>> {
+	return call<DocumentTemplateList>(fetchFn, `${itemPath('documents', id)}/templates/${encodeURIComponent(templateId)}`, jsonRequest('PUT', input));
 }
 
 // verifyChange memanggil POST /api/v1/changes/{id}/verification (V-1, M5.3).

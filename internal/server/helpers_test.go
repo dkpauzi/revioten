@@ -565,6 +565,7 @@ func (f *fakeProcessTemplates) UpdatePoint(_ context.Context, _ access.Actor, ve
 type fakeDocuments struct {
 	revisions []document.Revision
 	diff      document.Diff
+	templates []document.TemplateLink
 	list      []document.Summary
 	doc       document.Document
 	err       error
@@ -660,6 +661,16 @@ func (f *fakeDocuments) Release(_ context.Context, _ access.Actor, id string) (d
 func (f *fakeDocuments) Diff(_ context.Context, _ access.Actor, id string, from int, to *int, processID string) (document.Diff, error) {
 	f.got = called{method: "Diff", id: id, input: fmt.Sprint(from, ":", to != nil, ":", processID)}
 	return f.diff, f.err
+}
+
+func (f *fakeDocuments) Templates(_ context.Context, _ access.Actor, id string) ([]document.TemplateLink, error) {
+	f.got = called{method: "Templates", id: id}
+	return f.templates, f.err
+}
+
+func (f *fakeDocuments) SetTemplateMode(_ context.Context, _ access.Actor, id, templateID, mode, reason string) ([]document.TemplateLink, error) {
+	f.got, f.gotReason = called{method: "SetTemplateMode", id: id, input: templateID + ":" + mode}, reason
+	return f.templates, f.err
 }
 
 func (f *fakeDocuments) Revisions(_ context.Context, _ access.Actor, id string) ([]document.Revision, error) {
@@ -1060,12 +1071,14 @@ func (f *fakeRefDocs) RemoveLink(_ context.Context, _ access.Actor, id, linkID s
 
 // fakeChangeRequests meniru change.RequestService (Tahap 5).
 type fakeChangeRequests struct {
-	list   []change.Change
-	c      change.Change
-	err    error
-	got    called
-	gotNew change.NewChange
-	file   string // isi berkas OpenAttachment
+	list           []change.Change
+	c              change.Change
+	err            error
+	got            called
+	gotNew         change.NewChange
+	file           string // isi berkas OpenAttachment
+	preview        []change.PreviewItem
+	gotPropagation change.Propagation
 }
 
 func (f *fakeChangeRequests) List(_ context.Context, _ access.Actor, customerID string) ([]change.Change, error) {
@@ -1117,6 +1130,16 @@ func (f *fakeChangeRequests) Verify(_ context.Context, _ access.Actor, id string
 func (f *fakeChangeRequests) SaveImpacts(_ context.Context, _ access.Actor, id string, items []change.ImpactInput) (change.Change, error) {
 	f.got = called{method: "SaveImpacts", id: id, input: fmt.Sprint(items)}
 	return f.c, f.err
+}
+
+func (f *fakeChangeRequests) Preview(_ context.Context, _ access.Actor, versionID, scope string) ([]change.PreviewItem, error) {
+	f.got = called{method: "Preview", id: versionID, input: scope}
+	return f.preview, f.err
+}
+
+func (f *fakeChangeRequests) Propagate(_ context.Context, _ access.Actor, in change.Propagation) ([]change.Change, error) {
+	f.got, f.gotPropagation = called{method: "Propagate", id: in.VersionID, input: in.Scope}, in
+	return f.list, f.err
 }
 
 // OpenAttachment membuka berkas sementara berisi f.file.

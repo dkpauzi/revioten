@@ -254,6 +254,42 @@ func (e ChangeSourceMechanism) Valid() bool {
 	}
 }
 
+// Defines values for ChangeTemplateConflictPolicy.
+const (
+	ChangeTemplateConflictPolicyKeep      ChangeTemplateConflictPolicy = "keep"
+	ChangeTemplateConflictPolicyOverwrite ChangeTemplateConflictPolicy = "overwrite"
+)
+
+// Valid indicates whether the value is a known member of the ChangeTemplateConflictPolicy enum.
+func (e ChangeTemplateConflictPolicy) Valid() bool {
+	switch e {
+	case ChangeTemplateConflictPolicyKeep:
+		return true
+	case ChangeTemplateConflictPolicyOverwrite:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ChangeTemplateScope.
+const (
+	ChangeTemplateScopeAll       ChangeTemplateScope = "all"
+	ChangeTemplateScopeFollowing ChangeTemplateScope = "following"
+)
+
+// Valid indicates whether the value is a known member of the ChangeTemplateScope enum.
+func (e ChangeTemplateScope) Valid() bool {
+	switch e {
+	case ChangeTemplateScopeAll:
+		return true
+	case ChangeTemplateScopeFollowing:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ChangeTypeKey.
 const (
 	ChangeTypeKeyAdministrative ChangeTypeKey = "administrative"
@@ -437,6 +473,27 @@ func (e DocumentSummaryStatus) Valid() bool {
 	case DocumentSummaryStatusDraft:
 		return true
 	case DocumentSummaryStatusReleased:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DocumentTemplateMode.
+const (
+	DocumentTemplateModeDetached DocumentTemplateMode = "detached"
+	DocumentTemplateModeFollow   DocumentTemplateMode = "follow"
+	DocumentTemplateModePinned   DocumentTemplateMode = "pinned"
+)
+
+// Valid indicates whether the value is a known member of the DocumentTemplateMode enum.
+func (e DocumentTemplateMode) Valid() bool {
+	switch e {
+	case DocumentTemplateModeDetached:
+		return true
+	case DocumentTemplateModeFollow:
+		return true
+	case DocumentTemplateModePinned:
 		return true
 	default:
 		return false
@@ -1193,6 +1250,72 @@ func (e ProcessVersionSummaryStatus) Valid() bool {
 	}
 }
 
+// Defines values for PropagationItemMode.
+const (
+	PropagationItemModeDetached PropagationItemMode = "detached"
+	PropagationItemModeFollow   PropagationItemMode = "follow"
+	PropagationItemModePinned   PropagationItemMode = "pinned"
+)
+
+// Valid indicates whether the value is a known member of the PropagationItemMode enum.
+func (e PropagationItemMode) Valid() bool {
+	switch e {
+	case PropagationItemModeDetached:
+		return true
+	case PropagationItemModeFollow:
+		return true
+	case PropagationItemModePinned:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PropagationItemSkipped.
+const (
+	PropagationItemSkippedAlreadyProposed PropagationItemSkipped = "already_proposed"
+	PropagationItemSkippedDetached        PropagationItemSkipped = "detached"
+	PropagationItemSkippedNoChange        PropagationItemSkipped = "no_change"
+	PropagationItemSkippedPinned          PropagationItemSkipped = "pinned"
+)
+
+// Valid indicates whether the value is a known member of the PropagationItemSkipped enum.
+func (e PropagationItemSkipped) Valid() bool {
+	switch e {
+	case PropagationItemSkippedAlreadyProposed:
+		return true
+	case PropagationItemSkippedDetached:
+		return true
+	case PropagationItemSkippedNoChange:
+		return true
+	case PropagationItemSkippedPinned:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PropagationRowStatus.
+const (
+	PropagationRowStatusConflict PropagationRowStatus = "conflict"
+	PropagationRowStatusRemoved  PropagationRowStatus = "removed"
+	PropagationRowStatusUpdate   PropagationRowStatus = "update"
+)
+
+// Valid indicates whether the value is a known member of the PropagationRowStatus enum.
+func (e PropagationRowStatus) Valid() bool {
+	switch e {
+	case PropagationRowStatusConflict:
+		return true
+	case PropagationRowStatusRemoved:
+		return true
+	case PropagationRowStatusUpdate:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for RatingCriterionScale.
 const (
 	RatingCriterionScaleDetection  RatingCriterionScale = "detection"
@@ -1465,9 +1588,18 @@ type AffectedDocument struct {
 	Number string `json:"number"`
 
 	// ReleasedRevision The revision in force. Missing until the first release.
-	ReleasedRevision *int   `json:"released_revision,omitempty"`
-	Revision         int    `json:"revision"`
-	Status           string `json:"status"`
+	ReleasedRevision *int `json:"released_revision,omitempty"`
+	Revision         int  `json:"revision"`
+
+	// RowsConflict For a template change, the rows changed locally that were kept (conflict policy keep).
+	RowsConflict *int `json:"rows_conflict,omitempty"`
+
+	// RowsRemoved For a template change, the rows whose point no longer exists in the new version.
+	RowsRemoved *int `json:"rows_removed,omitempty"`
+
+	// RowsUpdated For a template change, the rows that took the new template content (M5.8).
+	RowsUpdated *int   `json:"rows_updated,omitempty"`
+	Status      string `json:"status"`
 }
 
 // ApRule One Action Priority for a box of severity, occurrence, and detection ranges; both ends included.
@@ -1632,9 +1764,12 @@ type Change struct {
 	SourceReference *string `json:"source_reference,omitempty"`
 
 	// Status Submitted, then accepted or rejected by a verifier (M5.3).
-	Status    ChangeStatus `json:"status"`
-	Trigger   *ChangeRef   `json:"trigger,omitempty"`
-	UpdatedAt time.Time    `json:"updated_at"`
+	Status ChangeStatus `json:"status"`
+
+	// Template The template propagation behind a change with mechanism template (M5.8).
+	Template  *ChangeTemplate `json:"template,omitempty"`
+	Trigger   *ChangeRef      `json:"trigger,omitempty"`
+	UpdatedAt time.Time       `json:"updated_at"`
 
 	// Verification Who accepted or rejected the change, when, and why (R-CHG-02).
 	Verification *ChangeVerification `json:"verification,omitempty"`
@@ -1735,6 +1870,20 @@ type ChangeSourceUpdate struct {
 	Active *bool  `json:"active,omitempty"`
 	Name   string `json:"name"`
 }
+
+// ChangeTemplate The template propagation behind a change with mechanism template (M5.8).
+type ChangeTemplate struct {
+	ConflictPolicy ChangeTemplateConflictPolicy `json:"conflict_policy"`
+	EffectiveDate  *openapi_types.Date          `json:"effective_date,omitempty"`
+	Scope          ChangeTemplateScope          `json:"scope"`
+	VersionId      string                       `json:"version_id"`
+}
+
+// ChangeTemplateConflictPolicy defines model for ChangeTemplate.ConflictPolicy.
+type ChangeTemplateConflictPolicy string
+
+// ChangeTemplateScope defines model for ChangeTemplate.Scope.
+type ChangeTemplateScope string
 
 // ChangeType defines model for ChangeType.
 type ChangeType struct {
@@ -2201,6 +2350,33 @@ type DocumentSummary struct {
 
 // DocumentSummaryStatus Draft while a draft revision is open; released when there is none (M5.4).
 type DocumentSummaryStatus string
+
+// DocumentTemplate defines model for DocumentTemplate.
+type DocumentTemplate struct {
+	Mode              DocumentTemplateMode `json:"mode"`
+	ProcessName       string               `json:"process_name"`
+	ProcessTemplateId string               `json:"process_template_id"`
+	Reason            *string              `json:"reason,omitempty"`
+
+	// Version The newest template version the rows of the document use.
+	Version int `json:"version"`
+}
+
+// DocumentTemplateMode defines model for DocumentTemplate.Mode.
+type DocumentTemplateMode string
+
+// DocumentTemplateList defines model for DocumentTemplateList.
+type DocumentTemplateList struct {
+	Items []DocumentTemplate `json:"items"`
+}
+
+// DocumentTemplateModeInput defines model for DocumentTemplateModeInput.
+type DocumentTemplateModeInput struct {
+	Mode string `json:"mode"`
+
+	// Reason Required for pinned and detached.
+	Reason *string `json:"reason,omitempty"`
+}
 
 // DocumentType defines model for DocumentType.
 type DocumentType struct {
@@ -3257,6 +3433,64 @@ type ProjectGroupRef struct {
 	Id   string `json:"id"`
 }
 
+// PropagationInput defines model for PropagationInput.
+type PropagationInput struct {
+	ChangeTypeId string `json:"change_type_id"`
+
+	// ConflictPolicy keep (rows changed locally stay and are counted) or overwrite.
+	ConflictPolicy string `json:"conflict_policy"`
+
+	// EffectiveDate Required for scope all.
+	EffectiveDate *openapi_types.Date `json:"effective_date,omitempty"`
+	Reason        string              `json:"reason"`
+
+	// Scope following (documents that follow, the default) or all (also pinned documents).
+	Scope string `json:"scope"`
+
+	// SourceReference The SQAM revision; required for scope all.
+	SourceReference *string `json:"source_reference,omitempty"`
+}
+
+// PropagationItem defines model for PropagationItem.
+type PropagationItem struct {
+	Conflicts  int                     `json:"conflicts"`
+	CustomerId string                  `json:"customer_id"`
+	DocumentId string                  `json:"document_id"`
+	Included   bool                    `json:"included"`
+	Mode       PropagationItemMode     `json:"mode"`
+	Number     string                  `json:"number"`
+	Removed    int                     `json:"removed"`
+	Rows       []PropagationRow        `json:"rows"`
+	Skipped    *PropagationItemSkipped `json:"skipped,omitempty"`
+
+	// Status Draft or released.
+	Status  string `json:"status"`
+	Updates int    `json:"updates"`
+}
+
+// PropagationItemMode defines model for PropagationItem.Mode.
+type PropagationItemMode string
+
+// PropagationItemSkipped defines model for PropagationItem.Skipped.
+type PropagationItemSkipped string
+
+// PropagationPreview defines model for PropagationPreview.
+type PropagationPreview struct {
+	Items []PropagationItem `json:"items"`
+}
+
+// PropagationRow defines model for PropagationRow.
+type PropagationRow struct {
+	Fields    []FieldDifference    `json:"fields"`
+	PointText string               `json:"point_text"`
+	Position  int                  `json:"position"`
+	RowId     string               `json:"row_id"`
+	Status    PropagationRowStatus `json:"status"`
+}
+
+// PropagationRowStatus defines model for PropagationRow.Status.
+type PropagationRowStatus string
+
 // RatingCriteriaUpdate defines model for RatingCriteriaUpdate.
 type RatingCriteriaUpdate struct {
 	Items []RatingCriterionInput `json:"items"`
@@ -3810,6 +4044,11 @@ type ListPartNumbersParams struct {
 	CustomerId CustomerIdQuery `form:"customer_id" json:"customer_id"`
 }
 
+// PreviewPropagationParams defines parameters for PreviewPropagation.
+type PreviewPropagationParams struct {
+	Scope string `form:"scope" json:"scope"`
+}
+
 // ResolveProcessTemplatePointsParams defines parameters for ResolveProcessTemplatePoints.
 type ResolveProcessTemplatePointsParams struct {
 	ModelId string `form:"model_id" json:"model_id"`
@@ -3929,6 +4168,9 @@ type AddDocumentSectionJSONRequestBody = NewDocumentSection
 // UpdateDocumentSectionJSONRequestBody defines body for UpdateDocumentSection for application/json ContentType.
 type UpdateDocumentSectionJSONRequestBody = DocumentSectionUpdate
 
+// SetDocumentTemplateModeJSONRequestBody defines body for SetDocumentTemplateMode for application/json ContentType.
+type SetDocumentTemplateModeJSONRequestBody = DocumentTemplateModeInput
+
 // SetFormSetSheetsJSONRequestBody defines body for SetFormSetSheets for application/json ContentType.
 type SetFormSetSheetsJSONRequestBody = FormSetSheets
 
@@ -3997,6 +4239,9 @@ type UpdateTemplatePointJSONRequestBody = TemplatePointUpdate
 
 // AddPointVariantJSONRequestBody defines body for AddPointVariant for application/json ContentType.
 type AddPointVariantJSONRequestBody = NewPointVariant
+
+// PropagateTemplateJSONRequestBody defines body for PropagateTemplate for application/json ContentType.
+type PropagateTemplateJSONRequestBody = PropagationInput
 
 // AddSubprocessJSONRequestBody defines body for AddSubprocess for application/json ContentType.
 type AddSubprocessJSONRequestBody = NewSubprocess
@@ -4249,6 +4494,12 @@ type ServerInterface interface {
 	// UpdateDocumentSection Rename, move, or change the part numbers of a section in every document of the set (E-2, D-155)
 	// (PUT /api/v1/documents/{documentId}/sections/{sectionId})
 	UpdateDocumentSection(w http.ResponseWriter, r *http.Request, documentId DocumentId, sectionId SectionId)
+	// ListDocumentTemplates The process templates the rows of a document use, with the link mode (L-4, M5.8)
+	// (GET /api/v1/documents/{documentId}/templates)
+	ListDocumentTemplates(w http.ResponseWriter, r *http.Request, documentId DocumentId)
+	// SetDocumentTemplateMode Follow, pin, or detach one process template for a document (E-2, M5.8, R-TPL-08)
+	// (PUT /api/v1/documents/{documentId}/templates/{processTemplateId})
+	SetDocumentTemplateMode(w http.ResponseWriter, r *http.Request, documentId DocumentId, processTemplateId ProcessTemplateId)
 	// SetFormSetSheets Choose the format template versions of the sheets of a draft form set version (A-2)
 	// (PUT /api/v1/form-set-versions/{formSetVersionId})
 	SetFormSetSheets(w http.ResponseWriter, r *http.Request, formSetVersionId FormSetVersionId)
@@ -4366,6 +4617,12 @@ type ServerInterface interface {
 	// AddPointVariant Add a variant of a point for a narrower scope in a draft version (E-6, M3.3, D-129)
 	// (POST /api/v1/process-template-versions/{processVersionId}/points/{pointId}/variants)
 	AddPointVariant(w http.ResponseWriter, r *http.Request, processVersionId ProcessVersionId, pointId PointId)
+	// PreviewPropagation Impact preview of a published template version, a dry run (E-6, M5.8, R-TPL-09)
+	// (GET /api/v1/process-template-versions/{processVersionId}/propagation)
+	PreviewPropagation(w http.ResponseWriter, r *http.Request, processVersionId ProcessVersionId, params PreviewPropagationParams)
+	// PropagateTemplate Propagate a published template version as changes, one per customer (E-6, M5.8, R-TPL-06)
+	// (POST /api/v1/process-template-versions/{processVersionId}/propagation)
+	PropagateTemplate(w http.ResponseWriter, r *http.Request, processVersionId ProcessVersionId)
 	// PublishProcessTemplateVersion Publish a draft version of a process template (E-6, R-TPL-05)
 	// (POST /api/v1/process-template-versions/{processVersionId}/publish)
 	PublishProcessTemplateVersion(w http.ResponseWriter, r *http.Request, processVersionId ProcessVersionId)
@@ -6342,6 +6599,67 @@ func (siw *ServerInterfaceWrapper) UpdateDocumentSection(w http.ResponseWriter, 
 	handler.ServeHTTP(w, r)
 }
 
+// ListDocumentTemplates operation middleware
+func (siw *ServerInterfaceWrapper) ListDocumentTemplates(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", r.PathValue("documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListDocumentTemplates(w, r, documentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetDocumentTemplateMode operation middleware
+func (siw *ServerInterfaceWrapper) SetDocumentTemplateMode(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", r.PathValue("documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "processTemplateId" -------------
+	var processTemplateId ProcessTemplateId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "processTemplateId", r.PathValue("processTemplateId"), &processTemplateId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "processTemplateId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetDocumentTemplateMode(w, r, documentId, processTemplateId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // SetFormSetSheets operation middleware
 func (siw *ServerInterfaceWrapper) SetFormSetSheets(w http.ResponseWriter, r *http.Request) {
 
@@ -7323,6 +7641,74 @@ func (siw *ServerInterfaceWrapper) AddPointVariant(w http.ResponseWriter, r *htt
 	handler.ServeHTTP(w, r)
 }
 
+// PreviewPropagation operation middleware
+func (siw *ServerInterfaceWrapper) PreviewPropagation(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "processVersionId" -------------
+	var processVersionId ProcessVersionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "processVersionId", r.PathValue("processVersionId"), &processVersionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "processVersionId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PreviewPropagationParams
+
+	// ------------- Required query parameter "scope" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "scope", r.URL.Query(), &params.Scope, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "scope"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "scope", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PreviewPropagation(w, r, processVersionId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PropagateTemplate operation middleware
+func (siw *ServerInterfaceWrapper) PropagateTemplate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "processVersionId" -------------
+	var processVersionId ProcessVersionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "processVersionId", r.PathValue("processVersionId"), &processVersionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "processVersionId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PropagateTemplate(w, r, processVersionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // PublishProcessTemplateVersion operation middleware
 func (siw *ServerInterfaceWrapper) PublishProcessTemplateVersion(w http.ResponseWriter, r *http.Request) {
 
@@ -8167,6 +8553,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/changes/{changeId}/attachments/{attachmentId}", wrapper.GetChangeAttachment)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/documents/{documentId}/changes", wrapper.ListDocumentChanges)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/release", wrapper.ReleaseDocument)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/documents/{documentId}/templates", wrapper.ListDocumentTemplates)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/documents/{documentId}/templates/{processTemplateId}", wrapper.SetDocumentTemplateMode)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/documents/{documentId}/diff", wrapper.GetDocumentDiff)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/documents/{documentId}/revisions", wrapper.ListDocumentRevisions)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/sections", wrapper.AddDocumentSection)
@@ -8186,6 +8574,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/process-templates", wrapper.ListProcessTemplates)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/process-templates", wrapper.CreateProcessTemplate)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/process-templates/{processTemplateId}/versions", wrapper.CreateProcessTemplateVersion)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/process-template-versions/{processVersionId}/propagation", wrapper.PreviewPropagation)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/process-template-versions/{processVersionId}/propagation", wrapper.PropagateTemplate)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/process-template-versions/{processVersionId}/publish", wrapper.PublishProcessTemplateVersion)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/process-template-versions/{processVersionId}", wrapper.GetProcessTemplateVersion)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/process-template-versions/{processVersionId}/subprocesses", wrapper.AddSubprocess)
@@ -10997,6 +11387,86 @@ func (response UpdateDocumentSectiondefaultJSONResponse) VisitUpdateDocumentSect
 	return err
 }
 
+type ListDocumentTemplatesRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+}
+
+type ListDocumentTemplatesResponseObject interface {
+	VisitListDocumentTemplatesResponse(w http.ResponseWriter) error
+}
+
+type ListDocumentTemplates200JSONResponse DocumentTemplateList
+
+func (response ListDocumentTemplates200JSONResponse) VisitListDocumentTemplatesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDocumentTemplatesdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ListDocumentTemplatesdefaultJSONResponse) VisitListDocumentTemplatesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetDocumentTemplateModeRequestObject struct {
+	DocumentId        DocumentId        `json:"documentId"`
+	ProcessTemplateId ProcessTemplateId `json:"processTemplateId"`
+	Body              *SetDocumentTemplateModeJSONRequestBody
+}
+
+type SetDocumentTemplateModeResponseObject interface {
+	VisitSetDocumentTemplateModeResponse(w http.ResponseWriter) error
+}
+
+type SetDocumentTemplateMode200JSONResponse DocumentTemplateList
+
+func (response SetDocumentTemplateMode200JSONResponse) VisitSetDocumentTemplateModeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetDocumentTemplateModedefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response SetDocumentTemplateModedefaultJSONResponse) VisitSetDocumentTemplateModeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type SetFormSetSheetsRequestObject struct {
 	FormSetVersionId FormSetVersionId `json:"formSetVersionId"`
 	Body             *SetFormSetSheetsJSONRequestBody
@@ -12529,6 +12999,86 @@ func (response AddPointVariantdefaultJSONResponse) VisitAddPointVariantResponse(
 	return err
 }
 
+type PreviewPropagationRequestObject struct {
+	ProcessVersionId ProcessVersionId `json:"processVersionId"`
+	Params           PreviewPropagationParams
+}
+
+type PreviewPropagationResponseObject interface {
+	VisitPreviewPropagationResponse(w http.ResponseWriter) error
+}
+
+type PreviewPropagation200JSONResponse PropagationPreview
+
+func (response PreviewPropagation200JSONResponse) VisitPreviewPropagationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PreviewPropagationdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response PreviewPropagationdefaultJSONResponse) VisitPreviewPropagationResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PropagateTemplateRequestObject struct {
+	ProcessVersionId ProcessVersionId `json:"processVersionId"`
+	Body             *PropagateTemplateJSONRequestBody
+}
+
+type PropagateTemplateResponseObject interface {
+	VisitPropagateTemplateResponse(w http.ResponseWriter) error
+}
+
+type PropagateTemplate201JSONResponse ChangeList
+
+func (response PropagateTemplate201JSONResponse) VisitPropagateTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PropagateTemplatedefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response PropagateTemplatedefaultJSONResponse) VisitPropagateTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type PublishProcessTemplateVersionRequestObject struct {
 	ProcessVersionId ProcessVersionId `json:"processVersionId"`
 }
@@ -13944,6 +14494,12 @@ type StrictServerInterface interface {
 	// UpdateDocumentSection Rename, move, or change the part numbers of a section in every document of the set (E-2, D-155)
 	// (PUT /api/v1/documents/{documentId}/sections/{sectionId})
 	UpdateDocumentSection(ctx context.Context, request UpdateDocumentSectionRequestObject) (UpdateDocumentSectionResponseObject, error)
+	// ListDocumentTemplates The process templates the rows of a document use, with the link mode (L-4, M5.8)
+	// (GET /api/v1/documents/{documentId}/templates)
+	ListDocumentTemplates(ctx context.Context, request ListDocumentTemplatesRequestObject) (ListDocumentTemplatesResponseObject, error)
+	// SetDocumentTemplateMode Follow, pin, or detach one process template for a document (E-2, M5.8, R-TPL-08)
+	// (PUT /api/v1/documents/{documentId}/templates/{processTemplateId})
+	SetDocumentTemplateMode(ctx context.Context, request SetDocumentTemplateModeRequestObject) (SetDocumentTemplateModeResponseObject, error)
 	// SetFormSetSheets Choose the format template versions of the sheets of a draft form set version (A-2)
 	// (PUT /api/v1/form-set-versions/{formSetVersionId})
 	SetFormSetSheets(ctx context.Context, request SetFormSetSheetsRequestObject) (SetFormSetSheetsResponseObject, error)
@@ -14061,6 +14617,12 @@ type StrictServerInterface interface {
 	// AddPointVariant Add a variant of a point for a narrower scope in a draft version (E-6, M3.3, D-129)
 	// (POST /api/v1/process-template-versions/{processVersionId}/points/{pointId}/variants)
 	AddPointVariant(ctx context.Context, request AddPointVariantRequestObject) (AddPointVariantResponseObject, error)
+	// PreviewPropagation Impact preview of a published template version, a dry run (E-6, M5.8, R-TPL-09)
+	// (GET /api/v1/process-template-versions/{processVersionId}/propagation)
+	PreviewPropagation(ctx context.Context, request PreviewPropagationRequestObject) (PreviewPropagationResponseObject, error)
+	// PropagateTemplate Propagate a published template version as changes, one per customer (E-6, M5.8, R-TPL-06)
+	// (POST /api/v1/process-template-versions/{processVersionId}/propagation)
+	PropagateTemplate(ctx context.Context, request PropagateTemplateRequestObject) (PropagateTemplateResponseObject, error)
 	// PublishProcessTemplateVersion Publish a draft version of a process template (E-6, R-TPL-05)
 	// (POST /api/v1/process-template-versions/{processVersionId}/publish)
 	PublishProcessTemplateVersion(ctx context.Context, request PublishProcessTemplateVersionRequestObject) (PublishProcessTemplateVersionResponseObject, error)
@@ -16204,6 +16766,66 @@ func (sh *strictHandler) UpdateDocumentSection(w http.ResponseWriter, r *http.Re
 	}
 }
 
+// ListDocumentTemplates operation middleware
+func (sh *strictHandler) ListDocumentTemplates(w http.ResponseWriter, r *http.Request, documentId DocumentId) {
+	var request ListDocumentTemplatesRequestObject
+
+	request.DocumentId = documentId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListDocumentTemplates(ctx, request.(ListDocumentTemplatesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListDocumentTemplates")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListDocumentTemplatesResponseObject); ok {
+		if err := validResponse.VisitListDocumentTemplatesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SetDocumentTemplateMode operation middleware
+func (sh *strictHandler) SetDocumentTemplateMode(w http.ResponseWriter, r *http.Request, documentId DocumentId, processTemplateId ProcessTemplateId) {
+	var request SetDocumentTemplateModeRequestObject
+
+	request.DocumentId = documentId
+	request.ProcessTemplateId = processTemplateId
+
+	var body SetDocumentTemplateModeJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetDocumentTemplateMode(ctx, request.(SetDocumentTemplateModeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetDocumentTemplateMode")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetDocumentTemplateModeResponseObject); ok {
+		if err := validResponse.VisitSetDocumentTemplateModeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // SetFormSetSheets operation middleware
 func (sh *strictHandler) SetFormSetSheets(w http.ResponseWriter, r *http.Request, formSetVersionId FormSetVersionId) {
 	var request SetFormSetSheetsRequestObject
@@ -17355,6 +17977,66 @@ func (sh *strictHandler) AddPointVariant(w http.ResponseWriter, r *http.Request,
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(AddPointVariantResponseObject); ok {
 		if err := validResponse.VisitAddPointVariantResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PreviewPropagation operation middleware
+func (sh *strictHandler) PreviewPropagation(w http.ResponseWriter, r *http.Request, processVersionId ProcessVersionId, params PreviewPropagationParams) {
+	var request PreviewPropagationRequestObject
+
+	request.ProcessVersionId = processVersionId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PreviewPropagation(ctx, request.(PreviewPropagationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PreviewPropagation")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PreviewPropagationResponseObject); ok {
+		if err := validResponse.VisitPreviewPropagationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PropagateTemplate operation middleware
+func (sh *strictHandler) PropagateTemplate(w http.ResponseWriter, r *http.Request, processVersionId ProcessVersionId) {
+	var request PropagateTemplateRequestObject
+
+	request.ProcessVersionId = processVersionId
+
+	var body PropagateTemplateJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PropagateTemplate(ctx, request.(PropagateTemplateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PropagateTemplate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PropagateTemplateResponseObject); ok {
+		if err := validResponse.VisitPropagateTemplateResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

@@ -46,6 +46,7 @@
 	import { pointColumns, pointTypes, pointsOf, scopeLevels, scopeText, templateOf, type PointColumn, type ScopeLevel } from '#lib/processTemplates.ts';
 	import { can } from '#lib/session.svelte.ts';
 	import VersionBar from '#lib/templates/VersionBar.svelte';
+	import PropagationPanel from '#lib/templates/PropagationPanel.svelte';
 	import { isDraft, latestVersion } from '#lib/versions.ts';
 
 	// Data dari server. null berarti belum selesai dimuat.
@@ -359,6 +360,12 @@
 			/>
 			{#if fieldErrors.status}<p class="error" role="alert">{fieldErrors.status}</p>{/if}
 		</section>
+		<!-- Propagasi hanya untuk versi terbit dan pemegang E-6 (M5.8). -->
+		{#if canEdit && version.status === 'published'}
+			{#key version.id}
+				<PropagationPanel {version} />
+			{/key}
+		{/if}
 		<section>
 			<h2>{t('subprocessesTitle')}</h2>
 			<SubprocessTable

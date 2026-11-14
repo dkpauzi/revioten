@@ -1299,12 +1299,96 @@ export type Change = {
     verification?: ChangeVerification;
     documents: Array<AffectedDocument>;
     attachments: Array<ChangeAttachment>;
+    template?: ChangeTemplate;
     /**
      * The impact checklist (R-CHG-05, M5.7).
      */
     impacts: Array<ChangeImpact>;
     created_at: string;
     updated_at: string;
+};
+
+/**
+ * The template propagation behind a change with mechanism template (M5.8).
+ */
+export type ChangeTemplate = {
+    version_id: string;
+    scope: 'following' | 'all';
+    conflict_policy: 'keep' | 'overwrite';
+    effective_date?: string;
+};
+
+export type PropagationInput = {
+    /**
+     * following (documents that follow, the default) or all (also pinned documents).
+     */
+    scope: string;
+    /**
+     * keep (rows changed locally stay and are counted) or overwrite.
+     */
+    conflict_policy: string;
+    change_type_id: string;
+    reason: string;
+    /**
+     * The SQAM revision; required for scope all.
+     */
+    source_reference?: string;
+    /**
+     * Required for scope all.
+     */
+    effective_date?: string;
+};
+
+export type PropagationPreview = {
+    items: Array<PropagationItem>;
+};
+
+export type PropagationItem = {
+    document_id: string;
+    number: string;
+    customer_id: string;
+    /**
+     * Draft or released.
+     */
+    status: string;
+    mode: 'follow' | 'pinned' | 'detached';
+    included: boolean;
+    skipped?: 'pinned' | 'detached' | 'no_change' | 'already_proposed';
+    updates: number;
+    conflicts: number;
+    removed: number;
+    rows: Array<PropagationRow>;
+};
+
+export type PropagationRow = {
+    row_id: string;
+    position: number;
+    status: 'update' | 'conflict' | 'removed';
+    point_text: string;
+    fields: Array<FieldDifference>;
+};
+
+export type DocumentTemplate = {
+    process_template_id: string;
+    process_name: string;
+    /**
+     * The newest template version the rows of the document use.
+     */
+    version: number;
+    mode: 'follow' | 'pinned' | 'detached';
+    reason?: string;
+};
+
+export type DocumentTemplateList = {
+    items: Array<DocumentTemplate>;
+};
+
+export type DocumentTemplateModeInput = {
+    mode: string;
+    /**
+     * Required for pinned and detached.
+     */
+    reason?: string;
 };
 
 export type ChangeImpact = {
@@ -1455,6 +1539,18 @@ export type AffectedDocument = {
      * True when the change went into a draft that was already open (R-CHG-03).
      */
     merged?: boolean;
+    /**
+     * For a template change, the rows that took the new template content (M5.8).
+     */
+    rows_updated?: number;
+    /**
+     * For a template change, the rows changed locally that were kept (conflict policy keep).
+     */
+    rows_conflict?: number;
+    /**
+     * For a template change, the rows whose point no longer exists in the new version.
+     */
+    rows_removed?: number;
 };
 
 export type NewChange = {
@@ -5960,6 +6056,77 @@ export type ReleaseDocumentResponses = {
 
 export type ReleaseDocumentResponse = ReleaseDocumentResponses[keyof ReleaseDocumentResponses];
 
+export type ListDocumentTemplatesData = {
+    body?: never;
+    path: {
+        documentId: string;
+    };
+    query?: never;
+    url: '/api/v1/documents/{documentId}/templates';
+};
+
+export type ListDocumentTemplatesErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ListDocumentTemplatesError = ListDocumentTemplatesErrors[keyof ListDocumentTemplatesErrors];
+
+export type ListDocumentTemplatesResponses = {
+    /**
+     * The templates.
+     */
+    200: DocumentTemplateList;
+};
+
+export type ListDocumentTemplatesResponse = ListDocumentTemplatesResponses[keyof ListDocumentTemplatesResponses];
+
+export type SetDocumentTemplateModeData = {
+    body: DocumentTemplateModeInput;
+    path: {
+        documentId: string;
+        processTemplateId: string;
+    };
+    query?: never;
+    url: '/api/v1/documents/{documentId}/templates/{processTemplateId}';
+};
+
+export type SetDocumentTemplateModeErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type SetDocumentTemplateModeError = SetDocumentTemplateModeErrors[keyof SetDocumentTemplateModeErrors];
+
+export type SetDocumentTemplateModeResponses = {
+    /**
+     * The templates after the change.
+     */
+    200: DocumentTemplateList;
+};
+
+export type SetDocumentTemplateModeResponse = SetDocumentTemplateModeResponses[keyof SetDocumentTemplateModeResponses];
+
 export type GetDocumentDiffData = {
     body?: never;
     path: {
@@ -6633,6 +6800,78 @@ export type CreateProcessTemplateVersionResponses = {
 };
 
 export type CreateProcessTemplateVersionResponse = CreateProcessTemplateVersionResponses[keyof CreateProcessTemplateVersionResponses];
+
+export type PreviewPropagationData = {
+    body?: never;
+    path: {
+        processVersionId: string;
+    };
+    query: {
+        scope: string;
+    };
+    url: '/api/v1/process-template-versions/{processVersionId}/propagation';
+};
+
+export type PreviewPropagationErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type PreviewPropagationError = PreviewPropagationErrors[keyof PreviewPropagationErrors];
+
+export type PreviewPropagationResponses = {
+    /**
+     * Every linked document, whether it takes part, and which rows change or conflict.
+     */
+    200: PropagationPreview;
+};
+
+export type PreviewPropagationResponse = PreviewPropagationResponses[keyof PreviewPropagationResponses];
+
+export type PropagateTemplateData = {
+    body: PropagationInput;
+    path: {
+        processVersionId: string;
+    };
+    query?: never;
+    url: '/api/v1/process-template-versions/{processVersionId}/propagation';
+};
+
+export type PropagateTemplateErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type PropagateTemplateError = PropagateTemplateErrors[keyof PropagateTemplateErrors];
+
+export type PropagateTemplateResponses = {
+    /**
+     * The changes made.
+     */
+    201: ChangeList;
+};
+
+export type PropagateTemplateResponse = PropagateTemplateResponses[keyof PropagateTemplateResponses];
 
 export type PublishProcessTemplateVersionData = {
     body?: never;

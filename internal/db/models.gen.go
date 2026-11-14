@@ -71,6 +71,10 @@ type Change struct {
 	VerifiedByAccountID  *string
 	VerifiedAt           *time.Time
 	VerificationNote     *string
+	TemplateVersionID    *string
+	PropagationScope     *string
+	ConflictPolicy       *string
+	EffectiveDate        pgtype.Date
 }
 
 type ChangeAttachment struct {
@@ -91,6 +95,9 @@ type ChangeDocument struct {
 	AddedAt         time.Time
 	DraftRevisionID *string
 	Merged          bool
+	RowsUpdated     *int32
+	RowsConflict    *int32
+	RowsRemoved     *int32
 }
 
 type ChangeImpact struct {
@@ -238,6 +245,15 @@ type DocumentSection struct {
 type DocumentSectionPartNumber struct {
 	SectionKey   string
 	PartNumberID string
+}
+
+type DocumentTemplateMode struct {
+	DocumentID        string
+	ProcessTemplateID string
+	Mode              string
+	Reason            *string
+	UpdatedByPersonID string
+	UpdatedAt         time.Time
 }
 
 type DocumentType struct {

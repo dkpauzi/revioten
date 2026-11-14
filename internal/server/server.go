@@ -186,6 +186,8 @@ type DocumentService interface {
 	Release(ctx context.Context, actor access.Actor, id string) (document.Document, error)
 	Revisions(ctx context.Context, actor access.Actor, id string) ([]document.Revision, error)
 	Diff(ctx context.Context, actor access.Actor, id string, from int, to *int, processID string) (document.Diff, error)
+	Templates(ctx context.Context, actor access.Actor, id string) ([]document.TemplateLink, error)
+	SetTemplateMode(ctx context.Context, actor access.Actor, id, templateID, mode, reason string) ([]document.TemplateLink, error)
 	FillReferences(ctx context.Context, actor access.Actor, id string) (document.Document, error)
 	UpdateRow(ctx context.Context, actor access.Actor, id, rowID string, in document.RowUpdate) (document.Document, error)
 	DeleteRow(ctx context.Context, actor access.Actor, id, rowID string) (document.Document, error)
@@ -205,6 +207,8 @@ type ChangeRequestService interface {
 	OpenAttachment(ctx context.Context, actor access.Actor, id, attachmentID string) (change.Attachment, *os.File, error)
 	Verify(ctx context.Context, actor access.Actor, id string, accept bool, note string) (change.Change, error)
 	SaveImpacts(ctx context.Context, actor access.Actor, id string, items []change.ImpactInput) (change.Change, error)
+	Preview(ctx context.Context, actor access.Actor, versionID, scope string) ([]change.PreviewItem, error)
+	Propagate(ctx context.Context, actor access.Actor, in change.Propagation) ([]change.Change, error)
 }
 
 // RefDocService adalah operasi master dokumen terkait (D-130, D-156).

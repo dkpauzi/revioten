@@ -2097,6 +2097,43 @@ paths:
                 $ref: '#/components/schemas/Document'
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/documents/{documentId}/templates:
+    get:
+      operationId: listDocumentTemplates
+      summary: The process templates the rows of a document use, with the link mode (L-4, M5.8)
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      responses:
+        '200':
+          description: The templates.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentTemplateList'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/documents/{documentId}/templates/{processTemplateId}:
+    put:
+      operationId: setDocumentTemplateMode
+      summary: Follow, pin, or detach one process template for a document (E-2, M5.8, R-TPL-08)
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+        - $ref: '#/components/parameters/ProcessTemplateId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentTemplateModeInput'
+      responses:
+        '200':
+          description: The templates after the change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentTemplateList'
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/documents/{documentId}/diff:
     get:
       operationId: getDocumentDiff
@@ -2463,6 +2500,49 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProcessTemplateVersion'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/process-template-versions/{processVersionId}/propagation:
+    get:
+      operationId: previewPropagation
+      summary: Impact preview of a published template version, a dry run (E-6, M5.8, R-TPL-09)
+      parameters:
+        - $ref: '#/components/parameters/ProcessVersionId'
+        - name: scope
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Every linked document, whether it takes part, and which rows change or conflict.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PropagationPreview'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: propagateTemplate
+      summary: Propagate a published template version as changes, one per customer (E-6, M5.8, R-TPL-06)
+      description: >-
+        The changes wait for verification. When a change is accepted, every document gets a draft and the new
+        template content is written into it. Released revisions are never rewritten (R-TPL-07).
+      parameters:
+        - $ref: '#/components/parameters/ProcessVersionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PropagationInput'
+      responses:
+        '201':
+          description: The changes made.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChangeList'
         default:
           $ref: '#/components/responses/Error'
   /api/v1/process-template-versions/{processVersionId}/publish:
@@ -4732,6 +4812,8 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ChangeAttachment'
+        template:
+          $ref: '#/components/schemas/ChangeTemplate'
         impacts:
           type: array
           description: The impact checklist (R-CHG-05, M5.7).
@@ -4743,6 +4825,132 @@ components:
         updated_at:
           type: string
           format: date-time
+    ChangeTemplate:
+      type: object
+      description: The template propagation behind a change with mechanism template (M5.8).
+      required: [version_id, scope, conflict_policy]
+      properties:
+        version_id:
+          type: string
+        scope:
+          type: string
+          enum: [following, all]
+        conflict_policy:
+          type: string
+          enum: [keep, overwrite]
+        effective_date:
+          type: string
+          format: date
+    PropagationInput:
+      type: object
+      required: [scope, conflict_policy, change_type_id, reason]
+      properties:
+        scope:
+          type: string
+          description: following (documents that follow, the default) or all (also pinned documents).
+        conflict_policy:
+          type: string
+          description: keep (rows changed locally stay and are counted) or overwrite.
+        change_type_id:
+          type: string
+        reason:
+          type: string
+        source_reference:
+          type: string
+          description: The SQAM revision; required for scope all.
+        effective_date:
+          type: string
+          format: date
+          description: Required for scope all.
+    PropagationPreview:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PropagationItem'
+    PropagationItem:
+      type: object
+      required: [document_id, number, customer_id, status, mode, included, updates, conflicts, removed, rows]
+      properties:
+        document_id:
+          type: string
+        number:
+          type: string
+        customer_id:
+          type: string
+        status:
+          type: string
+          description: Draft or released.
+        mode:
+          type: string
+          enum: [follow, pinned, detached]
+        included:
+          type: boolean
+        skipped:
+          type: string
+          enum: [pinned, detached, no_change, already_proposed]
+        updates:
+          type: integer
+        conflicts:
+          type: integer
+        removed:
+          type: integer
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/PropagationRow'
+    PropagationRow:
+      type: object
+      required: [row_id, position, status, point_text, fields]
+      properties:
+        row_id:
+          type: string
+        position:
+          type: integer
+        status:
+          type: string
+          enum: [update, conflict, removed]
+        point_text:
+          type: string
+        fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldDifference'
+    DocumentTemplate:
+      type: object
+      required: [process_template_id, process_name, version, mode]
+      properties:
+        process_template_id:
+          type: string
+        process_name:
+          type: string
+        version:
+          type: integer
+          description: The newest template version the rows of the document use.
+        mode:
+          type: string
+          enum: [follow, pinned, detached]
+        reason:
+          type: string
+    DocumentTemplateList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentTemplate'
+    DocumentTemplateModeInput:
+      type: object
+      required: [mode]
+      properties:
+        mode:
+          type: string
+        reason:
+          type: string
+          description: Required for pinned and detached.
     ChangeImpact:
       type: object
       required: [id, kind, decision, updated_by, updated_at]
@@ -4958,6 +5166,15 @@ components:
         merged:
           type: boolean
           description: True when the change went into a draft that was already open (R-CHG-03).
+        rows_updated:
+          type: integer
+          description: For a template change, the rows that took the new template content (M5.8).
+        rows_conflict:
+          type: integer
+          description: For a template change, the rows changed locally that were kept (conflict policy keep).
+        rows_removed:
+          type: integer
+          description: For a template change, the rows whose point no longer exists in the new version.
     NewChange:
       type: object
       required: [customer_id, trigger_id, change_type_id, reason, document_ids]

@@ -66,6 +66,7 @@ type Change struct {
 	Attachments     []Attachment       // lampiran aktif menurut waktu unggah; tidak pernah nil (M5.2)
 	Verification    *Verification      // terisi sesudah diterima atau ditolak (M5.3)
 	Impacts         []Impact           // daftar periksa dampak menurut urutan; tidak pernah nil (M5.7)
+	Template        *TemplateInfo      // terisi untuk mekanisme template (M5.8)
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 }
@@ -82,6 +83,10 @@ type AffectedDocument struct {
 	ReleasedRevision *int
 	DraftRevision    *int
 	Merged           bool
+	// M5.8: hasil penerapan template ke draft; nil sebelum diterapkan.
+	RowsUpdated  *int
+	RowsConflict *int
+	RowsRemoved  *int
 }
 
 // NewChange adalah isian perubahan manual baru.
@@ -327,6 +332,13 @@ func getChange(ctx context.Context, q *db.Queries, id string) (Change, error) {
 			VerifiedBy: deref(r.VerifiedBy), VerifiedByID: *r.VerifiedByPersonID, VerifiedAt: r.VerifiedAt.UTC(), Note: deref(r.VerificationNote),
 		}
 	}
+	if r.TemplateVersionID != nil {
+		c.Template = &TemplateInfo{VersionID: *r.TemplateVersionID, Scope: deref(r.PropagationScope), ConflictPolicy: deref(r.ConflictPolicy)}
+		if r.EffectiveDate.Valid {
+			at := r.EffectiveDate.Time
+			c.Template.EffectiveDate = &at
+		}
+	}
 	if c.Impacts, err = impacts(ctx, q, id); err != nil {
 		return Change{}, err
 	}
@@ -341,6 +353,7 @@ func getChange(ctx context.Context, q *db.Queries, id string) (Change, error) {
 		c.Documents = append(c.Documents, AffectedDocument{
 			ID: d.ID, Number: d.Number, Revision: int(d.Revision), Status: d.Status, Merged: d.Merged,
 			ReleasedRevision: intPtr(d.ReleasedRevision), DraftRevision: intPtr(d.DraftRevision),
+			RowsUpdated: int32Ptr(d.RowsUpdated), RowsConflict: int32Ptr(d.RowsConflict), RowsRemoved: int32Ptr(d.RowsRemoved),
 			DocumentType: Ref{ID: d.DocumentTypeID, Key: deref(d.DocumentTypeKey), Name: d.DocumentTypeName},
 		})
 	}
@@ -479,6 +492,14 @@ func optional(s string) *string {
 }
 
 func intPtr(v *int16) *int {
+	if v == nil {
+		return nil
+	}
+	n := int(*v)
+	return &n
+}
+
+func int32Ptr(v *int32) *int {
 	if v == nil {
 		return nil
 	}

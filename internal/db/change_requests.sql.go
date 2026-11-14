@@ -8,6 +8,8 @@ package db
 import (
 	"context"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const addChangeAttachment = `-- name: AddChangeAttachment :one
@@ -141,6 +143,67 @@ func (q *Queries) CreateChange(ctx context.Context, arg CreateChangeParams) (str
 	return id, err
 }
 
+const createTemplateChange = `-- name: CreateTemplateChange :one
+
+INSERT INTO changes (customer_id, mechanism, change_type_id, reason, source_reference, requested_by_person_id, requested_by_account_id,
+                     template_version_id, propagation_scope, conflict_policy, effective_date)
+VALUES ($1, 'template', $2, $3, $4, $5, $6, $7, $8, $9, $10)
+RETURNING id
+`
+
+type CreateTemplateChangeParams struct {
+	CustomerID           string
+	ChangeTypeID         string
+	Reason               string
+	SourceReference      *string
+	RequestedByPersonID  string
+	RequestedByAccountID string
+	TemplateVersionID    *string
+	PropagationScope     *string
+	ConflictPolicy       *string
+	EffectiveDate        pgtype.Date
+}
+
+// M5.8: propagasi template (R-TPL-06 sampai R-TPL-09).
+func (q *Queries) CreateTemplateChange(ctx context.Context, arg CreateTemplateChangeParams) (string, error) {
+	row := q.db.QueryRow(ctx, createTemplateChange,
+		arg.CustomerID,
+		arg.ChangeTypeID,
+		arg.Reason,
+		arg.SourceReference,
+		arg.RequestedByPersonID,
+		arg.RequestedByAccountID,
+		arg.TemplateVersionID,
+		arg.PropagationScope,
+		arg.ConflictPolicy,
+		arg.EffectiveDate,
+	)
+	var id string
+	err := row.Scan(&id)
+	return id, err
+}
+
+const documentHasTemplateChange = `-- name: DocumentHasTemplateChange :one
+SELECT EXISTS (
+    SELECT 1 FROM change_documents cd JOIN changes c ON c.id = cd.change_id
+    WHERE cd.document_id = $1 AND c.template_version_id = $2 AND c.status <> 'rejected'
+)
+`
+
+type DocumentHasTemplateChangeParams struct {
+	DocumentID        string
+	TemplateVersionID *string
+}
+
+// DocumentHasTemplateChange melaporkan apakah dokumen sudah punya perubahan
+// yang belum ditolak untuk versi template ini, supaya propagasi tidak dobel.
+func (q *Queries) DocumentHasTemplateChange(ctx context.Context, arg DocumentHasTemplateChangeParams) (bool, error) {
+	row := q.db.QueryRow(ctx, documentHasTemplateChange, arg.DocumentID, arg.TemplateVersionID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const fourMCategoryExists = `-- name: FourMCategoryExists :one
 SELECT EXISTS (SELECT 1 FROM four_m_categories WHERE id = $1)
 `
@@ -159,7 +222,8 @@ SELECT c.id, c.seq, c.customer_id, cu.code AS customer_code, c.mechanism,
        c.four_m_category_id, f.key AS four_m_key, f.name AS four_m_name,
        c.reason, c.source_reference, c.status, p.name AS requested_by, c.requested_by_person_id,
        c.created_at, c.updated_at,
-       c.verified_by_person_id, v.name AS verified_by, c.verified_at, c.verification_note
+       c.verified_by_person_id, v.name AS verified_by, c.verified_at, c.verification_note,
+       c.template_version_id, c.propagation_scope, c.conflict_policy, c.effective_date
 FROM changes c
 JOIN customers cu ON cu.id = c.customer_id
 JOIN change_types t ON t.id = c.change_type_id
@@ -195,6 +259,10 @@ type GetChangeRow struct {
 	VerifiedBy          *string
 	VerifiedAt          *time.Time
 	VerificationNote    *string
+	TemplateVersionID   *string
+	PropagationScope    *string
+	ConflictPolicy      *string
+	EffectiveDate       pgtype.Date
 }
 
 func (q *Queries) GetChange(ctx context.Context, id string) (GetChangeRow, error) {
@@ -225,6 +293,10 @@ func (q *Queries) GetChange(ctx context.Context, id string) (GetChangeRow, error
 		&i.VerifiedBy,
 		&i.VerifiedAt,
 		&i.VerificationNote,
+		&i.TemplateVersionID,
+		&i.PropagationScope,
+		&i.ConflictPolicy,
+		&i.EffectiveDate,
 	)
 	return i, err
 }
@@ -347,7 +419,8 @@ func (q *Queries) ListChangeAttachments(ctx context.Context, changeID string) ([
 
 const listChangeDocuments = `-- name: ListChangeDocuments :many
 SELECT d.id, n.number, t.id AS document_type_id, t.key AS document_type_key, t.name AS document_type_name, d.revision, d.status,
-       d.released_revision, dr.revision AS draft_revision, cd.merged
+       d.released_revision, dr.revision AS draft_revision, cd.merged,
+       cd.rows_updated, cd.rows_conflict, cd.rows_removed
 FROM change_documents cd
 JOIN documents d ON d.id = cd.document_id
 LEFT JOIN document_revisions dr ON dr.id = cd.draft_revision_id
@@ -368,6 +441,9 @@ type ListChangeDocumentsRow struct {
 	ReleasedRevision *int16
 	DraftRevision    *int16
 	Merged           bool
+	RowsUpdated      *int32
+	RowsConflict     *int32
+	RowsRemoved      *int32
 }
 
 // ListChangeDocuments memberi dokumen terdampak menurut urutan jenis dokumen
@@ -392,6 +468,9 @@ func (q *Queries) ListChangeDocuments(ctx context.Context, changeID string) ([]L
 			&i.ReleasedRevision,
 			&i.DraftRevision,
 			&i.Merged,
+			&i.RowsUpdated,
+			&i.RowsConflict,
+			&i.RowsRemoved,
 		); err != nil {
 			return nil, err
 		}
@@ -500,6 +579,49 @@ func (q *Queries) ListChangeImpacts(ctx context.Context, changeID string) ([]Lis
 	return items, nil
 }
 
+const listTemplateLinkedDocuments = `-- name: ListTemplateLinkedDocuments :many
+SELECT DISTINCT d.id, d.customer_id, n.number
+FROM document_rows r
+JOIN process_template_versions v ON v.id = r.template_version_id
+JOIN documents d ON d.id = r.document_id
+JOIN document_numbers n ON n.id = d.document_number_id
+WHERE v.template_id = $1 AND r.template_version_id <> $2 AND r.detached_at IS NULL
+ORDER BY d.customer_id, n.number
+`
+
+type ListTemplateLinkedDocumentsParams struct {
+	TemplateID string
+	VersionID  *string
+}
+
+type ListTemplateLinkedDocumentsRow struct {
+	ID         string
+	CustomerID string
+	Number     string
+}
+
+// ListTemplateLinkedDocuments memberi dokumen yang punya baris tertaut ke
+// versi lain process template ini dan belum diputus, menurut customer lalu nomor.
+func (q *Queries) ListTemplateLinkedDocuments(ctx context.Context, arg ListTemplateLinkedDocumentsParams) ([]ListTemplateLinkedDocumentsRow, error) {
+	rows, err := q.db.Query(ctx, listTemplateLinkedDocuments, arg.TemplateID, arg.VersionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListTemplateLinkedDocumentsRow{}
+	for rows.Next() {
+		var i ListTemplateLinkedDocumentsRow
+		if err := rows.Scan(&i.ID, &i.CustomerID, &i.Number); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const lockChange = `-- name: LockChange :exec
 SELECT id FROM changes WHERE id = $1 FOR NO KEY UPDATE
 `
@@ -542,6 +664,29 @@ func (q *Queries) RemoveChangeDocument(ctx context.Context, arg RemoveChangeDocu
 		return 0, err
 	}
 	return result.RowsAffected(), nil
+}
+
+const setChangeDocumentResult = `-- name: SetChangeDocumentResult :exec
+UPDATE change_documents SET rows_updated = $3, rows_conflict = $4, rows_removed = $5 WHERE change_id = $1 AND document_id = $2
+`
+
+type SetChangeDocumentResultParams struct {
+	ChangeID     string
+	DocumentID   string
+	RowsUpdated  *int32
+	RowsConflict *int32
+	RowsRemoved  *int32
+}
+
+func (q *Queries) SetChangeDocumentResult(ctx context.Context, arg SetChangeDocumentResultParams) error {
+	_, err := q.db.Exec(ctx, setChangeDocumentResult,
+		arg.ChangeID,
+		arg.DocumentID,
+		arg.RowsUpdated,
+		arg.RowsConflict,
+		arg.RowsRemoved,
+	)
+	return err
 }
 
 const verifyChange = `-- name: VerifyChange :execrows

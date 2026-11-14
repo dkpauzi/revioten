@@ -127,6 +127,12 @@ func openDrafts(ctx context.Context, q *db.Queries, actor access.Actor, c Change
 		if err := q.LinkChangeDraft(ctx, db.LinkChangeDraftParams{ChangeID: c.ID, DocumentID: docID, DraftRevisionID: &draft.ID, Merged: merged}); err != nil {
 			return err
 		}
+		// Perubahan template menulis isi versi barunya ke draft (M5.8).
+		if c.Mechanism == MechanismTemplate {
+			if err := applyTemplate(ctx, q, actor, c, docID); err != nil {
+				return err
+			}
+		}
 		details := map[string]string{"change": c.Ref, "revision": strconv.Itoa(int(draft.Revision)), "merged": strconv.FormatBool(merged)}
 		if err := audit.Record(ctx, q, actor, audit.Event{Action: audit.ActionDocumentDraftOpened, TargetType: audit.TargetDocument, TargetID: docID, Details: details}); err != nil {
 			return err

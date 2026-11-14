@@ -10,6 +10,8 @@ import (
 	"io"
 	"net/url"
 
+	openapi_types "github.com/oapi-codegen/runtime/types"
+
 	"github.com/dkpauzi/revioten/internal/change"
 	"github.com/dkpauzi/revioten/internal/problem"
 )
@@ -101,6 +103,12 @@ func toAPIChange(c change.Change) Change {
 			Id: x.ID, FileName: x.FileName, ContentType: x.ContentType, Size: x.Size, Sha256: x.SHA256, UploadedBy: x.UploadedBy, UploadedAt: x.UploadedAt,
 		})
 	}
+	if tpl := c.Template; tpl != nil {
+		out.Template = &ChangeTemplate{VersionId: tpl.VersionID, Scope: ChangeTemplateScope(tpl.Scope), ConflictPolicy: ChangeTemplateConflictPolicy(tpl.ConflictPolicy)}
+		if tpl.EffectiveDate != nil {
+			out.Template.EffectiveDate = &openapi_types.Date{Time: *tpl.EffectiveDate}
+		}
+	}
 	if v := c.Verification; v != nil {
 		out.Verification = &ChangeVerification{VerifiedBy: v.VerifiedBy, VerifiedAt: v.VerifiedAt, Note: v.Note}
 	}
@@ -114,7 +122,8 @@ func toAPIChange(c change.Change) Change {
 	}
 	for _, d := range c.Documents {
 		item := AffectedDocument{Id: d.ID, Number: d.Number, DocumentType: ref(d.DocumentType), Revision: d.Revision, Status: d.Status,
-			ReleasedRevision: d.ReleasedRevision, DraftRevision: d.DraftRevision}
+			ReleasedRevision: d.ReleasedRevision, DraftRevision: d.DraftRevision,
+			RowsUpdated: d.RowsUpdated, RowsConflict: d.RowsConflict, RowsRemoved: d.RowsRemoved}
 		if d.DraftRevision != nil {
 			item.Merged = &d.Merged
 		}
@@ -198,4 +207,50 @@ func (a *apiServer) SaveChangeImpacts(ctx context.Context, req SaveChangeImpacts
 		return nil, err
 	}
 	return SaveChangeImpacts200JSONResponse(toAPIChange(c)), nil
+}
+
+// PreviewPropagation menjawab GET /api/v1/process-template-versions/{id}/propagation (M5.8).
+func (a *apiServer) PreviewPropagation(ctx context.Context, req PreviewPropagationRequestObject) (PreviewPropagationResponseObject, error) {
+	items, err := a.changeRequests.Preview(ctx, actorFrom(ctx), req.ProcessVersionId, req.Params.Scope)
+	if err != nil {
+		return nil, err
+	}
+	out := PropagationPreview{Items: make([]PropagationItem, 0, len(items))}
+	for _, it := range items {
+		item := PropagationItem{
+			DocumentId: it.DocumentID, Number: it.Number, CustomerId: it.CustomerID, Status: it.Status, Mode: PropagationItemMode(it.Mode),
+			Included: it.Included, Updates: it.Updates, Conflicts: it.Conflicts, Removed: it.Removed, Rows: make([]PropagationRow, 0, len(it.Rows)),
+		}
+		if it.Skipped != "" {
+			skipped := PropagationItemSkipped(it.Skipped)
+			item.Skipped = &skipped
+		}
+		for _, r := range it.Rows {
+			row := PropagationRow{RowId: r.RowID, Position: r.Position, Status: PropagationRowStatus(r.Status), PointText: r.PointText, Fields: make([]FieldDifference, 0, len(r.Fields))}
+			for _, f := range r.Fields {
+				row.Fields = append(row.Fields, FieldDifference{FieldId: optional(f.FieldID), Label: f.Label, Template: f.Template, Row: f.Row})
+			}
+			item.Rows = append(item.Rows, row)
+		}
+		out.Items = append(out.Items, item)
+	}
+	return PreviewPropagation200JSONResponse(out), nil
+}
+
+// PropagateTemplate menjawab POST /api/v1/process-template-versions/{id}/propagation (M5.8).
+func (a *apiServer) PropagateTemplate(ctx context.Context, req PropagateTemplateRequestObject) (PropagateTemplateResponseObject, error) {
+	b := req.Body
+	in := change.Propagation{
+		VersionID: req.ProcessVersionId, Scope: b.Scope, ConflictPolicy: b.ConflictPolicy, ChangeTypeID: b.ChangeTypeId,
+		Reason: b.Reason, SourceReference: deref(b.SourceReference),
+	}
+	if b.EffectiveDate != nil {
+		at := b.EffectiveDate.Time
+		in.EffectiveDate = &at
+	}
+	list, err := a.changeRequests.Propagate(ctx, actorFrom(ctx), in)
+	if err != nil {
+		return nil, err
+	}
+	return PropagateTemplate201JSONResponse(toAPIChangeList(list)), nil
 }

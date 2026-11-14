@@ -13,7 +13,8 @@ SELECT c.id, c.seq, c.customer_id, cu.code AS customer_code, c.mechanism,
        c.four_m_category_id, f.key AS four_m_key, f.name AS four_m_name,
        c.reason, c.source_reference, c.status, p.name AS requested_by, c.requested_by_person_id,
        c.created_at, c.updated_at,
-       c.verified_by_person_id, v.name AS verified_by, c.verified_at, c.verification_note
+       c.verified_by_person_id, v.name AS verified_by, c.verified_at, c.verification_note,
+       c.template_version_id, c.propagation_scope, c.conflict_policy, c.effective_date
 FROM changes c
 JOIN customers cu ON cu.id = c.customer_id
 JOIN change_types t ON t.id = c.change_type_id
@@ -38,7 +39,8 @@ SELECT id FROM changes WHERE id = $1 FOR NO KEY UPDATE;
 -- ListChangeDocuments memberi dokumen terdampak menurut urutan jenis dokumen
 -- (PFD, PFMEA, CP), lalu nomornya.
 SELECT d.id, n.number, t.id AS document_type_id, t.key AS document_type_key, t.name AS document_type_name, d.revision, d.status,
-       d.released_revision, dr.revision AS draft_revision, cd.merged
+       d.released_revision, dr.revision AS draft_revision, cd.merged,
+       cd.rows_updated, cd.rows_conflict, cd.rows_removed
 FROM change_documents cd
 JOIN documents d ON d.id = cd.document_id
 LEFT JOIN document_revisions dr ON dr.id = cd.draft_revision_id
@@ -123,3 +125,33 @@ DELETE FROM change_impacts WHERE change_id = $1;
 -- name: AddChangeImpact :exec
 INSERT INTO change_impacts (change_id, position, kind, document_reference, decision, reason, updated_by_person_id)
 VALUES ($1, $2, $3, $4, $5, $6, $7);
+
+-- M5.8: propagasi template (R-TPL-06 sampai R-TPL-09).
+
+-- name: CreateTemplateChange :one
+INSERT INTO changes (customer_id, mechanism, change_type_id, reason, source_reference, requested_by_person_id, requested_by_account_id,
+                     template_version_id, propagation_scope, conflict_policy, effective_date)
+VALUES ($1, 'template', $2, $3, $4, $5, $6, $7, $8, $9, $10)
+RETURNING id;
+
+-- name: ListTemplateLinkedDocuments :many
+-- ListTemplateLinkedDocuments memberi dokumen yang punya baris tertaut ke
+-- versi lain process template ini dan belum diputus, menurut customer lalu nomor.
+SELECT DISTINCT d.id, d.customer_id, n.number
+FROM document_rows r
+JOIN process_template_versions v ON v.id = r.template_version_id
+JOIN documents d ON d.id = r.document_id
+JOIN document_numbers n ON n.id = d.document_number_id
+WHERE v.template_id = sqlc.arg(template_id) AND r.template_version_id <> sqlc.arg(version_id) AND r.detached_at IS NULL
+ORDER BY d.customer_id, n.number;
+
+-- name: SetChangeDocumentResult :exec
+UPDATE change_documents SET rows_updated = $3, rows_conflict = $4, rows_removed = $5 WHERE change_id = $1 AND document_id = $2;
+
+-- name: DocumentHasTemplateChange :one
+-- DocumentHasTemplateChange melaporkan apakah dokumen sudah punya perubahan
+-- yang belum ditolak untuk versi template ini, supaya propagasi tidak dobel.
+SELECT EXISTS (
+    SELECT 1 FROM change_documents cd JOIN changes c ON c.id = cd.change_id
+    WHERE cd.document_id = $1 AND c.template_version_id = $2 AND c.status <> 'rejected'
+);

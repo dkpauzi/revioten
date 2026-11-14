@@ -185,7 +185,8 @@ export const helpId: HelpContent = {
 			imageAlt: 'Baris versi process template yang sudah terbit, dengan tombol versi baru.',
 			tips: [
 				'Satu template paling banyak punya satu draft, jadi {versionNew} hanya muncul bila versi terakhir sudah terbit.',
-				'Versi baru memakai ID field dan poin yang sama, jadi dokumen tetap tersambung.'
+				'Versi baru memakai ID field dan poin yang sama, jadi dokumen tetap tersambung.',
+				'Sesudah versi process template terbit, {propagationPreview} di bagian propagasi menunjukkan dokumen mana yang memakai template itu, baris mana yang berubah, dan mana yang sudah diubah lokal. Propagasi membuat satu perubahan per customer yang menunggu verifikasi; isi baru masuk ke draft saat perubahan diterima.'
 			]
 		},
 		{

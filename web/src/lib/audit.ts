@@ -84,6 +84,8 @@ const actionKeys: Record<string, MessageKey> = {
 	'change.accepted': 'auditActionChangeAccepted',
 	'change.rejected': 'auditActionChangeRejected',
 	'change.impacts_saved': 'auditActionChangeImpactsSaved',
+	'change.template_applied': 'auditActionChangeTemplateApplied',
+	'document.template_mode_changed': 'auditActionDocumentTemplateModeChanged',
 	'document.draft_opened': 'auditActionDocumentDraftOpened',
 	'document.released': 'auditActionDocumentReleased',
 	'document.section_added': 'auditActionDocumentSectionAdded',

@@ -13,6 +13,7 @@
 	import OrderPanel from '#lib/documents/OrderPanel.svelte';
 	import PastePanel from '#lib/documents/PastePanel.svelte';
 	import RevisionsPanel from '#lib/documents/RevisionsPanel.svelte';
+	import TemplateLinksPanel from '#lib/documents/TemplateLinksPanel.svelte';
 	import SectionBar from '#lib/documents/SectionBar.svelte';
 	import Workbook from '#lib/documents/Workbook.svelte';
 	import { cleanContent, rowsOfSection, typedFields } from '#lib/documents.ts';
@@ -332,6 +333,7 @@
 	{/if}
 
 	<RevisionsPanel {doc} onreleased={(d) => (doc = d)} />
+	<TemplateLinksPanel {doc} />
 
 	{#if message}<p role="status">{message}</p>{/if}
 	{#if failure}<p class="error" role="alert">{failure}</p>{/if}

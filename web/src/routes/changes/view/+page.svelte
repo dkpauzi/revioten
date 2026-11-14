@@ -182,6 +182,15 @@
 		{/if}
 		<dt>{t('changeType')}</dt>
 		<dd>{change.change_type.name}</dd>
+		{#if change.template}
+			<dt>{t('propagationScope')}</dt>
+			<dd>
+				{t(change.template.scope === 'all' ? 'propagationScopeAll' : 'propagationScopeFollowing')} ·
+				{t(change.template.conflict_policy === 'overwrite' ? 'propagationOverwrite' : 'propagationKeep')}{change.template.effective_date
+					? ` · ${t('propagationEffectiveDate')} ${change.template.effective_date}`
+					: ''}
+			</dd>
+		{/if}
 		{#if change.four_m}
 			<dt>{t('changeFourM')}</dt>
 			<dd>{change.four_m.name}</dd>
@@ -230,6 +239,7 @@
 					<th>{t('numberColumnType')}</th>
 					<th>{t('changeRevision')}</th>
 					<th>{t('changeDraft')}</th>
+					{#if change.template}<th>{t('changeTemplateResult')}</th>{/if}
 					{#if editable}<th>{t('masterActions')}</th>{/if}
 				</tr>
 			</thead>
@@ -240,6 +250,13 @@
 						<td>{d.document_type.name}</td>
 						<td>{d.revision}</td>
 						<td>{d.draft_revision === undefined ? '' : t(d.merged ? 'changeDraftMerged' : 'changeDraftOpened', { revision: String(d.draft_revision) })}</td>
+						{#if change.template}
+							<td>
+								{d.rows_updated === undefined
+									? ''
+									: t('changeTemplateRows', { updated: String(d.rows_updated), conflict: String(d.rows_conflict ?? 0), removed: String(d.rows_removed ?? 0) })}
+							</td>
+						{/if}
 						{#if editable}
 							<td>
 								<button type="button" aria-label={t('changeDocumentRemoveFor', { number: d.number })} onclick={() => remove(d.id, d.number)}>{t('changeDocumentRemove')}</button>

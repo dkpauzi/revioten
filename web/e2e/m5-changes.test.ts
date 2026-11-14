@@ -254,3 +254,62 @@ test('M5.7: pemohon menyimpan daftar periksa dampak dengan alasan', async ({ pag
 	await expect(page.getByLabel(en.impactDocumentFor.replace('{line}', '4'))).toHaveValue('SW-ZZ-116');
 	await expect(page.getByLabel(en.impactReasonFor.replace('{line}', '2'))).toHaveValue('Failure mode stays the same');
 });
+
+test('M5.8: versi template baru dipropagasikan, dan isinya masuk ke draft saat perubahan diterima', async ({ page }) => {
+	// Perakit dari test M4 (m4-compose) memegang Pengelola template. Versi 2
+	// Incoming QC mengganti metode poin "Check part number" menjadi SPI.
+	await page.goto('/login');
+	const version2 = await asUser(page, 'perakit.e2e', 'baris dirakit dari process template', async () => {
+		const templates = await (await fetch('/api/v1/process-templates')).json();
+		const tpl = templates.items.find((x: { process: { name: string } }) => x.process.name === 'Incoming QC');
+		const v2 = await (await fetch(`/api/v1/process-templates/${tpl.id}/versions`, { method: 'POST' })).json();
+		const point = v2.subprocesses.flatMap((s: { points: { id: string; text: string }[] }) => s.points).find((p: { text: string }) => p.text === 'Check part number');
+		await fetch(`/api/v1/process-template-versions/${v2.id}/points/${point.id}`, {
+			method: 'PUT',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ text: 'Check part number', content: { product_characteristic: 'Part number', control_method: 'SPI' } })
+		});
+		await fetch(`/api/v1/process-template-versions/${v2.id}/publish`, { method: 'POST' });
+		return v2.version as number;
+	});
+	expect(version2).toBe(2);
+
+	await page.getByLabel(en.loginName, { exact: true }).fill('perakit.e2e');
+	await page.getByLabel(en.loginPassword, { exact: true }).fill('baris dirakit dari process template');
+	await page.getByRole('button', { name: en.loginSubmit }).click();
+	await expect(page.getByRole('button', { name: en.logout })).toBeVisible();
+	await openFromMenu(page, en.navGroupTemplates, en.navProcessTemplates);
+	await page.getByLabel(en.processTemplateChoose).selectOption({ label: 'Incoming QC' });
+	await expect(page.getByRole('heading', { name: en.propagationTitle.replace('{version}', '2') })).toBeVisible();
+	await page.getByRole('button', { name: en.propagationPreview }).click();
+	// Paling sedikit satu CP dokumen KM mengikuti dan ikut propagasi.
+	const cpRow = page.locator('table.preview tbody tr', { has: page.locator('td', { hasText: /^SC-KM-/ }) }).filter({ hasText: en.propagationYes });
+	await expect(cpRow.first()).toBeVisible();
+	await page.getByLabel(en.changeType, { exact: true }).selectOption({ index: 1 });
+	await page.getByLabel(en.changeReason, { exact: true }).fill('IQC uses SPI for the part number');
+	await page.getByRole('button', { name: /^Propagate to / }).click();
+	await expect(page.getByRole('status')).toContainText('CHG-');
+	await logOut(page);
+
+	// Verifikator menerima; isi baru masuk ke draft CP.
+	const cp = await asUser(page, 'verifikator.e2e', 'verifikasi selalu dengan catatan', async () => {
+		const customers = await (await fetch('/api/v1/customers')).json();
+		const customer = customers.items.find((c: { code: string }) => c.code === 'KM');
+		const list = await (await fetch(`/api/v1/changes?customer_id=${customer.id}`)).json();
+		const change = list.items.find((c: { mechanism: string }) => c.mechanism === 'template');
+		const accepted = await (
+			await fetch(`/api/v1/changes/${change.id}/verification`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ decision: 'accept', note: 'SPI is the new IQC method' })
+			})
+		).json();
+		return accepted.documents.filter((d: { document_type: { key: string } }) => d.document_type.key === 'cp') as { rows_updated?: number; rows_conflict?: number }[];
+	});
+	// Template diterapkan ke setiap CP: baris diperbarui, atau dibiarkan karena diubah lokal.
+	expect(cp.length).toBeGreaterThan(0);
+	for (const d of cp) {
+		expect(d.rows_updated).toBeDefined();
+		expect((d.rows_updated ?? 0) + (d.rows_conflict ?? 0)).toBeGreaterThan(0);
+	}
+});

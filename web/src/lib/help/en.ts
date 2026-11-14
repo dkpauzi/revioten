@@ -185,7 +185,8 @@ export const helpEn: HelpContent = {
 			imageAlt: 'The version row of a published process template with the New version button.',
 			tips: [
 				'A template has at most one draft, so {versionNew} only appears when the last version is published.',
-				'A new version keeps the same IDs of fields and points, so documents stay linked.'
+				'A new version keeps the same IDs of fields and points, so documents stay linked.',
+				'After a process template version is published, {propagationPreview} under the propagation section shows which documents use the template, which rows change, and which were changed locally. Propagating makes one change per customer that waits for verification; the new content goes into the drafts when the change is accepted.'
 			]
 		},
 		{

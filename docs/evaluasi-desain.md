@@ -1900,6 +1900,24 @@ Salin blok ini untuk setiap temuan baru.
 - **Status:** Terbuka
 - **Keputusan pemilik:**
 
+## E-105 · Rincian propagasi template yang belum diputuskan
+
+- **Tanggal dan milestone:** 14 November 2026, M5.8.
+- **Jenis:** Celah
+- **Rujukan:** R-TPL-06 (DECIDED), R-TPL-07 (DECIDED, prinsip), R-TPL-08 dan R-TPL-09 (PROPOSED), R-CMP-03, U5 `template_link`.
+- **Temuan:** R-TPL-08 dan R-TPL-09 masih usulan, dan beberapa hal tidak disebut: (1) di mana mode tautan disimpan (per dokumen dan process template, atau per baris); (2) apa yang terjadi pada baris yang poinnya dihapus atau disembunyikan di versi baru, dan pada poin baru; (3) siapa yang menjalankan propagasi dan siapa pemohon perubahannya; (4) satu perubahan per customer, per dokumen, atau satu untuk semua; (5) apakah cakupan "dokumen baru saja" perlu tombol.
+- **Opsi dan asumsi yang dipakai (ASUMSI E-105):**
+  - (1) Mode per dokumen dan process template (follow bawaan, pinned, detached); pinned dan detached wajib alasan. Putus tautan per baris (M4.8) tetap ada dan tidak pernah ikut propagasi.
+  - (2) Baris yang poinnya hilang dibiarkan dan dihitung "poin dihapus"; poin baru tidak ditambahkan (menunggu R-CMP-03, "undecided").
+  - (3) Pengelola template (E-6) menjalankan propagasi dan tercatat sebagai pemohon; verifikasi tetap oleh PE, PL, atau APQP/PPAP Controller (M5.3).
+  - (4) Satu perubahan bermekanisme template per customer, karena perubahan milik satu customer (M5.1) dan verifikator bercakupan Project Group.
+  - (5) Cakupan "dokumen baru saja" cukup dengan tidak menjalankan propagasi: dokumen baru memakai versi terbit terakhir saat dirakit.
+  - Konflik: baris yang isinya berbeda dari versi template asalnya. Keep membiarkan baris itu dan menghitungnya; overwrite menimpanya. Propagasi yang sama tidak bisa dijalankan dua kali untuk dokumen yang sudah ada di perubahan yang belum ditolak.
+- **Rekomendasi Claude Code (usulan):** terima asumsi di atas sebagai keputusan, dan putuskan R-CMP-03 sebelum yokoten.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
 
 ## Usulan desain UI (UX-01 sampai UX-07): dampak ke M0 sampai M3 dan saran
 

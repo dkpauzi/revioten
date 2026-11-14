@@ -382,3 +382,31 @@ func (a *apiServer) GetDocumentDiff(ctx context.Context, req GetDocumentDiffRequ
 	}
 	return GetDocumentDiff200JSONResponse(out), nil
 }
+
+// ListDocumentTemplates menjawab GET /api/v1/documents/{documentId}/templates (M5.8).
+func (a *apiServer) ListDocumentTemplates(ctx context.Context, req ListDocumentTemplatesRequestObject) (ListDocumentTemplatesResponseObject, error) {
+	list, err := a.documents.Templates(ctx, actorFrom(ctx), req.DocumentId)
+	if err != nil {
+		return nil, err
+	}
+	return ListDocumentTemplates200JSONResponse(toAPITemplateLinks(list)), nil
+}
+
+// SetDocumentTemplateMode menjawab PUT /api/v1/documents/{documentId}/templates/{processTemplateId} (M5.8).
+func (a *apiServer) SetDocumentTemplateMode(ctx context.Context, req SetDocumentTemplateModeRequestObject) (SetDocumentTemplateModeResponseObject, error) {
+	list, err := a.documents.SetTemplateMode(ctx, actorFrom(ctx), req.DocumentId, req.ProcessTemplateId, req.Body.Mode, deref(req.Body.Reason))
+	if err != nil {
+		return nil, err
+	}
+	return SetDocumentTemplateMode200JSONResponse(toAPITemplateLinks(list)), nil
+}
+
+func toAPITemplateLinks(list []document.TemplateLink) DocumentTemplateList {
+	out := DocumentTemplateList{Items: make([]DocumentTemplate, 0, len(list))}
+	for _, l := range list {
+		out.Items = append(out.Items, DocumentTemplate{
+			ProcessTemplateId: l.TemplateID, ProcessName: l.ProcessName, Version: l.Version, Mode: DocumentTemplateMode(l.Mode), Reason: optional(l.Reason),
+		})
+	}
+	return out
+}
