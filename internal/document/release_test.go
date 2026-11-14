@@ -41,6 +41,11 @@ func TestRelease(t *testing.T) {
 	if _, err := e.Docs.Release(ctx, both, cp.ID); codeOf(t, err) != "recorder:not_allowed" {
 		t.Errorf("penyusun mencatat rilisnya sendiri: %v", err)
 	}
+	// Tanpa scan bertanda tangan, rilis ditolak (M6.7).
+	if _, err := e.Docs.Release(ctx, recorder, cp.ID); codeOf(t, err) != "scan:required" {
+		t.Errorf("rilis tanpa scan: %v", err)
+	}
+	doctest.AttachScan(t, e.Pool, cp.ID)
 	d, err := e.Docs.Release(ctx, recorder, cp.ID)
 	if err != nil {
 		t.Fatal(err)
@@ -89,6 +94,7 @@ func TestRelease(t *testing.T) {
 	if _, err := e.Docs.AddRow(ctx, e.Author, cp.ID, document.NewRow{Content: map[string]any{}}); err != nil {
 		t.Fatal(err)
 	}
+	doctest.AttachScan(t, e.Pool, cp.ID)
 	if d, err = e.Docs.Release(ctx, both, cp.ID); err != nil || *d.ReleasedRevision != 1 {
 		t.Fatalf("rilis revisi 1: %v", err)
 	}

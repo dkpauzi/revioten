@@ -28,6 +28,7 @@ func TestDiff(t *testing.T) {
 	a := add(e.ProcessSMT, "Solder paste height")
 	b := add("", "Label position")
 	c := add("", "Packing count")
+	doctest.AttachScan(t, e.Pool, cp.ID)
 	if _, err := e.Docs.Release(ctx, recorder, cp.ID); err != nil {
 		t.Fatal(err)
 	}
@@ -69,6 +70,7 @@ func TestDiff(t *testing.T) {
 		t.Errorf("per proses: %+v, %v", diff.Rows, err)
 	}
 	// Dua revisi terbit dibandingkan dari snapshot-nya.
+	doctest.AttachScan(t, e.Pool, cp.ID)
 	if _, err := e.Docs.Release(ctx, recorder, cp.ID); err != nil {
 		t.Fatal(err)
 	}

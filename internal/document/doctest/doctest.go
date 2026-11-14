@@ -169,3 +169,16 @@ func FieldID(t *testing.T, v template.FormatVersion, label string) string {
 	t.Fatalf("kolom %q tidak ada", label)
 	return ""
 }
+
+// AttachScan mencatat scan bertanda tangan palsu pada draft terbuka dokumen
+// (M6.7), supaya test bisa mencatat rilis tanpa berkas sungguhan.
+func AttachScan(t *testing.T, pool *pgxpool.Pool, documentID string) {
+	t.Helper()
+	_, err := pool.Exec(t.Context(), `UPDATE document_revisions
+		SET scan_file_name = 'signed.pdf', scan_content_type = 'application/pdf', scan_size_bytes = 10,
+		    scan_sha256 = repeat('a', 64), scan_uploaded_by_person_id = created_by_person_id, scan_uploaded_at = now()
+		WHERE document_id = $1 AND status = 'draft'`, documentID)
+	if err != nil {
+		t.Fatal(err)
+	}
+}

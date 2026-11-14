@@ -20,6 +20,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/db/dbtest"
 	"github.com/dkpauzi/revioten/internal/document"
 	"github.com/dkpauzi/revioten/internal/numbering"
+	"github.com/dkpauzi/revioten/internal/printout"
 	"github.com/dkpauzi/revioten/internal/process"
 	"github.com/dkpauzi/revioten/internal/product"
 	"github.com/dkpauzi/revioten/internal/settings"
@@ -36,6 +37,9 @@ func TestMain(m *testing.M) {
 // operationCase adalah satu operasi kontrak beserta status yang diharapkan
 // untuk akun Viewer (tanpa peran), akun PPAP Engineer (Penyusun, Pengelola
 // template, dan Dokumen kontrol, seperti di U3 bagian 2), dan akun admin.
+// scanBody adalah unggahan scan bertanda tangan kecil (M6.7).
+const scanBody = "--revioten\r\nContent-Disposition: form-data; name=\"file\"; filename=\"signed.pdf\"\r\nContent-Type: application/pdf\r\n\r\n%PDF-1.4 signed\r\n--revioten--\r\n"
+
 // multipartBody adalah unggahan satu berkas teks kecil (M5.2).
 const multipartBody = "--revioten\r\nContent-Disposition: form-data; name=\"file\"; filename=\"uji.txt\"\r\nContent-Type: text/plain\r\n\r\nisi uji\r\n--revioten--\r\n"
 
@@ -70,6 +74,7 @@ func TestPermissionsPerOperation(t *testing.T) {
 		Templates: template.NewService(pool, checker), ProcessTemplates: template.NewProcessService(pool, checker),
 		Documents: document.NewService(pool, checker), RefDocs: template.NewRefDocService(pool, checker),
 		ChangeRequests: change.NewRequestService(pool, checker).WithStorage(attachmentStore),
+		Printing:       printout.NewService(pool, checker, document.NewService(pool, checker), attachmentStore, "missing-browser"),
 	})
 
 	// Admin pertama, satu akun kerja tanpa peran (hanya hak dasar Viewer), dan
@@ -304,8 +309,21 @@ func TestPermissionsPerOperation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// Tahap 6: revisi draft dokumen uji dan layout CP bawaan.
+	var revisionID, cpLayoutID string
+	if err := pool.QueryRow(ctx, "SELECT id FROM document_revisions WHERE document_id = $1", doc.ID).Scan(&revisionID); err != nil {
+		t.Fatal(err)
+	}
+	if err := pool.QueryRow(ctx, "SELECT id FROM print_layouts WHERE document_type_id = $1 AND is_default", docTypes[2].ID).Scan(&cpLayoutID); err != nil {
+		t.Fatal(err)
+	}
+	var firstTypeLayoutID string
+	if err := pool.QueryRow(ctx, "SELECT id FROM print_layouts WHERE document_type_id = $1 AND is_default", docTypes[0].ID).Scan(&firstTypeLayoutID); err != nil {
+		t.Fatal(err)
+	}
 	// params mengisi {nama} di alamat dan isi permintaan dengan ID sungguhan.
 	params := map[string]string{
+		"revisionId": revisionID, "layoutId": cpLayoutID, "firstTypeLayoutId": firstTypeLayoutID, "revision": "0",
 		"positionId": ppapEngineer.ID, "holderId": holder.ID, "approvalRouteId": routes[0].ID, "routeId": routes[1].ID,
 		"viewerPersonId": viewerInfo.PersonID,
 		"accountId":      viewerInfo.ID, "projectGroupId": group.ID, "customerId": cust.ID,
@@ -396,6 +414,18 @@ func TestPermissionsPerOperation(t *testing.T) {
 		// jadi aturan pencatat bukan penyusun menolaknya (R-APR-02).
 		{http.MethodPost, "/api/v1/documents/{documentId}/release", "", http.StatusForbidden, http.StatusUnprocessableEntity, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/documents/{documentId}/revisions", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		// Tahap 6. Cetak draft lewat L-4; scan lewat E-7 (engineer memegangnya), lalu diunduh.
+		{http.MethodPost, "/api/v1/documents/{documentId}/print", `{"purpose":"draft","format":"xlsx"}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		{http.MethodGet, "/api/v1/documents/{documentId}/prints", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		{http.MethodPost, "/api/v1/documents/{documentId}/scan", scanBody, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
+		{http.MethodGet, "/api/v1/documents/{documentId}/revisions/{revision}/scan", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		{http.MethodGet, "/api/v1/verify/{revisionId}", "", http.StatusOK, http.StatusOK, http.StatusOK},
+		// Layout (M6.1): semua akun kerja melihat (L-2); admin mengubah (A-2).
+		{http.MethodGet, "/api/v1/print-layouts", "", http.StatusOK, http.StatusOK, http.StatusOK},
+		{http.MethodPost, "/api/v1/print-layouts", `{"name":"Layout uji","document_type_id":"{cpTypeId}","layout":{"paper":"A4"}}`, http.StatusForbidden, http.StatusForbidden, http.StatusCreated},
+		{http.MethodPut, "/api/v1/print-layouts/{layoutId}", `{"name":"Standard CP","layout":{"paper":"A3","font_size":7}}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodGet, "/api/v1/customers/{customerId}/print-layouts", "", http.StatusOK, http.StatusOK, http.StatusOK},
+		{http.MethodPut, "/api/v1/customers/{customerId}/print-layouts/{documentTypeId}", `{"layout_id":"{firstTypeLayoutId}"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
 		// Perubahan surut SQAM (M5.10) lewat E-3: engineer mengajukannya untuk semua dokumen aktif customer uji.
 		{http.MethodPost, "/api/v1/sqam-changes", `{"customer_id":"{customerId}","change_type_id":"{contentTypeId}","reason":"Uji SQAM","sqam_reference":"SQAM rev 1","effective_date":"2026-12-01"}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
 		// Yokoten (M5.9). Daftar disaring per customer, jadi semua akun mendapat 200.

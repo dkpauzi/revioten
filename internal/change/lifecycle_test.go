@@ -32,6 +32,7 @@ func TestRevisionLifecycle(t *testing.T) {
 		t.Fatal(err)
 	}
 	row := d.Rows[0]
+	doctest.AttachScan(t, e.Pool, cp.ID)
 	if _, err := e.Docs.Release(ctx, dcc, cp.ID); err != nil {
 		t.Fatal(err)
 	}
@@ -69,6 +70,7 @@ func TestRevisionLifecycle(t *testing.T) {
 	if _, err := e.Docs.Release(ctx, both, cp.ID); err == nil {
 		t.Fatal("penyusun mencatat rilisnya sendiri")
 	}
+	doctest.AttachScan(t, e.Pool, cp.ID)
 	if _, err := e.Docs.Release(ctx, dcc, cp.ID); err != nil {
 		t.Fatal(err)
 	}
@@ -98,6 +100,7 @@ func TestRevisionLifecycle(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, key := range []string{"pfd", "pfmea", "cp"} {
+		doctest.AttachScan(t, e.Pool, other[key].ID)
 		if _, err := e.Docs.Release(ctx, dcc, other[key].ID); err != nil {
 			t.Fatal(err)
 		}

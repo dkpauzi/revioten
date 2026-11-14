@@ -59,6 +59,7 @@ func TestDraftRevisions(t *testing.T) {
 
 	// Revisi 0 dicatat terbit oleh dokumen kontrol (M5.5).
 	recorder := doctest.NewActor(t, e.Pool, "dcc.uji", "work", doctest.All(access.RoleDocumentControl))
+	doctest.AttachScan(t, e.Pool, cp.ID)
 	if _, err := e.Docs.Release(ctx, recorder, cp.ID); err != nil {
 		t.Fatal(err)
 	}

@@ -15,6 +15,7 @@
 package main
 
 import (
+	"cmp"
 	"context"
 	"flag"
 	"log/slog"
@@ -33,6 +34,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/db"
 	"github.com/dkpauzi/revioten/internal/document"
 	"github.com/dkpauzi/revioten/internal/numbering"
+	"github.com/dkpauzi/revioten/internal/printout"
 	"github.com/dkpauzi/revioten/internal/process"
 	"github.com/dkpauzi/revioten/internal/product"
 	"github.com/dkpauzi/revioten/internal/server"
@@ -94,6 +96,9 @@ func runServer(args []string) error {
 	if err != nil {
 		return err
 	}
+	docs := document.NewService(pool, checker)
+	// Cetak memakai folder lampiran yang sama untuk scan bertanda tangan (M6.7).
+	printing := printout.NewService(pool, checker, docs, attachments, cfg.PDFBrowser).WithBaseURL(cmp.Or(cfg.PublicBaseURL, "http://"+*addr))
 	srv := &http.Server{
 		Addr: *addr,
 		// web.Files berisi hasil build SvelteKit yang di-embed ke binary ini.
@@ -111,9 +116,10 @@ func runServer(args []string) error {
 			Settings:         settings.NewService(pool, checker),
 			Templates:        template.NewService(pool, checker),
 			ProcessTemplates: template.NewProcessService(pool, checker),
-			Documents:        document.NewService(pool, checker),
+			Documents:        docs,
 			RefDocs:          template.NewRefDocService(pool, checker),
 			ChangeRequests:   change.NewRequestService(pool, checker).WithStorage(attachments),
+			Printing:         printing,
 		}),
 		// Batas waktu membaca header permintaan. Tanpa batas ini, klien yang
 		// sangat lambat bisa menahan koneksi selamanya (pengaman dasar, G9).

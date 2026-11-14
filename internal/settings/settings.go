@@ -29,6 +29,8 @@ type Settings struct {
 	// ApprovalAll (bawaan) berarti semua penyetuju form harus setuju,
 	// ApprovalAny berarti satu persetujuan cukup.
 	FormApprovalMode string
+	// QREnabled menyalakan QR di cetakan (D-62); bawaannya mati.
+	QREnabled bool
 }
 
 // Aturan persetujuan form (D-139). Nilainya sama dengan di internal/template.
@@ -60,13 +62,14 @@ func (s *Service) Get(ctx context.Context, actor access.Actor) (Settings, error)
 	if err != nil {
 		return Settings{}, fmt.Errorf("membaca pengaturan sistem: %w", err)
 	}
-	return Settings{SignDatesEnabled: row.SignDatesEnabled, FormApprovalMode: row.FormApprovalMode}, nil
+	return Settings{SignDatesEnabled: row.SignDatesEnabled, FormApprovalMode: row.FormApprovalMode, QREnabled: row.QrEnabled}, nil
 }
 
 // Update adalah perubahan pengaturan. Saklar yang nil tetap seperti sebelumnya.
 type Update struct {
 	SignDatesEnabled *bool
 	FormApprovalMode *string
+	QREnabled        *bool
 }
 
 // Apply mengubah pengaturan sistem (A-3). Hak diperiksa dulu, juga bila
@@ -87,7 +90,10 @@ func (s *Service) Apply(ctx context.Context, actor access.Actor, in Update) (Set
 		if err != nil {
 			return err
 		}
-		after = Settings{SignDatesEnabled: before.SignDatesEnabled, FormApprovalMode: before.FormApprovalMode}
+		after = Settings{SignDatesEnabled: before.SignDatesEnabled, FormApprovalMode: before.FormApprovalMode, QREnabled: before.QrEnabled}
+		if in.QREnabled != nil {
+			after.QREnabled = *in.QREnabled
+		}
 		if in.SignDatesEnabled != nil {
 			after.SignDatesEnabled = *in.SignDatesEnabled
 		}
@@ -95,6 +101,12 @@ func (s *Service) Apply(ctx context.Context, actor access.Actor, in Update) (Set
 			after.FormApprovalMode = *in.FormApprovalMode
 		}
 		details := map[string]string{}
+		if after.QREnabled != before.QrEnabled {
+			if err := q.SetQREnabled(ctx, after.QREnabled); err != nil {
+				return err
+			}
+			details["qr_enabled"] = audit.Change(strconv.FormatBool(before.QrEnabled), strconv.FormatBool(after.QREnabled))
+		}
 		if after.SignDatesEnabled != before.SignDatesEnabled {
 			if err := q.SetSignDates(ctx, after.SignDatesEnabled); err != nil {
 				return err

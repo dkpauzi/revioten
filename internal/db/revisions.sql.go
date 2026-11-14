@@ -8,6 +8,8 @@ package db
 import (
 	"context"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createDocumentRevision = `-- name: CreateDocumentRevision :one
@@ -104,7 +106,7 @@ func (q *Queries) LinkChangeDraft(ctx context.Context, arg LinkChangeDraftParams
 
 const listDocumentRevisions = `-- name: ListDocumentRevisions :many
 SELECT r.id, r.revision, r.status, p.name AS created_by, r.created_at, r.released_at,
-       r.snapshot_sha256, rp.name AS released_by
+       r.snapshot_sha256, rp.name AS released_by, r.release_date, r.scan_file_name
 FROM document_revisions r JOIN people p ON p.id = r.created_by_person_id
 LEFT JOIN people rp ON rp.id = r.released_by_person_id
 WHERE r.document_id = $1
@@ -120,6 +122,8 @@ type ListDocumentRevisionsRow struct {
 	ReleasedAt     *time.Time
 	SnapshotSha256 *string
 	ReleasedBy     *string
+	ReleaseDate    pgtype.Date
+	ScanFileName   *string
 }
 
 func (q *Queries) ListDocumentRevisions(ctx context.Context, documentID string) ([]ListDocumentRevisionsRow, error) {
@@ -140,6 +144,8 @@ func (q *Queries) ListDocumentRevisions(ctx context.Context, documentID string) 
 			&i.ReleasedAt,
 			&i.SnapshotSha256,
 			&i.ReleasedBy,
+			&i.ReleaseDate,
+			&i.ScanFileName,
 		); err != nil {
 			return nil, err
 		}
@@ -230,7 +236,9 @@ const preparedDraft = `-- name: PreparedDraft :one
 SELECT EXISTS (
     SELECT 1 FROM audit_log a
     WHERE a.target_id = $1 AND a.actor_person_id = $2
-      AND a.action LIKE 'document.%' AND a.action NOT IN ('document.draft_opened', 'document.released')
+      AND a.action LIKE 'document.%'
+      -- Bukan perubahan isi: membuka draft, rilis, cetak, unggah scan, dan mode tautan template.
+      AND a.action NOT IN ('document.draft_opened', 'document.released', 'document.printed', 'document.scan_uploaded', 'document.template_mode_changed')
       AND a.seq > coalesce((SELECT max(r.seq) FROM audit_log r WHERE r.target_id = $1 AND r.action = 'document.released'), 0)
 )
 `
@@ -242,8 +250,8 @@ type PreparedDraftParams struct {
 
 // PreparedDraft melaporkan apakah orang itu ikut menyusun draft yang
 // terbuka: ada entri audit perubahan isi dokumen olehnya sesudah rilis
-// terakhir dokumen itu (R-APR-02, ASUMSI E-102). Membuka draft lewat
-// verifikasi tidak dihitung sebagai menyusun.
+// terakhir dokumen itu (R-APR-02, D-166). Membuka draft, mencetak, dan
+// mengunggah scan tidak dihitung sebagai menyusun.
 func (q *Queries) PreparedDraft(ctx context.Context, arg PreparedDraftParams) (bool, error) {
 	row := q.db.QueryRow(ctx, preparedDraft, arg.DocumentID, arg.PersonID)
 	var exists bool
@@ -254,7 +262,8 @@ func (q *Queries) PreparedDraft(ctx context.Context, arg PreparedDraftParams) (b
 const releaseDocumentRevision = `-- name: ReleaseDocumentRevision :execrows
 
 UPDATE document_revisions
-SET status = 'released', released_at = now(), snapshot = $1, snapshot_sha256 = $2,
+SET status = 'released', released_at = now(), release_date = coalesce(release_date, current_date),
+    snapshot = $1, snapshot_sha256 = $2,
     released_by_person_id = $3, released_by_account_id = $4
 WHERE id = $5 AND status = 'draft'
 `

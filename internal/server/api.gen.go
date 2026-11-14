@@ -1214,6 +1214,84 @@ func (e PositionKey) Valid() bool {
 	}
 }
 
+// Defines values for PrintLayoutContentOrientation.
+const (
+	PrintLayoutContentOrientationLandscape PrintLayoutContentOrientation = "landscape"
+	PrintLayoutContentOrientationPortrait  PrintLayoutContentOrientation = "portrait"
+)
+
+// Valid indicates whether the value is a known member of the PrintLayoutContentOrientation enum.
+func (e PrintLayoutContentOrientation) Valid() bool {
+	switch e {
+	case PrintLayoutContentOrientationLandscape:
+		return true
+	case PrintLayoutContentOrientationPortrait:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PrintLayoutContentPaper.
+const (
+	PrintLayoutContentPaperA3 PrintLayoutContentPaper = "A3"
+	PrintLayoutContentPaperA4 PrintLayoutContentPaper = "A4"
+)
+
+// Valid indicates whether the value is a known member of the PrintLayoutContentPaper enum.
+func (e PrintLayoutContentPaper) Valid() bool {
+	switch e {
+	case PrintLayoutContentPaperA3:
+		return true
+	case PrintLayoutContentPaperA4:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PrintLogFormat.
+const (
+	PrintLogFormatPdf  PrintLogFormat = "pdf"
+	PrintLogFormatXlsx PrintLogFormat = "xlsx"
+)
+
+// Valid indicates whether the value is a known member of the PrintLogFormat enum.
+func (e PrintLogFormat) Valid() bool {
+	switch e {
+	case PrintLogFormatPdf:
+		return true
+	case PrintLogFormatXlsx:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PrintLogPurpose.
+const (
+	PrintLogPurposeControlled PrintLogPurpose = "controlled"
+	PrintLogPurposeDraft      PrintLogPurpose = "draft"
+	PrintLogPurposeReference  PrintLogPurpose = "reference"
+	PrintLogPurposeSignature  PrintLogPurpose = "signature"
+)
+
+// Valid indicates whether the value is a known member of the PrintLogPurpose enum.
+func (e PrintLogPurpose) Valid() bool {
+	switch e {
+	case PrintLogPurposeControlled:
+		return true
+	case PrintLogPurposeDraft:
+		return true
+	case PrintLogPurposeReference:
+		return true
+	case PrintLogPurposeSignature:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ProcessTemplateVersionStatus.
 const (
 	ProcessTemplateVersionStatusDraft     ProcessTemplateVersionStatus = "draft"
@@ -1352,6 +1430,33 @@ func (e RatingCriterionInputScale) Valid() bool {
 	case RatingCriterionInputScaleOccurrence:
 		return true
 	case RatingCriterionInputScaleSeverity:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RevisionVerificationStatus.
+const (
+	RevisionVerificationStatusDraft      RevisionVerificationStatus = "draft"
+	RevisionVerificationStatusEffective  RevisionVerificationStatus = "effective"
+	RevisionVerificationStatusObsolete   RevisionVerificationStatus = "obsolete"
+	RevisionVerificationStatusSuperseded RevisionVerificationStatus = "superseded"
+	RevisionVerificationStatusVoid       RevisionVerificationStatus = "void"
+)
+
+// Valid indicates whether the value is a known member of the RevisionVerificationStatus enum.
+func (e RevisionVerificationStatus) Valid() bool {
+	switch e {
+	case RevisionVerificationStatusDraft:
+		return true
+	case RevisionVerificationStatusEffective:
+		return true
+	case RevisionVerificationStatusObsolete:
+		return true
+	case RevisionVerificationStatusSuperseded:
+		return true
+	case RevisionVerificationStatusVoid:
 		return true
 	default:
 		return false
@@ -2113,6 +2218,23 @@ type CustomerList struct {
 	Items []Customer `json:"items"`
 }
 
+// CustomerPrintLayout defines model for CustomerPrintLayout.
+type CustomerPrintLayout struct {
+	DocumentTypeId string `json:"document_type_id"`
+	LayoutId       string `json:"layout_id"`
+}
+
+// CustomerPrintLayoutInput defines model for CustomerPrintLayoutInput.
+type CustomerPrintLayoutInput struct {
+	// LayoutId Leave out to go back to the default layout.
+	LayoutId *string `json:"layout_id,omitempty"`
+}
+
+// CustomerPrintLayoutList defines model for CustomerPrintLayoutList.
+type CustomerPrintLayoutList struct {
+	Items []CustomerPrintLayout `json:"items"`
+}
+
 // CustomerRef defines model for CustomerRef.
 type CustomerRef struct {
 	// Code The current customer code.
@@ -2282,15 +2404,21 @@ type DocumentPartNumber struct {
 // DocumentRevision defines model for DocumentRevision.
 type DocumentRevision struct {
 	// Changes Reference numbers of the changes that went into this revision (M5.6).
-	Changes    []string   `json:"changes"`
-	CreatedAt  time.Time  `json:"created_at"`
-	CreatedBy  string     `json:"created_by"`
-	Id         string     `json:"id"`
-	ReleasedAt *time.Time `json:"released_at,omitempty"`
+	Changes   []string  `json:"changes"`
+	CreatedAt time.Time `json:"created_at"`
+	CreatedBy string    `json:"created_by"`
+	Id        string    `json:"id"`
+
+	// ReleaseDate Filled when the revision is printed for signature (D-59).
+	ReleaseDate *openapi_types.Date `json:"release_date,omitempty"`
+	ReleasedAt  *time.Time          `json:"released_at,omitempty"`
 
 	// ReleasedBy The person who recorded the release.
 	ReleasedBy *string `json:"released_by,omitempty"`
 	Revision   int     `json:"revision"`
+
+	// ScanFileName The signed scan uploaded for this revision (M6.7).
+	ScanFileName *string `json:"scan_file_name,omitempty"`
 
 	// Sha256 SHA-256 of the frozen snapshot (snapshot_hash, R-REV-07).
 	Sha256 *string                `json:"sha256,omitempty"`
@@ -3402,6 +3530,93 @@ type PositionRef struct {
 	Name string `json:"name"`
 }
 
+// PrintLayout defines model for PrintLayout.
+type PrintLayout struct {
+	DocumentTypeId  string `json:"document_type_id"`
+	DocumentTypeKey string `json:"document_type_key"`
+	Id              string `json:"id"`
+	IsDefault       bool   `json:"is_default"`
+
+	// Layout The layout as data (R-PRT-02). Widths are relative, per field key or field ID.
+	Layout    PrintLayoutContent `json:"layout"`
+	Name      string             `json:"name"`
+	UpdatedAt time.Time          `json:"updated_at"`
+}
+
+// PrintLayoutContent The layout as data (R-PRT-02). Widths are relative, per field key or field ID.
+type PrintLayoutContent struct {
+	Cover     bool    `json:"cover"`
+	FontSize  float32 `json:"font_size"`
+	MarginsMm struct {
+		Bottom float32 `json:"bottom"`
+		Left   float32 `json:"left"`
+		Right  float32 `json:"right"`
+		Top    float32 `json:"top"`
+	} `json:"margins_mm"`
+	Orientation   PrintLayoutContentOrientation `json:"orientation"`
+	Paper         PrintLayoutContentPaper       `json:"paper"`
+	RevisionMarks bool                          `json:"revision_marks"`
+	Widths        map[string]float32            `json:"widths"`
+}
+
+// PrintLayoutContentOrientation defines model for PrintLayoutContent.Orientation.
+type PrintLayoutContentOrientation string
+
+// PrintLayoutContentPaper defines model for PrintLayoutContent.Paper.
+type PrintLayoutContentPaper string
+
+// PrintLayoutInput defines model for PrintLayoutInput.
+type PrintLayoutInput struct {
+	// DocumentTypeId Only for a new layout.
+	DocumentTypeId *string `json:"document_type_id,omitempty"`
+
+	// Layout The layout content; missing values take the defaults (A3 landscape, 8 pt, 10 mm).
+	Layout map[string]interface{} `json:"layout"`
+	Name   string                 `json:"name"`
+}
+
+// PrintLayoutList defines model for PrintLayoutList.
+type PrintLayoutList struct {
+	Items []PrintLayout `json:"items"`
+}
+
+// PrintLog defines model for PrintLog.
+type PrintLog struct {
+	CopyNumber *int            `json:"copy_number,omitempty"`
+	Format     PrintLogFormat  `json:"format"`
+	Id         string          `json:"id"`
+	PrintedAt  time.Time       `json:"printed_at"`
+	PrintedBy  string          `json:"printed_by"`
+	Purpose    PrintLogPurpose `json:"purpose"`
+	Revision   int             `json:"revision"`
+
+	// Sha256 SHA-256 of the printed content.
+	Sha256 string `json:"sha256"`
+}
+
+// PrintLogFormat defines model for PrintLog.Format.
+type PrintLogFormat string
+
+// PrintLogPurpose defines model for PrintLog.Purpose.
+type PrintLogPurpose string
+
+// PrintLogList defines model for PrintLogList.
+type PrintLogList struct {
+	Items []PrintLog `json:"items"`
+}
+
+// PrintRequest defines model for PrintRequest.
+type PrintRequest struct {
+	// Format xlsx or pdf.
+	Format string `json:"format"`
+
+	// Purpose draft, signature, reference, or controlled (R-PRT-04).
+	Purpose string `json:"purpose"`
+
+	// Revision Leave out for the open draft, or the revision in force when there is no draft.
+	Revision *int `json:"revision,omitempty"`
+}
+
 // Process A manufacturing step, for example IQC (D-06, R-DOC-04). The ID never
 // changes; the name is only a display value. Other data refers to the
 // process by its ID.
@@ -3676,6 +3891,22 @@ type ResolvedSubprocess struct {
 	Points []ResolvedPoint `json:"points"`
 }
 
+// RevisionVerification defines model for RevisionVerification.
+type RevisionVerification struct {
+	CustomerCode string                     `json:"customer_code"`
+	DocumentId   string                     `json:"document_id"`
+	DocumentType string                     `json:"document_type"`
+	Number       string                     `json:"number"`
+	ReleasedAt   *time.Time                 `json:"released_at,omitempty"`
+	Revision     int                        `json:"revision"`
+	RevisionId   string                     `json:"revision_id"`
+	Sha256       *string                    `json:"sha256,omitempty"`
+	Status       RevisionVerificationStatus `json:"status"`
+}
+
+// RevisionVerificationStatus defines model for RevisionVerification.Status.
+type RevisionVerificationStatus string
+
 // Role defines model for Role.
 type Role struct {
 	Id          string    `json:"id"`
@@ -3813,6 +4044,17 @@ type Session struct {
 	Person      Person   `json:"person"`
 }
 
+// SignedScan defines model for SignedScan.
+type SignedScan struct {
+	ContentType string    `json:"content_type"`
+	FileName    string    `json:"file_name"`
+	Revision    int       `json:"revision"`
+	Sha256      string    `json:"sha256"`
+	Size        int64     `json:"size"`
+	UploadedAt  time.Time `json:"uploaded_at"`
+	UploadedBy  string    `json:"uploaded_by"`
+}
+
 // SpecialCode defines model for SpecialCode.
 type SpecialCode struct {
 	// Code Two or three letters A to Z, used in place of a customer code, for example ZZ.
@@ -3858,6 +4100,9 @@ type SystemSettings struct {
 	// FormApprovalMode How many form approvers must approve a form set or an AP table before it is published (D-139). all is the default.
 	FormApprovalMode SystemSettingsFormApprovalMode `json:"form_approval_mode"`
 
+	// QrEnabled When true, prints carry a QR code to the verification page (D-62, R-APR-16). Off by default.
+	QrEnabled bool `json:"qr_enabled"`
+
 	// SignDatesEnabled When false, signature slots have no sign date and the field is hidden (D-52).
 	SignDatesEnabled bool `json:"sign_dates_enabled"`
 }
@@ -3869,6 +4114,9 @@ type SystemSettingsFormApprovalMode string
 type SystemSettingsUpdate struct {
 	// FormApprovalMode Leave it out to keep the current value.
 	FormApprovalMode *SystemSettingsUpdateFormApprovalMode `json:"form_approval_mode,omitempty"`
+
+	// QrEnabled Leave it out to keep the current value.
+	QrEnabled *bool `json:"qr_enabled,omitempty"`
 
 	// SignDatesEnabled Leave it out to keep the current value.
 	SignDatesEnabled *bool `json:"sign_dates_enabled,omitempty"`
@@ -4202,6 +4450,11 @@ type GetDocumentDiffParams struct {
 	ProcessId *string `form:"process_id,omitempty" json:"process_id,omitempty"`
 }
 
+// UploadSignedScanMultipartBody defines parameters for UploadSignedScan.
+type UploadSignedScanMultipartBody struct {
+	File *openapi_types.File `json:"file,omitempty"`
+}
+
 // GetActionPriorityParams defines parameters for GetActionPriority.
 type GetActionPriorityParams struct {
 	Severity   int `form:"severity" json:"severity"`
@@ -4294,6 +4547,9 @@ type SetCustomerFormSetJSONRequestBody = CustomerFormSetChoice
 // SetCustomerDefaultRouteJSONRequestBody defines body for SetCustomerDefaultRoute for application/json ContentType.
 type SetCustomerDefaultRouteJSONRequestBody = RouteChoice
 
+// SetCustomerPrintLayoutJSONRequestBody defines body for SetCustomerPrintLayout for application/json ContentType.
+type SetCustomerPrintLayoutJSONRequestBody = CustomerPrintLayoutInput
+
 // ImportDocumentNumbersJSONRequestBody defines body for ImportDocumentNumbers for application/json ContentType.
 type ImportDocumentNumbersJSONRequestBody = NumberImportRequest
 
@@ -4333,6 +4589,9 @@ type ReorderDocumentRowsJSONRequestBody = DocumentOrder
 // MarkPfmeaCpCheckedJSONRequestBody defines body for MarkPfmeaCpChecked for application/json ContentType.
 type MarkPfmeaCpCheckedJSONRequestBody = PfmeaCpCheckInput
 
+// PrintDocumentJSONRequestBody defines body for PrintDocument for application/json ContentType.
+type PrintDocumentJSONRequestBody = PrintRequest
+
 // AddDocumentRowJSONRequestBody defines body for AddDocumentRow for application/json ContentType.
 type AddDocumentRowJSONRequestBody = DocumentRowInput
 
@@ -4344,6 +4603,9 @@ type UpdateDocumentRowJSONRequestBody = DocumentRowInput
 
 // DetachDocumentRowJSONRequestBody defines body for DetachDocumentRow for application/json ContentType.
 type DetachDocumentRowJSONRequestBody = RowDetach
+
+// UploadSignedScanMultipartRequestBody defines body for UploadSignedScan for multipart/form-data ContentType.
+type UploadSignedScanMultipartRequestBody UploadSignedScanMultipartBody
 
 // AddDocumentSectionJSONRequestBody defines body for AddDocumentSection for application/json ContentType.
 type AddDocumentSectionJSONRequestBody = NewDocumentSection
@@ -4413,6 +4675,12 @@ type UpdatePositionJSONRequestBody = NameUpdate
 
 // AddPositionHolderJSONRequestBody defines body for AddPositionHolder for application/json ContentType.
 type AddPositionHolderJSONRequestBody = NewPositionHolder
+
+// CreatePrintLayoutJSONRequestBody defines body for CreatePrintLayout for application/json ContentType.
+type CreatePrintLayoutJSONRequestBody = PrintLayoutInput
+
+// UpdatePrintLayoutJSONRequestBody defines body for UpdatePrintLayout for application/json ContentType.
+type UpdatePrintLayoutJSONRequestBody = PrintLayoutInput
 
 // AddTemplatePointJSONRequestBody defines body for AddTemplatePoint for application/json ContentType.
 type AddTemplatePointJSONRequestBody = NewTemplatePoint
@@ -4587,6 +4855,12 @@ type ServerInterface interface {
 	// SetCustomerDefaultRoute Set the default approval route of a customer (A-2, D-47)
 	// (PUT /api/v1/customers/{customerId}/default-route)
 	SetCustomerDefaultRoute(w http.ResponseWriter, r *http.Request, customerId CustomerId)
+	// ListCustomerPrintLayouts The layout a customer uses per document type; missing means the default (L-2, M6.1)
+	// (GET /api/v1/customers/{customerId}/print-layouts)
+	ListCustomerPrintLayouts(w http.ResponseWriter, r *http.Request, customerId CustomerId)
+	// SetCustomerPrintLayout Choose the layout of a customer for one document type; no layout_id means the default (A-2, M6.1)
+	// (PUT /api/v1/customers/{customerId}/print-layouts/{documentTypeId})
+	SetCustomerPrintLayout(w http.ResponseWriter, r *http.Request, customerId CustomerId, documentTypeId string)
 	// ImportDocumentNumbers Import legacy numbers of one customer, with a report (E-8, UC-14, R-NUM-06)
 	// (POST /api/v1/document-number-imports)
 	ImportDocumentNumbers(w http.ResponseWriter, r *http.Request)
@@ -4656,6 +4930,12 @@ type ServerInterface interface {
 	// MarkPfmeaCpChecked Set or clear the "checked by, date" mark of one process (V-2, D-65)
 	// (PUT /api/v1/documents/{documentId}/pfmea-cp)
 	MarkPfmeaCpChecked(w http.ResponseWriter, r *http.Request, documentId DocumentId)
+	// PrintDocument Print a document as Excel or PDF and record the print (M6.2 to M6.6, R-PRT-01, R-PRT-04)
+	// (POST /api/v1/documents/{documentId}/print)
+	PrintDocument(w http.ResponseWriter, r *http.Request, documentId DocumentId)
+	// ListDocumentPrints The print log of one document, newest first (L-4, M6.6)
+	// (GET /api/v1/documents/{documentId}/prints)
+	ListDocumentPrints(w http.ResponseWriter, r *http.Request, documentId DocumentId)
 	// FillDocumentReferences Fill the empty Relevant Document cells from the master list (E-2, D-130)
 	// (POST /api/v1/documents/{documentId}/references)
 	FillDocumentReferences(w http.ResponseWriter, r *http.Request, documentId DocumentId)
@@ -4665,6 +4945,9 @@ type ServerInterface interface {
 	// ListDocumentRevisions The revisions of one document, newest first (L-4, M5.5)
 	// (GET /api/v1/documents/{documentId}/revisions)
 	ListDocumentRevisions(w http.ResponseWriter, r *http.Request, documentId DocumentId)
+	// GetSignedScan Download the signed scan of one revision (L-4, M6.7)
+	// (GET /api/v1/documents/{documentId}/revisions/{revision}/scan)
+	GetSignedScan(w http.ResponseWriter, r *http.Request, documentId DocumentId, revision int)
 	// AddDocumentRow Add a row at the end of a draft document (E-2)
 	// (POST /api/v1/documents/{documentId}/rows)
 	AddDocumentRow(w http.ResponseWriter, r *http.Request, documentId DocumentId)
@@ -4680,6 +4963,9 @@ type ServerInterface interface {
 	// DetachDocumentRow Detach one row from its process template point, with a reason (E-2, M4.8)
 	// (POST /api/v1/documents/{documentId}/rows/{rowId}/detach)
 	DetachDocumentRow(w http.ResponseWriter, r *http.Request, documentId DocumentId, rowId RowId)
+	// UploadSignedScan Upload the signed scan of the open draft (E-7, M6.7)
+	// (POST /api/v1/documents/{documentId}/scan)
+	UploadSignedScan(w http.ResponseWriter, r *http.Request, documentId DocumentId)
 	// AddDocumentSection Add a section, one PCB of the model, to every document of the set (E-2, D-155)
 	// (POST /api/v1/documents/{documentId}/sections)
 	AddDocumentSection(w http.ResponseWriter, r *http.Request, documentId DocumentId)
@@ -4800,6 +5086,15 @@ type ServerInterface interface {
 	// RemovePositionHolder Remove a holder from a position (A-1)
 	// (DELETE /api/v1/positions/{positionId}/holders/{holderId})
 	RemovePositionHolder(w http.ResponseWriter, r *http.Request, positionId PositionId, holderId HolderId)
+	// ListPrintLayouts Print layouts, layout as data (L-2, M6.1, R-PRT-02)
+	// (GET /api/v1/print-layouts)
+	ListPrintLayouts(w http.ResponseWriter, r *http.Request)
+	// CreatePrintLayout Add a print layout (A-2, M6.1)
+	// (POST /api/v1/print-layouts)
+	CreatePrintLayout(w http.ResponseWriter, r *http.Request)
+	// UpdatePrintLayout Change the name and content of a print layout (A-2, M6.1)
+	// (PUT /api/v1/print-layouts/{layoutId})
+	UpdatePrintLayout(w http.ResponseWriter, r *http.Request, layoutId string)
 	// GetProcessTemplateVersion One process template version with its sub-processes and points (L-2)
 	// (GET /api/v1/process-template-versions/{processVersionId})
 	GetProcessTemplateVersion(w http.ResponseWriter, r *http.Request, processVersionId ProcessVersionId)
@@ -4908,6 +5203,9 @@ type ServerInterface interface {
 	// UpdateSystemSettings Change the system settings (A-3, UC-07)
 	// (PUT /api/v1/system-settings)
 	UpdateSystemSettings(w http.ResponseWriter, r *http.Request)
+	// VerifyRevision Status of one revision for the verification page (L-1, M6.5)
+	// (GET /api/v1/verify/{revisionId})
+	VerifyRevision(w http.ResponseWriter, r *http.Request, revisionId string)
 	// SearchYokotenTargets Find the yokoten targets for a filter without saving anything (E-3, M5.9)
 	// (POST /api/v1/yokoten-targets/search)
 	SearchYokotenTargets(w http.ResponseWriter, r *http.Request)
@@ -5731,6 +6029,67 @@ func (siw *ServerInterfaceWrapper) SetCustomerDefaultRoute(w http.ResponseWriter
 	handler.ServeHTTP(w, r)
 }
 
+// ListCustomerPrintLayouts operation middleware
+func (siw *ServerInterfaceWrapper) ListCustomerPrintLayouts(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "customerId" -------------
+	var customerId CustomerId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "customerId", r.PathValue("customerId"), &customerId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customerId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListCustomerPrintLayouts(w, r, customerId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetCustomerPrintLayout operation middleware
+func (siw *ServerInterfaceWrapper) SetCustomerPrintLayout(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "customerId" -------------
+	var customerId CustomerId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "customerId", r.PathValue("customerId"), &customerId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customerId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "documentTypeId" -------------
+	var documentTypeId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentTypeId", r.PathValue("documentTypeId"), &documentTypeId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentTypeId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetCustomerPrintLayout(w, r, customerId, documentTypeId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ImportDocumentNumbers operation middleware
 func (siw *ServerInterfaceWrapper) ImportDocumentNumbers(w http.ResponseWriter, r *http.Request) {
 
@@ -6481,6 +6840,58 @@ func (siw *ServerInterfaceWrapper) MarkPfmeaCpChecked(w http.ResponseWriter, r *
 	handler.ServeHTTP(w, r)
 }
 
+// PrintDocument operation middleware
+func (siw *ServerInterfaceWrapper) PrintDocument(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", r.PathValue("documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PrintDocument(w, r, documentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListDocumentPrints operation middleware
+func (siw *ServerInterfaceWrapper) ListDocumentPrints(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", r.PathValue("documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListDocumentPrints(w, r, documentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // FillDocumentReferences operation middleware
 func (siw *ServerInterfaceWrapper) FillDocumentReferences(w http.ResponseWriter, r *http.Request) {
 
@@ -6550,6 +6961,41 @@ func (siw *ServerInterfaceWrapper) ListDocumentRevisions(w http.ResponseWriter, 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListDocumentRevisions(w, r, documentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetSignedScan operation middleware
+func (siw *ServerInterfaceWrapper) GetSignedScan(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", r.PathValue("documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "revision" -------------
+	var revision int
+
+	err = runtime.BindStyledParameterWithOptions("simple", "revision", r.PathValue("revision"), &revision, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "revision", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetSignedScan(w, r, documentId, revision)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -6707,6 +7153,32 @@ func (siw *ServerInterfaceWrapper) DetachDocumentRow(w http.ResponseWriter, r *h
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.DetachDocumentRow(w, r, documentId, rowId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UploadSignedScan operation middleware
+func (siw *ServerInterfaceWrapper) UploadSignedScan(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", r.PathValue("documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UploadSignedScan(w, r, documentId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -7732,6 +8204,60 @@ func (siw *ServerInterfaceWrapper) RemovePositionHolder(w http.ResponseWriter, r
 	handler.ServeHTTP(w, r)
 }
 
+// ListPrintLayouts operation middleware
+func (siw *ServerInterfaceWrapper) ListPrintLayouts(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListPrintLayouts(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreatePrintLayout operation middleware
+func (siw *ServerInterfaceWrapper) CreatePrintLayout(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreatePrintLayout(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdatePrintLayout operation middleware
+func (siw *ServerInterfaceWrapper) UpdatePrintLayout(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "layoutId" -------------
+	var layoutId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "layoutId", r.PathValue("layoutId"), &layoutId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "layoutId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdatePrintLayout(w, r, layoutId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetProcessTemplateVersion operation middleware
 func (siw *ServerInterfaceWrapper) GetProcessTemplateVersion(w http.ResponseWriter, r *http.Request) {
 
@@ -8541,6 +9067,32 @@ func (siw *ServerInterfaceWrapper) UpdateSystemSettings(w http.ResponseWriter, r
 	handler.ServeHTTP(w, r)
 }
 
+// VerifyRevision operation middleware
+func (siw *ServerInterfaceWrapper) VerifyRevision(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "revisionId" -------------
+	var revisionId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "revisionId", r.PathValue("revisionId"), &revisionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "revisionId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.VerifyRevision(w, r, revisionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // SearchYokotenTargets operation middleware
 func (siw *ServerInterfaceWrapper) SearchYokotenTargets(w http.ResponseWriter, r *http.Request) {
 
@@ -8889,6 +9441,16 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/changes/{changeId}/attachments/{attachmentId}", wrapper.GetChangeAttachment)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/documents/{documentId}/changes", wrapper.ListDocumentChanges)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/release", wrapper.ReleaseDocument)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/print", wrapper.PrintDocument)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/documents/{documentId}/prints", wrapper.ListDocumentPrints)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/scan", wrapper.UploadSignedScan)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/documents/{documentId}/revisions/{revision}/scan", wrapper.GetSignedScan)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/verify/{revisionId}", wrapper.VerifyRevision)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/print-layouts", wrapper.ListPrintLayouts)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/print-layouts", wrapper.CreatePrintLayout)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/print-layouts/{layoutId}", wrapper.UpdatePrintLayout)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/customers/{customerId}/print-layouts", wrapper.ListCustomerPrintLayouts)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/customers/{customerId}/print-layouts/{documentTypeId}", wrapper.SetCustomerPrintLayout)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/documents/{documentId}/templates", wrapper.ListDocumentTemplates)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/documents/{documentId}/templates/{processTemplateId}", wrapper.SetDocumentTemplateMode)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/documents/{documentId}/diff", wrapper.GetDocumentDiff)
@@ -10347,6 +10909,86 @@ func (response SetCustomerDefaultRoutedefaultJSONResponse) VisitSetCustomerDefau
 	return err
 }
 
+type ListCustomerPrintLayoutsRequestObject struct {
+	CustomerId CustomerId `json:"customerId"`
+}
+
+type ListCustomerPrintLayoutsResponseObject interface {
+	VisitListCustomerPrintLayoutsResponse(w http.ResponseWriter) error
+}
+
+type ListCustomerPrintLayouts200JSONResponse CustomerPrintLayoutList
+
+func (response ListCustomerPrintLayouts200JSONResponse) VisitListCustomerPrintLayoutsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListCustomerPrintLayoutsdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ListCustomerPrintLayoutsdefaultJSONResponse) VisitListCustomerPrintLayoutsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetCustomerPrintLayoutRequestObject struct {
+	CustomerId     CustomerId `json:"customerId"`
+	DocumentTypeId string     `json:"documentTypeId"`
+	Body           *SetCustomerPrintLayoutJSONRequestBody
+}
+
+type SetCustomerPrintLayoutResponseObject interface {
+	VisitSetCustomerPrintLayoutResponse(w http.ResponseWriter) error
+}
+
+type SetCustomerPrintLayout200JSONResponse CustomerPrintLayoutList
+
+func (response SetCustomerPrintLayout200JSONResponse) VisitSetCustomerPrintLayoutResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetCustomerPrintLayoutdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response SetCustomerPrintLayoutdefaultJSONResponse) VisitSetCustomerPrintLayoutResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ImportDocumentNumbersRequestObject struct {
 	Body *ImportDocumentNumbersJSONRequestBody
 }
@@ -11283,6 +11925,99 @@ func (response MarkPfmeaCpCheckeddefaultJSONResponse) VisitMarkPfmeaCpCheckedRes
 	return err
 }
 
+type PrintDocumentRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+	Body       *PrintDocumentJSONRequestBody
+}
+
+type PrintDocumentResponseObject interface {
+	VisitPrintDocumentResponse(w http.ResponseWriter) error
+}
+
+type PrintDocument200ResponseHeaders struct {
+	ContentDisposition *string
+}
+
+type PrintDocument200ApplicationoctetStreamResponse struct {
+	Body          io.Reader
+	Headers       PrintDocument200ResponseHeaders
+	ContentLength int64
+}
+
+func (response PrintDocument200ApplicationoctetStreamResponse) VisitPrintDocumentResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "application/octet-stream")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	if response.Headers.ContentDisposition != nil {
+		w.Header().Set("Content-Disposition", fmt.Sprint(*response.Headers.ContentDisposition))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type PrintDocumentdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response PrintDocumentdefaultJSONResponse) VisitPrintDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDocumentPrintsRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+}
+
+type ListDocumentPrintsResponseObject interface {
+	VisitListDocumentPrintsResponse(w http.ResponseWriter) error
+}
+
+type ListDocumentPrints200JSONResponse PrintLogList
+
+func (response ListDocumentPrints200JSONResponse) VisitListDocumentPrintsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDocumentPrintsdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ListDocumentPrintsdefaultJSONResponse) VisitListDocumentPrintsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type FillDocumentReferencesRequestObject struct {
 	DocumentId DocumentId `json:"documentId"`
 }
@@ -11389,6 +12124,60 @@ type ListDocumentRevisionsdefaultJSONResponse struct {
 }
 
 func (response ListDocumentRevisionsdefaultJSONResponse) VisitListDocumentRevisionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetSignedScanRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+	Revision   int        `json:"revision"`
+}
+
+type GetSignedScanResponseObject interface {
+	VisitGetSignedScanResponse(w http.ResponseWriter) error
+}
+
+type GetSignedScan200ResponseHeaders struct {
+	ContentDisposition *string
+}
+
+type GetSignedScan200ApplicationoctetStreamResponse struct {
+	Body          io.Reader
+	Headers       GetSignedScan200ResponseHeaders
+	ContentLength int64
+}
+
+func (response GetSignedScan200ApplicationoctetStreamResponse) VisitGetSignedScanResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "application/octet-stream")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	if response.Headers.ContentDisposition != nil {
+		w.Header().Set("Content-Disposition", fmt.Sprint(*response.Headers.ContentDisposition))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type GetSignedScandefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response GetSignedScandefaultJSONResponse) VisitGetSignedScanResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -11591,6 +12380,46 @@ type DetachDocumentRowdefaultJSONResponse struct {
 }
 
 func (response DetachDocumentRowdefaultJSONResponse) VisitDetachDocumentRowResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UploadSignedScanRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+	Body       *multipart.Reader
+}
+
+type UploadSignedScanResponseObject interface {
+	VisitUploadSignedScanResponse(w http.ResponseWriter) error
+}
+
+type UploadSignedScan201JSONResponse SignedScan
+
+func (response UploadSignedScan201JSONResponse) VisitUploadSignedScanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UploadSignedScandefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response UploadSignedScandefaultJSONResponse) VisitUploadSignedScanResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -13174,6 +14003,123 @@ func (response RemovePositionHolderdefaultJSONResponse) VisitRemovePositionHolde
 	return err
 }
 
+type ListPrintLayoutsRequestObject struct {
+}
+
+type ListPrintLayoutsResponseObject interface {
+	VisitListPrintLayoutsResponse(w http.ResponseWriter) error
+}
+
+type ListPrintLayouts200JSONResponse PrintLayoutList
+
+func (response ListPrintLayouts200JSONResponse) VisitListPrintLayoutsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPrintLayoutsdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ListPrintLayoutsdefaultJSONResponse) VisitListPrintLayoutsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePrintLayoutRequestObject struct {
+	Body *CreatePrintLayoutJSONRequestBody
+}
+
+type CreatePrintLayoutResponseObject interface {
+	VisitCreatePrintLayoutResponse(w http.ResponseWriter) error
+}
+
+type CreatePrintLayout201JSONResponse PrintLayout
+
+func (response CreatePrintLayout201JSONResponse) VisitCreatePrintLayoutResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreatePrintLayoutdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response CreatePrintLayoutdefaultJSONResponse) VisitCreatePrintLayoutResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdatePrintLayoutRequestObject struct {
+	LayoutId string `json:"layoutId"`
+	Body     *UpdatePrintLayoutJSONRequestBody
+}
+
+type UpdatePrintLayoutResponseObject interface {
+	VisitUpdatePrintLayoutResponse(w http.ResponseWriter) error
+}
+
+type UpdatePrintLayout200JSONResponse PrintLayout
+
+func (response UpdatePrintLayout200JSONResponse) VisitUpdatePrintLayoutResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdatePrintLayoutdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response UpdatePrintLayoutdefaultJSONResponse) VisitUpdatePrintLayoutResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetProcessTemplateVersionRequestObject struct {
 	ProcessVersionId ProcessVersionId `json:"processVersionId"`
 }
@@ -14628,6 +15574,45 @@ func (response UpdateSystemSettingsdefaultJSONResponse) VisitUpdateSystemSetting
 	return err
 }
 
+type VerifyRevisionRequestObject struct {
+	RevisionId string `json:"revisionId"`
+}
+
+type VerifyRevisionResponseObject interface {
+	VisitVerifyRevisionResponse(w http.ResponseWriter) error
+}
+
+type VerifyRevision200JSONResponse RevisionVerification
+
+func (response VerifyRevision200JSONResponse) VisitVerifyRevisionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VerifyRevisiondefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response VerifyRevisiondefaultJSONResponse) VisitVerifyRevisionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type SearchYokotenTargetsRequestObject struct {
 	Body *SearchYokotenTargetsJSONRequestBody
 }
@@ -14963,6 +15948,12 @@ type StrictServerInterface interface {
 	// SetCustomerDefaultRoute Set the default approval route of a customer (A-2, D-47)
 	// (PUT /api/v1/customers/{customerId}/default-route)
 	SetCustomerDefaultRoute(ctx context.Context, request SetCustomerDefaultRouteRequestObject) (SetCustomerDefaultRouteResponseObject, error)
+	// ListCustomerPrintLayouts The layout a customer uses per document type; missing means the default (L-2, M6.1)
+	// (GET /api/v1/customers/{customerId}/print-layouts)
+	ListCustomerPrintLayouts(ctx context.Context, request ListCustomerPrintLayoutsRequestObject) (ListCustomerPrintLayoutsResponseObject, error)
+	// SetCustomerPrintLayout Choose the layout of a customer for one document type; no layout_id means the default (A-2, M6.1)
+	// (PUT /api/v1/customers/{customerId}/print-layouts/{documentTypeId})
+	SetCustomerPrintLayout(ctx context.Context, request SetCustomerPrintLayoutRequestObject) (SetCustomerPrintLayoutResponseObject, error)
 	// ImportDocumentNumbers Import legacy numbers of one customer, with a report (E-8, UC-14, R-NUM-06)
 	// (POST /api/v1/document-number-imports)
 	ImportDocumentNumbers(ctx context.Context, request ImportDocumentNumbersRequestObject) (ImportDocumentNumbersResponseObject, error)
@@ -15032,6 +16023,12 @@ type StrictServerInterface interface {
 	// MarkPfmeaCpChecked Set or clear the "checked by, date" mark of one process (V-2, D-65)
 	// (PUT /api/v1/documents/{documentId}/pfmea-cp)
 	MarkPfmeaCpChecked(ctx context.Context, request MarkPfmeaCpCheckedRequestObject) (MarkPfmeaCpCheckedResponseObject, error)
+	// PrintDocument Print a document as Excel or PDF and record the print (M6.2 to M6.6, R-PRT-01, R-PRT-04)
+	// (POST /api/v1/documents/{documentId}/print)
+	PrintDocument(ctx context.Context, request PrintDocumentRequestObject) (PrintDocumentResponseObject, error)
+	// ListDocumentPrints The print log of one document, newest first (L-4, M6.6)
+	// (GET /api/v1/documents/{documentId}/prints)
+	ListDocumentPrints(ctx context.Context, request ListDocumentPrintsRequestObject) (ListDocumentPrintsResponseObject, error)
 	// FillDocumentReferences Fill the empty Relevant Document cells from the master list (E-2, D-130)
 	// (POST /api/v1/documents/{documentId}/references)
 	FillDocumentReferences(ctx context.Context, request FillDocumentReferencesRequestObject) (FillDocumentReferencesResponseObject, error)
@@ -15041,6 +16038,9 @@ type StrictServerInterface interface {
 	// ListDocumentRevisions The revisions of one document, newest first (L-4, M5.5)
 	// (GET /api/v1/documents/{documentId}/revisions)
 	ListDocumentRevisions(ctx context.Context, request ListDocumentRevisionsRequestObject) (ListDocumentRevisionsResponseObject, error)
+	// GetSignedScan Download the signed scan of one revision (L-4, M6.7)
+	// (GET /api/v1/documents/{documentId}/revisions/{revision}/scan)
+	GetSignedScan(ctx context.Context, request GetSignedScanRequestObject) (GetSignedScanResponseObject, error)
 	// AddDocumentRow Add a row at the end of a draft document (E-2)
 	// (POST /api/v1/documents/{documentId}/rows)
 	AddDocumentRow(ctx context.Context, request AddDocumentRowRequestObject) (AddDocumentRowResponseObject, error)
@@ -15056,6 +16056,9 @@ type StrictServerInterface interface {
 	// DetachDocumentRow Detach one row from its process template point, with a reason (E-2, M4.8)
 	// (POST /api/v1/documents/{documentId}/rows/{rowId}/detach)
 	DetachDocumentRow(ctx context.Context, request DetachDocumentRowRequestObject) (DetachDocumentRowResponseObject, error)
+	// UploadSignedScan Upload the signed scan of the open draft (E-7, M6.7)
+	// (POST /api/v1/documents/{documentId}/scan)
+	UploadSignedScan(ctx context.Context, request UploadSignedScanRequestObject) (UploadSignedScanResponseObject, error)
 	// AddDocumentSection Add a section, one PCB of the model, to every document of the set (E-2, D-155)
 	// (POST /api/v1/documents/{documentId}/sections)
 	AddDocumentSection(ctx context.Context, request AddDocumentSectionRequestObject) (AddDocumentSectionResponseObject, error)
@@ -15176,6 +16179,15 @@ type StrictServerInterface interface {
 	// RemovePositionHolder Remove a holder from a position (A-1)
 	// (DELETE /api/v1/positions/{positionId}/holders/{holderId})
 	RemovePositionHolder(ctx context.Context, request RemovePositionHolderRequestObject) (RemovePositionHolderResponseObject, error)
+	// ListPrintLayouts Print layouts, layout as data (L-2, M6.1, R-PRT-02)
+	// (GET /api/v1/print-layouts)
+	ListPrintLayouts(ctx context.Context, request ListPrintLayoutsRequestObject) (ListPrintLayoutsResponseObject, error)
+	// CreatePrintLayout Add a print layout (A-2, M6.1)
+	// (POST /api/v1/print-layouts)
+	CreatePrintLayout(ctx context.Context, request CreatePrintLayoutRequestObject) (CreatePrintLayoutResponseObject, error)
+	// UpdatePrintLayout Change the name and content of a print layout (A-2, M6.1)
+	// (PUT /api/v1/print-layouts/{layoutId})
+	UpdatePrintLayout(ctx context.Context, request UpdatePrintLayoutRequestObject) (UpdatePrintLayoutResponseObject, error)
 	// GetProcessTemplateVersion One process template version with its sub-processes and points (L-2)
 	// (GET /api/v1/process-template-versions/{processVersionId})
 	GetProcessTemplateVersion(ctx context.Context, request GetProcessTemplateVersionRequestObject) (GetProcessTemplateVersionResponseObject, error)
@@ -15284,6 +16296,9 @@ type StrictServerInterface interface {
 	// UpdateSystemSettings Change the system settings (A-3, UC-07)
 	// (PUT /api/v1/system-settings)
 	UpdateSystemSettings(ctx context.Context, request UpdateSystemSettingsRequestObject) (UpdateSystemSettingsResponseObject, error)
+	// VerifyRevision Status of one revision for the verification page (L-1, M6.5)
+	// (GET /api/v1/verify/{revisionId})
+	VerifyRevision(ctx context.Context, request VerifyRevisionRequestObject) (VerifyRevisionResponseObject, error)
 	// SearchYokotenTargets Find the yokoten targets for a filter without saving anything (E-3, M5.9)
 	// (POST /api/v1/yokoten-targets/search)
 	SearchYokotenTargets(ctx context.Context, request SearchYokotenTargetsRequestObject) (SearchYokotenTargetsResponseObject, error)
@@ -16339,6 +17354,66 @@ func (sh *strictHandler) SetCustomerDefaultRoute(w http.ResponseWriter, r *http.
 	}
 }
 
+// ListCustomerPrintLayouts operation middleware
+func (sh *strictHandler) ListCustomerPrintLayouts(w http.ResponseWriter, r *http.Request, customerId CustomerId) {
+	var request ListCustomerPrintLayoutsRequestObject
+
+	request.CustomerId = customerId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListCustomerPrintLayouts(ctx, request.(ListCustomerPrintLayoutsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListCustomerPrintLayouts")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListCustomerPrintLayoutsResponseObject); ok {
+		if err := validResponse.VisitListCustomerPrintLayoutsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SetCustomerPrintLayout operation middleware
+func (sh *strictHandler) SetCustomerPrintLayout(w http.ResponseWriter, r *http.Request, customerId CustomerId, documentTypeId string) {
+	var request SetCustomerPrintLayoutRequestObject
+
+	request.CustomerId = customerId
+	request.DocumentTypeId = documentTypeId
+
+	var body SetCustomerPrintLayoutJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetCustomerPrintLayout(ctx, request.(SetCustomerPrintLayoutRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetCustomerPrintLayout")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetCustomerPrintLayoutResponseObject); ok {
+		if err := validResponse.VisitSetCustomerPrintLayoutResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ImportDocumentNumbers operation middleware
 func (sh *strictHandler) ImportDocumentNumbers(w http.ResponseWriter, r *http.Request) {
 	var request ImportDocumentNumbersRequestObject
@@ -17022,6 +18097,65 @@ func (sh *strictHandler) MarkPfmeaCpChecked(w http.ResponseWriter, r *http.Reque
 	}
 }
 
+// PrintDocument operation middleware
+func (sh *strictHandler) PrintDocument(w http.ResponseWriter, r *http.Request, documentId DocumentId) {
+	var request PrintDocumentRequestObject
+
+	request.DocumentId = documentId
+
+	var body PrintDocumentJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PrintDocument(ctx, request.(PrintDocumentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PrintDocument")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PrintDocumentResponseObject); ok {
+		if err := validResponse.VisitPrintDocumentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListDocumentPrints operation middleware
+func (sh *strictHandler) ListDocumentPrints(w http.ResponseWriter, r *http.Request, documentId DocumentId) {
+	var request ListDocumentPrintsRequestObject
+
+	request.DocumentId = documentId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListDocumentPrints(ctx, request.(ListDocumentPrintsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListDocumentPrints")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListDocumentPrintsResponseObject); ok {
+		if err := validResponse.VisitListDocumentPrintsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // FillDocumentReferences operation middleware
 func (sh *strictHandler) FillDocumentReferences(w http.ResponseWriter, r *http.Request, documentId DocumentId) {
 	var request FillDocumentReferencesRequestObject
@@ -17093,6 +18227,33 @@ func (sh *strictHandler) ListDocumentRevisions(w http.ResponseWriter, r *http.Re
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ListDocumentRevisionsResponseObject); ok {
 		if err := validResponse.VisitListDocumentRevisionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetSignedScan operation middleware
+func (sh *strictHandler) GetSignedScan(w http.ResponseWriter, r *http.Request, documentId DocumentId, revision int) {
+	var request GetSignedScanRequestObject
+
+	request.DocumentId = documentId
+	request.Revision = revision
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetSignedScan(ctx, request.(GetSignedScanRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetSignedScan")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetSignedScanResponseObject); ok {
+		if err := validResponse.VisitGetSignedScanResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -17254,6 +18415,39 @@ func (sh *strictHandler) DetachDocumentRow(w http.ResponseWriter, r *http.Reques
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(DetachDocumentRowResponseObject); ok {
 		if err := validResponse.VisitDetachDocumentRowResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UploadSignedScan operation middleware
+func (sh *strictHandler) UploadSignedScan(w http.ResponseWriter, r *http.Request, documentId DocumentId) {
+	var request UploadSignedScanRequestObject
+
+	request.DocumentId = documentId
+
+	if reader, err := r.MultipartReader(); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode multipart body: %w", err))
+		return
+	} else {
+		request.Body = reader
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UploadSignedScan(ctx, request.(UploadSignedScanRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UploadSignedScan")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UploadSignedScanResponseObject); ok {
+		if err := validResponse.VisitUploadSignedScanResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -18446,6 +19640,94 @@ func (sh *strictHandler) RemovePositionHolder(w http.ResponseWriter, r *http.Req
 	}
 }
 
+// ListPrintLayouts operation middleware
+func (sh *strictHandler) ListPrintLayouts(w http.ResponseWriter, r *http.Request) {
+	var request ListPrintLayoutsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListPrintLayouts(ctx, request.(ListPrintLayoutsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListPrintLayouts")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListPrintLayoutsResponseObject); ok {
+		if err := validResponse.VisitListPrintLayoutsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreatePrintLayout operation middleware
+func (sh *strictHandler) CreatePrintLayout(w http.ResponseWriter, r *http.Request) {
+	var request CreatePrintLayoutRequestObject
+
+	var body CreatePrintLayoutJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreatePrintLayout(ctx, request.(CreatePrintLayoutRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreatePrintLayout")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreatePrintLayoutResponseObject); ok {
+		if err := validResponse.VisitCreatePrintLayoutResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdatePrintLayout operation middleware
+func (sh *strictHandler) UpdatePrintLayout(w http.ResponseWriter, r *http.Request, layoutId string) {
+	var request UpdatePrintLayoutRequestObject
+
+	request.LayoutId = layoutId
+
+	var body UpdatePrintLayoutJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdatePrintLayout(ctx, request.(UpdatePrintLayoutRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdatePrintLayout")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdatePrintLayoutResponseObject); ok {
+		if err := validResponse.VisitUpdatePrintLayoutResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetProcessTemplateVersion operation middleware
 func (sh *strictHandler) GetProcessTemplateVersion(w http.ResponseWriter, r *http.Request, processVersionId ProcessVersionId) {
 	var request GetProcessTemplateVersionRequestObject
@@ -19488,6 +20770,32 @@ func (sh *strictHandler) UpdateSystemSettings(w http.ResponseWriter, r *http.Req
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UpdateSystemSettingsResponseObject); ok {
 		if err := validResponse.VisitUpdateSystemSettingsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// VerifyRevision operation middleware
+func (sh *strictHandler) VerifyRevision(w http.ResponseWriter, r *http.Request, revisionId string) {
+	var request VerifyRevisionRequestObject
+
+	request.RevisionId = revisionId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.VerifyRevision(ctx, request.(VerifyRevisionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "VerifyRevision")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(VerifyRevisionResponseObject); ok {
+		if err := validResponse.VisitVerifyRevisionResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

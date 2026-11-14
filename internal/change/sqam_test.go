@@ -27,6 +27,7 @@ func TestSQAMChange(t *testing.T) {
 	}
 	// CP K-125 sudah terbit di revisi 0.
 	recorder := doctest.NewActor(t, e.Pool, "dcc.uji", "work", doctest.All(access.RoleDocumentControl))
+	doctest.AttachScan(t, e.Pool, k125["cp"].ID)
 	if _, err := e.Docs.Release(ctx, recorder, k125["cp"].ID); err != nil {
 		t.Fatal(err)
 	}

@@ -102,6 +102,10 @@ const (
 	ActionChangeTemplateApplied       = "change.template_applied"        // M5.8
 	ActionYokotenCreated              = "yokoten.created"                // M5.9
 	ActionYokotenDecided              = "yokoten.decided"                // M5.9
+	ActionDocumentPrinted             = "document.printed"               // M6.6
+	ActionDocumentScanUploaded        = "document.scan_uploaded"         // M6.7
+	ActionPrintLayoutChanged          = "print_layout.changed"           // M6.1
+	ActionCustomerLayoutChanged       = "customer.layout_changed"        // M6.1
 	ActionDocumentCopied              = "document.copied"                // M4.7
 	ActionDocumentComposed            = "document.composed"              // M4.5
 	ActionRefDocCreated               = "referenced_document.created"    // D-130

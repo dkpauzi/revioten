@@ -2210,6 +2210,217 @@ paths:
                 $ref: '#/components/schemas/Document'
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/documents/{documentId}/print:
+    post:
+      operationId: printDocument
+      summary: Print a document as Excel or PDF and record the print (M6.2 to M6.6, R-PRT-01, R-PRT-04)
+      description: >-
+        A draft prints as draft (L-4) or for signature (E-5, fills the release date, D-59). A released revision
+        prints as reference (L-3) or as a numbered controlled copy (E-9). Drafts carry UNCONTROLLED COPY.
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrintRequest'
+      responses:
+        '200':
+          description: The printed file.
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/documents/{documentId}/prints:
+    get:
+      operationId: listDocumentPrints
+      summary: The print log of one document, newest first (L-4, M6.6)
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      responses:
+        '200':
+          description: The prints.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrintLogList'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/documents/{documentId}/scan:
+    post:
+      operationId: uploadSignedScan
+      summary: Upload the signed scan of the open draft (E-7, M6.7)
+      description: A release is refused until the signed scan is uploaded. PDF, PNG, or JPEG, at most 30 MB.
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: The scan.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignedScan'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/documents/{documentId}/revisions/{revision}/scan:
+    get:
+      operationId: getSignedScan
+      summary: Download the signed scan of one revision (L-4, M6.7)
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+        - name: revision
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: The scan.
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/verify/{revisionId}:
+    get:
+      operationId: verifyRevision
+      summary: Status of one revision for the verification page (L-1, M6.5)
+      parameters:
+        - name: revisionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The revision status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RevisionVerification'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/print-layouts:
+    get:
+      operationId: listPrintLayouts
+      summary: Print layouts, layout as data (L-2, M6.1, R-PRT-02)
+      responses:
+        '200':
+          description: The layouts.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrintLayoutList'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: createPrintLayout
+      summary: Add a print layout (A-2, M6.1)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrintLayoutInput'
+      responses:
+        '201':
+          description: The layout.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrintLayout'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/print-layouts/{layoutId}:
+    put:
+      operationId: updatePrintLayout
+      summary: Change the name and content of a print layout (A-2, M6.1)
+      parameters:
+        - name: layoutId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrintLayoutInput'
+      responses:
+        '200':
+          description: The layout.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrintLayout'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/customers/{customerId}/print-layouts:
+    get:
+      operationId: listCustomerPrintLayouts
+      summary: The layout a customer uses per document type; missing means the default (L-2, M6.1)
+      parameters:
+        - $ref: '#/components/parameters/CustomerId'
+      responses:
+        '200':
+          description: The choices.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerPrintLayoutList'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/customers/{customerId}/print-layouts/{documentTypeId}:
+    put:
+      operationId: setCustomerPrintLayout
+      summary: Choose the layout of a customer for one document type; no layout_id means the default (A-2, M6.1)
+      parameters:
+        - $ref: '#/components/parameters/CustomerId'
+        - name: documentTypeId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerPrintLayoutInput'
+      responses:
+        '200':
+          description: The choices after the change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerPrintLayoutList'
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/documents/{documentId}/templates:
     get:
       operationId: listDocumentTemplates
@@ -5371,6 +5582,13 @@ components:
         sha256:
           type: string
           description: SHA-256 of the frozen snapshot (snapshot_hash, R-REV-07).
+        release_date:
+          type: string
+          format: date
+          description: Filled when the revision is printed for signature (D-59).
+        scan_file_name:
+          type: string
+          description: The signed scan uploaded for this revision (M6.7).
         changes:
           type: array
           description: Reference numbers of the changes that went into this revision (M5.6).
@@ -5433,6 +5651,189 @@ components:
           description: The value before; missing when the cell was empty.
         new:
           description: The value after; missing when the cell is empty.
+    PrintRequest:
+      type: object
+      required: [purpose, format]
+      properties:
+        purpose:
+          type: string
+          description: draft, signature, reference, or controlled (R-PRT-04).
+        format:
+          type: string
+          description: xlsx or pdf.
+        revision:
+          type: integer
+          description: Leave out for the open draft, or the revision in force when there is no draft.
+    PrintLog:
+      type: object
+      required: [id, revision, purpose, format, sha256, printed_by, printed_at]
+      properties:
+        id:
+          type: string
+        revision:
+          type: integer
+        purpose:
+          type: string
+          enum: [draft, signature, reference, controlled]
+        format:
+          type: string
+          enum: [xlsx, pdf]
+        copy_number:
+          type: integer
+        sha256:
+          type: string
+          description: SHA-256 of the printed content.
+        printed_by:
+          type: string
+        printed_at:
+          type: string
+          format: date-time
+    PrintLogList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PrintLog'
+    SignedScan:
+      type: object
+      required: [revision, file_name, content_type, size, sha256, uploaded_by, uploaded_at]
+      properties:
+        revision:
+          type: integer
+        file_name:
+          type: string
+        content_type:
+          type: string
+        size:
+          type: integer
+          format: int64
+        sha256:
+          type: string
+        uploaded_by:
+          type: string
+        uploaded_at:
+          type: string
+          format: date-time
+    RevisionVerification:
+      type: object
+      required: [revision_id, document_id, number, document_type, customer_code, revision, status]
+      properties:
+        revision_id:
+          type: string
+        document_id:
+          type: string
+        number:
+          type: string
+        document_type:
+          type: string
+        customer_code:
+          type: string
+        revision:
+          type: integer
+        status:
+          type: string
+          enum: [effective, superseded, draft, void, obsolete]
+        released_at:
+          type: string
+          format: date-time
+        sha256:
+          type: string
+    PrintLayoutContent:
+      type: object
+      description: The layout as data (R-PRT-02). Widths are relative, per field key or field ID.
+      required: [paper, orientation, font_size, margins_mm, cover, revision_marks, widths]
+      properties:
+        paper:
+          type: string
+          enum: [A3, A4]
+        orientation:
+          type: string
+          enum: [landscape, portrait]
+        font_size:
+          type: number
+        margins_mm:
+          type: object
+          required: [top, right, bottom, left]
+          properties:
+            top:
+              type: number
+            right:
+              type: number
+            bottom:
+              type: number
+            left:
+              type: number
+        cover:
+          type: boolean
+        revision_marks:
+          type: boolean
+        widths:
+          type: object
+          additionalProperties:
+            type: number
+    PrintLayout:
+      type: object
+      required: [id, name, document_type_id, document_type_key, is_default, layout, updated_at]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        document_type_id:
+          type: string
+        document_type_key:
+          type: string
+        is_default:
+          type: boolean
+        layout:
+          $ref: '#/components/schemas/PrintLayoutContent'
+        updated_at:
+          type: string
+          format: date-time
+    PrintLayoutList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PrintLayout'
+    PrintLayoutInput:
+      type: object
+      required: [name, layout]
+      properties:
+        name:
+          type: string
+        document_type_id:
+          type: string
+          description: Only for a new layout.
+        layout:
+          type: object
+          description: The layout content; missing values take the defaults (A3 landscape, 8 pt, 10 mm).
+    CustomerPrintLayout:
+      type: object
+      required: [document_type_id, layout_id]
+      properties:
+        document_type_id:
+          type: string
+        layout_id:
+          type: string
+    CustomerPrintLayoutList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CustomerPrintLayout'
+    CustomerPrintLayoutInput:
+      type: object
+      properties:
+        layout_id:
+          type: string
+          description: Leave out to go back to the default layout.
     DocumentRevisionList:
       type: object
       required: [items]
@@ -6301,8 +6702,11 @@ components:
           type: boolean
     SystemSettings:
       type: object
-      required: [sign_dates_enabled, form_approval_mode]
+      required: [sign_dates_enabled, form_approval_mode, qr_enabled]
       properties:
+        qr_enabled:
+          type: boolean
+          description: When true, prints carry a QR code to the verification page (D-62, R-APR-16). Off by default.
         sign_dates_enabled:
           type: boolean
           description: When false, signature slots have no sign date and the field is hidden (D-52).
@@ -6313,6 +6717,9 @@ components:
     SystemSettingsUpdate:
       type: object
       properties:
+        qr_enabled:
+          type: boolean
+          description: Leave it out to keep the current value.
         sign_dates_enabled:
           type: boolean
           description: Leave it out to keep the current value.

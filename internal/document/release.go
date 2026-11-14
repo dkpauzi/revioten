@@ -32,6 +32,10 @@ type Revision struct {
 	ReleasedBy string     // "" untuk draft
 	ReleasedAt *time.Time // nil untuk draft
 	SHA256     string     // SHA-256 snapshot; "" untuk draft
+	// ReleaseDate diisi saat dicetak untuk tanda tangan (D-59); "" bila belum.
+	ReleaseDate string
+	// ScanFileName adalah scan bertanda tangan revisi ini (M6.7); "" bila belum.
+	ScanFileName string
 	// Changes adalah nomor rujukan perubahan yang masuk ke revisi ini (M5.6),
 	// misalnya CHG-0001; tidak pernah nil.
 	Changes []string
@@ -159,6 +163,14 @@ func (s *Service) Release(ctx context.Context, actor access.Actor, id string) (D
 		if err != nil {
 			return fmt.Errorf("membaca draft: %w", err)
 		}
+		// Rilis dicatat sesudah scan bertanda tangan diunggah (M6.7, R-APR-02).
+		info, err := q.GetRevisionPrintInfo(ctx, db.GetRevisionPrintInfoParams{DocumentID: id, Revision: draft.Revision})
+		if err != nil {
+			return fmt.Errorf("membaca draft: %w", err)
+		}
+		if info.ScanSha256 == nil {
+			return problems(invalid("scan", problem.Required, "Upload the signed scan before recording the release."))
+		}
 		text, sum, err := makeSnapshot(d)
 		if err != nil {
 			return err
@@ -200,7 +212,10 @@ func (s *Service) Revisions(ctx context.Context, actor access.Actor, id string) 
 	for _, r := range rows {
 		item := Revision{
 			ID: r.ID, Revision: int(r.Revision), Status: r.Status, CreatedBy: r.CreatedBy, CreatedAt: r.CreatedAt.UTC(),
-			ReleasedBy: deref(r.ReleasedBy), SHA256: deref(r.SnapshotSha256), Changes: []string{},
+			ReleasedBy: deref(r.ReleasedBy), SHA256: deref(r.SnapshotSha256), Changes: []string{}, ScanFileName: deref(r.ScanFileName),
+		}
+		if r.ReleaseDate.Valid {
+			item.ReleaseDate = r.ReleaseDate.Time.Format(time.DateOnly)
 		}
 		changes, err := s.q.ListRevisionChanges(ctx, &r.ID)
 		if err != nil {
@@ -219,4 +234,26 @@ func (s *Service) Revisions(ctx context.Context, actor access.Actor, id string) 
 		out = append(out, item)
 	}
 	return out, nil
+}
+
+// CurrentSnapshot memberi isi dokumen sekarang dalam bentuk snapshot, seperti
+// yang akan dibekukan saat rilis. Dipakai cetak draft (Tahap 6).
+func CurrentSnapshot(d Document) (Snapshot, []byte, error) {
+	text, sum, err := makeSnapshot(d)
+	if err != nil {
+		return Snapshot{}, nil, err
+	}
+	var s Snapshot
+	if err := json.Unmarshal(text, &s); err != nil {
+		return Snapshot{}, nil, err
+	}
+	_ = sum
+	return s, text, nil
+}
+
+// ParseSnapshot membaca teks snapshot revisi terbit.
+func ParseSnapshot(text string) (Snapshot, error) {
+	var s Snapshot
+	err := json.Unmarshal([]byte(text), &s)
+	return s, err
 }

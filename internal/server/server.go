@@ -19,6 +19,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/customer"
 	"github.com/dkpauzi/revioten/internal/document"
 	"github.com/dkpauzi/revioten/internal/numbering"
+	"github.com/dkpauzi/revioten/internal/printout"
 	"github.com/dkpauzi/revioten/internal/process"
 	"github.com/dkpauzi/revioten/internal/product"
 	"github.com/dkpauzi/revioten/internal/settings"
@@ -195,6 +196,20 @@ type DocumentService interface {
 
 // ChangeRequestService adalah operasi perubahan (Tahap 5).
 // *change.RequestService memenuhinya; test memakai versi palsu.
+// PrintService adalah operasi cetak, scan, layout, dan verifikasi (Tahap 6).
+type PrintService interface {
+	Print(ctx context.Context, actor access.Actor, id string, req printout.Request) (printout.File, error)
+	Logs(ctx context.Context, actor access.Actor, id string) ([]printout.Log, error)
+	UploadScan(ctx context.Context, actor access.Actor, id, fileName string, r io.Reader) (printout.Scan, error)
+	OpenScan(ctx context.Context, actor access.Actor, id string, revision int) (printout.Scan, *os.File, error)
+	Verify(ctx context.Context, actor access.Actor, revisionID string) (printout.Verification, error)
+	Layouts(ctx context.Context, actor access.Actor) ([]printout.PrintLayout, error)
+	CreateLayout(ctx context.Context, actor access.Actor, in printout.LayoutInput) (printout.PrintLayout, error)
+	UpdateLayout(ctx context.Context, actor access.Actor, id string, in printout.LayoutInput) (printout.PrintLayout, error)
+	SetCustomerLayout(ctx context.Context, actor access.Actor, customerID, documentTypeID, layoutID string) error
+	CustomerLayouts(ctx context.Context, actor access.Actor, customerID string) (map[string]string, error)
+}
+
 type ChangeRequestService interface {
 	List(ctx context.Context, actor access.Actor, customerID string) ([]change.Change, error)
 	ForDocument(ctx context.Context, actor access.Actor, documentID string) ([]change.Change, error)
@@ -285,6 +300,7 @@ type Deps struct {
 	RefDocs RefDocService
 	// ChangeRequests adalah perubahan (Tahap 5).
 	ChangeRequests ChangeRequestService
+	Printing       PrintService
 	// Logger untuk log server. Bila nil, dipakai slog.Default().
 	Logger *slog.Logger
 }
@@ -304,7 +320,7 @@ func NewHandler(ui fs.FS, deps Deps) http.Handler {
 		db: deps.DB, customers: deps.Customers, auth: deps.Auth, access: deps.Access,
 		audit: deps.Audit, products: deps.Products, processes: deps.Processes,
 		numbering: deps.Numbering, changes: deps.Changes, approval: deps.Approval, settings: deps.Settings,
-		templates: deps.Templates, processTemplates: deps.ProcessTemplates, documents: deps.Documents, refDocs: deps.RefDocs, changeRequests: deps.ChangeRequests, log: log,
+		templates: deps.Templates, processTemplates: deps.ProcessTemplates, documents: deps.Documents, refDocs: deps.RefDocs, changeRequests: deps.ChangeRequests, printing: deps.Printing, log: log,
 	}
 
 	// Route dari kontrak didaftarkan oleh kode hasil generate ke mux khusus API.
@@ -363,5 +379,6 @@ type apiServer struct {
 	documents        DocumentService
 	refDocs          RefDocService
 	changeRequests   ChangeRequestService
+	printing         PrintService
 	log              *slog.Logger
 }

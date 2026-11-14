@@ -93,7 +93,7 @@ func (a *apiServer) GetSystemSettings(ctx context.Context, _ GetSystemSettingsRe
 // UpdateSystemSettings menjawab PUT /api/v1/system-settings. Saklar yang
 // tidak dikirim tetap seperti sebelumnya (E-34).
 func (a *apiServer) UpdateSystemSettings(ctx context.Context, req UpdateSystemSettingsRequestObject) (UpdateSystemSettingsResponseObject, error) {
-	in := settings.Update{SignDatesEnabled: req.Body.SignDatesEnabled}
+	in := settings.Update{SignDatesEnabled: req.Body.SignDatesEnabled, QREnabled: req.Body.QrEnabled}
 	if req.Body.FormApprovalMode != nil {
 		mode := string(*req.Body.FormApprovalMode)
 		in.FormApprovalMode = &mode
@@ -107,7 +107,7 @@ func (a *apiServer) UpdateSystemSettings(ctx context.Context, req UpdateSystemSe
 
 // toAPISettings mengubah Settings domain menjadi SystemSettings kontrak API.
 func toAPISettings(s settings.Settings) SystemSettings {
-	return SystemSettings{SignDatesEnabled: s.SignDatesEnabled, FormApprovalMode: SystemSettingsFormApprovalMode(s.FormApprovalMode)}
+	return SystemSettings{SignDatesEnabled: s.SignDatesEnabled, QrEnabled: s.QREnabled, FormApprovalMode: SystemSettingsFormApprovalMode(s.FormApprovalMode)}
 }
 
 // toAPIPosition mengubah Position domain menjadi Position kontrak API.

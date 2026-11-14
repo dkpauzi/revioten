@@ -19,7 +19,7 @@ UPDATE documents SET revision = $2, status = 'draft', updated_at = now() WHERE i
 
 -- name: ListDocumentRevisions :many
 SELECT r.id, r.revision, r.status, p.name AS created_by, r.created_at, r.released_at,
-       r.snapshot_sha256, rp.name AS released_by
+       r.snapshot_sha256, rp.name AS released_by, r.release_date, r.scan_file_name
 FROM document_revisions r JOIN people p ON p.id = r.created_by_person_id
 LEFT JOIN people rp ON rp.id = r.released_by_person_id
 WHERE r.document_id = $1
@@ -39,7 +39,8 @@ ORDER BY c.seq;
 
 -- name: ReleaseDocumentRevision :execrows
 UPDATE document_revisions
-SET status = 'released', released_at = now(), snapshot = sqlc.arg(snapshot), snapshot_sha256 = sqlc.arg(sha256),
+SET status = 'released', released_at = now(), release_date = coalesce(release_date, current_date),
+    snapshot = sqlc.arg(snapshot), snapshot_sha256 = sqlc.arg(sha256),
     released_by_person_id = sqlc.arg(person_id), released_by_account_id = sqlc.arg(account_id)
 WHERE id = sqlc.arg(id) AND status = 'draft';
 
@@ -49,12 +50,14 @@ UPDATE documents SET status = 'released', released_revision = $2, updated_at = n
 -- name: PreparedDraft :one
 -- PreparedDraft melaporkan apakah orang itu ikut menyusun draft yang
 -- terbuka: ada entri audit perubahan isi dokumen olehnya sesudah rilis
--- terakhir dokumen itu (R-APR-02, ASUMSI E-102). Membuka draft lewat
--- verifikasi tidak dihitung sebagai menyusun.
+-- terakhir dokumen itu (R-APR-02, D-166). Membuka draft, mencetak, dan
+-- mengunggah scan tidak dihitung sebagai menyusun.
 SELECT EXISTS (
     SELECT 1 FROM audit_log a
     WHERE a.target_id = sqlc.arg(document_id) AND a.actor_person_id = sqlc.arg(person_id)
-      AND a.action LIKE 'document.%' AND a.action NOT IN ('document.draft_opened', 'document.released')
+      AND a.action LIKE 'document.%'
+      -- Bukan perubahan isi: membuka draft, rilis, cetak, unggah scan, dan mode tautan template.
+      AND a.action NOT IN ('document.draft_opened', 'document.released', 'document.printed', 'document.scan_uploaded', 'document.template_mode_changed')
       AND a.seq > coalesce((SELECT max(r.seq) FROM audit_log r WHERE r.target_id = sqlc.arg(document_id) AND r.action = 'document.released'), 0)
 );
 

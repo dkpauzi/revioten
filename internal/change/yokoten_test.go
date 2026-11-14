@@ -127,6 +127,7 @@ func TestYokoten(t *testing.T) {
 	}
 	recorder := doctest.NewActor(t, e.Pool, "dcc.uji", "work", doctest.All(access.RoleDocumentControl))
 	for _, key := range []string{"pfd", "pfmea"} {
+		doctest.AttachScan(t, e.Pool, k200set[key].ID)
 		if _, err := e.Docs.Release(ctx, recorder, k200set[key].ID); err != nil {
 			t.Fatal(err)
 		}
@@ -135,6 +136,7 @@ func TestYokoten(t *testing.T) {
 	if y, _ = s.GetYokoten(ctx, e.Author, y.ID); y.Targets[0].Progress != ProgressInDraft {
 		t.Errorf("sebagian terbit: %s", y.Targets[0].Progress)
 	}
+	doctest.AttachScan(t, e.Pool, k200.ID)
 	if _, err := e.Docs.Release(ctx, recorder, k200.ID); err != nil {
 		t.Fatal(err)
 	}

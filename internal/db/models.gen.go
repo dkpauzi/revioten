@@ -148,6 +148,12 @@ type CustomerCode struct {
 	ValidUntil *time.Time
 }
 
+type CustomerPrintLayout struct {
+	CustomerID     string
+	DocumentTypeID string
+	LayoutID       string
+}
+
 type Document struct {
 	ID                string
 	DocumentNumberID  string
@@ -201,19 +207,26 @@ type DocumentPointExclusion struct {
 }
 
 type DocumentRevision struct {
-	ID                  string
-	DocumentID          string
-	Revision            int16
-	Status              string
-	CreatedByPersonID   string
-	CreatedAt           time.Time
-	ReleasedAt          *time.Time
-	Snapshot            *string
-	SnapshotSha256      *string
-	ReleasedByPersonID  *string
-	ReleasedByAccountID *string
-	CustomerVisible     bool
-	PortalPublishedAt   *time.Time
+	ID                     string
+	DocumentID             string
+	Revision               int16
+	Status                 string
+	CreatedByPersonID      string
+	CreatedAt              time.Time
+	ReleasedAt             *time.Time
+	Snapshot               *string
+	SnapshotSha256         *string
+	ReleasedByPersonID     *string
+	ReleasedByAccountID    *string
+	CustomerVisible        bool
+	PortalPublishedAt      *time.Time
+	ReleaseDate            pgtype.Date
+	ScanFileName           *string
+	ScanContentType        *string
+	ScanSizeBytes          *int64
+	ScanSha256             *string
+	ScanUploadedByPersonID *string
+	ScanUploadedAt         *time.Time
 }
 
 type DocumentRow struct {
@@ -458,6 +471,31 @@ type PositionHolder struct {
 	CreatedAt       time.Time
 }
 
+type PrintLayout struct {
+	ID                string
+	Name              string
+	DocumentTypeID    string
+	IsDefault         bool
+	Layout            []byte
+	UpdatedByPersonID *string
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
+}
+
+type PrintLog struct {
+	ID                 string
+	DocumentID         string
+	RevisionID         string
+	Revision           int16
+	Purpose            string
+	Format             string
+	CopyNumber         *int32
+	ContentSha256      string
+	PrintedByPersonID  string
+	PrintedByAccountID string
+	PrintedAt          time.Time
+}
+
 type Process struct {
 	ID        string
 	CreatedAt time.Time
@@ -594,6 +632,7 @@ type SystemSetting struct {
 	ID               string
 	SignDatesEnabled bool
 	FormApprovalMode string
+	QrEnabled        bool
 }
 
 type TemplatePoint struct {

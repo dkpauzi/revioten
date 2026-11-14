@@ -35,6 +35,12 @@ type config struct {
 	// AttachmentDir dari ATTACHMENT_DIR: folder privat lampiran perubahan
 	// (M5.2). Bawaannya data/attachments, yang tidak di-commit.
 	AttachmentDir string
+	// PDFBrowser dari PDF_BROWSER: lokasi Chrome atau Edge untuk PDF (M6.3);
+	// kosong berarti dicari otomatis.
+	PDFBrowser string
+	// PublicBaseURL dari PUBLIC_BASE_URL: alamat aplikasi di QR (M6.5);
+	// kosong berarti alamat server.
+	PublicBaseURL string
 }
 
 // loadConfig membaca pengaturan dari environment dan dari file .env.
@@ -115,6 +121,7 @@ func loadConfig(getenv func(string) string, envFile string) (config, error) {
 		OwnerUser: owner.User.Username(), Database: strings.TrimPrefix(owner.Path, "/"),
 		BackupDir: get("BACKUP_DIR"), BackupPassphrase: get("BACKUP_PASSPHRASE"),
 		AttachmentDir: cmp.Or(get("ATTACHMENT_DIR"), filepath.Join("data", "attachments")),
+		PDFBrowser:    get("PDF_BROWSER"), PublicBaseURL: get("PUBLIC_BASE_URL"),
 	}, nil
 }
 
