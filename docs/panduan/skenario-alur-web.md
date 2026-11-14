@@ -1,4 +1,4 @@
-# Skenario alur web: dari nol sampai nomor dokumen
+# Skenario alur web: dari nol sampai dokumen draft
 
 - **Dibuat:** 8 November 2026, setelah M3.3. Akan diperbarui setiap milestone menambah layar.
 - **Untuk siapa:** pemilik, untuk mencoba seluruh sistem dari database kosong secara berurutan.
@@ -275,15 +275,62 @@ Logout, lalu login dengan `ppap.staff` dan ganti password seperti langkah 8.
    - tekan **Preview** dan periksa laporannya: nomor yang akan diimpor, baris yang ditolak beserta alasannya, celah nomor, dan set yang tidak sejajar;
    - bila sudah benar, tekan **Import**.
 
-## 7. Admin: periksa jejak
+## 7. Penyusun: dokumen draft (Tahap 4)
 
-### Langkah 15 · Audit log
+Akun `ppap.engineer` di contoh ini memegang peran Author, Template maintainer, Form approver, dan PFMEA–CP checker. Dalam pemakaian sebenarnya, Form approver biasanya PPAP Supervisor (D-139) dan tanda dicek diberikan PPAP Engineer (D-65).
+
+### Langkah 15 · Terbitkan form set
+Dokumen hanya bisa dibuat dari form set customer yang sudah terbit.
+
+1. Sebagai admin, buka **Template library → Format templates**. Pilih **PFD · PFD**, tekan **Publish version 1**, lalu jawab **OK**. Ulangi untuk **PFMEA AIAG 4th · PFMEA** dan **CP · CP**.
+2. Sebagai Form approver, buka **Template library → Form sets**. Pada **AIAG 4th set**, tekan **Publish version 1**, lalu jawab **OK**. Penyusun draft form set tidak bisa menerbitkannya sendiri.
+
+### Langkah 16 · Set nomor untuk dokumen
+Di **Documents → Numbers**, daftarkan satu set untuk customer `LM` seperti langkah 13. Hasilnya, misalnya, SH-LM-002, SF-LM-002, dan SC-LM-002 berstatus Reserved.
+
+### Langkah 17 · Buat dokumen
+Menu **Documents → Documents**.
+
+1. **Customer**: pilih `LM`.
+2. **Document number**: pilih `SH-LM-002 · PFD`. Centang model `K-125`. Tekan **Make document**.
+3. Ulangi untuk `SF-LM-002 · PFMEA` dan `SC-LM-002 · CP`. Nomornya berubah dari Reserved menjadi In use.
+4. Tekan nomor dokumen di daftar untuk membukanya. Bagian atas berisi header; di bawahnya **workbook** dengan tab **PFD**, **PFMEA**, **CP**, dan **Check**.
+
+### Langkah 18 · Rakit dari process template
+1. Di dokumen CP, tekan **Compose from process templates**.
+2. **Process template**: pilih `Laser marking · version 1` (hanya versi terbit yang muncul).
+3. Kiri: centang sub-proses `Marking` untuk memakai semua poinnya, atau centang poin satu per satu. Poin tanpa centang boleh diberi alasan.
+4. Kanan: periksa baris yang akan didapat PFD, PFMEA, dan CP.
+5. Tekan **Apply**. Ketiga dokumen terisi sekaligus. Model K-125 mendapat teks varian `fiber 20 W`, dan isi kolom diambil dari **Columns** poin (langkah 10).
+
+Cara lain mengisi baris:
+- **Add row** menambah baris kosong yang diketik langsung di tabel.
+- **Copy from another model** (hanya selama dokumen masih kosong) menyalin baris dokumen model serupa untuk seluruh set.
+- **Paste from Excel** ada, tetapi dikesampingkan dulu (D-151).
+
+### Langkah 19 · Ubah sel, urutkan, dan bandingkan
+1. Klik sel di tabel, ketik, lalu klik di luar tabel. Barisnya tersimpan; pop-up "The row was saved." muncul. Bila orang lain lebih dulu menyimpan baris yang sama, perubahan Anda tidak disimpan dan isi terbaru ditampilkan (M4.3).
+2. **Order and operation numbers**: seret langkah proses atau pakai tombol panah, centang penomoran otomatis (10, 20, 30), lalu **Save order**. Nomor yang Anda ketik sendiri tidak diubah.
+3. **Compare with template**: setiap baris hasil perakitan tampil **Same as template**, **Different from template** (dengan kolom yang berbeda), atau **Detached**. **Detach** memutus tautan satu baris; alasannya wajib.
+
+### Langkah 20 · Cek PFMEA dan CP
+1. Tekan tab **Check**. PFMEA dan CP tampil berdampingan, satu proses demi satu proses.
+2. Periksa bahwa setiap failure mode dan kontrol di PFMEA tercakup di CP.
+3. Pemegang PFMEA–CP checker menekan **Mark as checked**. Tanda menyimpan nama dan waktunya untuk revisi saat ini.
+4. Bila baris proses itu ditambah, diubah, atau dihapus sesudahnya, tanda tampil **Changed after the check**. Cek lagi dan tekan **Mark as checked** sekali lagi.
+
+### Langkah 21 · Diagram PFD
+Buka tab **PFD**, lalu tekan **Show the diagram**. Satu kotak per baris menurut urutan, bentuknya mengikuti **Flow Symbol**, dan **NG Disposition** digambar di samping langkahnya. Diagram hanya untuk dilihat; ubah barisnya di tabel.
+
+## 8. Admin: periksa jejak
+
+### Langkah 22 · Audit log
 Logout, lalu login lagi sebagai `admin.contoh`. Buka **Admin → Audit log**.
 
 1. Setiap langkah di atas tercatat: siapa, kapan, apa, dan akun mana (termasuk orang pemegangnya).
 2. Tekan **Check the chain** untuk memastikan catatan tidak pernah diubah. Audit log tidak bisa diedit siapa pun, juga lewat database.
 
-## 8. Bila ada masalah
+## 9. Bila ada masalah
 
 | Masalah | Penyebab yang biasa | Yang dilakukan |
 |---|---|---|
@@ -293,14 +340,16 @@ Logout, lalu login lagi sebagai `admin.contoh`. Buka **Admin → Audit log**.
 | Akun admin lupa password atau terkunci | — | `go run ./cmd/revioten reset-admin-password -login admin.contoh` |
 | Salah 10 kali saat login | Akun dikunci 15 menit | Tunggu 15 menit |
 | Halaman kosong atau galat setelah update kode | Server lama masih berjalan | Ctrl+C di jendela server, lalu `go run ./cmd/revioten` lagi |
+| Make document menolak: form set belum terbit | Form set customer belum diterbitkan Form approver | Langkah 15 |
+| Tombol Compose tidak menampilkan proses | Process template belum punya versi terbit | Langkah 12 |
+| Tab Check tidak ada | Dokumen bukan bagian set yang punya PFMEA dan CP | Daftarkan nomor sebagai set (langkah 16) |
 
-## 9. Yang belum ada di sistem (urutan milestone)
+## 10. Yang belum ada di sistem (urutan milestone)
 
 Langkah ini akan ditambahkan ke panduan saat milestone-nya selesai.
 
 | Milestone | Langkah yang akan muncul |
 |---|---|
-| M4.x | Membuat draft PFD, PFMEA, dan CP dari nomor yang sudah didaftarkan, lalu merakit baris dari process template untuk satu model (varian otomatis terpilih) |
-| M4.5 | Doc ref terisi dari master dokumen terkait (D-130) |
+| Belum dijadwalkan | Doc ref (Relevant Document) terisi dari master dokumen terkait (D-130, R-DOC-11) |
 | Tahap 5 | Permintaan perubahan, verifikasi, dan draft revisi |
 | Tahap 6 | Cetak untuk tanda tangan basah, catat dokumen kembali, dan catat rilis (pencatat rilis harus berbeda dari penyusun) |
