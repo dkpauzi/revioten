@@ -133,12 +133,12 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-109 | Scan bertanda tangan: jenis, ukuran, pengunggah, dan penggantian | Celah | M6.7 | Tidak | Diputuskan (D-173) |
 | E-110 | Rincian cetakan yang belum diputuskan | Celah | M6.1 sampai M6.9 | Tidak | Diputuskan (D-174) |
 | E-111 | Layout sebagai data: apa yang bisa diatur admin | Ambigu | M6.1, R-PRT-02 | Tidak | Diputuskan (D-175) |
-| E-112 | Pembanding Excel (M7.3) berhadapan dengan D-151 | Kontradiksi | M7.3 | Tidak | Terbuka |
-| E-113 | Verifikasi hardcopy: siapa pemeriksanya dan apa buktinya | Celah | M7.5 | Tidak | Terbuka |
-| E-114 | Penautan baris: metode dan ambang kemiripan | Celah | M7.4 | Tidak | Terbuka |
-| E-115 | Mode migrasi: bawaan dan cakupan saklarnya | Celah | M7.5, UC-07 | Tidak | Terbuka |
-| E-116 | Form dokumen lama dan riwayat teks: field dan aturannya | Celah | M7.1, M7.2 | Tidak | Terbuka |
-| E-117 | Dasbor ukuran: definisi setiap angka | Ambigu | M7.6, M7.7 | Tidak | Terbuka |
+| E-112 | Pembanding Excel (M7.3) berhadapan dengan D-151 | Kontradiksi | M7.3 | Tidak | Diputuskan (D-176) |
+| E-113 | Verifikasi hardcopy: siapa pemeriksanya dan apa buktinya | Celah | M7.5 | Tidak | Diputuskan (D-177) |
+| E-114 | Penautan baris: metode dan ambang kemiripan | Celah | M7.4 | Tidak | Diputuskan (D-178) |
+| E-115 | Mode migrasi: bawaan dan cakupan saklarnya | Celah | M7.5, UC-07 | Tidak | Diputuskan (D-179) |
+| E-116 | Form dokumen lama dan riwayat teks: field dan aturannya | Celah | M7.1, M7.2 | Tidak | Diputuskan (D-180) |
+| E-117 | Dasbor ukuran: definisi setiap angka | Ambigu | M7.6, M7.7 | Tidak | Diputuskan (D-181) |
 
 ## Keputusan 4 November 2026
 
@@ -2036,8 +2036,8 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (a). Cukup untuk menangkap salah ketik dan baris yang terlewat, tanpa biaya pemetaan kolom. (b) baru layak bila pilot menunjukkan salah kolom sering terjadi.
 - **Asumsi sementara di kode (ASUMSI E-112):** (a).
 - **Menghambat milestone?** Tidak
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan (D-176)
+- **Keputusan pemilik:** 15 November 2026, "Ya, terima semua" (D-176).
 
 ### E-113 · Verifikasi hardcopy: siapa pemeriksanya dan apa buktinya
 
@@ -2049,8 +2049,8 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (a). Baseline menjadi titik awal semua revisi berikutnya, jadi buktinya harus sekuat rilis biasa. Dua petugas migrasi yang ada (PPAP Staff dan PPAP Engineer, D-69) cukup untuk saling memeriksa.
 - **Asumsi sementara di kode (ASUMSI E-113):** (a).
 - **Menghambat milestone?** Tidak
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan (D-177)
+- **Keputusan pemilik:** 15 November 2026, "Ya, terima semua" (D-177).
 
 ### E-114 · Penautan baris: metode dan ambang kemiripan
 
@@ -2062,8 +2062,8 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (a) untuk pilot, lalu ukur: berapa usulan yang dikonfirmasi dan berapa yang ditolak. (b) hanya bila angka pilot menunjukkan ambang perlu digeser.
 - **Asumsi sementara di kode (ASUMSI E-114):** (a).
 - **Menghambat milestone?** Tidak
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan (D-178)
+- **Keputusan pemilik:** 15 November 2026, "Ya, terima semua" (D-178).
 
 ### E-115 · Mode migrasi: bawaan dan cakupan saklarnya
 
@@ -2075,8 +2075,8 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (a). Saklar global sederhana dan cocok dengan pilot satu customer. Per customer baru perlu bila migrasi berjalan bergelombang di versi perusahaan (R-MIG-08).
 - **Asumsi sementara di kode (ASUMSI E-115):** (a).
 - **Menghambat milestone?** Tidak
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan (D-179)
+- **Keputusan pemilik:** 15 November 2026, "Ya, terima semua" (D-179).
 
 ### E-116 · Form dokumen lama dan riwayat teks: field dan aturannya
 
@@ -2088,8 +2088,8 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (a). Teks bebas mengikuti R-MIG-01 (dokumen lama tidak dirapikan). (c) bisa ditambah bila auditor meminta berkas aslinya.
 - **Asumsi sementara di kode (ASUMSI E-116):** (a).
 - **Menghambat milestone?** Tidak
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan (D-180)
+- **Keputusan pemilik:** 15 November 2026, "Ya, terima semua" (D-180).
 
 ### E-117 · Dasbor ukuran: definisi setiap angka
 
@@ -2101,8 +2101,8 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (a), dengan menit diketik tangan untuk pilot. Untuk QCC, pakai median (tahan terhadap satu dokumen yang lama terbengkalai) dan sebut sebagai hasil demo (RK-50).
 - **Asumsi sementara di kode (ASUMSI E-117):** (a).
 - **Menghambat milestone?** Tidak
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan (D-181)
+- **Keputusan pemilik:** 15 November 2026, "Ya, terima semua" (D-181).
 
 ## Usulan desain UI (UX-01 sampai UX-07): dampak ke M0 sampai M3 dan saran
 
