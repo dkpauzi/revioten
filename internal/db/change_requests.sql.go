@@ -10,6 +10,37 @@ import (
 	"time"
 )
 
+const addChangeAttachment = `-- name: AddChangeAttachment :one
+
+INSERT INTO change_attachments (change_id, file_name, content_type, size_bytes, sha256, uploaded_by_person_id)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id
+`
+
+type AddChangeAttachmentParams struct {
+	ChangeID           string
+	FileName           string
+	ContentType        string
+	SizeBytes          int64
+	Sha256             string
+	UploadedByPersonID string
+}
+
+// M5.2: lampiran.
+func (q *Queries) AddChangeAttachment(ctx context.Context, arg AddChangeAttachmentParams) (string, error) {
+	row := q.db.QueryRow(ctx, addChangeAttachment,
+		arg.ChangeID,
+		arg.FileName,
+		arg.ContentType,
+		arg.SizeBytes,
+		arg.Sha256,
+		arg.UploadedByPersonID,
+	)
+	var id string
+	err := row.Scan(&id)
+	return id, err
+}
+
 const addChangeDocument = `-- name: AddChangeDocument :exec
 INSERT INTO change_documents (change_id, document_id) VALUES ($1, $2)
 `
@@ -195,6 +226,52 @@ func (q *Queries) GetDocumentForChange(ctx context.Context, id string) (GetDocum
 	return i, err
 }
 
+const listChangeAttachments = `-- name: ListChangeAttachments :many
+SELECT a.id, a.file_name, a.content_type, a.size_bytes, a.sha256, p.name AS uploaded_by, a.uploaded_at
+FROM change_attachments a
+JOIN people p ON p.id = a.uploaded_by_person_id
+WHERE a.change_id = $1 AND a.removed_at IS NULL
+ORDER BY a.uploaded_at, a.id
+`
+
+type ListChangeAttachmentsRow struct {
+	ID          string
+	FileName    string
+	ContentType string
+	SizeBytes   int64
+	Sha256      string
+	UploadedBy  string
+	UploadedAt  time.Time
+}
+
+func (q *Queries) ListChangeAttachments(ctx context.Context, changeID string) ([]ListChangeAttachmentsRow, error) {
+	rows, err := q.db.Query(ctx, listChangeAttachments, changeID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListChangeAttachmentsRow{}
+	for rows.Next() {
+		var i ListChangeAttachmentsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.FileName,
+			&i.ContentType,
+			&i.SizeBytes,
+			&i.Sha256,
+			&i.UploadedBy,
+			&i.UploadedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listChangeDocuments = `-- name: ListChangeDocuments :many
 SELECT d.id, n.number, t.id AS document_type_id, t.key AS document_type_key, t.name AS document_type_name, d.revision, d.status
 FROM change_documents cd
@@ -302,6 +379,24 @@ SELECT id FROM changes WHERE id = $1 FOR NO KEY UPDATE
 func (q *Queries) LockChange(ctx context.Context, id string) error {
 	_, err := q.db.Exec(ctx, lockChange, id)
 	return err
+}
+
+const removeChangeAttachment = `-- name: RemoveChangeAttachment :execrows
+UPDATE change_attachments SET removed_at = now()
+WHERE id = $1 AND change_id = $2 AND removed_at IS NULL
+`
+
+type RemoveChangeAttachmentParams struct {
+	ID       string
+	ChangeID string
+}
+
+func (q *Queries) RemoveChangeAttachment(ctx context.Context, arg RemoveChangeAttachmentParams) (int64, error) {
+	result, err := q.db.Exec(ctx, removeChangeAttachment, arg.ID, arg.ChangeID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const removeChangeDocument = `-- name: RemoveChangeDocument :execrows

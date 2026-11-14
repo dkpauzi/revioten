@@ -690,6 +690,24 @@ export function removeChangeDocument(id: string, documentId: string, fetchFn: ty
 	return call<Change>(fetchFn, `${itemPath('changes', id)}/documents/${encodeURIComponent(documentId)}`, { method: 'DELETE' });
 }
 
+// addChangeAttachment memanggil POST /api/v1/changes/{id}/attachments (E-3, M5.2).
+// Berkas dikirim sebagai multipart; browser mengisi Content-Type beserta batasnya.
+export function addChangeAttachment(id: string, file: File, fetchFn: typeof fetch = fetch): Promise<ApiResult<Change>> {
+	const form = new FormData();
+	form.append('file', file);
+	return call<Change>(fetchFn, itemPath('changes', id) + '/attachments', { method: 'POST', body: form });
+}
+
+// removeChangeAttachment memanggil DELETE /api/v1/changes/{id}/attachments/{attachmentId} (E-3).
+export function removeChangeAttachment(id: string, attachmentId: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<Change>> {
+	return call<Change>(fetchFn, changeAttachmentUrl(id, attachmentId), { method: 'DELETE' });
+}
+
+// changeAttachmentUrl adalah alamat unduhan satu lampiran (L-4).
+export function changeAttachmentUrl(id: string, attachmentId: string): string {
+	return `${itemPath('changes', id)}/attachments/${encodeURIComponent(attachmentId)}`;
+}
+
 // listDocumentChanges memanggil GET /api/v1/documents/{id}/changes (L-4).
 export function listDocumentChanges(id: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<ChangeList>> {
 	return call<ChangeList>(fetchFn, itemPath('documents', id) + '/changes', { method: 'GET' });

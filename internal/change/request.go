@@ -21,6 +21,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/audit"
 	"github.com/dkpauzi/revioten/internal/db"
 	"github.com/dkpauzi/revioten/internal/problem"
+	"github.com/dkpauzi/revioten/internal/storage"
 )
 
 // Mekanisme manual: perubahan yang diajukan orang lewat layar.
@@ -58,6 +59,7 @@ type Change struct {
 	RequestedBy     string             // nama orang pemohon
 	RequestedByID   string             // ID orang pemohon
 	Documents       []AffectedDocument // menurut jenis dokumen lalu nomor; tidak pernah nil
+	Attachments     []Attachment       // lampiran aktif menurut waktu unggah; tidak pernah nil (M5.2)
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 }
@@ -87,6 +89,7 @@ type RequestService struct {
 	pool  *pgxpool.Pool
 	q     *db.Queries
 	authz access.Authorizer
+	store *storage.Store // lampiran (M5.2); nil berarti unggahan ditolak
 }
 
 // NewRequestService membuat layanan perubahan.
@@ -301,6 +304,9 @@ func getChange(ctx context.Context, q *db.Queries, id string) (Change, error) {
 	}
 	if r.FourMCategoryID != nil {
 		c.FourM = &Ref{ID: *r.FourMCategoryID, Key: deref(r.FourMKey), Name: deref(r.FourMName)}
+	}
+	if c.Attachments, err = attachments(ctx, q, id); err != nil {
+		return Change{}, err
 	}
 	docs, err := q.ListChangeDocuments(ctx, id)
 	if err != nil {

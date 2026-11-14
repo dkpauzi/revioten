@@ -69,6 +69,18 @@ type Change struct {
 	UpdatedAt            time.Time
 }
 
+type ChangeAttachment struct {
+	ID                 string
+	ChangeID           string
+	FileName           string
+	ContentType        string
+	SizeBytes          int64
+	Sha256             string
+	UploadedByPersonID string
+	UploadedAt         time.Time
+	RemovedAt          *time.Time
+}
+
 type ChangeDocument struct {
 	ChangeID   string
 	DocumentID string

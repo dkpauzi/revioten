@@ -5,10 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/fs"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strconv"
 	"strings"
 	"testing"
@@ -1046,6 +1048,7 @@ type fakeChangeRequests struct {
 	err    error
 	got    called
 	gotNew change.NewChange
+	file   string // isi berkas OpenAttachment
 }
 
 func (f *fakeChangeRequests) List(_ context.Context, _ access.Actor, customerID string) ([]change.Change, error) {
@@ -1076,4 +1079,30 @@ func (f *fakeChangeRequests) AddDocument(_ context.Context, _ access.Actor, id, 
 func (f *fakeChangeRequests) RemoveDocument(_ context.Context, _ access.Actor, id, documentID string) (change.Change, error) {
 	f.got = called{method: "RemoveDocument", id: id, input: documentID}
 	return f.c, f.err
+}
+
+func (f *fakeChangeRequests) AddAttachment(_ context.Context, _ access.Actor, id, fileName string, r io.Reader) (change.Change, error) {
+	body, _ := io.ReadAll(r)
+	f.got = called{method: "AddAttachment", id: id, input: fileName + ":" + string(body)}
+	return f.c, f.err
+}
+
+func (f *fakeChangeRequests) RemoveAttachment(_ context.Context, _ access.Actor, id, attachmentID string) (change.Change, error) {
+	f.got = called{method: "RemoveAttachment", id: id, input: attachmentID}
+	return f.c, f.err
+}
+
+// OpenAttachment membuka berkas sementara berisi f.file.
+func (f *fakeChangeRequests) OpenAttachment(_ context.Context, _ access.Actor, id, attachmentID string) (change.Attachment, *os.File, error) {
+	f.got = called{method: "OpenAttachment", id: id, input: attachmentID}
+	if f.err != nil {
+		return change.Attachment{}, nil, f.err
+	}
+	tmp, err := os.CreateTemp("", "fake-attachment-")
+	if err != nil {
+		return change.Attachment{}, nil, err
+	}
+	_, _ = tmp.WriteString(f.file)
+	_, _ = tmp.Seek(0, io.SeekStart)
+	return change.Attachment{ID: attachmentID, FileName: "8D report.pdf"}, tmp, nil
 }

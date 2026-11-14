@@ -1809,6 +1809,22 @@ Salin blok ini untuk setiap temuan baru.
 - **Status:** Terbuka
 - **Keputusan pemilik:**
 
+## E-99 · Batas dan jenis berkas lampiran, tanpa antivirus
+
+- **Tanggal dan milestone:** 14 November 2026, M5.2.
+- **Jenis:** Celah
+- **Rujukan:** R-CHG-01 (lampiran), R-SEC-04 (penyimpanan berkas privat), brief bagian 7 (ClamAV "nanti").
+- **Temuan:** brief tidak menyebut ukuran paling besar lampiran, jenis berkas yang boleh, dan apa yang terjadi sebelum antivirus (ClamAV) dipasang. Berkas juga tidak masuk dump database, jadi backup M1.7 belum memuatnya.
+- **Opsi:**
+  - (a) 20 MB, daftar jenis tetap (PDF, gambar, Excel, Word, Outlook, teks, CSV), tanpa pemindaian sampai Tahap 8; folder lampiran disalin manual bersama backup.
+  - (b) Seperti (a), tetapi daftar jenis dan ukuran diatur admin di Settings.
+  - (c) Seperti (a), dan backup M1.7 ikut mengenkripsi folder lampiran.
+- **Rekomendasi Claude Code (usulan):** (a) sekarang, (c) sebelum dipakai sungguhan.
+- **Asumsi sementara di kode (ASUMSI E-99):** opsi (a). Berkas disimpan di `ATTACHMENT_DIR` (bawaan `data/attachments`) dengan nama SHA-256 isinya, selalu diunduh sebagai attachment, dan lampiran yang dilepas hanya ditandai (catatan dan berkas tetap ada).
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
 ## Usulan desain UI (UX-01 sampai UX-07): dampak ke M0 sampai M3 dan saran
 
 - **Sumber:** `docs/uml/usulan-desain-ui.md` (UML draft 0.12, 3 November 2026) dan kanvas desain UI "Desain UI Sistem PFD PFMEA CP" (18 artboard, baris v2 disarankan).

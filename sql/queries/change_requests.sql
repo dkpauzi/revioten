@@ -64,3 +64,22 @@ SELECT EXISTS (SELECT 1 FROM change_types WHERE id = $1);
 
 -- name: FourMCategoryExists :one
 SELECT EXISTS (SELECT 1 FROM four_m_categories WHERE id = $1);
+
+
+-- M5.2: lampiran.
+
+-- name: AddChangeAttachment :one
+INSERT INTO change_attachments (change_id, file_name, content_type, size_bytes, sha256, uploaded_by_person_id)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id;
+
+-- name: ListChangeAttachments :many
+SELECT a.id, a.file_name, a.content_type, a.size_bytes, a.sha256, p.name AS uploaded_by, a.uploaded_at
+FROM change_attachments a
+JOIN people p ON p.id = a.uploaded_by_person_id
+WHERE a.change_id = $1 AND a.removed_at IS NULL
+ORDER BY a.uploaded_at, a.id;
+
+-- name: RemoveChangeAttachment :execrows
+UPDATE change_attachments SET removed_at = now()
+WHERE id = $1 AND change_id = $2 AND removed_at IS NULL;

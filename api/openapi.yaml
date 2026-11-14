@@ -1950,6 +1950,72 @@ paths:
                 $ref: '#/components/schemas/Change'
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/changes/{changeId}/attachments:
+    post:
+      operationId: addChangeAttachment
+      summary: Attach a supporting file to a submitted change (E-3, M5.2)
+      description: >-
+        The file goes to private storage under its SHA-256. Allowed are PDF, pictures (PNG, JPEG), Excel, Word,
+        Outlook messages, text, and CSV, up to 20 MB.
+      parameters:
+        - $ref: '#/components/parameters/ChangeId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: The change after the change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Change'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/changes/{changeId}/attachments/{attachmentId}:
+    get:
+      operationId: getChangeAttachment
+      summary: Download one attachment of a change (L-4)
+      parameters:
+        - $ref: '#/components/parameters/ChangeId'
+        - $ref: '#/components/parameters/AttachmentId'
+      responses:
+        '200':
+          description: The file, always as a download.
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        default:
+          $ref: '#/components/responses/Error'
+    delete:
+      operationId: removeChangeAttachment
+      summary: Remove one attachment from a submitted change (E-3)
+      description: The record stays in the audit log; the file can no longer be downloaded.
+      parameters:
+        - $ref: '#/components/parameters/ChangeId'
+        - $ref: '#/components/parameters/AttachmentId'
+      responses:
+        '200':
+          description: The change after the change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Change'
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/documents/{documentId}/changes:
     get:
       operationId: listDocumentChanges
@@ -2704,6 +2770,12 @@ components:
         type: string
     FormatFieldId:
       name: formatFieldId
+      in: path
+      required: true
+      schema:
+        type: string
+    AttachmentId:
+      name: attachmentId
       in: path
       required: true
       schema:
@@ -4500,7 +4572,7 @@ components:
             $ref: '#/components/schemas/Change'
     Change:
       type: object
-      required: [id, ref, customer_id, customer_code, mechanism, change_type, reason, status, requested_by, documents, created_at, updated_at]
+      required: [id, ref, customer_id, customer_code, mechanism, change_type, reason, status, requested_by, documents, attachments, created_at, updated_at]
       properties:
         id:
           type: string
@@ -4536,10 +4608,35 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AffectedDocument'
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChangeAttachment'
         created_at:
           type: string
           format: date-time
         updated_at:
+          type: string
+          format: date-time
+    ChangeAttachment:
+      type: object
+      required: [id, file_name, content_type, size, sha256, uploaded_by, uploaded_at]
+      properties:
+        id:
+          type: string
+        file_name:
+          type: string
+        content_type:
+          type: string
+        size:
+          type: integer
+          format: int64
+        sha256:
+          type: string
+          description: SHA-256 of the content, so anyone can check the file was not changed.
+        uploaded_by:
+          type: string
+        uploaded_at:
           type: string
           format: date-time
     ChangeRef:

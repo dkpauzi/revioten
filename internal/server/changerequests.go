@@ -4,9 +4,14 @@ package server
 // internal/change/request.go; handler hanya menerjemahkan bentuk data.
 
 import (
+	"bytes"
 	"context"
+	"errors"
+	"io"
+	"net/url"
 
 	"github.com/dkpauzi/revioten/internal/change"
+	"github.com/dkpauzi/revioten/internal/problem"
 )
 
 // ListChanges menjawab GET /api/v1/changes?customer_id=.
@@ -82,6 +87,12 @@ func toAPIChange(c change.Change) Change {
 		Id: c.ID, Ref: c.Ref, CustomerId: c.CustomerID, CustomerCode: c.CustomerCode, Mechanism: ChangeMechanism(c.Mechanism),
 		ChangeType: ref(c.ChangeType), Reason: c.Reason, SourceReference: optional(c.SourceReference), Status: ChangeStatus(c.Status),
 		RequestedBy: c.RequestedBy, Documents: make([]AffectedDocument, 0, len(c.Documents)), CreatedAt: c.CreatedAt, UpdatedAt: c.UpdatedAt,
+		Attachments: make([]ChangeAttachment, 0, len(c.Attachments)),
+	}
+	for _, x := range c.Attachments {
+		out.Attachments = append(out.Attachments, ChangeAttachment{
+			Id: x.ID, FileName: x.FileName, ContentType: x.ContentType, Size: x.Size, Sha256: x.SHA256, UploadedBy: x.UploadedBy, UploadedAt: x.UploadedAt,
+		})
 	}
 	if c.Trigger != nil {
 		t := ref(*c.Trigger)
@@ -95,4 +106,56 @@ func toAPIChange(c change.Change) Change {
 		out.Documents = append(out.Documents, AffectedDocument{Id: d.ID, Number: d.Number, DocumentType: ref(d.DocumentType), Revision: d.Revision, Status: d.Status})
 	}
 	return out
+}
+
+// AddChangeAttachment menjawab POST /api/v1/changes/{changeId}/attachments (M5.2).
+// Bagian multipart bernama "file" dibaca langsung ke penyimpanan.
+func (a *apiServer) AddChangeAttachment(ctx context.Context, req AddChangeAttachmentRequestObject) (AddChangeAttachmentResponseObject, error) {
+	for {
+		part, err := req.Body.NextPart()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			return nil, &problem.ValidationError{Problems: []problem.Problem{{Field: "file", Code: problem.InvalidFormat, Message: "Send the file as multipart form data."}}}
+		}
+		if part.FormName() != "file" {
+			continue
+		}
+		c, err := a.changeRequests.AddAttachment(ctx, actorFrom(ctx), req.ChangeId, part.FileName(), part)
+		if err != nil {
+			return nil, err
+		}
+		return AddChangeAttachment201JSONResponse(toAPIChange(c)), nil
+	}
+	return nil, &problem.ValidationError{Problems: []problem.Problem{{Field: "file", Code: problem.Required, Message: "Choose a file."}}}
+}
+
+// GetChangeAttachment menjawab GET /api/v1/changes/{changeId}/attachments/{attachmentId}.
+// Berkas selalu dikirim sebagai unduhan, tidak pernah dibuka di browser.
+func (a *apiServer) GetChangeAttachment(ctx context.Context, req GetChangeAttachmentRequestObject) (GetChangeAttachmentResponseObject, error) {
+	att, f, err := a.changeRequests.OpenAttachment(ctx, actorFrom(ctx), req.ChangeId, req.AttachmentId)
+	if err != nil {
+		return nil, err
+	}
+	// Isi dibaca dulu (paling besar 20 MB), supaya berkas bisa langsung ditutup.
+	content, err := io.ReadAll(f)
+	f.Close()
+	if err != nil {
+		return nil, err
+	}
+	disposition := "attachment; filename*=UTF-8''" + url.PathEscape(att.FileName)
+	return GetChangeAttachment200ApplicationoctetStreamResponse{
+		Body: bytes.NewReader(content), ContentLength: int64(len(content)),
+		Headers: GetChangeAttachment200ResponseHeaders{ContentDisposition: &disposition},
+	}, nil
+}
+
+// RemoveChangeAttachment menjawab DELETE /api/v1/changes/{changeId}/attachments/{attachmentId}.
+func (a *apiServer) RemoveChangeAttachment(ctx context.Context, req RemoveChangeAttachmentRequestObject) (RemoveChangeAttachmentResponseObject, error) {
+	c, err := a.changeRequests.RemoveAttachment(ctx, actorFrom(ctx), req.ChangeId, req.AttachmentId)
+	if err != nil {
+		return nil, err
+	}
+	return RemoveChangeAttachment200JSONResponse(toAPIChange(c)), nil
 }

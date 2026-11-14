@@ -12,15 +12,23 @@ import (
 )
 
 // maxBodyBytes adalah ukuran body permintaan API paling besar (1 MiB).
-// Unggahan file nanti punya batasnya sendiri.
+// Unggahan lampiran (M5.2) punya batasnya sendiri, maxUploadBytes.
 // E-20 (D-99): bagian dari baseline konvensi API M0.5 (brief R-API-13).
 const maxBodyBytes = 1 << 20
+
+// maxUploadBytes adalah batas body unggahan lampiran: 20 MB isi berkas
+// ditambah ruang untuk bagian multipart lain (ASUMSI E-99).
+const maxUploadBytes = 21 << 20
 
 // limitBody membatasi ukuran body permintaan, supaya klien tidak bisa
 // menghabiskan memori server dengan body yang sangat besar.
 func limitBody(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		r.Body = http.MaxBytesReader(w, r.Body, maxBodyBytes)
+		limit := int64(maxBodyBytes)
+		if r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/attachments") {
+			limit = maxUploadBytes
+		}
+		r.Body = http.MaxBytesReader(w, r.Body, limit)
 		next.ServeHTTP(w, r)
 	})
 }

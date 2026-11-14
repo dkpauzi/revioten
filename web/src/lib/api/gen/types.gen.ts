@@ -1284,8 +1284,22 @@ export type Change = {
      */
     requested_by: string;
     documents: Array<AffectedDocument>;
+    attachments: Array<ChangeAttachment>;
     created_at: string;
     updated_at: string;
+};
+
+export type ChangeAttachment = {
+    id: string;
+    file_name: string;
+    content_type: string;
+    size: number;
+    /**
+     * SHA-256 of the content, so anyone can check the file was not changed.
+     */
+    sha256: string;
+    uploaded_by: string;
+    uploaded_at: string;
 };
 
 export type ChangeRef = {
@@ -2028,6 +2042,8 @@ export type FormatTemplateId = string;
 export type FormatVersionId = string;
 
 export type FormatFieldId = string;
+
+export type AttachmentId = string;
 
 export type ChangeId = string;
 
@@ -5553,6 +5569,115 @@ export type RemoveChangeDocumentResponses = {
 };
 
 export type RemoveChangeDocumentResponse = RemoveChangeDocumentResponses[keyof RemoveChangeDocumentResponses];
+
+export type AddChangeAttachmentData = {
+    body: {
+        file: Blob | File;
+    };
+    path: {
+        changeId: string;
+    };
+    query?: never;
+    url: '/api/v1/changes/{changeId}/attachments';
+};
+
+export type AddChangeAttachmentErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type AddChangeAttachmentError = AddChangeAttachmentErrors[keyof AddChangeAttachmentErrors];
+
+export type AddChangeAttachmentResponses = {
+    /**
+     * The change after the change.
+     */
+    201: Change;
+};
+
+export type AddChangeAttachmentResponse = AddChangeAttachmentResponses[keyof AddChangeAttachmentResponses];
+
+export type RemoveChangeAttachmentData = {
+    body?: never;
+    path: {
+        changeId: string;
+        attachmentId: string;
+    };
+    query?: never;
+    url: '/api/v1/changes/{changeId}/attachments/{attachmentId}';
+};
+
+export type RemoveChangeAttachmentErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type RemoveChangeAttachmentError = RemoveChangeAttachmentErrors[keyof RemoveChangeAttachmentErrors];
+
+export type RemoveChangeAttachmentResponses = {
+    /**
+     * The change after the change.
+     */
+    200: Change;
+};
+
+export type RemoveChangeAttachmentResponse = RemoveChangeAttachmentResponses[keyof RemoveChangeAttachmentResponses];
+
+export type GetChangeAttachmentData = {
+    body?: never;
+    path: {
+        changeId: string;
+        attachmentId: string;
+    };
+    query?: never;
+    url: '/api/v1/changes/{changeId}/attachments/{attachmentId}';
+};
+
+export type GetChangeAttachmentErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type GetChangeAttachmentError = GetChangeAttachmentErrors[keyof GetChangeAttachmentErrors];
+
+export type GetChangeAttachmentResponses = {
+    /**
+     * The file, always as a download.
+     */
+    200: Blob | File;
+};
+
+export type GetChangeAttachmentResponse = GetChangeAttachmentResponses[keyof GetChangeAttachmentResponses];
 
 export type ListDocumentChangesData = {
     body?: never;

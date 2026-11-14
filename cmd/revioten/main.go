@@ -37,6 +37,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/product"
 	"github.com/dkpauzi/revioten/internal/server"
 	"github.com/dkpauzi/revioten/internal/settings"
+	"github.com/dkpauzi/revioten/internal/storage"
 	"github.com/dkpauzi/revioten/internal/template"
 	"github.com/dkpauzi/revioten/web"
 )
@@ -88,6 +89,11 @@ func runServer(args []string) error {
 
 	// Satu titik pemeriksaan izin dipakai semua service (M1.2).
 	checker := access.NewChecker(pool)
+	// Lampiran perubahan disimpan di folder privat, bukan di database (M5.2).
+	attachments, err := storage.New(cfg.AttachmentDir)
+	if err != nil {
+		return err
+	}
 	srv := &http.Server{
 		Addr: *addr,
 		// web.Files berisi hasil build SvelteKit yang di-embed ke binary ini.
@@ -107,7 +113,7 @@ func runServer(args []string) error {
 			ProcessTemplates: template.NewProcessService(pool, checker),
 			Documents:        document.NewService(pool, checker),
 			RefDocs:          template.NewRefDocService(pool, checker),
-			ChangeRequests:   change.NewRequestService(pool, checker),
+			ChangeRequests:   change.NewRequestService(pool, checker).WithStorage(attachments),
 		}),
 		// Batas waktu membaca header permintaan. Tanpa batas ini, klien yang
 		// sangat lambat bisa menahan koneksi selamanya (pengaman dasar, G9).

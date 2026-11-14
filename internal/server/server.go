@@ -5,9 +5,11 @@ package server
 
 import (
 	"context"
+	"io"
 	"io/fs"
 	"log/slog"
 	"net/http"
+	"os"
 
 	"github.com/dkpauzi/revioten/internal/access"
 	"github.com/dkpauzi/revioten/internal/approval"
@@ -195,6 +197,9 @@ type ChangeRequestService interface {
 	Create(ctx context.Context, actor access.Actor, in change.NewChange) (change.Change, error)
 	AddDocument(ctx context.Context, actor access.Actor, id, documentID string) (change.Change, error)
 	RemoveDocument(ctx context.Context, actor access.Actor, id, documentID string) (change.Change, error)
+	AddAttachment(ctx context.Context, actor access.Actor, id, fileName string, r io.Reader) (change.Change, error)
+	RemoveAttachment(ctx context.Context, actor access.Actor, id, attachmentID string) (change.Change, error)
+	OpenAttachment(ctx context.Context, actor access.Actor, id, attachmentID string) (change.Attachment, *os.File, error)
 }
 
 // RefDocService adalah operasi master dokumen terkait (D-130, D-156).

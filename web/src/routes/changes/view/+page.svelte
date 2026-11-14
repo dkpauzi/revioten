@@ -2,9 +2,19 @@
 	// Halaman satu perubahan (M5.1): sumber, jenis, alasan, dan dokumen
 	// terdampak. Selama perubahan masih diajukan, pemegang E-3 bisa menambah
 	// atau melepas dokumen terdampak (yang terakhir tidak bisa dilepas).
+	// Lampiran (M5.2): berkas pendukung diunggah, diunduh, dan dilepas di sini.
 	import { untrack } from 'svelte';
 	import { page } from '$app/state';
-	import { addChangeDocument, getChange, listDocuments, removeChangeDocument, type ApiFailure } from '#lib/api/client.ts';
+	import {
+		addChangeAttachment,
+		addChangeDocument,
+		changeAttachmentUrl,
+		getChange,
+		listDocuments,
+		removeChangeAttachment,
+		removeChangeDocument,
+		type ApiFailure
+	} from '#lib/api/client.ts';
 	import type { Change, DocumentSummary } from '#lib/api/gen/index.ts';
 	import { failureText, problemText } from '#lib/errors.ts';
 	import { formatDateTime } from '#lib/format.ts';
@@ -17,6 +27,8 @@
 	let message = $state('');
 	let failure = $state('');
 	let documentId = $state('');
+	let fileInput = $state<HTMLInputElement | null>(null);
+	let uploading = $state(false);
 	let canPropose = $derived(can('E-3'));
 	let editable = $derived(canPropose && change?.status === 'submitted');
 	let addable = $derived(documents.filter((d) => !change?.documents.some((x) => x.id === d.id)));
@@ -59,6 +71,49 @@
 		change = result.data;
 		documentId = '';
 		message = t('changeDocumentAdded', { number });
+	}
+
+	async function upload(event: SubmitEvent) {
+		event.preventDefault();
+		message = '';
+		failure = '';
+		const file = fileInput?.files?.[0];
+		if (!change || !file) {
+			failure = t('changeAttachmentChoose');
+			return;
+		}
+		uploading = true;
+		const result = await addChangeAttachment(change.id, file);
+		uploading = false;
+		if (!result.ok) {
+			showError(result.error);
+			return;
+		}
+		change = result.data;
+		if (fileInput) {
+			fileInput.value = '';
+		}
+		message = t('changeAttachmentAdded', { file: file.name });
+	}
+
+	async function removeAttachment(id: string, file: string) {
+		message = '';
+		failure = '';
+		if (!change || !confirm(t('changeAttachmentRemoveConfirm', { file }))) {
+			return;
+		}
+		const result = await removeChangeAttachment(change.id, id);
+		if (!result.ok) {
+			showError(result.error);
+			return;
+		}
+		change = result.data;
+		message = t('changeAttachmentRemoved', { file });
+	}
+
+	// fileSize menulis ukuran berkas dalam KB atau MB.
+	function fileSize(bytes: number): string {
+		return bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 	}
 
 	async function remove(id: string, number: string) {
@@ -154,6 +209,50 @@
 			</form>
 		{/if}
 	</section>
+
+	<section>
+		<h2>{t('changeAttachments')}</h2>
+		{#if change.attachments.length === 0}
+			<p>{t('changeAttachmentsNone')}</p>
+		{:else}
+			<table>
+				<thead>
+					<tr>
+						<th>{t('changeAttachmentFile')}</th>
+						<th>{t('changeAttachmentSize')}</th>
+						<th>{t('changeAttachmentUploadedBy')}</th>
+						<th>SHA-256</th>
+						{#if editable}<th>{t('masterActions')}</th>{/if}
+					</tr>
+				</thead>
+				<tbody>
+					{#each change.attachments as a (a.id)}
+						<tr>
+							<td><a href={changeAttachmentUrl(change.id, a.id)} download={a.file_name}>{a.file_name}</a></td>
+							<td>{fileSize(a.size)}</td>
+							<td>{a.uploaded_by} · {formatDateTime(a.uploaded_at)}</td>
+							<td class="mono hash" title={a.sha256}>{a.sha256.slice(0, 12)}…</td>
+							{#if editable}
+								<td>
+									<button type="button" aria-label={t('changeAttachmentRemoveFor', { file: a.file_name })} onclick={() => removeAttachment(a.id, a.file_name)}>{t('changeDocumentRemove')}</button>
+								</td>
+							{/if}
+						</tr>
+					{/each}
+				</tbody>
+			</table>
+		{/if}
+		{#if editable}
+			<form class="row" onsubmit={upload} novalidate>
+				<div class="field">
+					<label for="change-attachment-file">{t('changeAttachmentAdd')}</label>
+					<input id="change-attachment-file" type="file" bind:this={fileInput} accept=".pdf,.png,.jpg,.jpeg,.xlsx,.xls,.docx,.doc,.msg,.txt,.csv" />
+					<p class="hint">{t('changeAttachmentHint')}</p>
+				</div>
+				<button type="submit" disabled={uploading}>{t('changeAttachmentUpload')}</button>
+			</form>
+		{/if}
+	</section>
 {/if}
 
 <style>
@@ -185,6 +284,10 @@
 
 	.row > button {
 		margin-top: var(--label-space);
+	}
+
+	.hash {
+		color: var(--text-3);
 	}
 
 	.mono {

@@ -1,11 +1,13 @@
 package main
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"net"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/dkpauzi/revioten/internal/db"
@@ -30,6 +32,9 @@ type config struct {
 	// Tidak wajib untuk server; perintah backup dan restore memeriksanya.
 	BackupDir        string
 	BackupPassphrase string
+	// AttachmentDir dari ATTACHMENT_DIR: folder privat lampiran perubahan
+	// (M5.2). Bawaannya data/attachments, yang tidak di-commit.
+	AttachmentDir string
 }
 
 // loadConfig membaca pengaturan dari environment dan dari file .env.
@@ -109,6 +114,7 @@ func loadConfig(getenv func(string) string, envFile string) (config, error) {
 		OwnerURL: ownerURL, AppURL: app.String(), AppPassword: get("APP_DB_PASSWORD"),
 		OwnerUser: owner.User.Username(), Database: strings.TrimPrefix(owner.Path, "/"),
 		BackupDir: get("BACKUP_DIR"), BackupPassphrase: get("BACKUP_PASSPHRASE"),
+		AttachmentDir: cmp.Or(get("ATTACHMENT_DIR"), filepath.Join("data", "attachments")),
 	}, nil
 }
 

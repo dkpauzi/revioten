@@ -1,8 +1,11 @@
 package server
 
 import (
+	"bytes"
+	"mime/multipart"
 	"net/http"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -28,7 +31,7 @@ func TestChangeEndpoints(t *testing.T) {
 		`"trigger":{"id":"s-1","name":"Customer claim"},"change_type":{"id":"t-1","key":"content","name":"Content"},` +
 		`"reason":"Add AOI check","status":"submitted","requested_by":"PPAP Engineer",` +
 		`"documents":[{"id":"d-1","number":"SC-AB-001","document_type":{"id":"dt-3","key":"cp","name":"CP"},"revision":0,"status":"draft"}],` +
-		`"created_at":"2026-11-14T08:00:00Z","updated_at":"2026-11-14T08:00:00Z"}`
+		`"attachments":[],"created_at":"2026-11-14T08:00:00Z","updated_at":"2026-11-14T08:00:00Z"}`
 	if rec.Code != http.StatusOK || !sameJSON(t, rec.Body.String(), want) {
 		t.Errorf("baca: status %d\n%s", rec.Code, rec.Body.String())
 	}
@@ -50,5 +53,45 @@ func TestChangeEndpoints(t *testing.T) {
 		if rec.Code >= 300 || fake.got != c.want {
 			t.Errorf("%s %s: status %d, %+v", c.method, c.path, rec.Code, fake.got)
 		}
+	}
+}
+
+// TestChangeAttachmentEndpoints: unggah lewat multipart, unduh sebagai
+// attachment dengan nama asli, dan body di atas 1 MiB diterima (M5.2).
+func TestChangeAttachmentEndpoints(t *testing.T) {
+	fake := &fakeChangeRequests{c: change.Change{ID: "c-1"}, file: "%PDF-1.4"}
+	srv := newTestServer(t, nil, Deps{ChangeRequests: fake})
+
+	var body bytes.Buffer
+	mw := multipart.NewWriter(&body)
+	_ = mw.WriteField("note", "abaikan")
+	fw, _ := mw.CreateFormFile("file", "8D report.pdf")
+	content := strings.Repeat("x", 2<<20) // 2 MB, di atas batas JSON 1 MiB
+	_, _ = fw.Write([]byte(content))
+	_ = mw.Close()
+	rec := srv.do(http.MethodPost, "/api/v1/changes/c-1/attachments", body.String(), "Content-Type", mw.FormDataContentType())
+	if rec.Code != http.StatusCreated || fake.got != (called{method: "AddAttachment", id: "c-1", input: "8D report.pdf:" + content}) {
+		t.Errorf("unggah: status %d, %s, %s", rec.Code, fake.got.method, rec.Body.String())
+	}
+
+	// Tanpa bagian "file": 422 dengan field file.
+	body.Reset()
+	mw = multipart.NewWriter(&body)
+	_ = mw.WriteField("note", "abaikan")
+	_ = mw.Close()
+	rec = srv.do(http.MethodPost, "/api/v1/changes/c-1/attachments", body.String(), "Content-Type", mw.FormDataContentType())
+	if rec.Code != http.StatusUnprocessableEntity || !strings.Contains(rec.Body.String(), `"field":"file"`) {
+		t.Errorf("tanpa file: status %d, %s", rec.Code, rec.Body.String())
+	}
+
+	rec = srv.do(http.MethodGet, "/api/v1/changes/c-1/attachments/a-1", "")
+	if rec.Code != http.StatusOK || rec.Body.String() != "%PDF-1.4" ||
+		rec.Header().Get("Content-Disposition") != "attachment; filename*=UTF-8''8D%20report.pdf" ||
+		rec.Header().Get("Content-Type") != "application/octet-stream" {
+		t.Errorf("unduh: status %d, %v, %q", rec.Code, rec.Header(), rec.Body.String())
+	}
+	rec = srv.do(http.MethodDelete, "/api/v1/changes/c-1/attachments/a-1", "")
+	if rec.Code != http.StatusOK || fake.got != (called{method: "RemoveAttachment", id: "c-1", input: "a-1"}) {
+		t.Errorf("lepas: status %d, %+v", rec.Code, fake.got)
 	}
 }

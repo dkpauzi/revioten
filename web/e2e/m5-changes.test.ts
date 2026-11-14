@@ -1,5 +1,5 @@
 // Test E2E Tahap 5: perubahan dokumen. M5.1: satu permintaan perubahan
-// menunjuk beberapa dokumen.
+// menunjuk beberapa dokumen. M5.2: lampiran diunggah, diunduh, dan dilepas.
 //
 // Nama file diawali m5- supaya berjalan sesudah formsets.test.ts, yang
 // menerbitkan form set AIAG 4th; dokumen hanya memakai form set yang terbit.
@@ -27,7 +27,7 @@ async function setupSet(page: Page): Promise<Record<string, string>> {
 	});
 }
 
-test('M5.1: penyusun mengajukan perubahan yang menunjuk beberapa dokumen', async ({ page }) => {
+test('M5.1 dan M5.2: penyusun mengajukan perubahan dengan beberapa dokumen dan lampiran', async ({ page }) => {
 	await logIn(page);
 	await ensureProjectGroup(page, 'GR1');
 	await page.evaluate(async () => {
@@ -72,4 +72,27 @@ test('M5.1: penyusun mengajukan perubahan yang menunjuk beberapa dokumen', async
 	await page.getByRole('button', { name: en.changeDocumentRemoveFor.replace('{number}', numbers.pfmea) }).click();
 	await expect(page.getByRole('status')).toHaveText(en.changeDocumentRemoved.replace('{number}', numbers.pfmea));
 	await expect(page.locator('table tbody tr')).toHaveCount(2);
+
+	// M5.2: berkas yang tidak diizinkan ditolak, PDF diterima lalu diunduh utuh.
+	const fileInput = page.getByLabel(en.changeAttachmentAdd);
+	await fileInput.setInputFiles({ name: 'setup.exe', mimeType: 'application/octet-stream', buffer: Buffer.from('MZ') });
+	await page.getByRole('button', { name: en.changeAttachmentUpload }).click();
+	await expect(page.getByRole('alert')).toHaveText(en.changeAttachmentNotAllowed);
+	const content = '%PDF-1.4 8D report claim 2026-031';
+	await fileInput.setInputFiles({ name: '8D report.pdf', mimeType: 'application/pdf', buffer: Buffer.from(content) });
+	await page.getByRole('button', { name: en.changeAttachmentUpload }).click();
+	await expect(page.getByRole('status')).toHaveText(en.changeAttachmentAdded.replace('{file}', '8D report.pdf'));
+	const download = page.waitForEvent('download');
+	await page.getByRole('link', { name: '8D report.pdf' }).click();
+	const file = await download;
+	expect(file.suggestedFilename()).toBe('8D report.pdf');
+	const stream = await file.createReadStream();
+	const chunks: Buffer[] = [];
+	for await (const chunk of stream) chunks.push(chunk as Buffer);
+	expect(Buffer.concat(chunks).toString()).toBe(content);
+
+	page.once('dialog', (dialog) => dialog.accept());
+	await page.getByRole('button', { name: en.changeAttachmentRemoveFor.replace('{file}', '8D report.pdf') }).click();
+	await expect(page.getByRole('status')).toHaveText(en.changeAttachmentRemoved.replace('{file}', '8D report.pdf'));
+	await expect(page.getByText(en.changeAttachmentsNone)).toBeVisible();
 });

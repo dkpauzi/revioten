@@ -25,7 +25,8 @@ const binary = join(root, 'bin', process.platform === 'win32' ? 'revioten-e2e.ex
 execFileSync('go', ['build', '-o', binary, './cmd/revioten'], { cwd: root, stdio: 'inherit' });
 
 // POSTGRES_DB di environment menang atas isi .env (lihat cmd/revioten/config.go).
-const env = { ...process.env, POSTGRES_DB: 'revioten_e2e' };
+// Lampiran E2E disimpan terpisah dari lampiran database utama (M5.2).
+const env = { ...process.env, POSTGRES_DB: 'revioten_e2e', ATTACHMENT_DIR: 'data/attachments-e2e' };
 
 // Password dikirim lewat pipa (stdin), bukan lewat argumen perintah.
 execFileSync(binary, ['create-admin', '-name', admin.name, '-login', admin.login], {

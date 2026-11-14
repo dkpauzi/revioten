@@ -11,6 +11,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"mime/multipart"
 	"net/http"
 	"time"
 
@@ -1475,6 +1477,7 @@ type AuditVerificationReason string
 
 // Change defines model for Change.
 type Change struct {
+	Attachments  []ChangeAttachment `json:"attachments"`
 	ChangeType   ChangeRef          `json:"change_type"`
 	CreatedAt    time.Time          `json:"created_at"`
 	CustomerCode string             `json:"customer_code"`
@@ -1505,6 +1508,19 @@ type ChangeMechanism string
 
 // ChangeStatus defines model for Change.Status.
 type ChangeStatus string
+
+// ChangeAttachment defines model for ChangeAttachment.
+type ChangeAttachment struct {
+	ContentType string `json:"content_type"`
+	FileName    string `json:"file_name"`
+	Id          string `json:"id"`
+
+	// Sha256 SHA-256 of the content, so anyone can check the file was not changed.
+	Sha256     string    `json:"sha256"`
+	Size       int64     `json:"size"`
+	UploadedAt time.Time `json:"uploaded_at"`
+	UploadedBy string    `json:"uploaded_by"`
+}
 
 // ChangeDocumentInput defines model for ChangeDocumentInput.
 type ChangeDocumentInput struct {
@@ -3316,6 +3332,9 @@ type AccountId = string
 // ApprovalRouteId defines model for ApprovalRouteId.
 type ApprovalRouteId = string
 
+// AttachmentId defines model for AttachmentId.
+type AttachmentId = string
+
 // ChangeId defines model for ChangeId.
 type ChangeId = string
 
@@ -3427,6 +3446,11 @@ type ListAuditLogParams struct {
 // ListChangesParams defines parameters for ListChanges.
 type ListChangesParams struct {
 	CustomerId string `form:"customer_id" json:"customer_id"`
+}
+
+// AddChangeAttachmentMultipartBody defines parameters for AddChangeAttachment.
+type AddChangeAttachmentMultipartBody struct {
+	File openapi_types.File `json:"file"`
 }
 
 // ListDocumentNumbersParams defines parameters for ListDocumentNumbers.
@@ -3545,6 +3569,9 @@ type SetChangeTypeRouteJSONRequestBody = ChangeTypeRouteChoice
 
 // CreateChangeJSONRequestBody defines body for CreateChange for application/json ContentType.
 type CreateChangeJSONRequestBody = NewChange
+
+// AddChangeAttachmentMultipartRequestBody defines body for AddChangeAttachment for multipart/form-data ContentType.
+type AddChangeAttachmentMultipartRequestBody AddChangeAttachmentMultipartBody
 
 // AddChangeDocumentJSONRequestBody defines body for AddChangeDocument for application/json ContentType.
 type AddChangeDocumentJSONRequestBody = ChangeDocumentInput
@@ -3800,6 +3827,15 @@ type ServerInterface interface {
 	// GetChange One change with its affected documents (L-4)
 	// (GET /api/v1/changes/{changeId})
 	GetChange(w http.ResponseWriter, r *http.Request, changeId ChangeId)
+	// AddChangeAttachment Attach a supporting file to a submitted change (E-3, M5.2)
+	// (POST /api/v1/changes/{changeId}/attachments)
+	AddChangeAttachment(w http.ResponseWriter, r *http.Request, changeId ChangeId)
+	// RemoveChangeAttachment Remove one attachment from a submitted change (E-3)
+	// (DELETE /api/v1/changes/{changeId}/attachments/{attachmentId})
+	RemoveChangeAttachment(w http.ResponseWriter, r *http.Request, changeId ChangeId, attachmentId AttachmentId)
+	// GetChangeAttachment Download one attachment of a change (L-4)
+	// (GET /api/v1/changes/{changeId}/attachments/{attachmentId})
+	GetChangeAttachment(w http.ResponseWriter, r *http.Request, changeId ChangeId, attachmentId AttachmentId)
 	// AddChangeDocument Add one affected document to a submitted change (E-3)
 	// (POST /api/v1/changes/{changeId}/documents)
 	AddChangeDocument(w http.ResponseWriter, r *http.Request, changeId ChangeId)
@@ -4579,6 +4615,102 @@ func (siw *ServerInterfaceWrapper) GetChange(w http.ResponseWriter, r *http.Requ
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetChange(w, r, changeId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AddChangeAttachment operation middleware
+func (siw *ServerInterfaceWrapper) AddChangeAttachment(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "changeId" -------------
+	var changeId ChangeId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "changeId", r.PathValue("changeId"), &changeId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "changeId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AddChangeAttachment(w, r, changeId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RemoveChangeAttachment operation middleware
+func (siw *ServerInterfaceWrapper) RemoveChangeAttachment(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "changeId" -------------
+	var changeId ChangeId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "changeId", r.PathValue("changeId"), &changeId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "changeId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "attachmentId" -------------
+	var attachmentId AttachmentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "attachmentId", r.PathValue("attachmentId"), &attachmentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "attachmentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RemoveChangeAttachment(w, r, changeId, attachmentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetChangeAttachment operation middleware
+func (siw *ServerInterfaceWrapper) GetChangeAttachment(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "changeId" -------------
+	var changeId ChangeId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "changeId", r.PathValue("changeId"), &changeId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "changeId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "attachmentId" -------------
+	var attachmentId AttachmentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "attachmentId", r.PathValue("attachmentId"), &attachmentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "attachmentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetChangeAttachment(w, r, changeId, attachmentId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -7560,6 +7692,9 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/changes/{changeId}", wrapper.GetChange)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/changes/{changeId}/documents", wrapper.AddChangeDocument)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/changes/{changeId}/documents/{documentId}", wrapper.RemoveChangeDocument)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/changes/{changeId}/attachments", wrapper.AddChangeAttachment)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/changes/{changeId}/attachments/{attachmentId}", wrapper.RemoveChangeAttachment)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/changes/{changeId}/attachments/{attachmentId}", wrapper.GetChangeAttachment)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/documents/{documentId}/changes", wrapper.ListDocumentChanges)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/sections", wrapper.AddDocumentSection)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/documents/{documentId}/sections/{sectionId}", wrapper.RemoveDocumentSection)
@@ -8435,6 +8570,140 @@ type GetChangedefaultJSONResponse struct {
 }
 
 func (response GetChangedefaultJSONResponse) VisitGetChangeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddChangeAttachmentRequestObject struct {
+	ChangeId ChangeId `json:"changeId"`
+	Body     *multipart.Reader
+}
+
+type AddChangeAttachmentResponseObject interface {
+	VisitAddChangeAttachmentResponse(w http.ResponseWriter) error
+}
+
+type AddChangeAttachment201JSONResponse Change
+
+func (response AddChangeAttachment201JSONResponse) VisitAddChangeAttachmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddChangeAttachmentdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response AddChangeAttachmentdefaultJSONResponse) VisitAddChangeAttachmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RemoveChangeAttachmentRequestObject struct {
+	ChangeId     ChangeId     `json:"changeId"`
+	AttachmentId AttachmentId `json:"attachmentId"`
+}
+
+type RemoveChangeAttachmentResponseObject interface {
+	VisitRemoveChangeAttachmentResponse(w http.ResponseWriter) error
+}
+
+type RemoveChangeAttachment200JSONResponse Change
+
+func (response RemoveChangeAttachment200JSONResponse) VisitRemoveChangeAttachmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RemoveChangeAttachmentdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response RemoveChangeAttachmentdefaultJSONResponse) VisitRemoveChangeAttachmentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetChangeAttachmentRequestObject struct {
+	ChangeId     ChangeId     `json:"changeId"`
+	AttachmentId AttachmentId `json:"attachmentId"`
+}
+
+type GetChangeAttachmentResponseObject interface {
+	VisitGetChangeAttachmentResponse(w http.ResponseWriter) error
+}
+
+type GetChangeAttachment200ResponseHeaders struct {
+	ContentDisposition *string
+}
+
+type GetChangeAttachment200ApplicationoctetStreamResponse struct {
+	Body          io.Reader
+	Headers       GetChangeAttachment200ResponseHeaders
+	ContentLength int64
+}
+
+func (response GetChangeAttachment200ApplicationoctetStreamResponse) VisitGetChangeAttachmentResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "application/octet-stream")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	if response.Headers.ContentDisposition != nil {
+		w.Header().Set("Content-Disposition", fmt.Sprint(*response.Headers.ContentDisposition))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type GetChangeAttachmentdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response GetChangeAttachmentdefaultJSONResponse) VisitGetChangeAttachmentResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -12863,6 +13132,15 @@ type StrictServerInterface interface {
 	// GetChange One change with its affected documents (L-4)
 	// (GET /api/v1/changes/{changeId})
 	GetChange(ctx context.Context, request GetChangeRequestObject) (GetChangeResponseObject, error)
+	// AddChangeAttachment Attach a supporting file to a submitted change (E-3, M5.2)
+	// (POST /api/v1/changes/{changeId}/attachments)
+	AddChangeAttachment(ctx context.Context, request AddChangeAttachmentRequestObject) (AddChangeAttachmentResponseObject, error)
+	// RemoveChangeAttachment Remove one attachment from a submitted change (E-3)
+	// (DELETE /api/v1/changes/{changeId}/attachments/{attachmentId})
+	RemoveChangeAttachment(ctx context.Context, request RemoveChangeAttachmentRequestObject) (RemoveChangeAttachmentResponseObject, error)
+	// GetChangeAttachment Download one attachment of a change (L-4)
+	// (GET /api/v1/changes/{changeId}/attachments/{attachmentId})
+	GetChangeAttachment(ctx context.Context, request GetChangeAttachmentRequestObject) (GetChangeAttachmentResponseObject, error)
 	// AddChangeDocument Add one affected document to a submitted change (E-3)
 	// (POST /api/v1/changes/{changeId}/documents)
 	AddChangeDocument(ctx context.Context, request AddChangeDocumentRequestObject) (AddChangeDocumentResponseObject, error)
@@ -13817,6 +14095,93 @@ func (sh *strictHandler) GetChange(w http.ResponseWriter, r *http.Request, chang
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetChangeResponseObject); ok {
 		if err := validResponse.VisitGetChangeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AddChangeAttachment operation middleware
+func (sh *strictHandler) AddChangeAttachment(w http.ResponseWriter, r *http.Request, changeId ChangeId) {
+	var request AddChangeAttachmentRequestObject
+
+	request.ChangeId = changeId
+
+	if reader, err := r.MultipartReader(); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode multipart body: %w", err))
+		return
+	} else {
+		request.Body = reader
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.AddChangeAttachment(ctx, request.(AddChangeAttachmentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AddChangeAttachment")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AddChangeAttachmentResponseObject); ok {
+		if err := validResponse.VisitAddChangeAttachmentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RemoveChangeAttachment operation middleware
+func (sh *strictHandler) RemoveChangeAttachment(w http.ResponseWriter, r *http.Request, changeId ChangeId, attachmentId AttachmentId) {
+	var request RemoveChangeAttachmentRequestObject
+
+	request.ChangeId = changeId
+	request.AttachmentId = attachmentId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RemoveChangeAttachment(ctx, request.(RemoveChangeAttachmentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RemoveChangeAttachment")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RemoveChangeAttachmentResponseObject); ok {
+		if err := validResponse.VisitRemoveChangeAttachmentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetChangeAttachment operation middleware
+func (sh *strictHandler) GetChangeAttachment(w http.ResponseWriter, r *http.Request, changeId ChangeId, attachmentId AttachmentId) {
+	var request GetChangeAttachmentRequestObject
+
+	request.ChangeId = changeId
+	request.AttachmentId = attachmentId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetChangeAttachment(ctx, request.(GetChangeAttachmentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetChangeAttachment")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetChangeAttachmentResponseObject); ok {
+		if err := validResponse.VisitGetChangeAttachmentResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

@@ -77,7 +77,10 @@ const problemKeys: Record<string, MessageKey> = {
 	'options:not_allowed': 'formatOptionsNotAllowed',
 	'required:not_allowed': 'formatHiddenRequired',
 	'symbols:taken': 'formatSymbolsTaken',
-	'symbols:not_allowed': 'formatSymbolsNotAllowed'
+	'symbols:not_allowed': 'formatSymbolsNotAllowed',
+	'file:not_allowed': 'changeAttachmentNotAllowed',
+	'file:required': 'changeAttachmentEmpty',
+	'file:too_long': 'changeAttachmentTooLarge'
 };
 
 // ProblemScope adalah formulir tempat masalah ditampilkan. Field yang sama bisa

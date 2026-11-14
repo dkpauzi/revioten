@@ -23,6 +23,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/process"
 	"github.com/dkpauzi/revioten/internal/product"
 	"github.com/dkpauzi/revioten/internal/settings"
+	"github.com/dkpauzi/revioten/internal/storage"
 	"github.com/dkpauzi/revioten/internal/template"
 )
 
@@ -35,6 +36,9 @@ func TestMain(m *testing.M) {
 // operationCase adalah satu operasi kontrak beserta status yang diharapkan
 // untuk akun Viewer (tanpa peran), akun PPAP Engineer (Penyusun, Pengelola
 // template, dan Dokumen kontrol, seperti di U3 bagian 2), dan akun admin.
+// multipartBody adalah unggahan satu berkas teks kecil (M5.2).
+const multipartBody = "--revioten\r\nContent-Disposition: form-data; name=\"file\"; filename=\"uji.txt\"\r\nContent-Type: text/plain\r\n\r\nisi uji\r\n--revioten--\r\n"
+
 type operationCase struct {
 	method, path, body      string
 	viewer, engineer, admin int
@@ -48,6 +52,10 @@ func TestPermissionsPerOperation(t *testing.T) {
 	pool := dbtest.NewPool(t)
 	ctx := t.Context()
 	checker := access.NewChecker(pool)
+	attachmentStore, err := storage.New(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
 	authSvc := auth.NewService(pool, checker)
 	customers := customer.NewService(pool, checker)
 	products := product.NewService(pool, checker)
@@ -61,7 +69,7 @@ func TestPermissionsPerOperation(t *testing.T) {
 		Numbering: numbers, Changes: changes, Approval: approvals, Settings: settings.NewService(pool, checker),
 		Templates: template.NewService(pool, checker), ProcessTemplates: template.NewProcessService(pool, checker),
 		Documents: document.NewService(pool, checker), RefDocs: template.NewRefDocService(pool, checker),
-		ChangeRequests: change.NewRequestService(pool, checker),
+		ChangeRequests: change.NewRequestService(pool, checker).WithStorage(attachmentStore),
 	})
 
 	// Admin pertama, satu akun kerja tanpa peran (hanya hak dasar Viewer), dan
@@ -305,7 +313,7 @@ func TestPermissionsPerOperation(t *testing.T) {
 		"processId": proc.ID, "documentTypeId": docTypes[0].ID, "cpTypeId": docTypes[2].ID, "documentNumberId": reg.Numbers[0].ID, "documentId": doc.ID, "rowId": doc.Rows[0].ID, "freeNumberId": reserved[1], "specialCodeId": specialCodes[0].ID,
 		"changeTypeId": changeTypes[0].ID, "changeSourceId": sources[0].ID, "fourMCategoryId": categories[0].ID,
 		"formatTemplateId": pfmeaFormat.ID, "formatVersionId": pfmeaVersion.ID, "formSetId": formSet.ID, "formSetVersionId": formSet.Versions[0].ID, "pfdSheetId": formSet.Versions[0].PFD.FormatVersionID, "pfmeaSheetId": formSet.Versions[0].PFMEA.FormatVersionID, "cpSheetId": formSet.Versions[0].CP.FormatVersionID, "formatFieldId": pfmeaVersion.Fields[0].ID,
-		"freeProcessId": reflow.ID, "refDocId": refDoc.ID, "linkId": refDoc.Links[0].ID, "changeId": changeReq.ID, "triggerId": triggerID, "contentTypeId": contentTypeID, "sectionId": "01900000-0000-7000-8000-000000000000", "processVersionId": iqcVersion.ID, "processTemplateId": iqcVersion.TemplateID, "subprocessId": iqcVersion.Subprocesses[0].ID,
+		"freeProcessId": reflow.ID, "refDocId": refDoc.ID, "linkId": refDoc.Links[0].ID, "changeId": changeReq.ID, "triggerId": triggerID, "contentTypeId": contentTypeID, "sectionId": "01900000-0000-7000-8000-000000000000", "attachmentId": "01900000-0000-7000-8000-000000000000", "processVersionId": iqcVersion.ID, "processTemplateId": iqcVersion.TemplateID, "subprocessId": iqcVersion.Subprocesses[0].ID,
 		"pointId": iqcVersion.Subprocesses[0].Points[0].ID, "variantId": iqcVersion.Subprocesses[0].Points[0].Variants[0].ID,
 	}
 
@@ -460,6 +468,10 @@ func TestPermissionsPerOperation(t *testing.T) {
 		{http.MethodGet, "/api/v1/changes/{changeId}", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodPost, "/api/v1/changes/{changeId}/documents", `{"document_id":"{documentId}"}`, http.StatusForbidden, http.StatusConflict, http.StatusForbidden},
 		{http.MethodDelete, "/api/v1/changes/{changeId}/documents/{documentId}", "", http.StatusForbidden, http.StatusUnprocessableEntity, http.StatusForbidden},
+		// Lampiran (M5.2): body multipart ditandai awalan --revioten. ID lampiran palsu: 404.
+		{http.MethodPost, "/api/v1/changes/{changeId}/attachments", multipartBody, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
+		{http.MethodGet, "/api/v1/changes/{changeId}/attachments/{attachmentId}", "", http.StatusForbidden, http.StatusNotFound, http.StatusForbidden},
+		{http.MethodDelete, "/api/v1/changes/{changeId}/attachments/{attachmentId}", "", http.StatusForbidden, http.StatusNotFound, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/documents/{documentId}/changes", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		// Bagian per PCB (D-155), sengaja di akhir: sesudah dokumen punya bagian, baris baru wajib menyebut
 		// bagiannya. Dokumen uji tidak punya part number, jadi bagian dibuat tanpa part number.
@@ -481,6 +493,9 @@ func TestPermissionsPerOperation(t *testing.T) {
 		for i, tc := range cases {
 			req := httptest.NewRequest(tc.method, fill(tc.path), strings.NewReader(fill(tc.body)))
 			req.Header.Set("Content-Type", "application/json")
+			if strings.HasPrefix(tc.body, "--revioten") {
+				req.Header.Set("Content-Type", "multipart/form-data; boundary=revioten")
+			}
 			// Kunci idempoten baru untuk setiap permintaan (pendaftaran nomor, R-NUM-03).
 			req.Header.Set("Idempotency-Key", fmt.Sprintf("%s-%d", who, i))
 			req.AddCookie(&http.Cookie{Name: sessionCookieName, Value: token})
