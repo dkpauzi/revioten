@@ -102,15 +102,16 @@ type ChangeDocument struct {
 }
 
 type ChangeImpact struct {
-	ID                string
-	ChangeID          string
-	Position          int32
-	Kind              string
-	DocumentReference *string
-	Decision          string
-	Reason            *string
-	UpdatedByPersonID string
-	UpdatedAt         time.Time
+	ID                   string
+	ChangeID             string
+	Position             int32
+	Kind                 string
+	DocumentReference    *string
+	Decision             string
+	Reason               *string
+	UpdatedByPersonID    string
+	UpdatedAt            time.Time
+	ReferencedDocumentID *string
 }
 
 type ChangeSource struct {

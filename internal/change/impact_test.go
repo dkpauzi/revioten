@@ -75,3 +75,37 @@ func TestImpactChecklist(t *testing.T) {
 		t.Errorf("sesudah ditolak: %v", err)
 	}
 }
+
+// TestImpactFromMaster: WI dipilih dari master dokumen terkait, dan nomor,
+// revisi, serta judulnya disalin dari master (D-168, R-DOC-11).
+func TestImpactFromMaster(t *testing.T) {
+	e := doctest.Setup(t)
+	ctx := t.Context()
+	s := NewRequestService(e.Pool, e.Checker)
+	m := readMasters(t, e)
+	set := e.NewSet(t, "ab", e.CustomerAB, e.ModelK125)
+	c, err := s.Create(ctx, e.Author, NewChange{CustomerID: e.CustomerAB, TriggerID: m.trigger, ChangeTypeID: m.content, Reason: "AOI", DocumentIDs: []string{set["cp"].ID}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var wi string
+	if err := e.Pool.QueryRow(ctx, `INSERT INTO referenced_documents (number, title, revision) VALUES ('SW-ZZ-116', 'AOI program setting', '02') RETURNING id`).Scan(&wi); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.SaveImpacts(ctx, e.Author, c.ID, []ImpactInput{{Kind: "wi", ReferencedDocumentID: "01900000-0000-7000-8000-000000000000", Decision: ImpactAffected}}); !slices.Contains(problemCodes(t, err), "items.0.referenced_document_id:invalid_format") {
+		t.Errorf("dokumen master tidak ada: %v", err)
+	}
+	c, err = s.SaveImpacts(ctx, e.Author, c.ID, []ImpactInput{
+		{Kind: "wi", ReferencedDocumentID: wi, DocumentReference: "diketik", Decision: ImpactAffected},
+		{Kind: "inspection_standard", DocumentReference: "IS-AB-01", Decision: ImpactNotAffected, Reason: "No new item"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if x := c.Impacts[0]; x.ReferencedDocumentID != wi || x.DocumentReference != "SW-ZZ-116 rev 02 · AOI program setting" {
+		t.Errorf("dari master: %+v", x)
+	}
+	if x := c.Impacts[1]; x.ReferencedDocumentID != "" || x.DocumentReference != "IS-AB-01" {
+		t.Errorf("ditulis bebas: %+v", x)
+	}
+}

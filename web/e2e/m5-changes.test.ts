@@ -240,7 +240,9 @@ test('M5.7: pemohon menyimpan daftar periksa dampak dengan alasan', async ({ pag
 	await page.getByLabel(en.impactDecisionFor.replace('{line}', '2')).selectOption('not_affected');
 	await page.getByLabel(en.impactReasonFor.replace('{line}', '2')).fill('Failure mode stays the same');
 	await page.getByLabel(en.impactDecisionFor.replace('{line}', '4')).selectOption('affected');
-	await page.getByLabel(en.impactDocumentFor.replace('{line}', '4')).fill('SW-ZZ-116');
+	// WI dipilih dari master dokumen terkait (D-168); SW-ZZ-103 dibuat test M4.
+	const masterOption = page.getByLabel(en.impactMasterFor.replace('{line}', '4')).locator('option', { hasText: /^SW-ZZ-103 / });
+	await page.getByLabel(en.impactMasterFor.replace('{line}', '4')).selectOption({ label: (await masterOption.textContent()) ?? '' });
 	await page.getByLabel(en.impactDecisionFor.replace('{line}', '5')).selectOption('not_affected');
 	await page.getByLabel(en.impactReasonFor.replace('{line}', '5')).fill('No new inspection item');
 	// Baris 1 tidak terdampak tanpa alasan: ditolak dengan nomor barisnya.
@@ -251,7 +253,8 @@ test('M5.7: pemohon menyimpan daftar periksa dampak dengan alasan', async ({ pag
 	await expect(page.getByRole('status')).toHaveText(en.impactSaved.replace('{ref}', 'CHG-0002'));
 	// Tersimpan: dimuat ulang dengan isi yang sama.
 	await page.reload();
-	await expect(page.getByLabel(en.impactDocumentFor.replace('{line}', '4'))).toHaveValue('SW-ZZ-116');
+	await expect(page.getByLabel(en.impactMasterFor.replace('{line}', '4'))).not.toHaveValue('');
+	await expect(page.getByLabel(en.impactDocumentFor.replace('{line}', '4'))).toHaveCount(0);
 	await expect(page.getByLabel(en.impactReasonFor.replace('{line}', '2'))).toHaveValue('Failure mode stays the same');
 });
 

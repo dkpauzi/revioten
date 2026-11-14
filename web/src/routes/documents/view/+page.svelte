@@ -28,7 +28,8 @@
 	let message = $state('');
 	let failure = $state('');
 	let fieldErrors = $state<Record<string, string>>({});
-	let canEdit = $derived(can('E-2'));
+	// Dokumen tanpa draft terbuka hanya bisa dibaca (M5.4): isinya berubah lewat perubahan.
+	let canEdit = $derived(can('E-2') && doc?.status !== 'released');
 
 	let typedHeader = $derived(format ? typedFields(format.fields, 'header') : []);
 

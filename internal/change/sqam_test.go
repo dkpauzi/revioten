@@ -83,6 +83,17 @@ func TestSQAMChange(t *testing.T) {
 	if err := e.Pool.QueryRow(ctx, "SELECT snapshot_sha256 FROM document_revisions WHERE document_id = $1 AND revision = 0", k125["cp"].ID).Scan(&after); err != nil || after != snapshot {
 		t.Errorf("snapshot revisi 0 berubah: %v", err)
 	}
+	// Jenis dokumen bisa dipilih (D-171): hanya CP, yaitu dua CP aktif customer AB.
+	var cpType string
+	if err := e.Pool.QueryRow(ctx, "SELECT id FROM document_types WHERE key = 'cp'").Scan(&cpType); err != nil {
+		t.Fatal(err)
+	}
+	only := in
+	only.DocumentTypeIDs = []string{cpType}
+	cp, err := s.SubmitSQAM(ctx, e.Author, only)
+	if err != nil || len(cp.Documents) != 2 {
+		t.Errorf("hanya CP: %+v, %v", cp.Documents, err)
+	}
 	// Database menolak perubahan SQAM tanpa tanggal berlaku.
 	if _, err := e.Pool.Exec(ctx, `UPDATE changes SET effective_date = NULL WHERE id = $1`, c.ID); err == nil {
 		t.Error("database menerima perubahan SQAM tanpa tanggal berlaku")

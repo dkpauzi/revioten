@@ -2,8 +2,9 @@
 	// Perubahan surut SQAM (M5.10, R-CHG-01, R-TPL-07): satu perubahan untuk
 	// semua dokumen aktif customer, dengan rujukan revisi SQAM dan tanggal
 	// berlaku. Saat diterima, setiap dokumen mendapat draft baru.
-	import { submitSQAMChange } from '#lib/api/client.ts';
-	import type { Change, ChangeType, FourMCategory } from '#lib/api/gen/index.ts';
+	import { onMount } from 'svelte';
+	import { listDocumentTypes, submitSQAMChange } from '#lib/api/client.ts';
+	import type { Change, ChangeType, DocumentType, FourMCategory } from '#lib/api/gen/index.ts';
 	import { failureText, problemText } from '#lib/errors.ts';
 	import { t } from '#lib/i18n/index.ts';
 
@@ -21,6 +22,14 @@
 	let reference = $state('');
 	let effectiveDate = $state('');
 	let failure = $state('');
+	// Jenis dokumen yang terdampak (D-171); tidak ada yang dicentang berarti semua.
+	let docTypes = $state<DocumentType[]>([]);
+	let typeIds = $state<string[]>([]);
+
+	onMount(async () => {
+		const result = await listDocumentTypes();
+		docTypes = result.ok ? result.data.items.filter((d) => d.key === 'pfd' || d.key === 'pfmea' || d.key === 'cp') : [];
+	});
 
 	async function submit(event: SubmitEvent) {
 		event.preventDefault();
@@ -31,7 +40,8 @@
 			four_m_category_id: fourMId || undefined,
 			reason: reason.trim(),
 			sqam_reference: reference.trim(),
-			effective_date: effectiveDate || undefined
+			effective_date: effectiveDate || undefined,
+			document_type_ids: typeIds.length > 0 ? typeIds : undefined
 		});
 		if (!result.ok) {
 			const details = result.error.body?.details ?? [];
@@ -74,6 +84,13 @@
 					{#each categories as f (f.id)}<option value={f.id}>{f.name}</option>{/each}
 				</select>
 			</div>
+			<fieldset class="wide">
+				<legend>{t('sqamTypes')}</legend>
+				{#each docTypes as d (d.id)}
+					<label class="check"><input type="checkbox" value={d.id} bind:group={typeIds} /> {d.name}</label>
+				{/each}
+				<p class="hint">{t('sqamTypesHint')}</p>
+			</fieldset>
 			<div class="field wide">
 				<label for="sqam-reason">{t('changeReason')}</label>
 				<textarea id="sqam-reason" rows="2" maxlength="2000" bind:value={reason}></textarea>
@@ -92,5 +109,11 @@
 
 	.wide {
 		grid-column: 1 / -1;
+	}
+
+	.check {
+		display: inline-flex;
+		gap: 0.25rem;
+		margin-right: 1rem;
 	}
 </style>

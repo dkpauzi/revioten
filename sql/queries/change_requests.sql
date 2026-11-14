@@ -116,7 +116,7 @@ SELECT EXISTS (
 -- M5.7: daftar periksa dampak (R-CHG-05).
 
 -- name: ListChangeImpacts :many
-SELECT i.id, i.kind, i.document_reference, i.decision, i.reason, p.name AS updated_by, i.updated_at
+SELECT i.id, i.kind, i.document_reference, i.referenced_document_id, i.decision, i.reason, p.name AS updated_by, i.updated_at
 FROM change_impacts i JOIN people p ON p.id = i.updated_by_person_id
 WHERE i.change_id = $1
 ORDER BY i.position;
@@ -125,8 +125,11 @@ ORDER BY i.position;
 DELETE FROM change_impacts WHERE change_id = $1;
 
 -- name: AddChangeImpact :exec
-INSERT INTO change_impacts (change_id, position, kind, document_reference, decision, reason, updated_by_person_id)
-VALUES ($1, $2, $3, $4, $5, $6, $7);
+INSERT INTO change_impacts (change_id, position, kind, document_reference, decision, reason, updated_by_person_id, referenced_document_id)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8);
+
+-- name: GetReferencedDocumentForImpact :one
+SELECT id, number, title, revision, active FROM referenced_documents WHERE id = $1;
 
 -- M5.8: propagasi template (R-TPL-06 sampai R-TPL-09).
 
@@ -161,13 +164,15 @@ SELECT EXISTS (
 -- M5.10: perubahan surut SQAM (R-CHG-01, R-TPL-07).
 
 -- name: ListActiveCustomerDocuments :many
--- ListActiveCustomerDocuments memberi semua dokumen customer yang nomornya
--- belum dibatalkan atau usang, menurut jenis dokumen lalu nomor.
+-- ListActiveCustomerDocuments memberi dokumen customer yang nomornya belum
+-- dibatalkan atau usang, menurut jenis dokumen lalu nomor. type_ids kosong
+-- berarti semua jenis dokumen (D-171).
 SELECT d.id, n.number
 FROM documents d
 JOIN document_numbers n ON n.id = d.document_number_id
 JOIN document_types t ON t.id = d.document_type_id
-WHERE d.customer_id = $1 AND n.status NOT IN ('obsolete', 'void')
+WHERE d.customer_id = sqlc.arg(customer_id) AND n.status NOT IN ('obsolete', 'void')
+  AND (cardinality(sqlc.arg(type_ids)::uuid[]) = 0 OR d.document_type_id = ANY (sqlc.arg(type_ids)::uuid[]))
 ORDER BY t.position, n.number;
 
 -- name: CreateSQAMChange :one

@@ -4971,6 +4971,11 @@ components:
         sqam_reference:
           type: string
           description: The SQAM revision, for example SQAM-KT rev 7, at most 200 characters.
+        document_type_ids:
+          type: array
+          description: The document types the SQAM revision affects (D-171); empty or missing means every type.
+          items:
+            type: string
         effective_date:
           type: string
           format: date
@@ -5250,6 +5255,9 @@ components:
         document_reference:
           type: string
           description: The number or name of the related document, for example SW-ZZ-116.
+        referenced_document_id:
+          type: string
+          description: The document in the master list of referenced documents, when picked from it (D-168).
         decision:
           type: string
           enum: [affected, not_affected]
@@ -5266,6 +5274,9 @@ components:
       properties:
         kind:
           type: string
+        referenced_document_id:
+          type: string
+          description: Pick from the master list of referenced documents (D-168); the number and title are copied from it.
         document_reference:
           type: string
         decision:

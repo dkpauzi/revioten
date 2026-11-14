@@ -94,8 +94,9 @@ func toAPIChange(c change.Change) Change {
 	}
 	for _, x := range c.Impacts {
 		out.Impacts = append(out.Impacts, ChangeImpact{
-			Id: x.ID, Kind: ChangeImpactKind(x.Kind), DocumentReference: optional(x.DocumentReference), Decision: ChangeImpactDecision(x.Decision),
-			Reason: optional(x.Reason), UpdatedBy: x.UpdatedBy, UpdatedAt: x.UpdatedAt,
+			Id: x.ID, Kind: ChangeImpactKind(x.Kind), DocumentReference: optional(x.DocumentReference), ReferencedDocumentId: optional(x.ReferencedDocumentID),
+			Decision: ChangeImpactDecision(x.Decision),
+			Reason:   optional(x.Reason), UpdatedBy: x.UpdatedBy, UpdatedAt: x.UpdatedAt,
 		})
 	}
 	for _, x := range c.Attachments {
@@ -206,7 +207,9 @@ func (a *apiServer) VerifyChange(ctx context.Context, req VerifyChangeRequestObj
 func (a *apiServer) SaveChangeImpacts(ctx context.Context, req SaveChangeImpactsRequestObject) (SaveChangeImpactsResponseObject, error) {
 	items := make([]change.ImpactInput, 0, len(req.Body.Items))
 	for _, x := range req.Body.Items {
-		items = append(items, change.ImpactInput{Kind: x.Kind, DocumentReference: deref(x.DocumentReference), Decision: x.Decision, Reason: deref(x.Reason)})
+		items = append(items, change.ImpactInput{
+			Kind: x.Kind, ReferencedDocumentID: deref(x.ReferencedDocumentId), DocumentReference: deref(x.DocumentReference), Decision: x.Decision, Reason: deref(x.Reason),
+		})
 	}
 	c, err := a.changeRequests.SaveImpacts(ctx, actorFrom(ctx), req.ChangeId, items)
 	if err != nil {
@@ -267,6 +270,9 @@ func (a *apiServer) SubmitSQAMChange(ctx context.Context, req SubmitSQAMChangeRe
 	in := change.SQAMChange{
 		CustomerID: b.CustomerId, ChangeTypeID: b.ChangeTypeId, FourMCategoryID: deref(b.FourMCategoryId), Reason: b.Reason,
 		SQAMReference: b.SqamReference,
+	}
+	if b.DocumentTypeIds != nil {
+		in.DocumentTypeIDs = *b.DocumentTypeIds
 	}
 	if b.EffectiveDate != nil {
 		date := b.EffectiveDate.Time

@@ -7,11 +7,14 @@ package change
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
+
+	"github.com/jackc/pgx/v5"
 
 	"github.com/dkpauzi/revioten/internal/access"
 	"github.com/dkpauzi/revioten/internal/audit"
@@ -39,18 +42,22 @@ type Impact struct {
 	ID                string
 	Kind              string
 	DocumentReference string // nomor atau nama dokumen; "" bila tidak diisi
-	Decision          string
-	Reason            string
-	UpdatedBy         string
-	UpdatedAt         time.Time
+	// ReferencedDocumentID adalah dokumen di master dokumen terkait (D-168);
+	// "" untuk dokumen yang ditulis bebas.
+	ReferencedDocumentID string
+	Decision             string
+	Reason               string
+	UpdatedBy            string
+	UpdatedAt            time.Time
 }
 
 // ImpactInput adalah isian satu baris daftar periksa.
 type ImpactInput struct {
-	Kind              string
-	DocumentReference string
-	Decision          string
-	Reason            string
+	Kind                 string
+	ReferencedDocumentID string // dari master dokumen terkait (D-168); bila diisi, nomornya diambil dari master
+	DocumentReference    string
+	Decision             string
+	Reason               string
 }
 
 // SaveImpacts menyimpan daftar periksa dampak satu perubahan secara utuh (E-3).
@@ -61,6 +68,29 @@ func (s *RequestService) SaveImpacts(ctx context.Context, actor access.Actor, id
 	if err != nil {
 		return Change{}, err
 	}
+	// Dokumen dari master: nomor, revisi, dan judulnya disalin dari master
+	// supaya sama persis dengan sumbernya (R-DOC-11, D-168).
+	for i, x := range clean {
+		if x.ReferencedDocumentID == "" {
+			continue
+		}
+		field := fmt.Sprintf("items.%d.referenced_document_id", i)
+		if !db.IsUUID(x.ReferencedDocumentID) {
+			return Change{}, problems(invalid(field, problem.InvalidFormat, "Choose a document from the list."))
+		}
+		doc, err := s.q.GetReferencedDocumentForImpact(ctx, x.ReferencedDocumentID)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return Change{}, problems(invalid(field, problem.InvalidFormat, "Choose a document from the list."))
+		}
+		if err != nil {
+			return Change{}, err
+		}
+		text := doc.Number
+		if doc.Revision != nil {
+			text += " rev " + *doc.Revision
+		}
+		clean[i].DocumentReference = truncate(text+" · "+doc.Title, maxImpactReference)
+	}
 	return s.update(ctx, actor, id, []string{StatusSubmitted, StatusAccepted}, func(q *db.Queries, c Change) (string, map[string]string, error) {
 		if err := q.ClearChangeImpacts(ctx, c.ID); err != nil {
 			return "", nil, err
@@ -70,6 +100,7 @@ func (s *RequestService) SaveImpacts(ctx context.Context, actor access.Actor, id
 			if err := q.AddChangeImpact(ctx, db.AddChangeImpactParams{
 				ChangeID: c.ID, Position: int32(i + 1), Kind: x.Kind, DocumentReference: optional(x.DocumentReference),
 				Decision: x.Decision, Reason: optional(x.Reason), UpdatedByPersonID: actor.PersonID,
+				ReferencedDocumentID: optional(x.ReferencedDocumentID),
 			}); err != nil {
 				return "", nil, err
 			}
@@ -91,6 +122,7 @@ func checkImpacts(items []ImpactInput) ([]ImpactInput, error) {
 		field := fmt.Sprintf("items.%d", i)
 		x.Kind, x.Decision = strings.TrimSpace(x.Kind), strings.TrimSpace(x.Decision)
 		x.DocumentReference, x.Reason = strings.TrimSpace(x.DocumentReference), strings.TrimSpace(x.Reason)
+		x.ReferencedDocumentID = strings.TrimSpace(x.ReferencedDocumentID)
 		switch {
 		case !contains(impactKinds, x.Kind):
 			return nil, problems(invalid(field+".kind", problem.InvalidFormat, "Choose the kind of document."))
@@ -126,7 +158,8 @@ func impacts(ctx context.Context, q *db.Queries, id string) ([]Impact, error) {
 	out := make([]Impact, 0, len(rows))
 	for _, r := range rows {
 		out = append(out, Impact{
-			ID: r.ID, Kind: r.Kind, DocumentReference: deref(r.DocumentReference), Decision: r.Decision, Reason: deref(r.Reason),
+			ID: r.ID, Kind: r.Kind, DocumentReference: deref(r.DocumentReference), ReferencedDocumentID: deref(r.ReferencedDocumentID),
+			Decision: r.Decision, Reason: deref(r.Reason),
 			UpdatedBy: r.UpdatedBy, UpdatedAt: r.UpdatedAt.UTC(),
 		})
 	}

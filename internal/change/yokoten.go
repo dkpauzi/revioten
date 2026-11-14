@@ -356,9 +356,10 @@ func truncate(s string, n int) string {
 	return strings.TrimSpace(s)
 }
 
-// GetYokoten membaca satu yokoten beserta papan statusnya (L-4 untuk
-// customer perubahan sumber). Target customer lain yang tidak boleh dilihat
-// pembaca tidak tampil (D-118).
+// GetYokoten membaca satu yokoten beserta papan statusnya. Pembaca butuh L-4
+// untuk customer perubahan sumber atau untuk paling sedikit satu customer
+// target, supaya pemilik target di Project Group lain bisa memutuskan
+// targetnya. Target customer yang tidak boleh dilihat pembaca tidak tampil (D-118).
 func (s *RequestService) GetYokoten(ctx context.Context, actor access.Actor, id string) (Yokoten, error) {
 	if !db.IsUUID(id) {
 		return Yokoten{}, problem.ErrNotFound
@@ -370,7 +371,15 @@ func (s *RequestService) GetYokoten(ctx context.Context, actor access.Actor, id 
 	if err != nil {
 		return Yokoten{}, fmt.Errorf("membaca yokoten: %w", err)
 	}
-	if err := s.authz.Authorize(ctx, actor, access.ViewDrafts, access.Resource{CustomerID: r.SourceCustomerID}); err != nil {
+	canView := func(customerID string) (bool, error) {
+		err := s.authz.Authorize(ctx, actor, access.ViewDrafts, access.Resource{CustomerID: customerID})
+		if errors.Is(err, access.ErrForbidden) {
+			return false, nil
+		}
+		return err == nil, err
+	}
+	sourceVisible, err := canView(r.SourceCustomerID)
+	if err != nil {
 		return Yokoten{}, err
 	}
 	y := Yokoten{
@@ -382,10 +391,12 @@ func (s *RequestService) GetYokoten(ctx context.Context, actor access.Actor, id 
 		return Yokoten{}, fmt.Errorf("membaca target yokoten: %w", err)
 	}
 	for _, t := range targets {
-		if err := s.authz.Authorize(ctx, actor, access.ViewDrafts, access.Resource{CustomerID: t.CustomerID}); errors.Is(err, access.ErrForbidden) {
-			continue
-		} else if err != nil {
+		visible, err := canView(t.CustomerID)
+		if err != nil {
 			return Yokoten{}, err
+		}
+		if !visible {
+			continue
 		}
 		item := YokotenTarget{
 			ID: t.ID, ModelID: t.ModelID, ModelName: t.ModelName, CustomerID: t.CustomerID, CustomerCode: t.CustomerCode,
@@ -409,6 +420,9 @@ func (s *RequestService) GetYokoten(ctx context.Context, actor access.Actor, id 
 		}
 		item.Progress = progress(item, deref(t.ChangeStatus))
 		y.Targets = append(y.Targets, item)
+	}
+	if !sourceVisible && len(y.Targets) == 0 {
+		return Yokoten{}, access.ErrForbidden
 	}
 	return y, nil
 }

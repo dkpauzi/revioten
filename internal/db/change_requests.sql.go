@@ -58,18 +58,19 @@ func (q *Queries) AddChangeDocument(ctx context.Context, arg AddChangeDocumentPa
 }
 
 const addChangeImpact = `-- name: AddChangeImpact :exec
-INSERT INTO change_impacts (change_id, position, kind, document_reference, decision, reason, updated_by_person_id)
-VALUES ($1, $2, $3, $4, $5, $6, $7)
+INSERT INTO change_impacts (change_id, position, kind, document_reference, decision, reason, updated_by_person_id, referenced_document_id)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 `
 
 type AddChangeImpactParams struct {
-	ChangeID          string
-	Position          int32
-	Kind              string
-	DocumentReference *string
-	Decision          string
-	Reason            *string
-	UpdatedByPersonID string
+	ChangeID             string
+	Position             int32
+	Kind                 string
+	DocumentReference    *string
+	Decision             string
+	Reason               *string
+	UpdatedByPersonID    string
+	ReferencedDocumentID *string
 }
 
 func (q *Queries) AddChangeImpact(ctx context.Context, arg AddChangeImpactParams) error {
@@ -81,6 +82,7 @@ func (q *Queries) AddChangeImpact(ctx context.Context, arg AddChangeImpactParams
 		arg.Decision,
 		arg.Reason,
 		arg.UpdatedByPersonID,
+		arg.ReferencedDocumentID,
 	)
 	return err
 }
@@ -385,6 +387,31 @@ func (q *Queries) GetDocumentForChange(ctx context.Context, id string) (GetDocum
 	return i, err
 }
 
+const getReferencedDocumentForImpact = `-- name: GetReferencedDocumentForImpact :one
+SELECT id, number, title, revision, active FROM referenced_documents WHERE id = $1
+`
+
+type GetReferencedDocumentForImpactRow struct {
+	ID       string
+	Number   string
+	Title    string
+	Revision *string
+	Active   bool
+}
+
+func (q *Queries) GetReferencedDocumentForImpact(ctx context.Context, id string) (GetReferencedDocumentForImpactRow, error) {
+	row := q.db.QueryRow(ctx, getReferencedDocumentForImpact, id)
+	var i GetReferencedDocumentForImpactRow
+	err := row.Scan(
+		&i.ID,
+		&i.Number,
+		&i.Title,
+		&i.Revision,
+		&i.Active,
+	)
+	return i, err
+}
+
 const isChangeVerifier = `-- name: IsChangeVerifier :one
 SELECT EXISTS (
     SELECT 1
@@ -418,8 +445,14 @@ FROM documents d
 JOIN document_numbers n ON n.id = d.document_number_id
 JOIN document_types t ON t.id = d.document_type_id
 WHERE d.customer_id = $1 AND n.status NOT IN ('obsolete', 'void')
+  AND (cardinality($2::uuid[]) = 0 OR d.document_type_id = ANY ($2::uuid[]))
 ORDER BY t.position, n.number
 `
+
+type ListActiveCustomerDocumentsParams struct {
+	CustomerID string
+	TypeIds    []string
+}
 
 type ListActiveCustomerDocumentsRow struct {
 	ID     string
@@ -427,10 +460,11 @@ type ListActiveCustomerDocumentsRow struct {
 }
 
 // M5.10: perubahan surut SQAM (R-CHG-01, R-TPL-07).
-// ListActiveCustomerDocuments memberi semua dokumen customer yang nomornya
-// belum dibatalkan atau usang, menurut jenis dokumen lalu nomor.
-func (q *Queries) ListActiveCustomerDocuments(ctx context.Context, customerID string) ([]ListActiveCustomerDocumentsRow, error) {
-	rows, err := q.db.Query(ctx, listActiveCustomerDocuments, customerID)
+// ListActiveCustomerDocuments memberi dokumen customer yang nomornya belum
+// dibatalkan atau usang, menurut jenis dokumen lalu nomor. type_ids kosong
+// berarti semua jenis dokumen (D-171).
+func (q *Queries) ListActiveCustomerDocuments(ctx context.Context, arg ListActiveCustomerDocumentsParams) ([]ListActiveCustomerDocumentsRow, error) {
+	rows, err := q.db.Query(ctx, listActiveCustomerDocuments, arg.CustomerID, arg.TypeIds)
 	if err != nil {
 		return nil, err
 	}
@@ -612,20 +646,21 @@ func (q *Queries) ListChangeIDsForDocument(ctx context.Context, documentID strin
 
 const listChangeImpacts = `-- name: ListChangeImpacts :many
 
-SELECT i.id, i.kind, i.document_reference, i.decision, i.reason, p.name AS updated_by, i.updated_at
+SELECT i.id, i.kind, i.document_reference, i.referenced_document_id, i.decision, i.reason, p.name AS updated_by, i.updated_at
 FROM change_impacts i JOIN people p ON p.id = i.updated_by_person_id
 WHERE i.change_id = $1
 ORDER BY i.position
 `
 
 type ListChangeImpactsRow struct {
-	ID                string
-	Kind              string
-	DocumentReference *string
-	Decision          string
-	Reason            *string
-	UpdatedBy         string
-	UpdatedAt         time.Time
+	ID                   string
+	Kind                 string
+	DocumentReference    *string
+	ReferencedDocumentID *string
+	Decision             string
+	Reason               *string
+	UpdatedBy            string
+	UpdatedAt            time.Time
 }
 
 // M5.7: daftar periksa dampak (R-CHG-05).
@@ -642,6 +677,7 @@ func (q *Queries) ListChangeImpacts(ctx context.Context, changeID string) ([]Lis
 			&i.ID,
 			&i.Kind,
 			&i.DocumentReference,
+			&i.ReferencedDocumentID,
 			&i.Decision,
 			&i.Reason,
 			&i.UpdatedBy,

@@ -2,6 +2,7 @@
 	// Perbandingan dua revisi (M5.6, R-REV-03): per baris dan per sel. Sisi
 	// "ke" boleh draft yang sedang dikerjakan. Saringan proses memberi riwayat
 	// satu proses di dokumen ini.
+	import { untrack } from 'svelte';
 	import { getDocumentDiff } from '#lib/api/client.ts';
 	import type { Document, DocumentDiff, DocumentRevision } from '#lib/api/gen/index.ts';
 	import { failureText, problemText } from '#lib/errors.ts';
@@ -17,7 +18,8 @@
 		)
 	);
 	let from = $state('');
-	let to = $state('draft');
+	// Bawaannya draft yang terbuka; dokumen tanpa draft dibandingkan dengan revisi terbit terakhir.
+	let to = $state(untrack(() => (doc.status === 'draft' ? 'draft' : String(revisions.find((r) => r.status === 'released')?.revision ?? ''))));
 	let processId = $state('');
 	let diff = $state<DocumentDiff | null>(null);
 	let failure = $state('');

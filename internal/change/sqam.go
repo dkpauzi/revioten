@@ -29,6 +29,9 @@ type SQAMChange struct {
 	Reason          string
 	SQAMReference   string     // misalnya "SQAM-KT rev 7, clause 4.3"
 	EffectiveDate   *time.Time // tanggal berlaku revisi SQAM
+	// DocumentTypeIDs memilih jenis dokumen yang terdampak (D-171); kosong
+	// berarti semua jenis.
+	DocumentTypeIDs []string
 }
 
 // SubmitSQAM mengajukan satu perubahan surut SQAM untuk semua dokumen aktif
@@ -69,18 +72,28 @@ func (s *RequestService) SubmitSQAM(ctx context.Context, actor access.Actor, in 
 			list = append(list, invalid("four_m_category_id", problem.InvalidFormat, "Choose a 4M category from the list."))
 		}
 	}
+	for _, typeID := range in.DocumentTypeIDs {
+		if !db.IsUUID(typeID) {
+			list = append(list, invalid("document_type_ids", problem.InvalidFormat, "Choose document types from the list."))
+			break
+		}
+	}
 	if err := problems(list...); err != nil {
 		return Change{}, err
+	}
+	types := in.DocumentTypeIDs
+	if types == nil {
+		types = []string{}
 	}
 	var id string
 	err := db.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
 		q := s.q.WithTx(tx)
-		docs, err := q.ListActiveCustomerDocuments(ctx, in.CustomerID)
+		docs, err := q.ListActiveCustomerDocuments(ctx, db.ListActiveCustomerDocumentsParams{CustomerID: in.CustomerID, TypeIds: types})
 		if err != nil {
 			return err
 		}
 		if len(docs) == 0 {
-			return problems(invalid("customer_id", problem.NotAllowed, "The customer has no active document."))
+			return problems(invalid("customer_id", problem.NotAllowed, "The customer has no active document of the chosen types."))
 		}
 		if id, err = q.CreateSQAMChange(ctx, db.CreateSQAMChangeParams{
 			CustomerID: in.CustomerID, ChangeTypeID: in.ChangeTypeID, FourMCategoryID: optional(fourM), Reason: reason,

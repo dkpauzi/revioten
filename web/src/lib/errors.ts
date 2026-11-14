@@ -91,6 +91,7 @@ const problemKeys: Record<string, MessageKey> = {
 	'impact.kind:invalid_format': 'impactKindInvalid',
 	'impact.document_reference:too_long': 'impactReferenceTooLong',
 	'impact.reason:too_long': 'impactReasonTooLong',
+	'impact.referenced_document_id:invalid_format': 'impactMasterInvalid',
 	'items:too_long': 'impactTooMany',
 	'targets:required': 'yokotenNoTargets',
 	'sqam_reference:required': 'sqamReferenceRequired',

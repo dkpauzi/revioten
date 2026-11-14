@@ -3,35 +3,49 @@
 	// (PFD, PFMEA, CP, WI, standar inspeksi) dicatat terdampak atau tidak,
 	// dengan alasan. Alasan wajib bila tidak terdampak.
 	import { untrack } from 'svelte';
-	import { saveChangeImpacts } from '#lib/api/client.ts';
-	import type { Change, ChangeImpactInput } from '#lib/api/gen/index.ts';
+	import { onMount } from 'svelte';
+	import { listReferencedDocuments, saveChangeImpacts } from '#lib/api/client.ts';
+	import type { Change, ChangeImpactInput, ReferencedDocument } from '#lib/api/gen/index.ts';
 	import { failureText, problemText } from '#lib/errors.ts';
 	import { t } from '#lib/i18n/index.ts';
 
 	let { change, editable, onsaved }: { change: Change; editable: boolean; onsaved: (c: Change) => void } = $props();
 
 	const kinds = ['pfd', 'pfmea', 'cp', 'wi', 'inspection_standard', 'other'] as const;
-	type Line = { kind: string; document_reference: string; decision: string; reason: string };
+	// referenced: dokumen dari master dokumen terkait (D-168); '' berarti ditulis bebas.
+	type Line = { kind: string; referenced: string; document_reference: string; decision: string; reason: string };
 
 	// Daftar yang belum pernah disimpan diisi saran: satu baris per jenis
 	// dokumen, dan dokumen terdampak perubahan ini sudah ditandai terdampak.
 	function initial(c: Change): Line[] {
 		if (c.impacts.length > 0) {
-			return c.impacts.map((x) => ({ kind: x.kind, document_reference: x.document_reference ?? '', decision: x.decision, reason: x.reason ?? '' }));
+			return c.impacts.map((x) => ({
+				kind: x.kind,
+				referenced: x.referenced_document_id ?? '',
+				document_reference: x.document_reference ?? '',
+				decision: x.decision,
+				reason: x.reason ?? ''
+			}));
 		}
 		return ['pfd', 'pfmea', 'cp', 'wi', 'inspection_standard'].map((kind) => {
 			const doc = c.documents.find((d) => d.document_type.key === kind);
-			return { kind, document_reference: doc?.number ?? '', decision: doc ? 'affected' : '', reason: '' };
+			return { kind, referenced: '', document_reference: doc?.number ?? '', decision: doc ? 'affected' : '', reason: '' };
 		});
 	}
 
 	// Isi awal saja; halaman membuat ulang komponen ini untuk perubahan lain.
 	let lines = $state<Line[]>(untrack(() => initial(change)));
 	let message = $state('');
+	let master = $state<ReferencedDocument[]>([]);
+
+	onMount(async () => {
+		const result = await listReferencedDocuments();
+		master = result.ok ? result.data.items.filter((d) => d.active) : [];
+	});
 	let failure = $state('');
 
 	function add() {
-		lines.push({ kind: 'wi', document_reference: '', decision: '', reason: '' });
+		lines.push({ kind: 'wi', referenced: '', document_reference: '', decision: '', reason: '' });
 	}
 
 	// kindLabel memberi nama jenis dokumen terkait.
@@ -46,7 +60,8 @@
 		const items: ChangeImpactInput[] = lines.map((l) => ({
 			kind: l.kind,
 			decision: l.decision,
-			document_reference: l.document_reference.trim() || undefined,
+			referenced_document_id: l.referenced || undefined,
+			document_reference: l.referenced ? undefined : l.document_reference.trim() || undefined,
 			reason: l.reason.trim() || undefined
 		}));
 		const result = await saveChangeImpacts(change.id, { items });
@@ -92,7 +107,17 @@
 									{#each kinds as k (k)}<option value={k}>{kindLabel(k)}</option>{/each}
 								</select>
 							</td>
-							<td><input aria-label={t('impactDocumentFor', { line: String(i + 1) })} maxlength="200" bind:value={line.document_reference} /></td>
+							<td>
+								{#if line.kind !== 'pfd' && line.kind !== 'pfmea' && line.kind !== 'cp' && master.length > 0}
+									<select aria-label={t('impactMasterFor', { line: String(i + 1) })} bind:value={line.referenced}>
+										<option value="">{t('impactTyped')}</option>
+										{#each master as d (d.id)}<option value={d.id}>{d.number} · {d.title}</option>{/each}
+									</select>
+								{/if}
+								{#if !line.referenced}
+									<input aria-label={t('impactDocumentFor', { line: String(i + 1) })} maxlength="200" bind:value={line.document_reference} />
+								{/if}
+							</td>
 							<td>
 								<select aria-label={t('impactDecisionFor', { line: String(i + 1) })} bind:value={line.decision}>
 									<option value="">{t('changeChoose')}</option>

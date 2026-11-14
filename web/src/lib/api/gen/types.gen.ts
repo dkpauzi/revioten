@@ -1323,6 +1323,10 @@ export type SqamChangeInput = {
      */
     sqam_reference: string;
     /**
+     * The document types the SQAM revision affects (D-171); empty or missing means every type.
+     */
+    document_type_ids?: Array<string>;
+    /**
      * Required; checked by the server so a missing date gets a clear message.
      */
     effective_date?: string;
@@ -1504,6 +1508,10 @@ export type ChangeImpact = {
      * The number or name of the related document, for example SW-ZZ-116.
      */
     document_reference?: string;
+    /**
+     * The document in the master list of referenced documents, when picked from it (D-168).
+     */
+    referenced_document_id?: string;
     decision: 'affected' | 'not_affected';
     reason?: string;
     updated_by: string;
@@ -1512,6 +1520,10 @@ export type ChangeImpact = {
 
 export type ChangeImpactInput = {
     kind: string;
+    /**
+     * Pick from the master list of referenced documents (D-168); the number and title are copied from it.
+     */
+    referenced_document_id?: string;
     document_reference?: string;
     decision: string;
     /**

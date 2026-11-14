@@ -83,7 +83,10 @@
 
 	<h3>{t('diffTitle')}</h3>
 	{#if items.some((r) => r.status === 'released')}
-		<DiffPanel {doc} revisions={items} />
+		<!-- Dibuat ulang setelah rilis atau draft baru, supaya pilihan bawaan ikut. -->
+		{#key `${doc.status}-${doc.revision}-${items.length}`}
+			<DiffPanel {doc} revisions={items} />
+		{/key}
 	{:else}
 		<p class="hint">{t('diffNoRelease')}</p>
 	{/if}

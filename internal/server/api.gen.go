@@ -1866,8 +1866,11 @@ type ChangeImpact struct {
 	Id                string           `json:"id"`
 	Kind              ChangeImpactKind `json:"kind"`
 	Reason            *string          `json:"reason,omitempty"`
-	UpdatedAt         time.Time        `json:"updated_at"`
-	UpdatedBy         string           `json:"updated_by"`
+
+	// ReferencedDocumentId The document in the master list of referenced documents, when picked from it (D-168).
+	ReferencedDocumentId *string   `json:"referenced_document_id,omitempty"`
+	UpdatedAt            time.Time `json:"updated_at"`
+	UpdatedBy            string    `json:"updated_by"`
 }
 
 // ChangeImpactDecision defines model for ChangeImpact.Decision.
@@ -1884,6 +1887,9 @@ type ChangeImpactInput struct {
 
 	// Reason Required when the document is not affected.
 	Reason *string `json:"reason,omitempty"`
+
+	// ReferencedDocumentId Pick from the master list of referenced documents (D-168); the number and title are copied from it.
+	ReferencedDocumentId *string `json:"referenced_document_id,omitempty"`
 }
 
 // ChangeImpactsInput defines model for ChangeImpactsInput.
@@ -3770,6 +3776,9 @@ type RowDifferenceList struct {
 type SQAMChangeInput struct {
 	ChangeTypeId string `json:"change_type_id"`
 	CustomerId   string `json:"customer_id"`
+
+	// DocumentTypeIds The document types the SQAM revision affects (D-171); empty or missing means every type.
+	DocumentTypeIds *[]string `json:"document_type_ids,omitempty"`
 
 	// EffectiveDate Required; checked by the server so a missing date gets a clear message.
 	EffectiveDate   *openapi_types.Date `json:"effective_date,omitempty"`
