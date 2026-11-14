@@ -2573,6 +2573,43 @@ type PersonInfo struct {
 	Name string `json:"name"`
 }
 
+// PfmeaCpCheck defines model for PfmeaCpCheck.
+type PfmeaCpCheck struct {
+	CheckedAt time.Time `json:"checked_at"`
+
+	// CheckedBy The name of the person who set the mark.
+	CheckedBy     string `json:"checked_by"`
+	CpRevision    int    `json:"cp_revision"`
+	PfmeaRevision int    `json:"pfmea_revision"`
+
+	// Stale A row of this process changed after the mark was set, so it should be checked again.
+	Stale bool `json:"stale"`
+}
+
+// PfmeaCpCheckInput defines model for PfmeaCpCheckInput.
+type PfmeaCpCheckInput struct {
+	Checked   bool   `json:"checked"`
+	ProcessId string `json:"process_id"`
+}
+
+// PfmeaCpComparison defines model for PfmeaCpComparison.
+type PfmeaCpComparison struct {
+	Cp        Document         `json:"cp"`
+	Pfmea     Document         `json:"pfmea"`
+	Processes []PfmeaCpProcess `json:"processes"`
+}
+
+// PfmeaCpProcess defines model for PfmeaCpProcess.
+type PfmeaCpProcess struct {
+	Check       *PfmeaCpCheck `json:"check,omitempty"`
+	CpRowIds    []string      `json:"cp_row_ids"`
+	PfmeaRowIds []string      `json:"pfmea_row_ids"`
+
+	// ProcessId Left out for the rows that have no process.
+	ProcessId   *string `json:"process_id,omitempty"`
+	ProcessName *string `json:"process_name,omitempty"`
+}
+
 // PointContent The content of a point per column of the format, keyed by the fixed field key, for example failure_mode or product_characteristic (D-146). A value is text, or a whole number from 1 to 10 for a rating column. One point serves every form that has a column with the same key.
 type PointContent map[string]interface{}
 
@@ -3316,6 +3353,9 @@ type SetDocumentHeaderJSONRequestBody = DocumentHeader
 // ReorderDocumentRowsJSONRequestBody defines body for ReorderDocumentRows for application/json ContentType.
 type ReorderDocumentRowsJSONRequestBody = DocumentOrder
 
+// MarkPfmeaCpCheckedJSONRequestBody defines body for MarkPfmeaCpChecked for application/json ContentType.
+type MarkPfmeaCpCheckedJSONRequestBody = PfmeaCpCheckInput
+
 // AddDocumentRowJSONRequestBody defines body for AddDocumentRow for application/json ContentType.
 type AddDocumentRowJSONRequestBody = DocumentRowInput
 
@@ -3564,6 +3604,12 @@ type ServerInterface interface {
 	// ReorderDocumentRows Save a new order of the rows, and number the operations when asked (E-2, M4.6)
 	// (PUT /api/v1/documents/{documentId}/order)
 	ReorderDocumentRows(w http.ResponseWriter, r *http.Request, documentId DocumentId)
+	// GetPfmeaCpComparison The PFMEA and the CP of the document set side by side, per process (L-4, M4.9)
+	// (GET /api/v1/documents/{documentId}/pfmea-cp)
+	GetPfmeaCpComparison(w http.ResponseWriter, r *http.Request, documentId DocumentId)
+	// MarkPfmeaCpChecked Set or clear the "checked by, date" mark of one process (V-2, D-65)
+	// (PUT /api/v1/documents/{documentId}/pfmea-cp)
+	MarkPfmeaCpChecked(w http.ResponseWriter, r *http.Request, documentId DocumentId)
 	// AddDocumentRow Add a row at the end of a draft document (E-2)
 	// (POST /api/v1/documents/{documentId}/rows)
 	AddDocumentRow(w http.ResponseWriter, r *http.Request, documentId DocumentId)
@@ -4876,6 +4922,58 @@ func (siw *ServerInterfaceWrapper) ReorderDocumentRows(w http.ResponseWriter, r 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ReorderDocumentRows(w, r, documentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetPfmeaCpComparison operation middleware
+func (siw *ServerInterfaceWrapper) GetPfmeaCpComparison(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", r.PathValue("documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetPfmeaCpComparison(w, r, documentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// MarkPfmeaCpChecked operation middleware
+func (siw *ServerInterfaceWrapper) MarkPfmeaCpChecked(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", r.PathValue("documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.MarkPfmeaCpChecked(w, r, documentId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -6729,6 +6827,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/documents/{documentId}/header", wrapper.SetDocumentHeader)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/documents/{documentId}/composition", wrapper.GetDocumentComposition)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/documents/{documentId}/composition", wrapper.ComposeDocument)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/documents/{documentId}/pfmea-cp", wrapper.GetPfmeaCpComparison)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/documents/{documentId}/pfmea-cp", wrapper.MarkPfmeaCpChecked)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/documents/{documentId}/differences", wrapper.GetDocumentDifferences)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/rows/{rowId}/detach", wrapper.DetachDocumentRow)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/copy", wrapper.CopyDocumentComposition)
@@ -8537,6 +8637,85 @@ type ReorderDocumentRowsdefaultJSONResponse struct {
 }
 
 func (response ReorderDocumentRowsdefaultJSONResponse) VisitReorderDocumentRowsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPfmeaCpComparisonRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+}
+
+type GetPfmeaCpComparisonResponseObject interface {
+	VisitGetPfmeaCpComparisonResponse(w http.ResponseWriter) error
+}
+
+type GetPfmeaCpComparison200JSONResponse PfmeaCpComparison
+
+func (response GetPfmeaCpComparison200JSONResponse) VisitGetPfmeaCpComparisonResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPfmeaCpComparisondefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response GetPfmeaCpComparisondefaultJSONResponse) VisitGetPfmeaCpComparisonResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type MarkPfmeaCpCheckedRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+	Body       *MarkPfmeaCpCheckedJSONRequestBody
+}
+
+type MarkPfmeaCpCheckedResponseObject interface {
+	VisitMarkPfmeaCpCheckedResponse(w http.ResponseWriter) error
+}
+
+type MarkPfmeaCpChecked200JSONResponse PfmeaCpComparison
+
+func (response MarkPfmeaCpChecked200JSONResponse) VisitMarkPfmeaCpCheckedResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type MarkPfmeaCpCheckeddefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response MarkPfmeaCpCheckeddefaultJSONResponse) VisitMarkPfmeaCpCheckedResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -11425,6 +11604,12 @@ type StrictServerInterface interface {
 	// ReorderDocumentRows Save a new order of the rows, and number the operations when asked (E-2, M4.6)
 	// (PUT /api/v1/documents/{documentId}/order)
 	ReorderDocumentRows(ctx context.Context, request ReorderDocumentRowsRequestObject) (ReorderDocumentRowsResponseObject, error)
+	// GetPfmeaCpComparison The PFMEA and the CP of the document set side by side, per process (L-4, M4.9)
+	// (GET /api/v1/documents/{documentId}/pfmea-cp)
+	GetPfmeaCpComparison(ctx context.Context, request GetPfmeaCpComparisonRequestObject) (GetPfmeaCpComparisonResponseObject, error)
+	// MarkPfmeaCpChecked Set or clear the "checked by, date" mark of one process (V-2, D-65)
+	// (PUT /api/v1/documents/{documentId}/pfmea-cp)
+	MarkPfmeaCpChecked(ctx context.Context, request MarkPfmeaCpCheckedRequestObject) (MarkPfmeaCpCheckedResponseObject, error)
 	// AddDocumentRow Add a row at the end of a draft document (E-2)
 	// (POST /api/v1/documents/{documentId}/rows)
 	AddDocumentRow(ctx context.Context, request AddDocumentRowRequestObject) (AddDocumentRowResponseObject, error)
@@ -12937,6 +13122,65 @@ func (sh *strictHandler) ReorderDocumentRows(w http.ResponseWriter, r *http.Requ
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ReorderDocumentRowsResponseObject); ok {
 		if err := validResponse.VisitReorderDocumentRowsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetPfmeaCpComparison operation middleware
+func (sh *strictHandler) GetPfmeaCpComparison(w http.ResponseWriter, r *http.Request, documentId DocumentId) {
+	var request GetPfmeaCpComparisonRequestObject
+
+	request.DocumentId = documentId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetPfmeaCpComparison(ctx, request.(GetPfmeaCpComparisonRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetPfmeaCpComparison")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetPfmeaCpComparisonResponseObject); ok {
+		if err := validResponse.VisitGetPfmeaCpComparisonResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// MarkPfmeaCpChecked operation middleware
+func (sh *strictHandler) MarkPfmeaCpChecked(w http.ResponseWriter, r *http.Request, documentId DocumentId) {
+	var request MarkPfmeaCpCheckedRequestObject
+
+	request.DocumentId = documentId
+
+	var body MarkPfmeaCpCheckedJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.MarkPfmeaCpChecked(ctx, request.(MarkPfmeaCpCheckedRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "MarkPfmeaCpChecked")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(MarkPfmeaCpCheckedResponseObject); ok {
+		if err := validResponse.VisitMarkPfmeaCpCheckedResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

@@ -41,6 +41,7 @@ import type {
 	Composition,
 	DocumentRowInput,
 	RowDifferenceList,
+	PfmeaCpComparison,
 	NewDocument,
 	FormSet,
 	FormSetList,
@@ -586,6 +587,16 @@ export function getDocumentDifferences(id: string, fetchFn: typeof fetch = fetch
 // detachDocumentRow memanggil POST /api/v1/documents/{id}/rows/{rowId}/detach (E-2, M4.8).
 export function detachDocumentRow(id: string, rowId: string, reason: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<Document>> {
 	return call<Document>(fetchFn, `${itemPath('documents', id)}/rows/${encodeURIComponent(rowId)}/detach`, jsonRequest('POST', { reason }));
+}
+
+// getPfmeaCpComparison memanggil GET /api/v1/documents/{id}/pfmea-cp (L-4, M4.9).
+export function getPfmeaCpComparison(id: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<PfmeaCpComparison>> {
+	return call<PfmeaCpComparison>(fetchFn, itemPath('documents', id) + '/pfmea-cp', { method: 'GET' });
+}
+
+// markPfmeaCpChecked memanggil PUT /api/v1/documents/{id}/pfmea-cp (V-2, D-65).
+export function markPfmeaCpChecked(id: string, processId: string, checked: boolean, fetchFn: typeof fetch = fetch): Promise<ApiResult<PfmeaCpComparison>> {
+	return call<PfmeaCpComparison>(fetchFn, itemPath('documents', id) + '/pfmea-cp', jsonRequest('PUT', { process_id: processId, checked }));
 }
 
 // updateDocumentRow memanggil PUT /api/v1/documents/{id}/rows/{rowId} (E-2).

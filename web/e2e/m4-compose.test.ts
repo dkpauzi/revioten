@@ -22,7 +22,7 @@ test('penyusun merakit CP, PFMEA, dan PFD dari process template IQC', async ({ p
 		await post('/api/v1/models', { customer_id: customer.id, name: 'M-45' });
 		await post('/api/v1/models', { customer_id: customer.id, name: 'M-46' });
 	});
-	const temporary = await createWorkAccount(page, 'Perakit dokumen', 'perakit.e2e', ['author', 'template_maintainer']);
+	const temporary = await createWorkAccount(page, 'Perakit dokumen', 'perakit.e2e', ['author', 'template_maintainer', 'pfmea_cp_checker']);
 	await logOut(page);
 	await logInFirstTime(page, 'perakit.e2e', temporary, 'baris dirakit dari process template');
 
@@ -227,4 +227,31 @@ test('penyusun merakit CP, PFMEA, dan PFD dari process template IQC', async ({ p
 	await expect(page.getByRole('status')).toHaveText(en.compareDetachDone.replace('{position}', '1'));
 	await expect(page.getByTestId('compare-summary')).toHaveText(en.compareSummary.replace('{rows}', '2').replace('{different}', '0'));
 	await expect(page.locator('.compare tbody tr').first()).toContainText(en.compareDetachReason.replace('{reason}', 'Customer drawing for M-46'));
+
+	// M4.9 (R-DOC-06, D-65): PFMEA dan CP M-45 berdampingan per proses, lalu
+	// proses Incoming QC diberi tanda sudah dicek.
+	await openFromMenu(page, en.navGroupDocuments, en.navDocuments);
+	await page.getByLabel(en.documentCustomer, { exact: true }).selectOption({ label: 'KM · Customer KM' });
+	await page.getByRole('link', { name: setup.cpNumber }).click();
+	await page.getByRole('link', { name: en.checkTab, exact: true }).click();
+	await expect(page.getByRole('heading', { name: en.checkTitle, level: 1 })).toBeVisible();
+	const iqc = page.getByRole('region', { name: 'Incoming QC' });
+	await expect(iqc.getByTestId('check-pfmea')).toContainText('Wrong part received');
+	await expect(iqc.getByTestId('check-cp')).toContainText('Part number');
+	await expect(iqc.getByTestId('check-mark')).toHaveText(en.checkNotYet);
+	await iqc.getByRole('button', { name: en.checkMarkFor.replace('{process}', 'Incoming QC') }).click();
+	await expect(page.getByRole('status')).toHaveText(en.checkMarked.replace('{process}', 'Incoming QC'));
+	await expect(iqc.getByTestId('check-mark')).toContainText('Perakit dokumen');
+
+	// Baris CP berubah sesudah dicek: tandanya perlu dicek ulang.
+	await page.getByRole('link', { name: 'CP', exact: true }).click();
+	await cell(0, product).click();
+	await page.keyboard.press('ControlOrMeta+a');
+	await page.keyboard.type('Part number and revision');
+	await page.getByRole('heading', { name: en.documentRowsTitle }).click();
+	await expect(page.getByRole('status')).toHaveText(en.documentRowSaved);
+	await page.getByRole('link', { name: en.checkTab, exact: true }).click();
+	await expect(iqc.getByTestId('check-mark')).toContainText(en.checkStale.split('{by}')[0].trim());
+	await iqc.getByRole('button', { name: en.checkMarkFor.replace('{process}', 'Incoming QC') }).click();
+	await expect(iqc.getByTestId('check-mark')).toContainText(en.checkDone.split('{by}')[0].trim());
 });

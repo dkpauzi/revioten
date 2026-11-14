@@ -1622,6 +1622,48 @@ paths:
                 $ref: '#/components/schemas/Document'
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/documents/{documentId}/pfmea-cp:
+    get:
+      operationId: getPfmeaCpComparison
+      summary: The PFMEA and the CP of the document set side by side, per process (L-4, M4.9)
+      description: >-
+        Opens from any document of the set. Rows are grouped by process, in the order the processes first appear
+        (PFMEA first, then CP); rows without a process come last. Each process may carry a "checked by, date" mark
+        for the current revisions of both documents (R-DOC-06).
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      responses:
+        '200':
+          description: The comparison.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PfmeaCpComparison'
+        default:
+          $ref: '#/components/responses/Error'
+    put:
+      operationId: markPfmeaCpChecked
+      summary: Set or clear the "checked by, date" mark of one process (V-2, D-65)
+      description: >-
+        A mark that is still current keeps its person and time. Marking a process that changed after its check renews
+        the mark. Setting and clearing are written to the audit log.
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PfmeaCpCheckInput'
+      responses:
+        '200':
+          description: The comparison after the change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PfmeaCpComparison'
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/documents/{documentId}/differences:
     get:
       operationId: getDocumentDifferences
@@ -3983,6 +4025,62 @@ components:
           type: string
         reason:
           type: string
+    PfmeaCpComparison:
+      type: object
+      required: [pfmea, cp, processes]
+      properties:
+        pfmea:
+          $ref: '#/components/schemas/Document'
+        cp:
+          $ref: '#/components/schemas/Document'
+        processes:
+          type: array
+          items:
+            $ref: '#/components/schemas/PfmeaCpProcess'
+    PfmeaCpProcess:
+      type: object
+      required: [pfmea_row_ids, cp_row_ids]
+      properties:
+        process_id:
+          type: string
+          description: Left out for the rows that have no process.
+        process_name:
+          type: string
+        pfmea_row_ids:
+          type: array
+          items:
+            type: string
+        cp_row_ids:
+          type: array
+          items:
+            type: string
+        check:
+          $ref: '#/components/schemas/PfmeaCpCheck'
+    PfmeaCpCheck:
+      type: object
+      required: [checked_by, checked_at, pfmea_revision, cp_revision, stale]
+      properties:
+        checked_by:
+          type: string
+          description: The name of the person who set the mark.
+        checked_at:
+          type: string
+          format: date-time
+        pfmea_revision:
+          type: integer
+        cp_revision:
+          type: integer
+        stale:
+          type: boolean
+          description: A row of this process changed after the mark was set, so it should be checked again.
+    PfmeaCpCheckInput:
+      type: object
+      required: [process_id, checked]
+      properties:
+        process_id:
+          type: string
+        checked:
+          type: boolean
     RowDifferenceList:
       type: object
       required: [items]

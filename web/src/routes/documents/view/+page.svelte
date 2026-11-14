@@ -310,11 +310,15 @@
 	{/if}
 
 	<section>
-		<!-- Tab sheet workbook (D-145): dokumen satu set PFD, PFMEA, dan CP. Tab Check menyusul di M4.9. -->
+		<!-- Tab sheet workbook (D-145): dokumen satu set PFD, PFMEA, dan CP, lalu tab Check (M4.9). -->
 		<nav class="sheets" aria-label={t('documentSheets')}>
 			{#each doc.set as m (m.id)}
 				<a href="/documents/view?id={m.id}" data-sveltekit-noscroll aria-current={m.id === doc.id ? 'page' : undefined}>{m.document_type.name}</a>
 			{/each}
+			<!-- Tab Check (M4.9): hanya untuk set yang punya PFMEA dan CP. -->
+			{#if doc.set.some((m) => m.document_type.key === 'pfmea') && doc.set.some((m) => m.document_type.key === 'cp')}
+				<a href="/documents/check?id={doc.id}">{t('checkTab')}</a>
+			{/if}
 		</nav>
 		<h2>{t('documentRowsTitle')}</h2>
 		{#if canEdit}<p class="hint">{t('documentGridHint')}</p>{/if}

@@ -77,6 +77,8 @@ const actionKeys: Record<string, MessageKey> = {
 	'document.composed': 'auditActionDocumentComposed',
 	'document.copied': 'auditActionDocumentCopied',
 	'document.row_detached': 'auditActionDocumentRowDetached',
+	'document.pfmea_cp_checked': 'auditActionPfmeaCpChecked',
+	'document.pfmea_cp_unchecked': 'auditActionPfmeaCpUnchecked',
 	'document.rows_reordered': 'auditActionDocumentRowsReordered',
 	'document.row_changed': 'auditActionDocumentRowChanged',
 	'document.row_removed': 'auditActionDocumentRowRemoved',
@@ -145,7 +147,9 @@ const detailKeys: Record<string, MessageKey> = {
 	content: 'auditDetailPointContent',
 	renumbered: 'auditDetailRenumbered',
 	rows: 'auditDetailRowCount',
-	source: 'auditDetailCopySource'
+	source: 'auditDetailCopySource',
+	pfmea: 'auditDetailPfmea',
+	cp: 'auditDetailCp'
 };
 
 const reasonKeys: Record<string, MessageKey> = {

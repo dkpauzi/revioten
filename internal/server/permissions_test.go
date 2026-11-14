@@ -92,6 +92,8 @@ func TestPermissionsPerOperation(t *testing.T) {
 			{Role: access.RoleDocumentControl, Scope: access.ScopeAll},
 			// Penyetuju form (V-3, D-139), untuk operasi menerbitkan form set.
 			{Role: access.RoleFormApprover, Scope: access.ScopeAll},
+			// Pemeriksa PFMEA-CP (V-2, D-65), untuk tanda dicek (M4.9).
+			{Role: access.RolePFMEACPChecker, Scope: access.ScopeAll},
 		},
 	})
 	if err != nil {
@@ -367,6 +369,9 @@ func TestPermissionsPerOperation(t *testing.T) {
 		{http.MethodPut, "/api/v1/documents/{documentId}/order", `{"row_ids":["{rowId}"]}`, http.StatusForbidden, http.StatusUnprocessableEntity, http.StatusForbidden},
 		// Menyalin dari dirinya sendiri ditolak aturan (422), sesudah haknya lolos.
 		{http.MethodPost, "/api/v1/documents/{documentId}/copy", `{"source_document_id":"{documentId}"}`, http.StatusForbidden, http.StatusUnprocessableEntity, http.StatusForbidden},
+		// Dokumen uji adalah dokumen tunggal tanpa pasangan PFMEA dan CP, jadi akun yang berhak mendapat 422 sesudah haknya lolos.
+		{http.MethodGet, "/api/v1/documents/{documentId}/pfmea-cp", "", http.StatusForbidden, http.StatusUnprocessableEntity, http.StatusForbidden},
+		{http.MethodPut, "/api/v1/documents/{documentId}/pfmea-cp", `{"process_id":"{processId}","checked":true}`, http.StatusForbidden, http.StatusUnprocessableEntity, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/documents/{documentId}/differences", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		// Baris uji tidak tertaut ke template, jadi akun yang berhak mendapat 422 sesudah haknya lolos.
 		{http.MethodPost, "/api/v1/documents/{documentId}/rows/{rowId}/detach", `{"reason":"x"}`, http.StatusForbidden, http.StatusUnprocessableEntity, http.StatusForbidden},

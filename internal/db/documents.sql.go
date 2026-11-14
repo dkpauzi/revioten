@@ -108,6 +108,43 @@ func (q *Queries) AddDocumentRow(ctx context.Context, arg AddDocumentRowParams) 
 	return i, err
 }
 
+const addPfmeaCpCheck = `-- name: AddPfmeaCpCheck :execrows
+INSERT INTO pfmea_cp_checks (pfmea_document_id, cp_document_id, process_id, pfmea_revision, cp_revision, checked_by_person_id, rows_fingerprint)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+ON CONFLICT (pfmea_document_id, cp_document_id, process_id, pfmea_revision, cp_revision) DO UPDATE
+SET checked_by_person_id = EXCLUDED.checked_by_person_id, checked_at = now(), rows_fingerprint = EXCLUDED.rows_fingerprint
+WHERE pfmea_cp_checks.rows_fingerprint <> EXCLUDED.rows_fingerprint
+`
+
+type AddPfmeaCpCheckParams struct {
+	PfmeaDocumentID   string
+	CpDocumentID      string
+	ProcessID         string
+	PfmeaRevision     int16
+	CpRevision        int16
+	CheckedByPersonID string
+	RowsFingerprint   string
+}
+
+// AddPfmeaCpCheck memberi tanda. Tanda yang masih segar tidak diganti, jadi
+// pemberi dan waktunya tetap. Tanda yang sidik jarinya sudah berbeda (perlu
+// dicek ulang) diperbarui: pemberi, waktu, dan sidik jarinya yang baru.
+func (q *Queries) AddPfmeaCpCheck(ctx context.Context, arg AddPfmeaCpCheckParams) (int64, error) {
+	result, err := q.db.Exec(ctx, addPfmeaCpCheck,
+		arg.PfmeaDocumentID,
+		arg.CpDocumentID,
+		arg.ProcessID,
+		arg.PfmeaRevision,
+		arg.CpRevision,
+		arg.CheckedByPersonID,
+		arg.RowsFingerprint,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const clearPointExclusion = `-- name: ClearPointExclusion :exec
 DELETE FROM document_point_exclusions WHERE document_id = $1 AND point_id = $2
 `
@@ -427,6 +464,17 @@ func (q *Queries) GetPartNumberOwner(ctx context.Context, id string) (GetPartNum
 	return i, err
 }
 
+const getProcessDisplayName = `-- name: GetProcessDisplayName :one
+SELECT name FROM process_names WHERE process_id = $1 AND kind = 'display'
+`
+
+func (q *Queries) GetProcessDisplayName(ctx context.Context, processID string) (string, error) {
+	row := q.db.QueryRow(ctx, getProcessDisplayName, processID)
+	var name string
+	err := row.Scan(&name)
+	return name, err
+}
+
 const latestPublishedFormSetVersion = `-- name: LatestPublishedFormSetVersion :one
 SELECT v.id, s.name, v.pfd_format_version_id, v.pfmea_format_version_id, v.cp_format_version_id
 FROM form_set_versions v
@@ -685,6 +733,66 @@ func (q *Queries) ListDocuments(ctx context.Context, customerID string) ([]ListD
 	return items, nil
 }
 
+const listPfmeaCpChecks = `-- name: ListPfmeaCpChecks :many
+
+
+SELECT c.process_id, c.pfmea_revision, c.cp_revision, c.checked_at, c.rows_fingerprint, p.name AS checked_by
+FROM pfmea_cp_checks c
+JOIN people p ON p.id = c.checked_by_person_id
+WHERE c.pfmea_document_id = $1 AND c.cp_document_id = $2 AND c.pfmea_revision = $3 AND c.cp_revision = $4
+`
+
+type ListPfmeaCpChecksParams struct {
+	PfmeaDocumentID string
+	CpDocumentID    string
+	PfmeaRevision   int16
+	CpRevision      int16
+}
+
+type ListPfmeaCpChecksRow struct {
+	ProcessID       string
+	PfmeaRevision   int16
+	CpRevision      int16
+	CheckedAt       time.Time
+	RowsFingerprint string
+	CheckedBy       string
+}
+
+// M4.9: tanda dicek PFMEA dan CP (R-DOC-06).
+// ListPfmeaCpChecks mengambil tanda dicek satu pasangan dokumen untuk revisi
+// keduanya sekarang, beserta nama pemberinya.
+func (q *Queries) ListPfmeaCpChecks(ctx context.Context, arg ListPfmeaCpChecksParams) ([]ListPfmeaCpChecksRow, error) {
+	rows, err := q.db.Query(ctx, listPfmeaCpChecks,
+		arg.PfmeaDocumentID,
+		arg.CpDocumentID,
+		arg.PfmeaRevision,
+		arg.CpRevision,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListPfmeaCpChecksRow{}
+	for rows.Next() {
+		var i ListPfmeaCpChecksRow
+		if err := rows.Scan(
+			&i.ProcessID,
+			&i.PfmeaRevision,
+			&i.CpRevision,
+			&i.CheckedAt,
+			&i.RowsFingerprint,
+			&i.CheckedBy,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listPointExclusions = `-- name: ListPointExclusions :many
 SELECT point_id, reason FROM document_point_exclusions WHERE document_id = $1
 `
@@ -732,6 +840,33 @@ func (q *Queries) ProcessExists(ctx context.Context, id string) (bool, error) {
 	var exists bool
 	err := row.Scan(&exists)
 	return exists, err
+}
+
+const removePfmeaCpCheck = `-- name: RemovePfmeaCpCheck :execrows
+DELETE FROM pfmea_cp_checks
+WHERE pfmea_document_id = $1 AND cp_document_id = $2 AND process_id = $3 AND pfmea_revision = $4 AND cp_revision = $5
+`
+
+type RemovePfmeaCpCheckParams struct {
+	PfmeaDocumentID string
+	CpDocumentID    string
+	ProcessID       string
+	PfmeaRevision   int16
+	CpRevision      int16
+}
+
+func (q *Queries) RemovePfmeaCpCheck(ctx context.Context, arg RemovePfmeaCpCheckParams) (int64, error) {
+	result, err := q.db.Exec(ctx, removePfmeaCpCheck,
+		arg.PfmeaDocumentID,
+		arg.CpDocumentID,
+		arg.ProcessID,
+		arg.PfmeaRevision,
+		arg.CpRevision,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const routeExists = `-- name: RouteExists :one

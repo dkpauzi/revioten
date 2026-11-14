@@ -121,4 +121,23 @@ func TestDocumentEndpoints(t *testing.T) {
 	if rec.Code != http.StatusOK || fake.got != (called{method: "Detach", id: "d-1", input: "row-1"}) || fake.gotReason != "Customer drawing" {
 		t.Errorf("putus tautan: status %d, %+v %q", rec.Code, fake.got, fake.gotReason)
 	}
+
+	// M4.9: PFMEA dan CP berdampingan, dan tanda dicek.
+	checkedAt := time.Date(2026, 11, 14, 9, 0, 0, 0, time.UTC)
+	fake.comparison = document.Comparison{
+		PFMEA: document.Document{ID: "d-2", Number: "SF-AB-001", Header: map[string]any{}, Models: []document.Ref{}, Rows: []document.Row{{ID: "pr-1", Position: 1, ProcessID: "p-1", Content: map[string]any{}}}},
+		CP:    fake.doc,
+		Processes: []document.ProcessGroup{{
+			ProcessID: "p-1", ProcessName: "SMT", PFMEARows: []document.Row{{ID: "pr-1"}}, CPRows: []document.Row{{ID: "row-1"}},
+			Check: &document.CheckMark{By: "PPAP Engineer", At: checkedAt, Stale: true},
+		}},
+	}
+	rec = srv.do(http.MethodGet, "/api/v1/documents/d-1/pfmea-cp", "")
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), `"processes":[{"check":{"checked_at":"2026-11-14T09:00:00Z","checked_by":"PPAP Engineer","cp_revision":0,"pfmea_revision":0,"stale":true},"cp_row_ids":["row-1"],"pfmea_row_ids":["pr-1"],"process_id":"p-1","process_name":"SMT"}]`) {
+		t.Errorf("perbandingan PFMEA-CP: status %d\n%s", rec.Code, rec.Body.String())
+	}
+	rec = srv.do(http.MethodPut, "/api/v1/documents/d-1/pfmea-cp", `{"process_id":"p-1","checked":true}`)
+	if rec.Code != http.StatusOK || fake.got != (called{method: "MarkChecked", id: "d-1", input: "p-1"}) || !fake.gotChecked {
+		t.Errorf("tanda dicek: status %d, %+v", rec.Code, fake.got)
+	}
 }

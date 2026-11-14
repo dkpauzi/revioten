@@ -238,3 +238,35 @@ ON CONFLICT (document_id, point_id) DO NOTHING;
 UPDATE document_rows
 SET detached_at = now(), detach_reason = $3, updated_at = now()
 WHERE id = $1 AND document_id = $2 AND template_point_id IS NOT NULL AND detached_at IS NULL;
+
+
+-- M4.9: tanda dicek PFMEA dan CP (R-DOC-06).
+
+
+-- name: ListPfmeaCpChecks :many
+-- ListPfmeaCpChecks mengambil tanda dicek satu pasangan dokumen untuk revisi
+-- keduanya sekarang, beserta nama pemberinya.
+SELECT c.process_id, c.pfmea_revision, c.cp_revision, c.checked_at, c.rows_fingerprint, p.name AS checked_by
+FROM pfmea_cp_checks c
+JOIN people p ON p.id = c.checked_by_person_id
+WHERE c.pfmea_document_id = $1 AND c.cp_document_id = $2 AND c.pfmea_revision = $3 AND c.cp_revision = $4;
+
+
+-- name: AddPfmeaCpCheck :execrows
+-- AddPfmeaCpCheck memberi tanda. Tanda yang masih segar tidak diganti, jadi
+-- pemberi dan waktunya tetap. Tanda yang sidik jarinya sudah berbeda (perlu
+-- dicek ulang) diperbarui: pemberi, waktu, dan sidik jarinya yang baru.
+INSERT INTO pfmea_cp_checks (pfmea_document_id, cp_document_id, process_id, pfmea_revision, cp_revision, checked_by_person_id, rows_fingerprint)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+ON CONFLICT (pfmea_document_id, cp_document_id, process_id, pfmea_revision, cp_revision) DO UPDATE
+SET checked_by_person_id = EXCLUDED.checked_by_person_id, checked_at = now(), rows_fingerprint = EXCLUDED.rows_fingerprint
+WHERE pfmea_cp_checks.rows_fingerprint <> EXCLUDED.rows_fingerprint;
+
+
+-- name: RemovePfmeaCpCheck :execrows
+DELETE FROM pfmea_cp_checks
+WHERE pfmea_document_id = $1 AND cp_document_id = $2 AND process_id = $3 AND pfmea_revision = $4 AND cp_revision = $5;
+
+
+-- name: GetProcessDisplayName :one
+SELECT name FROM process_names WHERE process_id = $1 AND kind = 'display';

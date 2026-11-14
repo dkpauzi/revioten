@@ -577,7 +577,10 @@ type fakeDocuments struct {
 	// differences dan gotReason: perbandingan dan putus tautan (M4.8).
 	differences []document.RowDifference
 	gotReason   string
-	header      map[string]any
+	// comparison dan gotChecked: PFMEA dan CP berdampingan (M4.9).
+	comparison document.Comparison
+	gotChecked bool
+	header     map[string]any
 	// headerVersion adalah versi header yang dikirim klien (M4.3).
 	headerVersion int
 }
@@ -640,6 +643,16 @@ func (f *fakeDocuments) Differences(_ context.Context, _ access.Actor, id string
 func (f *fakeDocuments) Detach(_ context.Context, _ access.Actor, id, rowID, reason string) (document.Document, error) {
 	f.got, f.gotReason = called{method: "Detach", id: id, input: rowID}, reason
 	return f.doc, f.err
+}
+
+func (f *fakeDocuments) Comparison(_ context.Context, _ access.Actor, id string) (document.Comparison, error) {
+	f.got = called{method: "Comparison", id: id}
+	return f.comparison, f.err
+}
+
+func (f *fakeDocuments) MarkChecked(_ context.Context, _ access.Actor, id, processID string, checked bool) (document.Comparison, error) {
+	f.got, f.gotChecked = called{method: "MarkChecked", id: id, input: processID}, checked
+	return f.comparison, f.err
 }
 
 func (f *fakeDocuments) DeleteRow(_ context.Context, _ access.Actor, id, rowID string) (document.Document, error) {

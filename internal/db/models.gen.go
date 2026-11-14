@@ -321,6 +321,17 @@ type Person struct {
 	CreatedAt      time.Time
 }
 
+type PfmeaCpCheck struct {
+	PfmeaDocumentID   string
+	CpDocumentID      string
+	ProcessID         string
+	PfmeaRevision     int16
+	CpRevision        int16
+	CheckedByPersonID string
+	CheckedAt         time.Time
+	RowsFingerprint   string
+}
+
 type Position struct {
 	ID              string
 	Key             string

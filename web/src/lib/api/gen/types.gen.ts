@@ -1137,6 +1137,42 @@ export type PointExclusion = {
     reason?: string;
 };
 
+export type PfmeaCpComparison = {
+    pfmea: Document;
+    cp: Document;
+    processes: Array<PfmeaCpProcess>;
+};
+
+export type PfmeaCpProcess = {
+    /**
+     * Left out for the rows that have no process.
+     */
+    process_id?: string;
+    process_name?: string;
+    pfmea_row_ids: Array<string>;
+    cp_row_ids: Array<string>;
+    check?: PfmeaCpCheck;
+};
+
+export type PfmeaCpCheck = {
+    /**
+     * The name of the person who set the mark.
+     */
+    checked_by: string;
+    checked_at: string;
+    pfmea_revision: number;
+    cp_revision: number;
+    /**
+     * A row of this process changed after the mark was set, so it should be checked again.
+     */
+    stale: boolean;
+};
+
+export type PfmeaCpCheckInput = {
+    process_id: string;
+    checked: boolean;
+};
+
 export type RowDifferenceList = {
     items: Array<RowDifference>;
 };
@@ -4776,6 +4812,76 @@ export type ComposeDocumentResponses = {
 };
 
 export type ComposeDocumentResponse = ComposeDocumentResponses[keyof ComposeDocumentResponses];
+
+export type GetPfmeaCpComparisonData = {
+    body?: never;
+    path: {
+        documentId: string;
+    };
+    query?: never;
+    url: '/api/v1/documents/{documentId}/pfmea-cp';
+};
+
+export type GetPfmeaCpComparisonErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type GetPfmeaCpComparisonError = GetPfmeaCpComparisonErrors[keyof GetPfmeaCpComparisonErrors];
+
+export type GetPfmeaCpComparisonResponses = {
+    /**
+     * The comparison.
+     */
+    200: PfmeaCpComparison;
+};
+
+export type GetPfmeaCpComparisonResponse = GetPfmeaCpComparisonResponses[keyof GetPfmeaCpComparisonResponses];
+
+export type MarkPfmeaCpCheckedData = {
+    body: PfmeaCpCheckInput;
+    path: {
+        documentId: string;
+    };
+    query?: never;
+    url: '/api/v1/documents/{documentId}/pfmea-cp';
+};
+
+export type MarkPfmeaCpCheckedErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type MarkPfmeaCpCheckedError = MarkPfmeaCpCheckedErrors[keyof MarkPfmeaCpCheckedErrors];
+
+export type MarkPfmeaCpCheckedResponses = {
+    /**
+     * The comparison after the change.
+     */
+    200: PfmeaCpComparison;
+};
+
+export type MarkPfmeaCpCheckedResponse = MarkPfmeaCpCheckedResponses[keyof MarkPfmeaCpCheckedResponses];
 
 export type GetDocumentDifferencesData = {
     body?: never;

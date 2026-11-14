@@ -247,3 +247,41 @@ func (a *apiServer) DetachDocumentRow(ctx context.Context, req DetachDocumentRow
 	}
 	return DetachDocumentRow200JSONResponse(toAPIDocument(d)), nil
 }
+
+// GetPfmeaCpComparison menjawab GET /api/v1/documents/{documentId}/pfmea-cp (M4.9).
+func (a *apiServer) GetPfmeaCpComparison(ctx context.Context, req GetPfmeaCpComparisonRequestObject) (GetPfmeaCpComparisonResponseObject, error) {
+	c, err := a.documents.Comparison(ctx, actorFrom(ctx), req.DocumentId)
+	if err != nil {
+		return nil, err
+	}
+	return GetPfmeaCpComparison200JSONResponse(toAPIComparison(c)), nil
+}
+
+// MarkPfmeaCpChecked menjawab PUT /api/v1/documents/{documentId}/pfmea-cp (M4.9).
+func (a *apiServer) MarkPfmeaCpChecked(ctx context.Context, req MarkPfmeaCpCheckedRequestObject) (MarkPfmeaCpCheckedResponseObject, error) {
+	c, err := a.documents.MarkChecked(ctx, actorFrom(ctx), req.DocumentId, req.Body.ProcessId, req.Body.Checked)
+	if err != nil {
+		return nil, err
+	}
+	return MarkPfmeaCpChecked200JSONResponse(toAPIComparison(c)), nil
+}
+
+// toAPIComparison mengubah perbandingan domain menjadi bentuk kontrak API.
+func toAPIComparison(c document.Comparison) PfmeaCpComparison {
+	out := PfmeaCpComparison{Pfmea: toAPIDocument(c.PFMEA), Cp: toAPIDocument(c.CP), Processes: make([]PfmeaCpProcess, 0, len(c.Processes))}
+	ids := func(rows []document.Row) []string {
+		list := make([]string, 0, len(rows))
+		for _, r := range rows {
+			list = append(list, r.ID)
+		}
+		return list
+	}
+	for _, g := range c.Processes {
+		item := PfmeaCpProcess{ProcessId: optional(g.ProcessID), ProcessName: optional(g.ProcessName), PfmeaRowIds: ids(g.PFMEARows), CpRowIds: ids(g.CPRows)}
+		if g.Check != nil {
+			item.Check = &PfmeaCpCheck{CheckedBy: g.Check.By, CheckedAt: g.Check.At, PfmeaRevision: g.Check.PFMEARevision, CpRevision: g.Check.CPRevision, Stale: g.Check.Stale}
+		}
+		out.Processes = append(out.Processes, item)
+	}
+	return out
+}
