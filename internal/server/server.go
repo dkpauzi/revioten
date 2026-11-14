@@ -186,6 +186,17 @@ type DocumentService interface {
 	DeleteRow(ctx context.Context, actor access.Actor, id, rowID string) (document.Document, error)
 }
 
+// ChangeRequestService adalah operasi perubahan (Tahap 5).
+// *change.RequestService memenuhinya; test memakai versi palsu.
+type ChangeRequestService interface {
+	List(ctx context.Context, actor access.Actor, customerID string) ([]change.Change, error)
+	ForDocument(ctx context.Context, actor access.Actor, documentID string) ([]change.Change, error)
+	Get(ctx context.Context, actor access.Actor, id string) (change.Change, error)
+	Create(ctx context.Context, actor access.Actor, in change.NewChange) (change.Change, error)
+	AddDocument(ctx context.Context, actor access.Actor, id, documentID string) (change.Change, error)
+	RemoveDocument(ctx context.Context, actor access.Actor, id, documentID string) (change.Change, error)
+}
+
 // RefDocService adalah operasi master dokumen terkait (D-130, D-156).
 // *template.RefDocService memenuhinya; test memakai versi palsu.
 type RefDocService interface {
@@ -253,6 +264,8 @@ type Deps struct {
 	Documents DocumentService
 	// RefDocs adalah master dokumen terkait (D-130).
 	RefDocs RefDocService
+	// ChangeRequests adalah perubahan (Tahap 5).
+	ChangeRequests ChangeRequestService
 	// Logger untuk log server. Bila nil, dipakai slog.Default().
 	Logger *slog.Logger
 }
@@ -272,7 +285,7 @@ func NewHandler(ui fs.FS, deps Deps) http.Handler {
 		db: deps.DB, customers: deps.Customers, auth: deps.Auth, access: deps.Access,
 		audit: deps.Audit, products: deps.Products, processes: deps.Processes,
 		numbering: deps.Numbering, changes: deps.Changes, approval: deps.Approval, settings: deps.Settings,
-		templates: deps.Templates, processTemplates: deps.ProcessTemplates, documents: deps.Documents, refDocs: deps.RefDocs, log: log,
+		templates: deps.Templates, processTemplates: deps.ProcessTemplates, documents: deps.Documents, refDocs: deps.RefDocs, changeRequests: deps.ChangeRequests, log: log,
 	}
 
 	// Route dari kontrak didaftarkan oleh kode hasil generate ke mux khusus API.
@@ -330,5 +343,6 @@ type apiServer struct {
 	processTemplates ProcessTemplateService
 	documents        DocumentService
 	refDocs          RefDocService
+	changeRequests   ChangeRequestService
 	log              *slog.Logger
 }

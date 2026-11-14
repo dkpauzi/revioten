@@ -1254,6 +1254,68 @@ export type DocumentOrder = {
     renumber?: boolean;
 };
 
+export type ChangeList = {
+    items: Array<Change>;
+};
+
+export type Change = {
+    id: string;
+    /**
+     * The reference number of the change, for example CHG-0001.
+     */
+    ref: string;
+    customer_id: string;
+    customer_code: string;
+    /**
+     * How the change started (D-113). Manual changes are submitted on screen.
+     */
+    mechanism: 'manual' | 'yokoten' | 'template' | 'sqam';
+    trigger?: ChangeRef;
+    change_type: ChangeRef;
+    four_m?: ChangeRef;
+    reason: string;
+    /**
+     * For example a complaint number, an 8D number, an audit finding, or an SQAM revision.
+     */
+    source_reference?: string;
+    status: 'submitted';
+    /**
+     * The name of the person who submitted the change.
+     */
+    requested_by: string;
+    documents: Array<AffectedDocument>;
+    created_at: string;
+    updated_at: string;
+};
+
+export type ChangeRef = {
+    id: string;
+    key?: string;
+    name: string;
+};
+
+export type AffectedDocument = {
+    id: string;
+    number: string;
+    document_type: ChangeRef;
+    revision: number;
+    status: string;
+};
+
+export type NewChange = {
+    customer_id: string;
+    trigger_id: string;
+    change_type_id: string;
+    four_m_category_id?: string;
+    reason: string;
+    source_reference?: string;
+    document_ids: Array<string>;
+};
+
+export type ChangeDocumentInput = {
+    document_id: string;
+};
+
 export type DocumentSection = {
     /**
      * The section of this document. Rows name this ID.
@@ -1966,6 +2028,8 @@ export type FormatTemplateId = string;
 export type FormatVersionId = string;
 
 export type FormatFieldId = string;
+
+export type ChangeId = string;
 
 export type SectionId = string;
 
@@ -5315,6 +5379,215 @@ export type RemoveReferencedDocumentLinkResponses = {
 };
 
 export type RemoveReferencedDocumentLinkResponse = RemoveReferencedDocumentLinkResponses[keyof RemoveReferencedDocumentLinkResponses];
+
+export type ListChangesData = {
+    body?: never;
+    path?: never;
+    query: {
+        customer_id: string;
+    };
+    url: '/api/v1/changes';
+};
+
+export type ListChangesErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ListChangesError = ListChangesErrors[keyof ListChangesErrors];
+
+export type ListChangesResponses = {
+    /**
+     * The changes.
+     */
+    200: ChangeList;
+};
+
+export type ListChangesResponse = ListChangesResponses[keyof ListChangesResponses];
+
+export type CreateChangeData = {
+    body: NewChange;
+    path?: never;
+    query?: never;
+    url: '/api/v1/changes';
+};
+
+export type CreateChangeErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type CreateChangeError = CreateChangeErrors[keyof CreateChangeErrors];
+
+export type CreateChangeResponses = {
+    /**
+     * The new change.
+     */
+    201: Change;
+};
+
+export type CreateChangeResponse = CreateChangeResponses[keyof CreateChangeResponses];
+
+export type GetChangeData = {
+    body?: never;
+    path: {
+        changeId: string;
+    };
+    query?: never;
+    url: '/api/v1/changes/{changeId}';
+};
+
+export type GetChangeErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type GetChangeError = GetChangeErrors[keyof GetChangeErrors];
+
+export type GetChangeResponses = {
+    /**
+     * The change.
+     */
+    200: Change;
+};
+
+export type GetChangeResponse = GetChangeResponses[keyof GetChangeResponses];
+
+export type AddChangeDocumentData = {
+    body: ChangeDocumentInput;
+    path: {
+        changeId: string;
+    };
+    query?: never;
+    url: '/api/v1/changes/{changeId}/documents';
+};
+
+export type AddChangeDocumentErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type AddChangeDocumentError = AddChangeDocumentErrors[keyof AddChangeDocumentErrors];
+
+export type AddChangeDocumentResponses = {
+    /**
+     * The change after the change.
+     */
+    201: Change;
+};
+
+export type AddChangeDocumentResponse = AddChangeDocumentResponses[keyof AddChangeDocumentResponses];
+
+export type RemoveChangeDocumentData = {
+    body?: never;
+    path: {
+        changeId: string;
+        documentId: string;
+    };
+    query?: never;
+    url: '/api/v1/changes/{changeId}/documents/{documentId}';
+};
+
+export type RemoveChangeDocumentErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type RemoveChangeDocumentError = RemoveChangeDocumentErrors[keyof RemoveChangeDocumentErrors];
+
+export type RemoveChangeDocumentResponses = {
+    /**
+     * The change after the change.
+     */
+    200: Change;
+};
+
+export type RemoveChangeDocumentResponse = RemoveChangeDocumentResponses[keyof RemoveChangeDocumentResponses];
+
+export type ListDocumentChangesData = {
+    body?: never;
+    path: {
+        documentId: string;
+    };
+    query?: never;
+    url: '/api/v1/documents/{documentId}/changes';
+};
+
+export type ListDocumentChangesErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ListDocumentChangesError = ListDocumentChangesErrors[keyof ListDocumentChangesErrors];
+
+export type ListDocumentChangesResponses = {
+    /**
+     * The changes.
+     */
+    200: ChangeList;
+};
+
+export type ListDocumentChangesResponse = ListDocumentChangesResponses[keyof ListDocumentChangesResponses];
 
 export type AddDocumentSectionData = {
     body: NewDocumentSection;

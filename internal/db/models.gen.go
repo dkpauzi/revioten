@@ -52,6 +52,29 @@ type AuditLog struct {
 	Hash           string
 }
 
+type Change struct {
+	ID                   string
+	Seq                  *int64
+	CustomerID           string
+	Mechanism            string
+	TriggerSourceID      *string
+	ChangeTypeID         string
+	FourMCategoryID      *string
+	Reason               string
+	SourceReference      *string
+	Status               string
+	RequestedByPersonID  string
+	RequestedByAccountID string
+	CreatedAt            time.Time
+	UpdatedAt            time.Time
+}
+
+type ChangeDocument struct {
+	ChangeID   string
+	DocumentID string
+	AddedAt    time.Time
+}
+
 type ChangeSource struct {
 	ID        string
 	Name      string

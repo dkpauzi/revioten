@@ -1856,6 +1856,115 @@ paths:
                 $ref: '#/components/schemas/ReferencedDocument'
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/changes:
+    get:
+      operationId: listChanges
+      summary: The changes of one customer, newest first (L-4, M5.1)
+      parameters:
+        - name: customer_id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The changes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChangeList'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: createChange
+      summary: Submit a change request (E-3, M5.1, R-CHG-01, UC-40)
+      description: >-
+        A manual change has a trigger (a change source that is not a system mechanism, D-113), a type of change, an
+        optional 4M category, a reason, an optional source reference, and one or more affected documents of the same
+        customer.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewChange'
+      responses:
+        '201':
+          description: The new change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Change'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/changes/{changeId}:
+    get:
+      operationId: getChange
+      summary: One change with its affected documents (L-4)
+      parameters:
+        - $ref: '#/components/parameters/ChangeId'
+      responses:
+        '200':
+          description: The change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Change'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/changes/{changeId}/documents:
+    post:
+      operationId: addChangeDocument
+      summary: Add one affected document to a submitted change (E-3)
+      parameters:
+        - $ref: '#/components/parameters/ChangeId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeDocumentInput'
+      responses:
+        '201':
+          description: The change after the change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Change'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/changes/{changeId}/documents/{documentId}:
+    delete:
+      operationId: removeChangeDocument
+      summary: Remove one affected document from a submitted change (E-3)
+      description: The last affected document cannot be removed.
+      parameters:
+        - $ref: '#/components/parameters/ChangeId'
+        - $ref: '#/components/parameters/DocumentId'
+      responses:
+        '200':
+          description: The change after the change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Change'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/documents/{documentId}/changes:
+    get:
+      operationId: listDocumentChanges
+      summary: The changes that affect one document, newest first (L-4)
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      responses:
+        '200':
+          description: The changes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChangeList'
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/documents/{documentId}/sections:
     post:
       operationId: addDocumentSection
@@ -2595,6 +2704,12 @@ components:
         type: string
     FormatFieldId:
       name: formatFieldId
+      in: path
+      required: true
+      schema:
+        type: string
+    ChangeId:
+      name: changeId
       in: path
       required: true
       schema:
@@ -4375,6 +4490,108 @@ components:
         renumber:
           type: boolean
           description: Number the operations automatically after ordering. Default false.
+    ChangeList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Change'
+    Change:
+      type: object
+      required: [id, ref, customer_id, customer_code, mechanism, change_type, reason, status, requested_by, documents, created_at, updated_at]
+      properties:
+        id:
+          type: string
+        ref:
+          type: string
+          description: The reference number of the change, for example CHG-0001.
+        customer_id:
+          type: string
+        customer_code:
+          type: string
+        mechanism:
+          type: string
+          enum: [manual, yokoten, template, sqam]
+          description: How the change started (D-113). Manual changes are submitted on screen.
+        trigger:
+          $ref: '#/components/schemas/ChangeRef'
+        change_type:
+          $ref: '#/components/schemas/ChangeRef'
+        four_m:
+          $ref: '#/components/schemas/ChangeRef'
+        reason:
+          type: string
+        source_reference:
+          type: string
+          description: For example a complaint number, an 8D number, an audit finding, or an SQAM revision.
+        status:
+          type: string
+          enum: [submitted]
+        requested_by:
+          type: string
+          description: The name of the person who submitted the change.
+        documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/AffectedDocument'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    ChangeRef:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+        key:
+          type: string
+        name:
+          type: string
+    AffectedDocument:
+      type: object
+      required: [id, number, document_type, revision, status]
+      properties:
+        id:
+          type: string
+        number:
+          type: string
+        document_type:
+          $ref: '#/components/schemas/ChangeRef'
+        revision:
+          type: integer
+        status:
+          type: string
+    NewChange:
+      type: object
+      required: [customer_id, trigger_id, change_type_id, reason, document_ids]
+      properties:
+        customer_id:
+          type: string
+        trigger_id:
+          type: string
+        change_type_id:
+          type: string
+        four_m_category_id:
+          type: string
+        reason:
+          type: string
+        source_reference:
+          type: string
+        document_ids:
+          type: array
+          items:
+            type: string
+    ChangeDocumentInput:
+      type: object
+      required: [document_id]
+      properties:
+        document_id:
+          type: string
     DocumentSection:
       type: object
       required: [id, key, position, name, part_numbers]

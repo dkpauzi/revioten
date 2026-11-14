@@ -41,6 +41,9 @@ import type {
 	Composition,
 	DocumentRowInput,
 	RowDifferenceList,
+	Change,
+	ChangeList,
+	NewChange,
 	NewDocumentSection,
 	DocumentSectionUpdate,
 	NewReferencedDocument,
@@ -658,6 +661,38 @@ export function updateDocumentSection(id: string, sectionId: string, input: Docu
 // removeDocumentSection memanggil DELETE /api/v1/documents/{id}/sections/{sectionId} (E-2).
 export function removeDocumentSection(id: string, sectionId: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<Document>> {
 	return call<Document>(fetchFn, `${itemPath('documents', id)}/sections/${encodeURIComponent(sectionId)}`, { method: 'DELETE' });
+}
+
+// Perubahan (Tahap 5).
+
+// listChanges memanggil GET /api/v1/changes?customer_id= (L-4, M5.1).
+export function listChanges(customerId: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<ChangeList>> {
+	return call<ChangeList>(fetchFn, '/api/v1/changes?customer_id=' + encodeURIComponent(customerId), { method: 'GET' });
+}
+
+// createChange memanggil POST /api/v1/changes (E-3, M5.1).
+export function createChange(input: NewChange, fetchFn: typeof fetch = fetch): Promise<ApiResult<Change>> {
+	return call<Change>(fetchFn, '/api/v1/changes', jsonRequest('POST', input));
+}
+
+// getChange memanggil GET /api/v1/changes/{id} (L-4).
+export function getChange(id: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<Change>> {
+	return call<Change>(fetchFn, itemPath('changes', id), { method: 'GET' });
+}
+
+// addChangeDocument memanggil POST /api/v1/changes/{id}/documents (E-3).
+export function addChangeDocument(id: string, documentId: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<Change>> {
+	return call<Change>(fetchFn, itemPath('changes', id) + '/documents', jsonRequest('POST', { document_id: documentId }));
+}
+
+// removeChangeDocument memanggil DELETE /api/v1/changes/{id}/documents/{documentId} (E-3).
+export function removeChangeDocument(id: string, documentId: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<Change>> {
+	return call<Change>(fetchFn, `${itemPath('changes', id)}/documents/${encodeURIComponent(documentId)}`, { method: 'DELETE' });
+}
+
+// listDocumentChanges memanggil GET /api/v1/documents/{id}/changes (L-4).
+export function listDocumentChanges(id: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<ChangeList>> {
+	return call<ChangeList>(fetchFn, itemPath('documents', id) + '/changes', { method: 'GET' });
 }
 
 // updateDocumentRow memanggil PUT /api/v1/documents/{id}/rows/{rowId} (E-2).

@@ -61,6 +61,7 @@ func TestPermissionsPerOperation(t *testing.T) {
 		Numbering: numbers, Changes: changes, Approval: approvals, Settings: settings.NewService(pool, checker),
 		Templates: template.NewService(pool, checker), ProcessTemplates: template.NewProcessService(pool, checker),
 		Documents: document.NewService(pool, checker), RefDocs: template.NewRefDocService(pool, checker),
+		ChangeRequests: change.NewRequestService(pool, checker),
 	})
 
 	// Admin pertama, satu akun kerja tanpa peran (hanya hak dasar Viewer), dan
@@ -277,6 +278,20 @@ func TestPermissionsPerOperation(t *testing.T) {
 	if refDoc, err = refDocs.AddLink(ctx, engineer, refDoc.ID, template.NewRefLink{ProcessID: proc.ID}); err != nil {
 		t.Fatal(err)
 	}
+	// Satu perubahan untuk dokumen uji (M5.1), dengan pemicu Customer claim dan jenis isi.
+	var triggerID, contentTypeID string
+	if err := pool.QueryRow(ctx, "SELECT id FROM change_sources WHERE name = 'Customer claim'").Scan(&triggerID); err != nil {
+		t.Fatal(err)
+	}
+	if err := pool.QueryRow(ctx, "SELECT id FROM change_types WHERE key = 'content'").Scan(&contentTypeID); err != nil {
+		t.Fatal(err)
+	}
+	changeReq, err := change.NewRequestService(pool, checker).Create(ctx, engineer, change.NewChange{
+		CustomerID: cust.ID, TriggerID: triggerID, ChangeTypeID: contentTypeID, Reason: "Uji izin", DocumentIDs: []string{doc.ID},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 	reflow, err := processes.Create(ctx, engineer, process.Input{Name: "Reflow"})
 	if err != nil {
 		t.Fatal(err)
@@ -290,7 +305,7 @@ func TestPermissionsPerOperation(t *testing.T) {
 		"processId": proc.ID, "documentTypeId": docTypes[0].ID, "cpTypeId": docTypes[2].ID, "documentNumberId": reg.Numbers[0].ID, "documentId": doc.ID, "rowId": doc.Rows[0].ID, "freeNumberId": reserved[1], "specialCodeId": specialCodes[0].ID,
 		"changeTypeId": changeTypes[0].ID, "changeSourceId": sources[0].ID, "fourMCategoryId": categories[0].ID,
 		"formatTemplateId": pfmeaFormat.ID, "formatVersionId": pfmeaVersion.ID, "formSetId": formSet.ID, "formSetVersionId": formSet.Versions[0].ID, "pfdSheetId": formSet.Versions[0].PFD.FormatVersionID, "pfmeaSheetId": formSet.Versions[0].PFMEA.FormatVersionID, "cpSheetId": formSet.Versions[0].CP.FormatVersionID, "formatFieldId": pfmeaVersion.Fields[0].ID,
-		"freeProcessId": reflow.ID, "refDocId": refDoc.ID, "linkId": refDoc.Links[0].ID, "sectionId": "01900000-0000-7000-8000-000000000000", "processVersionId": iqcVersion.ID, "processTemplateId": iqcVersion.TemplateID, "subprocessId": iqcVersion.Subprocesses[0].ID,
+		"freeProcessId": reflow.ID, "refDocId": refDoc.ID, "linkId": refDoc.Links[0].ID, "changeId": changeReq.ID, "triggerId": triggerID, "contentTypeId": contentTypeID, "sectionId": "01900000-0000-7000-8000-000000000000", "processVersionId": iqcVersion.ID, "processTemplateId": iqcVersion.TemplateID, "subprocessId": iqcVersion.Subprocesses[0].ID,
 		"pointId": iqcVersion.Subprocesses[0].Points[0].ID, "variantId": iqcVersion.Subprocesses[0].Points[0].Variants[0].ID,
 	}
 
@@ -438,6 +453,14 @@ func TestPermissionsPerOperation(t *testing.T) {
 		// Audit log hanya lewat akun admin (D-72, D-75).
 		{http.MethodGet, "/api/v1/audit-log", "", http.StatusForbidden, http.StatusForbidden, http.StatusOK},
 		{http.MethodGet, "/api/v1/audit-log/verification", "", http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		// Perubahan (M5.1). Dokumen uji sudah tertaut ke perubahan, jadi menambahnya lagi 409 dan
+		// melepasnya (dokumen terakhir) 422: haknya lolos, aturannya menolak.
+		{http.MethodGet, "/api/v1/changes?customer_id={customerId}", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		{http.MethodPost, "/api/v1/changes", `{"customer_id":"{customerId}","trigger_id":"{triggerId}","change_type_id":"{contentTypeId}","reason":"Uji","document_ids":["{documentId}"]}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
+		{http.MethodGet, "/api/v1/changes/{changeId}", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		{http.MethodPost, "/api/v1/changes/{changeId}/documents", `{"document_id":"{documentId}"}`, http.StatusForbidden, http.StatusConflict, http.StatusForbidden},
+		{http.MethodDelete, "/api/v1/changes/{changeId}/documents/{documentId}", "", http.StatusForbidden, http.StatusUnprocessableEntity, http.StatusForbidden},
+		{http.MethodGet, "/api/v1/documents/{documentId}/changes", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		// Bagian per PCB (D-155), sengaja di akhir: sesudah dokumen punya bagian, baris baru wajib menyebut
 		// bagiannya. Dokumen uji tidak punya part number, jadi bagian dibuat tanpa part number.
 		{http.MethodPost, "/api/v1/documents/{documentId}/sections", `{"name":"PCB A"}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},

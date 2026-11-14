@@ -119,6 +119,7 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-95 | Diagram PFD: cabang keputusan, rework, dan konektor halaman | Celah | M4.10 | Tidak | Terbuka |
 | E-96 | Siapa yang mengubah master dokumen terkait | Celah | D-130 | Tidak | Diputuskan (D-157) |
 | E-97 | Bagian per PCB: berlaku untuk seluruh set, dan cetakan | Celah | D-155 | Tidak | Diputuskan (D-160) |
+| E-98 | Nomor rujukan perubahan | Celah | M5.1 | Tidak | Terbuka |
 
 ## Keputusan 4 November 2026
 
@@ -1791,6 +1792,22 @@ Salin blok ini untuk setiap temuan baru.
 - **Menghambat milestone?** Tidak
 - **Status:** Diputuskan (D-160)
 - **Keputusan pemilik:** 14 November 2026: "Bagian per PCB berlaku untuk PFD, PFMEA, dan CP satu set (E-97)" (opsi a). Cetakan per bagian tetap di Tahap 6.
+
+### E-98 · Nomor rujukan perubahan
+
+- **Tanggal dan milestone:** 14 November 2026, M5.1.
+- **Jenis:** Celah
+- **Rujukan:** R-CHG-01, UML U5/U8 (belum memuat entitas perubahan).
+- **Temuan:** brief tidak menyebut apakah perubahan punya nomor, dan bentuknya. Tanpa nomor, perubahan sulit dirujuk di rapat, di kertas approval, dan di riwayat revisi.
+- **Opsi:**
+  - (a) Nomor berjalan sistem: CHG-0001, CHG-0002, … (satu urutan untuk semua customer).
+  - (b) Nomor per customer dan tahun, misalnya CHG-AB-2026-001.
+  - (c) Mengikuti nomor formulir perubahan yang dipakai di WI sekarang, bila ada.
+- **Rekomendasi Claude Code (usulan):** (c) bila WI punya formulirnya; bila tidak, (a).
+- **Asumsi sementara di kode (ASUMSI E-98):** opsi (a), dari kolom identity PostgreSQL. Nomor bisa berlubang bila satu pengajuan gagal di tengah transaksi; karena ini bukan nomor dokumen, aturan tanpa lubang R-NUM-03 tidak dipakai.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
 
 ## Usulan desain UI (UX-01 sampai UX-07): dampak ke M0 sampai M3 dan saran
 

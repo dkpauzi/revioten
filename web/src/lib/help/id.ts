@@ -275,6 +275,19 @@ export const helpId: HelpContent = {
 			tips: ['Nomor yang dibatalkan tetap ada di register beserta alasannya. Nomor itu tidak pernah diberikan ke dokumen lain.']
 		},
 		{
+			id: 'changes',
+			title: 'Perubahan',
+			who: 'Penyusun',
+			intro: 'Setiap revisi PFD, PFMEA, atau CP berangkat dari satu perubahan: pemicunya, jenis perubahan, alasannya, dan dokumen yang terdampak.',
+			steps: [
+				'Buka {navGroupDocuments}, lalu {navChanges}, dan pilih customer.',
+				'Isi {changeTrigger} (misalnya Customer claim), {changeType}, dan bila perlu {changeFourM} serta {changeReference}.',
+				'Tulis {changeReason}, centang setiap dokumen terdampak di {changeDocuments}, lalu tekan {changeSubmit}.',
+				'Perubahan mendapat nomor seperti [[CHG-0001]]. Buka perubahan itu untuk menambah atau melepas dokumen terdampak selama masih diajukan.'
+			],
+			tips: ['Perubahan selalu menunjuk paling sedikit satu dokumen, jadi dokumen terakhir tidak bisa dilepas.']
+		},
+		{
 			id: 'audit',
 			title: 'Audit log',
 			who: 'Admin',

@@ -88,6 +88,9 @@ const (
 	ActionDocumentSectionAdded   = "document.section_added"       // D-155
 	ActionDocumentSectionChanged = "document.section_changed"     // D-155
 	ActionDocumentSectionRemoved = "document.section_removed"     // D-155
+	ActionChangeCreated          = "change.created"               // M5.1
+	ActionChangeDocumentAdded    = "change.document_added"        // M5.1
+	ActionChangeDocumentRemoved  = "change.document_removed"      // M5.1
 	ActionDocumentCopied         = "document.copied"              // M4.7
 	ActionDocumentComposed       = "document.composed"            // M4.5
 	ActionRefDocCreated          = "referenced_document.created"  // D-130
@@ -155,6 +158,7 @@ const (
 	TargetProcessTemplate = "process_template"
 	TargetFormSet         = "form_set"
 	TargetReferencedDoc   = "referenced_document" // D-130
+	TargetChange          = "change"              // M5.1
 	TargetDocument        = "document"
 )
 

@@ -275,6 +275,19 @@ export const helpEn: HelpContent = {
 			tips: ['A voided number stays in the register with its reason. It is never given to another document.']
 		},
 		{
+			id: 'changes',
+			title: 'Changes',
+			who: 'Author',
+			intro: 'Every revision of a PFD, PFMEA, or CP starts from a change: what triggered it, the type of change, the reason, and the documents it affects.',
+			steps: [
+				'Open {navGroupDocuments}, then {navChanges}, and choose the customer.',
+				'Fill in {changeTrigger} (for example Customer claim), {changeType}, and, when it applies, {changeFourM} and {changeReference}.',
+				'Write the {changeReason}, tick every affected document under {changeDocuments}, and press {changeSubmit}.',
+				'The change gets a number such as [[CHG-0001]]. Open it to add or remove affected documents while it is still submitted.'
+			],
+			tips: ['A change always affects at least one document, so the last one cannot be removed.']
+		},
+		{
 			id: 'audit',
 			title: 'Audit log',
 			who: 'Admin',

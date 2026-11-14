@@ -1,0 +1,54 @@
+package server
+
+import (
+	"net/http"
+	"reflect"
+	"testing"
+	"time"
+
+	"github.com/dkpauzi/revioten/internal/change"
+)
+
+// TestChangeEndpoints: handler perubahan (M5.1) meneruskan isian ke layanan
+// dan menulis jawaban sesuai kontrak.
+func TestChangeEndpoints(t *testing.T) {
+	at := time.Date(2026, 11, 14, 8, 0, 0, 0, time.UTC)
+	fake := &fakeChangeRequests{c: change.Change{
+		ID: "c-1", Ref: "CHG-0001", CustomerID: "cu-1", CustomerCode: "AB", Mechanism: change.MechanismManual,
+		Trigger: &change.Ref{ID: "s-1", Name: "Customer claim"}, ChangeType: change.Ref{ID: "t-1", Key: "content", Name: "Content"},
+		Reason: "Add AOI check", Status: change.StatusSubmitted, RequestedBy: "PPAP Engineer",
+		Documents: []change.AffectedDocument{{ID: "d-1", Number: "SC-AB-001", DocumentType: change.Ref{ID: "dt-3", Key: "cp", Name: "CP"}, Status: "draft"}},
+		CreatedAt: at, UpdatedAt: at,
+	}}
+	fake.list = []change.Change{fake.c}
+	srv := newTestServer(t, nil, Deps{ChangeRequests: fake})
+
+	rec := srv.do(http.MethodGet, "/api/v1/changes/c-1", "")
+	want := `{"id":"c-1","ref":"CHG-0001","customer_id":"cu-1","customer_code":"AB","mechanism":"manual",` +
+		`"trigger":{"id":"s-1","name":"Customer claim"},"change_type":{"id":"t-1","key":"content","name":"Content"},` +
+		`"reason":"Add AOI check","status":"submitted","requested_by":"PPAP Engineer",` +
+		`"documents":[{"id":"d-1","number":"SC-AB-001","document_type":{"id":"dt-3","key":"cp","name":"CP"},"revision":0,"status":"draft"}],` +
+		`"created_at":"2026-11-14T08:00:00Z","updated_at":"2026-11-14T08:00:00Z"}`
+	if rec.Code != http.StatusOK || !sameJSON(t, rec.Body.String(), want) {
+		t.Errorf("baca: status %d\n%s", rec.Code, rec.Body.String())
+	}
+	rec = srv.do(http.MethodPost, "/api/v1/changes", `{"customer_id":"cu-1","trigger_id":"s-1","change_type_id":"t-1","reason":"Add AOI check","document_ids":["d-1","d-2"]}`)
+	wantNew := change.NewChange{CustomerID: "cu-1", TriggerID: "s-1", ChangeTypeID: "t-1", Reason: "Add AOI check", DocumentIDs: []string{"d-1", "d-2"}}
+	if rec.Code != http.StatusCreated || !reflect.DeepEqual(fake.gotNew, wantNew) {
+		t.Errorf("ajukan: status %d, %+v", rec.Code, fake.gotNew)
+	}
+	for _, c := range []struct {
+		method, path, body string
+		want               called
+	}{
+		{http.MethodGet, "/api/v1/changes?customer_id=cu-1", "", called{method: "List", id: "cu-1"}},
+		{http.MethodPost, "/api/v1/changes/c-1/documents", `{"document_id":"d-2"}`, called{method: "AddDocument", id: "c-1", input: "d-2"}},
+		{http.MethodDelete, "/api/v1/changes/c-1/documents/d-2", "", called{method: "RemoveDocument", id: "c-1", input: "d-2"}},
+		{http.MethodGet, "/api/v1/documents/d-1/changes", "", called{method: "ForDocument", id: "d-1"}},
+	} {
+		rec := srv.do(c.method, c.path, c.body)
+		if rec.Code >= 300 || fake.got != c.want {
+			t.Errorf("%s %s: status %d, %+v", c.method, c.path, rec.Code, fake.got)
+		}
+	}
+}

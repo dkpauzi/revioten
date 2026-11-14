@@ -138,6 +138,45 @@ func (e AuditVerificationReason) Valid() bool {
 	}
 }
 
+// Defines values for ChangeMechanism.
+const (
+	ChangeMechanismManual   ChangeMechanism = "manual"
+	ChangeMechanismSqam     ChangeMechanism = "sqam"
+	ChangeMechanismTemplate ChangeMechanism = "template"
+	ChangeMechanismYokoten  ChangeMechanism = "yokoten"
+)
+
+// Valid indicates whether the value is a known member of the ChangeMechanism enum.
+func (e ChangeMechanism) Valid() bool {
+	switch e {
+	case ChangeMechanismManual:
+		return true
+	case ChangeMechanismSqam:
+		return true
+	case ChangeMechanismTemplate:
+		return true
+	case ChangeMechanismYokoten:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ChangeStatus.
+const (
+	ChangeStatusSubmitted ChangeStatus = "submitted"
+)
+
+// Valid indicates whether the value is a known member of the ChangeStatus enum.
+func (e ChangeStatus) Valid() bool {
+	switch e {
+	case ChangeStatusSubmitted:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ChangeSourceMechanism.
 const (
 	ChangeSourceMechanismSqam     ChangeSourceMechanism = "sqam"
@@ -1291,6 +1330,15 @@ type ActionPriorityResult struct {
 // ActionPriorityResultPriority defines model for ActionPriorityResult.Priority.
 type ActionPriorityResultPriority string
 
+// AffectedDocument defines model for AffectedDocument.
+type AffectedDocument struct {
+	DocumentType ChangeRef `json:"document_type"`
+	Id           string    `json:"id"`
+	Number       string    `json:"number"`
+	Revision     int       `json:"revision"`
+	Status       string    `json:"status"`
+}
+
 // ApRule One Action Priority for a box of severity, occurrence, and detection ranges; both ends included.
 type ApRule struct {
 	DMax     int            `json:"d_max"`
@@ -1424,6 +1472,56 @@ type AuditVerification struct {
 // `link_mismatch`: prev_hash differs from the hash of the entry before.
 // `hash_mismatch`: the content no longer matches the hash, so it was changed.
 type AuditVerificationReason string
+
+// Change defines model for Change.
+type Change struct {
+	ChangeType   ChangeRef          `json:"change_type"`
+	CreatedAt    time.Time          `json:"created_at"`
+	CustomerCode string             `json:"customer_code"`
+	CustomerId   string             `json:"customer_id"`
+	Documents    []AffectedDocument `json:"documents"`
+	FourM        *ChangeRef         `json:"four_m,omitempty"`
+	Id           string             `json:"id"`
+
+	// Mechanism How the change started (D-113). Manual changes are submitted on screen.
+	Mechanism ChangeMechanism `json:"mechanism"`
+	Reason    string          `json:"reason"`
+
+	// Ref The reference number of the change, for example CHG-0001.
+	Ref string `json:"ref"`
+
+	// RequestedBy The name of the person who submitted the change.
+	RequestedBy string `json:"requested_by"`
+
+	// SourceReference For example a complaint number, an 8D number, an audit finding, or an SQAM revision.
+	SourceReference *string      `json:"source_reference,omitempty"`
+	Status          ChangeStatus `json:"status"`
+	Trigger         *ChangeRef   `json:"trigger,omitempty"`
+	UpdatedAt       time.Time    `json:"updated_at"`
+}
+
+// ChangeMechanism How the change started (D-113). Manual changes are submitted on screen.
+type ChangeMechanism string
+
+// ChangeStatus defines model for Change.Status.
+type ChangeStatus string
+
+// ChangeDocumentInput defines model for ChangeDocumentInput.
+type ChangeDocumentInput struct {
+	DocumentId string `json:"document_id"`
+}
+
+// ChangeList defines model for ChangeList.
+type ChangeList struct {
+	Items []Change `json:"items"`
+}
+
+// ChangeRef defines model for ChangeRef.
+type ChangeRef struct {
+	Id   string  `json:"id"`
+	Key  *string `json:"key,omitempty"`
+	Name string  `json:"name"`
+}
 
 // ChangeSource defines model for ChangeSource.
 type ChangeSource struct {
@@ -2244,6 +2342,17 @@ type NewAccount struct {
 
 // NewAccountKind defines model for NewAccount.Kind.
 type NewAccountKind string
+
+// NewChange defines model for NewChange.
+type NewChange struct {
+	ChangeTypeId    string   `json:"change_type_id"`
+	CustomerId      string   `json:"customer_id"`
+	DocumentIds     []string `json:"document_ids"`
+	FourMCategoryId *string  `json:"four_m_category_id,omitempty"`
+	Reason          string   `json:"reason"`
+	SourceReference *string  `json:"source_reference,omitempty"`
+	TriggerId       string   `json:"trigger_id"`
+}
 
 // NewCustomer defines model for NewCustomer.
 type NewCustomer struct {
@@ -3207,6 +3316,9 @@ type AccountId = string
 // ApprovalRouteId defines model for ApprovalRouteId.
 type ApprovalRouteId = string
 
+// ChangeId defines model for ChangeId.
+type ChangeId = string
+
 // ChangeSourceId defines model for ChangeSourceId.
 type ChangeSourceId = string
 
@@ -3310,6 +3422,11 @@ type ListAuditLogParams struct {
 
 	// Limit Number of entries to return.
 	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListChangesParams defines parameters for ListChanges.
+type ListChangesParams struct {
+	CustomerId string `form:"customer_id" json:"customer_id"`
 }
 
 // ListDocumentNumbersParams defines parameters for ListDocumentNumbers.
@@ -3425,6 +3542,12 @@ type UpdateChangeTypeJSONRequestBody = NameUpdate
 
 // SetChangeTypeRouteJSONRequestBody defines body for SetChangeTypeRoute for application/json ContentType.
 type SetChangeTypeRouteJSONRequestBody = ChangeTypeRouteChoice
+
+// CreateChangeJSONRequestBody defines body for CreateChange for application/json ContentType.
+type CreateChangeJSONRequestBody = NewChange
+
+// AddChangeDocumentJSONRequestBody defines body for AddChangeDocument for application/json ContentType.
+type AddChangeDocumentJSONRequestBody = ChangeDocumentInput
 
 // CreateCustomerJSONRequestBody defines body for CreateCustomer for application/json ContentType.
 type CreateCustomerJSONRequestBody = NewCustomer
@@ -3668,6 +3791,21 @@ type ServerInterface interface {
 	// SetChangeTypeRoute Set the approval route of a change type, or use the customer default (A-2, R-TPL-10)
 	// (PUT /api/v1/change-types/{changeTypeId}/approval-route)
 	SetChangeTypeRoute(w http.ResponseWriter, r *http.Request, changeTypeId ChangeTypeId)
+	// ListChanges The changes of one customer, newest first (L-4, M5.1)
+	// (GET /api/v1/changes)
+	ListChanges(w http.ResponseWriter, r *http.Request, params ListChangesParams)
+	// CreateChange Submit a change request (E-3, M5.1, R-CHG-01, UC-40)
+	// (POST /api/v1/changes)
+	CreateChange(w http.ResponseWriter, r *http.Request)
+	// GetChange One change with its affected documents (L-4)
+	// (GET /api/v1/changes/{changeId})
+	GetChange(w http.ResponseWriter, r *http.Request, changeId ChangeId)
+	// AddChangeDocument Add one affected document to a submitted change (E-3)
+	// (POST /api/v1/changes/{changeId}/documents)
+	AddChangeDocument(w http.ResponseWriter, r *http.Request, changeId ChangeId)
+	// RemoveChangeDocument Remove one affected document from a submitted change (E-3)
+	// (DELETE /api/v1/changes/{changeId}/documents/{documentId})
+	RemoveChangeDocument(w http.ResponseWriter, r *http.Request, changeId ChangeId, documentId DocumentId)
 	// ListCustomers List all customers, ordered by code
 	// (GET /api/v1/customers)
 	ListCustomers(w http.ResponseWriter, r *http.Request)
@@ -3725,6 +3863,9 @@ type ServerInterface interface {
 	// GetDocument One document with its header and rows (L-4)
 	// (GET /api/v1/documents/{documentId})
 	GetDocument(w http.ResponseWriter, r *http.Request, documentId DocumentId)
+	// ListDocumentChanges The changes that affect one document, newest first (L-4)
+	// (GET /api/v1/documents/{documentId}/changes)
+	ListDocumentChanges(w http.ResponseWriter, r *http.Request, documentId DocumentId)
 	// GetDocumentComposition The points of one process template version and their state in this document set (L-4, M4.5)
 	// (GET /api/v1/documents/{documentId}/composition)
 	GetDocumentComposition(w http.ResponseWriter, r *http.Request, documentId DocumentId, params GetDocumentCompositionParams)
@@ -4374,6 +4515,140 @@ func (siw *ServerInterfaceWrapper) SetChangeTypeRoute(w http.ResponseWriter, r *
 	handler.ServeHTTP(w, r)
 }
 
+// ListChanges operation middleware
+func (siw *ServerInterfaceWrapper) ListChanges(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListChangesParams
+
+	// ------------- Required query parameter "customer_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "customer_id", r.URL.Query(), &params.CustomerId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "customer_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customer_id", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListChanges(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateChange operation middleware
+func (siw *ServerInterfaceWrapper) CreateChange(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateChange(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetChange operation middleware
+func (siw *ServerInterfaceWrapper) GetChange(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "changeId" -------------
+	var changeId ChangeId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "changeId", r.PathValue("changeId"), &changeId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "changeId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetChange(w, r, changeId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AddChangeDocument operation middleware
+func (siw *ServerInterfaceWrapper) AddChangeDocument(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "changeId" -------------
+	var changeId ChangeId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "changeId", r.PathValue("changeId"), &changeId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "changeId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AddChangeDocument(w, r, changeId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RemoveChangeDocument operation middleware
+func (siw *ServerInterfaceWrapper) RemoveChangeDocument(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "changeId" -------------
+	var changeId ChangeId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "changeId", r.PathValue("changeId"), &changeId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "changeId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", r.PathValue("documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RemoveChangeDocument(w, r, changeId, documentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListCustomers operation middleware
 func (siw *ServerInterfaceWrapper) ListCustomers(w http.ResponseWriter, r *http.Request) {
 
@@ -4916,6 +5191,32 @@ func (siw *ServerInterfaceWrapper) GetDocument(w http.ResponseWriter, r *http.Re
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetDocument(w, r, documentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListDocumentChanges operation middleware
+func (siw *ServerInterfaceWrapper) ListDocumentChanges(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", r.PathValue("documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListDocumentChanges(w, r, documentId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -7254,6 +7555,12 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/referenced-documents/{refDocId}", wrapper.UpdateReferencedDocument)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/referenced-documents/{refDocId}/links", wrapper.AddReferencedDocumentLink)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/referenced-documents/{refDocId}/links/{linkId}", wrapper.RemoveReferencedDocumentLink)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/changes", wrapper.ListChanges)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/changes", wrapper.CreateChange)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/changes/{changeId}", wrapper.GetChange)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/changes/{changeId}/documents", wrapper.AddChangeDocument)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/changes/{changeId}/documents/{documentId}", wrapper.RemoveChangeDocument)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/documents/{documentId}/changes", wrapper.ListDocumentChanges)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/sections", wrapper.AddDocumentSection)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/documents/{documentId}/sections/{sectionId}", wrapper.RemoveDocumentSection)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/documents/{documentId}/sections/{sectionId}", wrapper.UpdateDocumentSection)
@@ -8011,6 +8318,203 @@ type SetChangeTypeRoutedefaultJSONResponse struct {
 }
 
 func (response SetChangeTypeRoutedefaultJSONResponse) VisitSetChangeTypeRouteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListChangesRequestObject struct {
+	Params ListChangesParams
+}
+
+type ListChangesResponseObject interface {
+	VisitListChangesResponse(w http.ResponseWriter) error
+}
+
+type ListChanges200JSONResponse ChangeList
+
+func (response ListChanges200JSONResponse) VisitListChangesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListChangesdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ListChangesdefaultJSONResponse) VisitListChangesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateChangeRequestObject struct {
+	Body *CreateChangeJSONRequestBody
+}
+
+type CreateChangeResponseObject interface {
+	VisitCreateChangeResponse(w http.ResponseWriter) error
+}
+
+type CreateChange201JSONResponse Change
+
+func (response CreateChange201JSONResponse) VisitCreateChangeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateChangedefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response CreateChangedefaultJSONResponse) VisitCreateChangeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetChangeRequestObject struct {
+	ChangeId ChangeId `json:"changeId"`
+}
+
+type GetChangeResponseObject interface {
+	VisitGetChangeResponse(w http.ResponseWriter) error
+}
+
+type GetChange200JSONResponse Change
+
+func (response GetChange200JSONResponse) VisitGetChangeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetChangedefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response GetChangedefaultJSONResponse) VisitGetChangeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddChangeDocumentRequestObject struct {
+	ChangeId ChangeId `json:"changeId"`
+	Body     *AddChangeDocumentJSONRequestBody
+}
+
+type AddChangeDocumentResponseObject interface {
+	VisitAddChangeDocumentResponse(w http.ResponseWriter) error
+}
+
+type AddChangeDocument201JSONResponse Change
+
+func (response AddChangeDocument201JSONResponse) VisitAddChangeDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddChangeDocumentdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response AddChangeDocumentdefaultJSONResponse) VisitAddChangeDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RemoveChangeDocumentRequestObject struct {
+	ChangeId   ChangeId   `json:"changeId"`
+	DocumentId DocumentId `json:"documentId"`
+}
+
+type RemoveChangeDocumentResponseObject interface {
+	VisitRemoveChangeDocumentResponse(w http.ResponseWriter) error
+}
+
+type RemoveChangeDocument200JSONResponse Change
+
+func (response RemoveChangeDocument200JSONResponse) VisitRemoveChangeDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RemoveChangeDocumentdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response RemoveChangeDocumentdefaultJSONResponse) VisitRemoveChangeDocumentResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -8823,6 +9327,45 @@ type GetDocumentdefaultJSONResponse struct {
 }
 
 func (response GetDocumentdefaultJSONResponse) VisitGetDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDocumentChangesRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+}
+
+type ListDocumentChangesResponseObject interface {
+	VisitListDocumentChangesResponse(w http.ResponseWriter) error
+}
+
+type ListDocumentChanges200JSONResponse ChangeList
+
+func (response ListDocumentChanges200JSONResponse) VisitListDocumentChangesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDocumentChangesdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ListDocumentChangesdefaultJSONResponse) VisitListDocumentChangesResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -12311,6 +12854,21 @@ type StrictServerInterface interface {
 	// SetChangeTypeRoute Set the approval route of a change type, or use the customer default (A-2, R-TPL-10)
 	// (PUT /api/v1/change-types/{changeTypeId}/approval-route)
 	SetChangeTypeRoute(ctx context.Context, request SetChangeTypeRouteRequestObject) (SetChangeTypeRouteResponseObject, error)
+	// ListChanges The changes of one customer, newest first (L-4, M5.1)
+	// (GET /api/v1/changes)
+	ListChanges(ctx context.Context, request ListChangesRequestObject) (ListChangesResponseObject, error)
+	// CreateChange Submit a change request (E-3, M5.1, R-CHG-01, UC-40)
+	// (POST /api/v1/changes)
+	CreateChange(ctx context.Context, request CreateChangeRequestObject) (CreateChangeResponseObject, error)
+	// GetChange One change with its affected documents (L-4)
+	// (GET /api/v1/changes/{changeId})
+	GetChange(ctx context.Context, request GetChangeRequestObject) (GetChangeResponseObject, error)
+	// AddChangeDocument Add one affected document to a submitted change (E-3)
+	// (POST /api/v1/changes/{changeId}/documents)
+	AddChangeDocument(ctx context.Context, request AddChangeDocumentRequestObject) (AddChangeDocumentResponseObject, error)
+	// RemoveChangeDocument Remove one affected document from a submitted change (E-3)
+	// (DELETE /api/v1/changes/{changeId}/documents/{documentId})
+	RemoveChangeDocument(ctx context.Context, request RemoveChangeDocumentRequestObject) (RemoveChangeDocumentResponseObject, error)
 	// ListCustomers List all customers, ordered by code
 	// (GET /api/v1/customers)
 	ListCustomers(ctx context.Context, request ListCustomersRequestObject) (ListCustomersResponseObject, error)
@@ -12368,6 +12926,9 @@ type StrictServerInterface interface {
 	// GetDocument One document with its header and rows (L-4)
 	// (GET /api/v1/documents/{documentId})
 	GetDocument(ctx context.Context, request GetDocumentRequestObject) (GetDocumentResponseObject, error)
+	// ListDocumentChanges The changes that affect one document, newest first (L-4)
+	// (GET /api/v1/documents/{documentId}/changes)
+	ListDocumentChanges(ctx context.Context, request ListDocumentChangesRequestObject) (ListDocumentChangesResponseObject, error)
 	// GetDocumentComposition The points of one process template version and their state in this document set (L-4, M4.5)
 	// (GET /api/v1/documents/{documentId}/composition)
 	GetDocumentComposition(ctx context.Context, request GetDocumentCompositionRequestObject) (GetDocumentCompositionResponseObject, error)
@@ -13180,6 +13741,149 @@ func (sh *strictHandler) SetChangeTypeRoute(w http.ResponseWriter, r *http.Reque
 	}
 }
 
+// ListChanges operation middleware
+func (sh *strictHandler) ListChanges(w http.ResponseWriter, r *http.Request, params ListChangesParams) {
+	var request ListChangesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListChanges(ctx, request.(ListChangesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListChanges")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListChangesResponseObject); ok {
+		if err := validResponse.VisitListChangesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateChange operation middleware
+func (sh *strictHandler) CreateChange(w http.ResponseWriter, r *http.Request) {
+	var request CreateChangeRequestObject
+
+	var body CreateChangeJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateChange(ctx, request.(CreateChangeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateChange")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateChangeResponseObject); ok {
+		if err := validResponse.VisitCreateChangeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetChange operation middleware
+func (sh *strictHandler) GetChange(w http.ResponseWriter, r *http.Request, changeId ChangeId) {
+	var request GetChangeRequestObject
+
+	request.ChangeId = changeId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetChange(ctx, request.(GetChangeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetChange")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetChangeResponseObject); ok {
+		if err := validResponse.VisitGetChangeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AddChangeDocument operation middleware
+func (sh *strictHandler) AddChangeDocument(w http.ResponseWriter, r *http.Request, changeId ChangeId) {
+	var request AddChangeDocumentRequestObject
+
+	request.ChangeId = changeId
+
+	var body AddChangeDocumentJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.AddChangeDocument(ctx, request.(AddChangeDocumentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AddChangeDocument")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AddChangeDocumentResponseObject); ok {
+		if err := validResponse.VisitAddChangeDocumentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RemoveChangeDocument operation middleware
+func (sh *strictHandler) RemoveChangeDocument(w http.ResponseWriter, r *http.Request, changeId ChangeId, documentId DocumentId) {
+	var request RemoveChangeDocumentRequestObject
+
+	request.ChangeId = changeId
+	request.DocumentId = documentId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RemoveChangeDocument(ctx, request.(RemoveChangeDocumentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RemoveChangeDocument")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RemoveChangeDocumentResponseObject); ok {
+		if err := validResponse.VisitRemoveChangeDocumentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListCustomers operation middleware
 func (sh *strictHandler) ListCustomers(w http.ResponseWriter, r *http.Request) {
 	var request ListCustomersRequestObject
@@ -13746,6 +14450,32 @@ func (sh *strictHandler) GetDocument(w http.ResponseWriter, r *http.Request, doc
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetDocumentResponseObject); ok {
 		if err := validResponse.VisitGetDocumentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListDocumentChanges operation middleware
+func (sh *strictHandler) ListDocumentChanges(w http.ResponseWriter, r *http.Request, documentId DocumentId) {
+	var request ListDocumentChangesRequestObject
+
+	request.DocumentId = documentId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListDocumentChanges(ctx, request.(ListDocumentChangesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListDocumentChanges")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListDocumentChangesResponseObject); ok {
+		if err := validResponse.VisitListDocumentChangesResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

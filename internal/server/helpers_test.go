@@ -1038,3 +1038,42 @@ func (f *fakeRefDocs) RemoveLink(_ context.Context, _ access.Actor, id, linkID s
 	f.got = called{method: "RemoveLink", id: id, input: linkID}
 	return f.doc, f.err
 }
+
+// fakeChangeRequests meniru change.RequestService (Tahap 5).
+type fakeChangeRequests struct {
+	list   []change.Change
+	c      change.Change
+	err    error
+	got    called
+	gotNew change.NewChange
+}
+
+func (f *fakeChangeRequests) List(_ context.Context, _ access.Actor, customerID string) ([]change.Change, error) {
+	f.got = called{method: "List", id: customerID}
+	return f.list, f.err
+}
+
+func (f *fakeChangeRequests) ForDocument(_ context.Context, _ access.Actor, documentID string) ([]change.Change, error) {
+	f.got = called{method: "ForDocument", id: documentID}
+	return f.list, f.err
+}
+
+func (f *fakeChangeRequests) Get(_ context.Context, _ access.Actor, id string) (change.Change, error) {
+	f.got = called{method: "Get", id: id}
+	return f.c, f.err
+}
+
+func (f *fakeChangeRequests) Create(_ context.Context, _ access.Actor, in change.NewChange) (change.Change, error) {
+	f.got, f.gotNew = called{method: "Create"}, in
+	return f.c, f.err
+}
+
+func (f *fakeChangeRequests) AddDocument(_ context.Context, _ access.Actor, id, documentID string) (change.Change, error) {
+	f.got = called{method: "AddDocument", id: id, input: documentID}
+	return f.c, f.err
+}
+
+func (f *fakeChangeRequests) RemoveDocument(_ context.Context, _ access.Actor, id, documentID string) (change.Change, error) {
+	f.got = called{method: "RemoveDocument", id: id, input: documentID}
+	return f.c, f.err
+}
