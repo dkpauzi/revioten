@@ -33,8 +33,11 @@ type Comparison struct {
 	Processes []ProcessGroup // menurut kemunculan pertama; baris tanpa proses di akhir
 }
 
-// ProcessGroup adalah baris PFMEA dan CP satu proses beserta tanda dicek-nya.
+// ProcessGroup adalah baris PFMEA dan CP satu proses di satu bagian beserta
+// tanda dicek-nya.
 type ProcessGroup struct {
+	SectionKey  string // bagian (D-155); "" untuk dokumen tanpa bagian
+	SectionName string
 	ProcessID   string // "" untuk baris tanpa proses
 	ProcessName string
 	PFMEARows   []Row // tidak pernah nil
@@ -51,14 +54,25 @@ type CheckMark struct {
 	Stale         bool // baris proses ini berubah sesudah dicek
 }
 
-// fingerprint memberi sidik jari baris satu proses di PFMEA dan CP: SHA-256
-// dari ID dan versi setiap baris. Versi naik setiap baris disimpan (M4.3),
-// jadi baris yang ditambah, diubah, atau dihapus mengubah sidik jarinya.
-func fingerprint(pfmea, cp Document, processID string) string {
+// sectionKeyOf memberi kunci bagian satu baris ("" untuk dokumen tanpa bagian).
+func sectionKeyOf(d Document, r Row) string {
+	for _, s := range d.Sections {
+		if s.ID == r.SectionID {
+			return s.Key
+		}
+	}
+	return ""
+}
+
+// fingerprint memberi sidik jari baris satu proses di satu bagian PFMEA dan
+// CP: SHA-256 dari ID dan versi setiap baris. Versi naik setiap baris
+// disimpan (M4.3), jadi baris yang ditambah, diubah, atau dihapus mengubah
+// sidik jarinya.
+func fingerprint(pfmea, cp Document, sectionKey, processID string) string {
 	h := sha256.New()
 	for _, d := range []Document{pfmea, cp} {
 		for _, r := range d.Rows {
-			if r.ProcessID == processID {
+			if r.ProcessID == processID && sectionKeyOf(d, r) == sectionKey {
 				fmt.Fprintf(h, "%s:%s:%d\n", d.ID, r.ID, r.Version)
 			}
 		}
@@ -84,7 +98,7 @@ func pair(ctx context.Context, q *db.Queries, d Document) (Document, Document, e
 	return pfmea, cp, err
 }
 
-// Comparison menampilkan PFMEA dan CP set dokumen id per proses (L-4).
+// Comparison menampilkan PFMEA dan CP set dokumen id per bagian dan proses (L-4).
 func (s *Service) Comparison(ctx context.Context, actor access.Actor, id string) (Comparison, error) {
 	d, err := s.Get(ctx, actor, id)
 	if err != nil {
@@ -103,26 +117,42 @@ func comparison(ctx context.Context, q *db.Queries, d Document) (Comparison, err
 		return Comparison{}, err
 	}
 	out := Comparison{PFMEA: pfmea, CP: cp, Processes: []ProcessGroup{}}
+	// Urutan dan nama bagian dari CP; PFMEA punya bagian yang sama (ASUMSI E-97).
+	sectionPos, sectionName := map[string]int{}, map[string]string{}
+	for _, doc := range []Document{pfmea, cp} {
+		for _, s := range doc.Sections {
+			sectionPos[s.Key], sectionName[s.Key] = s.Position, s.Name
+		}
+	}
 	index := map[string]int{}
-	group := func(r Row) *ProcessGroup {
-		i, ok := index[r.ProcessID]
+	group := func(doc Document, r Row) *ProcessGroup {
+		key := sectionKeyOf(doc, r)
+		k := key + "/" + r.ProcessID
+		i, ok := index[k]
 		if !ok {
 			i = len(out.Processes)
-			index[r.ProcessID] = i
-			out.Processes = append(out.Processes, ProcessGroup{ProcessID: r.ProcessID, ProcessName: r.ProcessName, PFMEARows: []Row{}, CPRows: []Row{}})
+			index[k] = i
+			out.Processes = append(out.Processes, ProcessGroup{
+				SectionKey: key, SectionName: sectionName[key], ProcessID: r.ProcessID, ProcessName: r.ProcessName,
+				PFMEARows: []Row{}, CPRows: []Row{},
+			})
 		}
 		return &out.Processes[i]
 	}
 	for _, r := range pfmea.Rows {
-		g := group(r)
+		g := group(pfmea, r)
 		g.PFMEARows = append(g.PFMEARows, r)
 	}
 	for _, r := range cp.Rows {
-		g := group(r)
+		g := group(cp, r)
 		g.CPRows = append(g.CPRows, r)
 	}
-	// Baris tanpa proses tidak bisa dicek per proses, jadi ditaruh di akhir.
+	// Menurut urutan bagian; di setiap bagian, baris tanpa proses di akhir
+	// karena tidak bisa dicek per proses.
 	slices.SortStableFunc(out.Processes, func(a, b ProcessGroup) int {
+		if pa, pb := sectionPos[a.SectionKey], sectionPos[b.SectionKey]; pa != pb {
+			return pa - pb
+		}
 		switch {
 		case a.ProcessID == "" && b.ProcessID != "":
 			return 1
@@ -139,21 +169,23 @@ func comparison(ctx context.Context, q *db.Queries, d Document) (Comparison, err
 		return Comparison{}, err
 	}
 	for _, c := range checks {
-		i := slices.IndexFunc(out.Processes, func(g ProcessGroup) bool { return g.ProcessID == c.ProcessID })
+		key := deref(c.SectionKey)
+		i := slices.IndexFunc(out.Processes, func(g ProcessGroup) bool { return g.SectionKey == key && g.ProcessID == c.ProcessID })
 		if i < 0 {
-			continue // proses itu sudah tidak punya baris
+			continue // proses itu sudah tidak punya baris di bagian ini
 		}
 		out.Processes[i].Check = &CheckMark{
 			By: c.CheckedBy, At: c.CheckedAt.UTC(), PFMEARevision: int(c.PfmeaRevision), CPRevision: int(c.CpRevision),
-			Stale: c.RowsFingerprint != fingerprint(pfmea, cp, c.ProcessID),
+			Stale: c.RowsFingerprint != fingerprint(pfmea, cp, key, c.ProcessID),
 		}
 	}
 	return out, nil
 }
 
-// MarkChecked memberi atau mencabut tanda dicek satu proses (V-2, D-65).
-// Memberi tanda pada proses yang perlu dicek ulang memperbarui tandanya.
-func (s *Service) MarkChecked(ctx context.Context, actor access.Actor, id, processID string, checked bool) (Comparison, error) {
+// MarkChecked memberi atau mencabut tanda dicek satu proses di satu bagian
+// (V-2, D-65). sectionKey wajib bila set punya bagian (D-155). Memberi tanda
+// pada proses yang perlu dicek ulang memperbarui tandanya.
+func (s *Service) MarkChecked(ctx context.Context, actor access.Actor, id, sectionKey, processID string, checked bool) (Comparison, error) {
 	d, err := s.load(ctx, id)
 	if err != nil {
 		return Comparison{}, err
@@ -167,25 +199,29 @@ func (s *Service) MarkChecked(ctx context.Context, actor access.Actor, id, proce
 		if err != nil {
 			return err
 		}
-		inUse := func(rows []Row) bool {
-			return slices.ContainsFunc(rows, func(r Row) bool { return r.ProcessID == processID })
+		if _, err := sectionByKey(cp, sectionKey); err != nil {
+			return err
 		}
-		if processID == "" || !db.IsUUID(processID) || (!inUse(pfmea.Rows) && !inUse(cp.Rows)) {
+		inUse := func(doc Document) bool {
+			return slices.ContainsFunc(doc.Rows, func(r Row) bool { return r.ProcessID == processID && sectionKeyOf(doc, r) == sectionKey })
+		}
+		if processID == "" || !db.IsUUID(processID) || (!inUse(pfmea) && !inUse(cp)) {
 			return problems(invalid("process_id", problem.InvalidFormat, "Choose a process that has rows in the PFMEA or the CP."))
 		}
-		key := struct{ pfmeaRev, cpRev int16 }{int16(pfmea.Revision), int16(cp.Revision)}
+		pfmeaRev, cpRev := int16(pfmea.Revision), int16(cp.Revision)
 		var changed int64
 		action := audit.ActionPFMEACPChecked
 		if checked {
 			changed, err = q.AddPfmeaCpCheck(ctx, db.AddPfmeaCpCheckParams{
 				PfmeaDocumentID: pfmea.ID, CpDocumentID: cp.ID, ProcessID: processID,
-				PfmeaRevision: key.pfmeaRev, CpRevision: key.cpRev, CheckedByPersonID: actor.PersonID,
-				RowsFingerprint: fingerprint(pfmea, cp, processID),
+				PfmeaRevision: pfmeaRev, CpRevision: cpRev, CheckedByPersonID: actor.PersonID,
+				RowsFingerprint: fingerprint(pfmea, cp, sectionKey, processID), SectionKey: optional(sectionKey),
 			})
 		} else {
 			action = audit.ActionPFMEACPUnchecked
 			changed, err = q.RemovePfmeaCpCheck(ctx, db.RemovePfmeaCpCheckParams{
-				PfmeaDocumentID: pfmea.ID, CpDocumentID: cp.ID, ProcessID: processID, PfmeaRevision: key.pfmeaRev, CpRevision: key.cpRev,
+				PfmeaDocumentID: pfmea.ID, CpDocumentID: cp.ID, ProcessID: processID, PfmeaRevision: pfmeaRev, CpRevision: cpRev,
+				SectionKey: optional(sectionKey),
 			})
 		}
 		if err != nil || changed == 0 {
@@ -195,10 +231,13 @@ func (s *Service) MarkChecked(ctx context.Context, actor access.Actor, id, proce
 		if err != nil {
 			return err
 		}
-		return audit.Record(ctx, q, actor, audit.Event{
-			Action: action, TargetType: audit.TargetDocument, TargetID: cp.ID,
-			Details: map[string]string{"process": name, "pfmea": pfmea.Number, "cp": cp.Number},
-		})
+		details := map[string]string{"process": name, "pfmea": pfmea.Number, "cp": cp.Number}
+		for _, sec := range cp.Sections {
+			if sec.Key == sectionKey {
+				details["section"] = sec.Name
+			}
+		}
+		return audit.Record(ctx, q, actor, audit.Event{Action: action, TargetType: audit.TargetDocument, TargetID: cp.ID, Details: details})
 	})
 	if err != nil {
 		return Comparison{}, result(err, "memberi tanda dicek")

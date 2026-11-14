@@ -86,10 +86,32 @@ func (s *Service) CopyFrom(ctx context.Context, actor access.Actor, id, sourceID
 			if len(target.Rows) > 0 {
 				return problems(invalid("rows", problem.NotAllowed, "Copy only into a document set that has no rows yet."))
 			}
+			if len(target.Sections) > 0 {
+				return problems(invalid("section", problem.NotAllowed, "Copy only into a document set that has no sections yet."))
+			}
 			if src.FormatVersionID != target.FormatVersionID {
 				return wrong("The two documents use different form versions.")
 			}
 			pairs = append(pairs, pair{target: target, source: src})
+		}
+		// Bagian sumber dibuat lebih dulu di set tujuan dengan nama dan urutan
+		// yang sama (D-155); baris lalu dipetakan menurut nama bagian. Satu
+		// kunci per nama, dipakai bersama semua dokumen tujuan. Part number
+		// tidak disalin, karena milik model sumber.
+		keys := map[string]string{}
+		for _, p := range pairs {
+			for _, sec := range p.source.Sections {
+				key, ok := keys[sec.Name]
+				if !ok {
+					if key, err = q.NewSectionKey(ctx); err != nil {
+						return err
+					}
+					keys[sec.Name] = key
+				}
+				if err := q.CopySectionsFrom(ctx, db.CopySectionsFromParams{DocumentID: p.target.ID, SectionKey: key, Position: int32(sec.Position), Name: sec.Name}); err != nil {
+					return err
+				}
+			}
 		}
 		total := 0
 		for _, p := range pairs {

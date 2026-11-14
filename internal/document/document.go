@@ -88,6 +88,8 @@ type Row struct {
 	// Detached: tautan ke poin template diputus, dengan alasan (M4.8, R-CMP-04).
 	Detached     bool
 	DetachReason string
+	// SectionID adalah bagian pemilik baris (D-155); "" untuk dokumen tanpa bagian.
+	SectionID string
 }
 
 // Document adalah satu dokumen lengkap dengan header dan barisnya.
@@ -110,6 +112,9 @@ type Document struct {
 	Header           map[string]any
 	HeaderVersion    int   // naik setiap kali header disimpan (M4.3)
 	Rows             []Row // menurut urutan, tidak pernah nil
+	// Sections adalah bagian per PCB menurut urutan (D-155); kosong untuk
+	// dokumen biasa. Tidak pernah nil.
+	Sections []Section
 	// Set berisi dokumen satu set, termasuk dokumen ini, menurut urutan jenis
 	// dokumen (M4.2). Dokumen dari nomor tunggal hanya berisi dirinya sendiri.
 	Set       []SetMember
@@ -154,6 +159,8 @@ type NewRow struct {
 	ProcessID       string
 	OperationNumber string
 	Content         map[string]any
+	// SectionID wajib bila dokumen punya bagian (D-155).
+	SectionID string
 }
 
 // RowUpdate adalah isi baru satu baris. Semua isian dikirim utuh, bersama
@@ -433,11 +440,15 @@ func (s *Service) AddRow(ctx context.Context, actor access.Actor, id string, in 
 		if len(d.Rows) >= maxRows {
 			return "", nil, problems(invalid("rows", problem.NotAllowed, "A document has at most 1000 rows."))
 		}
+		section, p := rowSection(d, in.SectionID)
+		if err := problems(p); err != nil {
+			return "", nil, err
+		}
 		operation, content, err := checkRow(ctx, q, format, in.ProcessID, in.OperationNumber, in.Content)
 		if err != nil {
 			return "", nil, err
 		}
-		row, err := q.AddDocumentRow(ctx, db.AddDocumentRowParams{DocumentID: d.ID, ProcessID: optional(in.ProcessID), OperationNumber: optional(operation), Content: content})
+		row, err := q.AddDocumentRow(ctx, db.AddDocumentRowParams{DocumentID: d.ID, ProcessID: optional(in.ProcessID), OperationNumber: optional(operation), Content: content, SectionID: section})
 		if err != nil {
 			return "", nil, err
 		}
@@ -459,11 +470,15 @@ func (s *Service) AddRows(ctx context.Context, actor access.Actor, id string, ro
 		}
 		var first, last int32
 		for i, in := range rows {
+			section, p := rowSection(d, in.SectionID)
+			if err := problems(p); err != nil {
+				return "", nil, atRow(i, err)
+			}
 			operation, content, err := checkRow(ctx, q, format, in.ProcessID, in.OperationNumber, in.Content)
 			if err != nil {
 				return "", nil, atRow(i, err)
 			}
-			row, err := q.AddDocumentRow(ctx, db.AddDocumentRowParams{DocumentID: d.ID, ProcessID: optional(in.ProcessID), OperationNumber: optional(operation), Content: content})
+			row, err := q.AddDocumentRow(ctx, db.AddDocumentRowParams{DocumentID: d.ID, ProcessID: optional(in.ProcessID), OperationNumber: optional(operation), Content: content, SectionID: section})
 			if err != nil {
 				return "", nil, err
 			}
@@ -672,6 +687,18 @@ func getDocument(ctx context.Context, q *db.Queries, id string) (Document, error
 	for _, m := range members {
 		d.Set = append(d.Set, SetMember{ID: m.ID, Number: m.Number, DocumentType: TypeRef{ID: m.DocumentTypeID, Key: deref(m.DocumentTypeKey), Name: m.DocumentTypeName}})
 	}
+	sections, err := q.ListDocumentSections(ctx, id)
+	if err != nil {
+		return Document{}, err
+	}
+	d.Sections = make([]Section, 0, len(sections))
+	for _, s := range sections {
+		item := Section{ID: s.ID, Key: s.SectionKey, Position: int(s.Position), Name: s.Name, PartNumbers: []PartRef{}}
+		for i, pid := range s.PartNumberIds {
+			item.PartNumbers = append(item.PartNumbers, PartRef{ID: pid, Number: s.PartNumbers[i], Name: s.PartNames[i]})
+		}
+		d.Sections = append(d.Sections, item)
+	}
 	rows, err := q.ListDocumentRows(ctx, id)
 	if err != nil {
 		return Document{}, err
@@ -679,7 +706,7 @@ func getDocument(ctx context.Context, q *db.Queries, id string) (Document, error
 	for _, row := range rows {
 		item := Row{ID: row.ID, Position: int(row.Position), ProcessID: deref(row.ProcessID), ProcessName: deref(row.ProcessName), OperationNumber: deref(row.OperationNumber), Version: int(row.Version),
 			TemplatePointID: deref(row.TemplatePointID), TemplateVersionID: deref(row.TemplateVersionID), OperationManual: row.OperationManual,
-			Detached: row.DetachedAt != nil, DetachReason: deref(row.DetachReason)}
+			Detached: row.DetachedAt != nil, DetachReason: deref(row.DetachReason), SectionID: deref(row.SectionID)}
 		if err := json.Unmarshal(row.Content, &item.Content); err != nil {
 			return Document{}, fmt.Errorf("membaca baris: %w", err)
 		}

@@ -54,13 +54,16 @@ func fillReferences(ctx context.Context, q *db.Queries, d Document, format templ
 	if err != nil {
 		return 0, err
 	}
+	// Baris pertama setiap proses dihitung per bagian (D-155), karena tiap
+	// bagian dicetak dengan daftar prosesnya sendiri.
 	seen := map[string]bool{}
 	filled := 0
 	for _, r := range d.Rows { // sudah urut menurut posisi
-		if r.ProcessID == "" || seen[r.ProcessID] {
+		key := r.SectionID + "/" + r.ProcessID
+		if r.ProcessID == "" || seen[key] {
 			continue
 		}
-		seen[r.ProcessID] = true
+		seen[key] = true
 		if text, _ := r.Content[field].(string); strings.TrimSpace(text) != "" {
 			continue
 		}

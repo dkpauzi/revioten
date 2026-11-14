@@ -1022,6 +1022,10 @@ export type Document = {
     header_version: number;
     rows: Array<DocumentRow>;
     /**
+     * The sections of the document, one per PCB of the model (D-155), in order. Empty for a document without sections.
+     */
+    sections: Array<DocumentSection>;
+    /**
      * The documents of the same set, this one included, by document type (M4.2). Documents from numbers registered as a set of PFD, PFMEA, and CP know each other; a single number gives only this document.
      */
     set: Array<DocumentSetMember>;
@@ -1067,6 +1071,10 @@ export type DocumentRow = {
      * The link to the template point was cut, with a reason (M4.8).
      */
     detached: boolean;
+    /**
+     * The section of the row (D-155); left out for a document without sections.
+     */
+    section_id?: string;
     detach_reason?: string;
     /**
      * Row content keyed by column field ID.
@@ -1086,6 +1094,10 @@ export type DocumentRowInput = {
     content: {
         [key: string]: unknown;
     };
+    /**
+     * The section of a new row; required when the document has sections (D-155). Ignored when changing a row.
+     */
+    section_id?: string;
     /**
      * The version of the row that was read. Required when changing a row, ignored when adding one. When the row was changed by someone else in the meantime the answer is 409 with code changed, and nothing is saved (optimistic locking, R-DOC-07).
      */
@@ -1128,6 +1140,10 @@ export type ComposedPoint = {
 
 export type ComposeInput = {
     process_template_version_id: string;
+    /**
+     * The section to compose (D-155); required when the set has sections.
+     */
+    section_key?: string;
     include?: Array<string>;
     exclude?: Array<PointExclusion>;
 };
@@ -1144,6 +1160,11 @@ export type PfmeaCpComparison = {
 };
 
 export type PfmeaCpProcess = {
+    /**
+     * The section (D-155); left out for a set without sections.
+     */
+    section_key?: string;
+    section_name?: string;
     /**
      * Left out for the rows that have no process.
      */
@@ -1169,6 +1190,10 @@ export type PfmeaCpCheck = {
 };
 
 export type PfmeaCpCheckInput = {
+    /**
+     * The section (D-155); required when the set has sections.
+     */
+    section_key?: string;
     process_id: string;
     checked: boolean;
 };
@@ -1218,11 +1243,40 @@ export type DocumentCopy = {
 };
 
 export type DocumentOrder = {
+    /**
+     * The section to order (D-155); required when the document has sections. Operation numbers start again at 10 per section.
+     */
+    section_id?: string;
     row_ids: Array<string>;
     /**
      * Number the operations automatically after ordering. Default false.
      */
     renumber?: boolean;
+};
+
+export type DocumentSection = {
+    /**
+     * The section of this document. Rows name this ID.
+     */
+    id: string;
+    /**
+     * The same for this section in every document of the set; composition and the check use it.
+     */
+    key: string;
+    position: number;
+    name: string;
+    part_numbers: Array<DocumentPartNumber>;
+};
+
+export type NewDocumentSection = {
+    name: string;
+    part_number_ids?: Array<string>;
+};
+
+export type DocumentSectionUpdate = {
+    name: string;
+    position?: number;
+    part_number_ids?: Array<string>;
 };
 
 export type ReferencedDocumentList = {
@@ -1912,6 +1966,8 @@ export type FormatTemplateId = string;
 export type FormatVersionId = string;
 
 export type FormatFieldId = string;
+
+export type SectionId = string;
 
 export type RefDocId = string;
 
@@ -4808,6 +4864,10 @@ export type GetDocumentCompositionData = {
     };
     query: {
         process_template_version_id: string;
+        /**
+         * The section (D-155); required when the set has sections.
+         */
+        section_key?: string;
     };
     url: '/api/v1/documents/{documentId}/composition';
 };
@@ -5255,6 +5315,113 @@ export type RemoveReferencedDocumentLinkResponses = {
 };
 
 export type RemoveReferencedDocumentLinkResponse = RemoveReferencedDocumentLinkResponses[keyof RemoveReferencedDocumentLinkResponses];
+
+export type AddDocumentSectionData = {
+    body: NewDocumentSection;
+    path: {
+        documentId: string;
+    };
+    query?: never;
+    url: '/api/v1/documents/{documentId}/sections';
+};
+
+export type AddDocumentSectionErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type AddDocumentSectionError = AddDocumentSectionErrors[keyof AddDocumentSectionErrors];
+
+export type AddDocumentSectionResponses = {
+    /**
+     * The document after the change.
+     */
+    201: Document;
+};
+
+export type AddDocumentSectionResponse = AddDocumentSectionResponses[keyof AddDocumentSectionResponses];
+
+export type RemoveDocumentSectionData = {
+    body?: never;
+    path: {
+        documentId: string;
+        sectionId: string;
+    };
+    query?: never;
+    url: '/api/v1/documents/{documentId}/sections/{sectionId}';
+};
+
+export type RemoveDocumentSectionErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type RemoveDocumentSectionError = RemoveDocumentSectionErrors[keyof RemoveDocumentSectionErrors];
+
+export type RemoveDocumentSectionResponses = {
+    /**
+     * The document after the change.
+     */
+    200: Document;
+};
+
+export type RemoveDocumentSectionResponse = RemoveDocumentSectionResponses[keyof RemoveDocumentSectionResponses];
+
+export type UpdateDocumentSectionData = {
+    body: DocumentSectionUpdate;
+    path: {
+        documentId: string;
+        sectionId: string;
+    };
+    query?: never;
+    url: '/api/v1/documents/{documentId}/sections/{sectionId}';
+};
+
+export type UpdateDocumentSectionErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type UpdateDocumentSectionError = UpdateDocumentSectionErrors[keyof UpdateDocumentSectionErrors];
+
+export type UpdateDocumentSectionResponses = {
+    /**
+     * The document after the change.
+     */
+    200: Document;
+};
+
+export type UpdateDocumentSectionResponse = UpdateDocumentSectionResponses[keyof UpdateDocumentSectionResponses];
 
 export type FillDocumentReferencesData = {
     body?: never;

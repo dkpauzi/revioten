@@ -85,6 +85,9 @@ const (
 	ActionDocumentRowDetached    = "document.row_detached"        // M4.8
 	ActionPFMEACPChecked         = "document.pfmea_cp_checked"    // M4.9
 	ActionPFMEACPUnchecked       = "document.pfmea_cp_unchecked"  // M4.9
+	ActionDocumentSectionAdded   = "document.section_added"       // D-155
+	ActionDocumentSectionChanged = "document.section_changed"     // D-155
+	ActionDocumentSectionRemoved = "document.section_removed"     // D-155
 	ActionDocumentCopied         = "document.copied"              // M4.7
 	ActionDocumentComposed       = "document.composed"            // M4.5
 	ActionRefDocCreated          = "referenced_document.created"  // D-130

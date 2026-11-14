@@ -41,6 +41,8 @@ import type {
 	Composition,
 	DocumentRowInput,
 	RowDifferenceList,
+	NewDocumentSection,
+	DocumentSectionUpdate,
 	NewReferencedDocument,
 	NewReferencedDocumentLink,
 	ReferencedDocument,
@@ -564,8 +566,12 @@ export function addDocumentRows(id: string, rows: DocumentRowInput[], fetchFn: t
 }
 
 // getDocumentComposition memanggil GET /api/v1/documents/{id}/composition (L-4, M4.5).
-export function getDocumentComposition(id: string, versionId: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<Composition>> {
-	const path = itemPath('documents', id) + '/composition?process_template_version_id=' + encodeURIComponent(versionId);
+// sectionKey memilih bagian (D-155); kosong untuk dokumen tanpa bagian.
+export function getDocumentComposition(id: string, versionId: string, sectionKey = '', fetchFn: typeof fetch = fetch): Promise<ApiResult<Composition>> {
+	let path = itemPath('documents', id) + '/composition?process_template_version_id=' + encodeURIComponent(versionId);
+	if (sectionKey !== '') {
+		path += '&section_key=' + encodeURIComponent(sectionKey);
+	}
 	return call<Composition>(fetchFn, path, { method: 'GET' });
 }
 
@@ -575,8 +581,9 @@ export function composeDocument(id: string, input: ComposeInput, fetchFn: typeof
 }
 
 // reorderDocumentRows memanggil PUT /api/v1/documents/{id}/order (E-2, M4.6).
-export function reorderDocumentRows(id: string, rowIds: string[], renumber: boolean, fetchFn: typeof fetch = fetch): Promise<ApiResult<Document>> {
-	return call<Document>(fetchFn, itemPath('documents', id) + '/order', jsonRequest('PUT', { row_ids: rowIds, renumber }));
+// sectionId memilih bagian yang diurutkan (D-155); kosong untuk dokumen tanpa bagian.
+export function reorderDocumentRows(id: string, rowIds: string[], renumber: boolean, sectionId = '', fetchFn: typeof fetch = fetch): Promise<ApiResult<Document>> {
+	return call<Document>(fetchFn, itemPath('documents', id) + '/order', jsonRequest('PUT', { row_ids: rowIds, renumber, section_id: sectionId || undefined }));
 }
 
 // copyDocumentComposition memanggil POST /api/v1/documents/{id}/copy (E-2, M4.7).
@@ -600,8 +607,8 @@ export function getPfmeaCpComparison(id: string, fetchFn: typeof fetch = fetch):
 }
 
 // markPfmeaCpChecked memanggil PUT /api/v1/documents/{id}/pfmea-cp (V-2, D-65).
-export function markPfmeaCpChecked(id: string, processId: string, checked: boolean, fetchFn: typeof fetch = fetch): Promise<ApiResult<PfmeaCpComparison>> {
-	return call<PfmeaCpComparison>(fetchFn, itemPath('documents', id) + '/pfmea-cp', jsonRequest('PUT', { process_id: processId, checked }));
+export function markPfmeaCpChecked(id: string, processId: string, checked: boolean, sectionKey = '', fetchFn: typeof fetch = fetch): Promise<ApiResult<PfmeaCpComparison>> {
+	return call<PfmeaCpComparison>(fetchFn, itemPath('documents', id) + '/pfmea-cp', jsonRequest('PUT', { process_id: processId, checked, section_key: sectionKey || undefined }));
 }
 
 // Master dokumen terkait (D-130, D-156).
@@ -634,6 +641,23 @@ export function removeReferencedDocumentLink(id: string, linkId: string, fetchFn
 // fillDocumentReferences memanggil POST /api/v1/documents/{id}/references (E-2, D-130).
 export function fillDocumentReferences(id: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<Document>> {
 	return call<Document>(fetchFn, itemPath('documents', id) + '/references', { method: 'POST' });
+}
+
+// Bagian per PCB (D-155).
+
+// addDocumentSection memanggil POST /api/v1/documents/{id}/sections (E-2).
+export function addDocumentSection(id: string, input: NewDocumentSection, fetchFn: typeof fetch = fetch): Promise<ApiResult<Document>> {
+	return call<Document>(fetchFn, itemPath('documents', id) + '/sections', jsonRequest('POST', input));
+}
+
+// updateDocumentSection memanggil PUT /api/v1/documents/{id}/sections/{sectionId} (E-2).
+export function updateDocumentSection(id: string, sectionId: string, input: DocumentSectionUpdate, fetchFn: typeof fetch = fetch): Promise<ApiResult<Document>> {
+	return call<Document>(fetchFn, `${itemPath('documents', id)}/sections/${encodeURIComponent(sectionId)}`, jsonRequest('PUT', input));
+}
+
+// removeDocumentSection memanggil DELETE /api/v1/documents/{id}/sections/{sectionId} (E-2).
+export function removeDocumentSection(id: string, sectionId: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<Document>> {
+	return call<Document>(fetchFn, `${itemPath('documents', id)}/sections/${encodeURIComponent(sectionId)}`, { method: 'DELETE' });
 }
 
 // updateDocumentRow memanggil PUT /api/v1/documents/{id}/rows/{rowId} (E-2).

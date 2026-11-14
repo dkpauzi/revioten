@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { FormatField } from './api/gen/index.ts';
-import { cellText, cleanContent, gridRow, rowInputFrom, typedFields } from './documents.ts';
+import { cellText, cleanContent, gridRow, rowInputFrom, rowsOfSection, typedFields } from './documents.ts';
 
 const field = (over: Partial<FormatField>): FormatField => ({
 	id: 'f', area: 'row', kind: 'text', label: 'L', position: 1, required: false, hidden: false, ...over
@@ -56,5 +56,21 @@ describe('gridRow dan rowInputFrom', () => {
 
 	it('tidak mengirim proses dan nomor operasi yang kosong', () => {
 		expect(rowInputFrom(format, { id: 'r', position: 1, _process: '', _operation: ' ' })).toEqual({ content: {} });
+	});
+});
+describe('rowsOfSection (D-155)', () => {
+	const row = (id: string, position: number, section?: string) =>
+		({ id, position, version: 1, operation_manual: false, detached: false, section_id: section, content: {} }) as Parameters<typeof rowsOfSection>[0][number];
+	const rows = [row('a', 1, 's1'), row('b', 2, 's2'), row('c', 3, 's1')];
+
+	it('memberi baris satu bagian dengan nomor tampilan mulai 1', () => {
+		expect(rowsOfSection(rows, 's1').map((r) => [r.id, r.position])).toEqual([
+			['a', 1],
+			['c', 2]
+		]);
+	});
+
+	it('tanpa bagian memberi semua baris', () => {
+		expect(rowsOfSection(rows, '').map((r) => r.id)).toEqual(['a', 'b', 'c']);
 	});
 });

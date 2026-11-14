@@ -13,8 +13,8 @@ import (
 const addComposedRow = `-- name: AddComposedRow :one
 
 
-INSERT INTO document_rows (document_id, position, process_id, content, template_point_id, template_version_id)
-VALUES ($1, (SELECT coalesce(max(position), 0) + 1 FROM document_rows WHERE document_id = $1), $2, $3, $4, $5)
+INSERT INTO document_rows (document_id, position, process_id, content, template_point_id, template_version_id, section_id)
+VALUES ($1, (SELECT coalesce(max(position), 0) + 1 FROM document_rows WHERE document_id = $1), $2, $3, $4, $5, $6)
 RETURNING id, position
 `
 
@@ -24,6 +24,7 @@ type AddComposedRowParams struct {
 	Content           []byte
 	TemplatePointID   *string
 	TemplateVersionID *string
+	SectionID         *string
 }
 
 type AddComposedRowRow struct {
@@ -41,6 +42,7 @@ func (q *Queries) AddComposedRow(ctx context.Context, arg AddComposedRowParams) 
 		arg.Content,
 		arg.TemplatePointID,
 		arg.TemplateVersionID,
+		arg.SectionID,
 	)
 	var i AddComposedRowRow
 	err := row.Scan(&i.ID, &i.Position)
@@ -76,9 +78,9 @@ func (q *Queries) AddDocumentPartNumber(ctx context.Context, arg AddDocumentPart
 }
 
 const addDocumentRow = `-- name: AddDocumentRow :one
-INSERT INTO document_rows (document_id, position, process_id, operation_number, content, operation_manual)
+INSERT INTO document_rows (document_id, position, process_id, operation_number, content, operation_manual, section_id)
 VALUES ($1, (SELECT coalesce(max(position), 0) + 1 FROM document_rows WHERE document_id = $1), $2, $4, $3,
-        $4::text IS NOT NULL)
+        $4::text IS NOT NULL, $5)
 RETURNING id, position
 `
 
@@ -87,6 +89,7 @@ type AddDocumentRowParams struct {
 	ProcessID       *string
 	Content         []byte
 	OperationNumber *string
+	SectionID       *string
 }
 
 type AddDocumentRowRow struct {
@@ -102,16 +105,36 @@ func (q *Queries) AddDocumentRow(ctx context.Context, arg AddDocumentRowParams) 
 		arg.ProcessID,
 		arg.Content,
 		arg.OperationNumber,
+		arg.SectionID,
 	)
 	var i AddDocumentRowRow
 	err := row.Scan(&i.ID, &i.Position)
 	return i, err
 }
 
+const addDocumentSection = `-- name: AddDocumentSection :one
+INSERT INTO document_sections (document_id, section_key, position, name)
+VALUES ($1, $2, (SELECT coalesce(max(position), 0) + 1 FROM document_sections WHERE document_id = $1), $3)
+RETURNING id
+`
+
+type AddDocumentSectionParams struct {
+	DocumentID string
+	SectionKey string
+	Name       string
+}
+
+func (q *Queries) AddDocumentSection(ctx context.Context, arg AddDocumentSectionParams) (string, error) {
+	row := q.db.QueryRow(ctx, addDocumentSection, arg.DocumentID, arg.SectionKey, arg.Name)
+	var id string
+	err := row.Scan(&id)
+	return id, err
+}
+
 const addPfmeaCpCheck = `-- name: AddPfmeaCpCheck :execrows
-INSERT INTO pfmea_cp_checks (pfmea_document_id, cp_document_id, process_id, pfmea_revision, cp_revision, checked_by_person_id, rows_fingerprint)
-VALUES ($1, $2, $3, $4, $5, $6, $7)
-ON CONFLICT (pfmea_document_id, cp_document_id, process_id, pfmea_revision, cp_revision) DO UPDATE
+INSERT INTO pfmea_cp_checks (pfmea_document_id, cp_document_id, process_id, pfmea_revision, cp_revision, checked_by_person_id, rows_fingerprint, section_key)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+ON CONFLICT (pfmea_document_id, cp_document_id, section_key, process_id, pfmea_revision, cp_revision) DO UPDATE
 SET checked_by_person_id = EXCLUDED.checked_by_person_id, checked_at = now(), rows_fingerprint = EXCLUDED.rows_fingerprint
 WHERE pfmea_cp_checks.rows_fingerprint <> EXCLUDED.rows_fingerprint
 `
@@ -124,6 +147,7 @@ type AddPfmeaCpCheckParams struct {
 	CpRevision        int16
 	CheckedByPersonID string
 	RowsFingerprint   string
+	SectionKey        *string
 }
 
 // AddPfmeaCpCheck memberi tanda. Tanda yang masih segar tidak diganti, jadi
@@ -138,6 +162,7 @@ func (q *Queries) AddPfmeaCpCheck(ctx context.Context, arg AddPfmeaCpCheckParams
 		arg.CpRevision,
 		arg.CheckedByPersonID,
 		arg.RowsFingerprint,
+		arg.SectionKey,
 	)
 	if err != nil {
 		return 0, err
@@ -145,26 +170,83 @@ func (q *Queries) AddPfmeaCpCheck(ctx context.Context, arg AddPfmeaCpCheckParams
 	return result.RowsAffected(), nil
 }
 
+const addSectionPartNumber = `-- name: AddSectionPartNumber :exec
+INSERT INTO document_section_part_numbers (section_key, part_number_id) VALUES ($1, $2)
+`
+
+type AddSectionPartNumberParams struct {
+	SectionKey   string
+	PartNumberID string
+}
+
+func (q *Queries) AddSectionPartNumber(ctx context.Context, arg AddSectionPartNumberParams) error {
+	_, err := q.db.Exec(ctx, addSectionPartNumber, arg.SectionKey, arg.PartNumberID)
+	return err
+}
+
+const assignExclusionsToSection = `-- name: AssignExclusionsToSection :exec
+UPDATE document_point_exclusions SET section_id = $2 WHERE document_id = $1 AND section_id IS NULL
+`
+
+type AssignExclusionsToSectionParams struct {
+	DocumentID string
+	SectionID  *string
+}
+
+func (q *Queries) AssignExclusionsToSection(ctx context.Context, arg AssignExclusionsToSectionParams) error {
+	_, err := q.db.Exec(ctx, assignExclusionsToSection, arg.DocumentID, arg.SectionID)
+	return err
+}
+
+const assignRowsToSection = `-- name: AssignRowsToSection :exec
+UPDATE document_rows SET section_id = $2 WHERE document_id = $1 AND section_id IS NULL
+`
+
+type AssignRowsToSectionParams struct {
+	DocumentID string
+	SectionID  *string
+}
+
+// AssignRowsToSection memindahkan baris tanpa bagian ke satu bagian; dipakai
+// saat bagian pertama dibuat, supaya baris yang sudah ada tidak tertinggal.
+func (q *Queries) AssignRowsToSection(ctx context.Context, arg AssignRowsToSectionParams) error {
+	_, err := q.db.Exec(ctx, assignRowsToSection, arg.DocumentID, arg.SectionID)
+	return err
+}
+
 const clearPointExclusion = `-- name: ClearPointExclusion :exec
-DELETE FROM document_point_exclusions WHERE document_id = $1 AND point_id = $2
+DELETE FROM document_point_exclusions
+WHERE document_id = $1 AND point_id = $2 AND section_id IS NOT DISTINCT FROM $3
 `
 
 type ClearPointExclusionParams struct {
 	DocumentID string
 	PointID    string
+	SectionID  *string
 }
 
 func (q *Queries) ClearPointExclusion(ctx context.Context, arg ClearPointExclusionParams) error {
-	_, err := q.db.Exec(ctx, clearPointExclusion, arg.DocumentID, arg.PointID)
+	_, err := q.db.Exec(ctx, clearPointExclusion, arg.DocumentID, arg.PointID, arg.SectionID)
+	return err
+}
+
+const clearSectionPartNumbers = `-- name: ClearSectionPartNumbers :exec
+DELETE FROM document_section_part_numbers WHERE section_key = $1
+`
+
+func (q *Queries) ClearSectionPartNumbers(ctx context.Context, sectionKey string) error {
+	_, err := q.db.Exec(ctx, clearSectionPartNumbers, sectionKey)
 	return err
 }
 
 const copyDocumentRows = `-- name: CopyDocumentRows :execrows
 
 
-INSERT INTO document_rows (document_id, position, process_id, operation_number, operation_manual, content, template_point_id, template_version_id, detached_at, detach_reason)
-SELECT $1::uuid, s.position, s.process_id, s.operation_number, s.operation_manual, s.content, s.template_point_id, s.template_version_id, s.detached_at, s.detach_reason
+INSERT INTO document_rows (document_id, position, process_id, operation_number, operation_manual, content, template_point_id, template_version_id, detached_at, detach_reason, section_id)
+SELECT $1::uuid, s.position, s.process_id, s.operation_number, s.operation_manual, s.content, s.template_point_id, s.template_version_id, s.detached_at, s.detach_reason, ts.id
 FROM document_rows s
+LEFT JOIN document_sections ss ON ss.id = s.section_id
+LEFT JOIN document_sections ts ON ts.document_id = $1::uuid AND ts.name = ss.name
 WHERE s.document_id = $2
 `
 
@@ -176,6 +258,7 @@ type CopyDocumentRowsParams struct {
 // M4.7: salin komposisi dari dokumen model lain (R-CMP-05).
 // CopyDocumentRows menyalin semua baris satu dokumen ke dokumen lain dengan
 // ID baru. Urutan, proses, nomor operasi, isi, dan tautan template ikut.
+// Bagian dipetakan menurut namanya: bagian tujuan dibuat lebih dulu dengan nama yang sama (D-155).
 func (q *Queries) CopyDocumentRows(ctx context.Context, arg CopyDocumentRowsParams) (int64, error) {
 	result, err := q.db.Exec(ctx, copyDocumentRows, arg.TargetID, arg.SourceID)
 	if err != nil {
@@ -185,11 +268,13 @@ func (q *Queries) CopyDocumentRows(ctx context.Context, arg CopyDocumentRowsPara
 }
 
 const copyPointExclusions = `-- name: CopyPointExclusions :exec
-INSERT INTO document_point_exclusions (document_id, point_id, reason)
-SELECT $1::uuid, s.point_id, s.reason
+INSERT INTO document_point_exclusions (document_id, point_id, reason, section_id)
+SELECT $1::uuid, s.point_id, s.reason, ts.id
 FROM document_point_exclusions s
+LEFT JOIN document_sections ss ON ss.id = s.section_id
+LEFT JOIN document_sections ts ON ts.document_id = $1::uuid AND ts.name = ss.name
 WHERE s.document_id = $2
-ON CONFLICT (document_id, point_id) DO NOTHING
+ON CONFLICT (document_id, section_id, point_id) DO NOTHING
 `
 
 type CopyPointExclusionsParams struct {
@@ -200,6 +285,42 @@ type CopyPointExclusionsParams struct {
 func (q *Queries) CopyPointExclusions(ctx context.Context, arg CopyPointExclusionsParams) error {
 	_, err := q.db.Exec(ctx, copyPointExclusions, arg.TargetID, arg.SourceID)
 	return err
+}
+
+const copySectionsFrom = `-- name: CopySectionsFrom :exec
+INSERT INTO document_sections (document_id, section_key, position, name)
+VALUES ($1, $2, $3, $4)
+`
+
+type CopySectionsFromParams struct {
+	DocumentID string
+	SectionKey string
+	Position   int32
+	Name       string
+}
+
+// CopySectionsFrom membuat bagian dokumen tujuan dengan nama dan urutan yang
+// sama dengan dokumen sumber. section_key baru per bagian, sama di set tujuan
+// karena kunci yang sama dipakai untuk semua dokumen tujuan (lihat copy.go).
+func (q *Queries) CopySectionsFrom(ctx context.Context, arg CopySectionsFromParams) error {
+	_, err := q.db.Exec(ctx, copySectionsFrom,
+		arg.DocumentID,
+		arg.SectionKey,
+		arg.Position,
+		arg.Name,
+	)
+	return err
+}
+
+const countSectionRows = `-- name: CountSectionRows :one
+SELECT count(*)::int FROM document_rows r JOIN document_sections s ON s.id = r.section_id WHERE s.section_key = $1
+`
+
+func (q *Queries) CountSectionRows(ctx context.Context, sectionKey string) (int32, error) {
+	row := q.db.QueryRow(ctx, countSectionRows, sectionKey)
+	var column_1 int32
+	err := row.Scan(&column_1)
+	return column_1, err
 }
 
 const createDocument = `-- name: CreateDocument :one
@@ -263,6 +384,24 @@ func (q *Queries) DeleteDocumentRow(ctx context.Context, arg DeleteDocumentRowPa
 	return i, err
 }
 
+const deleteDocumentSections = `-- name: DeleteDocumentSections :exec
+DELETE FROM document_sections WHERE section_key = $1
+`
+
+func (q *Queries) DeleteDocumentSections(ctx context.Context, sectionKey string) error {
+	_, err := q.db.Exec(ctx, deleteDocumentSections, sectionKey)
+	return err
+}
+
+const deleteSectionExclusions = `-- name: DeleteSectionExclusions :exec
+DELETE FROM document_point_exclusions WHERE section_id IN (SELECT id FROM document_sections WHERE section_key = $1)
+`
+
+func (q *Queries) DeleteSectionExclusions(ctx context.Context, sectionKey string) error {
+	_, err := q.db.Exec(ctx, deleteSectionExclusions, sectionKey)
+	return err
+}
+
 const detachDocumentRow = `-- name: DetachDocumentRow :execrows
 
 
@@ -300,21 +439,27 @@ func (q *Queries) DocumentExistsForNumber(ctx context.Context, documentNumberID 
 }
 
 const excludePoint = `-- name: ExcludePoint :exec
-INSERT INTO document_point_exclusions (document_id, point_id, reason)
-VALUES ($1, $2, $3)
-ON CONFLICT (document_id, point_id) DO UPDATE SET reason = EXCLUDED.reason, excluded_at = now()
+INSERT INTO document_point_exclusions (document_id, point_id, reason, section_id)
+VALUES ($1, $2, $3, $4)
+ON CONFLICT (document_id, section_id, point_id) DO UPDATE SET reason = EXCLUDED.reason, excluded_at = now()
 `
 
 type ExcludePointParams struct {
 	DocumentID string
 	PointID    string
 	Reason     *string
+	SectionID  *string
 }
 
 // ExcludePoint mencatat poin yang dikecualikan dari satu dokumen (R-CMP-03).
 // Mengecualikan lagi mengganti alasannya.
 func (q *Queries) ExcludePoint(ctx context.Context, arg ExcludePointParams) error {
-	_, err := q.db.Exec(ctx, excludePoint, arg.DocumentID, arg.PointID, arg.Reason)
+	_, err := q.db.Exec(ctx, excludePoint,
+		arg.DocumentID,
+		arg.PointID,
+		arg.Reason,
+		arg.SectionID,
+	)
 	return err
 }
 
@@ -573,7 +718,7 @@ func (q *Queries) ListDocumentPartNumbers(ctx context.Context, documentID string
 
 const listDocumentRows = `-- name: ListDocumentRows :many
 SELECT r.id, r.position, r.process_id, n.name AS process_name, r.operation_number, r.content, r.version,
-       r.template_point_id, r.template_version_id, r.operation_manual, r.detached_at, r.detach_reason
+       r.template_point_id, r.template_version_id, r.operation_manual, r.detached_at, r.detach_reason, r.section_id
 FROM document_rows r
 LEFT JOIN process_names n ON n.process_id = r.process_id AND n.kind = 'display'
 WHERE r.document_id = $1
@@ -593,6 +738,7 @@ type ListDocumentRowsRow struct {
 	OperationManual   bool
 	DetachedAt        *time.Time
 	DetachReason      *string
+	SectionID         *string
 }
 
 func (q *Queries) ListDocumentRows(ctx context.Context, documentID string) ([]ListDocumentRowsRow, error) {
@@ -617,6 +763,63 @@ func (q *Queries) ListDocumentRows(ctx context.Context, documentID string) ([]Li
 			&i.OperationManual,
 			&i.DetachedAt,
 			&i.DetachReason,
+			&i.SectionID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listDocumentSections = `-- name: ListDocumentSections :many
+
+
+SELECT s.id, s.section_key, s.position, s.name,
+       coalesce(array_agg(p.id ORDER BY p.number) FILTER (WHERE p.id IS NOT NULL), '{}')::uuid[] AS part_number_ids,
+       coalesce(array_agg(p.number ORDER BY p.number) FILTER (WHERE p.id IS NOT NULL), '{}')::text[] AS part_numbers,
+       coalesce(array_agg(coalesce(p.name, '') ORDER BY p.number) FILTER (WHERE p.id IS NOT NULL), '{}')::text[] AS part_names
+FROM document_sections s
+LEFT JOIN document_section_part_numbers sp ON sp.section_key = s.section_key
+LEFT JOIN part_numbers p ON p.id = sp.part_number_id
+WHERE s.document_id = $1
+GROUP BY s.id
+ORDER BY s.position
+`
+
+type ListDocumentSectionsRow struct {
+	ID            string
+	SectionKey    string
+	Position      int32
+	Name          string
+	PartNumberIds []string
+	PartNumbers   []string
+	PartNames     []string
+}
+
+// D-155 pola 2: bagian per PCB.
+// ListDocumentSections mengambil bagian satu dokumen menurut urutan, beserta
+// part number-nya (nomor dipisah koma, menurut nomor).
+func (q *Queries) ListDocumentSections(ctx context.Context, documentID string) ([]ListDocumentSectionsRow, error) {
+	rows, err := q.db.Query(ctx, listDocumentSections, documentID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListDocumentSectionsRow{}
+	for rows.Next() {
+		var i ListDocumentSectionsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.SectionKey,
+			&i.Position,
+			&i.Name,
+			&i.PartNumberIds,
+			&i.PartNumbers,
+			&i.PartNames,
 		); err != nil {
 			return nil, err
 		}
@@ -736,7 +939,7 @@ func (q *Queries) ListDocuments(ctx context.Context, customerID string) ([]ListD
 const listPfmeaCpChecks = `-- name: ListPfmeaCpChecks :many
 
 
-SELECT c.process_id, c.pfmea_revision, c.cp_revision, c.checked_at, c.rows_fingerprint, p.name AS checked_by
+SELECT c.process_id, c.section_key, c.pfmea_revision, c.cp_revision, c.checked_at, c.rows_fingerprint, p.name AS checked_by
 FROM pfmea_cp_checks c
 JOIN people p ON p.id = c.checked_by_person_id
 WHERE c.pfmea_document_id = $1 AND c.cp_document_id = $2 AND c.pfmea_revision = $3 AND c.cp_revision = $4
@@ -751,6 +954,7 @@ type ListPfmeaCpChecksParams struct {
 
 type ListPfmeaCpChecksRow struct {
 	ProcessID       string
+	SectionKey      *string
 	PfmeaRevision   int16
 	CpRevision      int16
 	CheckedAt       time.Time
@@ -777,6 +981,7 @@ func (q *Queries) ListPfmeaCpChecks(ctx context.Context, arg ListPfmeaCpChecksPa
 		var i ListPfmeaCpChecksRow
 		if err := rows.Scan(
 			&i.ProcessID,
+			&i.SectionKey,
 			&i.PfmeaRevision,
 			&i.CpRevision,
 			&i.CheckedAt,
@@ -794,12 +999,13 @@ func (q *Queries) ListPfmeaCpChecks(ctx context.Context, arg ListPfmeaCpChecksPa
 }
 
 const listPointExclusions = `-- name: ListPointExclusions :many
-SELECT point_id, reason FROM document_point_exclusions WHERE document_id = $1
+SELECT point_id, reason, section_id FROM document_point_exclusions WHERE document_id = $1
 `
 
 type ListPointExclusionsRow struct {
-	PointID string
-	Reason  *string
+	PointID   string
+	Reason    *string
+	SectionID *string
 }
 
 func (q *Queries) ListPointExclusions(ctx context.Context, documentID string) ([]ListPointExclusionsRow, error) {
@@ -811,7 +1017,7 @@ func (q *Queries) ListPointExclusions(ctx context.Context, documentID string) ([
 	items := []ListPointExclusionsRow{}
 	for rows.Next() {
 		var i ListPointExclusionsRow
-		if err := rows.Scan(&i.PointID, &i.Reason); err != nil {
+		if err := rows.Scan(&i.PointID, &i.Reason, &i.SectionID); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -831,6 +1037,18 @@ func (q *Queries) LockDocument(ctx context.Context, id string) error {
 	return err
 }
 
+const newSectionKey = `-- name: NewSectionKey :one
+SELECT uuidv7()::uuid
+`
+
+// NewSectionKey membuat kunci bagian baru, dipakai bersama semua dokumen satu set.
+func (q *Queries) NewSectionKey(ctx context.Context) (string, error) {
+	row := q.db.QueryRow(ctx, newSectionKey)
+	var column_1 string
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const processExists = `-- name: ProcessExists :one
 SELECT EXISTS (SELECT 1 FROM processes WHERE id = $1)
 `
@@ -845,6 +1063,7 @@ func (q *Queries) ProcessExists(ctx context.Context, id string) (bool, error) {
 const removePfmeaCpCheck = `-- name: RemovePfmeaCpCheck :execrows
 DELETE FROM pfmea_cp_checks
 WHERE pfmea_document_id = $1 AND cp_document_id = $2 AND process_id = $3 AND pfmea_revision = $4 AND cp_revision = $5
+  AND section_key IS NOT DISTINCT FROM $6
 `
 
 type RemovePfmeaCpCheckParams struct {
@@ -853,6 +1072,7 @@ type RemovePfmeaCpCheckParams struct {
 	ProcessID       string
 	PfmeaRevision   int16
 	CpRevision      int16
+	SectionKey      *string
 }
 
 func (q *Queries) RemovePfmeaCpCheck(ctx context.Context, arg RemovePfmeaCpCheckParams) (int64, error) {
@@ -862,11 +1082,27 @@ func (q *Queries) RemovePfmeaCpCheck(ctx context.Context, arg RemovePfmeaCpCheck
 		arg.ProcessID,
 		arg.PfmeaRevision,
 		arg.CpRevision,
+		arg.SectionKey,
 	)
 	if err != nil {
 		return 0, err
 	}
 	return result.RowsAffected(), nil
+}
+
+const renameDocumentSections = `-- name: RenameDocumentSections :exec
+UPDATE document_sections SET name = $2, updated_at = now() WHERE section_key = $1
+`
+
+type RenameDocumentSectionsParams struct {
+	SectionKey string
+	Name       string
+}
+
+// RenameDocumentSections mengganti nama bagian di semua dokumen satu set.
+func (q *Queries) RenameDocumentSections(ctx context.Context, arg RenameDocumentSectionsParams) error {
+	_, err := q.db.Exec(ctx, renameDocumentSections, arg.SectionKey, arg.Name)
+	return err
 }
 
 const routeExists = `-- name: RouteExists :one
@@ -897,6 +1133,21 @@ func (q *Queries) SetDocumentHeader(ctx context.Context, arg SetDocumentHeaderPa
 		return 0, err
 	}
 	return result.RowsAffected(), nil
+}
+
+const setDocumentSectionPosition = `-- name: SetDocumentSectionPosition :exec
+UPDATE document_sections SET position = $3, updated_at = now() WHERE document_id = $1 AND id = $2
+`
+
+type SetDocumentSectionPositionParams struct {
+	DocumentID string
+	ID         string
+	Position   int32
+}
+
+func (q *Queries) SetDocumentSectionPosition(ctx context.Context, arg SetDocumentSectionPositionParams) error {
+	_, err := q.db.Exec(ctx, setDocumentSectionPosition, arg.DocumentID, arg.ID, arg.Position)
+	return err
 }
 
 const setRowOperationNumber = `-- name: SetRowOperationNumber :exec

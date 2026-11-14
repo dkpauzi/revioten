@@ -26,3 +26,9 @@ Dokumen asli yang dipakai sebagai acuan desain dan data contoh. Sejak D-152 (14 
 Temuan dari dokumen ini dicatat di brief bagian 21 (F-13 sampai F-18).
 
 Catatan baca: di `.md`, tipe langkah L2 ditulis `op`, `insp`, `dec`, `trans`, `store`, dan simbol proses level 1 `Operation`, `Inspection`, `Storage`, `Transport`.
+
+## `SC-KT-040-00_PCP_KT_737D HL.xlsx`
+
+- **Diterima:** 14 November 2026 (D-159). Control plan nyata customer PT. Indonesia Koito, model 737D LED HL. **Isinya belum diperbarui; yang dijadikan acuan hanya polanya.**
+- **Pola:** lembar Cover (satu nomor, customer, model, daftar part name dan part number, satu riwayat revisi, satu persetujuan in-house dan customer), lalu satu lembar per bagian: PCB A (10029-8A15D), Heatsink Assy R/L (10067-8A1A8, 10167-8A1A8), Base Assy R/L (10063-8A1A8, 10163-8A1A8). Header tiap lembar mengulang data sampul dengan Product = nama bagian. Daftar proses tiap bagian mulai dari nomor 1 dan bisa berbeda (Router hanya di PCB A).
+- **Dipakai untuk:** bagian per PCB (D-155).

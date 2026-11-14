@@ -67,8 +67,10 @@ type ComposedPoint struct {
 // Poin yang tidak disebut tetap seperti semula.
 type Compose struct {
 	VersionID string
-	Include   []string // ID poin asal yang dipakai
-	Exclude   []Exclusion
+	// SectionKey adalah bagian tujuan (D-155); wajib bila set punya bagian.
+	SectionKey string
+	Include    []string // ID poin asal yang dipakai
+	Exclude    []Exclusion
 }
 
 // Exclusion adalah satu poin yang dikecualikan, dengan alasan opsional.
@@ -85,10 +87,12 @@ type target struct {
 
 // composeContext memuat versi template, dokumen satu set, dan poin yang
 // berlaku untuk model pertama dokumen (ASUMSI E-93).
-func composeContext(ctx context.Context, q *db.Queries, d Document, versionID string) (template.ProcessVersion, []template.ResolvedSubprocess, map[string]Document, error) {
+// sections memberi bagian tujuan di setiap dokumen set, menurut ID dokumen
+// ("" untuk dokumen tanpa bagian).
+func composeContext(ctx context.Context, q *db.Queries, d Document, versionID, sectionKey string) (template.ProcessVersion, []template.ResolvedSubprocess, map[string]Document, map[string]string, error) {
 	v, err := template.LoadProcessVersion(ctx, q, versionID)
 	if err != nil {
-		return v, nil, nil, err
+		return v, nil, nil, nil, err
 	}
 	docs := map[string]Document{d.DocumentType.Key: d}
 	for _, m := range d.Set {
@@ -97,25 +101,34 @@ func composeContext(ctx context.Context, q *db.Queries, d Document, versionID st
 		}
 		other, err := getDocument(ctx, q, m.ID)
 		if err != nil {
-			return v, nil, nil, err
+			return v, nil, nil, nil, err
 		}
 		docs[other.DocumentType.Key] = other
 	}
+	sections := map[string]string{}
+	for _, doc := range docs {
+		sectionID, err := sectionByKey(doc, sectionKey)
+		if err != nil {
+			return v, nil, nil, nil, err
+		}
+		sections[doc.ID] = sectionID
+	}
 	model, err := q.GetModel(ctx, d.Models[0].ID)
 	if err != nil {
-		return v, nil, nil, err
+		return v, nil, nil, nil, err
 	}
-	return v, template.ResolveFor(v, model.ID, model.CustomerID, deref(model.ModelGroupID)), docs, nil
+	return v, template.ResolveFor(v, model.ID, model.CustomerID, deref(model.ModelGroupID)), docs, sections, nil
 }
 
 // Composition menampilkan poin satu versi process template untuk dokumen ini
 // dan dokumen lain di set-nya, beserta keadaan setiap poin (L-4).
-func (s *Service) Composition(ctx context.Context, actor access.Actor, id, versionID string) (Composition, error) {
+// sectionKey memilih bagian (D-155); kosong untuk dokumen tanpa bagian.
+func (s *Service) Composition(ctx context.Context, actor access.Actor, id, versionID, sectionKey string) (Composition, error) {
 	d, err := s.Get(ctx, actor, id)
 	if err != nil {
 		return Composition{}, err
 	}
-	v, resolved, docs, err := composeContext(ctx, s.q, d, versionID)
+	v, resolved, docs, sections, err := composeContext(ctx, s.q, d, versionID, sectionKey)
 	if err != nil {
 		return Composition{}, result(err, "membaca perakitan")
 	}
@@ -127,7 +140,9 @@ func (s *Service) Composition(ctx context.Context, actor access.Actor, id, versi
 		}
 		excluded[doc.ID] = map[string]string{}
 		for _, r := range rows {
-			excluded[doc.ID][r.PointID] = deref(r.Reason)
+			if deref(r.SectionID) == sections[doc.ID] {
+				excluded[doc.ID][r.PointID] = deref(r.Reason)
+			}
 		}
 	}
 	out := Composition{VersionID: v.ID, Version: v.Version, Process: Ref{ID: v.Process.ID, Name: v.Process.Name}, Subprocesses: []ComposedSubprocess{}}
@@ -142,7 +157,7 @@ func (s *Service) Composition(ctx context.Context, actor access.Actor, id, versi
 				PointID: p.OriginID, Text: p.Text, DocumentID: doc.ID, State: StateUndecided,
 				DocumentType: TypeRef{ID: p.DocumentType.ID, Key: p.DocumentType.Key, Name: p.DocumentType.Name},
 			}
-			if slices.ContainsFunc(doc.Rows, func(r Row) bool { return r.TemplatePointID == p.OriginID }) {
+			if slices.ContainsFunc(rowsIn(doc, sections[doc.ID]), func(r Row) bool { return r.TemplatePointID == p.OriginID }) {
 				point.State = StateIncluded
 			} else if reason, ok := excluded[doc.ID][p.OriginID]; ok {
 				point.State, point.Reason = StateExcluded, reason
@@ -190,7 +205,7 @@ func (s *Service) Compose(ctx context.Context, actor access.Actor, id string, in
 		if !db.IsUUID(in.VersionID) {
 			return problems(invalid("process_template_version_id", problem.InvalidFormat, "Choose a process template version."))
 		}
-		v, resolved, docs, err := composeContext(ctx, q, d, in.VersionID)
+		v, resolved, docs, sections, err := composeContext(ctx, q, d, in.VersionID, in.SectionKey)
 		if err != nil {
 			return err
 		}
@@ -241,14 +256,15 @@ func (s *Service) Compose(ctx context.Context, actor access.Actor, id string, in
 			if err := problems(p); err != nil {
 				return err
 			}
-			if i := slices.IndexFunc(t.doc.Rows, func(r Row) bool { return r.TemplatePointID == e.PointID }); i >= 0 {
-				if err := removeRow(ctx, q, t.doc.ID, t.doc.Rows[i].ID); err != nil {
+			section := rowsIn(t.doc, sections[t.doc.ID])
+			if i := slices.IndexFunc(section, func(r Row) bool { return r.TemplatePointID == e.PointID }); i >= 0 {
+				if err := removeRow(ctx, q, t.doc.ID, section[i].ID); err != nil {
 					return err
 				}
 				removed++
 				rowCount[t.doc.ID]--
 			}
-			if err := q.ExcludePoint(ctx, db.ExcludePointParams{DocumentID: t.doc.ID, PointID: e.PointID, Reason: optional(reason)}); err != nil {
+			if err := q.ExcludePoint(ctx, db.ExcludePointParams{DocumentID: t.doc.ID, PointID: e.PointID, Reason: optional(reason), SectionID: optional(sections[t.doc.ID])}); err != nil {
 				return err
 			}
 			touched[t.doc.ID] = true
@@ -260,12 +276,12 @@ func (s *Service) Compose(ctx context.Context, actor access.Actor, id string, in
 				continue
 			}
 			t := targets[pointID]
-			if err := q.ClearPointExclusion(ctx, db.ClearPointExclusionParams{DocumentID: t.doc.ID, PointID: pointID}); err != nil {
+			if err := q.ClearPointExclusion(ctx, db.ClearPointExclusionParams{DocumentID: t.doc.ID, PointID: pointID, SectionID: optional(sections[t.doc.ID])}); err != nil {
 				return err
 			}
 			touched[t.doc.ID] = true
-			if slices.ContainsFunc(t.doc.Rows, func(r Row) bool { return r.TemplatePointID == pointID }) {
-				continue // sudah punya baris; perubahan lokalnya dibiarkan
+			if slices.ContainsFunc(rowsIn(t.doc, sections[t.doc.ID]), func(r Row) bool { return r.TemplatePointID == pointID }) {
+				continue // sudah punya baris di bagian ini; perubahan lokalnya dibiarkan
 			}
 			if rowCount[t.doc.ID] >= maxRows {
 				return problems(invalid("include", problem.NotAllowed, "A document has at most 1000 rows."))
@@ -276,7 +292,7 @@ func (s *Service) Compose(ctx context.Context, actor access.Actor, id string, in
 			}
 			if _, err := q.AddComposedRow(ctx, db.AddComposedRowParams{
 				DocumentID: t.doc.ID, ProcessID: optional(v.Process.ID), Content: content,
-				TemplatePointID: &pointID, TemplateVersionID: &v.ID,
+				TemplatePointID: &pointID, TemplateVersionID: &v.ID, SectionID: optional(sections[t.doc.ID]),
 			}); err != nil {
 				return err
 			}

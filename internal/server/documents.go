@@ -64,7 +64,7 @@ func (a *apiServer) SetDocumentHeader(ctx context.Context, req SetDocumentHeader
 func (a *apiServer) AddDocumentRow(ctx context.Context, req AddDocumentRowRequestObject) (AddDocumentRowResponseObject, error) {
 	b := req.Body
 	d, err := a.documents.AddRow(ctx, actorFrom(ctx), req.DocumentId, document.NewRow{
-		ProcessID: deref(b.ProcessId), OperationNumber: deref(b.OperationNumber), Content: b.Content,
+		ProcessID: deref(b.ProcessId), OperationNumber: deref(b.OperationNumber), Content: b.Content, SectionID: deref(b.SectionId),
 	})
 	if err != nil {
 		return nil, err
@@ -76,7 +76,7 @@ func (a *apiServer) AddDocumentRow(ctx context.Context, req AddDocumentRowReques
 func (a *apiServer) AddDocumentRows(ctx context.Context, req AddDocumentRowsRequestObject) (AddDocumentRowsResponseObject, error) {
 	rows := make([]document.NewRow, 0, len(req.Body.Rows))
 	for _, b := range req.Body.Rows {
-		rows = append(rows, document.NewRow{ProcessID: deref(b.ProcessId), OperationNumber: deref(b.OperationNumber), Content: b.Content})
+		rows = append(rows, document.NewRow{ProcessID: deref(b.ProcessId), OperationNumber: deref(b.OperationNumber), Content: b.Content, SectionID: deref(b.SectionId)})
 	}
 	d, err := a.documents.AddRows(ctx, actorFrom(ctx), req.DocumentId, rows)
 	if err != nil {
@@ -120,7 +120,14 @@ func toAPIDocument(d document.Document) Document {
 		FormatVersionId: d.FormatVersionID, Header: d.Header, HeaderVersion: d.HeaderVersion, CreatedAt: d.CreatedAt, UpdatedAt: d.UpdatedAt,
 		Models: make([]NamedRef, 0, len(d.Models)), PartNumbers: make([]DocumentPartNumber, 0, len(d.PartNumbers)),
 		Rows: make([]DocumentRow, 0, len(d.Rows)), RouteReason: optional(d.RouteReason),
-		Set: make([]DocumentSetMember, 0, len(d.Set)),
+		Set: make([]DocumentSetMember, 0, len(d.Set)), Sections: make([]DocumentSection, 0, len(d.Sections)),
+	}
+	for _, s := range d.Sections {
+		section := DocumentSection{Id: s.ID, Key: s.Key, Position: s.Position, Name: s.Name, PartNumbers: make([]DocumentPartNumber, 0, len(s.PartNumbers))}
+		for _, p := range s.PartNumbers {
+			section.PartNumbers = append(section.PartNumbers, DocumentPartNumber{Id: p.ID, Number: p.Number, Name: optional(p.Name)})
+		}
+		out.Sections = append(out.Sections, section)
 	}
 	for _, m := range d.Set {
 		out.Set = append(out.Set, DocumentSetMember{Id: m.ID, Number: m.Number, DocumentType: DocumentTypeRef{Id: m.DocumentType.ID, Key: DocumentTypeRefKey(m.DocumentType.Key), Name: m.DocumentType.Name}})
@@ -144,7 +151,7 @@ func toAPIDocument(d document.Document) Document {
 		}
 		out.Rows = append(out.Rows, DocumentRow{
 			Id: r.ID, Position: r.Position, Version: r.Version, ProcessId: optional(r.ProcessID), ProcessName: optional(r.ProcessName),
-			OperationNumber: optional(r.OperationNumber), Content: content, TemplatePointId: optional(r.TemplatePointID), OperationManual: r.OperationManual, Detached: r.Detached, DetachReason: optional(r.DetachReason),
+			OperationNumber: optional(r.OperationNumber), Content: content, TemplatePointId: optional(r.TemplatePointID), OperationManual: r.OperationManual, Detached: r.Detached, DetachReason: optional(r.DetachReason), SectionId: optional(r.SectionID),
 		})
 	}
 	return out
@@ -152,7 +159,7 @@ func toAPIDocument(d document.Document) Document {
 
 // GetDocumentComposition menjawab GET /api/v1/documents/{documentId}/composition (M4.5).
 func (a *apiServer) GetDocumentComposition(ctx context.Context, req GetDocumentCompositionRequestObject) (GetDocumentCompositionResponseObject, error) {
-	c, err := a.documents.Composition(ctx, actorFrom(ctx), req.DocumentId, req.Params.ProcessTemplateVersionId)
+	c, err := a.documents.Composition(ctx, actorFrom(ctx), req.DocumentId, req.Params.ProcessTemplateVersionId, deref(req.Params.SectionKey))
 	if err != nil {
 		return nil, err
 	}
@@ -176,7 +183,7 @@ func (a *apiServer) GetDocumentComposition(ctx context.Context, req GetDocumentC
 // ComposeDocument menjawab PUT /api/v1/documents/{documentId}/composition (M4.5).
 func (a *apiServer) ComposeDocument(ctx context.Context, req ComposeDocumentRequestObject) (ComposeDocumentResponseObject, error) {
 	b := req.Body
-	in := document.Compose{VersionID: b.ProcessTemplateVersionId}
+	in := document.Compose{VersionID: b.ProcessTemplateVersionId, SectionKey: deref(b.SectionKey)}
 	if b.Include != nil {
 		in.Include = *b.Include
 	}
@@ -194,7 +201,7 @@ func (a *apiServer) ComposeDocument(ctx context.Context, req ComposeDocumentRequ
 
 // ReorderDocumentRows menjawab PUT /api/v1/documents/{documentId}/order (M4.6).
 func (a *apiServer) ReorderDocumentRows(ctx context.Context, req ReorderDocumentRowsRequestObject) (ReorderDocumentRowsResponseObject, error) {
-	in := document.Order{RowIDs: req.Body.RowIds, Renumber: req.Body.Renumber != nil && *req.Body.Renumber}
+	in := document.Order{SectionID: deref(req.Body.SectionId), RowIDs: req.Body.RowIds, Renumber: req.Body.Renumber != nil && *req.Body.Renumber}
 	d, err := a.documents.Reorder(ctx, actorFrom(ctx), req.DocumentId, in)
 	if err != nil {
 		return nil, err
@@ -259,7 +266,7 @@ func (a *apiServer) GetPfmeaCpComparison(ctx context.Context, req GetPfmeaCpComp
 
 // MarkPfmeaCpChecked menjawab PUT /api/v1/documents/{documentId}/pfmea-cp (M4.9).
 func (a *apiServer) MarkPfmeaCpChecked(ctx context.Context, req MarkPfmeaCpCheckedRequestObject) (MarkPfmeaCpCheckedResponseObject, error) {
-	c, err := a.documents.MarkChecked(ctx, actorFrom(ctx), req.DocumentId, req.Body.ProcessId, req.Body.Checked)
+	c, err := a.documents.MarkChecked(ctx, actorFrom(ctx), req.DocumentId, deref(req.Body.SectionKey), req.Body.ProcessId, req.Body.Checked)
 	if err != nil {
 		return nil, err
 	}
@@ -277,11 +284,45 @@ func toAPIComparison(c document.Comparison) PfmeaCpComparison {
 		return list
 	}
 	for _, g := range c.Processes {
-		item := PfmeaCpProcess{ProcessId: optional(g.ProcessID), ProcessName: optional(g.ProcessName), PfmeaRowIds: ids(g.PFMEARows), CpRowIds: ids(g.CPRows)}
+		item := PfmeaCpProcess{SectionKey: optional(g.SectionKey), SectionName: optional(g.SectionName), ProcessId: optional(g.ProcessID), ProcessName: optional(g.ProcessName), PfmeaRowIds: ids(g.PFMEARows), CpRowIds: ids(g.CPRows)}
 		if g.Check != nil {
 			item.Check = &PfmeaCpCheck{CheckedBy: g.Check.By, CheckedAt: g.Check.At, PfmeaRevision: g.Check.PFMEARevision, CpRevision: g.Check.CPRevision, Stale: g.Check.Stale}
 		}
 		out.Processes = append(out.Processes, item)
 	}
 	return out
+}
+
+// AddDocumentSection menjawab POST /api/v1/documents/{documentId}/sections (D-155).
+func (a *apiServer) AddDocumentSection(ctx context.Context, req AddDocumentSectionRequestObject) (AddDocumentSectionResponseObject, error) {
+	in := document.NewSection{Name: req.Body.Name}
+	if req.Body.PartNumberIds != nil {
+		in.PartNumberIDs = *req.Body.PartNumberIds
+	}
+	d, err := a.documents.AddSection(ctx, actorFrom(ctx), req.DocumentId, in)
+	if err != nil {
+		return nil, err
+	}
+	return AddDocumentSection201JSONResponse(toAPIDocument(d)), nil
+}
+
+// UpdateDocumentSection menjawab PUT /api/v1/documents/{documentId}/sections/{sectionId} (D-155).
+func (a *apiServer) UpdateDocumentSection(ctx context.Context, req UpdateDocumentSectionRequestObject) (UpdateDocumentSectionResponseObject, error) {
+	b := req.Body
+	d, err := a.documents.UpdateSection(ctx, actorFrom(ctx), req.DocumentId, req.SectionId, document.SectionUpdate{
+		Name: b.Name, Position: b.Position, PartNumberIDs: b.PartNumberIds,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return UpdateDocumentSection200JSONResponse(toAPIDocument(d)), nil
+}
+
+// RemoveDocumentSection menjawab DELETE /api/v1/documents/{documentId}/sections/{sectionId} (D-155).
+func (a *apiServer) RemoveDocumentSection(ctx context.Context, req RemoveDocumentSectionRequestObject) (RemoveDocumentSectionResponseObject, error) {
+	d, err := a.documents.RemoveSection(ctx, actorFrom(ctx), req.DocumentId, req.SectionId)
+	if err != nil {
+		return nil, err
+	}
+	return RemoveDocumentSection200JSONResponse(toAPIDocument(d)), nil
 }

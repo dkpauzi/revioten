@@ -134,6 +134,7 @@ type DocumentPointExclusion struct {
 	PointID    string
 	Reason     *string
 	ExcludedAt time.Time
+	SectionID  *string
 }
 
 type DocumentRow struct {
@@ -151,6 +152,22 @@ type DocumentRow struct {
 	OperationManual   bool
 	DetachedAt        *time.Time
 	DetachReason      *string
+	SectionID         *string
+}
+
+type DocumentSection struct {
+	ID         string
+	DocumentID string
+	SectionKey string
+	Position   int32
+	Name       string
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+}
+
+type DocumentSectionPartNumber struct {
+	SectionKey   string
+	PartNumberID string
 }
 
 type DocumentType struct {
@@ -332,6 +349,7 @@ type PfmeaCpCheck struct {
 	CheckedByPersonID string
 	CheckedAt         time.Time
 	RowsFingerprint   string
+	SectionKey        *string
 }
 
 type Position struct {

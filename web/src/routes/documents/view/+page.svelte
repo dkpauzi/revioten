@@ -12,8 +12,9 @@
 	import CopyPanel from '#lib/documents/CopyPanel.svelte';
 	import OrderPanel from '#lib/documents/OrderPanel.svelte';
 	import PastePanel from '#lib/documents/PastePanel.svelte';
+	import SectionBar from '#lib/documents/SectionBar.svelte';
 	import Workbook from '#lib/documents/Workbook.svelte';
-	import { cleanContent, typedFields } from '#lib/documents.ts';
+	import { cleanContent, rowsOfSection, typedFields } from '#lib/documents.ts';
 	import { failureText, problemText } from '#lib/errors.ts';
 	import { t } from '#lib/i18n/index.ts';
 	import { can } from '#lib/session.svelte.ts';
@@ -45,6 +46,22 @@
 	let showDiagram = $state(false);
 	// Tombol banding hanya untuk dokumen yang punya baris tertaut ke template.
 	let hasLinkedRows = $derived(doc?.rows.some((r) => r.template_point_id) ?? false);
+
+	// Bagian per PCB yang dipilih (D-155), menurut kuncinya, supaya pilihan
+	// tetap saat berpindah tab PFD, PFMEA, dan CP. Tanpa pilihan: bagian pertama.
+	let sectionKey = $state('');
+	let section = $derived(doc?.sections.find((s) => s.key === sectionKey) ?? doc?.sections[0] ?? null);
+	let sectionId = $derived(section?.id ?? '');
+	// Dokumen yang ditampilkan: hanya baris bagian yang dipilih, bernomor mulai 1.
+	let shown = $derived(doc ? { ...doc, rows: rowsOfSection(doc.rows, sectionId) } : null);
+
+	// sectionChanged menerima dokumen sesudah bagian ditambah, diubah, atau dihapus.
+	function sectionChanged(d: Document, text: string, key: string) {
+		reset();
+		use(d);
+		sectionKey = key;
+		message = text;
+	}
 
 	// Isian header.
 	let header = $state<Record<string, string>>({});
@@ -171,7 +188,7 @@
 		if (!doc) {
 			return;
 		}
-		const result = await addDocumentRow(doc.id, { content: {} });
+		const result = await addDocumentRow(doc.id, { content: {}, section_id: sectionId || undefined });
 		if (!result.ok) {
 			showErrors(result.error);
 			return;
@@ -186,7 +203,7 @@
 		if (!doc) {
 			return false;
 		}
-		const result = await addDocumentRows(doc.id, rows);
+		const result = await addDocumentRows(doc.id, rows.map((r) => ({ ...r, section_id: sectionId || undefined })));
 		if (!result.ok) {
 			showErrors(result.error);
 			return false;
@@ -245,7 +262,7 @@
 		if (!doc) {
 			return false;
 		}
-		const result = await reorderDocumentRows(doc.id, rowIds, renumber);
+		const result = await reorderDocumentRows(doc.id, rowIds, renumber, sectionId);
 		if (!result.ok) {
 			showErrors(result.error);
 			return false;
@@ -261,7 +278,7 @@
 		if (!doc) {
 			return;
 		}
-		const position = doc.rows.find((r) => r.id === rowId)?.position ?? 0;
+		const position = shown?.rows.find((r) => r.id === rowId)?.position ?? 0;
 		if (!confirm(t('documentRowDeleteConfirm', { position: String(position) }))) {
 			return;
 		}
@@ -340,9 +357,11 @@
 			{/if}
 		</nav>
 		<h2>{t('documentRowsTitle')}</h2>
+		<SectionBar {doc} current={section} {canEdit} onselect={(key) => (sectionKey = key)} onchanged={sectionChanged} />
+		{#if section}<h3 class="section-title">{section.name}{section.part_numbers.length > 0 ? ` · ${section.part_numbers.map((p) => p.number).join(', ')}` : ''}</h3>{/if}
 		{#if canEdit}<p class="hint">{t('documentGridHint')}</p>{/if}
-		{#key doc.id}
-			<Workbook {doc} {format} {processes} {canEdit} onsave={saveCell} ondelete={removeRow} />
+		{#key doc.id + sectionId}
+			<Workbook doc={shown ?? doc} {format} {processes} {canEdit} onsave={saveCell} ondelete={removeRow} />
 		{/key}
 		{#if doc.document_type.key === 'pfd'}
 			<p><button type="button" aria-expanded={showDiagram} onclick={() => (showDiagram = !showDiagram)}>{showDiagram ? t('diagramClose') : t('diagramOpen')}</button></p>
@@ -353,7 +372,7 @@
 				{#await import('#lib/documents/PfdDiagram.svelte')}
 					<p>{t('formatLoading')}</p>
 				{:then diagram}
-					<diagram.default rows={doc.rows} {format} />
+					<diagram.default rows={shown?.rows ?? doc.rows} {format} />
 				{/await}
 			{/if}
 		{/if}
@@ -375,8 +394,8 @@
 
 	{#if canEdit && composing}
 		<section>
-			{#key doc.id}
-				<ComposePanel {doc} oncomposed={composed} oncancel={() => (composing = false)} />
+			{#key doc.id + sectionId}
+				<ComposePanel {doc} sectionKey={section?.key ?? ''} oncomposed={composed} oncancel={() => (composing = false)} />
 			{/key}
 		</section>
 	{/if}
@@ -397,7 +416,9 @@
 
 	{#if canEdit && ordering}
 		<section>
-			<OrderPanel {doc} onsave={saveOrder} oncancel={() => (ordering = false)} />
+			{#key sectionId}
+				<OrderPanel doc={shown ?? doc} onsave={saveOrder} oncancel={() => (ordering = false)} />
+			{/key}
 		</section>
 	{/if}
 

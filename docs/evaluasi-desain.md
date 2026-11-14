@@ -117,7 +117,8 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-93 | Perakitan: dokumen dengan beberapa model, dan pasangan poin | Celah | M4.5 | Tidak | Diputuskan (D-155) |
 | E-94 | Urutan langkah: per dokumen, proses yang berulang, dan jarak nomor operasi | Celah | M4.6 | Tidak | Diputuskan (D-153) |
 | E-95 | Diagram PFD: cabang keputusan, rework, dan konektor halaman | Celah | M4.10 | Tidak | Terbuka |
-| E-96 | Siapa yang mengubah master dokumen terkait | Celah | D-130 | Tidak | Terbuka |
+| E-96 | Siapa yang mengubah master dokumen terkait | Celah | D-130 | Tidak | Diputuskan (D-157) |
+| E-97 | Bagian per PCB: berlaku untuk seluruh set, dan cetakan | Celah | D-155 | Tidak | Terbuka |
 
 ## Keputusan 4 November 2026
 
@@ -1765,6 +1766,21 @@ Salin blok ini untuk setiap temuan baru.
   - (c) Admin, seperti master data lain.
 - **Rekomendasi Claude Code (usulan):** (a) sekarang, karena keduanya dipegang PPAP Engineer (D-68); (b) bila nanti dipegang orang berbeda.
 - **Asumsi sementara di kode (ASUMSI E-96):** opsi (a).
+- **Menghambat milestone?** Tidak
+- **Status:** Diputuskan (D-157)
+- **Keputusan pemilik:** 14 November 2026: "E-96 ya untuk saat ini PPAP engineer, karna dokumen yang di daftarkan hanya dokumen terkait process saja" (opsi a).
+
+### E-97 · Bagian per PCB: berlaku untuk seluruh set, dan cetakan
+
+- **Tanggal dan milestone:** 14 November 2026, D-155.
+- **Jenis:** Celah
+- **Rujukan:** D-155, D-159 (SC-KT-040-00), R-CMP-02, R-DOC-06, R-PRT-07.
+- **Temuan:** referensi D-159 adalah CP saja. Belum jelas apakah PFD dan PFMEA set yang sama juga dibagi per PCB, dan bagaimana sampul dan header per bagian dicetak (sampul berisi semua part, header tiap lembar berisi nama bagian dan part number-nya).
+- **Opsi:**
+  - (a) Bagian berlaku untuk seluruh set dengan kunci yang sama, supaya perakitan (R-CMP-02) dan cek PFMEA-CP (R-DOC-06) tetap per bagian.
+  - (b) Bagian hanya untuk CP; PFD dan PFMEA tetap satu daftar.
+- **Rekomendasi Claude Code (usulan):** (a).
+- **Asumsi sementara di kode (ASUMSI E-97):** opsi (a). Cetakan per bagian dibangun di Tahap 6 mengikuti pola D-159.
 - **Menghambat milestone?** Tidak
 - **Status:** Terbuka
 - **Keputusan pemilik:**

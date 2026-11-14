@@ -580,7 +580,10 @@ type fakeDocuments struct {
 	// comparison dan gotChecked: PFMEA dan CP berdampingan (M4.9).
 	comparison document.Comparison
 	gotChecked bool
-	header     map[string]any
+	// gotSection dan gotSectionUpd: bagian per PCB (D-155).
+	gotSection    document.NewSection
+	gotSectionUpd document.SectionUpdate
+	header        map[string]any
 	// headerVersion adalah versi header yang dikirim klien (M4.3).
 	headerVersion int
 }
@@ -615,7 +618,7 @@ func (f *fakeDocuments) AddRows(_ context.Context, _ access.Actor, id string, ro
 	return f.doc, f.err
 }
 
-func (f *fakeDocuments) Composition(_ context.Context, _ access.Actor, id, versionID string) (document.Composition, error) {
+func (f *fakeDocuments) Composition(_ context.Context, _ access.Actor, id, versionID, _ string) (document.Composition, error) {
 	f.got = called{method: "Composition", id: id, input: versionID}
 	return f.composition, f.err
 }
@@ -650,13 +653,28 @@ func (f *fakeDocuments) Comparison(_ context.Context, _ access.Actor, id string)
 	return f.comparison, f.err
 }
 
-func (f *fakeDocuments) MarkChecked(_ context.Context, _ access.Actor, id, processID string, checked bool) (document.Comparison, error) {
+func (f *fakeDocuments) MarkChecked(_ context.Context, _ access.Actor, id, _, processID string, checked bool) (document.Comparison, error) {
 	f.got, f.gotChecked = called{method: "MarkChecked", id: id, input: processID}, checked
 	return f.comparison, f.err
 }
 
 func (f *fakeDocuments) FillReferences(_ context.Context, _ access.Actor, id string) (document.Document, error) {
 	f.got = called{method: "FillReferences", id: id}
+	return f.doc, f.err
+}
+
+func (f *fakeDocuments) AddSection(_ context.Context, _ access.Actor, id string, in document.NewSection) (document.Document, error) {
+	f.got, f.gotSection = called{method: "AddSection", id: id}, in
+	return f.doc, f.err
+}
+
+func (f *fakeDocuments) UpdateSection(_ context.Context, _ access.Actor, id, sectionID string, in document.SectionUpdate) (document.Document, error) {
+	f.got, f.gotSectionUpd = called{method: "UpdateSection", id: id, input: sectionID}, in
+	return f.doc, f.err
+}
+
+func (f *fakeDocuments) RemoveSection(_ context.Context, _ access.Actor, id, sectionID string) (document.Document, error) {
+	f.got = called{method: "RemoveSection", id: id, input: sectionID}
 	return f.doc, f.err
 }
 

@@ -13,10 +13,13 @@
 
 	let {
 		doc,
+		sectionKey = '',
 		oncomposed,
 		oncancel
 	}: {
 		doc: Document;
+		// sectionKey adalah bagian tujuan (D-155); kosong untuk dokumen tanpa bagian.
+		sectionKey?: string;
 		oncomposed: (doc: Document, process: string) => void;
 		oncancel: () => void;
 	} = $props();
@@ -45,7 +48,7 @@
 		if (versionId === '') {
 			return;
 		}
-		const result = await getDocumentComposition(doc.id, versionId);
+		const result = await getDocumentComposition(doc.id, versionId, sectionKey);
 		if (!result.ok) {
 			problem = failureText(result.error);
 			return;
@@ -72,7 +75,7 @@
 		}
 		problem = '';
 		busy = true;
-		const result = await composeDocument(doc.id, composeInput(view, checks, reasons));
+		const result = await composeDocument(doc.id, { ...composeInput(view, checks, reasons), section_key: sectionKey || undefined });
 		busy = false;
 		if (!result.ok) {
 			const details = result.error.body?.details ?? [];

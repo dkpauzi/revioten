@@ -74,3 +74,11 @@ export function rowInputFrom(format: Pick<FormatVersion, 'fields'>, data: Record
 	}
 	return input;
 }
+
+// rowsOfSection memberi baris satu bagian (D-155) menurut urutan, dengan
+// nomor urut tampilan mulai 1 per bagian, seperti satu lembar per bagian di
+// CP kertas. sectionId "" berarti semua baris (dokumen tanpa bagian).
+export function rowsOfSection(rows: DocumentRow[], sectionId: string): DocumentRow[] {
+	const list = sectionId === '' ? rows : rows.filter((r) => r.section_id === sectionId);
+	return list.map((r, i) => ({ ...r, position: i + 1 }));
+}

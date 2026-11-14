@@ -86,7 +86,7 @@ func TestCopyFrom(t *testing.T) {
 		t.Errorf("PFMEA tujuan: %+v", pfmea.Rows)
 	}
 	// Poin yang dikecualikan ikut tersalin beserta alasannya.
-	view, err := f.s.Composition(ctx, f.author, cp.ID, tpl.version.ID)
+	view, err := f.s.Composition(ctx, f.author, cp.ID, tpl.version.ID, "")
 	if err != nil {
 		t.Fatal(err)
 	}

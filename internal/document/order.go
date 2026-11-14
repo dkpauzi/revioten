@@ -9,6 +9,7 @@ package document
 
 import (
 	"context"
+	"slices"
 	"strconv"
 
 	"github.com/dkpauzi/revioten/internal/access"
@@ -24,22 +25,36 @@ const operationStep = 10
 
 // Order adalah urutan baru baris satu dokumen.
 type Order struct {
-	RowIDs   []string // semua baris dokumen, tepat satu kali
-	Renumber bool     // isi nomor operasi otomatis sesudah diurutkan
+	// SectionID adalah bagian yang diurutkan (D-155); wajib bila dokumen
+	// punya bagian. Nomor operasi otomatis mulai lagi dari 10 per bagian.
+	SectionID string
+	RowIDs    []string // semua baris dokumen, tepat satu kali
+	Renumber  bool     // isi nomor operasi otomatis sesudah diurutkan
 }
 
 // Reorder menyimpan urutan baru baris (E-2), dan mengisi nomor operasi
 // otomatis bila diminta.
 func (s *Service) Reorder(ctx context.Context, actor access.Actor, id string, in Order) (Document, error) {
 	return s.edit(ctx, actor, id, func(q *db.Queries, d Document, _ template.FormatVersion) (string, map[string]string, error) {
-		bad := problems(invalid("row_ids", problem.InvalidFormat, "Send every row of the document exactly once."))
-		if len(in.RowIDs) == 0 || len(in.RowIDs) != len(d.Rows) {
+		if len(d.Sections) > 0 || in.SectionID != "" {
+			if _, p := rowSection(d, in.SectionID); p != nil {
+				return "", nil, problems(p)
+			}
+		}
+		section := rowsIn(d, in.SectionID)
+		bad := problems(invalid("row_ids", problem.InvalidFormat, "Send every row of the document or section exactly once."))
+		if len(in.RowIDs) == 0 || len(in.RowIDs) != len(section) {
 			return "", nil, bad
 		}
 		byID := map[string]Row{}
-		for _, r := range d.Rows {
+		positions := make([]int, 0, len(section))
+		for _, r := range section {
 			byID[r.ID] = r
+			positions = append(positions, r.Position)
 		}
+		// Baris bagian ini memakai lagi urutan yang sudah mereka tempati, jadi
+		// baris bagian lain tidak bergeser.
+		slices.Sort(positions)
 		ordered := make([]Row, 0, len(in.RowIDs))
 		seen := map[string]bool{}
 		for _, rowID := range in.RowIDs {
@@ -51,10 +66,10 @@ func (s *Service) Reorder(ctx context.Context, actor access.Actor, id string, in
 			ordered = append(ordered, r)
 		}
 		for i, r := range ordered {
-			if r.Position == i+1 {
+			if r.Position == positions[i] {
 				continue
 			}
-			if err := q.SetRowPosition(ctx, db.SetRowPositionParams{ID: r.ID, DocumentID: d.ID, Position: int32(i + 1)}); err != nil {
+			if err := q.SetRowPosition(ctx, db.SetRowPositionParams{ID: r.ID, DocumentID: d.ID, Position: int32(positions[i])}); err != nil {
 				return "", nil, err
 			}
 		}

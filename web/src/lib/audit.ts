@@ -76,6 +76,9 @@ const actionKeys: Record<string, MessageKey> = {
 	'document.rows_pasted': 'auditActionDocumentRowsPasted',
 	'document.composed': 'auditActionDocumentComposed',
 	'document.copied': 'auditActionDocumentCopied',
+	'document.section_added': 'auditActionDocumentSectionAdded',
+	'document.section_changed': 'auditActionDocumentSectionChanged',
+	'document.section_removed': 'auditActionDocumentSectionRemoved',
 	'document.references_filled': 'auditActionDocumentReferencesFilled',
 	'referenced_document.created': 'auditActionRefDocCreated',
 	'referenced_document.updated': 'auditActionRefDocUpdated',
@@ -154,7 +157,9 @@ const detailKeys: Record<string, MessageKey> = {
 	rows: 'auditDetailRowCount',
 	source: 'auditDetailCopySource',
 	pfmea: 'auditDetailPfmea',
-	cp: 'auditDetailCp'
+	cp: 'auditDetailCp',
+	section: 'auditDetailSection',
+	part_numbers: 'auditDetailPartNumbers'
 };
 
 const reasonKeys: Record<string, MessageKey> = {

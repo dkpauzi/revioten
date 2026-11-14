@@ -70,11 +70,11 @@ func TestComparison(t *testing.T) {
 	}
 
 	// Tanda dicek hanya oleh pemegang V-2 (D-65).
-	if _, err := f.s.MarkChecked(ctx, f.author, cp.ID, tpl.process, true); !errors.Is(err, access.ErrForbidden) {
+	if _, err := f.s.MarkChecked(ctx, f.author, cp.ID, "", tpl.process, true); !errors.Is(err, access.ErrForbidden) {
 		t.Errorf("penyusun memberi tanda: %v", err)
 	}
 	before := time.Now().Add(-time.Minute)
-	if c, err = f.s.MarkChecked(ctx, checker, cp.ID, tpl.process, true); err != nil {
+	if c, err = f.s.MarkChecked(ctx, checker, cp.ID, "", tpl.process, true); err != nil {
 		t.Fatal(err)
 	}
 	mark := c.Processes[0].Check
@@ -85,7 +85,7 @@ func TestComparison(t *testing.T) {
 		t.Errorf("proses lain ikut bertanda: %+v", c.Processes[1].Check)
 	}
 	// Memberi tanda lagi tidak menggandakan; tanda tetap milik pemberi pertama.
-	if c, err = f.s.MarkChecked(ctx, checker, cp.ID, tpl.process, true); err != nil || c.Processes[0].Check == nil {
+	if c, err = f.s.MarkChecked(ctx, checker, cp.ID, "", tpl.process, true); err != nil || c.Processes[0].Check == nil {
 		t.Errorf("tanda kedua: %+v, %v", c.Processes[0].Check, err)
 	}
 
@@ -100,15 +100,15 @@ func TestComparison(t *testing.T) {
 		t.Errorf("tanda sesudah baris berubah: %+v", mark)
 	}
 	// Dicek ulang: tanda diperbarui dan tidak lagi perlu dicek ulang.
-	if c, err = f.s.MarkChecked(ctx, checker, cp.ID, tpl.process, true); err != nil || c.Processes[0].Check == nil || c.Processes[0].Check.Stale {
+	if c, err = f.s.MarkChecked(ctx, checker, cp.ID, "", tpl.process, true); err != nil || c.Processes[0].Check == nil || c.Processes[0].Check.Stale {
 		t.Errorf("cek ulang: %+v, %v", c.Processes[0].Check, err)
 	}
 
 	// Baris yang dihapus juga perubahan: tanda baru, lalu satu baris PFMEA IQC dihapus.
-	if _, err := f.s.MarkChecked(ctx, checker, cp.ID, tpl.process, false); err != nil {
+	if _, err := f.s.MarkChecked(ctx, checker, cp.ID, "", tpl.process, false); err != nil {
 		t.Fatal(err)
 	}
-	if c, err = f.s.MarkChecked(ctx, checker, cp.ID, tpl.process, true); err != nil || c.Processes[0].Check == nil || c.Processes[0].Check.Stale {
+	if c, err = f.s.MarkChecked(ctx, checker, cp.ID, "", tpl.process, true); err != nil || c.Processes[0].Check == nil || c.Processes[0].Check.Stale {
 		t.Fatalf("tanda baru: %+v, %v", c.Processes[0].Check, err)
 	}
 	if _, err := f.s.DeleteRow(ctx, f.author, c.PFMEA.ID, c.PFMEA.Rows[1].ID); err != nil {
@@ -119,16 +119,16 @@ func TestComparison(t *testing.T) {
 		t.Errorf("tanda sesudah baris dihapus: %+v", mark)
 	}
 	// Proses lain tidak ikut berubah: SMT Printing diberi tanda dan tetap segar.
-	if c, err = f.s.MarkChecked(ctx, checker, cp.ID, f.process, true); err != nil || c.Processes[1].Check == nil || c.Processes[1].Check.Stale {
+	if c, err = f.s.MarkChecked(ctx, checker, cp.ID, "", f.process, true); err != nil || c.Processes[1].Check == nil || c.Processes[1].Check.Stale {
 		t.Errorf("tanda SMT: %+v, %v", c.Processes[1].Check, err)
 	}
 
 	// Tanda dicabut.
-	if c, err = f.s.MarkChecked(ctx, checker, cp.ID, tpl.process, false); err != nil || c.Processes[0].Check != nil {
+	if c, err = f.s.MarkChecked(ctx, checker, cp.ID, "", tpl.process, false); err != nil || c.Processes[0].Check != nil {
 		t.Errorf("cabut tanda: %+v, %v", c.Processes[0].Check, err)
 	}
 	// Proses yang tidak ada di kedua dokumen ditolak.
-	if _, err := f.s.MarkChecked(ctx, checker, cp.ID, "01900000-0000-7000-8000-000000000000", true); !slices.Contains(codes(t, err), "process_id:invalid_format") {
+	if _, err := f.s.MarkChecked(ctx, checker, cp.ID, "", "01900000-0000-7000-8000-000000000000", true); !slices.Contains(codes(t, err), "process_id:invalid_format") {
 		t.Errorf("proses asing: %v", err)
 	}
 	var actions []string

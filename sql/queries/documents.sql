@@ -105,7 +105,7 @@ ORDER BY p.number;
 
 -- name: ListDocumentRows :many
 SELECT r.id, r.position, r.process_id, n.name AS process_name, r.operation_number, r.content, r.version,
-       r.template_point_id, r.template_version_id, r.operation_manual, r.detached_at, r.detach_reason
+       r.template_point_id, r.template_version_id, r.operation_manual, r.detached_at, r.detach_reason, r.section_id
 FROM document_rows r
 LEFT JOIN process_names n ON n.process_id = r.process_id AND n.kind = 'display'
 WHERE r.document_id = $1
@@ -115,9 +115,9 @@ ORDER BY r.position;
 -- name: AddDocumentRow :one
 -- Nomor operasi yang dikirim saat baris dibuat berarti diketik atau ditempel
 -- penyusun, jadi ditandai manual (M4.6).
-INSERT INTO document_rows (document_id, position, process_id, operation_number, content, operation_manual)
+INSERT INTO document_rows (document_id, position, process_id, operation_number, content, operation_manual, section_id)
 VALUES ($1, (SELECT coalesce(max(position), 0) + 1 FROM document_rows WHERE document_id = $1), $2, sqlc.narg(operation_number), $3,
-        sqlc.narg(operation_number)::text IS NOT NULL)
+        sqlc.narg(operation_number)::text IS NOT NULL, sqlc.narg(section_id))
 RETURNING id, position;
 
 
@@ -171,25 +171,26 @@ ORDER BY t.position, n.number;
 -- name: AddComposedRow :one
 -- AddComposedRow menambah baris hasil perakitan di akhir dokumen, tertaut ke
 -- poin asalnya dan versi template yang dipakai (R-CMP-04).
-INSERT INTO document_rows (document_id, position, process_id, content, template_point_id, template_version_id)
-VALUES ($1, (SELECT coalesce(max(position), 0) + 1 FROM document_rows WHERE document_id = $1), $2, $3, $4, $5)
+INSERT INTO document_rows (document_id, position, process_id, content, template_point_id, template_version_id, section_id)
+VALUES ($1, (SELECT coalesce(max(position), 0) + 1 FROM document_rows WHERE document_id = $1), $2, $3, $4, $5, sqlc.narg(section_id))
 RETURNING id, position;
 
 
 -- name: ListPointExclusions :many
-SELECT point_id, reason FROM document_point_exclusions WHERE document_id = $1;
+SELECT point_id, reason, section_id FROM document_point_exclusions WHERE document_id = $1;
 
 
 -- name: ExcludePoint :exec
 -- ExcludePoint mencatat poin yang dikecualikan dari satu dokumen (R-CMP-03).
 -- Mengecualikan lagi mengganti alasannya.
-INSERT INTO document_point_exclusions (document_id, point_id, reason)
-VALUES ($1, $2, $3)
-ON CONFLICT (document_id, point_id) DO UPDATE SET reason = EXCLUDED.reason, excluded_at = now();
+INSERT INTO document_point_exclusions (document_id, point_id, reason, section_id)
+VALUES ($1, $2, $3, sqlc.narg(section_id))
+ON CONFLICT (document_id, section_id, point_id) DO UPDATE SET reason = EXCLUDED.reason, excluded_at = now();
 
 
 -- name: ClearPointExclusion :exec
-DELETE FROM document_point_exclusions WHERE document_id = $1 AND point_id = $2;
+DELETE FROM document_point_exclusions
+WHERE document_id = $1 AND point_id = $2 AND section_id IS NOT DISTINCT FROM sqlc.narg(section_id);
 
 
 -- M4.6: urutan dan nomor operasi.
@@ -215,18 +216,23 @@ WHERE id = $1 AND document_id = $2;
 -- name: CopyDocumentRows :execrows
 -- CopyDocumentRows menyalin semua baris satu dokumen ke dokumen lain dengan
 -- ID baru. Urutan, proses, nomor operasi, isi, dan tautan template ikut.
-INSERT INTO document_rows (document_id, position, process_id, operation_number, operation_manual, content, template_point_id, template_version_id, detached_at, detach_reason)
-SELECT sqlc.arg(target_id)::uuid, s.position, s.process_id, s.operation_number, s.operation_manual, s.content, s.template_point_id, s.template_version_id, s.detached_at, s.detach_reason
+-- Bagian dipetakan menurut namanya: bagian tujuan dibuat lebih dulu dengan nama yang sama (D-155).
+INSERT INTO document_rows (document_id, position, process_id, operation_number, operation_manual, content, template_point_id, template_version_id, detached_at, detach_reason, section_id)
+SELECT sqlc.arg(target_id)::uuid, s.position, s.process_id, s.operation_number, s.operation_manual, s.content, s.template_point_id, s.template_version_id, s.detached_at, s.detach_reason, ts.id
 FROM document_rows s
+LEFT JOIN document_sections ss ON ss.id = s.section_id
+LEFT JOIN document_sections ts ON ts.document_id = sqlc.arg(target_id)::uuid AND ts.name = ss.name
 WHERE s.document_id = sqlc.arg(source_id);
 
 
 -- name: CopyPointExclusions :exec
-INSERT INTO document_point_exclusions (document_id, point_id, reason)
-SELECT sqlc.arg(target_id)::uuid, s.point_id, s.reason
+INSERT INTO document_point_exclusions (document_id, point_id, reason, section_id)
+SELECT sqlc.arg(target_id)::uuid, s.point_id, s.reason, ts.id
 FROM document_point_exclusions s
+LEFT JOIN document_sections ss ON ss.id = s.section_id
+LEFT JOIN document_sections ts ON ts.document_id = sqlc.arg(target_id)::uuid AND ts.name = ss.name
 WHERE s.document_id = sqlc.arg(source_id)
-ON CONFLICT (document_id, point_id) DO NOTHING;
+ON CONFLICT (document_id, section_id, point_id) DO NOTHING;
 
 
 -- M4.8: putus tautan.
@@ -246,7 +252,7 @@ WHERE id = $1 AND document_id = $2 AND template_point_id IS NOT NULL AND detache
 -- name: ListPfmeaCpChecks :many
 -- ListPfmeaCpChecks mengambil tanda dicek satu pasangan dokumen untuk revisi
 -- keduanya sekarang, beserta nama pemberinya.
-SELECT c.process_id, c.pfmea_revision, c.cp_revision, c.checked_at, c.rows_fingerprint, p.name AS checked_by
+SELECT c.process_id, c.section_key, c.pfmea_revision, c.cp_revision, c.checked_at, c.rows_fingerprint, p.name AS checked_by
 FROM pfmea_cp_checks c
 JOIN people p ON p.id = c.checked_by_person_id
 WHERE c.pfmea_document_id = $1 AND c.cp_document_id = $2 AND c.pfmea_revision = $3 AND c.cp_revision = $4;
@@ -256,17 +262,94 @@ WHERE c.pfmea_document_id = $1 AND c.cp_document_id = $2 AND c.pfmea_revision = 
 -- AddPfmeaCpCheck memberi tanda. Tanda yang masih segar tidak diganti, jadi
 -- pemberi dan waktunya tetap. Tanda yang sidik jarinya sudah berbeda (perlu
 -- dicek ulang) diperbarui: pemberi, waktu, dan sidik jarinya yang baru.
-INSERT INTO pfmea_cp_checks (pfmea_document_id, cp_document_id, process_id, pfmea_revision, cp_revision, checked_by_person_id, rows_fingerprint)
-VALUES ($1, $2, $3, $4, $5, $6, $7)
-ON CONFLICT (pfmea_document_id, cp_document_id, process_id, pfmea_revision, cp_revision) DO UPDATE
+INSERT INTO pfmea_cp_checks (pfmea_document_id, cp_document_id, process_id, pfmea_revision, cp_revision, checked_by_person_id, rows_fingerprint, section_key)
+VALUES ($1, $2, $3, $4, $5, $6, $7, sqlc.narg(section_key))
+ON CONFLICT (pfmea_document_id, cp_document_id, section_key, process_id, pfmea_revision, cp_revision) DO UPDATE
 SET checked_by_person_id = EXCLUDED.checked_by_person_id, checked_at = now(), rows_fingerprint = EXCLUDED.rows_fingerprint
 WHERE pfmea_cp_checks.rows_fingerprint <> EXCLUDED.rows_fingerprint;
 
 
 -- name: RemovePfmeaCpCheck :execrows
 DELETE FROM pfmea_cp_checks
-WHERE pfmea_document_id = $1 AND cp_document_id = $2 AND process_id = $3 AND pfmea_revision = $4 AND cp_revision = $5;
+WHERE pfmea_document_id = $1 AND cp_document_id = $2 AND process_id = $3 AND pfmea_revision = $4 AND cp_revision = $5
+  AND section_key IS NOT DISTINCT FROM sqlc.narg(section_key);
 
 
 -- name: GetProcessDisplayName :one
 SELECT name FROM process_names WHERE process_id = $1 AND kind = 'display';
+
+
+-- D-155 pola 2: bagian per PCB.
+
+
+-- name: ListDocumentSections :many
+-- ListDocumentSections mengambil bagian satu dokumen menurut urutan, beserta
+-- part number-nya (nomor dipisah koma, menurut nomor).
+SELECT s.id, s.section_key, s.position, s.name,
+       coalesce(array_agg(p.id ORDER BY p.number) FILTER (WHERE p.id IS NOT NULL), '{}')::uuid[] AS part_number_ids,
+       coalesce(array_agg(p.number ORDER BY p.number) FILTER (WHERE p.id IS NOT NULL), '{}')::text[] AS part_numbers,
+       coalesce(array_agg(coalesce(p.name, '') ORDER BY p.number) FILTER (WHERE p.id IS NOT NULL), '{}')::text[] AS part_names
+FROM document_sections s
+LEFT JOIN document_section_part_numbers sp ON sp.section_key = s.section_key
+LEFT JOIN part_numbers p ON p.id = sp.part_number_id
+WHERE s.document_id = $1
+GROUP BY s.id
+ORDER BY s.position;
+
+
+-- name: AddDocumentSection :one
+INSERT INTO document_sections (document_id, section_key, position, name)
+VALUES ($1, $2, (SELECT coalesce(max(position), 0) + 1 FROM document_sections WHERE document_id = $1), $3)
+RETURNING id;
+
+
+-- name: RenameDocumentSections :exec
+-- RenameDocumentSections mengganti nama bagian di semua dokumen satu set.
+UPDATE document_sections SET name = $2, updated_at = now() WHERE section_key = $1;
+
+
+-- name: SetDocumentSectionPosition :exec
+UPDATE document_sections SET position = $3, updated_at = now() WHERE document_id = $1 AND id = $2;
+
+
+-- name: DeleteDocumentSections :exec
+DELETE FROM document_sections WHERE section_key = $1;
+
+
+-- name: ClearSectionPartNumbers :exec
+DELETE FROM document_section_part_numbers WHERE section_key = $1;
+
+
+-- name: AddSectionPartNumber :exec
+INSERT INTO document_section_part_numbers (section_key, part_number_id) VALUES ($1, $2);
+
+
+-- name: AssignRowsToSection :exec
+-- AssignRowsToSection memindahkan baris tanpa bagian ke satu bagian; dipakai
+-- saat bagian pertama dibuat, supaya baris yang sudah ada tidak tertinggal.
+UPDATE document_rows SET section_id = $2 WHERE document_id = $1 AND section_id IS NULL;
+
+
+-- name: AssignExclusionsToSection :exec
+UPDATE document_point_exclusions SET section_id = $2 WHERE document_id = $1 AND section_id IS NULL;
+
+
+-- name: CountSectionRows :one
+SELECT count(*)::int FROM document_rows r JOIN document_sections s ON s.id = r.section_id WHERE s.section_key = $1;
+
+
+-- name: CopySectionsFrom :exec
+-- CopySectionsFrom membuat bagian dokumen tujuan dengan nama dan urutan yang
+-- sama dengan dokumen sumber. section_key baru per bagian, sama di set tujuan
+-- karena kunci yang sama dipakai untuk semua dokumen tujuan (lihat copy.go).
+INSERT INTO document_sections (document_id, section_key, position, name)
+VALUES ($1, $2, $3, $4);
+
+
+-- name: NewSectionKey :one
+-- NewSectionKey membuat kunci bagian baru, dipakai bersama semua dokumen satu set.
+SELECT uuidv7()::uuid;
+
+
+-- name: DeleteSectionExclusions :exec
+DELETE FROM document_point_exclusions WHERE section_id IN (SELECT id FROM document_sections WHERE section_key = $1);

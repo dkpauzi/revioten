@@ -68,7 +68,7 @@
 		message = '';
 		failure = '';
 		busy = group.process_id;
-		const result = await markPfmeaCpChecked(currentId, group.process_id, checked);
+		const result = await markPfmeaCpChecked(currentId, group.process_id, checked, group.section_key ?? '');
 		busy = '';
 		if (!result.ok) {
 			failure = failureText(result.error);
@@ -111,8 +111,12 @@
 	{#if comparison.processes.length === 0}
 		<p>{t('checkEmpty')}</p>
 	{/if}
-	{#each comparison.processes as group (group.process_id ?? '-')}
-		<section class="process" aria-label={group.process_name || t('checkNoProcess')}>
+	{#each comparison.processes as group, i ((group.section_key ?? '') + '/' + (group.process_id ?? '-'))}
+		<!-- Judul bagian (D-155) tampil sekali, di atas proses pertama bagian itu. -->
+		{#if group.section_key && group.section_key !== comparison.processes[i - 1]?.section_key}
+			<h2 class="section-heading">{group.section_name}</h2>
+		{/if}
+		<section class="process" aria-label={(group.section_name ? group.section_name + ' · ' : '') + (group.process_name || t('checkNoProcess'))}>
 			<header>
 				<h2>{group.process_name || t('checkNoProcess')}</h2>
 				{#if group.process_id}
@@ -203,6 +207,12 @@
 		gap: 4px 24px;
 		color: var(--text-2);
 		font-family: 'Geist Mono Variable', monospace;
+	}
+
+	.section-heading {
+		margin: 1.5rem 0 0.5rem;
+		padding-bottom: 4px;
+		border-bottom: 2px solid var(--border);
 	}
 
 	.process header {

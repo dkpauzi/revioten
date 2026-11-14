@@ -1478,6 +1478,9 @@ type ComposeInput struct {
 	Exclude                  *[]PointExclusion `json:"exclude,omitempty"`
 	Include                  *[]string         `json:"include,omitempty"`
 	ProcessTemplateVersionId string            `json:"process_template_version_id"`
+
+	// SectionKey The section to compose (D-155); required when the set has sections.
+	SectionKey *string `json:"section_key,omitempty"`
 }
 
 // ComposedPoint defines model for ComposedPoint.
@@ -1635,6 +1638,9 @@ type Document struct {
 	RouteReason   *string              `json:"route_reason,omitempty"`
 	Rows          []DocumentRow        `json:"rows"`
 
+	// Sections The sections of the document, one per PCB of the model (D-155), in order. Empty for a document without sections.
+	Sections []DocumentSection `json:"sections"`
+
 	// Set The documents of the same set, this one included, by document type (M4.2). Documents from numbers registered as a set of PFD, PFMEA, and CP know each other; a single number gives only this document.
 	Set       []DocumentSetMember `json:"set"`
 	Status    DocumentStatus      `json:"status"`
@@ -1714,6 +1720,9 @@ type DocumentOrder struct {
 	// Renumber Number the operations automatically after ordering. Default false.
 	Renumber *bool    `json:"renumber,omitempty"`
 	RowIds   []string `json:"row_ids"`
+
+	// SectionId The section to order (D-155); required when the document has sections. Operation numbers start again at 10 per section.
+	SectionId *string `json:"section_id,omitempty"`
 }
 
 // DocumentPartNumber defines model for DocumentPartNumber.
@@ -1742,6 +1751,9 @@ type DocumentRow struct {
 	ProcessId       *string `json:"process_id,omitempty"`
 	ProcessName     *string `json:"process_name,omitempty"`
 
+	// SectionId The section of the row (D-155); left out for a document without sections.
+	SectionId *string `json:"section_id,omitempty"`
+
 	// TemplatePointId The process template point this row was composed from; left out for a typed or pasted row (R-CMP-04).
 	TemplatePointId *string `json:"template_point_id,omitempty"`
 
@@ -1760,8 +1772,32 @@ type DocumentRowInput struct {
 	OperationNumber *string                `json:"operation_number,omitempty"`
 	ProcessId       *string                `json:"process_id,omitempty"`
 
+	// SectionId The section of a new row; required when the document has sections (D-155). Ignored when changing a row.
+	SectionId *string `json:"section_id,omitempty"`
+
 	// Version The version of the row that was read. Required when changing a row, ignored when adding one. When the row was changed by someone else in the meantime the answer is 409 with code changed, and nothing is saved (optimistic locking, R-DOC-07).
 	Version *int `json:"version,omitempty"`
+}
+
+// DocumentSection defines model for DocumentSection.
+type DocumentSection struct {
+	// Id The section of this document. Rows name this ID.
+	Id string `json:"id"`
+
+	// Key The same for this section in every document of the set; composition and the check use it.
+	Key string `json:"key"`
+
+	// Name Example: Heatsink Assy (R/L)
+	Name        string               `json:"name"`
+	PartNumbers []DocumentPartNumber `json:"part_numbers"`
+	Position    int                  `json:"position"`
+}
+
+// DocumentSectionUpdate defines model for DocumentSectionUpdate.
+type DocumentSectionUpdate struct {
+	Name          string    `json:"name"`
+	PartNumberIds *[]string `json:"part_number_ids,omitempty"`
+	Position      *int      `json:"position,omitempty"`
 }
 
 // DocumentSetMember defines model for DocumentSetMember.
@@ -2259,6 +2295,12 @@ type NewDocumentNumberSet struct {
 	InitialRevision *int `json:"initial_revision,omitempty"`
 }
 
+// NewDocumentSection defines model for NewDocumentSection.
+type NewDocumentSection struct {
+	Name          string    `json:"name"`
+	PartNumberIds *[]string `json:"part_number_ids,omitempty"`
+}
+
 // NewFormSet defines model for NewFormSet.
 type NewFormSet struct {
 	CpFormatVersionId    string `json:"cp_format_version_id"`
@@ -2611,6 +2653,9 @@ type PfmeaCpCheck struct {
 type PfmeaCpCheckInput struct {
 	Checked   bool   `json:"checked"`
 	ProcessId string `json:"process_id"`
+
+	// SectionKey The section (D-155); required when the set has sections.
+	SectionKey *string `json:"section_key,omitempty"`
 }
 
 // PfmeaCpComparison defines model for PfmeaCpComparison.
@@ -2629,6 +2674,10 @@ type PfmeaCpProcess struct {
 	// ProcessId Left out for the rows that have no process.
 	ProcessId   *string `json:"process_id,omitempty"`
 	ProcessName *string `json:"process_name,omitempty"`
+
+	// SectionKey The section (D-155); left out for a set without sections.
+	SectionKey  *string `json:"section_key,omitempty"`
+	SectionName *string `json:"section_name,omitempty"`
 }
 
 // PointContent The content of a point per column of the format, keyed by the fixed field key, for example failure_mode or product_characteristic (D-146). A value is text, or a whole number from 1 to 10 for a rating column. One point serves every form that has a column with the same key.
@@ -3242,6 +3291,9 @@ type RefDocId = string
 // RowId defines model for RowId.
 type RowId = string
 
+// SectionId defines model for SectionId.
+type SectionId = string
+
 // SpecialCodeId defines model for SpecialCodeId.
 type SpecialCodeId = string
 
@@ -3312,6 +3364,9 @@ type ListDocumentsParams struct {
 // GetDocumentCompositionParams defines parameters for GetDocumentComposition.
 type GetDocumentCompositionParams struct {
 	ProcessTemplateVersionId string `form:"process_template_version_id" json:"process_template_version_id"`
+
+	// SectionKey The section (D-155); required when the set has sections.
+	SectionKey *string `form:"section_key,omitempty" json:"section_key,omitempty"`
 }
 
 // GetActionPriorityParams defines parameters for GetActionPriority.
@@ -3436,6 +3491,12 @@ type UpdateDocumentRowJSONRequestBody = DocumentRowInput
 
 // DetachDocumentRowJSONRequestBody defines body for DetachDocumentRow for application/json ContentType.
 type DetachDocumentRowJSONRequestBody = RowDetach
+
+// AddDocumentSectionJSONRequestBody defines body for AddDocumentSection for application/json ContentType.
+type AddDocumentSectionJSONRequestBody = NewDocumentSection
+
+// UpdateDocumentSectionJSONRequestBody defines body for UpdateDocumentSection for application/json ContentType.
+type UpdateDocumentSectionJSONRequestBody = DocumentSectionUpdate
 
 // SetFormSetSheetsJSONRequestBody defines body for SetFormSetSheets for application/json ContentType.
 type SetFormSetSheetsJSONRequestBody = FormSetSheets
@@ -3706,6 +3767,15 @@ type ServerInterface interface {
 	// DetachDocumentRow Detach one row from its process template point, with a reason (E-2, M4.8)
 	// (POST /api/v1/documents/{documentId}/rows/{rowId}/detach)
 	DetachDocumentRow(w http.ResponseWriter, r *http.Request, documentId DocumentId, rowId RowId)
+	// AddDocumentSection Add a section, one PCB of the model, to every document of the set (E-2, D-155)
+	// (POST /api/v1/documents/{documentId}/sections)
+	AddDocumentSection(w http.ResponseWriter, r *http.Request, documentId DocumentId)
+	// RemoveDocumentSection Remove an empty section from every document of the set (E-2, D-155)
+	// (DELETE /api/v1/documents/{documentId}/sections/{sectionId})
+	RemoveDocumentSection(w http.ResponseWriter, r *http.Request, documentId DocumentId, sectionId SectionId)
+	// UpdateDocumentSection Rename, move, or change the part numbers of a section in every document of the set (E-2, D-155)
+	// (PUT /api/v1/documents/{documentId}/sections/{sectionId})
+	UpdateDocumentSection(w http.ResponseWriter, r *http.Request, documentId DocumentId, sectionId SectionId)
 	// SetFormSetSheets Choose the format template versions of the sheets of a draft form set version (A-2)
 	// (PUT /api/v1/form-set-versions/{formSetVersionId})
 	SetFormSetSheets(w http.ResponseWriter, r *http.Request, formSetVersionId FormSetVersionId)
@@ -4886,6 +4956,19 @@ func (siw *ServerInterfaceWrapper) GetDocumentComposition(w http.ResponseWriter,
 		return
 	}
 
+	// ------------- Optional query parameter "section_key" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "section_key", r.URL.Query(), &params.SectionKey, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "section_key"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "section_key", Err: err})
+		}
+		return
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetDocumentComposition(w, r, documentId, params)
 	}))
@@ -5253,6 +5336,102 @@ func (siw *ServerInterfaceWrapper) DetachDocumentRow(w http.ResponseWriter, r *h
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.DetachDocumentRow(w, r, documentId, rowId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AddDocumentSection operation middleware
+func (siw *ServerInterfaceWrapper) AddDocumentSection(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", r.PathValue("documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AddDocumentSection(w, r, documentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RemoveDocumentSection operation middleware
+func (siw *ServerInterfaceWrapper) RemoveDocumentSection(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", r.PathValue("documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "sectionId" -------------
+	var sectionId SectionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "sectionId", r.PathValue("sectionId"), &sectionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "sectionId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RemoveDocumentSection(w, r, documentId, sectionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateDocumentSection operation middleware
+func (siw *ServerInterfaceWrapper) UpdateDocumentSection(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", r.PathValue("documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "sectionId" -------------
+	var sectionId SectionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "sectionId", r.PathValue("sectionId"), &sectionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "sectionId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateDocumentSection(w, r, documentId, sectionId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -7075,6 +7254,9 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/referenced-documents/{refDocId}", wrapper.UpdateReferencedDocument)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/referenced-documents/{refDocId}/links", wrapper.AddReferencedDocumentLink)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/referenced-documents/{refDocId}/links/{linkId}", wrapper.RemoveReferencedDocumentLink)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/sections", wrapper.AddDocumentSection)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/documents/{documentId}/sections/{sectionId}", wrapper.RemoveDocumentSection)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/documents/{documentId}/sections/{sectionId}", wrapper.UpdateDocumentSection)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/references", wrapper.FillDocumentReferences)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/rows", wrapper.AddDocumentRow)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/rows/batch", wrapper.AddDocumentRows)
@@ -9200,6 +9382,127 @@ type DetachDocumentRowdefaultJSONResponse struct {
 }
 
 func (response DetachDocumentRowdefaultJSONResponse) VisitDetachDocumentRowResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddDocumentSectionRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+	Body       *AddDocumentSectionJSONRequestBody
+}
+
+type AddDocumentSectionResponseObject interface {
+	VisitAddDocumentSectionResponse(w http.ResponseWriter) error
+}
+
+type AddDocumentSection201JSONResponse Document
+
+func (response AddDocumentSection201JSONResponse) VisitAddDocumentSectionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AddDocumentSectiondefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response AddDocumentSectiondefaultJSONResponse) VisitAddDocumentSectionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RemoveDocumentSectionRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+	SectionId  SectionId  `json:"sectionId"`
+}
+
+type RemoveDocumentSectionResponseObject interface {
+	VisitRemoveDocumentSectionResponse(w http.ResponseWriter) error
+}
+
+type RemoveDocumentSection200JSONResponse Document
+
+func (response RemoveDocumentSection200JSONResponse) VisitRemoveDocumentSectionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RemoveDocumentSectiondefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response RemoveDocumentSectiondefaultJSONResponse) VisitRemoveDocumentSectionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDocumentSectionRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+	SectionId  SectionId  `json:"sectionId"`
+	Body       *UpdateDocumentSectionJSONRequestBody
+}
+
+type UpdateDocumentSectionResponseObject interface {
+	VisitUpdateDocumentSectionResponse(w http.ResponseWriter) error
+}
+
+type UpdateDocumentSection200JSONResponse Document
+
+func (response UpdateDocumentSection200JSONResponse) VisitUpdateDocumentSectionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDocumentSectiondefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response UpdateDocumentSectiondefaultJSONResponse) VisitUpdateDocumentSectionResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -12107,6 +12410,15 @@ type StrictServerInterface interface {
 	// DetachDocumentRow Detach one row from its process template point, with a reason (E-2, M4.8)
 	// (POST /api/v1/documents/{documentId}/rows/{rowId}/detach)
 	DetachDocumentRow(ctx context.Context, request DetachDocumentRowRequestObject) (DetachDocumentRowResponseObject, error)
+	// AddDocumentSection Add a section, one PCB of the model, to every document of the set (E-2, D-155)
+	// (POST /api/v1/documents/{documentId}/sections)
+	AddDocumentSection(ctx context.Context, request AddDocumentSectionRequestObject) (AddDocumentSectionResponseObject, error)
+	// RemoveDocumentSection Remove an empty section from every document of the set (E-2, D-155)
+	// (DELETE /api/v1/documents/{documentId}/sections/{sectionId})
+	RemoveDocumentSection(ctx context.Context, request RemoveDocumentSectionRequestObject) (RemoveDocumentSectionResponseObject, error)
+	// UpdateDocumentSection Rename, move, or change the part numbers of a section in every document of the set (E-2, D-155)
+	// (PUT /api/v1/documents/{documentId}/sections/{sectionId})
+	UpdateDocumentSection(ctx context.Context, request UpdateDocumentSectionRequestObject) (UpdateDocumentSectionResponseObject, error)
 	// SetFormSetSheets Choose the format template versions of the sheets of a draft form set version (A-2)
 	// (PUT /api/v1/form-set-versions/{formSetVersionId})
 	SetFormSetSheets(ctx context.Context, request SetFormSetSheetsRequestObject) (SetFormSetSheetsResponseObject, error)
@@ -13865,6 +14177,100 @@ func (sh *strictHandler) DetachDocumentRow(w http.ResponseWriter, r *http.Reques
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(DetachDocumentRowResponseObject); ok {
 		if err := validResponse.VisitDetachDocumentRowResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AddDocumentSection operation middleware
+func (sh *strictHandler) AddDocumentSection(w http.ResponseWriter, r *http.Request, documentId DocumentId) {
+	var request AddDocumentSectionRequestObject
+
+	request.DocumentId = documentId
+
+	var body AddDocumentSectionJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.AddDocumentSection(ctx, request.(AddDocumentSectionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AddDocumentSection")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AddDocumentSectionResponseObject); ok {
+		if err := validResponse.VisitAddDocumentSectionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RemoveDocumentSection operation middleware
+func (sh *strictHandler) RemoveDocumentSection(w http.ResponseWriter, r *http.Request, documentId DocumentId, sectionId SectionId) {
+	var request RemoveDocumentSectionRequestObject
+
+	request.DocumentId = documentId
+	request.SectionId = sectionId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RemoveDocumentSection(ctx, request.(RemoveDocumentSectionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RemoveDocumentSection")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RemoveDocumentSectionResponseObject); ok {
+		if err := validResponse.VisitRemoveDocumentSectionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateDocumentSection operation middleware
+func (sh *strictHandler) UpdateDocumentSection(w http.ResponseWriter, r *http.Request, documentId DocumentId, sectionId SectionId) {
+	var request UpdateDocumentSectionRequestObject
+
+	request.DocumentId = documentId
+	request.SectionId = sectionId
+
+	var body UpdateDocumentSectionJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateDocumentSection(ctx, request.(UpdateDocumentSectionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateDocumentSection")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateDocumentSectionResponseObject); ok {
+		if err := validResponse.VisitUpdateDocumentSectionResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

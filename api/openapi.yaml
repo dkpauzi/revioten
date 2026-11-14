@@ -1589,6 +1589,11 @@ paths:
           required: true
           schema:
             type: string
+        - name: section_key
+          in: query
+          description: The section (D-155); required when the set has sections.
+          schema:
+            type: string
       responses:
         '200':
           description: The composition view.
@@ -1849,6 +1854,72 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ReferencedDocument'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/documents/{documentId}/sections:
+    post:
+      operationId: addDocumentSection
+      summary: Add a section, one PCB of the model, to every document of the set (E-2, D-155)
+      description: >-
+        A section has a name and part numbers chosen from the part numbers of the document; one section may hold two
+        part numbers (R and L). The section is added to the PFD, PFMEA, and CP of the set with the same key. When it is
+        the first section, the rows already there move into it. Once a set has sections, every new row names its
+        section, and composition, order, operation numbers, relevant documents, and the PFMEA to CP check work per
+        section.
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewDocumentSection'
+      responses:
+        '201':
+          description: The document after the change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/documents/{documentId}/sections/{sectionId}:
+    put:
+      operationId: updateDocumentSection
+      summary: Rename, move, or change the part numbers of a section in every document of the set (E-2, D-155)
+      description: Fields left out stay as they are, except the name, which is required (D-111).
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+        - $ref: '#/components/parameters/SectionId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentSectionUpdate'
+      responses:
+        '200':
+          description: The document after the change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        default:
+          $ref: '#/components/responses/Error'
+    delete:
+      operationId: removeDocumentSection
+      summary: Remove an empty section from every document of the set (E-2, D-155)
+      description: A section that still has rows gives 422 with code not_allowed on field section.
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+        - $ref: '#/components/parameters/SectionId'
+      responses:
+        '200':
+          description: The document after the change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
         default:
           $ref: '#/components/responses/Error'
   /api/v1/documents/{documentId}/references:
@@ -2524,6 +2595,12 @@ components:
         type: string
     FormatFieldId:
       name: formatFieldId
+      in: path
+      required: true
+      schema:
+        type: string
+    SectionId:
+      name: sectionId
       in: path
       required: true
       schema:
@@ -3941,7 +4018,7 @@ components:
           description: Required when route_id is not the default route of the customer (D-47).
     Document:
       type: object
-      required: [id, document_number_id, number, customer_id, customer_code, document_type, revision, status, form_set_version_id, form_set_name, format_version_id, models, part_numbers, header, header_version, rows, set, created_at, updated_at]
+      required: [id, document_number_id, number, customer_id, customer_code, document_type, revision, status, form_set_version_id, form_set_name, format_version_id, models, part_numbers, header, header_version, rows, sections, set, created_at, updated_at]
       properties:
         id:
           type: string
@@ -3990,6 +4067,11 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/DocumentRow'
+        sections:
+          type: array
+          description: The sections of the document, one per PCB of the model (D-155), in order. Empty for a document without sections.
+          items:
+            $ref: '#/components/schemas/DocumentSection'
         set:
           type: array
           description: >-
@@ -4055,6 +4137,9 @@ components:
         detached:
           type: boolean
           description: The link to the template point was cut, with a reason (M4.8).
+        section_id:
+          type: string
+          description: The section of the row (D-155); left out for a document without sections.
         detach_reason:
           type: string
         content:
@@ -4075,6 +4160,9 @@ components:
         content:
           type: object
           additionalProperties: true
+        section_id:
+          type: string
+          description: The section of a new row; required when the document has sections (D-155). Ignored when changing a row.
         version:
           type: integer
           description: >-
@@ -4134,6 +4222,9 @@ components:
       properties:
         process_template_version_id:
           type: string
+        section_key:
+          type: string
+          description: The section to compose (D-155); required when the set has sections.
         include:
           type: array
           items:
@@ -4166,6 +4257,11 @@ components:
       type: object
       required: [pfmea_row_ids, cp_row_ids]
       properties:
+        section_key:
+          type: string
+          description: The section (D-155); left out for a set without sections.
+        section_name:
+          type: string
         process_id:
           type: string
           description: Left out for the rows that have no process.
@@ -4202,6 +4298,9 @@ components:
       type: object
       required: [process_id, checked]
       properties:
+        section_key:
+          type: string
+          description: The section (D-155); required when the set has sections.
         process_id:
           type: string
         checked:
@@ -4266,6 +4365,9 @@ components:
       type: object
       required: [row_ids]
       properties:
+        section_id:
+          type: string
+          description: The section to order (D-155); required when the document has sections. Operation numbers start again at 10 per section.
         row_ids:
           type: array
           items:
@@ -4273,6 +4375,47 @@ components:
         renumber:
           type: boolean
           description: Number the operations automatically after ordering. Default false.
+    DocumentSection:
+      type: object
+      required: [id, key, position, name, part_numbers]
+      properties:
+        id:
+          type: string
+          description: The section of this document. Rows name this ID.
+        key:
+          type: string
+          description: The same for this section in every document of the set; composition and the check use it.
+        position:
+          type: integer
+        name:
+          type: string
+          example: Heatsink Assy (R/L)
+        part_numbers:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentPartNumber'
+    NewDocumentSection:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        part_number_ids:
+          type: array
+          items:
+            type: string
+    DocumentSectionUpdate:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        position:
+          type: integer
+        part_number_ids:
+          type: array
+          items:
+            type: string
     ReferencedDocumentList:
       type: object
       required: [items]

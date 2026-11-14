@@ -153,11 +153,11 @@ func TestCompose(t *testing.T) {
 	cp := set["cp"]
 
 	// Sebelum dirakit semua poin belum diputuskan. Varian K-125 yang tampil.
-	view, err := f.s.Composition(ctx, f.viewer, cp.ID, tpl.version.ID)
+	view, err := f.s.Composition(ctx, f.viewer, cp.ID, tpl.version.ID, "")
 	if !errors.Is(err, access.ErrForbidden) {
 		t.Errorf("akun tanpa hak melihat perakitan: %v", err)
 	}
-	if view, err = f.s.Composition(ctx, f.author, cp.ID, tpl.version.ID); err != nil {
+	if view, err = f.s.Composition(ctx, f.author, cp.ID, tpl.version.ID, ""); err != nil {
 		t.Fatal(err)
 	}
 	st := states(view)
@@ -218,7 +218,7 @@ func TestCompose(t *testing.T) {
 	}
 
 	// Tampilan perakitan: dimasukkan, dikecualikan dengan alasan, belum diputuskan.
-	view, err = f.s.Composition(ctx, f.author, cp.ID, tpl.version.ID)
+	view, err = f.s.Composition(ctx, f.author, cp.ID, tpl.version.ID, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -267,7 +267,7 @@ func TestCompose(t *testing.T) {
 	if _, err := f.s.DeleteRow(ctx, f.author, cp.ID, got.Rows[1].ID); err != nil {
 		t.Fatal(err)
 	}
-	view, _ = f.s.Composition(ctx, f.author, cp.ID, tpl.version.ID)
+	view, _ = f.s.Composition(ctx, f.author, cp.ID, tpl.version.ID, "")
 	if st = states(view); st["Check warpage (K-125)"] != StateExcluded || st["Check HIC"] != StateIncluded || st["Check MSL label"] != StateExcluded {
 		t.Errorf("keadaan sesudah hapus baris: %v", st)
 	}
@@ -283,7 +283,7 @@ func TestComposeRules(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	view, err := f.s.Composition(ctx, f.author, cp.ID, tpl.version.ID)
+	view, err := f.s.Composition(ctx, f.author, cp.ID, tpl.version.ID, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -318,7 +318,7 @@ func TestComposeRules(t *testing.T) {
 	if got := codes(t, err); !slices.Contains(got, "process_template_version_id:not_allowed") {
 		t.Errorf("versi draft: %v", got)
 	}
-	if _, err := f.s.Composition(ctx, f.author, cp.ID, "01900000-0000-7000-8000-000000000000"); !errors.Is(err, problem.ErrNotFound) {
+	if _, err := f.s.Composition(ctx, f.author, cp.ID, "01900000-0000-7000-8000-000000000000", ""); !errors.Is(err, problem.ErrNotFound) {
 		t.Errorf("versi tidak ada: %v", err)
 	}
 	if after := f.get(t, cp.ID); len(after.Rows) != 0 {

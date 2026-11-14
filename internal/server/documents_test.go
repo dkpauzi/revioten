@@ -31,7 +31,7 @@ func TestDocumentEndpoints(t *testing.T) {
 		`"document_type":{"id":"dt-3","key":"cp","name":"CP"},"revision":0,"status":"draft","form_set_version_id":"fsv-1",` +
 		`"form_set_name":"AIAG 4th set","format_version_id":"v-3","models":[{"id":"m-1","name":"K-125"}],"part_numbers":[],` +
 		`"route":{"id":"r-1","name":"Up to GM"},"header":{"f-1":"Line 1"},"header_version":4,` +
-		`"rows":[{"id":"row-1","position":1,"version":2,"operation_manual":false,"detached":false,"process_id":"p-1","process_name":"SMT","operation_number":"10","content":{"f-2":"Paste"}}],"set":[],` +
+		`"rows":[{"id":"row-1","position":1,"version":2,"operation_manual":false,"detached":false,"process_id":"p-1","process_name":"SMT","operation_number":"10","content":{"f-2":"Paste"}}],"sections":[],"set":[],` +
 		`"created_at":"2026-11-12T08:00:00Z","updated_at":"2026-11-12T08:00:00Z"}`
 	if rec.Code != http.StatusOK || fake.got != (called{method: "Get", id: "d-1"}) || !sameJSON(t, rec.Body.String(), want) {
 		t.Errorf("baca: status %d\n%s\ningin\n%s", rec.Code, rec.Body.String(), want)
@@ -139,5 +139,19 @@ func TestDocumentEndpoints(t *testing.T) {
 	rec = srv.do(http.MethodPut, "/api/v1/documents/d-1/pfmea-cp", `{"process_id":"p-1","checked":true}`)
 	if rec.Code != http.StatusOK || fake.got != (called{method: "MarkChecked", id: "d-1", input: "p-1"}) || !fake.gotChecked {
 		t.Errorf("tanda dicek: status %d, %+v", rec.Code, fake.got)
+	}
+
+	// D-155: bagian per PCB.
+	rec = srv.do(http.MethodPost, "/api/v1/documents/d-1/sections", `{"name":"Heatsink Assy (R/L)","part_number_ids":["pn-2","pn-3"]}`)
+	if rec.Code != http.StatusCreated || !reflect.DeepEqual(fake.gotSection, document.NewSection{Name: "Heatsink Assy (R/L)", PartNumberIDs: []string{"pn-2", "pn-3"}}) {
+		t.Errorf("tambah bagian: status %d, %+v", rec.Code, fake.gotSection)
+	}
+	rec = srv.do(http.MethodPut, "/api/v1/documents/d-1/sections/s-1", `{"name":"Heatsink Assy","position":1}`)
+	if g := fake.gotSectionUpd; rec.Code != http.StatusOK || fake.got != (called{method: "UpdateSection", id: "d-1", input: "s-1"}) || g.Name != "Heatsink Assy" || g.Position == nil || *g.Position != 1 || g.PartNumberIDs != nil {
+		t.Errorf("ubah bagian: status %d, %+v", rec.Code, g)
+	}
+	rec = srv.do(http.MethodDelete, "/api/v1/documents/d-1/sections/s-1", "")
+	if rec.Code != http.StatusOK || fake.got != (called{method: "RemoveSection", id: "d-1", input: "s-1"}) {
+		t.Errorf("hapus bagian: status %d, %+v", rec.Code, fake.got)
 	}
 }
