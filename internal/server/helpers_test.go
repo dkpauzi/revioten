@@ -573,6 +573,7 @@ type fakeDocuments struct {
 	// composition dan gotCompose: perakitan (M4.5).
 	composition document.Composition
 	gotCompose  document.Compose
+	gotOrder    document.Order // M4.6
 	header      map[string]any
 	// headerVersion adalah versi header yang dikirim klien (M4.3).
 	headerVersion int
@@ -615,6 +616,11 @@ func (f *fakeDocuments) Composition(_ context.Context, _ access.Actor, id, versi
 
 func (f *fakeDocuments) Compose(_ context.Context, _ access.Actor, id string, in document.Compose) (document.Document, error) {
 	f.got, f.gotCompose = called{method: "Compose", id: id}, in
+	return f.doc, f.err
+}
+
+func (f *fakeDocuments) Reorder(_ context.Context, _ access.Actor, id string, in document.Order) (document.Document, error) {
+	f.got, f.gotOrder = called{method: "Reorder", id: id}, in
 	return f.doc, f.err
 }
 

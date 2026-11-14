@@ -1622,6 +1622,31 @@ paths:
                 $ref: '#/components/schemas/Document'
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/documents/{documentId}/order:
+    put:
+      operationId: reorderDocumentRows
+      summary: Save a new order of the rows, and number the operations when asked (E-2, M4.6)
+      description: >-
+        row_ids holds every row of the document exactly once, in the new order. With renumber, consecutive rows of the
+        same process are one step and get one operation number, in steps of 10. A number that was typed or pasted
+        (operation_manual) is kept (R-CMP-01).
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentOrder'
+      responses:
+        '200':
+          description: The document after the change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/documents/{documentId}/rows:
     post:
       operationId: addDocumentRow
@@ -3768,7 +3793,7 @@ components:
           type: string
     DocumentRow:
       type: object
-      required: [id, position, version, content]
+      required: [id, position, version, operation_manual, content]
       properties:
         id:
           type: string
@@ -3784,6 +3809,9 @@ components:
           type: string
         operation_number:
           type: string
+        operation_manual:
+          type: boolean
+          description: The operation number was typed or pasted, so automatic numbering keeps it (M4.6).
         content:
           type: object
           additionalProperties: true
@@ -3877,6 +3905,17 @@ components:
           type: string
         reason:
           type: string
+    DocumentOrder:
+      type: object
+      required: [row_ids]
+      properties:
+        row_ids:
+          type: array
+          items:
+            type: string
+        renumber:
+          type: boolean
+          description: Number the operations automatically after ordering. Default false.
     DocumentRowBatch:
       type: object
       required: [rows]

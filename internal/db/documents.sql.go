@@ -76,16 +76,17 @@ func (q *Queries) AddDocumentPartNumber(ctx context.Context, arg AddDocumentPart
 }
 
 const addDocumentRow = `-- name: AddDocumentRow :one
-INSERT INTO document_rows (document_id, position, process_id, operation_number, content)
-VALUES ($1, (SELECT coalesce(max(position), 0) + 1 FROM document_rows WHERE document_id = $1), $2, $3, $4)
+INSERT INTO document_rows (document_id, position, process_id, operation_number, content, operation_manual)
+VALUES ($1, (SELECT coalesce(max(position), 0) + 1 FROM document_rows WHERE document_id = $1), $2, $4, $3,
+        $4::text IS NOT NULL)
 RETURNING id, position
 `
 
 type AddDocumentRowParams struct {
 	DocumentID      string
 	ProcessID       *string
-	OperationNumber *string
 	Content         []byte
+	OperationNumber *string
 }
 
 type AddDocumentRowRow struct {
@@ -93,12 +94,14 @@ type AddDocumentRowRow struct {
 	Position int32
 }
 
+// Nomor operasi yang dikirim saat baris dibuat berarti diketik atau ditempel
+// penyusun, jadi ditandai manual (M4.6).
 func (q *Queries) AddDocumentRow(ctx context.Context, arg AddDocumentRowParams) (AddDocumentRowRow, error) {
 	row := q.db.QueryRow(ctx, addDocumentRow,
 		arg.DocumentID,
 		arg.ProcessID,
-		arg.OperationNumber,
 		arg.Content,
+		arg.OperationNumber,
 	)
 	var i AddDocumentRowRow
 	err := row.Scan(&i.ID, &i.Position)
@@ -454,7 +457,7 @@ func (q *Queries) ListDocumentPartNumbers(ctx context.Context, documentID string
 
 const listDocumentRows = `-- name: ListDocumentRows :many
 SELECT r.id, r.position, r.process_id, n.name AS process_name, r.operation_number, r.content, r.version,
-       r.template_point_id, r.template_version_id
+       r.template_point_id, r.template_version_id, r.operation_manual
 FROM document_rows r
 LEFT JOIN process_names n ON n.process_id = r.process_id AND n.kind = 'display'
 WHERE r.document_id = $1
@@ -471,6 +474,7 @@ type ListDocumentRowsRow struct {
 	Version           int32
 	TemplatePointID   *string
 	TemplateVersionID *string
+	OperationManual   bool
 }
 
 func (q *Queries) ListDocumentRows(ctx context.Context, documentID string) ([]ListDocumentRowsRow, error) {
@@ -492,6 +496,7 @@ func (q *Queries) ListDocumentRows(ctx context.Context, documentID string) ([]Li
 			&i.Version,
 			&i.TemplatePointID,
 			&i.TemplateVersionID,
+			&i.OperationManual,
 		); err != nil {
 			return nil, err
 		}
@@ -682,6 +687,45 @@ func (q *Queries) SetDocumentHeader(ctx context.Context, arg SetDocumentHeaderPa
 	return result.RowsAffected(), nil
 }
 
+const setRowOperationNumber = `-- name: SetRowOperationNumber :exec
+UPDATE document_rows
+SET operation_number = $3, operation_manual = false, version = version + 1, updated_at = now()
+WHERE id = $1 AND document_id = $2
+`
+
+type SetRowOperationNumberParams struct {
+	ID              string
+	DocumentID      string
+	OperationNumber *string
+}
+
+// SetRowOperationNumber mengisi nomor operasi otomatis. Versi baris naik,
+// supaya layar yang masih memegang nomor lama tidak menimpanya (M4.3).
+func (q *Queries) SetRowOperationNumber(ctx context.Context, arg SetRowOperationNumberParams) error {
+	_, err := q.db.Exec(ctx, setRowOperationNumber, arg.ID, arg.DocumentID, arg.OperationNumber)
+	return err
+}
+
+const setRowPosition = `-- name: SetRowPosition :exec
+
+
+UPDATE document_rows SET position = $3 WHERE id = $1 AND document_id = $2
+`
+
+type SetRowPositionParams struct {
+	ID         string
+	DocumentID string
+	Position   int32
+}
+
+// M4.6: urutan dan nomor operasi.
+// SetRowPosition memindahkan satu baris. Batasan unik urutan ditunda sampai
+// akhir transaksi, jadi baris boleh bertukar tempat di tengah jalan.
+func (q *Queries) SetRowPosition(ctx context.Context, arg SetRowPositionParams) error {
+	_, err := q.db.Exec(ctx, setRowPosition, arg.ID, arg.DocumentID, arg.Position)
+	return err
+}
+
 const shiftRowsUp = `-- name: ShiftRowsUp :exec
 UPDATE document_rows SET position = position - 1
 WHERE document_id = $1 AND position > $2
@@ -709,8 +753,9 @@ func (q *Queries) TouchDocument(ctx context.Context, id string) error {
 
 const updateDocumentRow = `-- name: UpdateDocumentRow :execrows
 UPDATE document_rows
-SET process_id = $3, operation_number = $4, content = $5, version = version + 1, updated_at = now()
-WHERE id = $1 AND document_id = $2 AND version = $6
+SET process_id = $3, operation_number = $4, content = $5, operation_manual = $6,
+    version = version + 1, updated_at = now()
+WHERE id = $1 AND document_id = $2 AND version = $7
 `
 
 type UpdateDocumentRowParams struct {
@@ -719,6 +764,7 @@ type UpdateDocumentRowParams struct {
 	ProcessID       *string
 	OperationNumber *string
 	Content         []byte
+	OperationManual bool
 	ExpectedVersion int32
 }
 
@@ -731,6 +777,7 @@ func (q *Queries) UpdateDocumentRow(ctx context.Context, arg UpdateDocumentRowPa
 		arg.ProcessID,
 		arg.OperationNumber,
 		arg.Content,
+		arg.OperationManual,
 		arg.ExpectedVersion,
 	)
 	if err != nil {

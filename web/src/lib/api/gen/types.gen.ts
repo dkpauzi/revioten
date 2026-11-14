@@ -1056,6 +1056,10 @@ export type DocumentRow = {
     process_name?: string;
     operation_number?: string;
     /**
+     * The operation number was typed or pasted, so automatic numbering keeps it (M4.6).
+     */
+    operation_manual: boolean;
+    /**
      * Row content keyed by column field ID.
      */
     content: {
@@ -1122,6 +1126,14 @@ export type ComposeInput = {
 export type PointExclusion = {
     point_id: string;
     reason?: string;
+};
+
+export type DocumentOrder = {
+    row_ids: Array<string>;
+    /**
+     * Number the operations automatically after ordering. Default false.
+     */
+    renumber?: boolean;
 };
 
 export type DocumentRowBatch = {
@@ -4711,6 +4723,41 @@ export type ComposeDocumentResponses = {
 };
 
 export type ComposeDocumentResponse = ComposeDocumentResponses[keyof ComposeDocumentResponses];
+
+export type ReorderDocumentRowsData = {
+    body: DocumentOrder;
+    path: {
+        documentId: string;
+    };
+    query?: never;
+    url: '/api/v1/documents/{documentId}/order';
+};
+
+export type ReorderDocumentRowsErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ReorderDocumentRowsError = ReorderDocumentRowsErrors[keyof ReorderDocumentRowsErrors];
+
+export type ReorderDocumentRowsResponses = {
+    /**
+     * The document after the change.
+     */
+    200: Document;
+};
+
+export type ReorderDocumentRowsResponse = ReorderDocumentRowsResponses[keyof ReorderDocumentRowsResponses];
 
 export type AddDocumentRowData = {
     body: DocumentRowInput;

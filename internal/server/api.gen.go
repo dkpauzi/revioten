@@ -1682,6 +1682,13 @@ type DocumentNumberList struct {
 	NextBefore *string `json:"next_before,omitempty"`
 }
 
+// DocumentOrder defines model for DocumentOrder.
+type DocumentOrder struct {
+	// Renumber Number the operations automatically after ordering. Default false.
+	Renumber *bool    `json:"renumber,omitempty"`
+	RowIds   []string `json:"row_ids"`
+}
+
 // DocumentPartNumber defines model for DocumentPartNumber.
 type DocumentPartNumber struct {
 	Id     string  `json:"id"`
@@ -1695,7 +1702,10 @@ type DocumentRow struct {
 	Content map[string]interface{} `json:"content"`
 
 	// Id Fixed for the life of the row (R-DOC-02).
-	Id              string  `json:"id"`
+	Id string `json:"id"`
+
+	// OperationManual The operation number was typed or pasted, so automatic numbering keeps it (M4.6).
+	OperationManual bool    `json:"operation_manual"`
 	OperationNumber *string `json:"operation_number,omitempty"`
 	Position        int     `json:"position"`
 	ProcessId       *string `json:"process_id,omitempty"`
@@ -3226,6 +3236,9 @@ type ComposeDocumentJSONRequestBody = ComposeInput
 // SetDocumentHeaderJSONRequestBody defines body for SetDocumentHeader for application/json ContentType.
 type SetDocumentHeaderJSONRequestBody = DocumentHeader
 
+// ReorderDocumentRowsJSONRequestBody defines body for ReorderDocumentRows for application/json ContentType.
+type ReorderDocumentRowsJSONRequestBody = DocumentOrder
+
 // AddDocumentRowJSONRequestBody defines body for AddDocumentRow for application/json ContentType.
 type AddDocumentRowJSONRequestBody = DocumentRowInput
 
@@ -3462,6 +3475,9 @@ type ServerInterface interface {
 	// SetDocumentHeader Replace the header content of a draft document (E-2)
 	// (PUT /api/v1/documents/{documentId}/header)
 	SetDocumentHeader(w http.ResponseWriter, r *http.Request, documentId DocumentId)
+	// ReorderDocumentRows Save a new order of the rows, and number the operations when asked (E-2, M4.6)
+	// (PUT /api/v1/documents/{documentId}/order)
+	ReorderDocumentRows(w http.ResponseWriter, r *http.Request, documentId DocumentId)
 	// AddDocumentRow Add a row at the end of a draft document (E-2)
 	// (POST /api/v1/documents/{documentId}/rows)
 	AddDocumentRow(w http.ResponseWriter, r *http.Request, documentId DocumentId)
@@ -4693,6 +4709,32 @@ func (siw *ServerInterfaceWrapper) SetDocumentHeader(w http.ResponseWriter, r *h
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.SetDocumentHeader(w, r, documentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReorderDocumentRows operation middleware
+func (siw *ServerInterfaceWrapper) ReorderDocumentRows(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", r.PathValue("documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReorderDocumentRows(w, r, documentId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -6511,6 +6553,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/documents/{documentId}/header", wrapper.SetDocumentHeader)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/documents/{documentId}/composition", wrapper.GetDocumentComposition)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/documents/{documentId}/composition", wrapper.ComposeDocument)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/documents/{documentId}/order", wrapper.ReorderDocumentRows)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/rows", wrapper.AddDocumentRow)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/rows/batch", wrapper.AddDocumentRows)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/documents/{documentId}/rows/{rowId}", wrapper.DeleteDocumentRow)
@@ -8196,6 +8239,46 @@ type SetDocumentHeaderdefaultJSONResponse struct {
 }
 
 func (response SetDocumentHeaderdefaultJSONResponse) VisitSetDocumentHeaderResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReorderDocumentRowsRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+	Body       *ReorderDocumentRowsJSONRequestBody
+}
+
+type ReorderDocumentRowsResponseObject interface {
+	VisitReorderDocumentRowsResponse(w http.ResponseWriter) error
+}
+
+type ReorderDocumentRows200JSONResponse Document
+
+func (response ReorderDocumentRows200JSONResponse) VisitReorderDocumentRowsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReorderDocumentRowsdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ReorderDocumentRowsdefaultJSONResponse) VisitReorderDocumentRowsResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -11034,6 +11117,9 @@ type StrictServerInterface interface {
 	// SetDocumentHeader Replace the header content of a draft document (E-2)
 	// (PUT /api/v1/documents/{documentId}/header)
 	SetDocumentHeader(ctx context.Context, request SetDocumentHeaderRequestObject) (SetDocumentHeaderResponseObject, error)
+	// ReorderDocumentRows Save a new order of the rows, and number the operations when asked (E-2, M4.6)
+	// (PUT /api/v1/documents/{documentId}/order)
+	ReorderDocumentRows(ctx context.Context, request ReorderDocumentRowsRequestObject) (ReorderDocumentRowsResponseObject, error)
 	// AddDocumentRow Add a row at the end of a draft document (E-2)
 	// (POST /api/v1/documents/{documentId}/rows)
 	AddDocumentRow(ctx context.Context, request AddDocumentRowRequestObject) (AddDocumentRowResponseObject, error)
@@ -12451,6 +12537,39 @@ func (sh *strictHandler) SetDocumentHeader(w http.ResponseWriter, r *http.Reques
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(SetDocumentHeaderResponseObject); ok {
 		if err := validResponse.VisitSetDocumentHeaderResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ReorderDocumentRows operation middleware
+func (sh *strictHandler) ReorderDocumentRows(w http.ResponseWriter, r *http.Request, documentId DocumentId) {
+	var request ReorderDocumentRowsRequestObject
+
+	request.DocumentId = documentId
+
+	var body ReorderDocumentRowsJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReorderDocumentRows(ctx, request.(ReorderDocumentRowsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReorderDocumentRows")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReorderDocumentRowsResponseObject); ok {
+		if err := validResponse.VisitReorderDocumentRowsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

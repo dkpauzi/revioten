@@ -144,7 +144,7 @@ func toAPIDocument(d document.Document) Document {
 		}
 		out.Rows = append(out.Rows, DocumentRow{
 			Id: r.ID, Position: r.Position, Version: r.Version, ProcessId: optional(r.ProcessID), ProcessName: optional(r.ProcessName),
-			OperationNumber: optional(r.OperationNumber), Content: content, TemplatePointId: optional(r.TemplatePointID),
+			OperationNumber: optional(r.OperationNumber), Content: content, TemplatePointId: optional(r.TemplatePointID), OperationManual: r.OperationManual,
 		})
 	}
 	return out
@@ -190,4 +190,14 @@ func (a *apiServer) ComposeDocument(ctx context.Context, req ComposeDocumentRequ
 		return nil, err
 	}
 	return ComposeDocument200JSONResponse(toAPIDocument(d)), nil
+}
+
+// ReorderDocumentRows menjawab PUT /api/v1/documents/{documentId}/order (M4.6).
+func (a *apiServer) ReorderDocumentRows(ctx context.Context, req ReorderDocumentRowsRequestObject) (ReorderDocumentRowsResponseObject, error) {
+	in := document.Order{RowIDs: req.Body.RowIds, Renumber: req.Body.Renumber != nil && *req.Body.Renumber}
+	d, err := a.documents.Reorder(ctx, actorFrom(ctx), req.DocumentId, in)
+	if err != nil {
+		return nil, err
+	}
+	return ReorderDocumentRows200JSONResponse(toAPIDocument(d)), nil
 }

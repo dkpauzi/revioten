@@ -102,7 +102,7 @@ ORDER BY p.number;
 
 -- name: ListDocumentRows :many
 SELECT r.id, r.position, r.process_id, n.name AS process_name, r.operation_number, r.content, r.version,
-       r.template_point_id, r.template_version_id
+       r.template_point_id, r.template_version_id, r.operation_manual
 FROM document_rows r
 LEFT JOIN process_names n ON n.process_id = r.process_id AND n.kind = 'display'
 WHERE r.document_id = $1
@@ -110,8 +110,11 @@ ORDER BY r.position;
 
 
 -- name: AddDocumentRow :one
-INSERT INTO document_rows (document_id, position, process_id, operation_number, content)
-VALUES ($1, (SELECT coalesce(max(position), 0) + 1 FROM document_rows WHERE document_id = $1), $2, $3, $4)
+-- Nomor operasi yang dikirim saat baris dibuat berarti diketik atau ditempel
+-- penyusun, jadi ditandai manual (M4.6).
+INSERT INTO document_rows (document_id, position, process_id, operation_number, content, operation_manual)
+VALUES ($1, (SELECT coalesce(max(position), 0) + 1 FROM document_rows WHERE document_id = $1), $2, sqlc.narg(operation_number), $3,
+        sqlc.narg(operation_number)::text IS NOT NULL)
 RETURNING id, position;
 
 
@@ -119,7 +122,8 @@ RETURNING id, position;
 -- UpdateDocumentRow hanya berhasil bila versi baris masih sama dengan yang
 -- dibaca penyusun (M4.3); versinya lalu naik satu.
 UPDATE document_rows
-SET process_id = $3, operation_number = $4, content = $5, version = version + 1, updated_at = now()
+SET process_id = $3, operation_number = $4, content = $5, operation_manual = sqlc.arg(operation_manual),
+    version = version + 1, updated_at = now()
 WHERE id = $1 AND document_id = $2 AND version = sqlc.arg(expected_version);
 
 
@@ -183,3 +187,20 @@ ON CONFLICT (document_id, point_id) DO UPDATE SET reason = EXCLUDED.reason, excl
 
 -- name: ClearPointExclusion :exec
 DELETE FROM document_point_exclusions WHERE document_id = $1 AND point_id = $2;
+
+
+-- M4.6: urutan dan nomor operasi.
+
+
+-- name: SetRowPosition :exec
+-- SetRowPosition memindahkan satu baris. Batasan unik urutan ditunda sampai
+-- akhir transaksi, jadi baris boleh bertukar tempat di tengah jalan.
+UPDATE document_rows SET position = $3 WHERE id = $1 AND document_id = $2;
+
+
+-- name: SetRowOperationNumber :exec
+-- SetRowOperationNumber mengisi nomor operasi otomatis. Versi baris naik,
+-- supaya layar yang masih memegang nomor lama tidak menimpanya (M4.3).
+UPDATE document_rows
+SET operation_number = $3, operation_manual = false, version = version + 1, updated_at = now()
+WHERE id = $1 AND document_id = $2;

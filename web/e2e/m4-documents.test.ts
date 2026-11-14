@@ -9,6 +9,8 @@ import { en } from '../src/lib/i18n/en.ts';
 import { createWorkAccount, ensureProjectGroup, logIn, logInFirstTime, logOut, openFromMenu } from './helpers.ts';
 
 test('penyusun membuat dokumen CP, lalu baris dan header tersimpan', async ({ page }) => {
+	// Test ini mengikuti satu dokumen dari M4.1 sampai M4.6, jadi batas waktunya dilonggarkan.
+	test.slow();
 	await logIn(page);
 	await ensureProjectGroup(page, 'GR1');
 	await page.evaluate(async () => {
@@ -186,4 +188,36 @@ test('penyusun membuat dokumen CP, lalu baris dan header tersimpan', async ({ pa
 	await expect(cell(2, method)).toHaveText('X-ray');
 	await expect(cell(3, '_process')).toHaveText('');
 	await expect(cell(3, method)).toHaveText('Pull test');
+
+	// M4.6 (R-CMP-01): urutan langkah proses diubah dan tersimpan. Empat baris
+	// tadi adalah empat langkah: Dokumen Reflow, tanpa proses, Dokumen Reflow,
+	// tanpa proses. Nomor operasinya diketik atau ditempel, jadi tidak diubah.
+	await page.getByRole('button', { name: en.orderOpen }).click();
+	const steps = page.locator('.steps li');
+	await expect(steps).toHaveCount(4);
+	// Langkah ketiga naik dan bergabung dengan langkah pertama (proses yang sama).
+	await page.getByRole('button', { name: en.orderMoveUp.replace('{name}', '3. Dokumen Reflow') }).click();
+	await expect(steps).toHaveCount(3);
+	await expect(steps.first()).toContainText(en.orderStepRows.replace('{n}', '2'));
+	await expect(steps.first().getByTestId('order-number')).toHaveText(en.orderNumber.replace('{number}', '10, 30'));
+	await page.getByRole('button', { name: en.orderSave }).click();
+	await expect(page.getByRole('status')).toHaveText(en.orderSaved);
+	await expect(cell(1, product)).toHaveText('Void under BGA');
+	await expect(cell(1, '_operation')).toHaveText('30');
+	await expect(cell(2, '_operation')).toHaveText('20');
+
+	// Baris baru tanpa nomor: diseret ke tempat kedua, lalu mendapat nomor otomatis.
+	await page.getByRole('button', { name: en.documentRowAdd }).click();
+	await expect(rows).toHaveCount(5);
+	await page.getByRole('button', { name: en.orderOpen }).click();
+	await expect(steps).toHaveCount(4);
+	await steps.nth(3).dragTo(steps.nth(1));
+	await expect(steps.nth(1).getByTestId('order-number')).toHaveText(en.orderNumber.replace('{number}', '20'));
+	await page.getByRole('button', { name: en.orderSave }).click();
+	await expect(page.getByRole('status')).toHaveText(en.orderSaved);
+	await page.reload();
+	await expect(rows).toHaveCount(5);
+	await expect(cell(2, '_operation')).toHaveText('20');
+	await expect(cell(2, product)).toHaveText('');
+	await expect(cell(3, method)).toHaveText('AOI 100%');
 });

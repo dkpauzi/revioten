@@ -31,7 +31,7 @@ func TestDocumentEndpoints(t *testing.T) {
 		`"document_type":{"id":"dt-3","key":"cp","name":"CP"},"revision":0,"status":"draft","form_set_version_id":"fsv-1",` +
 		`"form_set_name":"AIAG 4th set","format_version_id":"v-3","models":[{"id":"m-1","name":"K-125"}],"part_numbers":[],` +
 		`"route":{"id":"r-1","name":"Up to GM"},"header":{"f-1":"Line 1"},"header_version":4,` +
-		`"rows":[{"id":"row-1","position":1,"version":2,"process_id":"p-1","process_name":"SMT","operation_number":"10","content":{"f-2":"Paste"}}],"set":[],` +
+		`"rows":[{"id":"row-1","position":1,"version":2,"operation_manual":false,"process_id":"p-1","process_name":"SMT","operation_number":"10","content":{"f-2":"Paste"}}],"set":[],` +
 		`"created_at":"2026-11-12T08:00:00Z","updated_at":"2026-11-12T08:00:00Z"}`
 	if rec.Code != http.StatusOK || fake.got != (called{method: "Get", id: "d-1"}) || !sameJSON(t, rec.Body.String(), want) {
 		t.Errorf("baca: status %d\n%s\ningin\n%s", rec.Code, rec.Body.String(), want)
@@ -92,5 +92,11 @@ func TestDocumentEndpoints(t *testing.T) {
 	wantCompose := document.Compose{VersionID: "pv-1", Include: []string{"pp-2"}, Exclude: []document.Exclusion{{PointID: "pp-1", Reason: "No MSD parts"}}}
 	if rec.Code != http.StatusOK || !reflect.DeepEqual(fake.gotCompose, wantCompose) {
 		t.Errorf("rakit: status %d, %+v", rec.Code, fake.gotCompose)
+	}
+
+	// M4.6: urutan baru dan penomoran otomatis.
+	rec = srv.do(http.MethodPut, "/api/v1/documents/d-1/order", `{"row_ids":["row-2","row-1"],"renumber":true}`)
+	if rec.Code != http.StatusOK || !reflect.DeepEqual(fake.gotOrder, document.Order{RowIDs: []string{"row-2", "row-1"}, Renumber: true}) {
+		t.Errorf("urut: status %d, %+v", rec.Code, fake.gotOrder)
 	}
 }

@@ -82,6 +82,9 @@ type Row struct {
 	// baris yang diketik atau ditempel sendiri (R-CMP-04, M4.5).
 	TemplatePointID   string
 	TemplateVersionID string
+	// OperationManual: nomor operasi diketik atau ditempel penyusun, jadi
+	// penomoran otomatis tidak menimpanya (M4.6).
+	OperationManual bool
 }
 
 // Document adalah satu dokumen lengkap dengan header dan barisnya.
@@ -505,7 +508,7 @@ func (s *Service) UpdateRow(ctx context.Context, actor access.Actor, id, rowID s
 		}
 		changed, err := q.UpdateDocumentRow(ctx, db.UpdateDocumentRowParams{
 			ID: rowID, DocumentID: d.ID, ProcessID: optional(in.ProcessID), OperationNumber: optional(operation), Content: content,
-			ExpectedVersion: int32(in.Version),
+			ExpectedVersion: int32(in.Version), OperationManual: isManual(d.Rows[i], operation),
 		})
 		if err != nil {
 			return "", nil, err
@@ -671,7 +674,7 @@ func getDocument(ctx context.Context, q *db.Queries, id string) (Document, error
 	}
 	for _, row := range rows {
 		item := Row{ID: row.ID, Position: int(row.Position), ProcessID: deref(row.ProcessID), ProcessName: deref(row.ProcessName), OperationNumber: deref(row.OperationNumber), Version: int(row.Version),
-			TemplatePointID: deref(row.TemplatePointID), TemplateVersionID: deref(row.TemplateVersionID)}
+			TemplatePointID: deref(row.TemplatePointID), TemplateVersionID: deref(row.TemplateVersionID), OperationManual: row.OperationManual}
 		if err := json.Unmarshal(row.Content, &item.Content); err != nil {
 			return Document{}, fmt.Errorf("membaca baris: %w", err)
 		}

@@ -567,6 +567,11 @@ export function composeDocument(id: string, input: ComposeInput, fetchFn: typeof
 	return call<Document>(fetchFn, itemPath('documents', id) + '/composition', jsonRequest('PUT', input));
 }
 
+// reorderDocumentRows memanggil PUT /api/v1/documents/{id}/order (E-2, M4.6).
+export function reorderDocumentRows(id: string, rowIds: string[], renumber: boolean, fetchFn: typeof fetch = fetch): Promise<ApiResult<Document>> {
+	return call<Document>(fetchFn, itemPath('documents', id) + '/order', jsonRequest('PUT', { row_ids: rowIds, renumber }));
+}
+
 // updateDocumentRow memanggil PUT /api/v1/documents/{id}/rows/{rowId} (E-2).
 export function updateDocumentRow(id: string, rowId: string, input: DocumentRowInput, fetchFn: typeof fetch = fetch): Promise<ApiResult<Document>> {
 	return call<Document>(fetchFn, `${itemPath('documents', id)}/rows/${encodeURIComponent(rowId)}`, jsonRequest('PUT', input));

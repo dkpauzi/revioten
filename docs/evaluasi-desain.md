@@ -112,9 +112,10 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-88 | Label kembar di form asli, sedangkan label harus unik per area | Kontradiksi | M3.1, Tahap 6 | Tidak (perlu sebelum Tahap 6) | Diputuskan (D-147) |
 | E-89 | Nama proses di PFMEA AIAG-VDA: diketik atau diisi dari master proses | Kontradiksi | M4.1, M4.5 | Tidak (perlu sebelum M4.1) | Diputuskan (D-144) |
 | E-90 | Batas isian dokumen, dan dokumen umum (kode ZZ) tanpa model | Celah | M4.1 | Tidak | Terbuka |
-| E-91 | Tempel dari Excel: ke mana isi sel janggal | Ambigu | M4.4 | Tidak | Terbuka |
-| E-92 | Isi poin per kolom: kolom mana yang dianggap sama di dua form set | Celah | M4.5 | Tidak | Terbuka |
+| E-91 | Tempel dari Excel: ke mana isi sel janggal | Ambigu | M4.4 | Tidak | Diputuskan (D-149) |
+| E-92 | Isi poin per kolom: kolom mana yang dianggap sama di dua form set | Celah | M4.5 | Tidak | Diputuskan (D-150) |
 | E-93 | Perakitan: dokumen dengan beberapa model, dan pasangan poin | Celah | M4.5 | Tidak | Terbuka |
+| E-94 | Urutan langkah: per dokumen, proses yang berulang, dan jarak nomor operasi | Celah | M4.6 | Tidak | Terbuka |
 
 ## Keputusan 4 November 2026
 
@@ -1666,8 +1667,8 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (a) sekarang; (b) bila dalam pemakaian ternyata tanda di pratinjau saja kurang.
 - **Asumsi sementara di kode (ASUMSI E-91):** opsi (a). Tanggal hanya diterima sebagai 2026-11-13 atau 13-Nov-26, karena bentuk 03/04/2026 bisa tertukar hari dan bulannya.
 - **Menghambat milestone?** Tidak
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan (D-149)
+- **Keputusan pemilik:** 14 November 2026: "E-91 untuk saat ini dikosongkan" (opsi a). Pemilik juga menyatakan impor Excel dikesampingkan dulu (D-151).
 
 ### E-92 · Isi poin per kolom: kolom mana yang dianggap sama di dua form set
 
@@ -1682,8 +1683,8 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (b) untuk CP, karena empat pasangan di atas adalah tafsiran; pasangan PFMEA cukup jelas.
 - **Asumsi sementara di kode (ASUMSI E-92):** pasangan di migrasi 00024. Poin hanya mengisi kolom teks dan rating; kolom pilihan, simbol, dan tanggal diisi di dokumen. Nilai poin yang tidak cocok dengan kolom form dokumen dilewati saat perakitan.
 - **Menghambat milestone?** Tidak
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan (D-150)
+- **Keputusan pemilik:** 14 November 2026: "E-92 saya setuju". Dicatat sebagai setuju dengan pasangan kolom di migrasi 00024 (tafsiran Claude Code atas jawaban itu).
 
 ### E-93 · Perakitan: dokumen dengan beberapa model, dan pasangan poin
 
@@ -1698,6 +1699,22 @@ Salin blok ini untuk setiap temuan baru.
   - (c) Satu baris per varian yang berbeda.
 - **Rekomendasi Claude Code (usulan):** (a).
 - **Asumsi sementara di kode (ASUMSI E-93):** opsi (a). Tawaran mencoret pasangan belum dibangun.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-94 · Urutan langkah: per dokumen, proses yang berulang, dan jarak nomor operasi
+
+- **Tanggal dan milestone:** 14 November 2026, M4.6.
+- **Jenis:** Celah
+- **Rujukan:** R-CMP-01, R-DOC-04, D-122, D-123.
+- **Temuan:** R-CMP-01 menyebut "the model's structure and drag and drop ordering" dan nomor operasi otomatis, tetapi tidak menyebut (1) apa satu "langkah" itu bila proses yang sama muncul dua kali di alur (misalnya AOI sesudah SMT sisi bawah dan sesudah SMT sisi atas), (2) apakah urutan di satu dokumen ikut mengubah PFD, PFMEA, dan CP lain di set yang sama, dan (3) jarak nomor operasi otomatis.
+- **Dampak bila dibiarkan:** urutan dan nomor operasi tiga dokumen satu model bisa berbeda satu sama lain.
+- **Opsi:**
+  - (a) Seperti sekarang: langkah adalah baris berurutan dengan proses yang sama, urutan disimpan per dokumen, nomor otomatis 10, 20, 30.
+  - (b) Urutan langkah menjadi milik set (atau PFD), dan PFMEA serta CP mengikutinya. Ini butuh "langkah" sebagai data sendiri, dan cocok dibangun bersama diagram PFD (M4.10) dan Process Flow di CP (D-122).
+- **Rekomendasi Claude Code (usulan):** (a) sekarang, (b) saat PFD menjadi sumber alur.
+- **Asumsi sementara di kode (ASUMSI E-94):** opsi (a).
 - **Menghambat milestone?** Tidak
 - **Status:** Terbuka
 - **Keputusan pemilik:**

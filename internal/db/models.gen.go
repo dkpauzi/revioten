@@ -146,6 +146,7 @@ type DocumentRow struct {
 	Version           int32
 	TemplatePointID   *string
 	TemplateVersionID *string
+	OperationManual   bool
 }
 
 type DocumentType struct {

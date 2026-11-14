@@ -5,9 +5,10 @@
 	// D-123); kolom yang dihitung tidak diketik.
 	import { untrack } from 'svelte';
 	import { page } from '$app/state';
-	import { addDocumentRow, addDocumentRows, deleteDocumentRow, getDocument, getFormatVersion, listProcesses, setDocumentHeader, updateDocumentRow, type ApiFailure } from '#lib/api/client.ts';
+	import { addDocumentRow, addDocumentRows, deleteDocumentRow, reorderDocumentRows, getDocument, getFormatVersion, listProcesses, setDocumentHeader, updateDocumentRow, type ApiFailure } from '#lib/api/client.ts';
 	import type { Document, DocumentRow, DocumentRowInput, FormatVersion, Process } from '#lib/api/gen/index.ts';
 	import ComposePanel from '#lib/documents/ComposePanel.svelte';
+	import OrderPanel from '#lib/documents/OrderPanel.svelte';
 	import PastePanel from '#lib/documents/PastePanel.svelte';
 	import Workbook from '#lib/documents/Workbook.svelte';
 	import { cleanContent, typedFields } from '#lib/documents.ts';
@@ -30,6 +31,8 @@
 	let pasting = $state(false);
 	// composing: panel perakitan dari process template sedang dibuka (M4.5).
 	let composing = $state(false);
+	// ordering: panel urutan dan nomor operasi sedang dibuka (M4.6).
+	let ordering = $state(false);
 
 	// Isian header.
 	let header = $state<Record<string, string>>({});
@@ -45,6 +48,7 @@
 			doc = null;
 			pasting = false;
 			composing = false;
+			ordering = false;
 			load(id);
 		});
 	});
@@ -187,6 +191,23 @@
 		message = t('composeDone', { process });
 	}
 
+	// saveOrder menyimpan urutan baris dan, bila diminta, nomor operasi otomatis (M4.6).
+	async function saveOrder(rowIds: string[], renumber: boolean): Promise<boolean> {
+		reset();
+		if (!doc) {
+			return false;
+		}
+		const result = await reorderDocumentRows(doc.id, rowIds, renumber);
+		if (!result.ok) {
+			showErrors(result.error);
+			return false;
+		}
+		use(result.data);
+		ordering = false;
+		message = t('orderSaved');
+		return true;
+	}
+
 	async function removeRow(rowId: string) {
 		reset();
 		if (!doc) {
@@ -276,6 +297,7 @@
 				<button type="button" onclick={addRow}>{t('documentRowAdd')}</button>
 				{#if !pasting}<button type="button" onclick={() => (pasting = true)}>{t('pasteOpen')}</button>{/if}
 				{#if !composing}<button type="button" onclick={() => (composing = true)}>{t('composeOpen')}</button>{/if}
+				{#if !ordering}<button type="button" onclick={() => (ordering = true)}>{t('orderOpen')}</button>{/if}
 			</p>
 		{/if}
 	</section>
@@ -285,6 +307,12 @@
 			{#key doc.id}
 				<ComposePanel {doc} oncomposed={composed} oncancel={() => (composing = false)} />
 			{/key}
+		</section>
+	{/if}
+
+	{#if canEdit && ordering}
+		<section>
+			<OrderPanel {doc} onsave={saveOrder} oncancel={() => (ordering = false)} />
 		</section>
 	{/if}
 
