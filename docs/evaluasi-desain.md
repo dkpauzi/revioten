@@ -119,16 +119,16 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-95 | Diagram PFD: cabang keputusan, rework, dan konektor halaman | Celah | M4.10 | Tidak | Terbuka |
 | E-96 | Siapa yang mengubah master dokumen terkait | Celah | D-130 | Tidak | Diputuskan (D-157) |
 | E-97 | Bagian per PCB: berlaku untuk seluruh set, dan cetakan | Celah | D-155 | Tidak | Diputuskan (D-160) |
-| E-98 | Nomor rujukan perubahan | Celah | M5.1 | Tidak | Terbuka |
-| E-99 | Batas dan jenis berkas lampiran, tanpa antivirus | Celah | M5.2 | Tidak | Terbuka |
-| E-100 | Perubahan yang ditolak, dan hak V-1 tanpa jabatan | Celah | M5.3 | Tidak | Terbuka |
-| E-101 | Arti "versi baris" dan konflik saat perubahan masuk ke draft terbuka | Ambigu | M5.4 | Tidak | Terbuka |
-| E-102 | Siapa "penyusun" draft, dan status perubahan sesudah rilis | Celah | M5.5 | Tidak | Terbuka |
-| E-103 | Riwayat "per proses" dan label kolom di diff | Ambigu | M5.6 | Tidak | Terbuka |
-| E-104 | Isi daftar periksa dampak: nomor bebas atau dari master, alasan, dan kapan diisi | Celah | M5.7 | Tidak | Terbuka |
-| E-105 | Rincian propagasi template yang belum diputuskan | Celah | M5.8 | Tidak | Terbuka |
-| E-106 | Rincian yokoten: sumber, target, keputusan, dan isi | Celah | M5.9 | Tidak | Terbuka |
-| E-107 | Cakupan perubahan surut SQAM dan hubungannya dengan format template | Celah | M5.10 | Tidak | Terbuka |
+| E-98 | Nomor rujukan perubahan | Celah | M5.1 | Tidak | Diputuskan (D-162) |
+| E-99 | Batas dan jenis berkas lampiran, tanpa antivirus | Celah | M5.2 | Tidak | Diputuskan (D-163) |
+| E-100 | Perubahan yang ditolak, dan hak V-1 tanpa jabatan | Celah | M5.3 | Tidak | Diputuskan (D-164) |
+| E-101 | Arti "versi baris" dan konflik saat perubahan masuk ke draft terbuka | Ambigu | M5.4 | Tidak | Diputuskan (D-165) |
+| E-102 | Siapa "penyusun" draft, dan status perubahan sesudah rilis | Celah | M5.5 | Tidak | Diputuskan (D-166) |
+| E-103 | Riwayat "per proses" dan label kolom di diff | Ambigu | M5.6 | Tidak | Diputuskan (D-167) |
+| E-104 | Isi daftar periksa dampak: nomor bebas atau dari master, alasan, dan kapan diisi | Celah | M5.7 | Tidak | Diputuskan (D-168) |
+| E-105 | Rincian propagasi template yang belum diputuskan | Celah | M5.8 | Tidak | Diputuskan (D-169) |
+| E-106 | Rincian yokoten: sumber, target, keputusan, dan isi | Celah | M5.9 | Tidak | Diputuskan (D-170) |
+| E-107 | Cakupan perubahan surut SQAM dan hubungannya dengan format template | Celah | M5.10 | Tidak | Diputuskan (D-171) |
 
 ## Keputusan 4 November 2026
 
@@ -1815,8 +1815,8 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (c) bila WI punya formulirnya; bila tidak, (a).
 - **Asumsi sementara di kode (ASUMSI E-98):** opsi (a), dari kolom identity PostgreSQL. Nomor bisa berlubang bila satu pengajuan gagal di tengah transaksi; karena ini bukan nomor dokumen, aturan tanpa lubang R-NUM-03 tidak dipakai.
 - **Menghambat milestone?** Tidak
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan (D-162)
+- **Keputusan pemilik:** 14 November 2026, "untuk saat ini saya menerima semua saran anda" (D-162).
 
 ### E-99 · Batas dan jenis berkas lampiran, tanpa antivirus
 
@@ -1831,8 +1831,8 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (a) sekarang, (c) sebelum dipakai sungguhan.
 - **Asumsi sementara di kode (ASUMSI E-99):** opsi (a). Berkas disimpan di `ATTACHMENT_DIR` (bawaan `data/attachments`) dengan nama SHA-256 isinya, selalu diunduh sebagai attachment, dan lampiran yang dilepas hanya ditandai (catatan dan berkas tetap ada).
 - **Menghambat milestone?** Tidak
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan (D-163)
+- **Keputusan pemilik:** 14 November 2026, "untuk saat ini saya menerima semua saran anda" (D-163).
 
 ### E-100 · Perubahan yang ditolak, dan hak V-1 tanpa jabatan
 
@@ -1846,8 +1846,8 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (1a) dan (2a).
 - **Asumsi sementara di kode (ASUMSI E-100):** (1a) dan (2a). Pemohon tidak pernah memverifikasi permintaannya sendiri, juga dijaga CHECK di database.
 - **Menghambat milestone?** Tidak
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan (D-164)
+- **Keputusan pemilik:** 14 November 2026, "untuk saat ini saya menerima semua saran anda" (D-164).
 
 ### E-101 · Arti "versi baris" dan konflik saat perubahan masuk ke draft terbuka
 
@@ -1861,8 +1861,8 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (1a) dan (2a).
 - **Asumsi sementara di kode (ASUMSI E-101):** (1a) dan (2a). Tabel `document_revisions` mencatat setiap revisi; `documents.status` released berarti tidak ada draft terbuka, dan trigger menolak perubahan baris dan header dokumen seperti itu.
 - **Menghambat milestone?** Tidak
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan (D-165)
+- **Keputusan pemilik:** 14 November 2026, "untuk saat ini saya menerima semua saran anda" (D-165).
 
 ### E-102 · Siapa "penyusun" draft, dan status perubahan sesudah rilis
 
@@ -1876,8 +1876,8 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (1a) sekarang, (1c) sesudah M6.1; (2a) di M5.6 atau M6.7.
 - **Asumsi sementara di kode (ASUMSI E-102):** (1a): entri audit `document.*` oleh orang itu pada dokumen itu sesudah `document.released` terakhir, kecuali `document.draft_opened`. Operasi satu set (rakit, urut) tercatat pada dokumen yang dibuka saja. Status perubahan tetap Accepted (2b).
 - **Menghambat milestone?** Tidak
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan (D-166)
+- **Keputusan pemilik:** 14 November 2026, "untuk saat ini saya menerima semua saran anda" (D-166).
 
 ### E-103 · Riwayat "per proses" dan label kolom di diff
 
@@ -1891,8 +1891,8 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (1a) sekarang, (1b) bersama yokoten (M5.9) bila dibutuhkan; (2a).
 - **Asumsi sementara di kode (ASUMSI E-103):** (1a) dan (2a). Baris dicocokkan lewat ID tetap; baris yang dipindah dicari dengan LCS, jadi baris yang hanya bergeser karena baris lain tidak dianggap dipindah. Teks kosong dianggap sama dengan sel kosong.
 - **Menghambat milestone?** Tidak
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan (D-167)
+- **Keputusan pemilik:** 14 November 2026, "untuk saat ini saya menerima semua saran anda" (D-167).
 
 ### E-104 · Isi daftar periksa dampak: nomor bebas atau dari master, alasan, dan kapan diisi
 
@@ -1906,8 +1906,8 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (1b) dan (2a), dengan catatan verifikator bisa melihat daftar sebelum memutuskan.
 - **Asumsi sementara di kode (ASUMSI E-104):** (1a) dan (2a). Layar menyarankan satu baris per jenis dokumen, dan dokumen terdampak perubahan sudah ditandai terdampak. Kategori 4M tetap isian perubahan (M5.1).
 - **Menghambat milestone?** Tidak
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan (D-168)
+- **Keputusan pemilik:** 14 November 2026, "untuk saat ini saya menerima semua saran anda" (D-168).
 
 ### E-105 · Rincian propagasi template yang belum diputuskan
 
@@ -1924,8 +1924,8 @@ Salin blok ini untuk setiap temuan baru.
   - Konflik: baris yang isinya berbeda dari versi template asalnya. Keep membiarkan baris itu dan menghitungnya; overwrite menimpanya. Propagasi yang sama tidak bisa dijalankan dua kali untuk dokumen yang sudah ada di perubahan yang belum ditolak.
 - **Rekomendasi Claude Code (usulan):** terima asumsi di atas sebagai keputusan, dan putuskan R-CMP-03 sebelum yokoten.
 - **Menghambat milestone?** Tidak
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan (D-169)
+- **Keputusan pemilik:** 14 November 2026, "untuk saat ini saya menerima semua saran anda" (D-169).
 
 ### E-106 · Rincian yokoten: sumber, target, keputusan, dan isi
 
@@ -1943,8 +1943,8 @@ Salin blok ini untuk setiap temuan baru.
   - Kemajuan: belum diputuskan, tidak berlaku, menunggu verifikasi, ditolak, dalam draft (ada dokumen target yang belum terbit), terbit (semua dokumen target terbit).
 - **Rekomendasi Claude Code (usulan):** terima (1) sampai (4) dan (6); untuk (5) pertimbangkan "salin baris dari sumber" sebagai pilihan di adapt, dengan asal baris tercatat (R-DOC-02).
 - **Menghambat milestone?** Tidak
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan (D-170)
+- **Keputusan pemilik:** 14 November 2026, "untuk saat ini saya menerima semua saran anda" (D-170).
 
 ### E-107 · Cakupan perubahan surut SQAM dan hubungannya dengan format template
 
@@ -1959,8 +1959,8 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (1b), (2b) sesudah Q-07 terjawab, dan (3a).
 - **Asumsi sementara di kode (ASUMSI E-107):** (1a), (2a), dan (3a). Rujukan revisi SQAM dan tanggal berlaku wajib, dijaga juga CHECK di database.
 - **Menghambat milestone?** Tidak
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan (D-171)
+- **Keputusan pemilik:** 14 November 2026, "untuk saat ini saya menerima semua saran anda" (D-171).
 
 
 ## Usulan desain UI (UX-01 sampai UX-07): dampak ke M0 sampai M3 dan saran
