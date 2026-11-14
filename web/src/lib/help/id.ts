@@ -277,14 +277,15 @@ export const helpId: HelpContent = {
 		{
 			id: 'changes',
 			title: 'Perubahan',
-			who: 'Penyusun',
+			who: 'Penyusun, Verifikator',
 			intro: 'Setiap revisi PFD, PFMEA, atau CP berangkat dari satu perubahan: pemicunya, jenis perubahan, alasannya, dan dokumen yang terdampak.',
 			steps: [
 				'Buka {navGroupDocuments}, lalu {navChanges}, dan pilih customer.',
 				'Isi {changeTrigger} (misalnya Customer claim), {changeType}, dan bila perlu {changeFourM} serta {changeReference}.',
 				'Tulis {changeReason}, centang setiap dokumen terdampak di {changeDocuments}, lalu tekan {changeSubmit}.',
 				'Perubahan mendapat nomor seperti [[CHG-0001]]. Buka perubahan itu untuk menambah atau melepas dokumen terdampak selama masih diajukan.',
-				'Di {changeAttachments}, pilih berkas di {changeAttachmentAdd} lalu tekan {changeAttachmentUpload}, misalnya laporan 8D atau foto NG. Tekan nama berkas untuk mengunduhnya.'
+				'Di {changeAttachments}, pilih berkas di {changeAttachmentAdd} lalu tekan {changeAttachmentUpload}, misalnya laporan 8D atau foto NG. Tekan nama berkas untuk mengunduhnya.',
+				'Verifikator (Project Engineer atau Project Leader dari Project Group customer, atau APQP/PPAP Controller) membuka perubahan, menulis {changeVerifyNote}, lalu menekan {changeAccept} atau {changeReject}. Pemohon tidak bisa memverifikasi perubahannya sendiri.'
 			],
 			tips: ['Perubahan selalu menunjuk paling sedikit satu dokumen, jadi dokumen terakhir tidak bisa dilepas.', 'Lampiran paling besar 20 MB. Lampiran yang dilepas tetap tercatat di audit log.']
 		},

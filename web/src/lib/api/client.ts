@@ -43,6 +43,7 @@ import type {
 	RowDifferenceList,
 	Change,
 	ChangeList,
+	ChangeVerificationInput,
 	NewChange,
 	NewDocumentSection,
 	DocumentSectionUpdate,
@@ -701,6 +702,11 @@ export function addChangeAttachment(id: string, file: File, fetchFn: typeof fetc
 // removeChangeAttachment memanggil DELETE /api/v1/changes/{id}/attachments/{attachmentId} (E-3).
 export function removeChangeAttachment(id: string, attachmentId: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<Change>> {
 	return call<Change>(fetchFn, changeAttachmentUrl(id, attachmentId), { method: 'DELETE' });
+}
+
+// verifyChange memanggil POST /api/v1/changes/{id}/verification (V-1, M5.3).
+export function verifyChange(id: string, input: ChangeVerificationInput, fetchFn: typeof fetch = fetch): Promise<ApiResult<Change>> {
+	return call<Change>(fetchFn, itemPath('changes', id) + '/verification', jsonRequest('POST', input));
 }
 
 // changeAttachmentUrl adalah alamat unduhan satu lampiran (L-4).

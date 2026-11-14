@@ -67,6 +67,10 @@ type Change struct {
 	RequestedByAccountID string
 	CreatedAt            time.Time
 	UpdatedAt            time.Time
+	VerifiedByPersonID   *string
+	VerifiedByAccountID  *string
+	VerifiedAt           *time.Time
+	VerificationNote     *string
 }
 
 type ChangeAttachment struct {

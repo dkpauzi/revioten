@@ -93,6 +93,8 @@ const (
 	ActionChangeDocumentRemoved   = "change.document_removed"      // M5.1
 	ActionChangeAttachmentAdded   = "change.attachment_added"      // M5.2
 	ActionChangeAttachmentRemoved = "change.attachment_removed"    // M5.2
+	ActionChangeAccepted          = "change.accepted"              // M5.3
+	ActionChangeRejected          = "change.rejected"              // M5.3
 	ActionDocumentCopied          = "document.copied"              // M4.7
 	ActionDocumentComposed        = "document.composed"            // M4.5
 	ActionRefDocCreated           = "referenced_document.created"  // D-130

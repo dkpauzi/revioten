@@ -343,7 +343,8 @@ kbd {
 /* Status nomor dokumen (R-NUM-04), warna mengikuti artboard Design system. */
 /* Versi template (M3.4): draft seperti Reserved, terbit seperti Released. */
 .badge[data-status='reserved'],
-.badge[data-status='draft'] {
+.badge[data-status='draft'],
+.badge[data-change-status='submitted'] {
 	background: var(--info-weak);
 	color: var(--info);
 }
@@ -354,7 +355,8 @@ kbd {
 }
 
 .badge[data-status='released'],
-.badge[data-status='published'] {
+.badge[data-status='published'],
+.badge[data-change-status='accepted'] {
 	background: var(--success-weak);
 	color: var(--success);
 }
@@ -364,7 +366,8 @@ kbd {
 	color: var(--text-3);
 }
 
-.badge[data-status='void'] {
+.badge[data-status='void'],
+.badge[data-change-status='rejected'] {
 	background: var(--danger-weak);
 	color: var(--danger);
 }

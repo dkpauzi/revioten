@@ -48,6 +48,7 @@ func TestChangeEndpoints(t *testing.T) {
 		{http.MethodPost, "/api/v1/changes/c-1/documents", `{"document_id":"d-2"}`, called{method: "AddDocument", id: "c-1", input: "d-2"}},
 		{http.MethodDelete, "/api/v1/changes/c-1/documents/d-2", "", called{method: "RemoveDocument", id: "c-1", input: "d-2"}},
 		{http.MethodGet, "/api/v1/documents/d-1/changes", "", called{method: "ForDocument", id: "d-1"}},
+		{http.MethodPost, "/api/v1/changes/c-1/verification", `{"decision":"reject","note":"No 8D"}`, called{method: "Verify", id: "c-1", input: "false:No 8D"}},
 	} {
 		rec := srv.do(c.method, c.path, c.body)
 		if rec.Code >= 300 || fake.got != c.want {

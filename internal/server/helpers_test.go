@@ -1092,6 +1092,11 @@ func (f *fakeChangeRequests) RemoveAttachment(_ context.Context, _ access.Actor,
 	return f.c, f.err
 }
 
+func (f *fakeChangeRequests) Verify(_ context.Context, _ access.Actor, id string, accept bool, note string) (change.Change, error) {
+	f.got = called{method: "Verify", id: id, input: fmt.Sprint(accept, ":", note)}
+	return f.c, f.err
+}
+
 // OpenAttachment membuka berkas sementara berisi f.file.
 func (f *fakeChangeRequests) OpenAttachment(_ context.Context, _ access.Actor, id, attachmentID string) (change.Attachment, *os.File, error) {
 	f.got = called{method: "OpenAttachment", id: id, input: attachmentID}

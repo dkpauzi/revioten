@@ -1278,15 +1278,39 @@ export type Change = {
      * For example a complaint number, an 8D number, an audit finding, or an SQAM revision.
      */
     source_reference?: string;
-    status: 'submitted';
+    /**
+     * Submitted, then accepted or rejected by a verifier (M5.3).
+     */
+    status: 'submitted' | 'accepted' | 'rejected';
     /**
      * The name of the person who submitted the change.
      */
     requested_by: string;
+    verification?: ChangeVerification;
     documents: Array<AffectedDocument>;
     attachments: Array<ChangeAttachment>;
     created_at: string;
     updated_at: string;
+};
+
+/**
+ * Who accepted or rejected the change, when, and why (R-CHG-02).
+ */
+export type ChangeVerification = {
+    /**
+     * The name of the person who verified.
+     */
+    verified_by: string;
+    verified_at: string;
+    note: string;
+};
+
+export type ChangeVerificationInput = {
+    decision: 'accept' | 'reject';
+    /**
+     * Mandatory, at most 2000 characters.
+     */
+    note: string;
 };
 
 export type ChangeAttachment = {
@@ -5569,6 +5593,41 @@ export type RemoveChangeDocumentResponses = {
 };
 
 export type RemoveChangeDocumentResponse = RemoveChangeDocumentResponses[keyof RemoveChangeDocumentResponses];
+
+export type VerifyChangeData = {
+    body: ChangeVerificationInput;
+    path: {
+        changeId: string;
+    };
+    query?: never;
+    url: '/api/v1/changes/{changeId}/verification';
+};
+
+export type VerifyChangeErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type VerifyChangeError = VerifyChangeErrors[keyof VerifyChangeErrors];
+
+export type VerifyChangeResponses = {
+    /**
+     * The verified change.
+     */
+    200: Change;
+};
+
+export type VerifyChangeResponse = VerifyChangeResponses[keyof VerifyChangeResponses];
 
 export type AddChangeAttachmentData = {
     body: {

@@ -1825,6 +1825,21 @@ Salin blok ini untuk setiap temuan baru.
 - **Status:** Terbuka
 - **Keputusan pemilik:**
 
+## E-100 · Perubahan yang ditolak, dan hak V-1 tanpa jabatan
+
+- **Tanggal dan milestone:** 14 November 2026, M5.3.
+- **Jenis:** Celah
+- **Rujukan:** R-CHG-02, D-51, D-54, D-66 (peran diatur admin), UC-41.
+- **Temuan:** (1) Brief tidak menyebut apa yang terjadi sesudah perubahan ditolak: boleh diperbaiki lalu diajukan ulang, atau selesai. (2) Peran Verifikator berisi V-1 dan diatur admin (D-66), tetapi D-51 menyebut tiga jabatan. Admin bisa memberi peran Verifikator kepada orang yang tidak memegang jabatan itu.
+- **Opsi:**
+  - (1a) Ditolak itu final; pemohon membuat perubahan baru (yang lama tetap di riwayat). (1b) Pemohon membuka ulang perubahan yang ditolak, lalu diverifikasi lagi.
+  - (2a) Verifikasi butuh V-1 dan jabatan (PE atau PL dari Project Group customer, atau APQP/PPAP Controller). (2b) V-1 saja cukup; jabatan hanya panduan admin.
+- **Rekomendasi Claude Code (usulan):** (1a) dan (2a).
+- **Asumsi sementara di kode (ASUMSI E-100):** (1a) dan (2a). Pemohon tidak pernah memverifikasi permintaannya sendiri, juga dijaga CHECK di database.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
 ## Usulan desain UI (UX-01 sampai UX-07): dampak ke M0 sampai M3 dan saran
 
 - **Sumber:** `docs/uml/usulan-desain-ui.md` (UML draft 0.12, 3 November 2026) dan kanvas desain UI "Desain UI Sistem PFD PFMEA CP" (18 artboard, baris v2 disarankan).

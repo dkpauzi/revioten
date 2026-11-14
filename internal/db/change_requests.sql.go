@@ -121,13 +121,15 @@ SELECT c.id, c.seq, c.customer_id, cu.code AS customer_code, c.mechanism,
        c.change_type_id, t.key AS change_type_key, t.name AS change_type_name,
        c.four_m_category_id, f.key AS four_m_key, f.name AS four_m_name,
        c.reason, c.source_reference, c.status, p.name AS requested_by, c.requested_by_person_id,
-       c.created_at, c.updated_at
+       c.created_at, c.updated_at,
+       c.verified_by_person_id, v.name AS verified_by, c.verified_at, c.verification_note
 FROM changes c
 JOIN customers cu ON cu.id = c.customer_id
 JOIN change_types t ON t.id = c.change_type_id
 JOIN people p ON p.id = c.requested_by_person_id
 LEFT JOIN change_sources s ON s.id = c.trigger_source_id
 LEFT JOIN four_m_categories f ON f.id = c.four_m_category_id
+LEFT JOIN people v ON v.id = c.verified_by_person_id
 WHERE c.id = $1
 `
 
@@ -152,6 +154,10 @@ type GetChangeRow struct {
 	RequestedByPersonID string
 	CreatedAt           time.Time
 	UpdatedAt           time.Time
+	VerifiedByPersonID  *string
+	VerifiedBy          *string
+	VerifiedAt          *time.Time
+	VerificationNote    *string
 }
 
 func (q *Queries) GetChange(ctx context.Context, id string) (GetChangeRow, error) {
@@ -178,6 +184,10 @@ func (q *Queries) GetChange(ctx context.Context, id string) (GetChangeRow, error
 		&i.RequestedByPersonID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.VerifiedByPersonID,
+		&i.VerifiedBy,
+		&i.VerifiedAt,
+		&i.VerificationNote,
 	)
 	return i, err
 }
@@ -224,6 +234,32 @@ func (q *Queries) GetDocumentForChange(ctx context.Context, id string) (GetDocum
 	var i GetDocumentForChangeRow
 	err := row.Scan(&i.ID, &i.CustomerID, &i.Number)
 	return i, err
+}
+
+const isChangeVerifier = `-- name: IsChangeVerifier :one
+SELECT EXISTS (
+    SELECT 1
+    FROM position_holders h
+    JOIN positions p ON p.id = h.position_id
+    LEFT JOIN customers c ON c.project_group_id = h.project_group_id AND c.id = $1
+    WHERE h.person_id = $2
+      AND (p.key = 'apqp_ppap_controller' OR (p.key IN ('project_leader', 'project_engineer') AND c.id IS NOT NULL))
+)
+`
+
+type IsChangeVerifierParams struct {
+	CustomerID string
+	PersonID   string
+}
+
+// IsChangeVerifier melaporkan apakah orang itu boleh memverifikasi perubahan
+// customer ini: Project Engineer atau Project Leader dari Project Group
+// customer, atau APQP/PPAP Controller (D-51, D-54).
+func (q *Queries) IsChangeVerifier(ctx context.Context, arg IsChangeVerifierParams) (bool, error) {
+	row := q.db.QueryRow(ctx, isChangeVerifier, arg.CustomerID, arg.PersonID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
 }
 
 const listChangeAttachments = `-- name: ListChangeAttachments :many
@@ -410,6 +446,37 @@ type RemoveChangeDocumentParams struct {
 
 func (q *Queries) RemoveChangeDocument(ctx context.Context, arg RemoveChangeDocumentParams) (int64, error) {
 	result, err := q.db.Exec(ctx, removeChangeDocument, arg.ChangeID, arg.DocumentID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const verifyChange = `-- name: VerifyChange :execrows
+
+UPDATE changes
+SET status = $1, verified_by_person_id = $2, verified_by_account_id = $3,
+    verified_at = now(), verification_note = $4, updated_at = now()
+WHERE id = $5 AND status = 'submitted'
+`
+
+type VerifyChangeParams struct {
+	Status    string
+	PersonID  *string
+	AccountID *string
+	Note      *string
+	ID        string
+}
+
+// M5.3: verifikasi atasan (R-CHG-02, D-51, D-54).
+func (q *Queries) VerifyChange(ctx context.Context, arg VerifyChangeParams) (int64, error) {
+	result, err := q.db.Exec(ctx, verifyChange,
+		arg.Status,
+		arg.PersonID,
+		arg.AccountID,
+		arg.Note,
+		arg.ID,
+	)
 	if err != nil {
 		return 0, err
 	}

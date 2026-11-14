@@ -468,6 +468,8 @@ func TestPermissionsPerOperation(t *testing.T) {
 		{http.MethodGet, "/api/v1/changes/{changeId}", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodPost, "/api/v1/changes/{changeId}/documents", `{"document_id":"{documentId}"}`, http.StatusForbidden, http.StatusConflict, http.StatusForbidden},
 		{http.MethodDelete, "/api/v1/changes/{changeId}/documents/{documentId}", "", http.StatusForbidden, http.StatusUnprocessableEntity, http.StatusForbidden},
+		// Verifikasi (M5.3): engineer (Penyusun) tanpa V-1 ditolak, seperti admin dan viewer.
+		{http.MethodPost, "/api/v1/changes/{changeId}/verification", `{"decision":"accept","note":"OK"}`, http.StatusForbidden, http.StatusForbidden, http.StatusForbidden},
 		// Lampiran (M5.2): body multipart ditandai awalan --revioten. ID lampiran palsu: 404.
 		{http.MethodPost, "/api/v1/changes/{changeId}/attachments", multipartBody, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/changes/{changeId}/attachments/{attachmentId}", "", http.StatusForbidden, http.StatusNotFound, http.StatusForbidden},

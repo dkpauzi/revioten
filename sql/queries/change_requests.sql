@@ -12,13 +12,15 @@ SELECT c.id, c.seq, c.customer_id, cu.code AS customer_code, c.mechanism,
        c.change_type_id, t.key AS change_type_key, t.name AS change_type_name,
        c.four_m_category_id, f.key AS four_m_key, f.name AS four_m_name,
        c.reason, c.source_reference, c.status, p.name AS requested_by, c.requested_by_person_id,
-       c.created_at, c.updated_at
+       c.created_at, c.updated_at,
+       c.verified_by_person_id, v.name AS verified_by, c.verified_at, c.verification_note
 FROM changes c
 JOIN customers cu ON cu.id = c.customer_id
 JOIN change_types t ON t.id = c.change_type_id
 JOIN people p ON p.id = c.requested_by_person_id
 LEFT JOIN change_sources s ON s.id = c.trigger_source_id
 LEFT JOIN four_m_categories f ON f.id = c.four_m_category_id
+LEFT JOIN people v ON v.id = c.verified_by_person_id
 WHERE c.id = $1;
 
 -- name: ListChangeIDs :many
@@ -83,3 +85,24 @@ ORDER BY a.uploaded_at, a.id;
 -- name: RemoveChangeAttachment :execrows
 UPDATE change_attachments SET removed_at = now()
 WHERE id = $1 AND change_id = $2 AND removed_at IS NULL;
+
+-- M5.3: verifikasi atasan (R-CHG-02, D-51, D-54).
+
+-- name: VerifyChange :execrows
+UPDATE changes
+SET status = sqlc.arg(status), verified_by_person_id = sqlc.arg(person_id), verified_by_account_id = sqlc.arg(account_id),
+    verified_at = now(), verification_note = sqlc.arg(note), updated_at = now()
+WHERE id = sqlc.arg(id) AND status = 'submitted';
+
+-- name: IsChangeVerifier :one
+-- IsChangeVerifier melaporkan apakah orang itu boleh memverifikasi perubahan
+-- customer ini: Project Engineer atau Project Leader dari Project Group
+-- customer, atau APQP/PPAP Controller (D-51, D-54).
+SELECT EXISTS (
+    SELECT 1
+    FROM position_holders h
+    JOIN positions p ON p.id = h.position_id
+    LEFT JOIN customers c ON c.project_group_id = h.project_group_id AND c.id = sqlc.arg(customer_id)
+    WHERE h.person_id = sqlc.arg(person_id)
+      AND (p.key = 'apqp_ppap_controller' OR (p.key IN ('project_leader', 'project_engineer') AND c.id IS NOT NULL))
+);

@@ -27,8 +27,12 @@ import (
 // Mekanisme manual: perubahan yang diajukan orang lewat layar.
 const MechanismManual = "manual"
 
-// Status perubahan. M5.3 menambah diterima dan ditolak.
-const StatusSubmitted = "submitted"
+// Status perubahan: diajukan, lalu diterima atau ditolak verifikator (M5.3).
+const (
+	StatusSubmitted = "submitted"
+	StatusAccepted  = "accepted"
+	StatusRejected  = "rejected"
+)
 
 // Batas isian perubahan, sama dengan CHECK di migrasi 00030.
 const (
@@ -60,6 +64,7 @@ type Change struct {
 	RequestedByID   string             // ID orang pemohon
 	Documents       []AffectedDocument // menurut jenis dokumen lalu nomor; tidak pernah nil
 	Attachments     []Attachment       // lampiran aktif menurut waktu unggah; tidak pernah nil (M5.2)
+	Verification    *Verification      // terisi sesudah diterima atau ditolak (M5.3)
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 }
@@ -304,6 +309,11 @@ func getChange(ctx context.Context, q *db.Queries, id string) (Change, error) {
 	}
 	if r.FourMCategoryID != nil {
 		c.FourM = &Ref{ID: *r.FourMCategoryID, Key: deref(r.FourMKey), Name: deref(r.FourMName)}
+	}
+	if r.VerifiedByPersonID != nil && r.VerifiedAt != nil {
+		c.Verification = &Verification{
+			VerifiedBy: deref(r.VerifiedBy), VerifiedByID: *r.VerifiedByPersonID, VerifiedAt: r.VerifiedAt.UTC(), Note: deref(r.VerificationNote),
+		}
 	}
 	if c.Attachments, err = attachments(ctx, q, id); err != nil {
 		return Change{}, err

@@ -277,14 +277,15 @@ export const helpEn: HelpContent = {
 		{
 			id: 'changes',
 			title: 'Changes',
-			who: 'Author',
+			who: 'Author, Verifier',
 			intro: 'Every revision of a PFD, PFMEA, or CP starts from a change: what triggered it, the type of change, the reason, and the documents it affects.',
 			steps: [
 				'Open {navGroupDocuments}, then {navChanges}, and choose the customer.',
 				'Fill in {changeTrigger} (for example Customer claim), {changeType}, and, when it applies, {changeFourM} and {changeReference}.',
 				'Write the {changeReason}, tick every affected document under {changeDocuments}, and press {changeSubmit}.',
 				'The change gets a number such as [[CHG-0001]]. Open it to add or remove affected documents while it is still submitted.',
-				'Under {changeAttachments}, choose a file in {changeAttachmentAdd} and press {changeAttachmentUpload}, for example the 8D report or a photo of the defect. Press the file name to download it.'
+				'Under {changeAttachments}, choose a file in {changeAttachmentAdd} and press {changeAttachmentUpload}, for example the 8D report or a photo of the defect. Press the file name to download it.',
+				'A verifier (the Project Engineer or the Project Leader of the customer’s project group, or the APQP/PPAP Controller) opens the change, writes a {changeVerifyNote}, and presses {changeAccept} or {changeReject}. The requester cannot verify their own change.'
 			],
 			tips: ['A change always affects at least one document, so the last one cannot be removed.', 'An attachment can be at most 20 MB. A removed attachment stays in the audit log.']
 		},

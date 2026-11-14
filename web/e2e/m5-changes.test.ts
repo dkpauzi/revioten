@@ -96,3 +96,37 @@ test('M5.1 dan M5.2: penyusun mengajukan perubahan dengan beberapa dokumen dan l
 	await expect(page.getByRole('status')).toHaveText(en.changeAttachmentRemoved.replace('{file}', '8D report.pdf'));
 	await expect(page.getByText(en.changeAttachmentsNone)).toBeVisible();
 });
+
+test('M5.3: APQP/PPAP Controller menerima perubahan dengan catatan wajib', async ({ page }) => {
+	await logIn(page);
+	const temporary = await createWorkAccount(page, 'APQP PPAP Controller E2E', 'verifikator.e2e', ['verifier']);
+	// Catat orangnya sebagai pemegang jabatan APQP/PPAP Controller (D-51, D-54).
+	await page.evaluate(async () => {
+		const accounts = await (await fetch('/api/v1/accounts')).json();
+		const account = accounts.items.find((a: { login: string }) => a.login === 'verifikator.e2e');
+		const positions = await (await fetch('/api/v1/positions')).json();
+		const controller = positions.items.find((p: { key: string }) => p.key === 'apqp_ppap_controller');
+		await fetch(`/api/v1/positions/${controller.id}/holders`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ person_id: account.person.id })
+		});
+	});
+	await logOut(page);
+	await logInFirstTime(page, 'verifikator.e2e', temporary, 'verifikasi selalu dengan catatan');
+
+	await openFromMenu(page, en.navGroupDocuments, en.navChanges);
+	await page.getByLabel(en.documentCustomer, { exact: true }).selectOption({ label: 'CH · Customer CH' });
+	await page.getByRole('row', { name: /CHG-0001/ }).getByRole('link', { name: 'CHG-0001' }).click();
+	await expect(page.getByRole('heading', { name: en.changeVerify })).toBeVisible();
+	// Tanpa catatan ditolak di layar.
+	await page.getByRole('button', { name: en.changeAccept, exact: true }).click();
+	await expect(page.getByText(en.changeVerifyNoteRequired)).toBeVisible();
+	await page.getByLabel(en.changeVerifyNote).fill('8D report checked, AOI check is needed');
+	await page.getByRole('button', { name: en.changeAccept, exact: true }).click();
+	await expect(page.getByRole('status')).toHaveText(en.changeAccepted.replace('{ref}', 'CHG-0001'));
+	await expect(page.locator('[data-change-status="accepted"]')).toHaveText(en.changeStatus_accepted);
+	await expect(page.getByText('APQP PPAP Controller E2E ·')).toBeVisible();
+	// Sesudah diterima, tidak ada tombol verifikasi lagi.
+	await expect(page.getByRole('heading', { name: en.changeVerify })).toHaveCount(0);
+});

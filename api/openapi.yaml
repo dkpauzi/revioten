@@ -1950,6 +1950,30 @@ paths:
                 $ref: '#/components/schemas/Change'
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/changes/{changeId}/verification:
+    post:
+      operationId: verifyChange
+      summary: Accept or reject a submitted change with a note (V-1, M5.3)
+      description: >-
+        Only the Project Engineer or the Project Leader of the customer's project group, or the APQP/PPAP
+        Controller, verifies (D-51, D-54). The requester cannot verify their own change (R-CHG-02).
+      parameters:
+        - $ref: '#/components/parameters/ChangeId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeVerificationInput'
+      responses:
+        '200':
+          description: The verified change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Change'
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/changes/{changeId}/attachments:
     post:
       operationId: addChangeAttachment
@@ -4600,10 +4624,13 @@ components:
           description: For example a complaint number, an 8D number, an audit finding, or an SQAM revision.
         status:
           type: string
-          enum: [submitted]
+          enum: [submitted, accepted, rejected]
+          description: Submitted, then accepted or rejected by a verifier (M5.3).
         requested_by:
           type: string
           description: The name of the person who submitted the change.
+        verification:
+          $ref: '#/components/schemas/ChangeVerification'
         documents:
           type: array
           items:
@@ -4618,6 +4645,29 @@ components:
         updated_at:
           type: string
           format: date-time
+    ChangeVerification:
+      type: object
+      description: Who accepted or rejected the change, when, and why (R-CHG-02).
+      required: [verified_by, verified_at, note]
+      properties:
+        verified_by:
+          type: string
+          description: The name of the person who verified.
+        verified_at:
+          type: string
+          format: date-time
+        note:
+          type: string
+    ChangeVerificationInput:
+      type: object
+      required: [decision, note]
+      properties:
+        decision:
+          type: string
+          enum: [accept, reject]
+        note:
+          type: string
+          description: Mandatory, at most 2000 characters.
     ChangeAttachment:
       type: object
       required: [id, file_name, content_type, size, sha256, uploaded_by, uploaded_at]

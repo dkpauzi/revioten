@@ -94,6 +94,9 @@ func toAPIChange(c change.Change) Change {
 			Id: x.ID, FileName: x.FileName, ContentType: x.ContentType, Size: x.Size, Sha256: x.SHA256, UploadedBy: x.UploadedBy, UploadedAt: x.UploadedAt,
 		})
 	}
+	if v := c.Verification; v != nil {
+		out.Verification = &ChangeVerification{VerifiedBy: v.VerifiedBy, VerifiedAt: v.VerifiedAt, Note: v.Note}
+	}
 	if c.Trigger != nil {
 		t := ref(*c.Trigger)
 		out.Trigger = &t
@@ -158,4 +161,16 @@ func (a *apiServer) RemoveChangeAttachment(ctx context.Context, req RemoveChange
 		return nil, err
 	}
 	return RemoveChangeAttachment200JSONResponse(toAPIChange(c)), nil
+}
+
+// VerifyChange menjawab POST /api/v1/changes/{changeId}/verification (M5.3).
+func (a *apiServer) VerifyChange(ctx context.Context, req VerifyChangeRequestObject) (VerifyChangeResponseObject, error) {
+	if !req.Body.Decision.Valid() {
+		return nil, &problem.ValidationError{Problems: []problem.Problem{{Field: "decision", Code: problem.InvalidFormat, Message: "Choose accept or reject."}}}
+	}
+	c, err := a.changeRequests.Verify(ctx, actorFrom(ctx), req.ChangeId, req.Body.Decision == ChangeVerificationInputDecisionAccept, req.Body.Note)
+	if err != nil {
+		return nil, err
+	}
+	return VerifyChange200JSONResponse(toAPIChange(c)), nil
 }

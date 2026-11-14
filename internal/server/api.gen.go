@@ -166,12 +166,18 @@ func (e ChangeMechanism) Valid() bool {
 
 // Defines values for ChangeStatus.
 const (
+	ChangeStatusAccepted  ChangeStatus = "accepted"
+	ChangeStatusRejected  ChangeStatus = "rejected"
 	ChangeStatusSubmitted ChangeStatus = "submitted"
 )
 
 // Valid indicates whether the value is a known member of the ChangeStatus enum.
 func (e ChangeStatus) Valid() bool {
 	switch e {
+	case ChangeStatusAccepted:
+		return true
+	case ChangeStatusRejected:
+		return true
 	case ChangeStatusSubmitted:
 		return true
 	default:
@@ -215,6 +221,24 @@ func (e ChangeTypeKey) Valid() bool {
 	case ChangeTypeKeyContent:
 		return true
 	case ChangeTypeKeyLayout:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ChangeVerificationInputDecision.
+const (
+	ChangeVerificationInputDecisionAccept ChangeVerificationInputDecision = "accept"
+	ChangeVerificationInputDecisionReject ChangeVerificationInputDecision = "reject"
+)
+
+// Valid indicates whether the value is a known member of the ChangeVerificationInputDecision enum.
+func (e ChangeVerificationInputDecision) Valid() bool {
+	switch e {
+	case ChangeVerificationInputDecisionAccept:
+		return true
+	case ChangeVerificationInputDecisionReject:
 		return true
 	default:
 		return false
@@ -1497,16 +1521,21 @@ type Change struct {
 	RequestedBy string `json:"requested_by"`
 
 	// SourceReference For example a complaint number, an 8D number, an audit finding, or an SQAM revision.
-	SourceReference *string      `json:"source_reference,omitempty"`
-	Status          ChangeStatus `json:"status"`
-	Trigger         *ChangeRef   `json:"trigger,omitempty"`
-	UpdatedAt       time.Time    `json:"updated_at"`
+	SourceReference *string `json:"source_reference,omitempty"`
+
+	// Status Submitted, then accepted or rejected by a verifier (M5.3).
+	Status    ChangeStatus `json:"status"`
+	Trigger   *ChangeRef   `json:"trigger,omitempty"`
+	UpdatedAt time.Time    `json:"updated_at"`
+
+	// Verification Who accepted or rejected the change, when, and why (R-CHG-02).
+	Verification *ChangeVerification `json:"verification,omitempty"`
 }
 
 // ChangeMechanism How the change started (D-113). Manual changes are submitted on screen.
 type ChangeMechanism string
 
-// ChangeStatus defines model for Change.Status.
+// ChangeStatus Submitted, then accepted or rejected by a verifier (M5.3).
 type ChangeStatus string
 
 // ChangeAttachment defines model for ChangeAttachment.
@@ -1586,6 +1615,26 @@ type ChangeTypeRouteChoice struct {
 	// RouteId Leave it out to use the default route of each customer.
 	RouteId *string `json:"route_id,omitempty"`
 }
+
+// ChangeVerification Who accepted or rejected the change, when, and why (R-CHG-02).
+type ChangeVerification struct {
+	Note       string    `json:"note"`
+	VerifiedAt time.Time `json:"verified_at"`
+
+	// VerifiedBy The name of the person who verified.
+	VerifiedBy string `json:"verified_by"`
+}
+
+// ChangeVerificationInput defines model for ChangeVerificationInput.
+type ChangeVerificationInput struct {
+	Decision ChangeVerificationInputDecision `json:"decision"`
+
+	// Note Mandatory, at most 2000 characters.
+	Note string `json:"note"`
+}
+
+// ChangeVerificationInputDecision defines model for ChangeVerificationInput.Decision.
+type ChangeVerificationInputDecision string
 
 // ComposeInput defines model for ComposeInput.
 type ComposeInput struct {
@@ -3576,6 +3625,9 @@ type AddChangeAttachmentMultipartRequestBody AddChangeAttachmentMultipartBody
 // AddChangeDocumentJSONRequestBody defines body for AddChangeDocument for application/json ContentType.
 type AddChangeDocumentJSONRequestBody = ChangeDocumentInput
 
+// VerifyChangeJSONRequestBody defines body for VerifyChange for application/json ContentType.
+type VerifyChangeJSONRequestBody = ChangeVerificationInput
+
 // CreateCustomerJSONRequestBody defines body for CreateCustomer for application/json ContentType.
 type CreateCustomerJSONRequestBody = NewCustomer
 
@@ -3842,6 +3894,9 @@ type ServerInterface interface {
 	// RemoveChangeDocument Remove one affected document from a submitted change (E-3)
 	// (DELETE /api/v1/changes/{changeId}/documents/{documentId})
 	RemoveChangeDocument(w http.ResponseWriter, r *http.Request, changeId ChangeId, documentId DocumentId)
+	// VerifyChange Accept or reject a submitted change with a note (V-1, M5.3)
+	// (POST /api/v1/changes/{changeId}/verification)
+	VerifyChange(w http.ResponseWriter, r *http.Request, changeId ChangeId)
 	// ListCustomers List all customers, ordered by code
 	// (GET /api/v1/customers)
 	ListCustomers(w http.ResponseWriter, r *http.Request)
@@ -4772,6 +4827,32 @@ func (siw *ServerInterfaceWrapper) RemoveChangeDocument(w http.ResponseWriter, r
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.RemoveChangeDocument(w, r, changeId, documentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// VerifyChange operation middleware
+func (siw *ServerInterfaceWrapper) VerifyChange(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "changeId" -------------
+	var changeId ChangeId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "changeId", r.PathValue("changeId"), &changeId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "changeId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.VerifyChange(w, r, changeId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -7692,6 +7773,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/changes/{changeId}", wrapper.GetChange)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/changes/{changeId}/documents", wrapper.AddChangeDocument)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/changes/{changeId}/documents/{documentId}", wrapper.RemoveChangeDocument)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/changes/{changeId}/verification", wrapper.VerifyChange)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/changes/{changeId}/attachments", wrapper.AddChangeAttachment)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/changes/{changeId}/attachments/{attachmentId}", wrapper.RemoveChangeAttachment)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/changes/{changeId}/attachments/{attachmentId}", wrapper.GetChangeAttachment)
@@ -8784,6 +8866,46 @@ type RemoveChangeDocumentdefaultJSONResponse struct {
 }
 
 func (response RemoveChangeDocumentdefaultJSONResponse) VisitRemoveChangeDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VerifyChangeRequestObject struct {
+	ChangeId ChangeId `json:"changeId"`
+	Body     *VerifyChangeJSONRequestBody
+}
+
+type VerifyChangeResponseObject interface {
+	VisitVerifyChangeResponse(w http.ResponseWriter) error
+}
+
+type VerifyChange200JSONResponse Change
+
+func (response VerifyChange200JSONResponse) VisitVerifyChangeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type VerifyChangedefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response VerifyChangedefaultJSONResponse) VisitVerifyChangeResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -13147,6 +13269,9 @@ type StrictServerInterface interface {
 	// RemoveChangeDocument Remove one affected document from a submitted change (E-3)
 	// (DELETE /api/v1/changes/{changeId}/documents/{documentId})
 	RemoveChangeDocument(ctx context.Context, request RemoveChangeDocumentRequestObject) (RemoveChangeDocumentResponseObject, error)
+	// VerifyChange Accept or reject a submitted change with a note (V-1, M5.3)
+	// (POST /api/v1/changes/{changeId}/verification)
+	VerifyChange(ctx context.Context, request VerifyChangeRequestObject) (VerifyChangeResponseObject, error)
 	// ListCustomers List all customers, ordered by code
 	// (GET /api/v1/customers)
 	ListCustomers(ctx context.Context, request ListCustomersRequestObject) (ListCustomersResponseObject, error)
@@ -14242,6 +14367,39 @@ func (sh *strictHandler) RemoveChangeDocument(w http.ResponseWriter, r *http.Req
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(RemoveChangeDocumentResponseObject); ok {
 		if err := validResponse.VisitRemoveChangeDocumentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// VerifyChange operation middleware
+func (sh *strictHandler) VerifyChange(w http.ResponseWriter, r *http.Request, changeId ChangeId) {
+	var request VerifyChangeRequestObject
+
+	request.ChangeId = changeId
+
+	var body VerifyChangeJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.VerifyChange(ctx, request.(VerifyChangeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "VerifyChange")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(VerifyChangeResponseObject); ok {
+		if err := validResponse.VisitVerifyChangeResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

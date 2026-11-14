@@ -3,6 +3,7 @@
 	// terdampak. Selama perubahan masih diajukan, pemegang E-3 bisa menambah
 	// atau melepas dokumen terdampak (yang terakhir tidak bisa dilepas).
 	// Lampiran (M5.2): berkas pendukung diunggah, diunduh, dan dilepas di sini.
+	// Verifikasi (M5.3): pemegang V-1 menerima atau menolak dengan catatan wajib.
 	import { untrack } from 'svelte';
 	import { page } from '$app/state';
 	import {
@@ -13,6 +14,7 @@
 		listDocuments,
 		removeChangeAttachment,
 		removeChangeDocument,
+		verifyChange,
 		type ApiFailure
 	} from '#lib/api/client.ts';
 	import type { Change, DocumentSummary } from '#lib/api/gen/index.ts';
@@ -29,6 +31,9 @@
 	let documentId = $state('');
 	let fileInput = $state<HTMLInputElement | null>(null);
 	let uploading = $state(false);
+	let note = $state('');
+	let noteError = $state('');
+	let canVerify = $derived(can('V-1') && change?.status === 'submitted');
 	let canPropose = $derived(can('E-3'));
 	let editable = $derived(canPropose && change?.status === 'submitted');
 	let addable = $derived(documents.filter((d) => !change?.documents.some((x) => x.id === d.id)));
@@ -116,6 +121,27 @@
 		return bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 	}
 
+	async function verify(decision: 'accept' | 'reject') {
+		message = '';
+		failure = '';
+		noteError = '';
+		if (!change) {
+			return;
+		}
+		if (note.trim() === '') {
+			noteError = t('changeVerifyNoteRequired');
+			return;
+		}
+		const result = await verifyChange(change.id, { decision, note: note.trim() });
+		if (!result.ok) {
+			showError(result.error);
+			return;
+		}
+		change = result.data;
+		note = '';
+		message = t(decision === 'accept' ? 'changeAccepted' : 'changeRejected', { ref: change.ref });
+	}
+
 	async function remove(id: string, number: string) {
 		message = '';
 		failure = '';
@@ -165,7 +191,29 @@
 		<dd class="reason">{change.reason}</dd>
 		<dt>{t('changeRequestedBy')}</dt>
 		<dd>{change.requested_by} · {formatDateTime(change.created_at)}</dd>
+		{#if change.verification}
+			<dt>{t(change.status === 'accepted' ? 'changeAcceptedBy' : 'changeRejectedBy')}</dt>
+			<dd>{change.verification.verified_by} · {formatDateTime(change.verification.verified_at)}</dd>
+			<dt>{t('changeVerifyNote')}</dt>
+			<dd class="reason">{change.verification.note}</dd>
+		{/if}
 	</dl>
+
+	{#if canVerify}
+		<section>
+			<h2>{t('changeVerify')}</h2>
+			<p class="hint">{t('changeVerifyHint')}</p>
+			<div class="field">
+				<label for="change-verify-note">{t('changeVerifyNote')}</label>
+				<textarea id="change-verify-note" rows="3" maxlength="2000" bind:value={note} aria-invalid={noteError !== ''} aria-describedby={noteError ? 'change-verify-note-error' : undefined}></textarea>
+				{#if noteError}<p class="error" id="change-verify-note-error">{noteError}</p>{/if}
+			</div>
+			<div class="row">
+				<button type="button" class="primary" onclick={() => verify('accept')}>{t('changeAccept')}</button>
+				<button type="button" onclick={() => verify('reject')}>{t('changeReject')}</button>
+			</div>
+		</section>
+	{/if}
 
 	{#if message}<p role="status">{message}</p>{/if}
 	{#if failure}<p class="error" role="alert">{failure}</p>{/if}
