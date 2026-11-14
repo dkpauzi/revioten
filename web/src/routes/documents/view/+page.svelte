@@ -8,6 +8,7 @@
 	import { addDocumentRow, addDocumentRows, deleteDocumentRow, reorderDocumentRows, getDocument, getFormatVersion, listProcesses, setDocumentHeader, updateDocumentRow, type ApiFailure } from '#lib/api/client.ts';
 	import type { Document, DocumentRow, DocumentRowInput, FormatVersion, Process } from '#lib/api/gen/index.ts';
 	import ComposePanel from '#lib/documents/ComposePanel.svelte';
+	import CopyPanel from '#lib/documents/CopyPanel.svelte';
 	import OrderPanel from '#lib/documents/OrderPanel.svelte';
 	import PastePanel from '#lib/documents/PastePanel.svelte';
 	import Workbook from '#lib/documents/Workbook.svelte';
@@ -33,6 +34,8 @@
 	let composing = $state(false);
 	// ordering: panel urutan dan nomor operasi sedang dibuka (M4.6).
 	let ordering = $state(false);
+	// copying: panel salin dari model lain sedang dibuka (M4.7).
+	let copying = $state(false);
 
 	// Isian header.
 	let header = $state<Record<string, string>>({});
@@ -49,6 +52,7 @@
 			pasting = false;
 			composing = false;
 			ordering = false;
+			copying = false;
 			load(id);
 		});
 	});
@@ -191,6 +195,14 @@
 		message = t('composeDone', { process });
 	}
 
+	// copied menerima dokumen sesudah baris disalin dari model lain (M4.7).
+	function copied(d: Document, source: string) {
+		reset();
+		use(d);
+		copying = false;
+		message = t('copyDone', { number: source });
+	}
+
 	// saveOrder menyimpan urutan baris dan, bila diminta, nomor operasi otomatis (M4.6).
 	async function saveOrder(rowIds: string[], renumber: boolean): Promise<boolean> {
 		reset();
@@ -298,6 +310,8 @@
 				{#if !pasting}<button type="button" onclick={() => (pasting = true)}>{t('pasteOpen')}</button>{/if}
 				{#if !composing}<button type="button" onclick={() => (composing = true)}>{t('composeOpen')}</button>{/if}
 				{#if !ordering}<button type="button" onclick={() => (ordering = true)}>{t('orderOpen')}</button>{/if}
+				<!-- Menyalin hanya untuk dokumen yang masih kosong (R-CMP-05). -->
+				{#if !copying && doc.rows.length === 0}<button type="button" onclick={() => (copying = true)}>{t('copyOpen')}</button>{/if}
 			</p>
 		{/if}
 	</section>
@@ -307,6 +321,12 @@
 			{#key doc.id}
 				<ComposePanel {doc} oncomposed={composed} oncancel={() => (composing = false)} />
 			{/key}
+		</section>
+	{/if}
+
+	{#if canEdit && copying}
+		<section>
+			<CopyPanel {doc} oncopied={copied} oncancel={() => (copying = false)} />
 		</section>
 	{/if}
 

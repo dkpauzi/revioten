@@ -1622,6 +1622,11 @@ type Document struct {
 // DocumentStatus defines model for Document.Status.
 type DocumentStatus string
 
+// DocumentCopy defines model for DocumentCopy.
+type DocumentCopy struct {
+	SourceDocumentId string `json:"source_document_id"`
+}
+
 // DocumentHeader defines model for DocumentHeader.
 type DocumentHeader struct {
 	Header map[string]interface{} `json:"header"`
@@ -1742,14 +1747,17 @@ type DocumentSetMember struct {
 
 // DocumentSummary defines model for DocumentSummary.
 type DocumentSummary struct {
-	DocumentType DocumentTypeRef       `json:"document_type"`
-	FormSetName  string                `json:"form_set_name"`
-	Id           string                `json:"id"`
-	Number       string                `json:"number"`
-	Revision     int                   `json:"revision"`
-	RowCount     int                   `json:"row_count"`
-	Status       DocumentSummaryStatus `json:"status"`
-	UpdatedAt    time.Time             `json:"updated_at"`
+	DocumentType DocumentTypeRef `json:"document_type"`
+	FormSetName  string          `json:"form_set_name"`
+	Id           string          `json:"id"`
+
+	// Models The names of the models of the document, in alphabetical order (M4.7).
+	Models    []string              `json:"models"`
+	Number    string                `json:"number"`
+	Revision  int                   `json:"revision"`
+	RowCount  int                   `json:"row_count"`
+	Status    DocumentSummaryStatus `json:"status"`
+	UpdatedAt time.Time             `json:"updated_at"`
 }
 
 // DocumentSummaryStatus defines model for DocumentSummary.Status.
@@ -3233,6 +3241,9 @@ type CreateDocumentJSONRequestBody = NewDocument
 // ComposeDocumentJSONRequestBody defines body for ComposeDocument for application/json ContentType.
 type ComposeDocumentJSONRequestBody = ComposeInput
 
+// CopyDocumentCompositionJSONRequestBody defines body for CopyDocumentComposition for application/json ContentType.
+type CopyDocumentCompositionJSONRequestBody = DocumentCopy
+
 // SetDocumentHeaderJSONRequestBody defines body for SetDocumentHeader for application/json ContentType.
 type SetDocumentHeaderJSONRequestBody = DocumentHeader
 
@@ -3472,6 +3483,9 @@ type ServerInterface interface {
 	// ComposeDocument Use or leave out points of a published process template version (E-2, M4.5)
 	// (PUT /api/v1/documents/{documentId}/composition)
 	ComposeDocument(w http.ResponseWriter, r *http.Request, documentId DocumentId)
+	// CopyDocumentComposition Start a document set from the rows of another model's documents (E-2, M4.7)
+	// (POST /api/v1/documents/{documentId}/copy)
+	CopyDocumentComposition(w http.ResponseWriter, r *http.Request, documentId DocumentId)
 	// SetDocumentHeader Replace the header content of a draft document (E-2)
 	// (PUT /api/v1/documents/{documentId}/header)
 	SetDocumentHeader(w http.ResponseWriter, r *http.Request, documentId DocumentId)
@@ -4683,6 +4697,32 @@ func (siw *ServerInterfaceWrapper) ComposeDocument(w http.ResponseWriter, r *htt
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ComposeDocument(w, r, documentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CopyDocumentComposition operation middleware
+func (siw *ServerInterfaceWrapper) CopyDocumentComposition(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", r.PathValue("documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CopyDocumentComposition(w, r, documentId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -6553,6 +6593,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/documents/{documentId}/header", wrapper.SetDocumentHeader)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/documents/{documentId}/composition", wrapper.GetDocumentComposition)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/documents/{documentId}/composition", wrapper.ComposeDocument)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/copy", wrapper.CopyDocumentComposition)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/documents/{documentId}/order", wrapper.ReorderDocumentRows)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/rows", wrapper.AddDocumentRow)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/rows/batch", wrapper.AddDocumentRows)
@@ -8199,6 +8240,46 @@ type ComposeDocumentdefaultJSONResponse struct {
 }
 
 func (response ComposeDocumentdefaultJSONResponse) VisitComposeDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CopyDocumentCompositionRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+	Body       *CopyDocumentCompositionJSONRequestBody
+}
+
+type CopyDocumentCompositionResponseObject interface {
+	VisitCopyDocumentCompositionResponse(w http.ResponseWriter) error
+}
+
+type CopyDocumentComposition200JSONResponse Document
+
+func (response CopyDocumentComposition200JSONResponse) VisitCopyDocumentCompositionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CopyDocumentCompositiondefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response CopyDocumentCompositiondefaultJSONResponse) VisitCopyDocumentCompositionResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -11114,6 +11195,9 @@ type StrictServerInterface interface {
 	// ComposeDocument Use or leave out points of a published process template version (E-2, M4.5)
 	// (PUT /api/v1/documents/{documentId}/composition)
 	ComposeDocument(ctx context.Context, request ComposeDocumentRequestObject) (ComposeDocumentResponseObject, error)
+	// CopyDocumentComposition Start a document set from the rows of another model's documents (E-2, M4.7)
+	// (POST /api/v1/documents/{documentId}/copy)
+	CopyDocumentComposition(ctx context.Context, request CopyDocumentCompositionRequestObject) (CopyDocumentCompositionResponseObject, error)
 	// SetDocumentHeader Replace the header content of a draft document (E-2)
 	// (PUT /api/v1/documents/{documentId}/header)
 	SetDocumentHeader(ctx context.Context, request SetDocumentHeaderRequestObject) (SetDocumentHeaderResponseObject, error)
@@ -12504,6 +12588,39 @@ func (sh *strictHandler) ComposeDocument(w http.ResponseWriter, r *http.Request,
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ComposeDocumentResponseObject); ok {
 		if err := validResponse.VisitComposeDocumentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CopyDocumentComposition operation middleware
+func (sh *strictHandler) CopyDocumentComposition(w http.ResponseWriter, r *http.Request, documentId DocumentId) {
+	var request CopyDocumentCompositionRequestObject
+
+	request.DocumentId = documentId
+
+	var body CopyDocumentCompositionJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CopyDocumentComposition(ctx, request.(CopyDocumentCompositionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CopyDocumentComposition")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CopyDocumentCompositionResponseObject); ok {
+		if err := validResponse.VisitCopyDocumentCompositionResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

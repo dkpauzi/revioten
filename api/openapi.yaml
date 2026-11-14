@@ -1622,6 +1622,32 @@ paths:
                 $ref: '#/components/schemas/Document'
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/documents/{documentId}/copy:
+    post:
+      operationId: copyDocumentComposition
+      summary: Start a document set from the rows of another model's documents (E-2, M4.7)
+      description: >-
+        Copies the rows and the excluded points of the source document into this one, and the same for the other
+        documents of the set (PFD from PFD, PFMEA from PFMEA, CP from CP). The target set must have no rows yet, and
+        the source must be another document of the same customer, document type, and form version. The copy gets new
+        row IDs and is independent of its source (R-CMP-05).
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentCopy'
+      responses:
+        '200':
+          description: The document after the change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/documents/{documentId}/order:
     put:
       operationId: reorderDocumentRows
@@ -3659,8 +3685,13 @@ components:
             $ref: '#/components/schemas/DocumentSummary'
     DocumentSummary:
       type: object
-      required: [id, number, document_type, revision, status, form_set_name, row_count, updated_at]
+      required: [id, number, document_type, revision, status, form_set_name, row_count, models, updated_at]
       properties:
+        models:
+          type: array
+          description: The names of the models of the document, in alphabetical order (M4.7).
+          items:
+            type: string
         id:
           type: string
         number:
@@ -3904,6 +3935,12 @@ components:
         point_id:
           type: string
         reason:
+          type: string
+    DocumentCopy:
+      type: object
+      required: [source_document_id]
+      properties:
+        source_document_id:
           type: string
     DocumentOrder:
       type: object

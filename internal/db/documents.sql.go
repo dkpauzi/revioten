@@ -122,6 +122,49 @@ func (q *Queries) ClearPointExclusion(ctx context.Context, arg ClearPointExclusi
 	return err
 }
 
+const copyDocumentRows = `-- name: CopyDocumentRows :execrows
+
+
+INSERT INTO document_rows (document_id, position, process_id, operation_number, operation_manual, content, template_point_id, template_version_id)
+SELECT $1::uuid, s.position, s.process_id, s.operation_number, s.operation_manual, s.content, s.template_point_id, s.template_version_id
+FROM document_rows s
+WHERE s.document_id = $2
+`
+
+type CopyDocumentRowsParams struct {
+	TargetID string
+	SourceID string
+}
+
+// M4.7: salin komposisi dari dokumen model lain (R-CMP-05).
+// CopyDocumentRows menyalin semua baris satu dokumen ke dokumen lain dengan
+// ID baru. Urutan, proses, nomor operasi, isi, dan tautan template ikut.
+func (q *Queries) CopyDocumentRows(ctx context.Context, arg CopyDocumentRowsParams) (int64, error) {
+	result, err := q.db.Exec(ctx, copyDocumentRows, arg.TargetID, arg.SourceID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const copyPointExclusions = `-- name: CopyPointExclusions :exec
+INSERT INTO document_point_exclusions (document_id, point_id, reason)
+SELECT $1::uuid, s.point_id, s.reason
+FROM document_point_exclusions s
+WHERE s.document_id = $2
+ON CONFLICT (document_id, point_id) DO NOTHING
+`
+
+type CopyPointExclusionsParams struct {
+	TargetID string
+	SourceID string
+}
+
+func (q *Queries) CopyPointExclusions(ctx context.Context, arg CopyPointExclusionsParams) error {
+	_, err := q.db.Exec(ctx, copyPointExclusions, arg.TargetID, arg.SourceID)
+	return err
+}
+
 const createDocument = `-- name: CreateDocument :one
 INSERT INTO documents (document_number_id, customer_id, document_type_id, revision, form_set_version_id,
                        format_version_id, approval_route_id, route_reason, created_by_person_id)
@@ -556,7 +599,10 @@ func (q *Queries) ListDocumentSet(ctx context.Context, id string) ([]ListDocumen
 const listDocuments = `-- name: ListDocuments :many
 SELECT d.id, n.number, t.key AS document_type_key, t.name AS document_type_name, d.revision, d.status,
        s.name AS form_set_name, d.updated_at,
-       (SELECT count(*) FROM document_rows r WHERE r.document_id = d.id)::int AS row_count
+       (SELECT count(*) FROM document_rows r WHERE r.document_id = d.id)::int AS row_count,
+       -- Nama model dokumen, menurut abjad (M4.7).
+       (SELECT coalesce(array_agg(m.name ORDER BY m.name), '{}')::text[]
+        FROM document_models dm JOIN models m ON m.id = dm.model_id WHERE dm.document_id = d.id) AS model_names
 FROM documents d
 JOIN document_numbers n ON n.id = d.document_number_id
 JOIN document_types t ON t.id = d.document_type_id
@@ -576,6 +622,7 @@ type ListDocumentsRow struct {
 	FormSetName      string
 	UpdatedAt        time.Time
 	RowCount         int32
+	ModelNames       []string
 }
 
 func (q *Queries) ListDocuments(ctx context.Context, customerID string) ([]ListDocumentsRow, error) {
@@ -597,6 +644,7 @@ func (q *Queries) ListDocuments(ctx context.Context, customerID string) ([]ListD
 			&i.FormSetName,
 			&i.UpdatedAt,
 			&i.RowCount,
+			&i.ModelNames,
 		); err != nil {
 			return nil, err
 		}

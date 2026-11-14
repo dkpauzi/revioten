@@ -624,6 +624,11 @@ func (f *fakeDocuments) Reorder(_ context.Context, _ access.Actor, id string, in
 	return f.doc, f.err
 }
 
+func (f *fakeDocuments) CopyFrom(_ context.Context, _ access.Actor, id, sourceID string) (document.Document, error) {
+	f.got = called{method: "CopyFrom", id: id, input: sourceID}
+	return f.doc, f.err
+}
+
 func (f *fakeDocuments) DeleteRow(_ context.Context, _ access.Actor, id, rowID string) (document.Document, error) {
 	f.got = called{method: "DeleteRow", id: id, input: rowID}
 	return f.doc, f.err

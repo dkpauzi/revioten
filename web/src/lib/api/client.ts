@@ -572,6 +572,11 @@ export function reorderDocumentRows(id: string, rowIds: string[], renumber: bool
 	return call<Document>(fetchFn, itemPath('documents', id) + '/order', jsonRequest('PUT', { row_ids: rowIds, renumber }));
 }
 
+// copyDocumentComposition memanggil POST /api/v1/documents/{id}/copy (E-2, M4.7).
+export function copyDocumentComposition(id: string, sourceId: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<Document>> {
+	return call<Document>(fetchFn, itemPath('documents', id) + '/copy', jsonRequest('POST', { source_document_id: sourceId }));
+}
+
 // updateDocumentRow memanggil PUT /api/v1/documents/{id}/rows/{rowId} (E-2).
 export function updateDocumentRow(id: string, rowId: string, input: DocumentRowInput, fetchFn: typeof fetch = fetch): Promise<ApiResult<Document>> {
 	return call<Document>(fetchFn, `${itemPath('documents', id)}/rows/${encodeURIComponent(rowId)}`, jsonRequest('PUT', input));

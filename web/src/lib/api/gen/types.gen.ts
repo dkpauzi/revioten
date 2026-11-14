@@ -963,6 +963,10 @@ export type DocumentList = {
 };
 
 export type DocumentSummary = {
+    /**
+     * The names of the models of the document, in alphabetical order (M4.7).
+     */
+    models: Array<string>;
     id: string;
     number: string;
     document_type: DocumentTypeRef;
@@ -1126,6 +1130,10 @@ export type ComposeInput = {
 export type PointExclusion = {
     point_id: string;
     reason?: string;
+};
+
+export type DocumentCopy = {
+    source_document_id: string;
 };
 
 export type DocumentOrder = {
@@ -4723,6 +4731,41 @@ export type ComposeDocumentResponses = {
 };
 
 export type ComposeDocumentResponse = ComposeDocumentResponses[keyof ComposeDocumentResponses];
+
+export type CopyDocumentCompositionData = {
+    body: DocumentCopy;
+    path: {
+        documentId: string;
+    };
+    query?: never;
+    url: '/api/v1/documents/{documentId}/copy';
+};
+
+export type CopyDocumentCompositionErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type CopyDocumentCompositionError = CopyDocumentCompositionErrors[keyof CopyDocumentCompositionErrors];
+
+export type CopyDocumentCompositionResponses = {
+    /**
+     * The document after the change.
+     */
+    200: Document;
+};
+
+export type CopyDocumentCompositionResponse = CopyDocumentCompositionResponses[keyof CopyDocumentCompositionResponses];
 
 export type ReorderDocumentRowsData = {
     body: DocumentOrder;

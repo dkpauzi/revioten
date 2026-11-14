@@ -365,6 +365,8 @@ func TestPermissionsPerOperation(t *testing.T) {
 		{http.MethodPut, "/api/v1/documents/{documentId}/composition", `{"process_template_version_id":"{processVersionId}"}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		// Dokumen uji sudah punya beberapa baris, jadi akun yang berhak mendapat 422 (bukan 403): haknya lolos, daftar barisnya yang ditolak.
 		{http.MethodPut, "/api/v1/documents/{documentId}/order", `{"row_ids":["{rowId}"]}`, http.StatusForbidden, http.StatusUnprocessableEntity, http.StatusForbidden},
+		// Menyalin dari dirinya sendiri ditolak aturan (422), sesudah haknya lolos.
+		{http.MethodPost, "/api/v1/documents/{documentId}/copy", `{"source_document_id":"{documentId}"}`, http.StatusForbidden, http.StatusUnprocessableEntity, http.StatusForbidden},
 		{http.MethodPost, "/api/v1/documents/{documentId}/rows/batch", `{"rows":[{"content":{}}]}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
 		{http.MethodPut, "/api/v1/documents/{documentId}/rows/{rowId}", `{"content":{},"version":1}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodDelete, "/api/v1/documents/{documentId}/rows/{rowId}", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},

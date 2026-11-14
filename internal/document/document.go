@@ -132,6 +132,7 @@ type Summary struct {
 	Status       string
 	FormSetName  string
 	RowCount     int
+	Models       []string // nama model, menurut abjad (M4.7); tidak pernah nil
 	UpdatedAt    time.Time
 }
 
@@ -372,7 +373,7 @@ func (s *Service) List(ctx context.Context, actor access.Actor, customerID strin
 	for _, r := range rows {
 		out = append(out, Summary{
 			ID: r.ID, Number: r.Number, DocumentType: TypeRef{Key: deref(r.DocumentTypeKey), Name: r.DocumentTypeName},
-			Revision: int(r.Revision), Status: r.Status, FormSetName: r.FormSetName, RowCount: int(r.RowCount), UpdatedAt: r.UpdatedAt.UTC(),
+			Revision: int(r.Revision), Status: r.Status, FormSetName: r.FormSetName, RowCount: int(r.RowCount), UpdatedAt: r.UpdatedAt.UTC(), Models: r.ModelNames,
 		})
 	}
 	return out, nil

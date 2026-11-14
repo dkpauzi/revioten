@@ -75,6 +75,7 @@ const actionKeys: Record<string, MessageKey> = {
 	'document.row_added': 'auditActionDocumentRowAdded',
 	'document.rows_pasted': 'auditActionDocumentRowsPasted',
 	'document.composed': 'auditActionDocumentComposed',
+	'document.copied': 'auditActionDocumentCopied',
 	'document.rows_reordered': 'auditActionDocumentRowsReordered',
 	'document.row_changed': 'auditActionDocumentRowChanged',
 	'document.row_removed': 'auditActionDocumentRowRemoved',
@@ -141,7 +142,9 @@ const detailKeys: Record<string, MessageKey> = {
 	removed: 'auditDetailRowsRemoved',
 	excluded: 'auditDetailPointsExcluded',
 	content: 'auditDetailPointContent',
-	renumbered: 'auditDetailRenumbered'
+	renumbered: 'auditDetailRenumbered',
+	rows: 'auditDetailRowCount',
+	source: 'auditDetailCopySource'
 };
 
 const reasonKeys: Record<string, MessageKey> = {

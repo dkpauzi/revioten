@@ -99,4 +99,10 @@ func TestDocumentEndpoints(t *testing.T) {
 	if rec.Code != http.StatusOK || !reflect.DeepEqual(fake.gotOrder, document.Order{RowIDs: []string{"row-2", "row-1"}, Renumber: true}) {
 		t.Errorf("urut: status %d, %+v", rec.Code, fake.gotOrder)
 	}
+
+	// M4.7: salin komposisi dari dokumen model lain.
+	rec = srv.do(http.MethodPost, "/api/v1/documents/d-1/copy", `{"source_document_id":"d-9"}`)
+	if rec.Code != http.StatusOK || fake.got != (called{method: "CopyFrom", id: "d-1", input: "d-9"}) {
+		t.Errorf("salin: status %d, %+v", rec.Code, fake.got)
+	}
 }

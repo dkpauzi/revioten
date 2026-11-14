@@ -19,7 +19,7 @@ func (a *apiServer) ListDocuments(ctx context.Context, req ListDocumentsRequestO
 	for _, d := range list {
 		out.Items = append(out.Items, DocumentSummary{
 			Id: d.ID, Number: d.Number, DocumentType: DocumentTypeRef{Id: d.DocumentType.ID, Key: DocumentTypeRefKey(d.DocumentType.Key), Name: d.DocumentType.Name},
-			Revision: d.Revision, Status: DocumentSummaryStatus(d.Status), FormSetName: d.FormSetName, RowCount: d.RowCount, UpdatedAt: d.UpdatedAt,
+			Revision: d.Revision, Status: DocumentSummaryStatus(d.Status), FormSetName: d.FormSetName, RowCount: d.RowCount, UpdatedAt: d.UpdatedAt, Models: orEmpty(d.Models),
 		})
 	}
 	return ListDocuments200JSONResponse(out), nil
@@ -200,4 +200,21 @@ func (a *apiServer) ReorderDocumentRows(ctx context.Context, req ReorderDocument
 		return nil, err
 	}
 	return ReorderDocumentRows200JSONResponse(toAPIDocument(d)), nil
+}
+
+// CopyDocumentComposition menjawab POST /api/v1/documents/{documentId}/copy (M4.7).
+func (a *apiServer) CopyDocumentComposition(ctx context.Context, req CopyDocumentCompositionRequestObject) (CopyDocumentCompositionResponseObject, error) {
+	d, err := a.documents.CopyFrom(ctx, actorFrom(ctx), req.DocumentId, req.Body.SourceDocumentId)
+	if err != nil {
+		return nil, err
+	}
+	return CopyDocumentComposition200JSONResponse(toAPIDocument(d)), nil
+}
+
+// orEmpty mengganti daftar nil dengan daftar kosong, supaya JSON-nya [] dan bukan null.
+func orEmpty(list []string) []string {
+	if list == nil {
+		return []string{}
+	}
+	return list
 }

@@ -20,6 +20,7 @@ test('penyusun merakit CP, PFMEA, dan PFD dari process template IQC', async ({ p
 		const group = groups.items.find((g: { code: string }) => g.code === 'GR1');
 		const customer = await post('/api/v1/customers', { code: 'KM', name: 'Customer KM', project_group_id: group.id });
 		await post('/api/v1/models', { customer_id: customer.id, name: 'M-45' });
+		await post('/api/v1/models', { customer_id: customer.id, name: 'M-46' });
 	});
 	const temporary = await createWorkAccount(page, 'Perakit dokumen', 'perakit.e2e', ['author', 'template_maintainer']);
 	await logOut(page);
@@ -73,7 +74,7 @@ test('penyusun merakit CP, PFMEA, dan PFD dari process template IQC', async ({ p
 		let cpNumber = '';
 		for (const n of set.items as { id: string; number: string; status: string }[]) {
 			if (n.status !== 'reserved') continue;
-			const doc = await post('/api/v1/documents', { document_number_id: n.id, model_ids: [models.items[0].id] });
+			const doc = await post('/api/v1/documents', { document_number_id: n.id, model_ids: [models.items.find((m: { name: string }) => m.name === 'M-45').id] });
 			if (doc.document_type.key === 'cp') cpNumber = n.number;
 		}
 		return { versionId, cpNumber };
@@ -156,4 +157,49 @@ test('penyusun merakit CP, PFMEA, dan PFD dari process template IQC', async ({ p
 	await expect(page.getByRole('status')).toHaveText(en.composeDone.replace('{process}', 'Incoming QC'));
 	await expect(rows).toHaveCount(2);
 	await expect(cell(1, product)).toHaveText('Warpage');
+
+	// M4.7 (R-CMP-05): model M-46 dimulai dari komposisi M-45, lalu berdiri sendiri.
+	const copyNumber = await page.evaluate(async () => {
+		const post = (path: string, body: object, headers: Record<string, string> = {}) =>
+			fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, body: JSON.stringify(body) }).then((r) => r.json());
+		const customers = await (await fetch('/api/v1/customers')).json();
+		const customer = customers.items.find((c: { code: string }) => c.code === 'KM');
+		const models = await (await fetch(`/api/v1/models?customer_id=${customer.id}`)).json();
+		const model = models.items.find((m: { name: string }) => m.name === 'M-46');
+		const set = await post('/api/v1/document-numbers/sets', { customer_id: customer.id }, { 'Idempotency-Key': crypto.randomUUID() });
+		let cp = '';
+		for (const n of set.items as { id: string; number: string; status: string }[]) {
+			if (n.status !== 'reserved') continue;
+			const doc = await post('/api/v1/documents', { document_number_id: n.id, model_ids: [model.id] });
+			if (doc.document_type.key === 'cp') cp = n.number;
+		}
+		return cp;
+	});
+	await openFromMenu(page, en.navGroupDocuments, en.navDocuments);
+	await page.getByLabel(en.documentCustomer, { exact: true }).selectOption({ label: 'KM · Customer KM' });
+	await page.getByRole('link', { name: copyNumber }).click();
+	await expect(page.getByRole('heading', { name: copyNumber, level: 1 })).toBeVisible();
+	await page.getByRole('button', { name: en.copyOpen }).click();
+	await page
+		.getByLabel(en.copySource)
+		.selectOption({ label: en.copyOption.replace('{number}', setup.cpNumber).replace('{models}', 'M-45').replace('{rows}', '2') });
+	await page.getByRole('button', { name: en.copyRun }).click();
+	await expect(page.getByRole('status')).toHaveText(en.copyDone.replace('{number}', setup.cpNumber));
+	await expect(rows).toHaveCount(2);
+	await expect(cell(0, product)).toHaveText('Part number');
+	// Sesudah berisi, tombol salin hilang.
+	await expect(page.getByRole('button', { name: en.copyOpen })).toHaveCount(0);
+
+	// Salinan diubah; dokumen M-45 tetap.
+	await cell(0, product).click();
+	await page.keyboard.press('ControlOrMeta+a');
+	await page.keyboard.type('Part number M-46');
+	await page.getByRole('heading', { name: en.documentRowsTitle }).click();
+	await expect(page.getByRole('status')).toHaveText(en.documentRowSaved);
+	await page.getByRole('link', { name: 'PFMEA', exact: true }).click();
+	await expect(rows).toHaveCount(2);
+	await openFromMenu(page, en.navGroupDocuments, en.navDocuments);
+	await page.getByLabel(en.documentCustomer, { exact: true }).selectOption({ label: 'KM · Customer KM' });
+	await page.getByRole('link', { name: setup.cpNumber }).click();
+	await expect(cell(0, product)).toHaveText('Part number');
 });

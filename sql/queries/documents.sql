@@ -76,7 +76,10 @@ SELECT id FROM documents WHERE id = $1 FOR NO KEY UPDATE;
 -- name: ListDocuments :many
 SELECT d.id, n.number, t.key AS document_type_key, t.name AS document_type_name, d.revision, d.status,
        s.name AS form_set_name, d.updated_at,
-       (SELECT count(*) FROM document_rows r WHERE r.document_id = d.id)::int AS row_count
+       (SELECT count(*) FROM document_rows r WHERE r.document_id = d.id)::int AS row_count,
+       -- Nama model dokumen, menurut abjad (M4.7).
+       (SELECT coalesce(array_agg(m.name ORDER BY m.name), '{}')::text[]
+        FROM document_models dm JOIN models m ON m.id = dm.model_id WHERE dm.document_id = d.id) AS model_names
 FROM documents d
 JOIN document_numbers n ON n.id = d.document_number_id
 JOIN document_types t ON t.id = d.document_type_id
@@ -204,3 +207,23 @@ UPDATE document_rows SET position = $3 WHERE id = $1 AND document_id = $2;
 UPDATE document_rows
 SET operation_number = $3, operation_manual = false, version = version + 1, updated_at = now()
 WHERE id = $1 AND document_id = $2;
+
+
+-- M4.7: salin komposisi dari dokumen model lain (R-CMP-05).
+
+
+-- name: CopyDocumentRows :execrows
+-- CopyDocumentRows menyalin semua baris satu dokumen ke dokumen lain dengan
+-- ID baru. Urutan, proses, nomor operasi, isi, dan tautan template ikut.
+INSERT INTO document_rows (document_id, position, process_id, operation_number, operation_manual, content, template_point_id, template_version_id)
+SELECT sqlc.arg(target_id)::uuid, s.position, s.process_id, s.operation_number, s.operation_manual, s.content, s.template_point_id, s.template_version_id
+FROM document_rows s
+WHERE s.document_id = sqlc.arg(source_id);
+
+
+-- name: CopyPointExclusions :exec
+INSERT INTO document_point_exclusions (document_id, point_id, reason)
+SELECT sqlc.arg(target_id)::uuid, s.point_id, s.reason
+FROM document_point_exclusions s
+WHERE s.document_id = sqlc.arg(source_id)
+ON CONFLICT (document_id, point_id) DO NOTHING;
