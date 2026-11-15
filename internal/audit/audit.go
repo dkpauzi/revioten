@@ -39,6 +39,15 @@ const (
 	ActionAccountCreated         = "account.created"
 	ActionRolesChanged           = "account.roles_changed"
 	ActionRolePermissionsChanged = "role.permissions_changed" // M8.1
+	// Tahap 9: API integrasi.
+	ActionServiceAccountCreated  = "service_account.created"
+	ActionServiceAccountDisabled = "service_account.disabled"
+	ActionServiceTokenIssued     = "service_account.token_issued"
+	ActionServiceTokenRevoked    = "service_account.token_revoked"
+	ActionServiceTokenRefused    = "service_account.token_refused"
+	ActionChangeProposed         = "change.proposed"
+	ActionChangeProposalApplied  = "change.proposal_applied"
+	ActionExportRequested        = "export.requested"
 	ActionPasswordReset          = "account.password_reset"
 	ActionAccountDisabled        = "account.disabled"
 	ActionAccountEnabled         = "account.enabled"

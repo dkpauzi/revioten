@@ -83,8 +83,8 @@ type CreateYokotenChangeParams struct {
 	CustomerID      string
 	Reason          string
 	SourceReference *string
-	PersonID        string
-	AccountID       string
+	PersonID        *string
+	AccountID       *string
 	SourceChangeID  string
 }
 

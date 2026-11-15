@@ -324,7 +324,7 @@ func (s *RequestService) Decide(ctx context.Context, actor access.Actor, yokoten
 			ref := y.Ref + " · " + y.SourceChange
 			id, err := q.CreateYokotenChange(ctx, db.CreateYokotenChangeParams{
 				CustomerID: target.CustomerID, Reason: truncate(text, maxReason), SourceReference: &ref,
-				PersonID: actor.PersonID, AccountID: actor.AccountID, SourceChangeID: y.SourceID,
+				PersonID: &actor.PersonID, AccountID: &actor.AccountID, SourceChangeID: y.SourceID,
 			})
 			if err != nil {
 				return err

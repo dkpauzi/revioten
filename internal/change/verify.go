@@ -7,7 +7,9 @@ package change
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"slices"
 	"strconv"
 	"strings"
@@ -19,6 +21,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/access"
 	"github.com/dkpauzi/revioten/internal/audit"
 	"github.com/dkpauzi/revioten/internal/db"
+	"github.com/dkpauzi/revioten/internal/document"
 	"github.com/dkpauzi/revioten/internal/problem"
 )
 
@@ -51,6 +54,18 @@ func (s *RequestService) Verify(ctx context.Context, actor access.Actor, id stri
 	// Aturan yang tidak bisa dimatikan: pemohon bukan verifikator (R-SEC-11).
 	if c.RequestedByID == actor.PersonID {
 		return Change{}, problems(invalid("verifier", problem.NotAllowed, "The requester cannot verify their own change."))
+	}
+	// Usulan dari luar: orang yang disebut aplikasi pemanggil sebagai pemohon
+	// tidak memverifikasinya (R-API-09). Nama itu hanya pernyataan aplikasi,
+	// jadi dicocokkan dengan login dan nama verifikator.
+	if c.Mechanism == MechanismIntegration {
+		p, err := s.q.GetChangeProposal(ctx, c.ID)
+		if err != nil {
+			return Change{}, err
+		}
+		if who := strings.TrimSpace(deref(p.OnBehalfOf)); who != "" && (strings.EqualFold(who, actor.Login) || strings.EqualFold(who, actor.PersonName)) {
+			return Change{}, problems(invalid("verifier", problem.NotAllowed, "The requester cannot verify their own change."))
+		}
 	}
 	// Hak V-1 saja belum cukup: orangnya harus memegang salah satu jabatan
 	// verifikator untuk customer ini (D-51, D-54).
@@ -127,6 +142,12 @@ func openDrafts(ctx context.Context, q *db.Queries, actor access.Actor, c Change
 		if err := q.LinkChangeDraft(ctx, db.LinkChangeDraftParams{ChangeID: c.ID, DocumentID: docID, DraftRevisionID: &draft.ID, Merged: merged}); err != nil {
 			return err
 		}
+		// Usulan dari luar menulis operasinya ke draft saat diterima (M9.4).
+		if c.Mechanism == MechanismIntegration {
+			if err := applyProposal(ctx, q, actor, c, docID); err != nil {
+				return err
+			}
+		}
 		// Perubahan template menulis isi versi barunya ke draft (M5.8).
 		if c.Mechanism == MechanismTemplate {
 			if err := applyTemplate(ctx, q, actor, c, docID); err != nil {
@@ -139,4 +160,28 @@ func openDrafts(ctx context.Context, q *db.Queries, actor access.Actor, c Change
 		}
 	}
 	return nil
+}
+
+// applyProposal menulis operasi usulan luar ke draft dokumen (M9.4, R-API-07).
+func applyProposal(ctx context.Context, q *db.Queries, actor access.Actor, c Change, docID string) error {
+	p, err := q.GetChangeProposal(ctx, c.ID)
+	if err != nil {
+		return err
+	}
+	if p.DocumentID != docID {
+		return nil
+	}
+	var ops []document.PatchOp
+	if err := json.Unmarshal(p.Operations, &ops); err != nil {
+		return fmt.Errorf("membaca operasi usulan: %w", err)
+	}
+	added, modified, removed, err := document.ApplyPatch(ctx, q, docID, ops)
+	if err != nil {
+		return err
+	}
+	if err := q.MarkProposalApplied(ctx, c.ID); err != nil {
+		return err
+	}
+	return audit.Record(ctx, q, actor, audit.Event{Action: audit.ActionChangeProposalApplied, TargetType: audit.TargetChange, TargetID: c.ID,
+		Details: map[string]string{"added": strconv.Itoa(added), "modified": strconv.Itoa(modified), "removed": strconv.Itoa(removed), "source": p.SourceApplication}})
 }

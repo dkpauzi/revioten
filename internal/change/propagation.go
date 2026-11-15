@@ -174,7 +174,7 @@ func (s *RequestService) Propagate(ctx context.Context, actor access.Actor, in P
 		for _, customerID := range customers {
 			id, err := q.CreateTemplateChange(ctx, db.CreateTemplateChangeParams{
 				CustomerID: customerID, ChangeTypeID: in.ChangeTypeID, Reason: reason, SourceReference: optional(in.SourceReference),
-				RequestedByPersonID: actor.PersonID, RequestedByAccountID: actor.AccountID,
+				RequestedByPersonID: &actor.PersonID, RequestedByAccountID: &actor.AccountID,
 				TemplateVersionID: &in.VersionID, PropagationScope: &scope, ConflictPolicy: &policy, EffectiveDate: date,
 			})
 			if err != nil {

@@ -19,7 +19,9 @@ const (
 const (
 	MechanismYokoten  = "yokoten"
 	MechanismTemplate = "template"
-	MechanismSQAM     = "sqam"
+	// MechanismIntegration: usulan dari aplikasi lain lewat API integrasi (M9.4).
+	MechanismIntegration = "integration"
+	MechanismSQAM        = "sqam"
 )
 
 // ChangeType adalah satu jenis perubahan: isi, tata letak saja, atau administratif.

@@ -22,6 +22,10 @@ const (
 	// E-27 (D-106): tambahan pada jenis aktor R-API-03.
 	//   - ActorSystem: perintah di komputer server, misalnya create-admin.
 	//   - ActorAnonymous: belum login, misalnya percobaan login yang gagal.
+	// ActorService adalah aplikasi lain yang memanggil API integrasi dengan
+	// token service account (Tahap 9). Izin aktor ini diperiksa paket
+	// integration (scope dan customer token), bukan lewat peran.
+	ActorService   ActorType = "service"
 	ActorSystem    ActorType = "system"
 	ActorAnonymous ActorType = "anonymous"
 )

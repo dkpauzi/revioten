@@ -98,7 +98,7 @@ func (s *RequestService) SubmitSQAM(ctx context.Context, actor access.Actor, in 
 		if id, err = q.CreateSQAMChange(ctx, db.CreateSQAMChangeParams{
 			CustomerID: in.CustomerID, ChangeTypeID: in.ChangeTypeID, FourMCategoryID: optional(fourM), Reason: reason,
 			SourceReference: &reference, EffectiveDate: pgtype.Date{Time: *in.EffectiveDate, Valid: true},
-			RequestedByPersonID: actor.PersonID, RequestedByAccountID: actor.AccountID,
+			RequestedByPersonID: &actor.PersonID, RequestedByAccountID: &actor.AccountID,
 		}); err != nil {
 			return err
 		}

@@ -5,6 +5,7 @@
 package db
 
 import (
+	"net/netip"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
@@ -53,29 +54,30 @@ type AuditLog struct {
 }
 
 type Change struct {
-	ID                   string
-	Seq                  *int64
-	CustomerID           string
-	Mechanism            string
-	TriggerSourceID      *string
-	ChangeTypeID         string
-	FourMCategoryID      *string
-	Reason               string
-	SourceReference      *string
-	Status               string
-	RequestedByPersonID  string
-	RequestedByAccountID string
-	CreatedAt            time.Time
-	UpdatedAt            time.Time
-	VerifiedByPersonID   *string
-	VerifiedByAccountID  *string
-	VerifiedAt           *time.Time
-	VerificationNote     *string
-	TemplateVersionID    *string
-	PropagationScope     *string
-	ConflictPolicy       *string
-	EffectiveDate        pgtype.Date
-	SourceChangeID       *string
+	ID                          string
+	Seq                         *int64
+	CustomerID                  string
+	Mechanism                   string
+	TriggerSourceID             *string
+	ChangeTypeID                string
+	FourMCategoryID             *string
+	Reason                      string
+	SourceReference             *string
+	Status                      string
+	RequestedByPersonID         *string
+	RequestedByAccountID        *string
+	CreatedAt                   time.Time
+	UpdatedAt                   time.Time
+	VerifiedByPersonID          *string
+	VerifiedByAccountID         *string
+	VerifiedAt                  *time.Time
+	VerificationNote            *string
+	TemplateVersionID           *string
+	PropagationScope            *string
+	ConflictPolicy              *string
+	EffectiveDate               pgtype.Date
+	SourceChangeID              *string
+	RequestedByServiceAccountID *string
 }
 
 type ChangeAttachment struct {
@@ -112,6 +114,16 @@ type ChangeImpact struct {
 	UpdatedByPersonID    string
 	UpdatedAt            time.Time
 	ReferencedDocumentID *string
+}
+
+type ChangeProposal struct {
+	ChangeID          string
+	DocumentID        string
+	BaseRevision      int16
+	SourceApplication string
+	OnBehalfOf        *string
+	Operations        []byte
+	AppliedAt         *time.Time
 }
 
 type ChangeSource struct {
@@ -305,6 +317,21 @@ type DocumentType struct {
 	Position int16
 }
 
+type ExportJob struct {
+	ID               string
+	ServiceAccountID string
+	DocumentID       string
+	Revision         int16
+	Status           string
+	FileName         *string
+	FileSha256       *string
+	SizeBytes        *int64
+	Error            *string
+	CreatedAt        time.Time
+	StartedAt        *time.Time
+	FinishedAt       *time.Time
+}
+
 type FormApproval struct {
 	ID         string
 	TargetKind string
@@ -403,6 +430,14 @@ type FourMCategory struct {
 	Key      string
 	Name     string
 	Position int16
+}
+
+type IntegrationRequest struct {
+	ServiceAccountID string
+	IdempotencyKey   string
+	RequestHash      string
+	ChangeID         *string
+	CreatedAt        time.Time
 }
 
 type Model struct {
@@ -631,6 +666,36 @@ type RouteSlot struct {
 type RouteSlotPosition struct {
 	SlotID     string
 	PositionID string
+}
+
+type ServiceAccount struct {
+	ID                string
+	Name              string
+	OwnerTeam         string
+	Contact           string
+	Purpose           string
+	Scopes            []string
+	AllowedNetworks   []netip.Prefix
+	DisabledAt        *time.Time
+	CreatedByPersonID string
+	CreatedAt         time.Time
+}
+
+type ServiceAccountCustomer struct {
+	ServiceAccountID string
+	CustomerID       string
+}
+
+type ServiceToken struct {
+	ID                string
+	ServiceAccountID  string
+	Prefix            string
+	TokenHash         string
+	ExpiresAt         time.Time
+	RevokedAt         *time.Time
+	LastUsedAt        *time.Time
+	CreatedByPersonID string
+	CreatedAt         time.Time
 }
 
 type Session struct {

@@ -11,7 +11,9 @@ SELECT c.id, c.seq, c.customer_id, cu.code AS customer_code, c.mechanism,
        c.trigger_source_id, s.name AS trigger_name,
        c.change_type_id, t.key AS change_type_key, t.name AS change_type_name,
        c.four_m_category_id, f.key AS four_m_key, f.name AS four_m_name,
-       c.reason, c.source_reference, c.status, p.name AS requested_by, c.requested_by_person_id,
+       c.reason, c.source_reference, c.status,
+       -- Pemohon: orang, atau service account untuk usulan dari luar (M9.4).
+       coalesce(p.name, sa.name)::text AS requested_by, c.requested_by_person_id, c.requested_by_service_account_id,
        c.created_at, c.updated_at,
        c.verified_by_person_id, v.name AS verified_by, c.verified_at, c.verification_note,
        c.template_version_id, c.propagation_scope, c.conflict_policy, c.effective_date,
@@ -19,7 +21,8 @@ SELECT c.id, c.seq, c.customer_id, cu.code AS customer_code, c.mechanism,
 FROM changes c
 JOIN customers cu ON cu.id = c.customer_id
 JOIN change_types t ON t.id = c.change_type_id
-JOIN people p ON p.id = c.requested_by_person_id
+LEFT JOIN people p ON p.id = c.requested_by_person_id
+LEFT JOIN service_accounts sa ON sa.id = c.requested_by_service_account_id
 LEFT JOIN change_sources s ON s.id = c.trigger_source_id
 LEFT JOIN four_m_categories f ON f.id = c.four_m_category_id
 LEFT JOIN people v ON v.id = c.verified_by_person_id

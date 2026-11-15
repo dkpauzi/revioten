@@ -60,17 +60,20 @@ type Change struct {
 	Reason          string
 	SourceReference string
 	Status          string
-	RequestedBy     string             // nama orang pemohon
-	RequestedByID   string             // ID orang pemohon
-	Documents       []AffectedDocument // menurut jenis dokumen lalu nomor; tidak pernah nil
-	Attachments     []Attachment       // lampiran aktif menurut waktu unggah; tidak pernah nil (M5.2)
-	Verification    *Verification      // terisi sesudah diterima atau ditolak (M5.3)
-	Impacts         []Impact           // daftar periksa dampak menurut urutan; tidak pernah nil (M5.7)
-	Template        *TemplateInfo      // terisi untuk mekanisme template (M5.8)
-	Source          *Ref               // perubahan sumber untuk mekanisme yokoten (M5.9); Name berisi nomornya
-	EffectiveDate   *time.Time         // tanggal berlaku untuk SQAM dan propagasi bercakupan all (M5.8, M5.10)
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
+	RequestedBy     string // nama orang pemohon
+	RequestedByID   string // ID orang pemohon
+	// ServiceAccountID terisi untuk usulan dari API integrasi (M9.4); pemohonnya
+	// bukan orang, jadi RequestedByID kosong dan RequestedBy berisi nama aplikasi.
+	ServiceAccountID string
+	Documents        []AffectedDocument // menurut jenis dokumen lalu nomor; tidak pernah nil
+	Attachments      []Attachment       // lampiran aktif menurut waktu unggah; tidak pernah nil (M5.2)
+	Verification     *Verification      // terisi sesudah diterima atau ditolak (M5.3)
+	Impacts          []Impact           // daftar periksa dampak menurut urutan; tidak pernah nil (M5.7)
+	Template         *TemplateInfo      // terisi untuk mekanisme template (M5.8)
+	Source           *Ref               // perubahan sumber untuk mekanisme yokoten (M5.9); Name berisi nomornya
+	EffectiveDate    *time.Time         // tanggal berlaku untuk SQAM dan propagasi bercakupan all (M5.8, M5.10)
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
 }
 
 // AffectedDocument adalah satu dokumen terdampak.
@@ -186,7 +189,7 @@ func (s *RequestService) Create(ctx context.Context, actor access.Actor, in NewC
 		id, err = q.CreateChange(ctx, db.CreateChangeParams{
 			CustomerID: in.CustomerID, Mechanism: MechanismManual, TriggerSourceID: &in.TriggerID, ChangeTypeID: in.ChangeTypeID,
 			FourMCategoryID: optional(in.FourMCategoryID), Reason: fields.reason, SourceReference: optional(fields.reference),
-			RequestedByPersonID: actor.PersonID, RequestedByAccountID: actor.AccountID,
+			RequestedByPersonID: &actor.PersonID, RequestedByAccountID: &actor.AccountID,
 		})
 		if err != nil {
 			return err
@@ -320,7 +323,7 @@ func getChange(ctx context.Context, q *db.Queries, id string) (Change, error) {
 		ID: r.ID, Ref: changeRef(r.Seq), CustomerID: r.CustomerID, CustomerCode: r.CustomerCode, Mechanism: r.Mechanism,
 		ChangeType: Ref{ID: r.ChangeTypeID, Key: r.ChangeTypeKey, Name: r.ChangeTypeName},
 		Reason:     r.Reason, SourceReference: deref(r.SourceReference), Status: r.Status,
-		RequestedBy: r.RequestedBy, RequestedByID: r.RequestedByPersonID,
+		RequestedBy: r.RequestedBy, RequestedByID: deref(r.RequestedByPersonID), ServiceAccountID: deref(r.RequestedByServiceAccountID),
 		Documents: []AffectedDocument{}, CreatedAt: r.CreatedAt.UTC(), UpdatedAt: r.UpdatedAt.UTC(),
 	}
 	if r.TriggerSourceID != nil {

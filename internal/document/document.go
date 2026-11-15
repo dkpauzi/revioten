@@ -768,3 +768,13 @@ func requireDraft(d Document) error {
 	}
 	return nil
 }
+
+// Load membaca satu dokumen lengkap tanpa memeriksa hak. Hanya untuk layanan
+// lain yang sudah memeriksa izin dengan caranya sendiri, misalnya API
+// integrasi yang memeriksa scope dan customer token (Tahap 9).
+func Load(ctx context.Context, q *db.Queries, id string) (Document, error) {
+	if !db.IsUUID(id) {
+		return Document{}, problem.ErrNotFound
+	}
+	return getDocument(ctx, q, id)
+}

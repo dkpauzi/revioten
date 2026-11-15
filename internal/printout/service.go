@@ -543,3 +543,33 @@ func deref(s *string) string {
 	}
 	return *s
 }
+
+// ExportReleased membuat Excel satu revisi terbit untuk ekspor API integrasi
+// (M9.5). Pemanggil sudah memeriksa izin (scope dan customer token) dan
+// mencatat audit; cetakan ini tidak masuk catatan cetak per orang.
+func (s *Service) ExportReleased(ctx context.Context, documentID string, revision int) (File, error) {
+	d, err := document.Load(ctx, s.q, documentID)
+	if err != nil {
+		return File{}, err
+	}
+	info, err := s.q.GetRevisionPrintInfo(ctx, db.GetRevisionPrintInfoParams{DocumentID: documentID, Revision: int16(revision)})
+	if errors.Is(err, pgx.ErrNoRows) || (err == nil && info.Status != "released") {
+		return File{}, problem.ErrNotFound
+	}
+	if err != nil {
+		return File{}, err
+	}
+	snap, err := document.ParseSnapshot(deref(info.Snapshot))
+	if err != nil {
+		return File{}, fmt.Errorf("membaca snapshot: %w", err)
+	}
+	in, err := s.input(ctx, d, snap, info, revision, deref(info.SnapshotSha256), Request{})
+	if err != nil {
+		return File{}, err
+	}
+	body, err := XLSX(Build(in))
+	if err != nil {
+		return File{}, fmt.Errorf("menulis Excel: %w", err)
+	}
+	return File{Name: fmt.Sprintf("%s%s-export.xlsx", d.Number, in.RevisionLabel), ContentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", Body: body}, nil
+}
