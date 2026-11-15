@@ -1,0 +1,11 @@
+# Konfigurasi oapi-codegen v2.8.1 untuk membuat api.gen.go dari api/integration.yaml.
+# Sengaja terpisah dari internal/server: kontrak integrasi punya tipe sendiri,
+# jadi perubahan UI API tidak mengubah bentuk API integrasi (R-API-02).
+package: integrationapi
+generate:
+  std-http-server: true
+  strict-server: true
+  models: true
+output: api.gen.go
+compatibility:
+  always-prefix-enum-values: true

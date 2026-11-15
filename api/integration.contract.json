@@ -1,0 +1,156 @@
+{
+  "createExport": {
+    "method": "POST",
+    "path": "/integration/v1/exports",
+    "response": {
+      "created_at": "string",
+      "document_id": "string",
+      "file_name": "string",
+      "finished_at": "string",
+      "id": "string",
+      "revision": "number",
+      "size_bytes": "number",
+      "status": "string"
+    },
+    "status": 202
+  },
+  "downloadExport": {
+    "method": "GET",
+    "path": "/integration/v1/exports/j-1/file",
+    "response": "application/octet-stream",
+    "status": 200
+  },
+  "error": {
+    "response": {
+      "code": "string",
+      "details": [
+        {
+          "code": "string",
+          "field": "string",
+          "message": "string"
+        }
+      ],
+      "message": "string",
+      "request_id": "string"
+    },
+    "status": 422
+  },
+  "getExport": {
+    "method": "GET",
+    "path": "/integration/v1/exports/j-1",
+    "response": {
+      "created_at": "string",
+      "document_id": "string",
+      "file_name": "string",
+      "finished_at": "string",
+      "id": "string",
+      "revision": "number",
+      "size_bytes": "number",
+      "status": "string"
+    },
+    "status": 200
+  },
+  "getProposedChange": {
+    "method": "GET",
+    "path": "/integration/v1/changes/ch-1",
+    "response": {
+      "created_at": "string",
+      "id": "string",
+      "ref": "string",
+      "status": "string",
+      "verification_note": "string",
+      "verified_at": "string"
+    },
+    "status": 200
+  },
+  "getReleasedRevision": {
+    "method": "GET",
+    "path": "/integration/v1/documents/d-1/revisions/current",
+    "response": {
+      "current": "boolean",
+      "customer_id": "string",
+      "document_id": "string",
+      "document_type": "string",
+      "fields": [
+        {
+          "area": "string",
+          "id": "string",
+          "key": "string",
+          "label": "string"
+        }
+      ],
+      "header": {
+        "f-0": "string"
+      },
+      "migrated": "boolean",
+      "models": [
+        "string"
+      ],
+      "number": "string",
+      "part_numbers": [
+        "string"
+      ],
+      "release_date": "string",
+      "released_at": "string",
+      "revision": "number",
+      "rows": [
+        {
+          "content": {
+            "f-1": "string"
+          },
+          "id": "string",
+          "operation_number": "string",
+          "position": "number",
+          "process_id": "string",
+          "process_name": "string",
+          "section_id": "string"
+        }
+      ],
+      "sections": [
+        {
+          "id": "string",
+          "name": "string",
+          "part_numbers": [
+            "string"
+          ]
+        }
+      ],
+      "sha256": "string"
+    },
+    "status": 200
+  },
+  "listReleasedDocuments": {
+    "method": "GET",
+    "path": "/integration/v1/documents",
+    "response": {
+      "items": [
+        {
+          "customer_code": "string",
+          "customer_id": "string",
+          "document_type": "string",
+          "id": "string",
+          "migrated": "boolean",
+          "number": "string",
+          "released_at": "string",
+          "revision": "number",
+          "sha256": "string"
+        }
+      ],
+      "next_cursor": "string"
+    },
+    "status": 200
+  },
+  "proposeChange": {
+    "method": "POST",
+    "path": "/integration/v1/changes",
+    "response": {
+      "created_at": "string",
+      "id": "string",
+      "ref": "string",
+      "status": "string",
+      "verification_note": "string",
+      "verified_at": "string"
+    },
+    "status": 201
+  }
+}

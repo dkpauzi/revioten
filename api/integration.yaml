@@ -1,0 +1,474 @@
+openapi: 3.0.4
+info:
+  title: PFD, PFMEA, and CP system · Integration API
+  version: 1.0.0
+  description: >-
+    The interface for other internal applications (stage 9, R-API-02). It is separate from the UI API
+    (`api/openapi.yaml`), so a change to the screens never breaks an integration. Every call carries a service
+    account token as a bearer token. A token is bound to scopes and to a set of customers (R-API-05); anything
+    outside them answers 404. Only released data is readable. Writes are change proposals that wait for human
+    verification; there is no way to verify, approve, or release through this API (R-API-07).
+
+    Versioning (R-API-15): the major version is in the path. Within v1 only additive changes are made.
+servers:
+  - url: /
+security:
+  - serviceToken: []
+paths:
+  /integration/v1/documents:
+    get:
+      operationId: listReleasedDocuments
+      summary: Released documents, by release time (scope documents:read)
+      description: >-
+        For incremental sync, keep the released_at of the last item you received and send it as updated_since.
+        Follow next_cursor until it is missing.
+      parameters:
+        - name: customer_id
+          in: query
+          schema:
+            type: string
+        - name: updated_since
+          in: query
+          description: Only documents whose revision in force was released at or after this time (UTC, ISO 8601).
+          schema:
+            type: string
+            format: date-time
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Page size from 1 to 200. The default is 50.
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: One page of released documents.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentPage'
+        default:
+          $ref: '#/components/responses/Error'
+  /integration/v1/documents/{documentId}/revisions/{revision}:
+    get:
+      operationId: getReleasedRevision
+      summary: One released revision with its rows (scope revisions:read)
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+        - name: revision
+          in: path
+          required: true
+          description: A revision number, or `current` for the revision in force.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The released revision.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Revision'
+        default:
+          $ref: '#/components/responses/Error'
+  /integration/v1/changes:
+    post:
+      operationId: proposeChange
+      summary: Propose a change to a released document (scope changes:propose)
+      description: >-
+        The proposal carries patch operations against the revision in force. It becomes a change that waits for
+        human verification; the document does not change until a verifier accepts it. Send an Idempotency-Key with
+        every write: repeating the same request returns the first result (R-API-10). A base revision that is no
+        longer in force answers 409 (R-API-11).
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeProposal'
+      responses:
+        '200':
+          description: The same request was sent before; this is its result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProposedChange'
+        '201':
+          description: The change was created and waits for verification.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProposedChange'
+        default:
+          $ref: '#/components/responses/Error'
+  /integration/v1/changes/{changeId}:
+    get:
+      operationId: getProposedChange
+      summary: The status of one of your own proposals (scope changes:read)
+      parameters:
+        - name: changeId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The proposal.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProposedChange'
+        default:
+          $ref: '#/components/responses/Error'
+  /integration/v1/exports:
+    post:
+      operationId: createExport
+      summary: Queue an Excel export of a released revision (scope exports:create)
+      description: The export is made in the background (R-API-14). Poll the job until its status is done, then download the file.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewExport'
+      responses:
+        '202':
+          description: The job was queued.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportJob'
+        default:
+          $ref: '#/components/responses/Error'
+  /integration/v1/exports/{exportId}:
+    get:
+      operationId: getExport
+      summary: The state of one export job
+      parameters:
+        - $ref: '#/components/parameters/ExportId'
+      responses:
+        '200':
+          description: The job.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportJob'
+        default:
+          $ref: '#/components/responses/Error'
+  /integration/v1/exports/{exportId}/file:
+    get:
+      operationId: downloadExport
+      summary: Download the file of a finished export job
+      parameters:
+        - $ref: '#/components/parameters/ExportId'
+      responses:
+        '200':
+          description: The Excel file.
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+        default:
+          $ref: '#/components/responses/Error'
+components:
+  securitySchemes:
+    serviceToken:
+      type: http
+      scheme: bearer
+      description: A service account token issued by the admin. Shown once, stored only as a hash, expiring, revocable (R-API-04).
+  parameters:
+    DocumentId:
+      name: documentId
+      in: path
+      required: true
+      schema:
+        type: string
+    ExportId:
+      name: exportId
+      in: path
+      required: true
+      schema:
+        type: string
+  responses:
+    Error:
+      description: >-
+        An error in the one error format (R-API-13). 401 unauthenticated, 403 forbidden (missing scope), 404
+        not_found, 409 conflict, 422 validation_failed, 429 rate_limited with a Retry-After header, 500 internal_error.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  schemas:
+    Error:
+      type: object
+      required: [code, message, request_id]
+      properties:
+        code:
+          type: string
+          enum: [invalid_request, unauthenticated, forbidden, not_found, method_not_allowed, conflict, validation_failed, rate_limited, internal_error]
+        message:
+          type: string
+        details:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorDetail'
+        request_id:
+          type: string
+    ErrorDetail:
+      type: object
+      required: [field, code, message]
+      properties:
+        field:
+          type: string
+        code:
+          type: string
+        message:
+          type: string
+    DocumentPage:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReleasedDocument'
+        next_cursor:
+          type: string
+          description: Missing on the last page.
+    ReleasedDocument:
+      type: object
+      required: [id, number, customer_id, customer_code, document_type, revision, released_at, sha256, migrated]
+      properties:
+        id:
+          type: string
+        number:
+          type: string
+        customer_id:
+          type: string
+        customer_code:
+          type: string
+        document_type:
+          type: string
+          description: pfd, pfmea, or cp.
+        revision:
+          type: integer
+          description: The revision in force.
+        released_at:
+          type: string
+          format: date-time
+        sha256:
+          type: string
+          description: SHA-256 of the frozen content of the revision in force.
+        migrated:
+          type: boolean
+    Revision:
+      type: object
+      required: [document_id, number, customer_id, document_type, revision, current, released_at, sha256, migrated, models, part_numbers, header, fields, sections, rows]
+      properties:
+        document_id:
+          type: string
+        number:
+          type: string
+        customer_id:
+          type: string
+        document_type:
+          type: string
+        revision:
+          type: integer
+        current:
+          type: boolean
+          description: True when this is the revision in force.
+        released_at:
+          type: string
+          format: date-time
+        release_date:
+          type: string
+        sha256:
+          type: string
+        migrated:
+          type: boolean
+        models:
+          type: array
+          items:
+            type: string
+        part_numbers:
+          type: array
+          items:
+            type: string
+        header:
+          type: object
+          additionalProperties: true
+          description: Header values by field ID.
+        fields:
+          type: array
+          description: The columns of the form. A field ID is the key of a value in header or in the content of a row.
+          items:
+            $ref: '#/components/schemas/Field'
+        sections:
+          type: array
+          items:
+            $ref: '#/components/schemas/Section'
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/Row'
+    Field:
+      type: object
+      required: [id, label, area]
+      properties:
+        id:
+          type: string
+        key:
+          type: string
+          description: A stable name shared between forms, when the column has one.
+        label:
+          type: string
+        area:
+          type: string
+          enum: [header, row]
+    Section:
+      type: object
+      required: [id, name, part_numbers]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        part_numbers:
+          type: array
+          items:
+            type: string
+    Row:
+      type: object
+      required: [id, position, content]
+      properties:
+        id:
+          type: string
+          description: The stable row ID. Use it in modify and remove operations.
+        position:
+          type: integer
+        section_id:
+          type: string
+        process_id:
+          type: string
+        process_name:
+          type: string
+        operation_number:
+          type: string
+        content:
+          type: object
+          additionalProperties: true
+          description: Cell values by field ID.
+    ChangeProposal:
+      type: object
+      required: [document_id, base_revision, source_application, reason, operations]
+      properties:
+        document_id:
+          type: string
+        base_revision:
+          type: integer
+          description: The revision in force that you read. A mismatch answers 409.
+        source_application:
+          type: string
+        on_behalf_of:
+          type: string
+          description: The person the proposal is for. Recorded and shown as asserted, never trusted for authorization (R-API-09).
+        change_type:
+          type: string
+          enum: [content, layout, administrative]
+          description: The default is content.
+        reason:
+          type: string
+        reference:
+          type: string
+        operations:
+          type: array
+          items:
+            $ref: '#/components/schemas/PatchOperation'
+    PatchOperation:
+      type: object
+      required: [op]
+      properties:
+        op:
+          type: string
+          enum: [add, modify, remove]
+        row_id:
+          type: string
+          description: Required for modify and remove.
+        process_id:
+          type: string
+          description: Optional for add.
+        section_id:
+          type: string
+          description: Required for add when the document has sections.
+        content:
+          type: object
+          additionalProperties: true
+          description: Cell values by field ID. For modify only the given columns change; null empties a column.
+    ProposedChange:
+      type: object
+      required: [id, ref, status, created_at]
+      properties:
+        id:
+          type: string
+        ref:
+          type: string
+          description: The reference number people see, for example CHG-0007.
+        status:
+          type: string
+          enum: [submitted, accepted, rejected]
+        created_at:
+          type: string
+          format: date-time
+        verified_at:
+          type: string
+          format: date-time
+        verification_note:
+          type: string
+    NewExport:
+      type: object
+      required: [document_id]
+      properties:
+        document_id:
+          type: string
+        revision:
+          type: integer
+          description: Leave it out for the revision in force.
+    ExportJob:
+      type: object
+      required: [id, document_id, revision, status, created_at]
+      properties:
+        id:
+          type: string
+        document_id:
+          type: string
+        revision:
+          type: integer
+        status:
+          type: string
+          enum: [queued, running, done, failed]
+        file_name:
+          type: string
+        size_bytes:
+          type: integer
+          format: int64
+        error:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        finished_at:
+          type: string
+          format: date-time
