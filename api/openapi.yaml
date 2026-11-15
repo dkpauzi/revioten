@@ -2573,6 +2573,181 @@ paths:
                 $ref: '#/components/schemas/ExcelComparison'
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/released-documents:
+    get:
+      operationId: listReleasedDocuments
+      summary: Documents of one customer that have a revision in force (L-1, D-195)
+      description: The revision and status are those of the revision in force, never a draft. Void numbers are left out.
+      parameters:
+        - name: customer_id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The released documents, by number.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentList'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/released-documents/{documentId}:
+    get:
+      operationId: getReleasedDocument
+      summary: The revision in force of one document, read from its snapshot (L-1, D-195)
+      description: A document that was never released does not exist for this reader (404). Row versions are 0.
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      responses:
+        '200':
+          description: The revision in force.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/released-documents/{documentId}/pfmea-cp:
+    get:
+      operationId: getReleasedPfmeaCpComparison
+      summary: The released PFMEA and CP of the document set side by side, read only (L-1, D-195)
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      responses:
+        '200':
+          description: The comparison of the revisions in force.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PfmeaCpComparison'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/periodic-reviews/sets:
+    get:
+      operationId: listReviewSets
+      summary: Document sets and their periodic review status (L-2, D-138, D-196)
+      description: >-
+        Without all=true only the sets that are due soon or overdue. A set is the PFD, PFMEA, and CP of one customer
+        with the same running number.
+      parameters:
+        - name: customer_id
+          in: query
+          schema:
+            type: string
+        - name: document_id
+          in: query
+          schema:
+            type: string
+        - name: all
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: The sets.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewSetList'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/periodic-reviews:
+    get:
+      operationId: listPeriodicReviews
+      summary: Recent periodic review records (L-2, D-196)
+      parameters:
+        - name: customer_id
+          in: query
+          schema:
+            type: string
+        - name: open_only
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: The records, newest first.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PeriodicReviewList'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: recordPeriodicReview
+      summary: Record a periodic review with no change (E-3, D-196)
+      description: >-
+        Every checklist item is answered OK or Not applicable. The revisions in force are frozen with their SHA-256.
+        The record restarts the review clock once another person confirms it.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewPeriodicReview'
+      responses:
+        '201':
+          description: The record, waiting for confirmation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PeriodicReview'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/periodic-reviews/{reviewId}/confirm:
+    post:
+      operationId: confirmPeriodicReview
+      summary: Confirm a periodic review record (V-1, D-196)
+      description: The person who recorded it cannot confirm it (R-SEC-11).
+      parameters:
+        - name: reviewId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The confirmed record.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PeriodicReview'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/performance:
+    get:
+      operationId: getPerformance
+      summary: The performance report of PPAP Engineers (L-5, D-197)
+      description: >-
+        A week runs from Friday to Thursday; months and years are calendar ones, in the factory time zone (WIB).
+        date picks the period that contains it; leave it out for today.
+      parameters:
+        - name: period
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [week, month, year]
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: customer_id
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The report.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Performance'
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/metrics:
     get:
       operationId: getMetrics
@@ -5483,6 +5658,290 @@ components:
                 type: string
         truncated:
           type: boolean
+    ReviewSetDocument:
+      type: object
+      required: [id, number, document_type, revision]
+      properties:
+        id:
+          type: string
+        number:
+          type: string
+        document_type:
+          type: string
+        revision:
+          type: integer
+    ReviewSet:
+      type: object
+      required: [customer_id, customer_code, sequence, documents, models, last_release, due_on, status, days_left, draft_open]
+      properties:
+        customer_id:
+          type: string
+        customer_code:
+          type: string
+        sequence:
+          type: integer
+        documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReviewSetDocument'
+        models:
+          type: array
+          items:
+            type: string
+        last_release:
+          type: string
+          format: date
+        last_review:
+          type: string
+          format: date
+        due_on:
+          type: string
+          format: date
+        status:
+          type: string
+          enum: [ok, due_soon, overdue]
+        days_left:
+          type: integer
+          description: Negative when overdue.
+        open_review_id:
+          type: string
+          description: The record waiting for confirmation, if any.
+        draft_open:
+          type: boolean
+    ReviewSetList:
+      type: object
+      required: [period_months, warning_days, due_soon, overdue, items]
+      properties:
+        period_months:
+          type: integer
+        warning_days:
+          type: integer
+        due_soon:
+          type: integer
+        overdue:
+          type: integer
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReviewSet'
+    ReviewAnswer:
+      type: object
+      required: [item, answer]
+      properties:
+        item:
+          type: string
+          enum: [process_flow, claims_findings, occurrence_detection, special_characteristics, control_methods, references, reaction_plan, pfmea_cp_sync]
+        answer:
+          type: string
+          enum: [ok, not_applicable]
+        note:
+          type: string
+    NewPeriodicReview:
+      type: object
+      required: [document_id, reviewed_on, participants, conclusion, checklist]
+      properties:
+        document_id:
+          type: string
+          description: Any document of the set.
+        reviewed_on:
+          type: string
+          description: YYYY-MM-DD, not in the future.
+        participants:
+          type: string
+        conclusion:
+          type: string
+        checklist:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReviewAnswer'
+    ReviewedRevision:
+      type: object
+      required: [document_id, number, document_type, revision, sha256]
+      properties:
+        document_id:
+          type: string
+        number:
+          type: string
+        document_type:
+          type: string
+        revision:
+          type: integer
+        sha256:
+          type: string
+    PeriodicReview:
+      type: object
+      required: [id, ref, customer_id, customer_code, sequence, reviewed_on, participants, conclusion, checklist, revisions, status, recorded_by, recorded_at]
+      properties:
+        id:
+          type: string
+        ref:
+          type: string
+          description: For example PRV-0001.
+        customer_id:
+          type: string
+        customer_code:
+          type: string
+        sequence:
+          type: integer
+        reviewed_on:
+          type: string
+          format: date
+        participants:
+          type: string
+        conclusion:
+          type: string
+        checklist:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReviewAnswer'
+        revisions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReviewedRevision'
+        status:
+          type: string
+          enum: [submitted, confirmed]
+        recorded_by:
+          type: string
+        recorded_at:
+          type: string
+          format: date-time
+        confirmed_by:
+          type: string
+        confirmed_at:
+          type: string
+          format: date-time
+    PeriodicReviewList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PeriodicReview'
+    DurationSummary:
+      type: object
+      required: [count, average_hours, median_hours]
+      properties:
+        count:
+          type: integer
+        average_hours:
+          type: number
+        median_hours:
+          type: number
+    PerformancePerson:
+      type: object
+      required: [name, submitted, accepted, rejected, yokotens, releases, accepted_to_release, edit_to_print, print_to_signed]
+      properties:
+        person_id:
+          type: string
+          description: Left out for requests from another application.
+        name:
+          type: string
+        submitted:
+          type: integer
+        accepted:
+          type: integer
+        rejected:
+          type: integer
+        yokotens:
+          type: integer
+        releases:
+          type: integer
+        accepted_to_release:
+          $ref: '#/components/schemas/DurationSummary'
+        edit_to_print:
+          $ref: '#/components/schemas/DurationSummary'
+        print_to_signed:
+          $ref: '#/components/schemas/DurationSummary'
+    PerformanceRelease:
+      type: object
+      required: [revision_id, number, document_type, revision, accepted_at, released_at]
+      properties:
+        revision_id:
+          type: string
+        number:
+          type: string
+        document_type:
+          type: string
+        revision:
+          type: integer
+        printed_by:
+          type: string
+        accepted_at:
+          type: string
+          format: date-time
+        printed_at:
+          type: string
+          format: date-time
+        scan_at:
+          type: string
+          format: date-time
+        released_at:
+          type: string
+          format: date-time
+        accepted_to_release_hours:
+          type: number
+        edit_to_print_hours:
+          type: number
+        print_to_signed_hours:
+          type: number
+    TriggerCount:
+      type: object
+      required: [name, mechanism, count]
+      properties:
+        name:
+          type: string
+        mechanism:
+          type: string
+        count:
+          type: integer
+    Performance:
+      type: object
+      required: [period, from, to, submitted, accepted, rejected, by_trigger, yokotens, yokoten_targets, yokoten_changes, releases, accepted_to_release, edit_to_print, print_to_signed, people, release_items]
+      properties:
+        period:
+          type: string
+          enum: [week, month, year]
+        from:
+          type: string
+          format: date
+        to:
+          type: string
+          format: date
+          description: The last day of the period (inclusive).
+        submitted:
+          type: integer
+        accepted:
+          type: integer
+        rejected:
+          type: integer
+        by_trigger:
+          type: array
+          items:
+            $ref: '#/components/schemas/TriggerCount'
+        yokotens:
+          type: integer
+        yokoten_targets:
+          type: integer
+        yokoten_changes:
+          type: integer
+        releases:
+          type: integer
+        accepted_to_release:
+          $ref: '#/components/schemas/DurationSummary'
+        edit_to_print:
+          $ref: '#/components/schemas/DurationSummary'
+        print_to_signed:
+          $ref: '#/components/schemas/DurationSummary'
+        people:
+          type: array
+          items:
+            $ref: '#/components/schemas/PerformancePerson'
+        release_items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PerformanceRelease'
     Metrics:
       type: object
       required: [rows, documents, yokoten, revision, migration]

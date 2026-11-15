@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"time"
 
 	"github.com/dkpauzi/revioten/internal/access"
 	"github.com/dkpauzi/revioten/internal/document"
@@ -28,6 +29,7 @@ type MigrationService interface {
 // MetricsService menghitung ukuran dasbor (M7.7).
 type MetricsService interface {
 	Get(ctx context.Context, actor access.Actor, customerID string) (metrics.Metrics, error)
+	Performance(ctx context.Context, actor access.Actor, kind string, date time.Time, customerID string) (metrics.Performance, error)
 }
 
 // ListMigratableNumbers menjawab GET /api/v1/migration/numbers.

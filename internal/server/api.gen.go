@@ -1259,6 +1259,45 @@ func (e OutboxEntryStatus) Valid() bool {
 	}
 }
 
+// Defines values for PerformancePeriod.
+const (
+	PerformancePeriodMonth PerformancePeriod = "month"
+	PerformancePeriodWeek  PerformancePeriod = "week"
+	PerformancePeriodYear  PerformancePeriod = "year"
+)
+
+// Valid indicates whether the value is a known member of the PerformancePeriod enum.
+func (e PerformancePeriod) Valid() bool {
+	switch e {
+	case PerformancePeriodMonth:
+		return true
+	case PerformancePeriodWeek:
+		return true
+	case PerformancePeriodYear:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PeriodicReviewStatus.
+const (
+	PeriodicReviewStatusConfirmed PeriodicReviewStatus = "confirmed"
+	PeriodicReviewStatusSubmitted PeriodicReviewStatus = "submitted"
+)
+
+// Valid indicates whether the value is a known member of the PeriodicReviewStatus enum.
+func (e PeriodicReviewStatus) Valid() bool {
+	switch e {
+	case PeriodicReviewStatusConfirmed:
+		return true
+	case PeriodicReviewStatusSubmitted:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PermissionInfoLevel.
 const (
 	PermissionInfoLevelAdmin  PermissionInfoLevel = "admin"
@@ -1568,6 +1607,81 @@ func (e RatingCriterionInputScale) Valid() bool {
 	}
 }
 
+// Defines values for ReviewAnswerAnswer.
+const (
+	ReviewAnswerAnswerNotApplicable ReviewAnswerAnswer = "not_applicable"
+	ReviewAnswerAnswerOk            ReviewAnswerAnswer = "ok"
+)
+
+// Valid indicates whether the value is a known member of the ReviewAnswerAnswer enum.
+func (e ReviewAnswerAnswer) Valid() bool {
+	switch e {
+	case ReviewAnswerAnswerNotApplicable:
+		return true
+	case ReviewAnswerAnswerOk:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ReviewAnswerItem.
+const (
+	ReviewAnswerItemClaimsFindings         ReviewAnswerItem = "claims_findings"
+	ReviewAnswerItemControlMethods         ReviewAnswerItem = "control_methods"
+	ReviewAnswerItemOccurrenceDetection    ReviewAnswerItem = "occurrence_detection"
+	ReviewAnswerItemPfmeaCpSync            ReviewAnswerItem = "pfmea_cp_sync"
+	ReviewAnswerItemProcessFlow            ReviewAnswerItem = "process_flow"
+	ReviewAnswerItemReactionPlan           ReviewAnswerItem = "reaction_plan"
+	ReviewAnswerItemReferences             ReviewAnswerItem = "references"
+	ReviewAnswerItemSpecialCharacteristics ReviewAnswerItem = "special_characteristics"
+)
+
+// Valid indicates whether the value is a known member of the ReviewAnswerItem enum.
+func (e ReviewAnswerItem) Valid() bool {
+	switch e {
+	case ReviewAnswerItemClaimsFindings:
+		return true
+	case ReviewAnswerItemControlMethods:
+		return true
+	case ReviewAnswerItemOccurrenceDetection:
+		return true
+	case ReviewAnswerItemPfmeaCpSync:
+		return true
+	case ReviewAnswerItemProcessFlow:
+		return true
+	case ReviewAnswerItemReactionPlan:
+		return true
+	case ReviewAnswerItemReferences:
+		return true
+	case ReviewAnswerItemSpecialCharacteristics:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ReviewSetStatus.
+const (
+	ReviewSetStatusDueSoon ReviewSetStatus = "due_soon"
+	ReviewSetStatusOk      ReviewSetStatus = "ok"
+	ReviewSetStatusOverdue ReviewSetStatus = "overdue"
+)
+
+// Valid indicates whether the value is a known member of the ReviewSetStatus enum.
+func (e ReviewSetStatus) Valid() bool {
+	switch e {
+	case ReviewSetStatusDueSoon:
+		return true
+	case ReviewSetStatusOk:
+		return true
+	case ReviewSetStatusOverdue:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for RevisionVerificationStatus.
 const (
 	RevisionVerificationStatusDraft      RevisionVerificationStatus = "draft"
@@ -1814,6 +1928,27 @@ func (e ListDocumentNumbersParamsStatus) Valid() bool {
 	case ListDocumentNumbersParamsStatusSkipped:
 		return true
 	case ListDocumentNumbersParamsStatusVoid:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GetPerformanceParamsPeriod.
+const (
+	GetPerformanceParamsPeriodMonth GetPerformanceParamsPeriod = "month"
+	GetPerformanceParamsPeriodWeek  GetPerformanceParamsPeriod = "week"
+	GetPerformanceParamsPeriodYear  GetPerformanceParamsPeriod = "year"
+)
+
+// Valid indicates whether the value is a known member of the GetPerformanceParamsPeriod enum.
+func (e GetPerformanceParamsPeriod) Valid() bool {
+	switch e {
+	case GetPerformanceParamsPeriodMonth:
+		return true
+	case GetPerformanceParamsPeriodWeek:
+		return true
+	case GetPerformanceParamsPeriodYear:
 		return true
 	default:
 		return false
@@ -2782,6 +2917,13 @@ type DocumentTypeRef struct {
 // DocumentTypeRefKey defines model for DocumentTypeRef.Key.
 type DocumentTypeRefKey string
 
+// DurationSummary defines model for DurationSummary.
+type DurationSummary struct {
+	AverageHours float32 `json:"average_hours"`
+	Count        int     `json:"count"`
+	MedianHours  float32 `json:"median_hours"`
+}
+
 // EmailAddress defines model for EmailAddress.
 type EmailAddress struct {
 	// Email Empty removes the address.
@@ -3455,6 +3597,19 @@ type NewPartNumber struct {
 	Number string `json:"number"`
 }
 
+// NewPeriodicReview defines model for NewPeriodicReview.
+type NewPeriodicReview struct {
+	Checklist  []ReviewAnswer `json:"checklist"`
+	Conclusion string         `json:"conclusion"`
+
+	// DocumentId Any document of the set.
+	DocumentId   string `json:"document_id"`
+	Participants string `json:"participants"`
+
+	// ReviewedOn YYYY-MM-DD, not in the future.
+	ReviewedOn string `json:"reviewed_on"`
+}
+
 // NewPointVariant defines model for NewPointVariant.
 type NewPointVariant struct {
 	// Content The content of a point per column of the format, keyed by the fixed field key, for example failure_mode or product_characteristic (D-146). A value is text, or a whole number from 1 to 10 for a rating column. One point serves every form that has a column with the same key.
@@ -3753,6 +3908,92 @@ type PasswordChange struct {
 	// NewPassword 15 to 128 characters. Common passwords and passwords that contain
 	// the login name, the person name, or the system name are refused.
 	NewPassword string `json:"new_password"`
+}
+
+// Performance defines model for Performance.
+type Performance struct {
+	Accepted          int                  `json:"accepted"`
+	AcceptedToRelease DurationSummary      `json:"accepted_to_release"`
+	ByTrigger         []TriggerCount       `json:"by_trigger"`
+	EditToPrint       DurationSummary      `json:"edit_to_print"`
+	From              openapi_types.Date   `json:"from"`
+	People            []PerformancePerson  `json:"people"`
+	Period            PerformancePeriod    `json:"period"`
+	PrintToSigned     DurationSummary      `json:"print_to_signed"`
+	Rejected          int                  `json:"rejected"`
+	ReleaseItems      []PerformanceRelease `json:"release_items"`
+	Releases          int                  `json:"releases"`
+	Submitted         int                  `json:"submitted"`
+
+	// To The last day of the period (inclusive).
+	To             openapi_types.Date `json:"to"`
+	YokotenChanges int                `json:"yokoten_changes"`
+	YokotenTargets int                `json:"yokoten_targets"`
+	Yokotens       int                `json:"yokotens"`
+}
+
+// PerformancePeriod defines model for Performance.Period.
+type PerformancePeriod string
+
+// PerformancePerson defines model for PerformancePerson.
+type PerformancePerson struct {
+	Accepted          int             `json:"accepted"`
+	AcceptedToRelease DurationSummary `json:"accepted_to_release"`
+	EditToPrint       DurationSummary `json:"edit_to_print"`
+	Name              string          `json:"name"`
+
+	// PersonId Left out for requests from another application.
+	PersonId      *string         `json:"person_id,omitempty"`
+	PrintToSigned DurationSummary `json:"print_to_signed"`
+	Rejected      int             `json:"rejected"`
+	Releases      int             `json:"releases"`
+	Submitted     int             `json:"submitted"`
+	Yokotens      int             `json:"yokotens"`
+}
+
+// PerformanceRelease defines model for PerformanceRelease.
+type PerformanceRelease struct {
+	AcceptedAt             time.Time  `json:"accepted_at"`
+	AcceptedToReleaseHours *float32   `json:"accepted_to_release_hours,omitempty"`
+	DocumentType           string     `json:"document_type"`
+	EditToPrintHours       *float32   `json:"edit_to_print_hours,omitempty"`
+	Number                 string     `json:"number"`
+	PrintToSignedHours     *float32   `json:"print_to_signed_hours,omitempty"`
+	PrintedAt              *time.Time `json:"printed_at,omitempty"`
+	PrintedBy              *string    `json:"printed_by,omitempty"`
+	ReleasedAt             time.Time  `json:"released_at"`
+	Revision               int        `json:"revision"`
+	RevisionId             string     `json:"revision_id"`
+	ScanAt                 *time.Time `json:"scan_at,omitempty"`
+}
+
+// PeriodicReview defines model for PeriodicReview.
+type PeriodicReview struct {
+	Checklist    []ReviewAnswer `json:"checklist"`
+	Conclusion   string         `json:"conclusion"`
+	ConfirmedAt  *time.Time     `json:"confirmed_at,omitempty"`
+	ConfirmedBy  *string        `json:"confirmed_by,omitempty"`
+	CustomerCode string         `json:"customer_code"`
+	CustomerId   string         `json:"customer_id"`
+	Id           string         `json:"id"`
+	Participants string         `json:"participants"`
+	RecordedAt   time.Time      `json:"recorded_at"`
+	RecordedBy   string         `json:"recorded_by"`
+
+	// Ref For example PRV-0001.
+	Ref        string               `json:"ref"`
+	ReviewedOn openapi_types.Date   `json:"reviewed_on"`
+	Revisions  []ReviewedRevision   `json:"revisions"`
+	Sequence   int                  `json:"sequence"`
+	Status     PeriodicReviewStatus `json:"status"`
+}
+
+// PeriodicReviewStatus defines model for PeriodicReview.Status.
+type PeriodicReviewStatus string
+
+// PeriodicReviewList defines model for PeriodicReviewList.
+type PeriodicReviewList struct {
+	Items []PeriodicReview `json:"items"`
 }
 
 // PermissionInfo defines model for PermissionInfo.
@@ -4277,6 +4518,68 @@ type ResolvedSubprocess struct {
 	Points []ResolvedPoint `json:"points"`
 }
 
+// ReviewAnswer defines model for ReviewAnswer.
+type ReviewAnswer struct {
+	Answer ReviewAnswerAnswer `json:"answer"`
+	Item   ReviewAnswerItem   `json:"item"`
+	Note   *string            `json:"note,omitempty"`
+}
+
+// ReviewAnswerAnswer defines model for ReviewAnswer.Answer.
+type ReviewAnswerAnswer string
+
+// ReviewAnswerItem defines model for ReviewAnswer.Item.
+type ReviewAnswerItem string
+
+// ReviewSet defines model for ReviewSet.
+type ReviewSet struct {
+	CustomerCode string `json:"customer_code"`
+	CustomerId   string `json:"customer_id"`
+
+	// DaysLeft Negative when overdue.
+	DaysLeft    int                 `json:"days_left"`
+	Documents   []ReviewSetDocument `json:"documents"`
+	DraftOpen   bool                `json:"draft_open"`
+	DueOn       openapi_types.Date  `json:"due_on"`
+	LastRelease openapi_types.Date  `json:"last_release"`
+	LastReview  *openapi_types.Date `json:"last_review,omitempty"`
+	Models      []string            `json:"models"`
+
+	// OpenReviewId The record waiting for confirmation, if any.
+	OpenReviewId *string         `json:"open_review_id,omitempty"`
+	Sequence     int             `json:"sequence"`
+	Status       ReviewSetStatus `json:"status"`
+}
+
+// ReviewSetStatus defines model for ReviewSet.Status.
+type ReviewSetStatus string
+
+// ReviewSetDocument defines model for ReviewSetDocument.
+type ReviewSetDocument struct {
+	DocumentType string `json:"document_type"`
+	Id           string `json:"id"`
+	Number       string `json:"number"`
+	Revision     int    `json:"revision"`
+}
+
+// ReviewSetList defines model for ReviewSetList.
+type ReviewSetList struct {
+	DueSoon      int         `json:"due_soon"`
+	Items        []ReviewSet `json:"items"`
+	Overdue      int         `json:"overdue"`
+	PeriodMonths int         `json:"period_months"`
+	WarningDays  int         `json:"warning_days"`
+}
+
+// ReviewedRevision defines model for ReviewedRevision.
+type ReviewedRevision struct {
+	DocumentId   string `json:"document_id"`
+	DocumentType string `json:"document_type"`
+	Number       string `json:"number"`
+	Revision     int    `json:"revision"`
+	Sha256       string `json:"sha256"`
+}
+
 // RevisionVerification defines model for RevisionVerification.
 type RevisionVerification struct {
 	CustomerCode string                     `json:"customer_code"`
@@ -4604,6 +4907,13 @@ type TemplatePointUpdate struct {
 type TemporaryPassword struct {
 	// TemporaryPassword Shown only once. Give it to the owner of the account.
 	TemporaryPassword string `json:"temporary_password"`
+}
+
+// TriggerCount defines model for TriggerCount.
+type TriggerCount struct {
+	Count     int    `json:"count"`
+	Mechanism string `json:"mechanism"`
+	Name      string `json:"name"`
 }
 
 // Yokoten defines model for Yokoten.
@@ -4949,6 +5259,29 @@ type ListPartNumbersParams struct {
 	CustomerId CustomerIdQuery `form:"customer_id" json:"customer_id"`
 }
 
+// GetPerformanceParams defines parameters for GetPerformance.
+type GetPerformanceParams struct {
+	Period     GetPerformanceParamsPeriod `form:"period" json:"period"`
+	Date       *openapi_types.Date        `form:"date,omitempty" json:"date,omitempty"`
+	CustomerId *string                    `form:"customer_id,omitempty" json:"customer_id,omitempty"`
+}
+
+// GetPerformanceParamsPeriod defines parameters for GetPerformance.
+type GetPerformanceParamsPeriod string
+
+// ListPeriodicReviewsParams defines parameters for ListPeriodicReviews.
+type ListPeriodicReviewsParams struct {
+	CustomerId *string `form:"customer_id,omitempty" json:"customer_id,omitempty"`
+	OpenOnly   *bool   `form:"open_only,omitempty" json:"open_only,omitempty"`
+}
+
+// ListReviewSetsParams defines parameters for ListReviewSets.
+type ListReviewSetsParams struct {
+	CustomerId *string `form:"customer_id,omitempty" json:"customer_id,omitempty"`
+	DocumentId *string `form:"document_id,omitempty" json:"document_id,omitempty"`
+	All        *bool   `form:"all,omitempty" json:"all,omitempty"`
+}
+
 // PreviewPropagationParams defines parameters for PreviewPropagation.
 type PreviewPropagationParams struct {
 	Scope string `form:"scope" json:"scope"`
@@ -4957,6 +5290,11 @@ type PreviewPropagationParams struct {
 // ResolveProcessTemplatePointsParams defines parameters for ResolveProcessTemplatePoints.
 type ResolveProcessTemplatePointsParams struct {
 	ModelId string `form:"model_id" json:"model_id"`
+}
+
+// ListReleasedDocumentsParams defines parameters for ListReleasedDocuments.
+type ListReleasedDocumentsParams struct {
+	CustomerId string `form:"customer_id" json:"customer_id"`
 }
 
 // SetOwnEmailJSONRequestBody defines body for SetOwnEmail for application/json ContentType.
@@ -5162,6 +5500,9 @@ type CreatePartNumberJSONRequestBody = NewPartNumber
 
 // UpdatePartNumberJSONRequestBody defines body for UpdatePartNumber for application/json ContentType.
 type UpdatePartNumberJSONRequestBody = PartNumberUpdate
+
+// RecordPeriodicReviewJSONRequestBody defines body for RecordPeriodicReview for application/json ContentType.
+type RecordPeriodicReviewJSONRequestBody = NewPeriodicReview
 
 // UpdatePositionJSONRequestBody defines body for UpdatePosition for application/json ContentType.
 type UpdatePositionJSONRequestBody = NameUpdate
@@ -5618,6 +5959,21 @@ type ServerInterface interface {
 	// UpdatePartNumber Change the number and name of a part number (A-2)
 	// (PUT /api/v1/part-numbers/{partNumberId})
 	UpdatePartNumber(w http.ResponseWriter, r *http.Request, partNumberId PartNumberId)
+	// GetPerformance The performance report of PPAP Engineers (L-5, D-197)
+	// (GET /api/v1/performance)
+	GetPerformance(w http.ResponseWriter, r *http.Request, params GetPerformanceParams)
+	// ListPeriodicReviews Recent periodic review records (L-2, D-196)
+	// (GET /api/v1/periodic-reviews)
+	ListPeriodicReviews(w http.ResponseWriter, r *http.Request, params ListPeriodicReviewsParams)
+	// RecordPeriodicReview Record a periodic review with no change (E-3, D-196)
+	// (POST /api/v1/periodic-reviews)
+	RecordPeriodicReview(w http.ResponseWriter, r *http.Request)
+	// ListReviewSets Document sets and their periodic review status (L-2, D-138, D-196)
+	// (GET /api/v1/periodic-reviews/sets)
+	ListReviewSets(w http.ResponseWriter, r *http.Request, params ListReviewSetsParams)
+	// ConfirmPeriodicReview Confirm a periodic review record (V-1, D-196)
+	// (POST /api/v1/periodic-reviews/{reviewId}/confirm)
+	ConfirmPeriodicReview(w http.ResponseWriter, r *http.Request, reviewId string)
 	// ListPermissions The permission catalog in the order of the user map (A-1, M8.1)
 	// (GET /api/v1/permissions)
 	ListPermissions(w http.ResponseWriter, r *http.Request)
@@ -5720,6 +6076,15 @@ type ServerInterface interface {
 	// RemoveReferencedDocumentLink Remove one process link of a referenced document (E-6)
 	// (DELETE /api/v1/referenced-documents/{refDocId}/links/{linkId})
 	RemoveReferencedDocumentLink(w http.ResponseWriter, r *http.Request, refDocId RefDocId, linkId LinkId)
+	// ListReleasedDocuments Documents of one customer that have a revision in force (L-1, D-195)
+	// (GET /api/v1/released-documents)
+	ListReleasedDocuments(w http.ResponseWriter, r *http.Request, params ListReleasedDocumentsParams)
+	// GetReleasedDocument The revision in force of one document, read from its snapshot (L-1, D-195)
+	// (GET /api/v1/released-documents/{documentId})
+	GetReleasedDocument(w http.ResponseWriter, r *http.Request, documentId DocumentId)
+	// GetReleasedPfmeaCpComparison The released PFMEA and CP of the document set side by side, read only (L-1, D-195)
+	// (GET /api/v1/released-documents/{documentId}/pfmea-cp)
+	GetReleasedPfmeaCpComparison(w http.ResponseWriter, r *http.Request, documentId DocumentId)
 	// ListRoles The role catalog with the rights of each role (A-1)
 	// (GET /api/v1/roles)
 	ListRoles(w http.ResponseWriter, r *http.Request)
@@ -8986,6 +9351,210 @@ func (siw *ServerInterfaceWrapper) UpdatePartNumber(w http.ResponseWriter, r *ht
 	handler.ServeHTTP(w, r)
 }
 
+// GetPerformance operation middleware
+func (siw *ServerInterfaceWrapper) GetPerformance(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetPerformanceParams
+
+	// ------------- Required query parameter "period" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "period", r.URL.Query(), &params.Period, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "period"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "period", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "date" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "date", r.URL.Query(), &params.Date, runtime.BindQueryParameterOptions{Type: "string", Format: "date"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "date"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "date", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "customer_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "customer_id", r.URL.Query(), &params.CustomerId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "customer_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customer_id", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetPerformance(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListPeriodicReviews operation middleware
+func (siw *ServerInterfaceWrapper) ListPeriodicReviews(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListPeriodicReviewsParams
+
+	// ------------- Optional query parameter "customer_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "customer_id", r.URL.Query(), &params.CustomerId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "customer_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customer_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "open_only" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "open_only", r.URL.Query(), &params.OpenOnly, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "open_only"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "open_only", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListPeriodicReviews(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RecordPeriodicReview operation middleware
+func (siw *ServerInterfaceWrapper) RecordPeriodicReview(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RecordPeriodicReview(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListReviewSets operation middleware
+func (siw *ServerInterfaceWrapper) ListReviewSets(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListReviewSetsParams
+
+	// ------------- Optional query parameter "customer_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "customer_id", r.URL.Query(), &params.CustomerId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "customer_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customer_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "document_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "document_id", r.URL.Query(), &params.DocumentId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "document_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "document_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "all" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "all", r.URL.Query(), &params.All, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "all"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "all", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListReviewSets(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ConfirmPeriodicReview operation middleware
+func (siw *ServerInterfaceWrapper) ConfirmPeriodicReview(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "reviewId" -------------
+	var reviewId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "reviewId", r.PathValue("reviewId"), &reviewId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "reviewId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ConfirmPeriodicReview(w, r, reviewId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListPermissions operation middleware
 func (siw *ServerInterfaceWrapper) ListPermissions(w http.ResponseWriter, r *http.Request) {
 
@@ -9812,6 +10381,91 @@ func (siw *ServerInterfaceWrapper) RemoveReferencedDocumentLink(w http.ResponseW
 	handler.ServeHTTP(w, r)
 }
 
+// ListReleasedDocuments operation middleware
+func (siw *ServerInterfaceWrapper) ListReleasedDocuments(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListReleasedDocumentsParams
+
+	// ------------- Required query parameter "customer_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "customer_id", r.URL.Query(), &params.CustomerId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "customer_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customer_id", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListReleasedDocuments(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetReleasedDocument operation middleware
+func (siw *ServerInterfaceWrapper) GetReleasedDocument(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", r.PathValue("documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetReleasedDocument(w, r, documentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetReleasedPfmeaCpComparison operation middleware
+func (siw *ServerInterfaceWrapper) GetReleasedPfmeaCpComparison(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", r.PathValue("documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetReleasedPfmeaCpComparison(w, r, documentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListRoles operation middleware
 func (siw *ServerInterfaceWrapper) ListRoles(w http.ResponseWriter, r *http.Request) {
 
@@ -10498,6 +11152,14 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/documents/{documentId}/link-suggestions", wrapper.ListLinkSuggestions)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/links", wrapper.LinkDocumentRows)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/excel-comparison", wrapper.CompareDocumentWithExcel)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/released-documents", wrapper.ListReleasedDocuments)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/released-documents/{documentId}", wrapper.GetReleasedDocument)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/released-documents/{documentId}/pfmea-cp", wrapper.GetReleasedPfmeaCpComparison)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/periodic-reviews/sets", wrapper.ListReviewSets)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/periodic-reviews", wrapper.ListPeriodicReviews)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/periodic-reviews", wrapper.RecordPeriodicReview)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/periodic-reviews/{reviewId}/confirm", wrapper.ConfirmPeriodicReview)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/performance", wrapper.GetPerformance)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/metrics", wrapper.GetMetrics)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/release", wrapper.ReleaseDocument)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/print", wrapper.PrintDocument)
@@ -15447,6 +16109,201 @@ func (response UpdatePartNumberdefaultJSONResponse) VisitUpdatePartNumberRespons
 	return err
 }
 
+type GetPerformanceRequestObject struct {
+	Params GetPerformanceParams
+}
+
+type GetPerformanceResponseObject interface {
+	VisitGetPerformanceResponse(w http.ResponseWriter) error
+}
+
+type GetPerformance200JSONResponse Performance
+
+func (response GetPerformance200JSONResponse) VisitGetPerformanceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPerformancedefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response GetPerformancedefaultJSONResponse) VisitGetPerformanceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPeriodicReviewsRequestObject struct {
+	Params ListPeriodicReviewsParams
+}
+
+type ListPeriodicReviewsResponseObject interface {
+	VisitListPeriodicReviewsResponse(w http.ResponseWriter) error
+}
+
+type ListPeriodicReviews200JSONResponse PeriodicReviewList
+
+func (response ListPeriodicReviews200JSONResponse) VisitListPeriodicReviewsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPeriodicReviewsdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ListPeriodicReviewsdefaultJSONResponse) VisitListPeriodicReviewsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RecordPeriodicReviewRequestObject struct {
+	Body *RecordPeriodicReviewJSONRequestBody
+}
+
+type RecordPeriodicReviewResponseObject interface {
+	VisitRecordPeriodicReviewResponse(w http.ResponseWriter) error
+}
+
+type RecordPeriodicReview201JSONResponse PeriodicReview
+
+func (response RecordPeriodicReview201JSONResponse) VisitRecordPeriodicReviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RecordPeriodicReviewdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response RecordPeriodicReviewdefaultJSONResponse) VisitRecordPeriodicReviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListReviewSetsRequestObject struct {
+	Params ListReviewSetsParams
+}
+
+type ListReviewSetsResponseObject interface {
+	VisitListReviewSetsResponse(w http.ResponseWriter) error
+}
+
+type ListReviewSets200JSONResponse ReviewSetList
+
+func (response ListReviewSets200JSONResponse) VisitListReviewSetsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListReviewSetsdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ListReviewSetsdefaultJSONResponse) VisitListReviewSetsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConfirmPeriodicReviewRequestObject struct {
+	ReviewId string `json:"reviewId"`
+}
+
+type ConfirmPeriodicReviewResponseObject interface {
+	VisitConfirmPeriodicReviewResponse(w http.ResponseWriter) error
+}
+
+type ConfirmPeriodicReview200JSONResponse PeriodicReview
+
+func (response ConfirmPeriodicReview200JSONResponse) VisitConfirmPeriodicReviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ConfirmPeriodicReviewdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ConfirmPeriodicReviewdefaultJSONResponse) VisitConfirmPeriodicReviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListPermissionsRequestObject struct {
 }
 
@@ -16782,6 +17639,123 @@ func (response RemoveReferencedDocumentLinkdefaultJSONResponse) VisitRemoveRefer
 	return err
 }
 
+type ListReleasedDocumentsRequestObject struct {
+	Params ListReleasedDocumentsParams
+}
+
+type ListReleasedDocumentsResponseObject interface {
+	VisitListReleasedDocumentsResponse(w http.ResponseWriter) error
+}
+
+type ListReleasedDocuments200JSONResponse DocumentList
+
+func (response ListReleasedDocuments200JSONResponse) VisitListReleasedDocumentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListReleasedDocumentsdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ListReleasedDocumentsdefaultJSONResponse) VisitListReleasedDocumentsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetReleasedDocumentRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+}
+
+type GetReleasedDocumentResponseObject interface {
+	VisitGetReleasedDocumentResponse(w http.ResponseWriter) error
+}
+
+type GetReleasedDocument200JSONResponse Document
+
+func (response GetReleasedDocument200JSONResponse) VisitGetReleasedDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetReleasedDocumentdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response GetReleasedDocumentdefaultJSONResponse) VisitGetReleasedDocumentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetReleasedPfmeaCpComparisonRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+}
+
+type GetReleasedPfmeaCpComparisonResponseObject interface {
+	VisitGetReleasedPfmeaCpComparisonResponse(w http.ResponseWriter) error
+}
+
+type GetReleasedPfmeaCpComparison200JSONResponse PfmeaCpComparison
+
+func (response GetReleasedPfmeaCpComparison200JSONResponse) VisitGetReleasedPfmeaCpComparisonResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetReleasedPfmeaCpComparisondefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response GetReleasedPfmeaCpComparisondefaultJSONResponse) VisitGetReleasedPfmeaCpComparisonResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListRolesRequestObject struct {
 }
 
@@ -18067,6 +19041,21 @@ type StrictServerInterface interface {
 	// UpdatePartNumber Change the number and name of a part number (A-2)
 	// (PUT /api/v1/part-numbers/{partNumberId})
 	UpdatePartNumber(ctx context.Context, request UpdatePartNumberRequestObject) (UpdatePartNumberResponseObject, error)
+	// GetPerformance The performance report of PPAP Engineers (L-5, D-197)
+	// (GET /api/v1/performance)
+	GetPerformance(ctx context.Context, request GetPerformanceRequestObject) (GetPerformanceResponseObject, error)
+	// ListPeriodicReviews Recent periodic review records (L-2, D-196)
+	// (GET /api/v1/periodic-reviews)
+	ListPeriodicReviews(ctx context.Context, request ListPeriodicReviewsRequestObject) (ListPeriodicReviewsResponseObject, error)
+	// RecordPeriodicReview Record a periodic review with no change (E-3, D-196)
+	// (POST /api/v1/periodic-reviews)
+	RecordPeriodicReview(ctx context.Context, request RecordPeriodicReviewRequestObject) (RecordPeriodicReviewResponseObject, error)
+	// ListReviewSets Document sets and their periodic review status (L-2, D-138, D-196)
+	// (GET /api/v1/periodic-reviews/sets)
+	ListReviewSets(ctx context.Context, request ListReviewSetsRequestObject) (ListReviewSetsResponseObject, error)
+	// ConfirmPeriodicReview Confirm a periodic review record (V-1, D-196)
+	// (POST /api/v1/periodic-reviews/{reviewId}/confirm)
+	ConfirmPeriodicReview(ctx context.Context, request ConfirmPeriodicReviewRequestObject) (ConfirmPeriodicReviewResponseObject, error)
 	// ListPermissions The permission catalog in the order of the user map (A-1, M8.1)
 	// (GET /api/v1/permissions)
 	ListPermissions(ctx context.Context, request ListPermissionsRequestObject) (ListPermissionsResponseObject, error)
@@ -18169,6 +19158,15 @@ type StrictServerInterface interface {
 	// RemoveReferencedDocumentLink Remove one process link of a referenced document (E-6)
 	// (DELETE /api/v1/referenced-documents/{refDocId}/links/{linkId})
 	RemoveReferencedDocumentLink(ctx context.Context, request RemoveReferencedDocumentLinkRequestObject) (RemoveReferencedDocumentLinkResponseObject, error)
+	// ListReleasedDocuments Documents of one customer that have a revision in force (L-1, D-195)
+	// (GET /api/v1/released-documents)
+	ListReleasedDocuments(ctx context.Context, request ListReleasedDocumentsRequestObject) (ListReleasedDocumentsResponseObject, error)
+	// GetReleasedDocument The revision in force of one document, read from its snapshot (L-1, D-195)
+	// (GET /api/v1/released-documents/{documentId})
+	GetReleasedDocument(ctx context.Context, request GetReleasedDocumentRequestObject) (GetReleasedDocumentResponseObject, error)
+	// GetReleasedPfmeaCpComparison The released PFMEA and CP of the document set side by side, read only (L-1, D-195)
+	// (GET /api/v1/released-documents/{documentId}/pfmea-cp)
+	GetReleasedPfmeaCpComparison(ctx context.Context, request GetReleasedPfmeaCpComparisonRequestObject) (GetReleasedPfmeaCpComparisonResponseObject, error)
 	// ListRoles The role catalog with the rights of each role (A-1)
 	// (GET /api/v1/roles)
 	ListRoles(ctx context.Context, request ListRolesRequestObject) (ListRolesResponseObject, error)
@@ -21854,6 +22852,141 @@ func (sh *strictHandler) UpdatePartNumber(w http.ResponseWriter, r *http.Request
 	}
 }
 
+// GetPerformance operation middleware
+func (sh *strictHandler) GetPerformance(w http.ResponseWriter, r *http.Request, params GetPerformanceParams) {
+	var request GetPerformanceRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetPerformance(ctx, request.(GetPerformanceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetPerformance")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetPerformanceResponseObject); ok {
+		if err := validResponse.VisitGetPerformanceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListPeriodicReviews operation middleware
+func (sh *strictHandler) ListPeriodicReviews(w http.ResponseWriter, r *http.Request, params ListPeriodicReviewsParams) {
+	var request ListPeriodicReviewsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListPeriodicReviews(ctx, request.(ListPeriodicReviewsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListPeriodicReviews")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListPeriodicReviewsResponseObject); ok {
+		if err := validResponse.VisitListPeriodicReviewsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RecordPeriodicReview operation middleware
+func (sh *strictHandler) RecordPeriodicReview(w http.ResponseWriter, r *http.Request) {
+	var request RecordPeriodicReviewRequestObject
+
+	var body RecordPeriodicReviewJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RecordPeriodicReview(ctx, request.(RecordPeriodicReviewRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RecordPeriodicReview")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RecordPeriodicReviewResponseObject); ok {
+		if err := validResponse.VisitRecordPeriodicReviewResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListReviewSets operation middleware
+func (sh *strictHandler) ListReviewSets(w http.ResponseWriter, r *http.Request, params ListReviewSetsParams) {
+	var request ListReviewSetsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListReviewSets(ctx, request.(ListReviewSetsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListReviewSets")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListReviewSetsResponseObject); ok {
+		if err := validResponse.VisitListReviewSetsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ConfirmPeriodicReview operation middleware
+func (sh *strictHandler) ConfirmPeriodicReview(w http.ResponseWriter, r *http.Request, reviewId string) {
+	var request ConfirmPeriodicReviewRequestObject
+
+	request.ReviewId = reviewId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ConfirmPeriodicReview(ctx, request.(ConfirmPeriodicReviewRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ConfirmPeriodicReview")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ConfirmPeriodicReviewResponseObject); ok {
+		if err := validResponse.VisitConfirmPeriodicReviewResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListPermissions operation middleware
 func (sh *strictHandler) ListPermissions(w http.ResponseWriter, r *http.Request) {
 	var request ListPermissionsRequestObject
@@ -22848,6 +23981,84 @@ func (sh *strictHandler) RemoveReferencedDocumentLink(w http.ResponseWriter, r *
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(RemoveReferencedDocumentLinkResponseObject); ok {
 		if err := validResponse.VisitRemoveReferencedDocumentLinkResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListReleasedDocuments operation middleware
+func (sh *strictHandler) ListReleasedDocuments(w http.ResponseWriter, r *http.Request, params ListReleasedDocumentsParams) {
+	var request ListReleasedDocumentsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListReleasedDocuments(ctx, request.(ListReleasedDocumentsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListReleasedDocuments")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListReleasedDocumentsResponseObject); ok {
+		if err := validResponse.VisitListReleasedDocumentsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetReleasedDocument operation middleware
+func (sh *strictHandler) GetReleasedDocument(w http.ResponseWriter, r *http.Request, documentId DocumentId) {
+	var request GetReleasedDocumentRequestObject
+
+	request.DocumentId = documentId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetReleasedDocument(ctx, request.(GetReleasedDocumentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetReleasedDocument")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetReleasedDocumentResponseObject); ok {
+		if err := validResponse.VisitGetReleasedDocumentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetReleasedPfmeaCpComparison operation middleware
+func (sh *strictHandler) GetReleasedPfmeaCpComparison(w http.ResponseWriter, r *http.Request, documentId DocumentId) {
+	var request GetReleasedPfmeaCpComparisonRequestObject
+
+	request.DocumentId = documentId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetReleasedPfmeaCpComparison(ctx, request.(GetReleasedPfmeaCpComparisonRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetReleasedPfmeaCpComparison")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetReleasedPfmeaCpComparisonResponseObject); ok {
+		if err := validResponse.VisitGetReleasedPfmeaCpComparisonResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

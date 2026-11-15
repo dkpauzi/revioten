@@ -149,7 +149,10 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-125 | Hal Tahap 9 yang tidak dibangun | Celah | M9.2, M9.6, Gerbang 9 | Tidak | Diputuskan (D-191) |
 | E-126 | Email Microsoft 365: jalur kirim dan uji dengan tenant perusahaan | Celah | D-194 | Tidak | Terbuka |
 | E-127 | Penerima dan isi email notifikasi | Celah | D-194 | Tidak | Terbuka |
-| E-128 | Akun Viewer belum bisa membuka dokumen terbit dan tab Check | Celah | M1.2, M4.9, M8.1 | Tidak | Terbuka |
+| E-128 | Akun Viewer belum bisa membuka dokumen terbit dan tab Check | Celah | M1.2, M4.9, M8.1 | Tidak | Diputuskan (D-195) |
+| E-129 | Tanda "perlu dicek ulang" pada PFMEA dan CP terbit | Celah | D-195, M4.9 | Tidak | Terbuka |
+| E-130 | Laporan kinerja: siapa yang dihitung dan titik waktunya | Ambigu | D-197 | Tidak | Terbuka |
+| E-131 | Zona waktu pabrik untuk tanggal dan periode laporan | Celah | D-196, D-197 | Tidak | Terbuka |
 
 ## Keputusan 4 November 2026
 
@@ -1620,7 +1623,7 @@ Salin blok ini untuk setiap temuan baru.
   - (b) Revisi administratif: dokumen naik revisi dengan riwayat "Periodic review, no change" dan tanda tangan basah lengkap.
   - (c) Seperti (a), ditambah lembar review yang dicetak, ditandatangani, dan dipindai sebagai lampiran.
 - **Rekomendasi Claude Code (usulan):** (a), atau (c) bila auditor atau customer meminta tanda tangan.
-- **Asumsi sementara di kode:** tidak ada; belum dibangun.
+- **Asumsi sementara di kode (ASUMSI E-86, 15 November 2026):** opsi (a): jam per set dokumen, dimulai lagi oleh catatan review yang dikonfirmasi orang kedua (V-1), peringatan 90 hari sebelumnya, daftar periksa delapan butir tetap di kode (D-196).
 - **Menghambat milestone?** Tidak (perlu sebelum Tahap 6)
 - **Status:** Terbuka
 - **Keputusan pemilik:**
@@ -2253,7 +2256,46 @@ Salin blok ini untuk setiap temuan baru.
 - **Temuan:** R-SEC-12 menyebut viewer melihat dokumen terbit semua customer, dan L-1 adalah "lihat dokumen rilis". Tetapi halaman dokumen dan tab Check (PFMEA dan CP berdampingan) butuh L-4, yang tidak dimiliki Viewer. Akibatnya internal audit, QA, QC, dan produksi dengan akun Viewer hanya bisa membuka halaman verifikasi, bukan isi dokumen. Memberi tanda dicek di tab Check butuh V-2 (peran Pemeriksa PFMEA–CP), yang saat ini dipegang PPAP Engineer (D-65). Admin sudah bisa memberikan peran itu ke akun lain, atau menambahkan V-2 ke peran lain di layar Roles, tanpa perubahan kode. Row-level security sudah siap: database mengizinkan dokumen yang pernah terbit untuk semua akun.
 - **Opsi:** (a) layar baca dokumen terbit untuk akun tanpa L-4: isi revisi yang berlaku (snapshot), termasuk tab Check baca saja, tanpa draft; (b) beri akun internal audit dan produksi peran kerja (misalnya Pemeriksa PFMEA–CP) supaya mendapat L-4, yang juga membuka draft; (c) bangun tampilan genba (D-137) sebagai layar baca untuk produksi.
 - **Rekomendasi Claude Code (usulan):** (a) segera, karena memenuhi aturan yang sudah diputuskan (R-SEC-12) tanpa membuka draft. Lalu (c) untuk produksi di lini. (b) hanya untuk orang yang memang ikut memeriksa draft.
-- **Asumsi sementara di kode (ASUMSI E-128):** (a), kecuali E-128 yang belum diubah di kode.
+- **Asumsi sementara di kode:** tidak ada lagi; dibangun sesuai keputusan.
+- **Menghambat milestone?** Tidak
+- **Status:** Diputuskan (D-195)
+- **Keputusan pemilik:** opsi (a), 15 November 2026: "E-128 OK". Dibangun: halaman Released documents dan tab Check baca saja (D-195).
+
+### E-129 · Tanda "perlu dicek ulang" pada PFMEA dan CP terbit
+
+- **Tanggal dan milestone:** 15 November 2026, D-195.
+- **Jenis:** Celah
+- **Rujukan:** D-195, R-DOC-06, M4.9, R-REV-02.
+- **Temuan:** Tanda dicek menyimpan sidik jari baris saat dicek, yang dihitung dari versi baris. Snapshot rilis tidak menyimpan versi baris, jadi untuk revisi terbit tanda "perlu dicek ulang" hanya bisa dihitung selama tidak ada draft terbuka (saat itu baris dokumen sama dengan isi revisi terbit).
+- **Opsi:** (a) seperti sekarang; (b) simpan status tanda dicek ke snapshot saat rilis; (c) larang rilis bila ada tanda yang perlu dicek ulang.
+- **Rekomendasi Claude Code (usulan):** (b), karena auditor melihat keadaan saat rilis dan tidak berubah sesudahnya.
+- **Asumsi sementara di kode (ASUMSI E-129):** (a). Selama draft terbuka, tanda ditampilkan seperti yang tercatat.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-130 · Laporan kinerja: siapa yang dihitung dan titik waktunya
+
+- **Tanggal dan milestone:** 15 November 2026, D-197.
+- **Jenis:** Ambigu
+- **Rujukan:** D-197.
+- **Temuan:** Permintaan pemilik menyebut angka, tetapi tidak menyebut kepada siapa angka itu dihitung dan kapan setiap tahap dimulai. Yang dipakai sekarang: (1) jumlah permintaan dihitung untuk pemohon, dan masuk periode menurut tanggal diajukan atau diverifikasi; (2) waktu tahap dihitung untuk revisi yang terbit dalam periode lewat perubahan yang diterima, dan dikaitkan ke orang yang mencetak untuk tanda tangan; (3) "mulai mengedit" adalah saat draft revisi dibuka (perubahan diterima), bukan saat sel pertama diubah; (4) "siap cetak" dan "mulai tanda tangan" adalah cetakan terakhir untuk tanda tangan sebelum scan diunggah; (5) "selesai ditandatangani" adalah saat scan bertanda tangan diunggah; (6) "request yang diterima" dibaca sebagai diterima verifikator (accepted). Revisi awal dokumen baru dan dokumen lama tidak dihitung.
+- **Opsi:** pemilik memastikan butir (1) sampai (6), atau menyebut yang lain. Bila "diterima" berarti masuk ke PPAP Engineer, angka "diajukan" yang dipakai.
+- **Rekomendasi Claude Code (usulan):** pakai seperti sekarang untuk percobaan satu bulan, lalu bandingkan dengan laporan mingguan manual.
+- **Asumsi sementara di kode (ASUMSI E-130):** butir (1) sampai (6) di atas.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-131 · Zona waktu pabrik untuk tanggal dan periode laporan
+
+- **Tanggal dan milestone:** 15 November 2026, D-196, D-197.
+- **Jenis:** Celah
+- **Rujukan:** D-196, D-197, D-59.
+- **Temuan:** Jatuh tempo review dan batas minggu Jumat sampai Kamis butuh satu zona waktu. Brief belum menyebutnya.
+- **Opsi:** (a) WIB tetap di kode; (b) pengaturan zona waktu di Settings.
+- **Rekomendasi Claude Code (usulan):** (a) untuk demo; (b) bila ada pabrik di zona lain.
+- **Asumsi sementara di kode (ASUMSI E-131):** (a) WIB (UTC+7), `internal/clock`.
 - **Menghambat milestone?** Tidak
 - **Status:** Terbuka
 - **Keputusan pemilik:**

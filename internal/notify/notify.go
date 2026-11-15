@@ -20,6 +20,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 
@@ -38,6 +39,8 @@ const (
 	EventYokotenCreated      = "yokoten_created"
 	EventMigrationWaiting    = "migration_waiting"
 	EventTokenExpiring       = "token_expiring"
+	EventReviewDue           = "review_due"
+	EventReviewWaiting       = "review_waiting"
 	EventTest                = "test"
 )
 
@@ -129,6 +132,8 @@ func (n *Notifier) dispatch(ctx context.Context, q *db.Queries, actor access.Act
 		return n.yokotenCreated(ctx, q, actor, e.Details["yokoten"])
 	case audit.ActionDocumentMigrated:
 		return n.migrationWaiting(ctx, q, actor, e.TargetID)
+	case audit.ActionPeriodicReviewRecorded:
+		return n.reviewWaiting(ctx, q, actor, e.TargetID)
 	}
 	return nil
 }
@@ -321,6 +326,27 @@ func (n *Notifier) migrationWaiting(ctx context.Context, q *db.Queries, actor ac
 		subject: fmt.Sprintf("[%s] Legacy document %s waits for verification", d.CustomerCode, d.Number),
 		body: fmt.Sprintf("%s entered the legacy document %s at revision %d. Another migration officer compares it with the signed hard copy and verifies it.\nDokumen lama %s menunggu verifikasi terhadap hardcopy.",
 			actor.PersonName, d.Number, d.Revision, d.Number) + n.link("/documents/view?id="+d.ID),
+	}
+	return enqueue(ctx, q, actor, m, people)
+}
+
+// reviewWaiting memberi tahu verifikator customer itu bahwa catatan review
+// tanpa perubahan menunggu konfirmasi orang kedua (D-196).
+func (n *Notifier) reviewWaiting(ctx context.Context, q *db.Queries, actor access.Actor, id string) error {
+	r, err := q.GetPeriodicReview(ctx, id)
+	if err != nil {
+		return err
+	}
+	people, err := q.PeopleWithPermission(ctx, db.PeopleWithPermissionParams{Permission: string(access.VerifyChanges), CustomerID: &r.CustomerID})
+	if err != nil {
+		return err
+	}
+	set := fmt.Sprintf("%s · %04d", strings.ToUpper(r.CustomerCode), r.Sequence)
+	m := message{
+		event:   EventReviewWaiting,
+		subject: fmt.Sprintf("[%s] Periodic review of set %s waits for confirmation", strings.ToUpper(r.CustomerCode), set),
+		body: fmt.Sprintf("%s recorded a periodic review with no change for the document set %s (reviewed on %s). Another person confirms it.\nReview berkala tanpa perubahan untuk set %s menunggu konfirmasi.",
+			r.RecordedBy, set, r.ReviewedOn.Time.Format(time.DateOnly), set) + n.link("/periodic-reviews"),
 	}
 	return enqueue(ctx, q, actor, m, people)
 }

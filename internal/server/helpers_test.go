@@ -603,6 +603,21 @@ func (f *fakeDocuments) Create(_ context.Context, _ access.Actor, in document.Ne
 	return f.doc, f.err
 }
 
+func (f *fakeDocuments) ListReleased(_ context.Context, _ access.Actor, customerID string) ([]document.Summary, error) {
+	f.got = called{method: "ListReleased", id: customerID}
+	return f.list, f.err
+}
+
+func (f *fakeDocuments) Released(_ context.Context, _ access.Actor, id string) (document.Document, error) {
+	f.got = called{method: "Released", id: id}
+	return f.doc, f.err
+}
+
+func (f *fakeDocuments) ReleasedComparison(_ context.Context, _ access.Actor, id string) (document.Comparison, error) {
+	f.got = called{method: "ReleasedComparison", id: id}
+	return document.Comparison{}, f.err
+}
+
 func (f *fakeDocuments) Get(_ context.Context, _ access.Actor, id string) (document.Document, error) {
 	f.got = called{method: "Get", id: id}
 	return f.doc, f.err

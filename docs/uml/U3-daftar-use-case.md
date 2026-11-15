@@ -107,7 +107,8 @@ Pengecek dan approver menandatangani cetakan di kertas, jadi tanda tangan itu ti
 | UC-54 | Ekspor Excel dan PDF | Pengguna internal | Microsoft Excel | Excel A3 dan A4, PDF yang sama rapinya. | R-PRT-01 | M6.2, M6.3 | MVP |
 | UC-55 | Lihat salinan yang harus ditarik | Dokumen kontrol | | Daftar dari catatan cetak saat revisi baru rilis. | R-PRT-06 | M6.6 | Usulan |
 | UC-56 | Buka halaman verifikasi | Viewer | | Status berlaku, digantikan, atau dibatalkan. Lewat QR bila QR menyala. | R-APR-03, R-APR-16, D-62 | M6.5 | Saklar |
-| UC-57 | Baca dokumen rilis | Viewer | | Hanya baca. Belum ada layar untuk akun tanpa L-4 (lihat Status pembangunan). | R-APR-06, D-41, R-SEC-12 | M1.2 (hak L-1), M5.5 | MVP |
+| UC-57 | Baca dokumen rilis | Viewer | | Hanya baca, dari snapshot revisi yang berlaku, termasuk PFMEA dan CP berdampingan; draft tidak pernah tampil (D-195). | R-APR-06, D-41, R-SEC-12, D-195 | M1.2 (hak L-1), M5.5 | MVP |
+| UC-58 | Review berkala set dokumen | Penyusun | Verifikator | Set yang 36 bulan tidak direvisi diberi peringatan; review dengan perubahan (permintaan perubahan, pemicu Periodic review) atau tanpa perubahan (catatan review, dikonfirmasi orang kedua). | D-138, D-196, E-86 | Sesudah Tahap 6 | MVP |
 
 ## F. Migrasi dan ukuran
 
@@ -117,6 +118,7 @@ Pengecek dan approver menandatangani cetakan di kertas, jadi tanda tangan itu ti
 | UC-61 | Bandingkan dengan Excel lama | Petugas migrasi | Microsoft Excel | Excel lama hanya untuk dibandingkan dengan hasil perakitan. | R-MIG-04 | M7.3 | Usulan |
 | UC-62 | Tautkan baris hasil tempel ke template | Petugas migrasi | | Sistem mengusulkan pasangan, manusia mengonfirmasi. | R-MIG-05 | M7.4 | MVP |
 | UC-63 | Verifikasi terhadap hardcopy bertanda tangan | Petugas migrasi | | Status Released (migrated). | R-MIG-06 | M7.5 | Usulan |
+| UC-65 | Lihat laporan kinerja PPAP Engineer | Penyusun | Penyetuju form (supervisor) | Per minggu (Jumat sampai Kamis), bulan, dan tahun: permintaan perubahan per pemicu, yokoten, dan waktu per tahap, total dan per orang. | D-197, E-130 | Sesudah Tahap 7 | MVP |
 | UC-64 | Lihat dasbor ukuran | Pengguna internal | | Persentase baris yang mengikuti template, status dokumen dan yokoten, dan waktu revisi. Usulan UX-07: cakupan yokoten, yaitu persentase dokumen target yang sudah rilis per yokoten, sebagai ukuran utama QCC. | Brief bagian 2, UX-07 | M7.7 | MVP |
 
 ## G. API integrasi dan web ECR (Tahap 9, latihan)
@@ -150,8 +152,8 @@ Pengecek dan approver menandatangani cetakan di kertas, jadi tanda tangan itu ti
 | B. Penomoran dan template | UC-10 sampai UC-14, UC-20 sampai UC-23 | UC-15 (pengingat nomor Reserved), UC-24 dan UC-25 (usulan UX) |
 | C. Dokumen dan perakitan | UC-30 sampai UC-38 | UC-39 (gambar di sel, usulan UX) |
 | D. Perubahan dan revisi | UC-40 sampai UC-47 | |
-| E. Cetak dan rilis | UC-50, UC-52, UC-53, UC-54, UC-56 | UC-51 (dokumen dikembalikan, M5.5a usulan), UC-55 (salinan yang ditarik, usulan), konfirmasi slot di UC-52 (R-APR-10, usulan), **UC-57: akun tanpa L-4 (Viewer, internal audit, produksi) belum bisa membuka dokumen terbit**, karena halaman dokumen butuh L-4 |
-| F. Migrasi dan ukuran | UC-60 sampai UC-64 | |
+| E. Cetak dan rilis | UC-50, UC-52 sampai UC-54, UC-56, UC-57 (D-195), UC-58 (D-196) | UC-51 (dokumen dikembalikan, M5.5a usulan), UC-55 (salinan yang ditarik, usulan), konfirmasi slot di UC-52 (R-APR-10, usulan) |
+| F. Migrasi dan ukuran | UC-60 sampai UC-65 (UC-65 sejak D-197) | |
 | G. API integrasi | UC-80 sampai UC-83, UC-87 (latihan) | Webhook (M9.6, opsional) |
 | H. Email notifikasi | UC-70 sampai UC-72 | Uji dengan tenant Microsoft 365 perusahaan |
 | I. Portal customer | | UC-84 sampai UC-86 (masa depan, D-192) |

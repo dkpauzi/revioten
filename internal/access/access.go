@@ -60,6 +60,7 @@ const (
 	ViewRegister      Permission = "L-2"  // lihat register nomor, riwayat, diff, diagram, dasbor
 	ExportReleased    Permission = "L-3"  // ekspor Excel dan PDF dokumen rilis
 	ViewDrafts        Permission = "L-4"  // lihat draft dan permintaan perubahan yang berjalan
+	ViewPerformance   Permission = "L-5"  // lihat laporan kinerja PPAP Engineer (D-197)
 	RegisterNumbers   Permission = "E-1"  // daftarkan nomor dokumen
 	EditDrafts        Permission = "E-2"  // buat, rakit, dan edit dokumen draft
 	ProposeChanges    Permission = "E-3"  // ajukan perubahan

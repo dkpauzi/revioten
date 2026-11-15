@@ -6,6 +6,7 @@
 	import { onMount } from 'svelte';
 	import { getMetrics, listCustomers } from '#lib/api/client.ts';
 	import type { Customer, Metrics } from '#lib/api/gen/index.ts';
+	import ReviewSummary from '#lib/ReviewSummary.svelte';
 	import { failureText } from '#lib/errors.ts';
 	import { t } from '#lib/i18n/index.ts';
 
@@ -56,6 +57,8 @@
 </div>
 
 {#if loadError}<p class="error" role="alert">{loadError}</p>{/if}
+
+<ReviewSummary {customerId} />
 
 {#if metrics}
 	<div class="cards">

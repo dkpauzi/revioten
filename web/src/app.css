@@ -340,6 +340,12 @@ kbd {
 	background: currentColor;
 }
 
+/* Review berkala (D-196): kuning dalam masa peringatan. Merah ikut Void di bawah. */
+.badge[data-review='due_soon'] {
+	background: var(--warning-weak);
+	color: var(--warning);
+}
+
 /* Status nomor dokumen (R-NUM-04), warna mengikuti artboard Design system. */
 /* Versi template (M3.4): draft seperti Reserved, terbit seperti Released. */
 .badge[data-status='reserved'],
@@ -371,6 +377,7 @@ kbd {
 	color: var(--text-3);
 }
 
+.badge[data-review='overdue'],
 .badge[data-status='void'],
 .badge[data-change-status='rejected'],
 .badge[data-yokoten='rejected'] {

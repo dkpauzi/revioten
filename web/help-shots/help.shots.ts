@@ -301,6 +301,21 @@ test('potret layar untuk halaman Help', async ({ page }) => {
 	await expect(page.getByRole('heading', { name: en.dashboardRows })).toBeVisible();
 	await shot(page, 'dashboard');
 
+	// Dokumen terbit (D-195), review berkala (D-196), dan laporan kinerja (D-197).
+	await openFromMenu(page, en.navGroupDocuments, en.navReleasedDocuments);
+	await page.getByLabel(en.documentCustomer, { exact: true }).selectOption({ label: 'LM · Contoh Customer LM' });
+	await expect(page.getByRole('link', { name: 'SH-LM-001' })).toBeVisible();
+	await shot(page, 'released-documents');
+
+	await openFromMenu(page, en.navGroupDocuments, en.navPeriodicReviews);
+	await page.getByLabel(en.reviewShowAll).check();
+	await expect(page.getByRole('link', { name: 'SH-LM-001' })).toBeVisible();
+	await shot(page, 'periodic-review');
+
+	await openFromMenu(page, en.navGroupDocuments, en.navPerformance);
+	await expect(page.getByRole('heading', { name: en.performanceChanges })).toBeVisible();
+	await shot(page, 'performance');
+
 	// Admin: audit log.
 	await logOut(page);
 	await logInAs(page, admin.login, admin.password);

@@ -361,6 +361,51 @@ export const helpId: HelpContent = {
 			imageAlt: 'Dasbor dengan kartu baris, dokumen, yokoten, waktu revisi, dan migrasi.'
 		},
 		{
+			id: 'released-documents',
+			title: 'Dokumen terbit',
+			who: 'Semua orang, juga akun Viewer (internal audit, QA, QC, produksi)',
+			intro: 'Baca revisi yang berlaku dari PFD, PFMEA, atau Control Plan yang sudah terbit, persis seperti yang ditandatangani. Draft tidak pernah tampil di sini.',
+			steps: [
+				'Buka {navGroupDocuments}, lalu {navReleasedDocuments}.',
+				'Pilih customer, lalu ketik nomor atau model di {releasedSearch} untuk mempersempit daftar.',
+				'Tekan nomor untuk membaca dokumennya. Tab membuka dokumen lain di set yang sama.',
+				'Tekan {checkTab} untuk membaca PFMEA dan CP terbit berdampingan, beserta tanda dicek.'
+			],
+			tips: ['Tidak ada yang bisa diubah di halaman ini.', 'Dokumen yang sedang direvisi tetap menampilkan revisi terbitnya sampai revisi baru terbit.'],
+			image: 'released-documents',
+			imageAlt: 'Halaman Dokumen terbit dengan daftar dokumen terbit satu customer.'
+		},
+		{
+			id: 'periodic-review',
+			title: 'Review berkala setiap 3 tahun',
+			who: 'PPAP Engineer mencatat, verifikator mengonfirmasi; semua orang melihat peringatannya',
+			intro: 'Set PFD, PFMEA, dan Control Plan yang 3 tahun tidak direvisi harus direview. Peringatannya muncul di {navHome}, di dasbor, di halaman dokumen, di {navPeriodicReviews}, dan sebagai email ke penyusun customer itu: kuning 90 hari sebelum jatuh tempo, merah sesudahnya.',
+			steps: [
+				'Buka {navGroupDocuments}, lalu {navPeriodicReviews}. Set yang paling mendesak ada di atas.',
+				'Bila ada yang harus diubah, tekan {reviewWithChanges}. Permintaan perubahan terbuka dengan pemicu Periodic review dan dokumen set itu.',
+				'Bila tidak ada yang harus diubah, tekan {reviewNoChange}, isi {reviewDate}, {reviewParticipants}, setiap butir daftar periksa, dan {reviewConclusion}, lalu tekan {reviewSave}.',
+				'Orang kedua berperan Verifikator menekan {reviewConfirm} di {reviewWaitingTitle}. Siklus review lalu mulai lagi dari tanggal review.'
+			],
+			tips: ['Orang yang mencatat review tidak bisa mengonfirmasinya.', 'Review yang sudah dikonfirmasi tidak bisa diubah. Revisi dokumen tidak naik.', 'Rilis baru juga memulai lagi siklusnya.'],
+			image: 'periodic-review',
+			imageAlt: 'Halaman Review berkala dengan satu set dokumen yang lewat jatuh tempo.'
+		},
+		{
+			id: 'performance',
+			title: 'Laporan kinerja',
+			who: 'PPAP Engineer dan supervisor',
+			intro: 'Angka mingguan, bulanan, atau tahunan pekerjaan PPAP, dihitung dari perubahan, cetakan, scan bertanda tangan, dan rilis yang tercatat. Satu minggu dari Jumat sampai Kamis, jadi laporan hari Jumat memuat minggu yang baru selesai.',
+			steps: [
+				'Buka {navGroupDocuments}, lalu {navPerformance}.',
+				'Pilih {performanceWeek}, {performanceMonth}, atau {performanceYear}, dan satu tanggal dalam periode itu. {performancePrevious} dan {performanceNext} berpindah satu periode.',
+				'Baca {performanceChanges} dan {performanceByTrigger} untuk claim customer dan temuan audit, serta {performanceYokoten} untuk yokoten.',
+				'Baca {performanceTimes}: {performanceAcceptedToRelease}, {performanceEditToPrint}, dan {performancePrintToSigned}, total dan {performancePeople}.'
+			],
+			tips: ['Waktu dihitung dari revisi yang terbit dalam periode lewat perubahan yang diterima.', 'Mulai edit dihitung sejak draft revisi dibuka; siap cetak adalah cetakan terakhir untuk tanda tangan sebelum scan bertanda tangan.'],
+			image: 'performance',
+			imageAlt: 'Laporan kinerja satu minggu dengan jumlah perubahan dan waktu per tahap.'
+		},
+		{
 			id: 'roles',
 			title: 'Peran dan hak',
 			who: 'Admin',

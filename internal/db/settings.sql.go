@@ -24,9 +24,17 @@ const getSystemSettings = `-- name: GetSystemSettings :one
 SELECT id, sign_dates_enabled, form_approval_mode, qr_enabled, migration_mode FROM system_settings
 `
 
-func (q *Queries) GetSystemSettings(ctx context.Context) (SystemSetting, error) {
+type GetSystemSettingsRow struct {
+	ID               string
+	SignDatesEnabled bool
+	FormApprovalMode string
+	QrEnabled        bool
+	MigrationMode    bool
+}
+
+func (q *Queries) GetSystemSettings(ctx context.Context) (GetSystemSettingsRow, error) {
 	row := q.db.QueryRow(ctx, getSystemSettings)
-	var i SystemSetting
+	var i GetSystemSettingsRow
 	err := row.Scan(
 		&i.ID,
 		&i.SignDatesEnabled,
@@ -41,9 +49,17 @@ const lockSystemSettings = `-- name: LockSystemSettings :one
 SELECT id, sign_dates_enabled, form_approval_mode, qr_enabled, migration_mode FROM system_settings FOR NO KEY UPDATE
 `
 
-func (q *Queries) LockSystemSettings(ctx context.Context) (SystemSetting, error) {
+type LockSystemSettingsRow struct {
+	ID               string
+	SignDatesEnabled bool
+	FormApprovalMode string
+	QrEnabled        bool
+	MigrationMode    bool
+}
+
+func (q *Queries) LockSystemSettings(ctx context.Context) (LockSystemSettingsRow, error) {
 	row := q.db.QueryRow(ctx, lockSystemSettings)
-	var i SystemSetting
+	var i LockSystemSettingsRow
 	err := row.Scan(
 		&i.ID,
 		&i.SignDatesEnabled,

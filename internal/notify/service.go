@@ -11,12 +11,14 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/dkpauzi/revioten/internal/access"
 	"github.com/dkpauzi/revioten/internal/audit"
 	"github.com/dkpauzi/revioten/internal/db"
 	"github.com/dkpauzi/revioten/internal/problem"
+	"github.com/dkpauzi/revioten/internal/review"
 )
 
 // MaxAttempts adalah jumlah percobaan kirim sebelum email ditandai gagal.
@@ -278,6 +280,62 @@ func (s *Service) CheckExpiringTokens(ctx context.Context) error {
 	return nil
 }
 
+// CheckDueReviews menulis email ke penyusun (E-3) customer itu untuk set
+// dokumen yang akan atau sudah lewat jatuh tempo review berkala (D-196),
+// sekali per set per tahap.
+func (s *Service) CheckDueReviews(ctx context.Context, now time.Time) error {
+	// Pekerja melihat semua customer; penerimanya dipilih menurut hak.
+	ctx = db.AsSystem(ctx)
+	o, err := review.Compute(ctx, s.q, review.Filter{}, now)
+	if err != nil {
+		return err
+	}
+	for _, set := range o.Sets {
+		due := pgtype.Date{Time: set.DueOn, Valid: true}
+		sent, err := s.q.ReviewNoticeSent(ctx, db.ReviewNoticeSentParams{CustomerCode: set.CustomerCode, Sequence: int32(set.Sequence), DueOn: due, Stage: set.Status})
+		if err != nil {
+			return err
+		}
+		if sent {
+			continue
+		}
+		err = db.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
+			q := s.q.WithTx(tx)
+			people, err := q.PeopleWithPermission(ctx, db.PeopleWithPermissionParams{Permission: string(access.ProposeChanges), CustomerID: &set.CustomerID})
+			if err != nil {
+				return err
+			}
+			numbers := make([]string, 0, len(set.Documents))
+			for _, d := range set.Documents {
+				numbers = append(numbers, fmt.Sprintf("%s rev %d", d.Number, d.Revision))
+			}
+			name := fmt.Sprintf("%s · %04d", strings.ToUpper(set.CustomerCode), set.Sequence)
+			subject := fmt.Sprintf("[%s] Periodic review of set %s is due on %s", strings.ToUpper(set.CustomerCode), name, set.DueOn.Format(time.DateOnly))
+			if set.Status == review.StatusOverdue {
+				subject = fmt.Sprintf("[%s] Periodic review of set %s is overdue since %s", strings.ToUpper(set.CustomerCode), name, set.DueOn.Format(time.DateOnly))
+			}
+			m := message{event: EventReviewDue, subject: subject,
+				body: fmt.Sprintf("The documents %s (models %s) had no revision since %s. Review them: with changes (a change request with the trigger Periodic review) or with no change (a review record).\nSet dokumen %s harus direview berkala paling lambat %s.",
+					strings.Join(numbers, ", "), strings.Join(set.Models, ", "), set.LastRelease.Format(time.DateOnly), name, set.DueOn.Format(time.DateOnly)) + s.link("/periodic-reviews")}
+			if err := enqueue(ctx, q, access.Actor{}, m, people); err != nil {
+				return err
+			}
+			return q.AddReviewNotice(ctx, db.AddReviewNoticeParams{CustomerCode: set.CustomerCode, Sequence: int32(set.Sequence), DueOn: due, Stage: set.Status})
+		})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *Service) link(path string) string {
+	if s.config.BaseURL == "" {
+		return ""
+	}
+	return "\n\n" + strings.TrimRight(s.config.BaseURL, "/") + path
+}
+
 // Run mengirim kotak keluar sampai ctx selesai: setiap every, dan memeriksa
 // token yang segera kedaluwarsa sekali setiap jam.
 func (s *Service) Run(ctx context.Context, every time.Duration) {
@@ -292,6 +350,9 @@ func (s *Service) Run(ctx context.Context, every time.Duration) {
 		if time.Since(lastTokenCheck) >= time.Hour {
 			if err := s.CheckExpiringTokens(ctx); err != nil {
 				s.log.Error("memeriksa token yang segera kedaluwarsa", "error", err.Error())
+			}
+			if err := s.CheckDueReviews(ctx, time.Now()); err != nil {
+				s.log.Error("memeriksa review berkala yang jatuh tempo", "error", err.Error())
 			}
 			lastTokenCheck = time.Now()
 		}

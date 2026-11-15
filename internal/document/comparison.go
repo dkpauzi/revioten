@@ -52,6 +52,8 @@ type CheckMark struct {
 	PFMEARevision int
 	CPRevision    int
 	Stale         bool // baris proses ini berubah sesudah dicek
+	// fingerprint adalah sidik jari baris proses saat dicek.
+	fingerprint string
 }
 
 // sectionKeyOf memberi kunci bagian satu baris ("" untuk dokumen tanpa bagian).
@@ -116,6 +118,22 @@ func comparison(ctx context.Context, q *db.Queries, d Document) (Comparison, err
 	if err != nil {
 		return Comparison{}, err
 	}
+	out, err := groupComparison(ctx, q, pfmea, cp)
+	if err != nil {
+		return Comparison{}, err
+	}
+	for i := range out.Processes {
+		if g := &out.Processes[i]; g.Check != nil {
+			g.Check.Stale = g.Check.fingerprint != fingerprint(pfmea, cp, g.SectionKey, g.ProcessID)
+		}
+	}
+	return out, nil
+}
+
+// groupComparison mengelompokkan baris PFMEA dan CP per bagian dan proses,
+// lalu memasang tanda dicek untuk revisi kedua dokumen itu. Stale dihitung
+// pemanggil, karena sumber barisnya bisa dokumen atau snapshot (D-195).
+func groupComparison(ctx context.Context, q *db.Queries, pfmea, cp Document) (Comparison, error) {
 	out := Comparison{PFMEA: pfmea, CP: cp, Processes: []ProcessGroup{}}
 	// Urutan dan nama bagian dari CP; PFMEA punya bagian yang sama (ASUMSI E-97).
 	sectionPos, sectionName := map[string]int{}, map[string]string{}
@@ -176,7 +194,7 @@ func comparison(ctx context.Context, q *db.Queries, d Document) (Comparison, err
 		}
 		out.Processes[i].Check = &CheckMark{
 			By: c.CheckedBy, At: c.CheckedAt.UTC(), PFMEARevision: int(c.PfmeaRevision), CPRevision: int(c.CpRevision),
-			Stale: c.RowsFingerprint != fingerprint(pfmea, cp, key, c.ProcessID),
+			fingerprint: c.RowsFingerprint,
 		}
 	}
 	return out, nil

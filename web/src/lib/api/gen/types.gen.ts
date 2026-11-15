@@ -1209,6 +1209,160 @@ export type ExcelComparison = {
     truncated: boolean;
 };
 
+export type ReviewSetDocument = {
+    id: string;
+    number: string;
+    document_type: string;
+    revision: number;
+};
+
+export type ReviewSet = {
+    customer_id: string;
+    customer_code: string;
+    sequence: number;
+    documents: Array<ReviewSetDocument>;
+    models: Array<string>;
+    last_release: string;
+    last_review?: string;
+    due_on: string;
+    status: 'ok' | 'due_soon' | 'overdue';
+    /**
+     * Negative when overdue.
+     */
+    days_left: number;
+    /**
+     * The record waiting for confirmation, if any.
+     */
+    open_review_id?: string;
+    draft_open: boolean;
+};
+
+export type ReviewSetList = {
+    period_months: number;
+    warning_days: number;
+    due_soon: number;
+    overdue: number;
+    items: Array<ReviewSet>;
+};
+
+export type ReviewAnswer = {
+    item: 'process_flow' | 'claims_findings' | 'occurrence_detection' | 'special_characteristics' | 'control_methods' | 'references' | 'reaction_plan' | 'pfmea_cp_sync';
+    answer: 'ok' | 'not_applicable';
+    note?: string;
+};
+
+export type NewPeriodicReview = {
+    /**
+     * Any document of the set.
+     */
+    document_id: string;
+    /**
+     * YYYY-MM-DD, not in the future.
+     */
+    reviewed_on: string;
+    participants: string;
+    conclusion: string;
+    checklist: Array<ReviewAnswer>;
+};
+
+export type ReviewedRevision = {
+    document_id: string;
+    number: string;
+    document_type: string;
+    revision: number;
+    sha256: string;
+};
+
+export type PeriodicReview = {
+    id: string;
+    /**
+     * For example PRV-0001.
+     */
+    ref: string;
+    customer_id: string;
+    customer_code: string;
+    sequence: number;
+    reviewed_on: string;
+    participants: string;
+    conclusion: string;
+    checklist: Array<ReviewAnswer>;
+    revisions: Array<ReviewedRevision>;
+    status: 'submitted' | 'confirmed';
+    recorded_by: string;
+    recorded_at: string;
+    confirmed_by?: string;
+    confirmed_at?: string;
+};
+
+export type PeriodicReviewList = {
+    items: Array<PeriodicReview>;
+};
+
+export type DurationSummary = {
+    count: number;
+    average_hours: number;
+    median_hours: number;
+};
+
+export type PerformancePerson = {
+    /**
+     * Left out for requests from another application.
+     */
+    person_id?: string;
+    name: string;
+    submitted: number;
+    accepted: number;
+    rejected: number;
+    yokotens: number;
+    releases: number;
+    accepted_to_release: DurationSummary;
+    edit_to_print: DurationSummary;
+    print_to_signed: DurationSummary;
+};
+
+export type PerformanceRelease = {
+    revision_id: string;
+    number: string;
+    document_type: string;
+    revision: number;
+    printed_by?: string;
+    accepted_at: string;
+    printed_at?: string;
+    scan_at?: string;
+    released_at: string;
+    accepted_to_release_hours?: number;
+    edit_to_print_hours?: number;
+    print_to_signed_hours?: number;
+};
+
+export type TriggerCount = {
+    name: string;
+    mechanism: string;
+    count: number;
+};
+
+export type Performance = {
+    period: 'week' | 'month' | 'year';
+    from: string;
+    /**
+     * The last day of the period (inclusive).
+     */
+    to: string;
+    submitted: number;
+    accepted: number;
+    rejected: number;
+    by_trigger: Array<TriggerCount>;
+    yokotens: number;
+    yokoten_targets: number;
+    yokoten_changes: number;
+    releases: number;
+    accepted_to_release: DurationSummary;
+    edit_to_print: DurationSummary;
+    print_to_signed: DurationSummary;
+    people: Array<PerformancePerson>;
+    release_items: Array<PerformanceRelease>;
+};
+
 export type Metrics = {
     rows: {
         total: number;
@@ -7480,6 +7634,289 @@ export type CompareDocumentWithExcelResponses = {
 };
 
 export type CompareDocumentWithExcelResponse = CompareDocumentWithExcelResponses[keyof CompareDocumentWithExcelResponses];
+
+export type ListReleasedDocumentsData = {
+    body?: never;
+    path?: never;
+    query: {
+        customer_id: string;
+    };
+    url: '/api/v1/released-documents';
+};
+
+export type ListReleasedDocumentsErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ListReleasedDocumentsError = ListReleasedDocumentsErrors[keyof ListReleasedDocumentsErrors];
+
+export type ListReleasedDocumentsResponses = {
+    /**
+     * The released documents, by number.
+     */
+    200: DocumentList;
+};
+
+export type ListReleasedDocumentsResponse = ListReleasedDocumentsResponses[keyof ListReleasedDocumentsResponses];
+
+export type GetReleasedDocumentData = {
+    body?: never;
+    path: {
+        documentId: string;
+    };
+    query?: never;
+    url: '/api/v1/released-documents/{documentId}';
+};
+
+export type GetReleasedDocumentErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type GetReleasedDocumentError = GetReleasedDocumentErrors[keyof GetReleasedDocumentErrors];
+
+export type GetReleasedDocumentResponses = {
+    /**
+     * The revision in force.
+     */
+    200: Document;
+};
+
+export type GetReleasedDocumentResponse = GetReleasedDocumentResponses[keyof GetReleasedDocumentResponses];
+
+export type GetReleasedPfmeaCpComparisonData = {
+    body?: never;
+    path: {
+        documentId: string;
+    };
+    query?: never;
+    url: '/api/v1/released-documents/{documentId}/pfmea-cp';
+};
+
+export type GetReleasedPfmeaCpComparisonErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type GetReleasedPfmeaCpComparisonError = GetReleasedPfmeaCpComparisonErrors[keyof GetReleasedPfmeaCpComparisonErrors];
+
+export type GetReleasedPfmeaCpComparisonResponses = {
+    /**
+     * The comparison of the revisions in force.
+     */
+    200: PfmeaCpComparison;
+};
+
+export type GetReleasedPfmeaCpComparisonResponse = GetReleasedPfmeaCpComparisonResponses[keyof GetReleasedPfmeaCpComparisonResponses];
+
+export type ListReviewSetsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        customer_id?: string;
+        document_id?: string;
+        all?: boolean;
+    };
+    url: '/api/v1/periodic-reviews/sets';
+};
+
+export type ListReviewSetsErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ListReviewSetsError = ListReviewSetsErrors[keyof ListReviewSetsErrors];
+
+export type ListReviewSetsResponses = {
+    /**
+     * The sets.
+     */
+    200: ReviewSetList;
+};
+
+export type ListReviewSetsResponse = ListReviewSetsResponses[keyof ListReviewSetsResponses];
+
+export type ListPeriodicReviewsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        customer_id?: string;
+        open_only?: boolean;
+    };
+    url: '/api/v1/periodic-reviews';
+};
+
+export type ListPeriodicReviewsErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ListPeriodicReviewsError = ListPeriodicReviewsErrors[keyof ListPeriodicReviewsErrors];
+
+export type ListPeriodicReviewsResponses = {
+    /**
+     * The records, newest first.
+     */
+    200: PeriodicReviewList;
+};
+
+export type ListPeriodicReviewsResponse = ListPeriodicReviewsResponses[keyof ListPeriodicReviewsResponses];
+
+export type RecordPeriodicReviewData = {
+    body: NewPeriodicReview;
+    path?: never;
+    query?: never;
+    url: '/api/v1/periodic-reviews';
+};
+
+export type RecordPeriodicReviewErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type RecordPeriodicReviewError = RecordPeriodicReviewErrors[keyof RecordPeriodicReviewErrors];
+
+export type RecordPeriodicReviewResponses = {
+    /**
+     * The record, waiting for confirmation.
+     */
+    201: PeriodicReview;
+};
+
+export type RecordPeriodicReviewResponse = RecordPeriodicReviewResponses[keyof RecordPeriodicReviewResponses];
+
+export type ConfirmPeriodicReviewData = {
+    body?: never;
+    path: {
+        reviewId: string;
+    };
+    query?: never;
+    url: '/api/v1/periodic-reviews/{reviewId}/confirm';
+};
+
+export type ConfirmPeriodicReviewErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ConfirmPeriodicReviewError = ConfirmPeriodicReviewErrors[keyof ConfirmPeriodicReviewErrors];
+
+export type ConfirmPeriodicReviewResponses = {
+    /**
+     * The confirmed record.
+     */
+    200: PeriodicReview;
+};
+
+export type ConfirmPeriodicReviewResponse = ConfirmPeriodicReviewResponses[keyof ConfirmPeriodicReviewResponses];
+
+export type GetPerformanceData = {
+    body?: never;
+    path?: never;
+    query: {
+        period: 'week' | 'month' | 'year';
+        date?: string;
+        customer_id?: string;
+    };
+    url: '/api/v1/performance';
+};
+
+export type GetPerformanceErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type GetPerformanceError = GetPerformanceErrors[keyof GetPerformanceErrors];
+
+export type GetPerformanceResponses = {
+    /**
+     * The report.
+     */
+    200: Performance;
+};
+
+export type GetPerformanceResponse = GetPerformanceResponses[keyof GetPerformanceResponses];
 
 export type GetMetricsData = {
     body?: never;

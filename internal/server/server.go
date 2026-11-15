@@ -170,6 +170,10 @@ type DocumentService interface {
 	List(ctx context.Context, actor access.Actor, customerID string) ([]document.Summary, error)
 	Create(ctx context.Context, actor access.Actor, in document.NewDocument) (document.Document, error)
 	Get(ctx context.Context, actor access.Actor, id string) (document.Document, error)
+	// Dokumen terbit untuk pembaca dengan L-1 (D-195).
+	ListReleased(ctx context.Context, actor access.Actor, customerID string) ([]document.Summary, error)
+	Released(ctx context.Context, actor access.Actor, id string) (document.Document, error)
+	ReleasedComparison(ctx context.Context, actor access.Actor, id string) (document.Comparison, error)
 	SetHeader(ctx context.Context, actor access.Actor, id string, header map[string]any, version int) (document.Document, error)
 	AddRow(ctx context.Context, actor access.Actor, id string, in document.NewRow) (document.Document, error)
 	AddRows(ctx context.Context, actor access.Actor, id string, rows []document.NewRow) (document.Document, error)
@@ -312,6 +316,8 @@ type Deps struct {
 	Integration     http.Handler
 	// Notifications adalah email notifikasi (D-194).
 	Notifications NotificationService
+	// Reviews adalah review berkala (D-196).
+	Reviews ReviewService
 	// Logger untuk log server. Bila nil, dipakai slog.Default().
 	Logger *slog.Logger
 }
@@ -332,7 +338,7 @@ func NewHandler(ui fs.FS, deps Deps) http.Handler {
 		audit: deps.Audit, products: deps.Products, processes: deps.Processes,
 		numbering: deps.Numbering, changes: deps.Changes, approval: deps.Approval, settings: deps.Settings,
 		templates: deps.Templates, processTemplates: deps.ProcessTemplates, documents: deps.Documents, refDocs: deps.RefDocs, changeRequests: deps.ChangeRequests, printing: deps.Printing,
-		migration: deps.Migration, metrics: deps.Metrics, roles: deps.Roles,
+		migration: deps.Migration, metrics: deps.Metrics, reviews: deps.Reviews, roles: deps.Roles,
 		serviceAccounts: deps.ServiceAccounts, notifications: deps.Notifications, log: log,
 	}
 
@@ -400,6 +406,7 @@ type apiServer struct {
 	printing         PrintService
 	migration        MigrationService
 	metrics          MetricsService
+	reviews          ReviewService
 	roles            RoleService
 	serviceAccounts  ServiceAccountService
 	notifications    NotificationService

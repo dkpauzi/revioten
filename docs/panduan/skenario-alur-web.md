@@ -357,18 +357,29 @@ Login sebagai `dok.kontrol`. Buka SC-LM-003, isi **Minutes spent**, lalu **Verif
 ### Langkah 30 · Dasbor
 Buka **Documents → Dashboard**: baris yang mengikuti template, dokumen per status, target yokoten, waktu revisi, dan usaha migrasi.
 
+## 10a. Dokumen terbit, review berkala, dan kinerja (D-195 sampai D-197)
+
+### Langkah 31 · Dokumen terbit
+Buka **Documents → Released documents**, pilih customer LM. Setiap akun, juga akun Viewer tanpa peran kerja (internal audit, QA, QC, produksi), membaca revisi yang berlaku. Tekan nomor dokumen untuk membaca isinya, dan tab **Check** untuk PFMEA dan CP terbit berdampingan. Tidak ada tombol ubah, dan draft tidak pernah tampil.
+
+### Langkah 32 · Review berkala
+Buka **Documents → Periodic review**. Set PFD, PFMEA, dan CP yang 36 bulan tidak direvisi tampil kuning 90 hari sebelum jatuh tempo dan merah sesudahnya. Peringatan yang sama muncul di **Home**, di **Dashboard**, di halaman dokumen, dan sebagai email ke penyusun customer itu. Centang **Show sets that are not due** untuk melihat semua set. Untuk set yang jatuh tempo, penyusun menekan **Review with changes** (permintaan perubahan dengan pemicu Periodic review) atau **Reviewed, no change** (daftar periksa, peserta, kesimpulan), lalu verifikator menekan **Confirm**.
+
+### Langkah 33 · Laporan kinerja
+Login sebagai `ppap.engineer`. Buka **Documents → Performance report**. Pilih **Week (Friday to Thursday)**, **Month**, atau **Year**: jumlah permintaan perubahan per pemicu (termasuk Customer claim dan Audit finding), yokoten, dan waktu dari diterima sampai rilis, dari mulai edit sampai siap cetak, dan dari cetak sampai ditandatangani, total dan per orang.
+
 ## 11. Admin: periksa peran dan jejak (Tahap 8)
 
-### Langkah 31 · Roles
+### Langkah 34 · Roles
 Login sebagai `admin.contoh`. Buka **Admin → Roles**. Setiap kolom satu peran, setiap baris satu hak. Kotak yang abu-abu terkunci: peran Admin dan Viewer, hak admin, dan hak dasar.
 
-### Langkah 32 · Aplikasi lain (API integrasi, Tahap 9)
+### Langkah 35 · Aplikasi lain (API integrasi, Tahap 9)
 Buka **Admin → Service accounts**. Di **Add a service account**, isi nama aplikasi, tim pemilik, kontak, dan tujuan; centang scope **Read the list of released documents** dan **Read released revisions with their rows**, centang customer LM, lalu **Add the service account**. Tekan **Issue a token**: token tampil SATU KALI dan disalin ke clipboard. Aplikasi lain memanggil `GET /integration/v1/documents` dengan header `Authorization: Bearer <token>` dan hanya melihat dokumen terbit customer LM.
 
-### Langkah 33 · Email notifikasi (D-194)
+### Langkah 36 · Email notifikasi (D-194)
 Tekan **Change password** di bilah atas, isi **Email for notifications**, lalu **Save the email address**. Admin juga bisa mengisi alamat orang lain di **Admin → Accounts** dengan tombol **Email**. Buka **Admin → Notifications**: server email (diatur IT), saklar per peristiwa, tombol **Send me a test email**, dan kotak keluar. Sebelum IT mengatur Microsoft 365, email hanya tercatat dengan status **Not sent**.
 
-### Langkah 34 · Audit log
+### Langkah 37 · Audit log
 Buka **Admin → Audit log**.
 
 1. Setiap langkah di atas tercatat: siapa, kapan, apa, dan akun mana (termasuk orang pemegangnya).

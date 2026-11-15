@@ -5,6 +5,7 @@
 	// claim, ECR, temuan audit); yokoten, propagasi template, dan SQAM dimulai
 	// sistem (D-113). Server tetap memeriksa setiap operasi.
 	import { onMount } from 'svelte';
+	import { page } from '$app/state';
 	import { createChange, listChangeSources, listChangeTypes, listChanges, listCustomers, listDocuments, listFourMCategories } from '#lib/api/client.ts';
 	import type { Change, ChangeSource, ChangeType, Customer, DocumentSummary, FourMCategory } from '#lib/api/gen/index.ts';
 	import { failureText, problemText } from '#lib/errors.ts';
@@ -39,6 +40,17 @@
 		triggers = s.ok ? s.data.items.filter((x) => x.active && !x.mechanism) : [];
 		types = ty.ok ? ty.data.items : [];
 		categories = f.ok ? f.data.items : [];
+		// Tautan "Review with changes" (D-196) mengisi customer, pemicu, dan
+		// dokumen set itu: ?customer=&trigger=<nama sumber>&documents=id,id.
+		const params = page.url.searchParams;
+		const preset = params.get('customer') ?? '';
+		if (preset !== '' && customers.some((x) => x.id === preset)) {
+			customerId = preset;
+			await chooseCustomer();
+			const trigger = triggers.find((x) => x.name === params.get('trigger'));
+			const wanted = (params.get('documents') ?? '').split(',').filter((id) => documents.some((d) => d.id === id));
+			draft = { ...draft, triggerId: trigger?.id ?? '', documentIds: wanted };
+		}
 	});
 
 	async function chooseCustomer() {

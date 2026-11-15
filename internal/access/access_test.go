@@ -19,7 +19,7 @@ func TestMain(m *testing.M) {
 
 // allPermissions adalah katalog hak U3, urut seperti di matriks.
 var allPermissions = []Permission{
-	ViewReleased, ViewRegister, ExportReleased, ViewDrafts,
+	ViewReleased, ViewRegister, ExportReleased, ViewDrafts, ViewPerformance,
 	RegisterNumbers, EditDrafts, ProposeChanges, WorkRevisions, PrintForSignature,
 	ManageTemplates, RecordRelease, ManageNumbers, ControlledCopies, MigrateDocuments,
 	VerifyChanges, CheckPFMEACP, ApproveForms,
@@ -29,12 +29,13 @@ var allPermissions = []Permission{
 // u3Matrix adalah matriks U3-peta-pengguna bagian 3, ditulis ulang di test
 // supaya isi awal di migrasi 00003 bisa dibandingkan dengannya.
 var u3Matrix = map[string][]Permission{
-	RoleAuthor:             {ViewReleased, ViewRegister, ExportReleased, ViewDrafts, RegisterNumbers, EditDrafts, ProposeChanges, WorkRevisions, PrintForSignature},
+	RoleAuthor:             {ViewReleased, ViewRegister, ExportReleased, ViewDrafts, ViewPerformance, RegisterNumbers, EditDrafts, ProposeChanges, WorkRevisions, PrintForSignature},
 	RoleTemplateMaintainer: {ViewReleased, ViewRegister, ExportReleased, ViewDrafts, ManageTemplates},
 	RolePFMEACPChecker:     {ViewReleased, ViewRegister, ExportReleased, ViewDrafts, CheckPFMEACP},
 	RoleVerifier:           {ViewReleased, ViewRegister, ExportReleased, ViewDrafts, VerifyChanges},
 	// Penyetuju form (D-139, migrasi 00019): menerbitkan form set dan tabel AP.
-	RoleFormApprover:    {ViewReleased, ViewRegister, ExportReleased, ViewDrafts, ApproveForms},
+	// L-5 untuk Penyusun dan Penyetuju form: laporan kinerja (D-197, migrasi 00047).
+	RoleFormApprover:    {ViewReleased, ViewRegister, ExportReleased, ViewDrafts, ViewPerformance, ApproveForms},
 	RoleDocumentControl: {ViewReleased, ViewRegister, ExportReleased, ViewDrafts, RecordRelease, ManageNumbers, ControlledCopies},
 	RoleMigration:       {ViewReleased, ViewRegister, ExportReleased, ViewDrafts, MigrateDocuments},
 	RoleViewer:          {ViewReleased, ViewRegister, ExportReleased},

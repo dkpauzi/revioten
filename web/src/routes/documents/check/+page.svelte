@@ -4,9 +4,12 @@
 	// saat ini PPAP Engineer) memberi tanda "dicek oleh, tanggal" per proses.
 	// Tanda berlaku untuk revisi kedua dokumen saat itu, dan ditandai perlu
 	// dicek ulang bila baris proses itu berubah sesudahnya.
+	//
+	// Dengan ?released=1 halaman ini membaca PFMEA dan CP revisi yang berlaku
+	// (D-195): untuk akun Viewer, tanpa draft, dan tanda dicek tidak bisa diubah.
 	import { untrack } from 'svelte';
 	import { page } from '$app/state';
-	import { getFormatVersion, getPfmeaCpComparison, markPfmeaCpChecked } from '#lib/api/client.ts';
+	import { getFormatVersion, getPfmeaCpComparison, getReleasedPfmeaCpComparison, markPfmeaCpChecked } from '#lib/api/client.ts';
 	import type { DocumentRow, FormatField, FormatVersion, PfmeaCpComparison, PfmeaCpProcess } from '#lib/api/gen/index.ts';
 	import { cellText } from '#lib/documents.ts';
 	import { failureText } from '#lib/errors.ts';
@@ -20,18 +23,21 @@
 	let message = $state('');
 	let failure = $state('');
 	let busy = $state('');
-	let canCheck = $derived(can('V-2'));
-
 	let currentId = $derived(page.url.searchParams.get('id') ?? '');
+	let released = $derived(page.url.searchParams.get('released') === '1');
+	let canCheck = $derived(can('V-2') && !released);
+	// Alamat dokumen: halaman baca terbit atau workbook draft.
+	let viewPath = $derived(released ? '/documents/released/view' : '/documents/view');
 	$effect(() => {
 		const id = currentId;
-		untrack(() => load(id));
+		const readOnly = released;
+		untrack(() => load(id, readOnly));
 	});
 
-	async function load(id: string) {
+	async function load(id: string, readOnly: boolean) {
 		comparison = null;
 		loadError = '';
-		const result = await getPfmeaCpComparison(id);
+		const result = readOnly ? await getReleasedPfmeaCpComparison(id) : await getPfmeaCpComparison(id);
 		if (!result.ok) {
 			const details = result.error.body?.details ?? [];
 			loadError = details.some((d) => d.field === 'set') ? t('checkNoPair') : failureText(result.error);
@@ -83,22 +89,22 @@
 {#if loadError}
 	<h1>{t('checkTitle')}</h1>
 	<p class="error" role="alert">{loadError}</p>
-	<p><a href="/documents/view?id={currentId}">{t('checkBack')}</a></p>
+	<p><a href="{viewPath}?id={currentId}">{t('checkBack')}</a></p>
 {:else if !comparison || !formats}
 	<p>{t('formatLoading')}</p>
 {:else}
 	{@const pfmeaFields = shownFields(formats.pfmea)}
 	{@const cpFields = shownFields(formats.cp)}
-	<p><a href="/documents">{t('documentBack')}</a></p>
+	<p><a href={released ? '/documents/released' : '/documents'}>{t(released ? 'releasedBack' : 'documentBack')}</a></p>
 	<h1>{t('checkTitle')}</h1>
-	<p class="hint">{t('checkHint')}</p>
+	<p class="hint">{t(released ? 'releasedCheckHint' : 'checkHint')}</p>
 
 	<!-- Tab sheet workbook (D-145): PFD, PFMEA, CP, lalu Check. -->
 	<nav class="sheets" aria-label={t('documentSheets')}>
 		{#each comparison.cp.set as m (m.id)}
-			<a href="/documents/view?id={m.id}" data-sveltekit-noscroll>{m.document_type.name}</a>
+			<a href="{viewPath}?id={m.id}" data-sveltekit-noscroll>{m.document_type.name}</a>
 		{/each}
-		<a href="/documents/check?id={currentId}" aria-current="page">{t('checkTab')}</a>
+		<a href="/documents/check?id={currentId}{released ? '&released=1' : ''}" aria-current="page">{t('checkTab')}</a>
 	</nav>
 
 	<p class="pair">

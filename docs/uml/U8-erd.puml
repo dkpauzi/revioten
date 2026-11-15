@@ -1,4 +1,4 @@
-' U8 · ERD fisik (draft 0.16, 2026-11-15), dibangkitkan dari skema database sampai migrasi 00046
+' U8 · ERD fisik (draft 0.16, 2026-11-15), dibangkitkan dari skema database sampai migrasi 00047
 ' oleh docs/uml/tools/u8_dari_database.py. Jangan diedit tangan: ubah migrasinya, lalu jalankan skrip itu lagi.
 ' Menggambarkan tabel PostgreSQL 18 yang sudah dibangun (R-UML-03: diagram fisik mengikuti kode).
 ' Tim IT boleh memakai stack lain (R-UML-02); aturan yang wajib dipertahankan ada di brief dan U5.
@@ -212,6 +212,8 @@ entity "system_settings" as system_settings {
   * form_approval_mode : text
   * qr_enabled : boolean
   * migration_mode : boolean
+  * review_period_months : smallint
+  * review_warning_days : smallint
 }
 
 accounts ||--o{ account_roles
@@ -1211,6 +1213,37 @@ entity "notification_outbox" as notification_outbox {
   sent_at : timestamptz
 }
 
+entity "periodic_reviews" as periodic_reviews {
+  * id : uuid <<PK>>
+  --
+  * seq : bigint <<UK>>
+  * customer_id : uuid <<FK>>
+  * customer_code : text
+  * sequence : integer
+  * reviewed_on : date
+  * participants : text
+  * conclusion : text
+  * checklist : jsonb
+  * revisions : jsonb
+  * status : text
+  * recorded_by_person_id : uuid <<FK>>
+  * recorded_by_account_id : uuid <<FK>>
+  * recorded_at : timestamptz
+  confirmed_by_person_id : uuid <<FK>>
+  confirmed_by_account_id : uuid <<FK>>
+  confirmed_at : timestamptz
+}
+
+entity "periodic_review_notices" as periodic_review_notices {
+  * customer_code : text <<PK>>
+  * sequence : integer <<PK>>
+  * due_on : date <<PK>>
+  * stage : text <<PK>>
+  --
+  * sent_at : timestamptz
+}
+
+entity "accounts" as accounts #EEEEEE
 entity "changes" as changes #EEEEEE
 entity "customers" as customers #EEEEEE
 entity "documents" as documents #EEEEEE
@@ -1223,6 +1256,9 @@ service_accounts ||--o{ export_jobs
 service_accounts ||--o{ integration_requests
 notification_events ||--o{ notification_outbox
 people ||--o{ notification_outbox
+accounts ||--o{ periodic_reviews
+customers ||--o{ periodic_reviews
+people ||--o{ periodic_reviews
 customers ||--o{ service_account_customers
 service_accounts ||--o{ service_account_customers
 people ||--o{ service_accounts

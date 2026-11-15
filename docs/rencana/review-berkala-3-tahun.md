@@ -2,7 +2,7 @@
 
 - **Dibuat:** 10 November 2026, dari permintaan pemilik.
 - **Keputusan yang sudah dicatat:** D-138 di brief.
-- **Status:** rancangan (usulan), **belum dibangun**. Rincian yang belum diputuskan ada di temuan E-86.
+- **Status:** **dibangun 15 November 2026 (D-196)** dengan opsi (a) temuan E-86 sebagai asumsi kerja. Bedanya dengan rancangan ini: email jatuh tempo sudah ada (D-194), pengaturan 36 bulan dan 90 hari belum bisa diubah di layar, lampiran bukti dan cetak lembar review belum dibangun, dan daftar periksa hanya menerima OK atau Tidak berlaku (butir yang perlu diubah berarti review dengan perubahan).
 
 ## 1. Permintaan pemilik
 

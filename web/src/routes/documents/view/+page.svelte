@@ -20,6 +20,7 @@
 	import LinkPanel from '#lib/documents/LinkPanel.svelte';
 	import SectionBar from '#lib/documents/SectionBar.svelte';
 	import Workbook from '#lib/documents/Workbook.svelte';
+	import ReviewBanner from '#lib/ReviewBanner.svelte';
 	import { cleanContent, rowsOfSection, typedFields } from '#lib/documents.ts';
 	import { failureText, problemText } from '#lib/errors.ts';
 	import { t } from '#lib/i18n/index.ts';
@@ -307,6 +308,7 @@
 {:else}
 	<p><a href="/documents">{t('documentBack')}</a></p>
 	<h1 class="mono">{doc.number}</h1>
+	<ReviewBanner documentId={doc.id} />
 	<dl class="facts">
 		<dt>{t('numberColumnType')}</dt>
 		<dd>{doc.document_type.name}</dd>

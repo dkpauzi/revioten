@@ -26,6 +26,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/printout"
 	"github.com/dkpauzi/revioten/internal/process"
 	"github.com/dkpauzi/revioten/internal/product"
+	"github.com/dkpauzi/revioten/internal/review"
 	"github.com/dkpauzi/revioten/internal/settings"
 	"github.com/dkpauzi/revioten/internal/storage"
 	"github.com/dkpauzi/revioten/internal/template"
@@ -84,6 +85,7 @@ func TestPermissionsPerOperation(t *testing.T) {
 		Migration:      document.NewService(pool, checker), Metrics: metrics.NewService(pool, checker), Roles: authSvc,
 		ServiceAccounts: integration.NewService(pool, checker, nil, nil),
 		Notifications:   notify.NewService(pool, checker, nil, notify.Config{}, nil),
+		Reviews:         review.NewService(pool, checker),
 	})
 
 	// Admin pertama, satu akun kerja tanpa peran (hanya hak dasar Viewer), dan
@@ -341,7 +343,7 @@ func TestPermissionsPerOperation(t *testing.T) {
 		"processId": proc.ID, "documentTypeId": docTypes[0].ID, "cpTypeId": docTypes[2].ID, "documentNumberId": reg.Numbers[0].ID, "roleId": access.RolePFMEACPChecker, "event": "change_submitted", "serviceAccountId": "01900000-0000-7000-8000-000000000000", "tokenId": "01900000-0000-7000-8000-000000000001", "documentId": doc.ID, "rowId": doc.Rows[0].ID, "freeNumberId": reserved[1], "specialCodeId": specialCodes[0].ID,
 		"changeTypeId": changeTypes[0].ID, "changeSourceId": sources[0].ID, "fourMCategoryId": categories[0].ID,
 		"formatTemplateId": pfmeaFormat.ID, "formatVersionId": pfmeaVersion.ID, "formSetId": formSet.ID, "formSetVersionId": formSet.Versions[0].ID, "pfdSheetId": formSet.Versions[0].PFD.FormatVersionID, "pfmeaSheetId": formSet.Versions[0].PFMEA.FormatVersionID, "cpSheetId": formSet.Versions[0].CP.FormatVersionID, "formatFieldId": pfmeaVersion.Fields[0].ID,
-		"freeProcessId": reflow.ID, "refDocId": refDoc.ID, "linkId": refDoc.Links[0].ID, "changeId": changeReq.ID, "triggerId": triggerID, "contentTypeId": contentTypeID, "sectionId": "01900000-0000-7000-8000-000000000000", "attachmentId": "01900000-0000-7000-8000-000000000000", "yokotenId": "01900000-0000-7000-8000-000000000000", "targetId": "01900000-0000-7000-8000-000000000000", "processVersionId": iqcVersion.ID, "processTemplateId": iqcVersion.TemplateID, "subprocessId": iqcVersion.Subprocesses[0].ID,
+		"freeProcessId": reflow.ID, "refDocId": refDoc.ID, "linkId": refDoc.Links[0].ID, "changeId": changeReq.ID, "triggerId": triggerID, "contentTypeId": contentTypeID, "sectionId": "01900000-0000-7000-8000-000000000000", "attachmentId": "01900000-0000-7000-8000-000000000000", "reviewId": "01900000-0000-7000-8000-000000000000", "yokotenId": "01900000-0000-7000-8000-000000000000", "targetId": "01900000-0000-7000-8000-000000000000", "processVersionId": iqcVersion.ID, "processTemplateId": iqcVersion.TemplateID, "subprocessId": iqcVersion.Subprocesses[0].ID,
 		"pointId": iqcVersion.Subprocesses[0].Points[0].ID, "variantId": iqcVersion.Subprocesses[0].Points[0].Variants[0].ID,
 	}
 
@@ -561,6 +563,20 @@ func TestPermissionsPerOperation(t *testing.T) {
 		// Tahap 7. Dasbor untuk semua akun (L-2). Migrasi lewat E-10, yang dipegang engineer (D-69);
 		// mode migrasi mati (bawaan), jadi sesudah haknya lolos operasinya ditolak 422 (R-MIG-06).
 		{http.MethodGet, "/api/v1/metrics", "", http.StatusOK, http.StatusOK, http.StatusOK},
+		// D-195: dokumen terbit untuk semua akun (L-1). Dokumen uji belum terbit, jadi tidak ada (404),
+		// dan bagi akun yang bisa melihat draft-nya, set-nya belum punya PFMEA dan CP terbit (422).
+		// Row-level security menyembunyikan draft dari viewer dan admin, jadi bagi mereka dokumennya tidak ada.
+		{http.MethodGet, "/api/v1/released-documents?customer_id={customerId}", "", http.StatusOK, http.StatusOK, http.StatusOK},
+		{http.MethodGet, "/api/v1/released-documents/{documentId}", "", http.StatusNotFound, http.StatusNotFound, http.StatusNotFound},
+		{http.MethodGet, "/api/v1/released-documents/{documentId}/pfmea-cp", "", http.StatusNotFound, http.StatusUnprocessableEntity, http.StatusNotFound},
+		// D-196: daftar review untuk semua akun (L-2); mencatat lewat E-3 (daftar periksa kosong: 422);
+		// catatan palsu tidak ada (404).
+		{http.MethodGet, "/api/v1/periodic-reviews/sets", "", http.StatusOK, http.StatusOK, http.StatusOK},
+		{http.MethodGet, "/api/v1/periodic-reviews", "", http.StatusOK, http.StatusOK, http.StatusOK},
+		{http.MethodPost, "/api/v1/periodic-reviews", `{"document_id":"{documentId}","reviewed_on":"2026-01-01","participants":"A","conclusion":"B","checklist":[]}`, http.StatusNotFound, http.StatusUnprocessableEntity, http.StatusNotFound},
+		{http.MethodPost, "/api/v1/periodic-reviews/{reviewId}/confirm", "", http.StatusNotFound, http.StatusNotFound, http.StatusNotFound},
+		// D-197: laporan kinerja hanya untuk pemegang L-5 (Penyusun dan Penyetuju form).
+		{http.MethodGet, "/api/v1/performance?period=week", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/migration/numbers?customer_id={customerId}", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodPost, "/api/v1/migration/documents", `{"document_number_id":"{documentNumberId}","model_ids":[],"revision":4,"effective_date":"2025-03-10","prepared_by":"A","approved_by":"B"}`, http.StatusForbidden, http.StatusUnprocessableEntity, http.StatusForbidden},
 		{http.MethodPut, "/api/v1/documents/{documentId}/history", `{"entries":[]}`, http.StatusForbidden, http.StatusUnprocessableEntity, http.StatusForbidden},

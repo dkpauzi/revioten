@@ -1,5 +1,6 @@
 <script lang="ts">
 	import HealthStatus from '#lib/HealthStatus.svelte';
+	import ReviewSummary from '#lib/ReviewSummary.svelte';
 	import { t } from '#lib/i18n/index.ts';
 	import { buildMenu } from '#lib/menu.ts';
 	import { can } from '#lib/session.svelte.ts';
@@ -11,6 +12,9 @@
 </script>
 
 <h1>{t('homeTitle')}</h1>
+
+<!-- Peringatan review berkala 3 tahun (D-196). -->
+<ReviewSummary />
 
 <div class="tiles">
 	{#each tiles as group (group.id)}

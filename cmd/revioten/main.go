@@ -41,6 +41,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/printout"
 	"github.com/dkpauzi/revioten/internal/process"
 	"github.com/dkpauzi/revioten/internal/product"
+	"github.com/dkpauzi/revioten/internal/review"
 	"github.com/dkpauzi/revioten/internal/server"
 	"github.com/dkpauzi/revioten/internal/settings"
 	"github.com/dkpauzi/revioten/internal/storage"
@@ -124,6 +125,7 @@ func runServer(args []string) error {
 	} else {
 		slog.Info("email notifikasi aktif", "provider", cfg.Mail.Provider)
 	}
+	cfg.Mail.BaseURL = cmp.Or(cfg.PublicBaseURL, "http://"+*addr)
 	notifications := notify.NewService(pool, checker, mailer, cfg.Mail, nil)
 	audit.SetListener(notify.NewNotifier(cmp.Or(cfg.PublicBaseURL, "http://"+*addr)).Listener())
 	go notifications.Run(ctx, 15*time.Second)
@@ -155,6 +157,7 @@ func runServer(args []string) error {
 			Printing:         printing,
 			Migration:        docs,
 			Metrics:          metrics.NewService(pool, checker),
+			Reviews:          review.NewService(pool, checker),
 		}),
 		// Batas waktu membaca header permintaan. Tanpa batas ini, klien yang
 		// sangat lambat bisa menahan koneksi selamanya (pengaman dasar, G9).

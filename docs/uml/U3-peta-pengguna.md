@@ -43,10 +43,11 @@ Semua pengguna yang login otomatis punya hak dasar level Lihat (L-1 sampai L-3),
 
 | Kode | Hak | Use case | Penyusun | Pengelola template | Pemeriksa PFMEA–CP | Verifikator | Dokumen kontrol | Petugas migrasi | Viewer | Admin |
 |---|---|---|---|---|---|---|---|---|---|---|
-| **L-1** | Lihat dokumen rilis dan halaman verifikasi (layar dokumen rilis untuk akun tanpa L-4 belum dibangun, lihat U3 daftar use case) | UC-56, UC-57 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| **L-1** | Lihat dokumen rilis dan halaman verifikasi, termasuk halaman Released documents dan tab Check baca saja (D-195) | UC-56, UC-57 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | **L-2** | Lihat register nomor, riwayat dan diff, diagram PFD, dasbor, dan master data (D-103) | UC-12, UC-37, UC-47, UC-64 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | **L-3** | Ekspor Excel dan PDF dokumen rilis | UC-54 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | **L-4** | Lihat draft dan permintaan perubahan yang sedang berjalan (usulan) | UC-47 | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — | — |
+| **L-5** | Lihat laporan kinerja PPAP Engineer (D-197, migrasi 00047). Bawaannya juga untuk Penyetuju form (supervisor) | UC-65 | ✓ | — | — | — | — | — | — | — |
 | **E-1** | Daftarkan nomor dokumen, termasuk sebagai set | UC-10, UC-11 | ✓ | — | — | — | — | — | — | — |
 | **E-2** | Buat, rakit, dan edit dokumen draft, termasuk gambar dan tabel spesifikasi di sel, serta mengusulkan cakupan poin (usulan) | UC-30 sampai UC-35, UC-38, UC-39, UC-25 (mengusulkan) | ✓ | — | — | — | — | — | — | — |
 | **E-3** | Ajukan perubahan dan isi daftar periksa dampak | UC-40, UC-42 | ✓ | — | — | — | — | — | — | — |

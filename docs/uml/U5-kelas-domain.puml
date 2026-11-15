@@ -1067,3 +1067,61 @@ note bottom of OutboxEmail
 end note
 
 @enduml
+
+' ---------------------------------------------------------------------------
+@startuml U5-J-review-berkala
+hide circle
+hide empty methods
+skinparam shadowing false
+skinparam ArrowColor #444444
+skinparam class {
+  BorderColor #1F4E79
+  BackgroundColor #FFFFFF
+  BackgroundColor<<lihat U5-A>> #F4F4F4
+  BackgroundColor<<lihat U5-B>> #F4F4F4
+  BackgroundColor<<lihat U5-F>> #F4F4F4
+}
+
+title U5-J · Review berkala (D-138, D-196)
+
+class DocumentSet {
+  customer_code
+  sequence
+  --
+  dihitung, tidak disimpan:
+  last_release
+  due_on = acuan + 36 bulan
+  status : ok, due_soon, overdue
+}
+class PeriodicReview {
+  ref : PRV-0001
+  reviewed_on
+  participants
+  checklist : 8 butir, OK atau N/A
+  conclusion
+  revisions : nomor, revisi, SHA-256
+  status : submitted, confirmed
+}
+class ReviewNotice {
+  due_on
+  stage : due_soon, overdue
+}
+class Customer <<lihat U5-A>>
+class Person <<lihat U5-B>>
+class Document <<lihat U5-F>>
+
+DocumentSet "*" -- "1" Customer
+DocumentSet "1" o-- "1..3" Document : PFD, PFMEA, CP
+DocumentSet "1" -- "0..*" PeriodicReview
+DocumentSet "1" -- "0..*" ReviewNotice : email sekali per tahap >
+PeriodicReview "*" -- "1" Person : dicatat (E-3) >
+PeriodicReview "*" -- "0..1" Person : dikonfirmasi (V-1) >
+
+note bottom of PeriodicReview
+  Pencatat tidak mengonfirmasi sendiri (R-SEC-11).
+  Hanya catatan terkonfirmasi yang memulai lagi jam
+  review; sesudah itu tidak bisa diubah (trigger
+  database). Review dengan perubahan memakai
+  permintaan perubahan biasa (pemicu Periodic review).
+end note
+@enduml

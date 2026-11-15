@@ -119,7 +119,7 @@ func TestDefaults(t *testing.T) {
 	}
 
 	want := []string{
-		"Audit finding//aktif", "Customer claim//aktif", "ECR//aktif", "PP (pre-production)//aktif",
+		"Audit finding//aktif", "Customer claim//aktif", "ECR//aktif", "Periodic review//aktif", "PP (pre-production)//aktif",
 		"SQAM/sqam/aktif", "Template propagation/template/aktif", "Yokoten/yokoten/aktif",
 	}
 	if got := sourceNames(t, f); !slices.Equal(got, want) {

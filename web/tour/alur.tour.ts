@@ -495,16 +495,33 @@ test('alur dari admin sampai dokumen terbit, revisi, migrasi, dasbor, dan API in
 	await expect(page.getByRole('heading', { name: en.dashboardTitle, level: 1 })).toBeVisible();
 	await say(page, 'Langkah 30', 'Documents > Dashboard. Angka dihitung dari data: baris yang mengikuti template, status dokumen, waktu revisi, dan usaha migrasi.');
 
+	// ---------- Bagian F2: dokumen terbit, review berkala, dan kinerja (D-195 sampai D-197) ----------
+	await openFromMenu(page, en.navGroupDocuments, en.navReleasedDocuments);
+	await page.getByLabel(en.documentCustomer, { exact: true }).selectOption({ label: 'LM · Contoh Customer LM' });
+	await expect(page.getByRole('link', { name: /^SC-LM-003/ })).toBeVisible();
+	await say(page, 'Langkah 31', 'Documents > Released documents. Semua akun, juga Viewer (internal audit, QA, produksi), membaca revisi yang berlaku. Draft tidak pernah tampil.');
+
+	await openFromMenu(page, en.navGroupDocuments, en.navPeriodicReviews);
+	await page.getByLabel(en.reviewShowAll).check();
+	await say(page, 'Langkah 32', 'Documents > Periodic review. Set yang 3 tahun tidak direvisi muncul kuning 90 hari sebelumnya dan merah sesudahnya, juga di Home, dasbor, halaman dokumen, dan email.');
+
+	await logOut(page);
+	await logInAs(page, engineer.login, engineer.password);
+	await expect(page.getByRole('button', { name: en.logout })).toBeVisible();
+	await openFromMenu(page, en.navGroupDocuments, en.navPerformance);
+	await expect(page.getByRole('heading', { name: en.performanceChanges })).toBeVisible();
+	await say(page, 'Langkah 33', 'Documents > Performance report. PPAP Engineer dan supervisor melihat angka per minggu (Jumat sampai Kamis), bulan, dan tahun.');
+
 	// ---------- Bagian G: admin memeriksa peran dan jejak (Tahap 8) ----------
 	await logOut(page);
-	await say(page, 'Langkah 31', 'Admin login lagi untuk memeriksa isi peran dan audit log.');
+	await say(page, 'Langkah 34', 'Admin login lagi untuk memeriksa isi peran dan audit log.');
 	await logInAs(page, admin.login, admin.password);
 	await expect(page.getByRole('button', { name: en.logout })).toBeVisible();
 	await openFromMenu(page, en.navGroupAdmin, en.navRoles);
 	await expect(page.getByRole('heading', { name: en.rolesTitle, level: 1 })).toBeVisible();
-	await say(page, 'Langkah 31', 'Admin > Roles. Admin mengatur hak setiap peran kerja; hak admin dan hak dasar terkunci.');
+	await say(page, 'Langkah 34', 'Admin > Roles. Admin mengatur hak setiap peran kerja; hak admin dan hak dasar terkunci.');
 	await openFromMenu(page, en.navGroupAdmin, en.navServiceAccounts);
-	await say(page, 'Langkah 32', 'Admin > Service accounts. Aplikasi lain (misalnya MES) mendapat token dengan scope dan customer terbatas.');
+	await say(page, 'Langkah 35', 'Admin > Service accounts. Aplikasi lain (misalnya MES) mendapat token dengan scope dan customer terbatas.');
 	await page.getByLabel(en.serviceAccountName, { exact: true }).fill('Contoh MES');
 	await page.getByLabel(en.serviceAccountTeam, { exact: true }).fill('Tim MES');
 	await page.getByLabel(en.serviceAccountContact, { exact: true }).fill('mes@contoh.test');
@@ -517,24 +534,24 @@ test('alur dari admin sampai dokumen terbit, revisi, migrasi, dasbor, dan API in
 	const mes = page.locator('section', { has: page.getByRole('heading', { name: 'Contoh MES', level: 2 }) });
 	await mes.getByRole('button', { name: en.serviceTokenIssue }).click();
 	const token = (await page.locator('.issued code').textContent()) ?? '';
-	await say(page, 'Langkah 32', 'Token tampil SATU KALI dan disalin ke clipboard. Server hanya menyimpan hash-nya.');
+	await say(page, 'Langkah 35', 'Token tampil SATU KALI dan disalin ke clipboard. Server hanya menyimpan hash-nya.');
 	const app = await playwright.request.newContext({ baseURL: new URL(page.url()).origin, extraHTTPHeaders: { Authorization: `Bearer ${token}` } });
 	const docs = await (await app.get('/integration/v1/documents')).json();
 	await app.dispose();
 	expect(docs.items.length).toBeGreaterThan(0);
-	await say(page, 'Langkah 32', `Aplikasi itu membaca ${docs.items.length} dokumen terbit customer LM lewat /integration/v1. Draft tidak pernah ikut.`);
+	await say(page, 'Langkah 35', `Aplikasi itu membaca ${docs.items.length} dokumen terbit customer LM lewat /integration/v1. Draft tidak pernah ikut.`);
 
 	await page.goto('/account/password');
-	await say(page, 'Langkah 33', 'Setiap orang mengisi alamat email sendiri untuk notifikasi (atau diisi admin di Accounts).');
+	await say(page, 'Langkah 36', 'Setiap orang mengisi alamat email sendiri untuk notifikasi (atau diisi admin di Accounts).');
 	await page.getByLabel(en.accountEmail, { exact: true }).fill('admin@contoh.test');
 	await page.getByRole('button', { name: en.accountEmailSave }).click();
 	await expect(page.getByRole('status')).toHaveText(en.accountEmailSaved);
 	await openFromMenu(page, en.navGroupAdmin, en.navNotifications);
-	await say(page, 'Langkah 33', 'Admin > Notifications. Email dikirim saat ada yang menunggu seseorang. Server email (Microsoft 365) diatur IT; sebelum itu email hanya tercatat.');
-	await say(page, 'Langkah 33', 'Kotak keluar menunjukkan setiap email: perubahan untuk diverifikasi, keputusan untuk pemohon, scan siap rilis, dan lainnya.');
+	await say(page, 'Langkah 36', 'Admin > Notifications. Email dikirim saat ada yang menunggu seseorang. Server email (Microsoft 365) diatur IT; sebelum itu email hanya tercatat.');
+	await say(page, 'Langkah 36', 'Kotak keluar menunjukkan setiap email: perubahan untuk diverifikasi, keputusan untuk pemohon, scan siap rilis, dan lainnya.');
 
 	await openFromMenu(page, en.navGroupAdmin, en.navAuditLog);
-	await say(page, 'Langkah 34', 'Semua langkah tadi tercatat: siapa, kapan, dan apa. Catatan ini tidak bisa diubah.');
+	await say(page, 'Langkah 37', 'Semua langkah tadi tercatat: siapa, kapan, dan apa. Catatan ini tidak bisa diubah.');
 	await page.getByRole('button', { name: en.auditVerify }).click();
 	await expect(page.getByRole('status')).toContainText(en.auditChainValid.split('{entries}')[0]);
 	await say(page, 'Selesai', 'Rantai audit utuh. Alur dari master data sampai rilis, revisi, migrasi, dasbor, dan API integrasi selesai.');

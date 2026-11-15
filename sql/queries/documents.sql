@@ -359,3 +359,26 @@ SELECT uuidv7()::uuid;
 
 -- name: DeleteSectionExclusions :exec
 DELETE FROM document_point_exclusions WHERE section_id IN (SELECT id FROM document_sections WHERE section_key = $1);
+
+-- name: ListCustomerReleasedDocuments :many
+-- ListCustomerReleasedDocuments memberi dokumen satu customer yang punya revisi
+-- berlaku, dengan revisi dan tanggal rilis revisi itu (D-195). Nomor Void
+-- tidak ikut; nomor Obsolete ikut supaya isinya tetap bisa dibaca.
+SELECT d.id, n.number, n.status AS number_status, t.key AS document_type_key, t.name AS document_type_name,
+       d.released_revision::smallint AS released_revision, rr.released_at::timestamptz AS released_at,
+       s.name AS form_set_name,
+       (SELECT coalesce(array_agg(m.name ORDER BY m.name), '{}')::text[]
+        FROM document_models dm JOIN models m ON m.id = dm.model_id WHERE dm.document_id = d.id) AS model_names,
+       d.origin, rr.migrated AS released_migrated
+FROM documents d
+JOIN document_numbers n ON n.id = d.document_number_id
+JOIN document_types t ON t.id = d.document_type_id
+JOIN document_revisions rr ON rr.document_id = d.id AND rr.revision = d.released_revision
+JOIN form_set_versions fv ON fv.id = d.form_set_version_id
+JOIN form_sets s ON s.id = fv.form_set_id
+WHERE d.customer_id = $1 AND d.released_revision IS NOT NULL AND n.status <> 'void'
+ORDER BY n.number;
+
+-- name: DocumentReleasedRevision :one
+SELECT d.released_revision FROM documents d JOIN document_numbers n ON n.id = d.document_number_id
+WHERE d.id = $1 AND n.status <> 'void';

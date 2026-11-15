@@ -510,6 +510,34 @@ type PartNumber struct {
 	CreatedAt  time.Time
 }
 
+type PeriodicReview struct {
+	ID                   string
+	Seq                  *int64
+	CustomerID           string
+	CustomerCode         string
+	Sequence             int32
+	ReviewedOn           pgtype.Date
+	Participants         string
+	Conclusion           string
+	Checklist            []byte
+	Revisions            []byte
+	Status               string
+	RecordedByPersonID   string
+	RecordedByAccountID  string
+	RecordedAt           time.Time
+	ConfirmedByPersonID  *string
+	ConfirmedByAccountID *string
+	ConfirmedAt          *time.Time
+}
+
+type PeriodicReviewNotice struct {
+	CustomerCode string
+	Sequence     int32
+	DueOn        pgtype.Date
+	Stage        string
+	SentAt       time.Time
+}
+
 type Permission struct {
 	Code      string
 	Level     string
@@ -743,11 +771,13 @@ type Subprocess struct {
 }
 
 type SystemSetting struct {
-	ID               string
-	SignDatesEnabled bool
-	FormApprovalMode string
-	QrEnabled        bool
-	MigrationMode    bool
+	ID                 string
+	SignDatesEnabled   bool
+	FormApprovalMode   string
+	QrEnabled          bool
+	MigrationMode      bool
+	ReviewPeriodMonths int16
+	ReviewWarningDays  int16
 }
 
 type TemplatePoint struct {

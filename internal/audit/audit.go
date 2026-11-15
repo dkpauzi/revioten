@@ -133,10 +133,13 @@ const (
 	ActionRefDocUnlinked              = "referenced_document.unlinked"   // D-130
 	ActionDocumentRefsFilled          = "document.references_filled"     // D-130
 	ActionDocumentRowsReordered       = "document.rows_reordered"        // M4.6
-	ActionDocumentRowChanged          = "document.row_changed"
-	ActionDocumentRowRemoved          = "document.row_removed"
-	ActionChangeTypeRouteChanged      = "change_type.route_changed"
-	ActionSystemSettingsUpdated       = "system_settings.updated"
+	// Review berkala tanpa perubahan (D-196). Sasarannya catatan review.
+	ActionPeriodicReviewRecorded  = "periodic_review.recorded"
+	ActionPeriodicReviewConfirmed = "periodic_review.confirmed"
+	ActionDocumentRowChanged      = "document.row_changed"
+	ActionDocumentRowRemoved      = "document.row_removed"
+	ActionChangeTypeRouteChanged  = "change_type.route_changed"
+	ActionSystemSettingsUpdated   = "system_settings.updated"
 	// Register nomor dokumen (Tahap 2).
 	ActionDocumentNumberRegistered = "document_number.registered"
 	ActionDocumentNumberImported   = "document_number.imported"

@@ -98,6 +98,8 @@ const actionKeys: Record<string, MessageKey> = {
 	'change.impacts_saved': 'auditActionChangeImpactsSaved',
 	'change.template_applied': 'auditActionChangeTemplateApplied',
 	'yokoten.created': 'auditActionYokotenCreated',
+	'periodic_review.recorded': 'auditActionPeriodicReviewRecorded',
+	'periodic_review.confirmed': 'auditActionPeriodicReviewConfirmed',
 	'document.printed': 'auditActionDocumentPrinted',
 	'document.migrated': 'auditActionDocumentMigrated',
 	'document.history_changed': 'auditActionDocumentHistoryChanged',

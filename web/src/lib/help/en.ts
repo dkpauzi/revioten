@@ -361,6 +361,51 @@ export const helpEn: HelpContent = {
 			imageAlt: 'The dashboard with cards for rows, documents, yokoten, revision time, and migration.'
 		},
 		{
+			id: 'released-documents',
+			title: 'Released documents',
+			who: 'Everyone, also Viewer accounts (internal audit, QA, QC, production)',
+			intro: 'Read the revision in force of any released PFD, PFMEA, or Control Plan, exactly as it was signed. Drafts are never shown here.',
+			steps: [
+				'Open {navGroupDocuments}, then {navReleasedDocuments}.',
+				'Choose a customer, then type a number or model in {releasedSearch} to narrow the list.',
+				'Press a number to read the document. The tabs open the other documents of the set.',
+				'Press {checkTab} to read the released PFMEA and CP side by side, with the check marks.'
+			],
+			tips: ['Nothing can be changed on these pages.', 'A document that is being revised still shows its released revision until the new one is released.'],
+			image: 'released-documents',
+			imageAlt: 'The Released documents page with the list of released documents of one customer.'
+		},
+		{
+			id: 'periodic-review',
+			title: 'Periodic review every 3 years',
+			who: 'PPAP Engineer records, a verifier confirms; everyone sees the warnings',
+			intro: 'A PFD, PFMEA, and Control Plan set with no revision for 3 years must be reviewed. The warning appears on {navHome}, on the dashboard, on the document page, in {navPeriodicReviews}, and as an email to the authors of the customer: yellow 90 days before the due date, red after it.',
+			steps: [
+				'Open {navGroupDocuments}, then {navPeriodicReviews}. The most urgent sets are at the top.',
+				'If something must change, press {reviewWithChanges}. The change request opens with the trigger Periodic review and the documents of the set.',
+				'If nothing must change, press {reviewNoChange}, fill in {reviewDate}, {reviewParticipants}, every checklist item, and {reviewConclusion}, then press {reviewSave}.',
+				'A second person with the Verifier role presses {reviewConfirm} under {reviewWaitingTitle}. The review period then starts again from the review date.'
+			],
+			tips: ['The person who recorded a review cannot confirm it.', 'A confirmed review cannot be changed. The document revision does not go up.', 'A new release also starts the period again.'],
+			image: 'periodic-review',
+			imageAlt: 'The Periodic review page with a document set that is overdue.'
+		},
+		{
+			id: 'performance',
+			title: 'Performance report',
+			who: 'PPAP Engineer and supervisor',
+			intro: 'The weekly, monthly, or yearly numbers of the PPAP work, counted from the recorded changes, prints, signed scans, and releases. A week runs from Friday to Thursday, so the Friday report covers the week that just ended.',
+			steps: [
+				'Open {navGroupDocuments}, then {navPerformance}.',
+				'Choose {performanceWeek}, {performanceMonth}, or {performanceYear}, and a date in the period. {performancePrevious} and {performanceNext} move one period.',
+				'Read {performanceChanges} and {performanceByTrigger} for customer claims and audit findings, and {performanceYokoten} for yokoten.',
+				'Read {performanceTimes}: {performanceAcceptedToRelease}, {performanceEditToPrint}, and {performancePrintToSigned}, in total and {performancePeople}.'
+			],
+			tips: ['Times count revisions released in the period through an accepted change.', 'Editing starts when the draft revision opens; ready to print is the last print for signature before the signed scan.'],
+			image: 'performance',
+			imageAlt: 'The Performance report for one week with the change counts and the time per stage.'
+		},
+		{
 			id: 'roles',
 			title: 'Roles and rights',
 			who: 'Admin',

@@ -440,6 +440,18 @@ func (q *Queries) DocumentExistsForNumber(ctx context.Context, documentNumberID 
 	return exists, err
 }
 
+const documentReleasedRevision = `-- name: DocumentReleasedRevision :one
+SELECT d.released_revision FROM documents d JOIN document_numbers n ON n.id = d.document_number_id
+WHERE d.id = $1 AND n.status <> 'void'
+`
+
+func (q *Queries) DocumentReleasedRevision(ctx context.Context, id string) (*int16, error) {
+	row := q.db.QueryRow(ctx, documentReleasedRevision, id)
+	var released_revision *int16
+	err := row.Scan(&released_revision)
+	return released_revision, err
+}
+
 const excludePoint = `-- name: ExcludePoint :exec
 INSERT INTO document_point_exclusions (document_id, point_id, reason, section_id)
 VALUES ($1, $2, $3, $4)
@@ -660,6 +672,72 @@ func (q *Queries) LatestPublishedFormSetVersion(ctx context.Context, formSetID s
 		&i.CpFormatVersionID,
 	)
 	return i, err
+}
+
+const listCustomerReleasedDocuments = `-- name: ListCustomerReleasedDocuments :many
+SELECT d.id, n.number, n.status AS number_status, t.key AS document_type_key, t.name AS document_type_name,
+       d.released_revision::smallint AS released_revision, rr.released_at::timestamptz AS released_at,
+       s.name AS form_set_name,
+       (SELECT coalesce(array_agg(m.name ORDER BY m.name), '{}')::text[]
+        FROM document_models dm JOIN models m ON m.id = dm.model_id WHERE dm.document_id = d.id) AS model_names,
+       d.origin, rr.migrated AS released_migrated
+FROM documents d
+JOIN document_numbers n ON n.id = d.document_number_id
+JOIN document_types t ON t.id = d.document_type_id
+JOIN document_revisions rr ON rr.document_id = d.id AND rr.revision = d.released_revision
+JOIN form_set_versions fv ON fv.id = d.form_set_version_id
+JOIN form_sets s ON s.id = fv.form_set_id
+WHERE d.customer_id = $1 AND d.released_revision IS NOT NULL AND n.status <> 'void'
+ORDER BY n.number
+`
+
+type ListCustomerReleasedDocumentsRow struct {
+	ID               string
+	Number           string
+	NumberStatus     string
+	DocumentTypeKey  *string
+	DocumentTypeName string
+	ReleasedRevision int16
+	ReleasedAt       time.Time
+	FormSetName      string
+	ModelNames       []string
+	Origin           string
+	ReleasedMigrated bool
+}
+
+// ListCustomerReleasedDocuments memberi dokumen satu customer yang punya revisi
+// berlaku, dengan revisi dan tanggal rilis revisi itu (D-195). Nomor Void
+// tidak ikut; nomor Obsolete ikut supaya isinya tetap bisa dibaca.
+func (q *Queries) ListCustomerReleasedDocuments(ctx context.Context, customerID string) ([]ListCustomerReleasedDocumentsRow, error) {
+	rows, err := q.db.Query(ctx, listCustomerReleasedDocuments, customerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListCustomerReleasedDocumentsRow{}
+	for rows.Next() {
+		var i ListCustomerReleasedDocumentsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Number,
+			&i.NumberStatus,
+			&i.DocumentTypeKey,
+			&i.DocumentTypeName,
+			&i.ReleasedRevision,
+			&i.ReleasedAt,
+			&i.FormSetName,
+			&i.ModelNames,
+			&i.Origin,
+			&i.ReleasedMigrated,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listDocumentModels = `-- name: ListDocumentModels :many

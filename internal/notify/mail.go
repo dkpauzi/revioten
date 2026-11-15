@@ -50,6 +50,8 @@ type Mailer interface {
 type Config struct {
 	Provider string // graph, smtp, log, atau kosong (email tidak dikirim)
 	From     string // alamat pengirim, misalnya revioten@perusahaan.co.id
+	// BaseURL adalah alamat aplikasi untuk tautan di email pekerja (D-196).
+	BaseURL string
 
 	SMTPHost     string
 	SMTPPort     int

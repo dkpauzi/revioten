@@ -29,7 +29,7 @@ func TestSetRolePermissions(t *testing.T) {
 	_ = info
 
 	catalog, err := s.ListPermissions(ctx, admin)
-	if err != nil || len(catalog) != 21 || catalog[0].Code != access.ViewReleased {
+	if err != nil || len(catalog) != 22 || catalog[0].Code != access.ViewReleased {
 		t.Fatalf("katalog: %d hak, %v", len(catalog), err)
 	}
 	if _, err := s.ListPermissions(ctx, dcc); !errors.Is(err, access.ErrForbidden) {

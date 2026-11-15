@@ -33,6 +33,12 @@ const groups: { id: MenuGroup['id']; label: MessageKey; entries: Entry[] }[] = [
 			{ href: '/yokoten', label: 'navYokoten', permission: 'L-4' },
 			// Dasbor ukuran (M7.7): semua akun (L-2).
 			{ href: '/dashboard', label: 'navDashboard' },
+			// Dokumen terbit untuk semua akun (L-1, D-195).
+			{ href: '/documents/released', label: 'navReleasedDocuments', permission: 'L-1' },
+			// Review berkala 3 tahun (L-2, D-196).
+			{ href: '/periodic-reviews', label: 'navPeriodicReviews' },
+			// Laporan kinerja PPAP Engineer (L-5, D-197).
+			{ href: '/performance', label: 'navPerformance', permission: 'L-5' },
 			{ href: '/numbers', label: 'navNumbers' },
 			// Impor nomor lama hanya untuk document control (E-8, M2.5).
 			{ href: '/numbers/import', label: 'numberImportLink', permission: 'E-8' }

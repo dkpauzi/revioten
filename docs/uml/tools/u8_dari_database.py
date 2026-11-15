@@ -53,7 +53,8 @@ GROUPS = [
         "print_layouts", "customer_print_layouts", "print_logs", "document_baselines", "document_history_entries"]),
     ("U8-J-integrasi-dan-notifikasi", "API integrasi dan email notifikasi", [
         "service_accounts", "service_account_customers", "service_tokens", "integration_requests",
-        "change_proposals", "export_jobs", "notification_events", "notification_outbox"]),
+        "change_proposals", "export_jobs", "notification_events", "notification_outbox",
+        "periodic_reviews", "periodic_review_notices"]),
 ]
 
 SQL = """

@@ -151,7 +151,12 @@ import type {
 	ServiceAccount,
 	ServiceAccountList,
 	EmailAddress,
-	NotificationOverview
+	NotificationOverview,
+	NewPeriodicReview,
+	Performance,
+	PeriodicReview,
+	PeriodicReviewList,
+	ReviewSetList,
 } from './gen/index.ts';
 
 // ApiFailure menjelaskan panggilan yang gagal: status HTTP (0 bila server
@@ -1497,4 +1502,61 @@ function isApiError(body: unknown): body is ApiError {
 		'request_id' in body &&
 		typeof body.request_id === 'string'
 	);
+}
+
+// D-195: dokumen terbit untuk pembaca dengan L-1 (Viewer). Isinya revisi yang
+// berlaku, dari snapshot; draft tidak pernah terlihat.
+
+// listReleasedDocuments memanggil GET /api/v1/released-documents?customer_id= (L-1).
+export function listReleasedDocuments(customerId: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<DocumentList>> {
+	return call<DocumentList>(fetchFn, `/api/v1/released-documents?customer_id=${encodeURIComponent(customerId)}`, { method: 'GET' });
+}
+
+// getReleasedDocument memanggil GET /api/v1/released-documents/{id} (L-1).
+export function getReleasedDocument(id: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<Document>> {
+	return call<Document>(fetchFn, itemPath('released-documents', id), { method: 'GET' });
+}
+
+// getReleasedPfmeaCpComparison memanggil GET /api/v1/released-documents/{id}/pfmea-cp (L-1).
+export function getReleasedPfmeaCpComparison(id: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<PfmeaCpComparison>> {
+	return call<PfmeaCpComparison>(fetchFn, itemPath('released-documents', id) + '/pfmea-cp', { method: 'GET' });
+}
+
+// D-196: review berkala 3 tahun.
+
+// listReviewSets memanggil GET /api/v1/periodic-reviews/sets (L-2). Tanpa all,
+// hanya set yang akan atau sudah lewat jatuh tempo.
+export function listReviewSets(filter: { customerId?: string; documentId?: string; all?: boolean }, fetchFn: typeof fetch = fetch): Promise<ApiResult<ReviewSetList>> {
+	const query = new URLSearchParams();
+	if (filter.customerId) query.set('customer_id', filter.customerId);
+	if (filter.documentId) query.set('document_id', filter.documentId);
+	if (filter.all) query.set('all', 'true');
+	const text = query.toString();
+	return call<ReviewSetList>(fetchFn, '/api/v1/periodic-reviews/sets' + (text ? '?' + text : ''), { method: 'GET' });
+}
+
+// listPeriodicReviews memanggil GET /api/v1/periodic-reviews (L-2).
+export function listPeriodicReviews(openOnly: boolean, fetchFn: typeof fetch = fetch): Promise<ApiResult<PeriodicReviewList>> {
+	return call<PeriodicReviewList>(fetchFn, '/api/v1/periodic-reviews' + (openOnly ? '?open_only=true' : ''), { method: 'GET' });
+}
+
+// recordPeriodicReview memanggil POST /api/v1/periodic-reviews (E-3).
+export function recordPeriodicReview(input: NewPeriodicReview, fetchFn: typeof fetch = fetch): Promise<ApiResult<PeriodicReview>> {
+	return call<PeriodicReview>(fetchFn, '/api/v1/periodic-reviews', jsonRequest('POST', input));
+}
+
+// confirmPeriodicReview memanggil POST /api/v1/periodic-reviews/{id}/confirm (V-1).
+export function confirmPeriodicReview(id: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<PeriodicReview>> {
+	return call<PeriodicReview>(fetchFn, itemPath('periodic-reviews', id) + '/confirm', { method: 'POST' });
+}
+
+// D-197: laporan kinerja PPAP Engineer.
+
+// getPerformance memanggil GET /api/v1/performance (L-5). date YYYY-MM-DD
+// memilih periode yang memuatnya; kosong berarti hari ini.
+export function getPerformance(period: 'week' | 'month' | 'year', date: string, customerId: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<Performance>> {
+	const query = new URLSearchParams({ period });
+	if (date) query.set('date', date);
+	if (customerId) query.set('customer_id', customerId);
+	return call<Performance>(fetchFn, '/api/v1/performance?' + query.toString(), { method: 'GET' });
 }
