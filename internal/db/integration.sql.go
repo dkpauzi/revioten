@@ -735,6 +735,20 @@ func (q *Queries) PatchRowContent(ctx context.Context, arg PatchRowContentParams
 	return result.RowsAffected(), nil
 }
 
+const requeueRunningExports = `-- name: RequeueRunningExports :execrows
+UPDATE export_jobs SET status = 'queued', started_at = NULL WHERE status = 'running'
+`
+
+// RequeueRunningExports mengembalikan job yang tertahan berstatus running
+// (server mati di tengah pekerjaan) ke antrean (D-188).
+func (q *Queries) RequeueRunningExports(ctx context.Context) (int64, error) {
+	result, err := q.db.Exec(ctx, requeueRunningExports)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const revokeServiceToken = `-- name: RevokeServiceToken :one
 UPDATE service_tokens SET revoked_at = now()
 WHERE id = $1 AND service_account_id = $2 AND revoked_at IS NULL

@@ -155,3 +155,8 @@ UPDATE export_jobs SET status = 'done', file_name = $2, file_sha256 = $3, size_b
 
 -- name: FailExportJob :exec
 UPDATE export_jobs SET status = 'failed', error = $2, finished_at = now() WHERE id = $1;
+
+-- name: RequeueRunningExports :execrows
+-- RequeueRunningExports mengembalikan job yang tertahan berstatus running
+-- (server mati di tengah pekerjaan) ke antrean (D-188).
+UPDATE export_jobs SET status = 'queued', started_at = NULL WHERE status = 'running';

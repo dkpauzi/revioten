@@ -338,6 +338,11 @@ func (s *Service) ProcessNextExport(ctx context.Context) (bool, error) {
 // RunExports mengerjakan antrean ekspor sampai ctx selesai. Dipanggil sekali
 // saat server mulai, sebagai goroutine. report menerima kegagalan untuk log.
 func (s *Service) RunExports(ctx context.Context, every time.Duration, report func(error)) {
+	// Job yang tertahan karena server mati di tengah pekerjaan diantrekan
+	// lagi, karena pekerja ini satu-satunya pekerja (D-188).
+	if _, err := s.q.RequeueRunningExports(ctx); err != nil && report != nil {
+		report(err)
+	}
 	ticker := time.NewTicker(every)
 	defer ticker.Stop()
 	for {

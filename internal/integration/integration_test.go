@@ -1,6 +1,7 @@
 package integration_test
 
 import (
+	"context"
 	"errors"
 	"io"
 	"os"
@@ -411,5 +412,28 @@ func TestExport(t *testing.T) {
 	other, _, _ := e.client(t, "ERP", integration.Scopes, e.CustomerAB)
 	if _, err := e.svc.GetExport(ctx, other, job.ID); !errors.Is(err, problem.ErrNotFound) {
 		t.Errorf("job aplikasi lain terbaca: %v", err)
+	}
+
+	// Job yang tertahan running (server mati) diantrekan lagi saat pekerja mulai (D-188).
+	stuck, err := e.svc.CreateExport(ctx, c, cp.ID, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.Pool.Exec(ctx, `UPDATE export_jobs SET status = 'running', started_at = now() WHERE id = $1`, stuck.ID); err != nil {
+		t.Fatal(err)
+	}
+	run, cancel := context.WithCancel(ctx)
+	stopped := make(chan struct{})
+	go func() { e.svc.RunExports(run, time.Hour, nil); close(stopped) }()
+	for i := 0; i < 100; i++ {
+		if j, _ := e.svc.GetExport(ctx, c, stuck.ID); j.Status == "done" {
+			break
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	cancel()
+	<-stopped
+	if j, _ := e.svc.GetExport(ctx, c, stuck.ID); j.Status != "done" {
+		t.Errorf("job tertahan: %s", j.Status)
 	}
 }
