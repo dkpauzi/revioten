@@ -139,10 +139,10 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-115 | Mode migrasi: bawaan dan cakupan saklarnya | Celah | M7.5, UC-07 | Tidak | Diputuskan (D-179) |
 | E-116 | Form dokumen lama dan riwayat teks: field dan aturannya | Celah | M7.1, M7.2 | Tidak | Diputuskan (D-180) |
 | E-117 | Dasbor ukuran: definisi setiap angka | Ambigu | M7.6, M7.7 | Tidak | Diputuskan (D-181) |
-| E-118 | Row-level security: tabel mana, dan apa yang terjadi tanpa subjek | Sulit dibangun | M8.1 | Tidak | Terbuka |
-| E-119 | Isi peran diatur admin: aturan yang dikunci | Celah | M8.1 | Tidak | Terbuka |
-| E-120 | Pemindai antivirus dan PDF di deploy Docker | Sulit dibangun | M8.2, M8.3 | Tidak | Terbuka |
-| E-121 | Kriteria M8.2, M8.4, dan M8.5 yang butuh pemilik atau pihak lain | Celah | M8.2, M8.4, M8.5 | Tidak | Terbuka |
+| E-118 | Row-level security: tabel mana, dan apa yang terjadi tanpa subjek | Sulit dibangun | M8.1 | Tidak | Diputuskan (D-182) |
+| E-119 | Isi peran diatur admin: aturan yang dikunci | Celah | M8.1 | Tidak | Diputuskan (D-183) |
+| E-120 | Pemindai antivirus dan PDF di deploy Docker | Sulit dibangun | M8.2, M8.3 | Tidak | Diputuskan (D-184) |
+| E-121 | Kriteria M8.2, M8.4, dan M8.5 yang butuh pemilik atau pihak lain | Celah | M8.2, M8.4, M8.5 | Tidak | Diputuskan (D-185) |
 
 ## Keputusan 4 November 2026
 
@@ -2054,7 +2054,7 @@ Salin blok ini untuk setiap temuan baru.
 - **Asumsi sementara di kode (ASUMSI E-113):** (a).
 - **Menghambat milestone?** Tidak
 - **Status:** Diputuskan (D-177)
-- **Keputusan pemilik:** 15 November 2026, "Ya, terima semua" (D-177).
+- **Keputusan pemilik:** 15 November 2026, "Ya, terima semua" (D-177). Diubah 15 November 2026 (D-186): scan hardcopy menjadi opsional.
 
 ### E-114 · Penautan baris: metode dan ambang kemiripan
 
@@ -2118,8 +2118,8 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (a) untuk demo. Untuk versi perusahaan (b) dan (c), terutama sebelum ada token integrasi atau portal customer (D-19, RK-31).
 - **Asumsi sementara di kode (ASUMSI E-118):** (a).
 - **Menghambat milestone?** Tidak
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan (D-182)
+- **Keputusan pemilik:** 15 November 2026, "terima semua saran" (D-182).
 
 ### E-119 · Isi peran diatur admin: aturan yang dikunci
 
@@ -2131,8 +2131,8 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (a), dengan tinjauan berkala isi peran terhadap U3 (peta pengguna sebagai baseline yang disetujui). (b) murah dan layak ditambah bila admin sering mengubah peran.
 - **Asumsi sementara di kode (ASUMSI E-119):** (a).
 - **Menghambat milestone?** Tidak
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan (D-183)
+- **Keputusan pemilik:** 15 November 2026, "terima semua saran" (D-183).
 
 ### E-120 · Pemindai antivirus dan PDF di deploy Docker
 
@@ -2144,8 +2144,8 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** Pemindaian (a) untuk demo dan (b) untuk versi perusahaan, dengan antivirus perusahaan bila IT memintanya. PDF (a) untuk demo, karena demo sehari-hari berjalan lewat `go run` di Windows dengan Edge; (c) untuk versi perusahaan, supaya browser terpisah dari aplikasi.
 - **Asumsi sementara di kode (ASUMSI E-120):** (a).
 - **Menghambat milestone?** Tidak
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan (D-184)
+- **Keputusan pemilik:** 15 November 2026, "terima semua saran" (D-184).
 
 ### E-121 · Kriteria M8.2, M8.4, dan M8.5 yang butuh pemilik atau pihak lain
 
@@ -2157,8 +2157,8 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (a), dengan ketiganya dicatat sebagai syarat sebelum presentasi QCC.
 - **Asumsi sementara di kode (ASUMSI E-121):** (a).
 - **Menghambat milestone?** Tidak
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan (D-185)
+- **Keputusan pemilik:** 15 November 2026, "terima semua saran" (D-185).
 
 ## Usulan desain UI (UX-01 sampai UX-07): dampak ke M0 sampai M3 dan saran
 

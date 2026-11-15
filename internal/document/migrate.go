@@ -312,8 +312,8 @@ func (s *Service) SetHistory(ctx context.Context, actor access.Actor, id string,
 // VerifyMigration mencatat bahwa isi baseline sudah dicocokkan dengan
 // hardcopy bertanda tangan (E-10, M7.5). Revisi itu terbit sebagai Released
 // (migrated) dengan snapshot dan SHA-256. Pemeriksa bukan orang yang
-// memasukkan atau mengisi dokumen itu (R-SEC-11, ASUMSI E-113), dan scan
-// hardcopy bertanda tangan harus sudah diunggah.
+// memasukkan atau mengisi dokumen itu (R-SEC-11, D-177). Scan hardcopy
+// tidak wajib (D-186).
 // effortMinutes adalah menit kerja migrasi dokumen ini (M7.6), boleh nil.
 func (s *Service) VerifyMigration(ctx context.Context, actor access.Actor, id string, effortMinutes *int) (Document, error) {
 	d, err := s.load(ctx, id)
@@ -357,13 +357,11 @@ func (s *Service) VerifyMigration(ctx context.Context, actor access.Actor, id st
 		if err != nil {
 			return fmt.Errorf("membaca draft: %w", err)
 		}
-		// Scan hardcopy bertanda tangan adalah buktinya, seperti rilis biasa (M6.7, D-173).
+		// Scan hardcopy boleh diunggah sebagai bukti tambahan, tetapi tidak wajib:
+		// yang menentukan adalah verifikasi orang kedua (D-186).
 		info, err := q.GetRevisionPrintInfo(ctx, db.GetRevisionPrintInfoParams{DocumentID: id, Revision: draft.Revision})
 		if err != nil {
 			return fmt.Errorf("membaca draft: %w", err)
-		}
-		if info.ScanSha256 == nil {
-			return problems(invalid("scan", problem.Required, "Upload the scan of the signed hard copy before verifying."))
 		}
 		text, sum, err := makeSnapshot(d)
 		if err != nil {
@@ -386,7 +384,7 @@ func (s *Service) VerifyMigration(ctx context.Context, actor access.Actor, id st
 		if _, err := q.VerifyDocumentBaseline(ctx, db.VerifyDocumentBaselineParams{DocumentID: id, VerifiedByPersonID: &actor.PersonID, EffortMinutes: effort}); err != nil {
 			return err
 		}
-		details := map[string]string{"number": d.Number, "revision": strconv.Itoa(int(draft.Revision)), "sha256": sum}
+		details := map[string]string{"number": d.Number, "revision": strconv.Itoa(int(draft.Revision)), "sha256": sum, "scan": strconv.FormatBool(info.ScanSha256 != nil)}
 		if effort != nil {
 			details["effort_minutes"] = strconv.Itoa(int(*effort))
 		}

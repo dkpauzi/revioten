@@ -255,7 +255,11 @@ func (s *Service) input(ctx context.Context, d document.Document, snap document.
 		// Catatan rilis pengganti tanda tangan di cetakan sistem (M6.9, R-PUB-06).
 		in.ReleaseNote = fmt.Sprintf("Released %s, recorded by %s, record %s, signed scan on file", in.ReleaseDate, deref(info.ReleasedBy), info.ID[:8])
 		if info.Migrated {
-			in.ReleaseNote = fmt.Sprintf("Released (migrated) %s, verified against the signed hard copy by %s, record %s, scan on file", in.ReleaseDate, deref(info.ReleasedBy), info.ID[:8])
+			in.ReleaseNote = fmt.Sprintf("Released (migrated) %s, verified against the signed hard copy by %s, record %s", in.ReleaseDate, deref(info.ReleasedBy), info.ID[:8])
+			// Scan hardcopy opsional untuk baseline migrasi (D-186).
+			if info.ScanSha256 != nil {
+				in.ReleaseNote += ", scan on file"
+			}
 		}
 	}
 	// Tanda revisi dibanding revisi terbit sebelumnya (R-REV-09).

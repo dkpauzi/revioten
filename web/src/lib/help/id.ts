@@ -18,7 +18,7 @@ export const helpId: HelpContent = {
 			intro: 'Semua halaman butuh login. Akun baru mendapat kata sandi sementara dari admin dan wajib menggantinya saat login pertama.',
 			steps: [
 				'Buka alamat sistem di browser. Halaman {loginTitle} tampil.',
-				'Isi {loginName} dan {loginPassword}, lalu tekan {loginSubmit}.',
+				'Isi {loginName} dan {loginPassword}, lalu tekan {loginSubmit}. Tekan {loginShow} di samping kata sandi untuk memeriksa ketikan Anda.',
 				'Saat login pertama, halaman {passwordTitle} terbuka sendiri. Isi {passwordCurrent} dengan kata sandi sementara.',
 				'Isi {passwordNew} dan {passwordConfirm} dengan kata sandi Anda sendiri, minimal 8 karakter, lalu tekan {passwordSave}.',
 				'Untuk mengganti kata sandi di lain waktu, tekan {navAccount} di bilah atas.',
@@ -339,9 +339,9 @@ export const helpId: HelpContent = {
 				'Buka dokumennya. Ketik atau rakit isinya sampai sama dengan hardcopy. Di {historyTitle}, tekan {historyAdd} untuk setiap baris tabel riwayat lama, lalu {historySave}.',
 				'Untuk memeriksa ketikan, unggah berkas lama di {excelCompareTitle} dan tekan {excelCompareButton}. Berkas hanya dibandingkan, tidak pernah diimpor.',
 				'Di {linkTitle}, tekan {linkFind}, centang pasangan yang benar, lalu tekan {linkConfirm}. Baris yang tertaut menerima pembaruan template berikutnya.',
-				'Unggah scan hardcopy bertanda tangan di {revisions}. Petugas migrasi lain membuka dokumen itu, mengisi {migrationEffort}, lalu menekan {migrationVerify}. Statusnya menjadi {documentStatusReleasedMigrated}.'
+				'Petugas migrasi lain membuka dokumen itu, membandingkannya dengan hardcopy bertanda tangan, mengisi {migrationEffort}, lalu menekan {migrationVerify}. Statusnya menjadi {documentStatusReleasedMigrated}.'
 			],
-			tips: ['Orang yang memasukkan dokumen tidak bisa memverifikasinya.', 'Sesudah diverifikasi, baseline dan riwayatnya tidak bisa diubah; perubahan berikutnya lewat permintaan perubahan biasa.', 'Matikan mode migrasi setelah migrasi selesai.'],
+			tips: ['Orang yang memasukkan dokumen tidak bisa memverifikasinya.', 'Scan hardcopy opsional. Bila ingin menyimpannya sebagai bukti, unggah di {revisions} sebelum verifikasi.', 'Sesudah diverifikasi, baseline dan riwayatnya tidak bisa diubah; perubahan berikutnya lewat permintaan perubahan biasa.', 'Matikan mode migrasi setelah migrasi selesai.'],
 			image: 'migration',
 			imageAlt: 'Baseline migrasi sebuah dokumen lama dengan baris riwayat revisinya.'
 		},

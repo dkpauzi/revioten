@@ -479,8 +479,7 @@ test('alur dari admin sampai dokumen terbit, revisi, migrasi, dan dasbor', async
 	await baseline.getByRole('button', { name: en.historySave }).click();
 	await expect(baseline.getByRole('status')).toHaveText(en.historySaved);
 	await say(page, 'Langkah 28', 'Riwayat revisi lama disalin sebagai teks. Isi dokumen diketik atau dirakit sampai sama dengan hardcopy.');
-	await uploadScan(page, 'SC-LM-003-hardcopy.pdf');
-	await say(page, 'Langkah 28', 'Scan hardcopy bertanda tangan diunggah sebagai bukti.');
+	await say(page, 'Langkah 28', 'Scan hardcopy boleh diunggah sebagai bukti tambahan, tetapi tidak wajib. Yang wajib: verifikasi orang kedua.');
 
 	await switchTo(page, control.login, control.password);
 	await openDocument(page, 'SC-LM-003');

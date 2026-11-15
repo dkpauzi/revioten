@@ -64,10 +64,8 @@ test('M7: dokumen lama masuk di revisi 4, diverifikasi orang lain, dan tampil di
 	await compare.getByRole('button', { name: en.excelCompareButton }).click();
 	await expect(compare.getByRole('alert')).toBeVisible();
 
+	// Scan hardcopy tidak diunggah: untuk baseline migrasi scan opsional (D-186).
 	const revisions = page.locator('section', { has: page.getByRole('heading', { name: en.revisions, exact: true }) });
-	await revisions.getByLabel(en.scanUpload).setInputFiles({ name: 'hardcopy.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 hardcopy') });
-	await revisions.getByRole('button', { name: en.scanUploadButton }).click();
-	await expect(revisions.getByRole('status')).toHaveText(en.scanUploaded.replace('{file}', 'hardcopy.pdf'));
 	// Baseline tidak punya tombol rilis biasa, dan pemasuk tidak bisa memverifikasi sendiri.
 	await expect(revisions.getByRole('button', { name: en.revisionRelease.replace('{revision}', '4') })).toHaveCount(0);
 	page.once('dialog', (dialog) => dialog.accept());

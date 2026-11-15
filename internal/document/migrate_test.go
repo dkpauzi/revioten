@@ -145,16 +145,7 @@ func TestMigrateLegacyDocument(t *testing.T) {
 	if _, err := f.s.Release(ctx, dcc, d.ID); code(t, err) != "status:not_allowed" {
 		t.Errorf("rilis biasa untuk baseline: %v", err)
 	}
-	// Tanpa scan hardcopy bertanda tangan, verifikasi ditolak (D-173).
-	if _, err := f.s.VerifyMigration(ctx, engineer, d.ID, &effort); code(t, err) != "scan:required" {
-		t.Errorf("verifikasi tanpa scan: %v", err)
-	}
-	if _, err := f.pool.Exec(ctx, `UPDATE document_revisions
-		SET scan_file_name = 'hardcopy.pdf', scan_content_type = 'application/pdf', scan_size_bytes = 10,
-		    scan_sha256 = repeat('a', 64), scan_uploaded_by_person_id = created_by_person_id, scan_uploaded_at = now()
-		WHERE document_id = $1 AND status = 'draft'`, d.ID); err != nil {
-		t.Fatal(err)
-	}
+	// Scan hardcopy tidak wajib untuk baseline migrasi (D-186): verifikasi orang kedua cukup.
 	d, err = f.s.VerifyMigration(ctx, engineer, d.ID, &effort)
 	if err != nil {
 		t.Fatal(err)
@@ -164,7 +155,7 @@ func TestMigrateLegacyDocument(t *testing.T) {
 		t.Fatalf("sesudah verifikasi: %+v %+v", d, d.Baseline)
 	}
 	revs, err := f.s.Revisions(ctx, f.author, d.ID)
-	if err != nil || len(revs) != 1 || !revs[0].Migrated || revs[0].ReleaseDate != "2025-03-10" || len(revs[0].SHA256) != 64 {
+	if err != nil || len(revs) != 1 || !revs[0].Migrated || revs[0].ReleaseDate != "2025-03-10" || len(revs[0].SHA256) != 64 || revs[0].ScanFileName != "" {
 		t.Fatalf("revisi: %+v, %v", revs, err)
 	}
 

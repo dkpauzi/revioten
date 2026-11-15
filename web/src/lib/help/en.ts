@@ -18,7 +18,7 @@ export const helpEn: HelpContent = {
 			intro: 'Every page needs a login. A new account gets a temporary password from the admin and must change it at the first login.',
 			steps: [
 				'Open the address of the system in your browser. The {loginTitle} page appears.',
-				'Fill in {loginName} and {loginPassword}, then press {loginSubmit}.',
+				'Fill in {loginName} and {loginPassword}, then press {loginSubmit}. Press {loginShow} next to the password to check what you typed.',
 				'At the first login the {passwordTitle} page opens by itself. Fill in {passwordCurrent} with the temporary password.',
 				'Fill in {passwordNew} and {passwordConfirm} with your own password of at least 8 characters, then press {passwordSave}.',
 				'To change your password later, press {navAccount} in the top bar.',
@@ -339,9 +339,9 @@ export const helpEn: HelpContent = {
 				'Open the document. Type or compose the content until it equals the hard copy. Under {historyTitle}, press {historyAdd} for each line of the old history table, then {historySave}.',
 				'To check your typing, upload the old file under {excelCompareTitle} and press {excelCompareButton}. The file is only compared, never imported.',
 				'Under {linkTitle}, press {linkFind}, tick the pairs that are right, and press {linkConfirm}. Linked rows receive later template updates.',
-				'Upload the scan of the signed hard copy under {revisions}. Another migration officer opens the document, fills in {migrationEffort}, and presses {migrationVerify}. The status becomes {documentStatusReleasedMigrated}.'
+				'Another migration officer opens the document, compares it with the signed hard copy, fills in {migrationEffort}, and presses {migrationVerify}. The status becomes {documentStatusReleasedMigrated}.'
 			],
-			tips: ['The person who entered a document cannot verify it.', 'After verification the baseline and its history cannot be changed; the next change goes through a normal change request.', 'Switch migration mode off when the migration is finished.'],
+			tips: ['The person who entered a document cannot verify it.', 'A scan of the hard copy is optional. To keep one as evidence, upload it under {revisions} before the verification.', 'After verification the baseline and its history cannot be changed; the next change goes through a normal change request.', 'Switch migration mode off when the migration is finished.'],
 			image: 'migration',
 			imageAlt: 'The migration baseline of a legacy document with its revision history lines.'
 		},

@@ -25,6 +25,18 @@ test('API menolak permintaan tanpa sesi', async ({ request }) => {
 	expect((await response.json()).code).toBe('unauthenticated');
 });
 
+test('password yang diketik bisa dilihat dan disembunyikan lagi (D-187)', async ({ page }) => {
+	await page.goto('/login');
+	const password = page.getByLabel(en.loginPassword);
+	await password.fill('contoh ketikan');
+	await expect(password).toHaveAttribute('type', 'password');
+	await page.getByRole('button', { name: en.loginShow, exact: true }).click();
+	await expect(password).toHaveAttribute('type', 'text');
+	await expect(password).toHaveValue('contoh ketikan');
+	await page.getByRole('button', { name: en.loginHide, exact: true }).click();
+	await expect(password).toHaveAttribute('type', 'password');
+});
+
 test('password salah ditolak dengan pesan umum', async ({ page }) => {
 	await page.goto('/login');
 	await page.getByLabel(en.loginName).fill(admin.login);

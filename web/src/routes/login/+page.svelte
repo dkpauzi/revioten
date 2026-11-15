@@ -13,6 +13,8 @@
 	let password = $state('');
 	let submitting = $state(false);
 	let errorText = $state('');
+	// Isi password bisa ditampilkan sebentar untuk memeriksa ketikan (D-187).
+	let showPassword = $state(false);
 
 	// enter menyimpan sesi lalu membuka halaman tujuan. Akun yang passwordnya
 	// direset admin wajib ganti password dulu (E-08).
@@ -41,6 +43,7 @@
 		const result = await login({ login: loginName, password });
 		submitting = false;
 		password = '';
+		showPassword = false;
 		if (result.ok) {
 			enter(result.data);
 			return;
@@ -61,13 +64,19 @@
 	<div class="field">
 		<label for="login-password">{t('loginPassword')}</label>
 		<!-- type=password menyamarkan isi, dan tempel (paste) tetap boleh (ASVS 6.2.6, 6.2.7). -->
-		<input
-			id="login-password"
-			name="password"
-			type="password"
-			autocomplete="current-password"
-			bind:value={password}
-		/>
+		<div class="password">
+			<input
+				id="login-password"
+				name="password"
+				type={showPassword ? 'text' : 'password'}
+				autocomplete="current-password"
+				bind:value={password}
+			/>
+			<!-- type=button supaya tombol ini tidak mengirim formulir. -->
+			<button type="button" aria-pressed={showPassword} aria-controls="login-password" onclick={() => (showPassword = !showPassword)}>
+				{showPassword ? t('loginHide') : t('loginShow')}
+			</button>
+		</div>
 	</div>
 
 	<button type="submit" disabled={submitting}>
@@ -81,6 +90,16 @@
 </form>
 
 <style>
+	.password {
+		display: flex;
+		gap: 0.5rem;
+	}
+
+	.password input {
+		flex: 1;
+		min-width: 0;
+	}
+
 	.field {
 		margin-bottom: 1rem;
 		max-width: 20rem;

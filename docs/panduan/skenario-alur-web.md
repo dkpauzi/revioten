@@ -349,7 +349,7 @@ Login sebagai `dok.kontrol`. Unggah scan revisi 1, **Record release of revision 
 ## 10. Dokumen lama (Tahap 7)
 
 ### Langkah 28 · Masukkan dokumen lama
-Login sebagai `ppap.engineer`. Daftarkan satu set nomor lagi. Di **Documents → Documents**, bagian **Enter a legacy document**: pilih SC-LM-003, centang K-200, isi **Current revision** 4, **Effective date**, dan nama di hardcopy, lalu **Enter the legacy document**. Buka dokumennya, tambah baris riwayat di **Revision history from the legacy table**, simpan, lalu unggah scan hardcopy di **Revisions**.
+Login sebagai `ppap.engineer`. Daftarkan satu set nomor lagi. Di **Documents → Documents**, bagian **Enter a legacy document**: pilih SC-LM-003, centang K-200, isi **Current revision** 4, **Effective date**, dan nama di hardcopy, lalu **Enter the legacy document**. Buka dokumennya, tambah baris riwayat di **Revision history from the legacy table**, lalu simpan. Scan hardcopy boleh diunggah di **Revisions** sebagai bukti tambahan, tetapi tidak wajib (D-186).
 
 ### Langkah 29 · Verifikasi hardcopy
 Login sebagai `dok.kontrol`. Buka SC-LM-003, isi **Minutes spent**, lalu **Verify against the hard copy**. Statusnya menjadi Released (migrated). Orang yang memasukkan dokumen tidak bisa memverifikasinya.
