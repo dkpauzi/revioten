@@ -1,6 +1,6 @@
 # Paket UML · Sistem PFD, PFMEA, dan CP
 
-- **Versi:** draft 0.14, 4 November 2026. Sumbernya brief desain v1.21, kode Tahap 0 sampai M3.2 dan migrasi 00014 (D-80: UML diperbarui mengikuti kode), dan usulan dari desain UI serta register nomor yang dicatat di `usulan-desain-ui.md` (UX-01 sampai UX-07, status Terbuka). Draft 0.12 datang dari pemilik; draft 0.13 menambah hasil tinjauan Claude Code atas desain UI (`docs/catatan/Tinjauan-desain-UI-UML-0.12.md`); draft 0.14 mencatat keputusan pemilik 4 November 2026 (D-121 sampai D-126). Nama jabatan mengikuti bagan organisasi NPI (D-54), tanpa nama orang.
+- **Versi:** draft 0.16, 15 November 2026. Sumbernya brief desain v1.34 dan kode sampai Tahap 9 (migrasi 00046), sesuai D-80 (UML mengikuti kode). Draft 0.16 menyusul kode Tahap 4 sampai 9: U5-F sampai U5-I baru, U8 dibangkitkan ulang dari database (79 tabel), U2 menambah aplikasi lain, web ECR, Microsoft 365, dan antivirus, U3 menambah status pembangunan, notifikasi, dan ECR, U6 baru. Riwayat: draft 0.12 dari pemilik; 0.13 dan 0.14 menambah hasil tinjauan desain UI dan keputusan D-121 sampai D-126. Nama jabatan mengikuti bagan organisasi NPI (D-54).
 - **Tujuan:** bahan bagi tim IT untuk membangun versi mereka sendiri tanpa melihat kode (D-33, D-38). Paket ini dibekukan sebagai v1.0 di milestone M8.4 (R-UML-03).
 - **Kode berjalan sejajar:** mulai 27 Oktober 2026 kode dibangun sejajar dengan UML yang tersisa, dan dipakai untuk mengevaluasi desain (D-77). Temuan dari kode dicatat di `docs/evaluasi-desain.md` lalu diputuskan pemilik (usulan, brief bagian 15).
 
@@ -8,22 +8,22 @@
 
 | ID | Artefak | File | Status |
 |---|---|---|---|
-| U1 | Glosarium | `U1-glosarium.md` | Draft 0.14: kolom terisi otomatis dan aturan cetak tanda revisi. Draft 0.13: simbol Revision yang dipasang sistem. Draft 0.12: menambah istilah usulan UX (simbol internal dan customer, cakupan poin, gambar di sel, tabel spesifikasi, cek sinkronisasi, workbook, cakupan yokoten, nomor lama). Draft 0.11: dengan kolom istilah layar Inggris (D-98), istilah penomoran Tahap 2, istilah format template M3.1, dan istilah process template M3.2. Kolom Cek WI diisi pemilik. |
-| U2 | Diagram konteks C4 | `U2-c4-konteks.puml`, `export/U2-c4-konteks.svg`, `export/U2-c4-konteks.png` | Draft 0.7 |
-| U3 | Diagram use case dan spesifikasi use case | `U3-daftar-use-case.md`, `U3-use-case.puml` (8 diagram), `U3-gaya.iuml`, `export/U3-*.svg` dan `.png` | Draft 0.9: menambah UC-24, UC-25, UC-39 (usulan), memperluas UC-36 ke PFD, dan merinci UC-14 serta UC-64. Spesifikasi lengkap (prasyarat, alur, hasil) masih langkah 5 urutan S2 di milestone. |
-| U3 (lampiran) | Peta pengguna dan hak akses | `U3-peta-pengguna.md`, `U3-peta-pengguna.puml`, `export/U3-H-peta-pengguna.svg` dan `.png` | Baseline, disetujui pemilik 27 Oktober 2026 (D-66); draft 0.8 menambah aturan tetap D-104 dan D-118; draft 0.9 memetakan UC usulan ke hak yang sudah ada tanpa hak baru |
+| U1 | Glosarium | `U1-glosarium.md` | Draft 0.16: istilah migrasi, dasbor, API integrasi, web ECR, email notifikasi, dan row-level security. Draft 0.11 sampai 0.15: istilah layar Inggris (D-98), penomoran, format template, process template, kolom terisi otomatis, menu, dan varian poin. Kolom Cek WI diisi pemilik. |
+| U2 | Diagram konteks C4 | `U2-c4-konteks.puml`, `export/U2-c4-konteks.svg`, `export/U2-c4-konteks.png` | Draft 0.16 (sumber diperbarui, gambar di `export/` masih draft 0.7 sampai dirender ulang) |
+| U3 | Diagram use case dan spesifikasi use case | `U3-daftar-use-case.md`, `U3-use-case.puml` (10 diagram), `U3-gaya.iuml`, `export/U3-*.svg` dan `.png` | Draft 0.16: bagian Status pembangunan, U3-G API integrasi dan ECR, U3-H email notifikasi, U3-I portal (masa depan). Gambar di `export/` masih draft 0.9 sampai dirender ulang. Spesifikasi lengkap (prasyarat, alur, hasil) masih langkah 5 urutan S2. |
+| U3 (lampiran) | Peta pengguna dan hak akses | `U3-peta-pengguna.md`, `U3-peta-pengguna.puml`, `export/U3-H-peta-pengguna.svg` dan `.png` | Baseline, disetujui pemilik 27 Oktober 2026 (D-66). Draft 0.16 menambah layar Roles, row-level security, dan bagian 7 "Siapa yang butuh akun"; isi matriks hak tidak berubah. |
 | U4 | Activity diagram dengan swimlane | | Belum |
-| U5 | Diagram kelas domain | `U5-kelas-domain.puml` (5 diagram) | Draft 0.14: jenis kolom terisi otomatis di U5-C. Draft 0.13: tanda automatic pada Symbol di U5-C. Draft 0.12: U5-A sampai U5-D tetap (entitas yang dibangun sampai M3.2). U5-E baru berisi usulan UX-01 sampai UX-04 yang belum diputuskan dan belum dibangun, berwarna kuning `<<usulan>>`. |
-| U6 | State machine | | Belum |
+| U5 | Diagram kelas domain | `U5-kelas-domain.puml` (9 diagram) | Draft 0.16: U5-F dokumen dan baris, U5-G perubahan dan revisi, U5-H cetak dan migrasi, U5-I integrasi dan notifikasi. U5-E berisi usulan UX yang belum diputuskan. |
+| U6 | State machine | `U6-state-machine.puml` (5 diagram) | Draft 0.16, baru: nomor dokumen, perubahan, revisi, versi template dan form set, email dan job ekspor |
 | U7 | Sequence diagram | | Belum |
-| U8 | ERD fisik | `U8-erd.puml` (6 diagram) | Draft 0.14: jenis kolom terisi otomatis (migrasi 00014). Draft 0.13: kolom `format_symbols.automatic` (migrasi 00013). Tidak berubah di draft 0.12, karena ERD mengikuti migrasi kode. Draft 0.11: tabel migrasi 00001 sampai 00012, beserta kunci dan constraint penting. Hak role aplikasi ditulis untuk tabel yang dijaga ketat (audit log, register nomor, format template, process template). Diperbarui per milestone. Belum dirender |
+| U8 | ERD fisik | `U8-erd.puml` (10 diagram), dibangkitkan oleh `tools/u8_dari_database.py` | Draft 0.16: 79 tabel dan 147 hubungan sampai migrasi 00046, ditandai `<<RLS>>` untuk tabel yang disaring database. Jangan diedit tangan: jalankan skripnya lagi sesudah migrasi baru. Belum dirender |
 | Lampiran | Usulan desain UI dan temuan register | `usulan-desain-ui.md` | Draft 0.12, status semua butir Terbuka |
-| U9 | Diagram komponen C4 dan deployment | | Belum (M8.4) |
-| U10 | File OpenAPI | `api/openapi.yaml` di root repo (UI API `/api/v1`) | Berjalan per milestone. Kontrak integrasi `/integration/v1` dibuat di Tahap 9 |
+| U9 | Diagram komponen C4 dan deployment | | Belum. Gambaran tertulisnya ada di `docs/presentasi/dokumen-untuk-it.md` bagian 2 dan 6 |
+| U10 | File OpenAPI | `api/openapi.yaml` (UI API `/api/v1`) dan `api/integration.yaml` (API integrasi `/integration/v1`, Tahap 9) | Berjalan per milestone. Bentuk API integrasi dijaga contract test (`api/integration.contract.json`) |
 | U11 | Catatan keputusan | Log keputusan di brief bagian 6 | Berjalan |
 | U12 | Skenario penerimaan (Given, When, Then) | | Belum (S4) |
 | U13 | Matriks keterlacakan | | Belum |
-| U14 | Kebutuhan kualitas | | Belum (M8.4) |
+| U14 | Kebutuhan kualitas | | Belum. Sebagian ada di `docs/presentasi/dokumen-untuk-it.md` bagian 4, 5, dan 7 |
 
 ## Cara merender
 
@@ -45,7 +45,17 @@ java -jar plantuml-1.2026.9.jar -tsvg -o export U5-kelas-domain.puml
 java -jar plantuml-1.2026.9.jar -tpng -o export U5-kelas-domain.puml
 java -jar plantuml-1.2026.9.jar -tsvg -o export U8-erd.puml
 java -jar plantuml-1.2026.9.jar -tpng -o export U8-erd.puml
+java -jar plantuml-1.2026.9.jar -tsvg -o export U6-state-machine.puml
+java -jar plantuml-1.2026.9.jar -tpng -o export U6-state-machine.puml
 ```
+
+U8 dibangkitkan dari database, bukan ditulis tangan. Sesudah migrasi baru, dari root repo dengan PostgreSQL menyala:
+
+```
+python docs/uml/tools/u8_dari_database.py revioten
+```
+
+**15 November 2026:** sumber draft 0.16 belum dirender, karena Java dan PlantUML belum terpasang di komputer pemilik. Gambar di `export/` masih versi lama sampai perintah di atas dijalankan.
 
 U5 dan U8 ditulis di container cloud. Pada 3 November 2026 keduanya, beserta U3, berhasil dirender di container dengan PlantUML 1.2022.12 dan Graphviz, versi lama yang ada di sana, jadi sintaksnya sudah lolos pemeriksaan dasar. U2 tidak bisa dirender dengan versi lama itu karena C4-PlantUML 2.14.0 butuh PlantUML yang lebih baru. Jalankan perintah di atas di komputer pemilik, lalu commit hasilnya. Bila PlantUML menolak salah satu baris, catat pesannya agar file sumbernya dibetulkan.
 

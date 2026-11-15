@@ -44,7 +44,8 @@ describe('buildMenu', () => {
 			'/admin/roles',
 			'/admin/service-accounts',
 			'/admin/audit',
-			'/admin/settings'
+			'/admin/settings',
+			'/admin/notifications'
 		]);
 		expect(hrefs(['A-4']).admin).toEqual(['/admin/audit']);
 	});

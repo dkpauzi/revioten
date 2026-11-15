@@ -35,6 +35,22 @@ Tanpa pengaturan, unggahan tidak dipindai dan server menulis peringatan saat mul
 - Bila pemindai dipasang tetapi mati, setiap unggahan ditolak dengan pesan yang jelas. Itu disengaja: berkas yang belum dipindai tidak pernah disimpan.
 - Uji: unggah berkas uji EICAR sebagai lampiran perubahan. Harus ditolak.
 
+## 3a. Email notifikasi (D-194)
+
+1. Minta IT mengisi pengaturan email di `.env` (lihat `.env.example`, bagian email): `MAIL_PROVIDER=graph` dengan `GRAPH_*`, atau `MAIL_PROVIDER=smtp` dengan `SMTP_*`, dan `MAIL_FROM`.
+2. Untuk mencoba tanpa server email: `MAIL_PROVIDER=log`. Email hanya ditulis ke log server.
+3. Jalankan ulang server. Log menulis `email notifikasi aktif` atau `email notifikasi tidak dikirim`.
+4. Setiap orang mengisi alamat email di halaman akun, atau admin di Admin → Accounts.
+5. Admin → Notifications → **Send me a test email**. Status di kotak keluar harus **Sent**.
+
+| Status | Artinya |
+|---|---|
+| Waiting | Menunggu giliran dikirim |
+| Sent | Diterima server email |
+| Failed | Gagal 5 kali; alasannya tertulis |
+| Not sent · no email address | Penerima belum punya alamat |
+| Not sent · email server not set up | `MAIL_PROVIDER` kosong saat email itu diproses |
+
 ## 4. Backup harian
 
 1. Isi `BACKUP_DIR` (folder di disk lain) dan `BACKUP_PASSPHRASE` (minimal 15 karakter) di `.env`.

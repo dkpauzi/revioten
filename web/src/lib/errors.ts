@@ -95,6 +95,8 @@ const problemKeys: Record<string, MessageKey> = {
 	'items:too_long': 'impactTooMany',
 	'targets:required': 'yokotenNoTargets',
 	'scan:required': 'scanRequired',
+	'email:invalid_format': 'accountEmailInvalid',
+	'email:required': 'notifyNeedOwnEmail',
 	'role:not_allowed': 'rolesFixed',
 	'permissions:not_allowed': 'rolesNoAdminRights',
 	'migration_mode:not_allowed': 'migrationModeOff',

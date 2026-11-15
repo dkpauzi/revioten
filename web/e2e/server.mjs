@@ -26,7 +26,8 @@ execFileSync('go', ['build', '-o', binary, './cmd/revioten'], { cwd: root, stdio
 
 // POSTGRES_DB di environment menang atas isi .env (lihat cmd/revioten/config.go).
 // Lampiran E2E disimpan terpisah dari lampiran database utama (M5.2).
-const env = { ...process.env, POSTGRES_DB: 'revioten_e2e', ATTACHMENT_DIR: 'data/attachments-e2e' };
+// MAIL_PROVIDER=log: email notifikasi melewati jalur kirim, tetapi hanya ditulis ke log (D-194).
+const env = { ...process.env, POSTGRES_DB: 'revioten_e2e', ATTACHMENT_DIR: 'data/attachments-e2e', MAIL_PROVIDER: 'log', MAIL_FROM: 'revioten@contoh.test' };
 
 // Password dikirim lewat pipa (stdin), bukan lewat argumen perintah.
 execFileSync(binary, ['create-admin', '-name', admin.name, '-login', admin.login], {

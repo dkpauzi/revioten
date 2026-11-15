@@ -401,6 +401,25 @@ export const helpId: HelpContent = {
 			imageAlt: 'Halaman Service account dengan satu aplikasi, scope, customer, dan tokennya.'
 		},
 		{
+			id: 'notifications',
+			title: 'Email notifikasi',
+			who: 'Semua orang untuk alamat sendiri, Admin untuk pengaturan',
+			intro: 'Sistem mengirim email bila ada yang menunggu seseorang: perubahan untuk diverifikasi, keputusan atas perubahan Anda, scan bertanda tangan yang siap dirilis, yokoten yang perlu diputuskan, dan lainnya. Persetujuan tetap di kertas.',
+			steps: [
+				'Isi alamat Anda sendiri: tekan {passwordTitle} di bilah atas, isi {accountEmailTitle}, lalu tekan {accountEmailSave}. Admin juga bisa mengisinya di {navAccounts} dengan {accountEmail}.',
+				'Admin membuka {navGroupAdmin}, lalu {navNotifications}, untuk melihat cara email dikirim dan menyalakan atau mematikan setiap peristiwa.',
+				'Tekan {notifyTest} untuk memastikan email sampai ke alamat Anda.',
+				'{notifyOutbox} menampilkan setiap email beserta statusnya. {notifyStatus_skipped} dengan {notifyReason_no_email} berarti orang itu belum punya alamat.'
+			],
+			tips: [
+				'IT mengatur server email (Microsoft 365) di pengaturan server. Sebelum itu email tercatat tetapi tidak dikirim.',
+				'Anda tidak pernah mendapat email atas aksi Anda sendiri.',
+				'Email tidak pernah memuat password atau token.'
+			],
+			image: 'notifications',
+			imageAlt: 'Halaman Email notifikasi dengan server email, daftar peristiwa, dan kotak keluar.'
+		},
+		{
 			id: 'audit',
 			title: 'Audit log',
 			who: 'Admin',

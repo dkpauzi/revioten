@@ -57,7 +57,7 @@ func code(t *testing.T, err error) string {
 func TestNotifications(t *testing.T) {
 	e := doctest.Setup(t)
 	ctx := t.Context()
-	audit.SetListener(notify.NewNotifier("http://contoh.test").Listener())
+	audit.SetListener(notify.NewNotifier("http://contoh.test").Strict().Listener())
 	t.Cleanup(func() { audit.SetListener(nil) })
 	mailer := &fakeMailer{}
 	svc := notify.NewService(e.Pool, e.Checker, mailer, notify.Config{Provider: "log"}, nil)

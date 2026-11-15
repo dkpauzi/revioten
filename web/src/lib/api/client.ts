@@ -149,7 +149,9 @@ import type {
 	IssuedServiceToken,
 	NewServiceAccount,
 	ServiceAccount,
-	ServiceAccountList
+	ServiceAccountList,
+	EmailAddress,
+	NotificationOverview
 } from './gen/index.ts';
 
 // ApiFailure menjelaskan panggilan yang gagal: status HTTP (0 bila server
@@ -1307,6 +1309,38 @@ export function listPermissions(fetchFn: typeof fetch = fetch): Promise<ApiResul
 // setRolePermissions memanggil PUT /api/v1/roles/{id}/permissions (A-1, M8.1).
 export function setRolePermissions(roleId: string, permissions: string[], fetchFn: typeof fetch = fetch): Promise<ApiResult<Role>> {
 	return call<Role>(fetchFn, itemPath('roles', roleId) + '/permissions', jsonRequest('PUT', { permissions }));
+}
+
+// D-194: email notifikasi.
+
+// getOwnEmail memanggil GET /api/v1/account/email.
+export function getOwnEmail(fetchFn: typeof fetch = fetch): Promise<ApiResult<EmailAddress>> {
+	return call<EmailAddress>(fetchFn, '/api/v1/account/email', { method: 'GET' });
+}
+
+// setOwnEmail memanggil PUT /api/v1/account/email.
+export function setOwnEmail(email: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<EmailAddress>> {
+	return call<EmailAddress>(fetchFn, '/api/v1/account/email', jsonRequest('PUT', { email }));
+}
+
+// setAccountEmail memanggil PUT /api/v1/accounts/{id}/email (A-1).
+export function setAccountEmail(accountId: string, email: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<EmailAddress>> {
+	return call<EmailAddress>(fetchFn, `/api/v1/accounts/${encodeURIComponent(accountId)}/email`, jsonRequest('PUT', { email }));
+}
+
+// getNotifications memanggil GET /api/v1/notifications (A-3).
+export function getNotifications(fetchFn: typeof fetch = fetch): Promise<ApiResult<NotificationOverview>> {
+	return call<NotificationOverview>(fetchFn, '/api/v1/notifications', { method: 'GET' });
+}
+
+// setNotificationEvent memanggil PUT /api/v1/notifications/events/{event} (A-3).
+export function setNotificationEvent(event: string, enabled: boolean, fetchFn: typeof fetch = fetch): Promise<ApiResult<void>> {
+	return call<void>(fetchFn, `/api/v1/notifications/events/${encodeURIComponent(event)}`, jsonRequest('PUT', { enabled }));
+}
+
+// sendTestEmail memanggil POST /api/v1/notifications/test (A-3).
+export function sendTestEmail(fetchFn: typeof fetch = fetch): Promise<ApiResult<void>> {
+	return call<void>(fetchFn, '/api/v1/notifications/test', { method: 'POST' });
 }
 
 // Tahap 9: service account API integrasi (A-1).

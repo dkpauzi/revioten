@@ -1,17 +1,15 @@
-' U8 · ERD fisik (draft 0.14, 4 November 2026, sumber migrasi 00001 sampai 00014 di sql/migrations)
-' Menggambarkan tabel PostgreSQL 18 yang sudah dibangun sampai M3.2 dan migrasi 00014 (R-UML-03: diagram
-' fisik mengikuti kode per milestone). Tim IT boleh memakai stack lain (R-UML-02); aturan yang
-' wajib dipertahankan ditulis di catatan setiap diagram.
+' U8 · ERD fisik (draft 0.16, 2026-11-15), dibangkitkan dari skema database sampai migrasi 00046
+' oleh docs/uml/tools/u8_dari_database.py. Jangan diedit tangan: ubah migrasinya, lalu jalankan skrip itu lagi.
+' Menggambarkan tabel PostgreSQL 18 yang sudah dibangun (R-UML-03: diagram fisik mengikuti kode).
+' Tim IT boleh memakai stack lain (R-UML-02); aturan yang wajib dipertahankan ada di brief dan U5.
 '
 ' Konvensi:
 '   * di depan kolom   = NOT NULL
-'   <<PK>> <<FK>> <<UK>> = primary key, foreign key, unique
-'   kolom tanpa *       = boleh kosong
-'   uuid diisi uuidv7() bila tidak disebut lain (urut menurut waktu dibuat)
-'   |o pada ujung induk = foreign key boleh kosong; semua garis utuh, karena garis
-'   putus-putus di paket ini berarti tindakan di atas kertas (README, Konvensi)
+'   <<PK>> <<FK>> <<UK>> = primary key, foreign key, unique satu kolom
+'   <<RLS>> pada tabel = row-level security menyaring baris per akun (M8.1)
+'   garis menuju tabel induk yang dirujuk foreign key; tabel di kelompok lain ditampilkan ringkas
 '
-' Render dari folder docs/uml (sintaks dicek dengan PlantUML 1.2022.12 pada 3 November 2026, lihat README):
+' Render dari folder docs/uml:
 '   java -jar plantuml-1.2026.9.jar -tsvg -o export U8-erd.puml
 
 ' ---------------------------------------------------------------------------
@@ -24,7 +22,7 @@ skinparam ArrowColor #444444
 skinparam ClassBorderColor #1F4E79
 skinparam ClassBackgroundColor #FFFFFF
 
-title U8-A · Master data customer, model, dan proses (migrasi 00001, 00005, 00006)
+title U8-A · Master data customer, model, dan proses
 
 entity "project_groups" as project_groups {
   * id : uuid <<PK>>
@@ -39,10 +37,11 @@ entity "customers" as customers {
   --
   * code : text <<UK>>
   * name : text
-  project_group_id : uuid <<FK>>
-  * active : boolean = true
-  default_route_id : uuid <<FK>>
   * created_at : timestamptz
+  project_group_id : uuid <<FK>>
+  * active : boolean
+  default_route_id : uuid <<FK>>
+  default_form_set_id : uuid <<FK>>
 }
 
 entity "customer_codes" as customer_codes {
@@ -87,61 +86,34 @@ entity "processes" as processes {
 }
 
 entity "process_names" as process_names {
-  * name_key : text <<PK>> = lower(name)
+  * name_key : text <<PK>>
   --
   * process_id : uuid <<FK>>
   * kind : text
   * name : text
 }
 
-entity "approval_routes" as approval_routes_a {
+entity "subprocesses" as subprocesses {
   * id : uuid <<PK>>
+  --
+  * process_id : uuid <<FK>>
+  * created_at : timestamptz
 }
 
-project_groups |o--o{ customers
+entity "approval_routes" as approval_routes #EEEEEE
+entity "form_sets" as form_sets #EEEEEE
+
 customers ||--o{ customer_codes
+approval_routes ||--o{ customers
+form_sets ||--o{ customers
+project_groups ||--o{ customers
 customers ||--o{ model_groups
 customers ||--o{ models
-model_groups |o--o{ models
+model_groups ||--o{ models
 models ||--o{ part_numbers
-processes ||--|{ process_names
-approval_routes_a |o--o{ customers
+processes ||--o{ process_names
+processes ||--o{ subprocesses
 
-note right of customers
-  code: ^[A-Z]{2}$, bukan ZZ (D-89), sama dengan
-  kode berlaku di customer_codes (E-11, D-88).
-  name: 1 sampai 200 karakter tanpa spasi di tepi (E-21).
-  Tidak pernah dihapus, hanya active = false (D-86).
-  project_group_id wajib di layanan; kolomnya boleh
-  kosong untuk data sebelum M1.4.
-end note
-
-note bottom of customer_codes
-  Riwayat kode (D-88). Satu kode hanya pernah milik
-  satu customer (PK code, D-109).
-  UNIQUE (customer_id) WHERE valid_until IS NULL:
-  tepat satu kode berlaku per customer.
-  UNIQUE (code, customer_id): sasaran foreign key
-  gabungan dari document_numbers (00010).
-end note
-
-note bottom of models
-  UNIQUE (customer_id, name).
-  FK (model_group_id, customer_id) -> model_groups (id, customer_id):
-  group model harus milik customer yang sama (D-42).
-end note
-
-note bottom of part_numbers
-  UNIQUE (customer_id, number).
-  FK (model_id, customer_id) -> models (id, customer_id).
-end note
-
-note bottom of process_names
-  kind: display (tepat satu per proses) atau alias.
-  name_key = lower(name) adalah PK: nama dan alias semua
-  proses berbagi satu ruang nama tanpa membedakan
-  huruf besar kecil (D-110). Proses tidak pernah dihapus.
-end note
 @enduml
 
 ' ---------------------------------------------------------------------------
@@ -154,7 +126,7 @@ skinparam ArrowColor #444444
 skinparam ClassBorderColor #1F4E79
 skinparam ClassBackgroundColor #FFFFFF
 
-title U8-B · Orang, akun, hak akses, dan audit log (migrasi 00002 sampai 00004)
+title U8-B · Orang, akun, peran, hak, sesi, dan audit log
 
 entity "people" as people {
   * id : uuid <<PK>>
@@ -162,6 +134,7 @@ entity "people" as people {
   * name : text
   employee_number : text <<UK>>
   * created_at : timestamptz
+  email : text
 }
 
 entity "accounts" as accounts {
@@ -171,8 +144,8 @@ entity "accounts" as accounts {
   * kind : text
   * login : text <<UK>>
   * password_hash : text
-  * must_change_password : boolean = false
-  * failed_logins : integer = 0
+  * must_change_password : boolean
+  * failed_logins : integer
   locked_until : timestamptz
   disabled_at : timestamptz
   external_id : text <<UK>>
@@ -188,13 +161,6 @@ entity "sessions" as sessions {
   * expires_at : timestamptz
 }
 
-entity "permissions" as permissions {
-  * code : text <<PK>>
-  --
-  * level : text
-  * sort_order : integer
-}
-
 entity "roles" as roles {
   * id : text <<PK>>
   --
@@ -202,16 +168,24 @@ entity "roles" as roles {
   * sort_order : integer
 }
 
+entity "permissions" as permissions {
+  * code : text <<PK>>
+  --
+  * level : text
+  * sort_order : integer
+}
+
 entity "role_permissions" as role_permissions {
-  * role_id : text <<PK, FK>>
-  * permission_code : text <<PK, FK>>
+  * role_id : text <<FK>> <<PK>>
+  * permission_code : text <<FK>> <<PK>>
+  --
 }
 
 entity "account_roles" as account_roles {
-  * account_id : uuid <<PK, FK>>
-  * role_id : text <<PK, FK>>
+  * account_id : uuid <<FK>> <<PK>>
+  * role_id : text <<FK>> <<PK>>
   --
-  * scope : text = 'all'
+  * scope : text
 }
 
 entity "audit_log" as audit_log {
@@ -231,53 +205,28 @@ entity "audit_log" as audit_log {
   * hash : text <<UK>>
 }
 
-people ||--o{ accounts
-accounts ||--o{ sessions
-roles ||--o{ role_permissions
-permissions ||--o{ role_permissions
+entity "system_settings" as system_settings {
+  * id : uuid <<PK>>
+  --
+  * sign_dates_enabled : boolean
+  * form_approval_mode : text
+  * qr_enabled : boolean
+  * migration_mode : boolean
+}
+
 accounts ||--o{ account_roles
 roles ||--o{ account_roles
-accounts |o--o{ audit_log
-people |o--o{ audit_log
+people ||--o{ accounts
+accounts ||--o{ audit_log
+people ||--o{ audit_log
+permissions ||--o{ role_permissions
+roles ||--o{ role_permissions
+accounts ||--o{ sessions
 
-note right of accounts
-  kind: work atau admin (D-72). UNIQUE (person_id, kind):
-  satu orang paling banyak satu akun kerja dan satu akun
-  admin (D-79). login: ^[a-z0-9._-]{3,64}$ (D-85).
-  password_hash: argon2id format PHC; password asli
-  tidak pernah disimpan (R-SEC-14).
-  Tidak pernah dihapus, hanya disabled_at (D-105).
-end note
-
-note bottom of sessions
-  Hanya hash SHA-256 token; token asli di cookie.
-  Batas diam dan batas mutlak sesi (D-85).
-  Satu-satunya tabel yang boleh DELETE (logout).
-end note
-
-note bottom of account_roles
-  scope: all atau own_project_group (D-71, D-82).
-  Katalog hak (permissions) tetap; isi peran
-  (role_permissions) diatur admin (D-66).
-end note
-
-note right of audit_log
-  Append-only (R-SEC-03):
-  - role aplikasi hanya SELECT dan INSERT;
-  - trigger menolak UPDATE, DELETE, TRUNCATE;
-  - seq tanpa lubang, dibagikan aplikasi di bawah
-    advisory lock rantai, bukan sequence (E-06);
-  - hash = SHA-256(prev_hash + isi), satu rantai
-    untuk seluruh sistem (D-83).
-  actor_type: human, system, anonymous (D-106);
-  human selalu punya akun dan orang.
-  details: teks JSON, bukan jsonb, supaya byte yang
-  di-hash sama dengan yang disimpan.
-end note
 @enduml
 
 ' ---------------------------------------------------------------------------
-@startuml U8-C-dokumen-perubahan-rute
+@startuml U8-C-perubahan-dan-rute
 hide circle
 hide empty members
 skinparam linetype ortho
@@ -286,7 +235,7 @@ skinparam ArrowColor #444444
 skinparam ClassBorderColor #1F4E79
 skinparam ClassBackgroundColor #FFFFFF
 
-title U8-C · Jenis dokumen, master perubahan, jabatan, dan rute approval (migrasi 00007 sampai 00009)
+title U8-C · Jenis dokumen, master perubahan, jabatan, dan rute approval
 
 entity "document_types" as document_types {
   * id : uuid <<PK>>
@@ -319,7 +268,7 @@ entity "change_sources" as change_sources {
   --
   * name : text
   mechanism : text <<UK>>
-  * active : boolean = true
+  * active : boolean
   * created_at : timestamptz
 }
 
@@ -337,8 +286,8 @@ entity "positions" as positions {
   * key : text <<UK>>
   * name : text
   * per_project_group : boolean
-  * single_holder : boolean = false
   * sort_order : smallint
+  * single_holder : boolean
 }
 
 entity "position_holders" as position_holders {
@@ -368,84 +317,22 @@ entity "route_slots" as route_slots {
 }
 
 entity "route_slot_positions" as route_slot_positions {
-  * slot_id : uuid <<PK, FK>>
-  * position_id : uuid <<PK, FK>>
-}
-
-entity "system_settings" as system_settings {
-  * id : uuid <<PK>>
+  * slot_id : uuid <<FK>> <<PK>>
+  * position_id : uuid <<FK>> <<PK>>
   --
-  * sign_dates_enabled : boolean = false
 }
 
-entity "people" as people_c {
-  * id : uuid <<PK>>
-}
+entity "people" as people #EEEEEE
+entity "project_groups" as project_groups #EEEEEE
 
-entity "project_groups" as project_groups_c {
-  * id : uuid <<PK>>
-}
-
-entity "customers" as customers_c {
-  * id : uuid <<PK>>
-}
-
+approval_routes ||--o{ change_types
+people ||--o{ position_holders
 positions ||--o{ position_holders
-people_c ||--o{ position_holders
-project_groups_c |o--o{ position_holders
-approval_routes ||--|{ route_slots
-route_slots ||--|{ route_slot_positions
+project_groups ||--o{ position_holders
 positions ||--o{ route_slot_positions
-approval_routes |o--o{ change_types
-approval_routes |o--o{ customers_c
+route_slots ||--o{ route_slot_positions
+approval_routes ||--o{ route_slots
 
-note right of document_types
-  key: pfd, pfmea, cp, atau kosong untuk jenis lain dari WI.
-  Hanya jenis ber-key yang dinomori sistem (R-NUM-01).
-  Awalan nomor = kode pabrik (number_settings) + letter,
-  misalnya S + C = SC (D-89). Nama unik tanpa membedakan
-  huruf besar kecil.
-end note
-
-note bottom of special_codes
-  code: ^[A-Z]{2,3}$; berdiri di posisi kode customer,
-  misalnya ZZ untuk General/Common (D-114).
-end note
-
-note bottom of change_sources
-  mechanism: yokoten, template, atau sqam untuk sumber
-  milik mekanisme sistem; CHECK: selalu aktif (D-113).
-end note
-
-note right of positions
-  key tetap, name hanya tampilan (D-58).
-  per_project_group: satu pemegang per Project Group
-  (Project Leader, Project Engineer, D-54).
-  single_holder: satu pemegang untuk seluruh pabrik,
-  dijaga layanan (approver, D-115, migrasi 00009).
-  CHECK: tidak keduanya.
-end note
-
-note bottom of position_holders
-  FK (position_id, per_project_group) -> positions:
-  project_group_id wajib tepat bila jabatannya per
-  Project Group (CHECK).
-  UNIQUE NULLS NOT DISTINCT (position_id, person_id,
-  project_group_id); UNIQUE (position_id, project_group_id)
-  WHERE per_project_group.
-end note
-
-note bottom of route_slots
-  stage: prepared, checked, approved. Satu Prepared,
-  satu Checked, lalu satu atau lebih Approved, paling
-  banyak 10 slot (D-117, dijaga layanan).
-  UNIQUE (route_id, slot_order).
-end note
-
-note bottom of system_settings
-  Satu baris (unique index pada true). Juga
-  number_settings di U8-D.
-end note
 @enduml
 
 ' ---------------------------------------------------------------------------
@@ -458,20 +345,20 @@ skinparam ArrowColor #444444
 skinparam ClassBorderColor #1F4E79
 skinparam ClassBackgroundColor #FFFFFF
 
-title U8-D · Register nomor dokumen (migrasi 00007 dan 00010, Tahap 2)
+title U8-D · Register nomor dokumen
 
 entity "number_settings" as number_settings {
   * id : uuid <<PK>>
   --
   * factory_code : text
-  * pattern : text = '{prefix}-{customer}-{seq}'
-  * sequence_format : text = 'letter_block'
-  * revision_digits : smallint = 2
+  * pattern : text
+  * sequence_format : text
+  * revision_digits : smallint
 }
 
 entity "number_counters" as number_counters {
-  * customer_code : text <<PK, FK>>
-  * document_type_id : uuid <<PK, FK>>
+  * customer_code : text <<FK>> <<PK>>
+  * document_type_id : uuid <<FK>> <<PK>>
   --
   * last_value : integer
 }
@@ -497,106 +384,32 @@ entity "document_numbers" as document_numbers {
   * document_type_id : uuid <<FK>>
   * sequence : integer
   * status : text
-  * initial_revision : smallint = 0
+  * initial_revision : smallint
   * batch_id : uuid <<FK>>
   status_reason : text
   status_changed_at : timestamptz
   * created_at : timestamptz
 }
 
-entity "customer_codes" as customer_codes_d {
-  * code : text <<PK>>
-  --
-  * customer_id : uuid <<FK>>
-}
+entity "accounts" as accounts #EEEEEE
+entity "customer_codes" as customer_codes #EEEEEE
+entity "customers" as customers #EEEEEE
+entity "document_types" as document_types #EEEEEE
+entity "people" as people #EEEEEE
 
-entity "customers" as customers_d {
-  * id : uuid <<PK>>
-}
+customer_codes ||--o{ document_numbers
+document_types ||--o{ document_numbers
+number_batches ||--o{ document_numbers
+accounts ||--o{ number_batches
+customers ||--o{ number_batches
+people ||--o{ number_batches
+customer_codes ||--o{ number_counters
+document_types ||--o{ number_counters
 
-entity "document_types" as document_types_d {
-  * id : uuid <<PK>>
-  --
-  key : text <<UK>>
-}
-
-entity "accounts" as accounts_d {
-  * id : uuid <<PK>>
-}
-
-entity "people" as people_d {
-  * id : uuid <<PK>>
-}
-
-customers_d ||--|{ customer_codes_d
-customer_codes_d ||--o{ number_counters
-document_types_d ||--o{ number_counters
-customer_codes_d ||--o{ document_numbers
-document_types_d ||--o{ document_numbers
-number_batches ||--|{ document_numbers
-customers_d ||--o{ number_batches
-accounts_d ||--o{ number_batches
-people_d ||--o{ number_batches
-
-note right of number_settings
-  Satu baris. Satu pola untuk semua jenis dokumen dan
-  customer (ASUMSI E-61). Pola wajib memuat {prefix},
-  {customer}, {seq} tepat sekali dengan pemisah, supaya
-  nomor bisa dibaca kembali (impor, M2.5).
-  sequence_format letter_block: 001 sampai 999, lalu
-  A001 sampai Z999 (D-89). revision_digits 1 sampai 3.
-end note
-
-note right of number_counters
-  Penghitung per teks kode customer dan jenis dokumen
-  (R-NUM-03, D-93), bukan sequence PostgreSQL.
-  Dinaikkan di dalam transaksi pendaftaran; transaksi
-  yang batal tidak meninggalkan lubang.
-  Tidak pernah turun: greatest(last_value, nilai baru).
-  Beberapa penghitung selalu dikunci menurut urutan
-  kode lalu document_type_id (set dan impor), supaya
-  tidak deadlock.
-end note
-
-note as urutan_kunci
-  <b>Urutan kunci setiap transaksi penomoran</b> (E-69)
-  1. customers FOR SHARE, sebelum INSERT apa pun yang
-     merujuk customer itu. Foreign key memasang kunci
-     KEY SHARE; menaikkannya ke FOR SHARE di tengah
-     transaksi bisa deadlock dengan ganti kode, yang
-     mengubah kolom code yang unik.
-  2. number_counters, menurut customer_code lalu
-     document_type_id.
-  3. Kunci rantai audit_log, paling akhir.
-end note
-
-note bottom of number_batches
-  kind: single, set (M2.4), import (M2.5).
-  UNIQUE (account_id, idempotency_key) (ASUMSI E-63).
-  CHECK: kunci kosong tepat untuk import;
-  kunci 1 sampai 100 karakter dengan request_hash.
-  Pendaftar = person_id; asal nomor = kind.
-end note
-
-note left of document_numbers
-  number: teks tersimpan, tidak pernah dihitung ulang
-  (R-NUM-02); nomor impor memakai teks aslinya (R-NUM-06).
-  UNIQUE (customer_code, document_type_id, sequence):
-  satu nomor berjalan sekali, juga bila pola berubah.
-  FK (customer_code, customer_id) -> customer_codes
-  (code, customer_id): kode di nomor adalah kode
-  customer itu, sekarang atau dulu (R-POR-01, E-11).
-  status: reserved, in_use, released, obsolete, void,
-  skipped (ASUMSI E-64). sequence >= 0 (000 hanya dari
-  impor). status_reason 1 sampai 500 karakter.
-  Hak role aplikasi: SELECT, INSERT, dan UPDATE hanya
-  kolom status, status_reason, status_changed_at;
-  tanpa DELETE (R-NUM-04).
-end note
 @enduml
 
 ' ---------------------------------------------------------------------------
-@startuml U8-E-format-template
+@startuml U8-E-format-dan-form-set
 hide circle
 hide empty members
 skinparam linetype ortho
@@ -605,7 +418,7 @@ skinparam ArrowColor #444444
 skinparam ClassBorderColor #1F4E79
 skinparam ClassBackgroundColor #FFFFFF
 
-title U8-E · Format template (migrasi 00011, 00013, dan 00014, M3.1)
+title U8-E · Format template, form set, dan persetujuan form
 
 entity "format_templates" as format_templates {
   * id : uuid <<PK>>
@@ -622,11 +435,14 @@ entity "format_template_versions" as format_template_versions {
   --
   * template_id : uuid <<FK>>
   * version : integer
-  * status : text = 'draft'
+  * status : text
   * risk_method : text
   highlight_rpn_above : smallint
   highlight_severity_at_least : smallint
   * created_at : timestamptz
+  published_at : timestamptz
+  ap_rules : jsonb
+  changed_by_person_id : uuid <<FK>>
 }
 
 entity "format_fields" as format_fields {
@@ -638,111 +454,94 @@ entity "format_fields" as format_fields {
   rating_scale : text
   rating_set : smallint
   * created_at : timestamptz
+  key : text
 }
 
 entity "format_version_fields" as format_version_fields {
-  * version_id : uuid <<PK, FK>>
-  * field_id : uuid <<PK, FK>>
+  * version_id : uuid <<FK>> <<PK>>
+  * field_id : uuid <<FK>> <<PK>>
   --
   * template_id : uuid <<FK>>
   * area : text <<FK>>
   * label : text
   * position : smallint
-  * required : boolean = false
-  * hidden : boolean = false
+  * required : boolean
+  * hidden : boolean
   options : jsonb
+  group_label : text
 }
 
 entity "format_rating_criteria" as format_rating_criteria {
-  * version_id : uuid <<PK, FK>>
+  * version_id : uuid <<FK>> <<PK>>
   * scale : text <<PK>>
   * value : smallint <<PK>>
   --
-  * criteria : text = ''
+  * criteria : text
 }
 
 entity "format_symbols" as format_symbols {
-  * version_id : uuid <<PK, FK>>
+  * version_id : uuid <<FK>> <<PK>>
   * key : text <<PK>>
   --
   * name : text
   * position : smallint
-  * automatic : boolean = false
+  * automatic : boolean
 }
 
-entity "document_types" as document_types_e {
+entity "form_sets" as form_sets {
   * id : uuid <<PK>>
+  --
+  * key : text <<UK>>
+  * name : text
+  * is_default : boolean
+  * created_at : timestamptz
 }
 
-entity "customers" as customers_e {
+entity "form_set_versions" as form_set_versions {
   * id : uuid <<PK>>
+  --
+  * form_set_id : uuid <<FK>>
+  * version : integer
+  * status : text
+  published_at : timestamptz
+  cover_format_version_id : uuid <<FK>>
+  * pfd_format_version_id : uuid <<FK>>
+  * pfmea_format_version_id : uuid <<FK>>
+  * cp_format_version_id : uuid <<FK>>
+  prepared_by_person_id : uuid <<FK>>
+  * created_at : timestamptz
 }
 
-document_types_e ||--o{ format_templates
-customers_e |o--o{ format_templates
-format_templates ||--|{ format_template_versions
+entity "form_approvals" as form_approvals {
+  * id : uuid <<PK>>
+  --
+  * target_kind : text
+  * target_id : uuid
+  * person_id : uuid <<FK>>
+  * account_id : uuid <<FK>>
+  * approved_at : timestamptz
+}
+
+entity "accounts" as accounts #EEEEEE
+entity "customers" as customers #EEEEEE
+entity "document_types" as document_types #EEEEEE
+entity "people" as people #EEEEEE
+
+accounts ||--o{ form_approvals
+people ||--o{ form_approvals
+form_sets ||--o{ form_set_versions
+format_template_versions ||--o{ form_set_versions
+people ||--o{ form_set_versions
 format_templates ||--o{ format_fields
-format_template_versions ||--o{ format_version_fields
-format_fields ||--|{ format_version_fields
 format_template_versions ||--o{ format_rating_criteria
 format_template_versions ||--o{ format_symbols
+format_templates ||--o{ format_template_versions
+people ||--o{ format_template_versions
+customers ||--o{ format_templates
+document_types ||--o{ format_templates
+format_fields ||--o{ format_version_fields
+format_template_versions ||--o{ format_version_fields
 
-note right of format_templates
-  methodology: aiag_4th, aiag_vda, sqam, atau kosong
-  (form PFD dan CP yang dipakai). customer_id diisi
-  untuk format SQAM satu customer. Nama unik tanpa
-  membedakan huruf besar kecil. Jenis dokumen hanya
-  PFD, PFMEA, atau CP (dijaga layanan).
-end note
-
-note right of format_template_versions
-  UNIQUE (template_id, version).
-  status: draft atau published (M3.4).
-  risk_method: rpn, ap, atau none.
-  CHECK: aturan RPN hanya untuk rpn (1 sampai
-  999); aturan severity untuk rpn dan ap (1 sampai
-  10). Hak role aplikasi: UPDATE hanya kolom
-  highlight_*.
-end note
-
-note right of format_fields
-  Identitas field yang tetap lintas versi.
-  kind: text, date, select, symbol, rating, rpn,
-  operation_number, process, process_flow
-  (kolom terisi otomatis, migrasi 00014; hanya
-  area row, D-122 dan D-123).
-  CHECK: rating wajib rating_scale; rating dan rpn
-  wajib rating_set (1 atau 2) dan hanya di area row.
-  Hak role aplikasi: SELECT dan INSERT saja, jadi
-  area dan jenis tidak pernah berubah.
-end note
-
-note left of format_version_fields
-  FK (version_id, template_id) -> versi, dan
-  FK (field_id, template_id, area) -> format_fields:
-  versi dan field milik template yang sama.
-  UNIQUE (version_id, area, position) DEFERRABLE
-  INITIALLY DEFERRED, supaya field bisa digeser.
-  UNIQUE (version_id, area, lower(label)).
-  CHECK: tersembunyi tidak bisa wajib.
-  Tanpa DELETE: field disembunyikan, tidak dihapus
-  (R-TPL-02).
-end note
-
-note bottom of format_rating_criteria
-  scale: severity, occurrence, detection;
-  value 1 sampai 10; criteria paling banyak 500
-  karakter. Isi awal kosong (ASUMSI E-70).
-end note
-
-note bottom of format_symbols
-  key ^[a-z][a-z0-9_]{0,49}$, tetap; nama unik
-  per versi. Tanpa DELETE (ASUMSI E-70).
-  automatic (migrasi 00013): true untuk Revision,
-  yang dipasang sistem (R-REV-09). Hak UPDATE
-  hanya kolom name, jadi aplikasi tidak bisa
-  mengubah tanda ini.
-end note
 @enduml
 
 ' ---------------------------------------------------------------------------
@@ -755,12 +554,12 @@ skinparam ArrowColor #444444
 skinparam ClassBorderColor #1F4E79
 skinparam ClassBackgroundColor #FFFFFF
 
-title U8-F · Process template (migrasi 00012, M3.2)
+title U8-F · Process template, poin, varian, dan dokumen terkait
 
 entity "process_templates" as process_templates {
   * id : uuid <<PK>>
   --
-  * process_id : uuid <<FK>>
+  * process_id : uuid <<FK>> <<UK>>
   * created_at : timestamptz
 }
 
@@ -770,25 +569,19 @@ entity "process_template_versions" as process_template_versions {
   * template_id : uuid <<FK>>
   * process_id : uuid <<FK>>
   * version : integer
-  * status : text = 'draft'
+  * status : text
   * created_at : timestamptz
-}
-
-entity "subprocesses" as subprocesses {
-  * id : uuid <<PK>>
-  --
-  * process_id : uuid <<FK>>
-  * created_at : timestamptz
+  published_at : timestamptz
 }
 
 entity "process_template_subprocesses" as process_template_subprocesses {
-  * version_id : uuid <<PK, FK>>
-  * subprocess_id : uuid <<PK, FK>>
+  * version_id : uuid <<FK>> <<PK>>
+  * subprocess_id : uuid <<FK>> <<PK>>
   --
   * process_id : uuid <<FK>>
   * name : text
   * position : smallint
-  * hidden : boolean = false
+  * hidden : boolean
 }
 
 entity "template_points" as template_points {
@@ -797,76 +590,643 @@ entity "template_points" as template_points {
   * subprocess_id : uuid <<FK>>
   * document_type_id : uuid <<FK>>
   * created_at : timestamptz
+  * scope : text
+  customer_id : uuid <<FK>>
+  model_group_id : uuid <<FK>>
+  model_id : uuid <<FK>>
+  variant_of : uuid <<FK>>
 }
 
 entity "process_template_points" as process_template_points {
-  * version_id : uuid <<PK, FK>>
-  * point_id : uuid <<PK, FK>>
+  * version_id : uuid <<FK>> <<PK>>
+  * point_id : uuid <<FK>> <<PK>>
   --
   * subprocess_id : uuid <<FK>>
   * document_type_id : uuid <<FK>>
   * text : text
   * position : smallint
-  * hidden : boolean = false
+  * hidden : boolean
+  * content : jsonb
 }
 
-entity "processes" as processes_f {
+entity "process_template_variants" as process_template_variants {
+  * version_id : uuid <<FK>> <<PK>>
+  * point_id : uuid <<FK>> <<PK>>
+  --
+  * origin_point_id : uuid <<FK>>
+  * text : text
+  * hidden : boolean
+  * content : jsonb
+}
+
+entity "referenced_documents" as referenced_documents {
   * id : uuid <<PK>>
+  --
+  * number : text <<UK>>
+  * title : text
+  level : text
+  revision : text
+  revision_date : date
+  * active : boolean
+  * created_at : timestamptz
+  * updated_at : timestamptz
 }
 
-entity "document_types" as document_types_f {
+entity "referenced_document_links" as referenced_document_links {
   * id : uuid <<PK>>
+  --
+  * document_id : uuid <<FK>>
+  * process_id : uuid <<FK>>
+  * scope : text
+  customer_id : uuid <<FK>>
+  model_group_id : uuid <<FK>>
+  model_id : uuid <<FK>>
+  * created_at : timestamptz
 }
 
-processes_f ||--o| process_templates
-process_templates ||--|{ process_template_versions
-processes_f ||--o{ subprocesses
-process_template_versions ||--o{ process_template_subprocesses
-subprocesses ||--|{ process_template_subprocesses
-subprocesses ||--o{ template_points
-document_types_f ||--o{ template_points
+entity "customers" as customers #EEEEEE
+entity "document_types" as document_types #EEEEEE
+entity "model_groups" as model_groups #EEEEEE
+entity "models" as models #EEEEEE
+entity "processes" as processes #EEEEEE
+entity "subprocesses" as subprocesses #EEEEEE
+
 process_template_subprocesses ||--o{ process_template_points
-template_points ||--|{ process_template_points
+template_points ||--o{ process_template_points
+process_template_versions ||--o{ process_template_subprocesses
+subprocesses ||--o{ process_template_subprocesses
+process_template_points ||--o{ process_template_variants
+template_points ||--o{ process_template_variants
+process_templates ||--o{ process_template_versions
+processes ||--o{ process_templates
+customers ||--o{ referenced_document_links
+model_groups ||--o{ referenced_document_links
+models ||--o{ referenced_document_links
+processes ||--o{ referenced_document_links
+referenced_documents ||--o{ referenced_document_links
+customers ||--o{ template_points
+document_types ||--o{ template_points
+model_groups ||--o{ template_points
+models ||--o{ template_points
+subprocesses ||--o{ template_points
 
-note right of process_templates
-  UNIQUE (process_id): satu template umum per
-  proses (ASUMSI E-72). M3.3 mengganti kunci ini
-  dengan kunci per proses dan cakupan.
-  Hak role aplikasi: SELECT dan INSERT.
-end note
+@enduml
 
-note right of process_template_versions
-  FK (template_id, process_id) -> process_templates.
-  UNIQUE (template_id, version).
-  status: draft atau published (M3.4). Hak UPDATE
-  hanya kolom status, dibutuhkan untuk mengunci baris
-  versi (SELECT ... FOR NO KEY UPDATE).
-end note
+' ---------------------------------------------------------------------------
+@startuml U8-G-dokumen
+hide circle
+hide empty members
+skinparam linetype ortho
+skinparam shadowing false
+skinparam ArrowColor #444444
+skinparam ClassBorderColor #1F4E79
+skinparam ClassBackgroundColor #FFFFFF
 
-note right of subprocesses
-  Identitas sub-proses yang tetap, milik satu proses
-  master (ASUMSI E-33). Hak role aplikasi: SELECT dan
-  INSERT saja, jadi prosesnya tidak pernah berubah.
-end note
+title U8-G · Dokumen, baris, bagian per PCB, dan cek PFMEA-CP
 
-note left of process_template_subprocesses
-  FK (version_id, process_id) -> versi, dan
-  FK (subprocess_id, process_id) -> subprocesses:
-  sub-proses dari proses lain ditolak database.
-  UNIQUE (version_id, position) DEFERRABLE
-  INITIALLY DEFERRED. UNIQUE (version_id,
-  lower(name)). UPDATE hanya name, position,
-  hidden. Tanpa DELETE.
-end note
+entity "documents" as documents <<RLS>> {
+  * id : uuid <<PK>>
+  --
+  * document_number_id : uuid <<FK>> <<UK>>
+  * customer_id : uuid <<FK>>
+  * document_type_id : uuid <<FK>>
+  * revision : smallint
+  * status : text
+  * form_set_version_id : uuid <<FK>>
+  * format_version_id : uuid <<FK>>
+  approval_route_id : uuid <<FK>>
+  route_reason : text
+  * header : jsonb
+  * created_by_person_id : uuid <<FK>>
+  * created_at : timestamptz
+  * updated_at : timestamptz
+  * header_version : integer
+  released_revision : smallint
+  * origin : text
+}
 
-note bottom of process_template_points
-  FK (version_id, subprocess_id) -> sub-proses di
-  versi yang sama, dan FK (point_id, subprocess_id,
-  document_type_id) -> template_points.
-  UNIQUE (version_id, subprocess_id,
-  document_type_id, position) DEFERRABLE INITIALLY
-  DEFERRED. text satu baris, paling banyak 500
-  karakter (ASUMSI E-73). UPDATE hanya text,
-  position, hidden. Tanpa DELETE.
-end note
+entity "document_models" as document_models {
+  * document_id : uuid <<FK>> <<PK>>
+  * model_id : uuid <<FK>> <<PK>>
+  --
+}
+
+entity "document_part_numbers" as document_part_numbers {
+  * document_id : uuid <<FK>> <<PK>>
+  * part_number_id : uuid <<FK>> <<PK>>
+  --
+}
+
+entity "document_rows" as document_rows <<RLS>> {
+  * id : uuid <<PK>>
+  --
+  * document_id : uuid <<FK>>
+  * position : integer
+  process_id : uuid <<FK>>
+  operation_number : text
+  * content : jsonb
+  * created_at : timestamptz
+  * updated_at : timestamptz
+  * version : integer
+  template_point_id : uuid <<FK>>
+  template_version_id : uuid <<FK>>
+  * operation_manual : boolean
+  detached_at : timestamptz
+  detach_reason : text
+  section_id : uuid <<FK>>
+}
+
+entity "document_sections" as document_sections {
+  * id : uuid <<PK>>
+  --
+  * document_id : uuid <<FK>>
+  * section_key : uuid
+  * position : integer
+  * name : text
+  * created_at : timestamptz
+  * updated_at : timestamptz
+}
+
+entity "document_section_part_numbers" as document_section_part_numbers {
+  * section_key : uuid <<PK>>
+  * part_number_id : uuid <<FK>> <<PK>>
+  --
+}
+
+entity "document_point_exclusions" as document_point_exclusions {
+  --
+  * document_id : uuid <<FK>>
+  * point_id : uuid <<FK>>
+  reason : text
+  * excluded_at : timestamptz
+  section_id : uuid <<FK>>
+}
+
+entity "document_template_modes" as document_template_modes {
+  * document_id : uuid <<FK>> <<PK>>
+  * process_template_id : uuid <<FK>> <<PK>>
+  --
+  * mode : text
+  reason : text
+  * updated_by_person_id : uuid <<FK>>
+  * updated_at : timestamptz
+}
+
+entity "pfmea_cp_checks" as pfmea_cp_checks {
+  --
+  * pfmea_document_id : uuid <<FK>>
+  * cp_document_id : uuid <<FK>>
+  * process_id : uuid <<FK>>
+  * pfmea_revision : smallint
+  * cp_revision : smallint
+  * checked_by_person_id : uuid <<FK>>
+  * checked_at : timestamptz
+  * rows_fingerprint : text
+  section_key : uuid
+}
+
+entity "approval_routes" as approval_routes #EEEEEE
+entity "customers" as customers #EEEEEE
+entity "document_numbers" as document_numbers #EEEEEE
+entity "document_types" as document_types #EEEEEE
+entity "form_set_versions" as form_set_versions #EEEEEE
+entity "format_template_versions" as format_template_versions #EEEEEE
+entity "models" as models #EEEEEE
+entity "part_numbers" as part_numbers #EEEEEE
+entity "people" as people #EEEEEE
+entity "process_template_versions" as process_template_versions #EEEEEE
+entity "process_templates" as process_templates #EEEEEE
+entity "processes" as processes #EEEEEE
+entity "template_points" as template_points #EEEEEE
+
+documents ||--o{ document_models
+models ||--o{ document_models
+documents ||--o{ document_part_numbers
+part_numbers ||--o{ document_part_numbers
+document_sections ||--o{ document_point_exclusions
+documents ||--o{ document_point_exclusions
+template_points ||--o{ document_point_exclusions
+document_sections ||--o{ document_rows
+documents ||--o{ document_rows
+process_template_versions ||--o{ document_rows
+processes ||--o{ document_rows
+template_points ||--o{ document_rows
+part_numbers ||--o{ document_section_part_numbers
+documents ||--o{ document_sections
+documents ||--o{ document_template_modes
+people ||--o{ document_template_modes
+process_templates ||--o{ document_template_modes
+approval_routes ||--o{ documents
+customers ||--o{ documents
+document_numbers ||--o{ documents
+document_types ||--o{ documents
+form_set_versions ||--o{ documents
+format_template_versions ||--o{ documents
+people ||--o{ documents
+documents ||--o{ pfmea_cp_checks
+people ||--o{ pfmea_cp_checks
+processes ||--o{ pfmea_cp_checks
+
+@enduml
+
+' ---------------------------------------------------------------------------
+@startuml U8-H-perubahan-revisi-yokoten
+hide circle
+hide empty members
+skinparam linetype ortho
+skinparam shadowing false
+skinparam ArrowColor #444444
+skinparam ClassBorderColor #1F4E79
+skinparam ClassBackgroundColor #FFFFFF
+
+title U8-H · Perubahan, revisi, rilis, dan yokoten
+
+entity "changes" as changes {
+  * id : uuid <<PK>>
+  --
+  * seq : bigint <<UK>>
+  * customer_id : uuid <<FK>>
+  * mechanism : text
+  trigger_source_id : uuid <<FK>>
+  * change_type_id : uuid <<FK>>
+  four_m_category_id : uuid <<FK>>
+  * reason : text
+  source_reference : text
+  * status : text
+  requested_by_person_id : uuid <<FK>>
+  requested_by_account_id : uuid <<FK>>
+  * created_at : timestamptz
+  * updated_at : timestamptz
+  verified_by_person_id : uuid <<FK>>
+  verified_by_account_id : uuid <<FK>>
+  verified_at : timestamptz
+  verification_note : text
+  template_version_id : uuid <<FK>>
+  propagation_scope : text
+  conflict_policy : text
+  effective_date : date
+  source_change_id : uuid <<FK>>
+  requested_by_service_account_id : uuid <<FK>>
+}
+
+entity "change_documents" as change_documents {
+  * change_id : uuid <<FK>> <<PK>>
+  * document_id : uuid <<FK>> <<PK>>
+  --
+  * added_at : timestamptz
+  draft_revision_id : uuid <<FK>>
+  * merged : boolean
+  rows_updated : integer
+  rows_conflict : integer
+  rows_removed : integer
+}
+
+entity "change_attachments" as change_attachments {
+  * id : uuid <<PK>>
+  --
+  * change_id : uuid <<FK>>
+  * file_name : text
+  * content_type : text
+  * size_bytes : bigint
+  * sha256 : text
+  * uploaded_by_person_id : uuid <<FK>>
+  * uploaded_at : timestamptz
+  removed_at : timestamptz
+}
+
+entity "change_impacts" as change_impacts {
+  * id : uuid <<PK>>
+  --
+  * change_id : uuid <<FK>>
+  * position : integer
+  * kind : text
+  document_reference : text
+  * decision : text
+  reason : text
+  * updated_by_person_id : uuid <<FK>>
+  * updated_at : timestamptz
+  referenced_document_id : uuid <<FK>>
+}
+
+entity "document_revisions" as document_revisions <<RLS>> {
+  * id : uuid <<PK>>
+  --
+  * document_id : uuid <<FK>>
+  * revision : smallint
+  * status : text
+  * created_by_person_id : uuid <<FK>>
+  * created_at : timestamptz
+  released_at : timestamptz
+  snapshot : text
+  snapshot_sha256 : text
+  released_by_person_id : uuid <<FK>>
+  released_by_account_id : uuid <<FK>>
+  * customer_visible : boolean
+  portal_published_at : timestamptz
+  release_date : date
+  scan_file_name : text
+  scan_content_type : text
+  scan_size_bytes : bigint
+  scan_sha256 : text
+  scan_uploaded_by_person_id : uuid <<FK>>
+  scan_uploaded_at : timestamptz
+  * migrated : boolean
+}
+
+entity "yokotens" as yokotens {
+  * id : uuid <<PK>>
+  --
+  * seq : bigint <<UK>>
+  * source_change_id : uuid <<FK>>
+  * reason : text
+  filter_process_id : uuid <<FK>>
+  filter_text : text
+  * created_by_person_id : uuid <<FK>>
+  * created_by_account_id : uuid <<FK>>
+  * created_at : timestamptz
+}
+
+entity "yokoten_targets" as yokoten_targets {
+  * id : uuid <<PK>>
+  --
+  * yokoten_id : uuid <<FK>>
+  * model_id : uuid <<FK>>
+  * customer_id : uuid <<FK>>
+  * decision : text
+  reason : text
+  decided_by_person_id : uuid <<FK>>
+  decided_at : timestamptz
+  change_id : uuid <<FK>>
+}
+
+entity "yokoten_target_documents" as yokoten_target_documents {
+  * target_id : uuid <<FK>> <<PK>>
+  * document_id : uuid <<FK>> <<PK>>
+  --
+}
+
+entity "accounts" as accounts #EEEEEE
+entity "change_sources" as change_sources #EEEEEE
+entity "change_types" as change_types #EEEEEE
+entity "customers" as customers #EEEEEE
+entity "documents" as documents #EEEEEE
+entity "four_m_categories" as four_m_categories #EEEEEE
+entity "models" as models #EEEEEE
+entity "people" as people #EEEEEE
+entity "process_template_versions" as process_template_versions #EEEEEE
+entity "processes" as processes #EEEEEE
+entity "referenced_documents" as referenced_documents #EEEEEE
+entity "service_accounts" as service_accounts #EEEEEE
+
+changes ||--o{ change_attachments
+people ||--o{ change_attachments
+changes ||--o{ change_documents
+document_revisions ||--o{ change_documents
+documents ||--o{ change_documents
+changes ||--o{ change_impacts
+people ||--o{ change_impacts
+referenced_documents ||--o{ change_impacts
+accounts ||--o{ changes
+change_sources ||--o{ changes
+change_types ||--o{ changes
+customers ||--o{ changes
+four_m_categories ||--o{ changes
+people ||--o{ changes
+process_template_versions ||--o{ changes
+service_accounts ||--o{ changes
+accounts ||--o{ document_revisions
+documents ||--o{ document_revisions
+people ||--o{ document_revisions
+documents ||--o{ yokoten_target_documents
+yokoten_targets ||--o{ yokoten_target_documents
+changes ||--o{ yokoten_targets
+customers ||--o{ yokoten_targets
+models ||--o{ yokoten_targets
+people ||--o{ yokoten_targets
+yokotens ||--o{ yokoten_targets
+accounts ||--o{ yokotens
+changes ||--o{ yokotens
+people ||--o{ yokotens
+processes ||--o{ yokotens
+
+@enduml
+
+' ---------------------------------------------------------------------------
+@startuml U8-I-cetak-dan-migrasi
+hide circle
+hide empty members
+skinparam linetype ortho
+skinparam shadowing false
+skinparam ArrowColor #444444
+skinparam ClassBorderColor #1F4E79
+skinparam ClassBackgroundColor #FFFFFF
+
+title U8-I · Cetak, layout, dan migrasi dokumen lama
+
+entity "print_layouts" as print_layouts {
+  * id : uuid <<PK>>
+  --
+  * name : text <<UK>>
+  * document_type_id : uuid <<FK>>
+  * is_default : boolean
+  * layout : jsonb
+  updated_by_person_id : uuid <<FK>>
+  * created_at : timestamptz
+  * updated_at : timestamptz
+}
+
+entity "customer_print_layouts" as customer_print_layouts {
+  * customer_id : uuid <<FK>> <<PK>>
+  * document_type_id : uuid <<FK>> <<PK>>
+  --
+  * layout_id : uuid <<FK>>
+}
+
+entity "print_logs" as print_logs {
+  * id : uuid <<PK>>
+  --
+  * document_id : uuid <<FK>>
+  * revision_id : uuid <<FK>>
+  * revision : smallint
+  * purpose : text
+  * format : text
+  copy_number : integer
+  * content_sha256 : text
+  * printed_by_person_id : uuid <<FK>>
+  * printed_by_account_id : uuid <<FK>>
+  * printed_at : timestamptz
+}
+
+entity "document_baselines" as document_baselines {
+  * document_id : uuid <<FK>> <<PK>>
+  --
+  * revision : smallint
+  * effective_date : date
+  * prepared_by : text
+  * approved_by : text
+  * created_by_person_id : uuid <<FK>>
+  * created_at : timestamptz
+  verified_by_person_id : uuid <<FK>>
+  verified_at : timestamptz
+  effort_minutes : integer
+}
+
+entity "document_history_entries" as document_history_entries {
+  * id : uuid <<PK>>
+  --
+  * document_id : uuid <<FK>>
+  * position : integer
+  * revision_label : text
+  entry_date : date
+  * description : text
+  * created_by_person_id : uuid <<FK>>
+  * created_at : timestamptz
+}
+
+entity "accounts" as accounts #EEEEEE
+entity "customers" as customers #EEEEEE
+entity "document_revisions" as document_revisions #EEEEEE
+entity "document_types" as document_types #EEEEEE
+entity "documents" as documents #EEEEEE
+entity "people" as people #EEEEEE
+
+customers ||--o{ customer_print_layouts
+document_types ||--o{ customer_print_layouts
+print_layouts ||--o{ customer_print_layouts
+documents ||--o{ document_baselines
+people ||--o{ document_baselines
+document_baselines ||--o{ document_history_entries
+people ||--o{ document_history_entries
+document_types ||--o{ print_layouts
+people ||--o{ print_layouts
+accounts ||--o{ print_logs
+document_revisions ||--o{ print_logs
+documents ||--o{ print_logs
+people ||--o{ print_logs
+
+@enduml
+
+' ---------------------------------------------------------------------------
+@startuml U8-J-integrasi-dan-notifikasi
+hide circle
+hide empty members
+skinparam linetype ortho
+skinparam shadowing false
+skinparam ArrowColor #444444
+skinparam ClassBorderColor #1F4E79
+skinparam ClassBackgroundColor #FFFFFF
+
+title U8-J · API integrasi dan email notifikasi
+
+entity "service_accounts" as service_accounts {
+  * id : uuid <<PK>>
+  --
+  * name : text <<UK>>
+  * owner_team : text
+  * contact : text
+  * purpose : text
+  * scopes : text[]
+  * allowed_networks : cidr[]
+  disabled_at : timestamptz
+  * created_by_person_id : uuid <<FK>>
+  * created_at : timestamptz
+}
+
+entity "service_account_customers" as service_account_customers {
+  * service_account_id : uuid <<FK>> <<PK>>
+  * customer_id : uuid <<FK>> <<PK>>
+  --
+}
+
+entity "service_tokens" as service_tokens {
+  * id : uuid <<PK>>
+  --
+  * service_account_id : uuid <<FK>>
+  * prefix : text <<UK>>
+  * token_hash : text <<UK>>
+  * expires_at : timestamptz
+  revoked_at : timestamptz
+  last_used_at : timestamptz
+  * created_by_person_id : uuid <<FK>>
+  * created_at : timestamptz
+  expiry_notified_at : timestamptz
+}
+
+entity "integration_requests" as integration_requests {
+  * service_account_id : uuid <<FK>> <<PK>>
+  * idempotency_key : text <<PK>>
+  --
+  * request_hash : text
+  change_id : uuid
+  * created_at : timestamptz
+}
+
+entity "change_proposals" as change_proposals {
+  * change_id : uuid <<FK>> <<PK>>
+  --
+  * document_id : uuid <<FK>>
+  * base_revision : smallint
+  * source_application : text
+  on_behalf_of : text
+  * operations : jsonb
+  applied_at : timestamptz
+}
+
+entity "export_jobs" as export_jobs {
+  * id : uuid <<PK>>
+  --
+  * service_account_id : uuid <<FK>>
+  * document_id : uuid <<FK>>
+  * revision : smallint
+  * status : text
+  file_name : text
+  file_sha256 : text
+  size_bytes : bigint
+  error : text
+  * created_at : timestamptz
+  started_at : timestamptz
+  finished_at : timestamptz
+}
+
+entity "notification_events" as notification_events {
+  * key : text <<PK>>
+  --
+  * position : smallint
+  * enabled : boolean
+}
+
+entity "notification_outbox" as notification_outbox {
+  * id : uuid <<PK>>
+  --
+  * event : text <<FK>>
+  * recipient_person_id : uuid <<FK>>
+  recipient_email : text
+  * subject : text
+  * body : text
+  * status : text
+  reason : text
+  * attempts : smallint
+  * next_attempt_at : timestamptz
+  * created_at : timestamptz
+  sent_at : timestamptz
+}
+
+entity "changes" as changes #EEEEEE
+entity "customers" as customers #EEEEEE
+entity "documents" as documents #EEEEEE
+entity "people" as people #EEEEEE
+
+changes ||--o{ change_proposals
+documents ||--o{ change_proposals
+documents ||--o{ export_jobs
+service_accounts ||--o{ export_jobs
+service_accounts ||--o{ integration_requests
+notification_events ||--o{ notification_outbox
+people ||--o{ notification_outbox
+customers ||--o{ service_account_customers
+service_accounts ||--o{ service_account_customers
+people ||--o{ service_accounts
+people ||--o{ service_tokens
+service_accounts ||--o{ service_tokens
+
 @enduml

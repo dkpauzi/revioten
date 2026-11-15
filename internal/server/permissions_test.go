@@ -34,6 +34,9 @@ import (
 // TestMain menyalakan PostgreSQL untuk test integrasi di file ini. Test lain
 // di paket ini memakai service palsu dan tetap berjalan dengan -short.
 func TestMain(m *testing.M) {
+	// Pendengar notifikasi email terpasang, supaya setiap peristiwa di test
+	// ini juga menguji penyusunan emailnya (D-194).
+	audit.SetListener(notify.NewNotifier("http://contoh.test").Strict().Listener())
 	os.Exit(dbtest.Main(m))
 }
 

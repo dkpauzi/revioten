@@ -158,6 +158,16 @@ test('potret layar untuk halaman Help', async ({ page }) => {
 	await page.evaluate(() => document.querySelectorAll('.issued').forEach((el) => el.remove()));
 	await shot(page, 'service-accounts');
 
+	// Email notifikasi (D-194): alamat admin, lalu halaman Notifications.
+	await page.goto('/account/password');
+	await page.getByLabel(en.accountEmail, { exact: true }).fill('admin@contoh.test');
+	await page.getByRole('button', { name: en.accountEmailSave }).click();
+	await expect(page.getByRole('status')).toHaveText(en.accountEmailSaved);
+	await openFromMenu(page, en.navGroupAdmin, en.navNotifications);
+	await page.getByRole('button', { name: en.notifyTest }).click();
+	await expect(page.getByRole('status')).toHaveText(en.notifyTestQueued);
+	await shot(page, 'notifications');
+
 	// Pengelola template.
 	await logOut(page);
 	await logInAs(page, engineer.login, temporary);

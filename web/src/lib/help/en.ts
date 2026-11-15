@@ -401,6 +401,25 @@ export const helpEn: HelpContent = {
 			imageAlt: 'The Service accounts page with one application, its scopes, customers, and tokens.'
 		},
 		{
+			id: 'notifications',
+			title: 'Email notifications',
+			who: 'Everyone for the own address, Admin for the settings',
+			intro: 'The system sends an email when something waits for someone: a change to verify, a decision on your change, a signed scan ready to release, a yokoten to decide, and more. Approval itself stays on paper.',
+			steps: [
+				'Set your own address: press {passwordTitle} in the top bar, then fill in {accountEmailTitle} and press {accountEmailSave}. The admin can also set it under {navAccounts} with {accountEmail}.',
+				'The admin opens {navGroupAdmin}, then {navNotifications}, to see how emails are sent and to switch events on or off.',
+				'Press {notifyTest} to check that an email reaches your address.',
+				'The {notifyOutbox} shows every email with its status. {notifyStatus_skipped} with {notifyReason_no_email} means the person has no address yet.'
+			],
+			tips: [
+				'IT sets the email server (Microsoft 365) in the server settings. Until then emails are recorded but not sent.',
+				'You never get an email about your own action.',
+				'Emails never contain passwords or tokens.'
+			],
+			image: 'notifications',
+			imageAlt: 'The Email notifications page with the email server, the list of events, and the outbox.'
+		},
+		{
 			id: 'audit',
 			title: 'Audit log',
 			who: 'Admin',

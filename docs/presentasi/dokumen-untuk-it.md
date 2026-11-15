@@ -67,6 +67,23 @@ Lampiran dan scan bertanda tangan dibatasi ukurannya (20 MB dan 30 MB), disimpan
 
 Password, token, dan alamat koneksi tidak pernah masuk log, pesan error, atau audit log, dan ini dibuktikan dengan test (R-SEC-14). Rahasia dibaca dari environment atau berkas `.env` yang tidak masuk repositori.
 
+## 4.7 Email notifikasi (D-194)
+
+Sistem mengirim email saat ada yang menunggu seseorang. Email ditulis ke kotak keluar di database bersama peristiwanya, lalu dikirim pekerja di latar belakang. Email tidak pernah memuat password atau token.
+
+Yang perlu disiapkan IT, salah satu:
+
+| Jalur | Pengaturan | Catatan |
+|---|---|---|
+| Microsoft Graph (disarankan) | `MAIL_PROVIDER=graph`, `MAIL_FROM`, `GRAPH_TENANT_ID`, `GRAPH_CLIENT_ID`, `GRAPH_CLIENT_SECRET` | App registration di Microsoft Entra ID dengan izin aplikasi Mail.Send. Sebaiknya dibatasi ke kotak surat pengirim saja. |
+| SMTP | `MAIL_PROVIDER=smtp`, `MAIL_FROM`, `SMTP_HOST`, `SMTP_PORT` (587), `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_STARTTLS` | Misalnya smtp.office365.com atau relay Exchange internal. Login SMTP dengan password biasa mungkin dibatasi di tenant perusahaan; mohon dicek. |
+
+Belum diuji dengan tenant perusahaan (E-126). Sesudah diatur, admin menekan **Send me a test email** di Admin → Notifications.
+
+## 4.8 Web ECR dan aplikasi lain (Tahap 9, D-193)
+
+Web ECR atau aplikasi lain terhubung lewat `/integration/v1` dengan token service account (kontrak `api/integration.yaml`). Penggunanya tidak butuh akun di sistem ini; nama orangnya dikirim sebagai `on_behalf_of` dan hanya dicatat. Setiap usulan menunggu verifikasi orang yang punya akun di sistem ini. Tidak ada jalur API untuk verifikasi, approval, atau rilis.
+
 ## 5. Backup dan pemulihan
 
 - Backup: `pg_dump` format custom dan arsip folder lampiran, keduanya dienkripsi dengan passphrase (age), ditambah manifest berisi SHA-256.
@@ -93,7 +110,9 @@ Yang berbeda untuk versi IT: server dan sertifikat perusahaan, nama host, alamat
 ## 8. Yang kami minta dari IT
 
 1. Tinjauan atas desain dan UML: siapa peninjaunya dan kapan (Q-44).
-2. Keputusan cara login untuk versi perusahaan: akun lokal atau SSO.
+2. Keputusan cara login untuk versi perusahaan: akun lokal atau SSO (misalnya Microsoft Entra ID).
+2a. Email notifikasi: jalur Microsoft Graph atau SMTP dan pengaturannya (bagian 4.7).
+2b. Web ECR: siapa pemiliknya, dan apakah ia akan memakai API integrasi (bagian 4.8).
 3. Server uji, nama host, dan sertifikat.
 4. Antivirus: apakah pemindaian unggahan memakai antivirus perusahaan. ClamAV tanpa akses internet tidak mendapat pembaruan tanda virus (RK-58).
 5. Tempat backup di luar server, jadwalnya, dan siapa yang menyimpan passphrase.

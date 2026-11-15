@@ -1,6 +1,7 @@
 # U1 · Glosarium
 
-- Paket UML: draft 0.14, 4 November 2026 (draft 0.13 dan 0.12: 3 November 2026; draft 0.11, 0.10, 0.9, 0.8, dan 0.7: 31, 31, 30, 30, dan 27 Oktober 2026). Draft 0.12 menambah istilah dari desain UI 2 November 2026 dan temuan register nomor 3 November 2026, bertanda UX-xx (`usulan-desain-ui.md`). Draft 0.13 mencatat simbol Revision yang dipasang sistem (migrasi 00013). Draft 0.14 menambah kolom terisi otomatis dan aturan cetak tanda revisi (D-121 sampai D-123). Draft 0.15 (8 November 2026) menambah nama kelompok menu (D-127), cakupan poin yang sudah diputuskan, dan varian poin (D-129).
+- Paket UML: draft 0.16, 15 November 2026 (draft 0.14: 4 November 2026) (draft 0.13 dan 0.12: 3 November 2026; draft 0.11, 0.10, 0.9, 0.8, dan 0.7: 31, 31, 30, 30, dan 27 Oktober 2026). Draft 0.12 menambah istilah dari desain UI 2 November 2026 dan temuan register nomor 3 November 2026, bertanda UX-xx (`usulan-desain-ui.md`). Draft 0.13 mencatat simbol Revision yang dipasang sistem (migrasi 00013). Draft 0.14 menambah kolom terisi otomatis dan aturan cetak tanda revisi (D-121 sampai D-123). Draft 0.15 (8 November 2026) menambah nama kelompok menu (D-127), cakupan poin yang sudah diputuskan, dan varian poin (D-129). Draft 0.16 menambah istilah migrasi, dasbor, API integrasi, web ECR, email notifikasi, dan row-level security.
+
 - Sumber: brief desain v1.22, termasuk temuan dari dokumen TR-020 (brief bagian 21). Nama jabatan mengikuti bagan organisasi NPI (update 22 Januari 2026). Nama orang tidak dicantumkan. Setiap istilah merujuk ke ID di brief (R-UML-01).
 - Bahasa: penjelasan dalam bahasa Indonesia. Nama jabatan, nama standar, dan tahap tanda tangan memakai istilah yang sama dengan brief (R-UML-05, usulan).
 - Kolom **Istilah layar (Inggris)** (E-19, D-98): istilah yang dipakai di layar berbahasa Inggris dan di katalog teks `web/src/lib/i18n/en.ts`. Layar juga punya bahasa Indonesia (D-128, menggantikan D-96); katalognya `web/src/lib/i18n/id.ts` memakai kolom **Istilah**. Istilah baru di layar ditambahkan ke sini lebih dulu.
@@ -215,18 +216,32 @@ Peran adalah hak akses di aplikasi, berbeda dari jabatan. Pemetaan jabatan ke pe
 
 | Istilah | Istilah layar (Inggris) | Arti | Sebutan lain | Rujukan | Cek WI |
 |---|---|---|---|---|---|
-| Baseline migrasi | Migration baseline | Dokumen lama yang dimasukkan di revisi saat ini (misalnya -04), sama dengan hardcopy bertanda tangan. (usulan) | | R-MIG-03 | Belum |
-| Released (migrated) | Released (migrated) | Status dokumen migrasi setelah diverifikasi terhadap hardcopy bertanda tangan. (usulan) | | R-MIG-06 | Tidak perlu |
-| Mode migrasi | Migration mode | Saklar yang membuka fitur migrasi untuk peran khusus. Bisa dimatikan admin. (usulan) | | R-MIG-06 | Tidak perlu |
+| Baseline migrasi | Migration baseline | Dokumen lama yang dimasukkan di revisi saat ini (misalnya -04), sama dengan hardcopy bertanda tangan. Penyusun dan approver ditulis seperti di hardcopy. | | R-MIG-03, D-180 | Belum |
+| Riwayat revisi lama | Revision history from the legacy table | Baris revisi, tanggal, dan deskripsi dari tabel riwayat Excel lama, tercetak sebelum revisi buatan sistem. | | R-REV-05, D-180 | Belum |
+| Released (migrated) | Released (migrated) | Status dokumen migrasi setelah petugas migrasi lain mencocokkannya dengan hardcopy bertanda tangan. Scan hardcopy opsional. | | R-MIG-06, D-177, D-186 | Tidak perlu |
+| Mode migrasi | Migration mode | Saklar global di Settings yang membuka fitur migrasi; bawaannya mati. | | R-MIG-06, D-179 | Tidak perlu |
+| Pembanding Excel | Compare with the legacy Excel | Excel lama hanya dibandingkan sebagai kumpulan teks, tidak diimpor dan tidak disimpan. | | R-MIG-04, D-176 | Tidak perlu |
+| Dasbor | Dashboard | Ukuran yang dihitung dari data: baris yang mengikuti template, dokumen per status, yokoten, waktu revisi, usaha migrasi. | | M7.7, D-181 | Tidak perlu |
 | Penautan baris | Linking pass | Sistem mengusulkan pasangan baris hasil tempel dengan poin template lewat kemiripan teks, lalu manusia mengonfirmasi. | Linking pass | R-MIG-05 | Tidak perlu |
 
-## 9. Masa depan (latihan tahap 9 dan 10)
+## 9. API integrasi dan notifikasi (Tahap 9, D-193, D-194)
 
 | Istilah | Istilah layar (Inggris) | Arti | Sebutan lain | Rujukan | Cek WI |
 |---|---|---|---|---|---|
-| API integrasi | Integration API | Antarmuka untuk aplikasi internal lain: membaca data dan mengirim usulan perubahan. (masa depan) | | Brief bagian 16 | Tidak perlu |
-| Service account | Service account | Akun aplikasi lain dengan token, scope, dan masa berlaku. (masa depan) | | R-API-04 | Tidak perlu |
-| Usulan perubahan | Change proposal | Perubahan yang dikirim aplikasi lain dan menunggu verifikasi manusia. (masa depan) | Change proposal | R-API-07 | Tidak perlu |
+| API integrasi | Integration API | Antarmuka `/integration/v1` untuk aplikasi internal lain: membaca data rilis dan mengirim usulan perubahan. Kontraknya `api/integration.yaml`. | | R-API-02, Tahap 9 | Tidak perlu |
+| Service account | Service account | Akun aplikasi lain dengan scope, customer yang diizinkan, jaringan, dan token. Tidak pernah dihapus, hanya dinonaktifkan. | | R-API-04 | Tidak perlu |
+| Token integrasi | Token | Rahasia acak yang dipakai aplikasi lain; tampil sekali, disimpan sebagai hash, kedaluwarsa, bisa dicabut. | | R-API-04 | Tidak perlu |
+| Scope | Scope | Izin token dalam bentuk resource:action, misalnya documents:read atau changes:propose. | | R-API-05 | Tidak perlu |
+| Usulan perubahan | Change proposal | Perubahan yang dikirim aplikasi lain, berisi operasi terhadap revisi yang berlaku, dan menunggu verifikasi manusia. | Change proposal | R-API-07 | Tidak perlu |
+| Web ECR | ECR web | Aplikasi Engineering Change Request perusahaan yang mengirim usulan dengan pemicu ECR lewat API integrasi. | | D-193 | Belum |
+| Email notifikasi | Email notification | Email yang dikirim saat ada yang menunggu seseorang, lewat Microsoft 365. | | D-194 | Tidak perlu |
+| Kotak keluar | Outbox | Daftar email yang akan, sudah, atau gagal dikirim; ditulis bersama peristiwanya. | Outbox | D-194 | Tidak perlu |
+| Row-level security | Row-level security | Penyaringan baris oleh database menurut akun yang dilayani. | RLS | M8.1, D-182 | Tidak perlu |
+
+## 10. Masa depan (portal customer, Tahap 10, ditunda D-192)
+
+| Istilah | Istilah layar (Inggris) | Arti | Sebutan lain | Rujukan | Cek WI |
+|---|---|---|---|---|---|
 | Portal customer | Customer portal | Halaman baca saja bagi customer untuk melihat dan mengunduh dokumen rilis miliknya. (masa depan) | | D-18, R-POR-08 | Tidak perlu |
 | Customer user | Customer user | Akun customer, terpisah dari akun internal. (masa depan) | | R-POR-04 | Tidak perlu |
 | Izin tampil | Display permission | Konfirmasi internal sebelum revisi tampil di portal. (masa depan) | Display permission | R-PUB-03 | Tidak perlu |

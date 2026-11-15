@@ -1,0 +1,118 @@
+' U6 · State machine (draft 0.16, 15 November 2026, sumber brief v1.34 dan kode sampai Tahap 9)
+' Keadaan dan perpindahan yang dijaga sistem. Setiap perpindahan menyebut siapa yang memicunya dan
+' aturan yang menjaganya (R-UML-01). Satu file berisi lima diagram.
+' Render dari folder docs/uml:
+'   java -jar plantuml-1.2026.9.jar -tsvg -o export U6-state-machine.puml
+
+' ---------------------------------------------------------------------------
+@startuml U6-A-nomor-dokumen
+skinparam shadowing false
+title U6-A · Nomor dokumen (R-NUM-04, Tahap 2)
+
+[*] --> Reserved : Penyusun mendaftarkan (E-1)
+[*] --> Skipped : nomor dilewati saat set didaftarkan
+Reserved --> InUse : dokumen dibuat dari nomor itu
+Reserved --> Void : dokumen kontrol membatalkan, alasan wajib (E-8)
+InUse --> Released : revisi pertama terbit
+InUse --> Void : dokumen kontrol membatalkan (E-8)
+Released --> Obsolete : dokumen kontrol (E-8)
+
+note right of Void
+  Nomor tidak pernah dihapus atau dipakai ulang.
+  Role database aplikasi tidak punya DELETE.
+end note
+@enduml
+
+' ---------------------------------------------------------------------------
+@startuml U6-B-perubahan
+skinparam shadowing false
+title U6-B · Permintaan perubahan (R-CHG-01, R-CHG-02, Tahap 5 dan 9)
+
+[*] --> Submitted : Penyusun mengajukan (E-3),\natau aplikasi lain mengusulkan (changes:propose)
+Submitted --> Accepted : Verifikator menerima,\ncatatan wajib (V-1)
+Submitted --> Rejected : Verifikator menolak,\ncatatan wajib (V-1)
+Accepted --> [*]
+Rejected --> [*]
+
+note right of Submitted
+  Pemohon tidak memverifikasi sendiri (R-SEC-11).
+  Untuk usulan dari aplikasi, orang yang disebut
+  on_behalf_of juga tidak (R-API-09).
+  Email ke verifikator customer itu (D-194).
+end note
+
+note right of Accepted
+  Setiap dokumen terdampak mendapat draft revisi
+  berikutnya, atau masuk ke draft yang sudah
+  terbuka (R-CHG-03). Isi usulan dari aplikasi
+  ditulis ke draft saat ini (M9.4).
+end note
+@enduml
+
+' ---------------------------------------------------------------------------
+@startuml U6-C-revisi-dokumen
+skinparam shadowing false
+title U6-C · Revisi satu dokumen (R-REV-01, R-REV-02, Tahap 5 sampai 7)
+
+[*] --> Draft : dokumen dibuat (revisi awal),\nperubahan diterima (revisi berikutnya),\natau dokumen lama dimasukkan (revisi di hardcopy)
+Draft --> Draft : isi diubah (E-2), dicetak untuk\ntanda tangan (E-5), scan diunggah (E-7)
+Draft --> Released : dokumen kontrol mencatat rilis (E-7):\nscan bertanda tangan wajib, pencatat bukan penyusun
+Draft --> ReleasedMigrated : petugas migrasi lain memverifikasi\nterhadap hardcopy (E-10); scan opsional (D-186)
+Released --> Superseded : revisi berikutnya terbit
+ReleasedMigrated --> Superseded : revisi berikutnya terbit
+
+state ReleasedMigrated : "Released (migrated)"
+state Superseded : masih tersimpan, tidak berlaku
+
+note right of Released
+  Isi dibekukan sebagai snapshot dengan SHA-256.
+  Trigger database menolak setiap perubahan
+  (SQLSTATE 55000). Paling banyak satu draft
+  terbuka per dokumen.
+end note
+@enduml
+
+' ---------------------------------------------------------------------------
+@startuml U6-D-versi-template-dan-form-set
+skinparam shadowing false
+title U6-D · Versi format, process template, dan form set (R-TPL-05, D-139)
+
+[*] --> Draft : versi baru, salinan versi terbit terakhir
+Draft --> Draft : diubah (A-2 untuk format,\nE-6 untuk process template)
+Draft --> MenungguPersetujuan : satu penyetuju form menyetujui,\nyang lain belum (form set dan versi AP, V-3)
+MenungguPersetujuan --> Published : aturan persetujuan terpenuhi\n(semua atau satu, Settings)
+Draft --> Published : diterbitkan (format biasa dan\nprocess template), atau semua\npenyetuju sudah menyetujui
+
+state MenungguPersetujuan : "Menunggu persetujuan"
+note right of Published
+  Versi terbit tidak bisa diubah (trigger database).
+  Penyusun draft tidak menyetujui sendiri (D-139).
+  Email ke penyetuju form yang belum (D-194).
+end note
+@enduml
+
+' ---------------------------------------------------------------------------
+@startuml U6-E-email-dan-ekspor
+skinparam shadowing false
+title U6-E · Email di kotak keluar (D-194) dan job ekspor (M9.5)
+
+state "Email" as Email {
+  [*] --> Pending : peristiwa terjadi,\npenerima punya alamat
+  [*] --> Skipped : penerima tanpa alamat
+  Pending --> Sending : pekerja mengambil
+  Sending --> Sent : server email menerima
+  Sending --> Pending : gagal, dicoba lagi\n(2, 4, 8, 16 menit)
+  Sending --> Failed : gagal 5 kali
+  Sending --> Skipped : server email belum diatur
+  Sending --> Pending : server mati di tengah jalan\n(diantrekan lagi saat mulai)
+}
+
+state "Job ekspor" as Job {
+  [*] --> Queued : aplikasi meminta (exports:create)
+  Queued --> Running : pekerja mengambil
+  Running --> Done : berkas Excel tersimpan
+  Running --> FailedJob : gagal
+  Running --> Queued : server mati di tengah jalan\n(diantrekan lagi saat mulai, D-188)
+  state FailedJob : "Failed"
+}
+@enduml

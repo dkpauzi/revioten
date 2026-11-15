@@ -75,7 +75,9 @@ const groups: { id: MenuGroup['id']; label: MessageKey; entries: Entry[] }[] = [
 			// Audit log hanya lewat akun admin (A-4, D-75).
 			{ href: '/admin/audit', label: 'navAuditLog', permission: 'A-4' },
 			// Pengaturan sistem untuk pemegang A-3 (UC-07).
-			{ href: '/admin/settings', label: 'navSettings', permission: 'A-3' }
+			{ href: '/admin/settings', label: 'navSettings', permission: 'A-3' },
+			// Email notifikasi (D-194).
+			{ href: '/admin/notifications', label: 'navNotifications', permission: 'A-3' }
 		]
 	}
 ];

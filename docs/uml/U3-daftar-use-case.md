@@ -1,6 +1,7 @@
 # U3 · Daftar use case
 
-- Paket UML: draft 0.9, 3 November 2026 (draft 0.8: 30 Oktober 2026). Sumber: brief desain v1.16, ditambah usulan dari desain UI 2 November 2026 (`usulan-desain-ui.md`, UX-01 sampai UX-07).
+- Paket UML: draft 0.16, 15 November 2026 (draft 0.9: 3 November 2026). Sumber: brief desain v1.34 dan kode sampai Tahap 9, ditambah usulan dari desain UI 2 November 2026 (`usulan-desain-ui.md`, UX-01 sampai UX-07).
+- Draft 0.16 menambah bagian **Status pembangunan**, use case notifikasi (UC-70 sampai UC-72) dan ECR (UC-87), memindahkan UC-80 sampai UC-83 dari masa depan ke dibangun (Tahap 9, latihan), dan menandai portal customer sebagai masa depan (D-192).
 - Draft 0.9 menambah UC-24, UC-25, dan UC-39, memperluas UC-36 ke PFD, dan menambah rincian UC-14 serta UC-64. Semua tambahan berstatus Usulan sampai diputuskan pemilik.
 - Peta jabatan ke peran dan matriks hak akses ada di `U3-peta-pengguna.md`.
 - Isi: daftar use case tanpa detail (S2 langkah 2). Spesifikasi lengkap (prasyarat, alur utama, alur alternatif, hasil) dibuat di langkah 5.
@@ -29,7 +30,9 @@
 | Petugas migrasi | PPAP Staff dan PPAP Engineer, untuk saat ini | R-MIG-06, D-69 |
 | Penjadwal | Proses waktu di dalam sistem, untuk pengingat | R-NUM-04 |
 | Microsoft Excel | Sistem lain di komputer pengguna | R-MIG-02, R-PRT-01 |
-| Aplikasi internal lain | Aplikasi yang digabung lewat API (masa depan) | D-61, bagian 16 |
+| Aplikasi internal lain | Aplikasi yang memakai API integrasi dengan token service account, misalnya MES (Tahap 9) | D-61, R-API-04 |
+| Web ECR | Aplikasi Engineering Change Request perusahaan; mengirim usulan lewat API integrasi. Penggunanya tidak butuh akun di sistem ini | D-193 |
+| Microsoft 365 | Server email perusahaan untuk email notifikasi, diatur IT | D-194 |
 | Customer user | Akun customer (masa depan) | R-POR-04 |
 
 Pengecek dan approver menandatangani cetakan di kertas, jadi tanda tangan itu tidak menjadi use case. Pengecek hanya muncul di UC-85 (masa depan). Approver tidak punya use case sendiri: mereka menandatangani di kertas dan memakai akun Viewer untuk UC-56 dan UC-57 (R-APR-13, D-70).
@@ -104,7 +107,7 @@ Pengecek dan approver menandatangani cetakan di kertas, jadi tanda tangan itu ti
 | UC-54 | Ekspor Excel dan PDF | Pengguna internal | Microsoft Excel | Excel A3 dan A4, PDF yang sama rapinya. | R-PRT-01 | M6.2, M6.3 | MVP |
 | UC-55 | Lihat salinan yang harus ditarik | Dokumen kontrol | | Daftar dari catatan cetak saat revisi baru rilis. | R-PRT-06 | M6.6 | Usulan |
 | UC-56 | Buka halaman verifikasi | Viewer | | Status berlaku, digantikan, atau dibatalkan. Lewat QR bila QR menyala. | R-APR-03, R-APR-16, D-62 | M6.5 | Saklar |
-| UC-57 | Baca dokumen rilis | Viewer | | Hanya baca. | R-APR-06, D-41 | M1.2 (hak L-1), M5.5 | MVP |
+| UC-57 | Baca dokumen rilis | Viewer | | Hanya baca. Belum ada layar untuk akun tanpa L-4 (lihat Status pembangunan). | R-APR-06, D-41, R-SEC-12 | M1.2 (hak L-1), M5.5 | MVP |
 
 ## F. Migrasi dan ukuran
 
@@ -116,17 +119,43 @@ Pengecek dan approver menandatangani cetakan di kertas, jadi tanda tangan itu ti
 | UC-63 | Verifikasi terhadap hardcopy bertanda tangan | Petugas migrasi | | Status Released (migrated). | R-MIG-06 | M7.5 | Usulan |
 | UC-64 | Lihat dasbor ukuran | Pengguna internal | | Persentase baris yang mengikuti template, status dokumen dan yokoten, dan waktu revisi. Usulan UX-07: cakupan yokoten, yaitu persentase dokumen target yang sudah rilis per yokoten, sebagai ukuran utama QCC. | Brief bagian 2, UX-07 | M7.7 | MVP |
 
-## G. Masa depan (latihan tahap 9 dan 10)
+## G. API integrasi dan web ECR (Tahap 9, latihan)
 
 | ID | Use case | Aktor utama | Aktor lain | Ringkasan | Rujukan | Milestone | Status |
 |---|---|---|---|---|---|---|---|
-| UC-80 | Kelola service account dan token | Admin | | Scope, customer yang diizinkan, dan masa berlaku. | R-API-04 | M9.1 | Masa depan |
-| UC-81 | Baca data rilis lewat API | Aplikasi internal lain | | Data rilis, paginasi, filter updated_since. | R-API-12 | M9.3 | Masa depan |
-| UC-82 | Kirim usulan perubahan lewat API | Aplikasi internal lain | Verifikator | Menjadi permintaan perubahan yang menunggu verifikasi manusia. | R-API-07 | M9.4 | Masa depan |
-| UC-83 | Ekspor data secara asinkron | Aplikasi internal lain | | Job ekspor, polling, unduh. | R-API-14 | M9.5 | Masa depan |
+| UC-80 | Kelola service account dan token | Admin | | Scope, customer yang diizinkan, jaringan, dan masa berlaku; token tampil sekali. | R-API-04 | M9.1 | MVP (latihan) |
+| UC-81 | Baca data rilis lewat API | Aplikasi internal lain | | Data rilis, paginasi, filter updated_since. | R-API-12 | M9.3 | MVP (latihan) |
+| UC-82 | Kirim usulan perubahan lewat API | Aplikasi internal lain | Verifikator | Menjadi permintaan perubahan yang menunggu verifikasi manusia. | R-API-07 | M9.4 | MVP (latihan) |
+| UC-83 | Ekspor data secara asinkron | Aplikasi internal lain | | Job ekspor, polling, unduh. | R-API-14 | M9.5 | MVP (latihan) |
+| UC-87 | Kirim permintaan ECR untuk satu set dokumen | Web ECR | Verifikator | Pemicu ECR, nomor ECR sebagai rujukan, seluruh set, boleh tanpa operasi baris; penyusun mengubah draft sesudah diterima. | D-193, R-API-07 | M9.4 | MVP (latihan) |
+
+## H. Email notifikasi (D-194)
+
+| ID | Use case | Aktor utama | Aktor lain | Ringkasan | Rujukan | Milestone | Status |
+|---|---|---|---|---|---|---|---|
+| UC-70 | Isi alamat email sendiri | Pengguna internal | Admin | Setiap akun mengurus alamatnya sendiri; admin bisa mengisi alamat orang lain. | D-104, D-194 | D-194 | MVP |
+| UC-71 | Atur email notifikasi dan lihat kotak keluar | Admin | Microsoft 365 | Saklar per peristiwa, email uji, status setiap email. Server email diatur IT di pengaturan server. | D-194 | D-194 | MVP |
+| UC-72 | Terima email saat ada yang menunggu saya | Pengguna internal | Microsoft 365 | Perubahan diajukan, diterima atau ditolak, scan siap rilis, revisi terbit, form menunggu persetujuan, yokoten, dokumen lama menunggu verifikasi, token segera kedaluwarsa. | D-194 | D-194 | MVP |
+
+## I. Masa depan (portal customer, Tahap 10, ditunda D-192)
 | UC-84 | Lihat dan unduh dokumen di portal | Customer user | | Hanya dokumen rilis milik customer itu. | R-POR-08 | M10.2, M10.6 | Masa depan |
 | UC-85 | Beri izin tampil | Penyusun | Pengecek | Konfirmasi per peran, terikat content hash. | R-PUB-03 | M10.4 | Masa depan |
 | UC-86 | Kelola kebijakan publikasi customer | Admin | Dokumen kontrol | Sumber file dan tahap paling awal. | R-PUB-02 | M10.3 | Masa depan |
+
+## Status pembangunan (15 November 2026)
+
+| Kelompok | Sudah dibangun | Belum |
+|---|---|---|
+| A. Akses dan pengaturan | UC-01 sampai UC-09 (isi peran di layar Roles sejak M8.1) | |
+| B. Penomoran dan template | UC-10 sampai UC-14, UC-20 sampai UC-23 | UC-15 (pengingat nomor Reserved), UC-24 dan UC-25 (usulan UX) |
+| C. Dokumen dan perakitan | UC-30 sampai UC-38 | UC-39 (gambar di sel, usulan UX) |
+| D. Perubahan dan revisi | UC-40 sampai UC-47 | |
+| E. Cetak dan rilis | UC-50, UC-52, UC-53, UC-54, UC-56 | UC-51 (dokumen dikembalikan, M5.5a usulan), UC-55 (salinan yang ditarik, usulan), konfirmasi slot di UC-52 (R-APR-10, usulan), **UC-57: akun tanpa L-4 (Viewer, internal audit, produksi) belum bisa membuka dokumen terbit**, karena halaman dokumen butuh L-4 |
+| F. Migrasi dan ukuran | UC-60 sampai UC-64 | |
+| G. API integrasi | UC-80 sampai UC-83, UC-87 (latihan) | Webhook (M9.6, opsional) |
+| H. Email notifikasi | UC-70 sampai UC-72 | Uji dengan tenant Microsoft 365 perusahaan |
+| I. Portal customer | | UC-84 sampai UC-86 (masa depan, D-192) |
+| Di luar daftar ini | | Tampilan genba dan pencarian per proses (D-137, lingkup sudah diputuskan, belum dibangun) |
 
 ## Yang masih menunggu jawaban
 

@@ -365,7 +365,10 @@ Login sebagai `admin.contoh`. Buka **Admin → Roles**. Setiap kolom satu peran,
 ### Langkah 32 · Aplikasi lain (API integrasi, Tahap 9)
 Buka **Admin → Service accounts**. Di **Add a service account**, isi nama aplikasi, tim pemilik, kontak, dan tujuan; centang scope **Read the list of released documents** dan **Read released revisions with their rows**, centang customer LM, lalu **Add the service account**. Tekan **Issue a token**: token tampil SATU KALI dan disalin ke clipboard. Aplikasi lain memanggil `GET /integration/v1/documents` dengan header `Authorization: Bearer <token>` dan hanya melihat dokumen terbit customer LM.
 
-### Langkah 33 · Audit log
+### Langkah 33 · Email notifikasi (D-194)
+Tekan **Change password** di bilah atas, isi **Email for notifications**, lalu **Save the email address**. Admin juga bisa mengisi alamat orang lain di **Admin → Accounts** dengan tombol **Email**. Buka **Admin → Notifications**: server email (diatur IT), saklar per peristiwa, tombol **Send me a test email**, dan kotak keluar. Sebelum IT mengatur Microsoft 365, email hanya tercatat dengan status **Not sent**.
+
+### Langkah 34 · Audit log
 Buka **Admin → Audit log**.
 
 1. Setiap langkah di atas tercatat: siapa, kapan, apa, dan akun mana (termasuk orang pemegangnya).

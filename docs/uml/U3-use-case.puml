@@ -1,4 +1,6 @@
-' U3 · Diagram use case (draft 0.9, 3 November 2026, sumber brief v1.16 dan usulan-desain-ui.md)
+' U3 · Diagram use case (draft 0.16, 15 November 2026, sumber brief v1.34 dan kode sampai Tahap 9)
+' Draft 0.16: U3-G menjadi API integrasi yang sudah dibangun (Tahap 9) dan web ECR (D-193); portal customer
+' pindah ke U3-I sebagai masa depan (D-192); U3-H baru untuk email notifikasi (D-194).
 ' Draft 0.9 menambah UC-24, UC-25, UC-39 (usulan) dan memperluas UC-36 ke PFD (UX-04).
 ' Satu file berisi delapan diagram. Rujukan ID brief untuk setiap use case ada di U3-daftar-use-case.md (R-UML-01).
 ' Render dari folder docs/uml:
@@ -275,9 +277,9 @@ actor "Microsoft Excel" as excel
 
 rectangle "Sistem PFD, PFMEA, dan CP" {
   usecase "UC-60\nMasukkan dokumen lama\nsebagai baseline" as UC60
-  usecase "UC-61\nBandingkan dengan Excel lama" as UC61 <<usulan>>
+  usecase "UC-61\nBandingkan dengan Excel lama" as UC61
   usecase "UC-62\nTautkan baris hasil tempel\nke template" as UC62
-  usecase "UC-63\nVerifikasi terhadap hardcopy\nbertanda tangan" as UC63 <<usulan>>
+  usecase "UC-63\nVerifikasi terhadap hardcopy\n(orang kedua; scan opsional)" as UC63
   usecase "UC-64\nLihat dasbor ukuran" as UC64
 }
 
@@ -289,36 +291,73 @@ user --> UC64
 UC61 --> excel
 @enduml
 
-@startuml U3-G-masa-depan
+@startuml U3-G-integrasi
 !include U3-gaya.iuml
-title U3-G · Masa depan (latihan tahap 9 dan 10)
+title U3-G · API integrasi untuk aplikasi lain (Tahap 9) dan web ECR (D-193)
 
 actor "Admin" as admin
-actor "Aplikasi internal lain" as apps <<masa depan>>
+actor "Aplikasi internal lain\n(misalnya MES)" as apps
+actor "Web ECR" as ecr
+actor "Verifikator" as verif
+
+rectangle "Sistem PFD, PFMEA, dan CP" {
+  usecase "UC-80\nKelola service account\ndan token" as UC80
+  usecase "UC-81\nBaca data rilis lewat API" as UC81
+  usecase "UC-82\nKirim usulan perubahan\nlewat API" as UC82
+  usecase "UC-83\nEkspor data secara asinkron" as UC83
+  usecase "UC-87\nKirim permintaan ECR\nuntuk satu set dokumen" as UC87
+}
+
+admin --> UC80
+apps --> UC81
+apps --> UC82
+apps --> UC83
+ecr --> UC87
+ecr --> UC81
+UC87 ..> UC82 : <<include>>
+UC82 --> verif
+@enduml
+
+@startuml U3-H-notifikasi
+!include U3-gaya.iuml
+title U3-H · Email notifikasi (D-194)
+
+actor "Admin" as admin
+actor "Pengguna internal" as user
+actor "Microsoft 365" as m365
+
+rectangle "Sistem PFD, PFMEA, dan CP" {
+  usecase "UC-70\nIsi alamat email sendiri" as UC70
+  usecase "UC-71\nAtur email notifikasi\ndan lihat kotak keluar" as UC71
+  usecase "UC-72\nTerima email saat ada\nyang menunggu saya" as UC72
+}
+
+user --> UC70
+admin --> UC71
+user --> UC72
+UC72 --> m365
+UC71 --> m365
+@enduml
+
+@startuml U3-I-masa-depan
+!include U3-gaya.iuml
+title U3-I · Masa depan: portal customer (Tahap 10, ditunda D-192)
+
+actor "Admin" as admin
 actor "Customer user" as cust <<masa depan>>
 actor "Penyusun" as pen
-actor "Verifikator" as verif
 actor "Pengecek" as cek
 actor "Dokumen kontrol" as dokkon
 
 rectangle "Sistem PFD, PFMEA, dan CP" {
-  usecase "UC-80\nKelola service account\ndan token" as UC80 <<masa depan>>
-  usecase "UC-81\nBaca data rilis lewat API" as UC81 <<masa depan>>
-  usecase "UC-82\nKirim usulan perubahan\nlewat API" as UC82 <<masa depan>>
-  usecase "UC-83\nEkspor data secara asinkron" as UC83 <<masa depan>>
   usecase "UC-84\nLihat dan unduh dokumen\ndi portal" as UC84 <<masa depan>>
   usecase "UC-85\nBeri izin tampil" as UC85 <<masa depan>>
   usecase "UC-86\nKelola kebijakan publikasi\ncustomer" as UC86 <<masa depan>>
 }
 
-admin --> UC80
 admin --> UC86
-apps --> UC81
-apps --> UC82
-apps --> UC83
 cust --> UC84
 pen --> UC85
 UC85 --> cek
-UC82 --> verif
 UC86 --> dokkon
 @enduml

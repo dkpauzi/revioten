@@ -524,8 +524,17 @@ test('alur dari admin sampai dokumen terbit, revisi, migrasi, dasbor, dan API in
 	expect(docs.items.length).toBeGreaterThan(0);
 	await say(page, 'Langkah 32', `Aplikasi itu membaca ${docs.items.length} dokumen terbit customer LM lewat /integration/v1. Draft tidak pernah ikut.`);
 
+	await page.goto('/account/password');
+	await say(page, 'Langkah 33', 'Setiap orang mengisi alamat email sendiri untuk notifikasi (atau diisi admin di Accounts).');
+	await page.getByLabel(en.accountEmail, { exact: true }).fill('admin@contoh.test');
+	await page.getByRole('button', { name: en.accountEmailSave }).click();
+	await expect(page.getByRole('status')).toHaveText(en.accountEmailSaved);
+	await openFromMenu(page, en.navGroupAdmin, en.navNotifications);
+	await say(page, 'Langkah 33', 'Admin > Notifications. Email dikirim saat ada yang menunggu seseorang. Server email (Microsoft 365) diatur IT; sebelum itu email hanya tercatat.');
+	await say(page, 'Langkah 33', 'Kotak keluar menunjukkan setiap email: perubahan untuk diverifikasi, keputusan untuk pemohon, scan siap rilis, dan lainnya.');
+
 	await openFromMenu(page, en.navGroupAdmin, en.navAuditLog);
-	await say(page, 'Langkah 33', 'Semua langkah tadi tercatat: siapa, kapan, dan apa. Catatan ini tidak bisa diubah.');
+	await say(page, 'Langkah 34', 'Semua langkah tadi tercatat: siapa, kapan, dan apa. Catatan ini tidak bisa diubah.');
 	await page.getByRole('button', { name: en.auditVerify }).click();
 	await expect(page.getByRole('status')).toContainText(en.auditChainValid.split('{entries}')[0]);
 	await say(page, 'Selesai', 'Rantai audit utuh. Alur dari master data sampai rilis, revisi, migrasi, dasbor, dan API integrasi selesai.');

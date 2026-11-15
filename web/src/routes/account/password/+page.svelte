@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { changePassword, getSession } from '#lib/api/client.ts';
+	import { onMount } from 'svelte';
+	import { changePassword, getOwnEmail, getSession, setOwnEmail } from '#lib/api/client.ts';
 	import { failureText, problemText } from '#lib/errors.ts';
 	import { t } from '#lib/i18n/index.ts';
 	import { session } from '#lib/session.svelte.ts';
@@ -12,6 +13,34 @@
 	let fieldErrors = $state<Record<string, string>>({});
 	let formError = $state('');
 	let changed = $state(false);
+
+	// Alamat email sendiri untuk notifikasi (D-104, D-194).
+	let email = $state('');
+	let emailError = $state('');
+	let emailSaved = $state('');
+	// Kolom dikunci sampai alamat tersimpan selesai dimuat, supaya ketikan
+	// tidak tertimpa jawaban yang datang belakangan.
+	let emailLoaded = $state(false);
+
+	onMount(async () => {
+		const result = await getOwnEmail();
+		if (result.ok) email = result.data.email;
+		emailLoaded = true;
+	});
+
+	async function saveEmail(event: SubmitEvent) {
+		event.preventDefault();
+		emailError = '';
+		emailSaved = '';
+		const result = await setOwnEmail(email);
+		if (!result.ok) {
+			const details = result.error.body?.details ?? [];
+			emailError = details.length > 0 ? problemText(details[0]) : failureText(result.error);
+			return;
+		}
+		email = result.data.email;
+		emailSaved = email === '' ? t('accountEmailRemoved') : t('accountEmailSaved');
+	}
 
 	async function submit(event: SubmitEvent) {
 		event.preventDefault();
@@ -109,6 +138,22 @@
 		<p role="status">{t('passwordChanged')}</p>
 	{/if}
 </form>
+
+{#if !session.current?.must_change_password}
+	<section>
+		<h2>{t('accountEmailTitle')}</h2>
+		<p class="hint">{t('accountEmailHint')}</p>
+		<form onsubmit={saveEmail} novalidate>
+			<div class="field">
+				<label for="own-email">{t('accountEmail')}</label>
+				<input id="own-email" type="text" inputmode="email" autocomplete="email" disabled={!emailLoaded} bind:value={email} />
+				{#if emailError}<p class="error" role="alert">{emailError}</p>{/if}
+			</div>
+			<button type="submit" disabled={!emailLoaded}>{t('accountEmailSave')}</button>
+			{#if emailSaved}<p role="status">{emailSaved}</p>{/if}
+		</form>
+	</section>
+{/if}
 
 <style>
 	.field {

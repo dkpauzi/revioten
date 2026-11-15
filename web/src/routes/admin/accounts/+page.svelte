@@ -9,6 +9,7 @@
 		listAccounts,
 		listRoles,
 		resetAccountPassword,
+		setAccountEmail,
 		setAccountRoles,
 		type ApiFailure,
 		type ApiResult
@@ -187,6 +188,14 @@
 		await run(() => enableAccount(account.id));
 	}
 
+	// Alamat email orang pemegang akun, untuk email notifikasi (D-194).
+	// Kosong menghapus alamatnya.
+	async function editEmail(account: AccountInfo) {
+		const email = prompt(t('accountEmailPrompt', { login: account.login }), account.person.email ?? '');
+		if (email === null) return;
+		await run(() => setAccountEmail(account.id, email));
+	}
+
 	// Akun sendiri tidak bisa di-reset atau dinonaktifkan dari sini (server
 	// juga menolaknya); password sendiri diganti lewat halaman ganti password.
 	function isOwn(account: AccountInfo): boolean {
@@ -320,6 +329,7 @@
 							<td>
 								{account.person.name}
 								{#if account.person.employee_number}({account.person.employee_number}){/if}
+								<br /><small class="hint">{account.person.email ?? t('accountNoEmail')}</small>
 							</td>
 							<td>{account.kind === 'admin' ? t('accountKindAdmin') : t('accountKindWork')}</td>
 							<td>
@@ -348,6 +358,9 @@
 												{t('accountEditRoles')}
 											</button>
 										{/if}
+										<button type="button" disabled={busy} onclick={() => editEmail(account)}>
+											{t('accountEmail')}
+										</button>
 										{#if !isOwn(account)}
 											<button type="button" disabled={busy} onclick={() => resetPassword(account)}>
 												{t('accountResetPassword')}

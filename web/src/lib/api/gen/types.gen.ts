@@ -201,6 +201,40 @@ export type IssuedServiceToken = {
     info: ServiceToken;
 };
 
+export type EmailAddress = {
+    /**
+     * Empty removes the address.
+     */
+    email: string;
+};
+
+export type NotificationOverview = {
+    /**
+     * graph, smtp, log, or empty when email is not set up. Set by IT in the server settings.
+     */
+    provider: string;
+    from: string;
+    server: string;
+    events: Array<{
+        key: string;
+        enabled: boolean;
+    }>;
+    outbox: Array<OutboxEntry>;
+};
+
+export type OutboxEntry = {
+    id: string;
+    event: string;
+    recipient: string;
+    email?: string;
+    subject: string;
+    status: 'pending' | 'sending' | 'sent' | 'failed' | 'skipped';
+    reason?: string;
+    attempts: number;
+    created_at: string;
+    sent_at?: string;
+};
+
 export type RoleList = {
     items: Array<Role>;
 };
@@ -230,6 +264,10 @@ export type PersonInfo = {
     id: string;
     name: string;
     employee_number?: string;
+    /**
+     * Address for email notifications (D-194).
+     */
+    email?: string;
 };
 
 export type AccountList = {
@@ -2984,6 +3022,210 @@ export type LoginResponses = {
 };
 
 export type LoginResponse = LoginResponses[keyof LoginResponses];
+
+export type GetOwnEmailData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/account/email';
+};
+
+export type GetOwnEmailErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type GetOwnEmailError = GetOwnEmailErrors[keyof GetOwnEmailErrors];
+
+export type GetOwnEmailResponses = {
+    /**
+     * The email address; empty when none is set.
+     */
+    200: EmailAddress;
+};
+
+export type GetOwnEmailResponse = GetOwnEmailResponses[keyof GetOwnEmailResponses];
+
+export type SetOwnEmailData = {
+    body: EmailAddress;
+    path?: never;
+    query?: never;
+    url: '/api/v1/account/email';
+};
+
+export type SetOwnEmailErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type SetOwnEmailError = SetOwnEmailErrors[keyof SetOwnEmailErrors];
+
+export type SetOwnEmailResponses = {
+    /**
+     * The saved address.
+     */
+    200: EmailAddress;
+};
+
+export type SetOwnEmailResponse = SetOwnEmailResponses[keyof SetOwnEmailResponses];
+
+export type SetAccountEmailData = {
+    body: EmailAddress;
+    path: {
+        accountId: string;
+    };
+    query?: never;
+    url: '/api/v1/accounts/{accountId}/email';
+};
+
+export type SetAccountEmailErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type SetAccountEmailError = SetAccountEmailErrors[keyof SetAccountEmailErrors];
+
+export type SetAccountEmailResponses = {
+    /**
+     * The saved address.
+     */
+    200: EmailAddress;
+};
+
+export type SetAccountEmailResponse = SetAccountEmailResponses[keyof SetAccountEmailResponses];
+
+export type GetNotificationsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/notifications';
+};
+
+export type GetNotificationsErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type GetNotificationsError = GetNotificationsErrors[keyof GetNotificationsErrors];
+
+export type GetNotificationsResponses = {
+    /**
+     * The overview.
+     */
+    200: NotificationOverview;
+};
+
+export type GetNotificationsResponse = GetNotificationsResponses[keyof GetNotificationsResponses];
+
+export type SetNotificationEventData = {
+    body: {
+        enabled: boolean;
+    };
+    path: {
+        event: string;
+    };
+    query?: never;
+    url: '/api/v1/notifications/events/{event}';
+};
+
+export type SetNotificationEventErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type SetNotificationEventError = SetNotificationEventErrors[keyof SetNotificationEventErrors];
+
+export type SetNotificationEventResponses = {
+    /**
+     * Saved.
+     */
+    204: void;
+};
+
+export type SetNotificationEventResponse = SetNotificationEventResponses[keyof SetNotificationEventResponses];
+
+export type SendTestEmailData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/notifications/test';
+};
+
+export type SendTestEmailErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type SendTestEmailError = SendTestEmailErrors[keyof SendTestEmailErrors];
+
+export type SendTestEmailResponses = {
+    /**
+     * The test email waits in the outbox.
+     */
+    204: void;
+};
+
+export type SendTestEmailResponse = SendTestEmailResponses[keyof SendTestEmailResponses];
 
 export type ChangePasswordData = {
     body: PasswordChange;

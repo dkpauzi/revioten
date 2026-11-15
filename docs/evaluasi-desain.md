@@ -147,6 +147,9 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-123 | Batas jaringan token di belakang Caddy | Celah | M9.1, M8.3 | Tidak | Diputuskan (D-189) |
 | E-124 | Aturan usulan dari luar yang belum tertulis | Celah | M9.4 | Tidak | Diputuskan (D-190) |
 | E-125 | Hal Tahap 9 yang tidak dibangun | Celah | M9.2, M9.6, Gerbang 9 | Tidak | Diputuskan (D-191) |
+| E-126 | Email Microsoft 365: jalur kirim dan uji dengan tenant perusahaan | Celah | D-194 | Tidak | Terbuka |
+| E-127 | Penerima dan isi email notifikasi | Celah | D-194 | Tidak | Terbuka |
+| E-128 | Akun Viewer belum bisa membuka dokumen terbit dan tab Check | Celah | M1.2, M4.9, M8.1 | Tidak | Terbuka |
 
 ## Keputusan 4 November 2026
 
@@ -2215,6 +2218,45 @@ Salin blok ini untuk setiap temuan baru.
 - **Menghambat milestone?** Tidak
 - **Status:** Diputuskan (D-191)
 - **Keputusan pemilik:** 15 November 2026, "terima semua saran" (D-191).
+
+### E-126 · Email Microsoft 365: jalur kirim dan uji dengan tenant perusahaan
+
+- **Tanggal dan milestone:** 15 November 2026, D-194.
+- **Jenis:** Celah
+- **Rujukan:** D-194, R-SEC-14, RK-58.
+- **Temuan:** Ada dua jalur ke Microsoft 365 yang dibangun: Microsoft Graph (app registration di Microsoft Entra ID dengan izin aplikasi Mail.Send, client secret) dan SMTP dengan STARTTLS (misalnya smtp.office365.com port 587, login akun pengirim, atau relay Exchange internal). Keduanya hanya diuji dengan server tiruan; belum dengan tenant perusahaan. Microsoft sedang mengurangi login SMTP dengan password biasa (basic authentication) di Exchange Online; status pastinya untuk tenant perusahaan belum diverifikasi dan perlu dicek IT. Izin Mail.Send di Graph berlaku untuk semua kotak surat kecuali dibatasi IT.
+- **Opsi:** (a) Graph sebagai jalur utama, SMTP sebagai cadangan, keduanya diatur IT lewat pengaturan server; (b) SMTP saja; (c) relay SMTP internal tanpa login.
+- **Rekomendasi Claude Code (usulan):** (a). Minta IT membatasi izin Mail.Send aplikasi ke satu kotak surat pengirim, dan menyimpan client secret di tempat rahasia server, bukan di repo.
+- **Asumsi sementara di kode (ASUMSI E-126):** (a), kecuali E-128 yang belum diubah di kode.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-127 · Penerima dan isi email notifikasi
+
+- **Tanggal dan milestone:** 15 November 2026, D-194.
+- **Jenis:** Celah
+- **Rujukan:** D-194, D-51, D-54, D-139.
+- **Temuan:** Brief tidak menyebut siapa menerima email untuk setiap peristiwa. Yang dibangun: perubahan diajukan ke verifikator customer itu (V-1 plus jabatan verifikator); diterima atau ditolak ke pemohon (orang; usulan dari aplikasi tidak); scan bertanda tangan diunggah ke pemegang E-7 customer itu; revisi terbit ke pemohon perubahan di revisi itu; form set atau tabel AP ke penyetuju form yang belum menyetujui; yokoten ke Project Leader dan Project Engineer customer target; dokumen lama masuk ke petugas migrasi lain; token segera kedaluwarsa ke akun admin. Orang yang memicu peristiwa tidak pernah diberi email. Email ditulis dalam dua bahasa (Inggris dan Indonesia) dengan tautan ke halamannya. Tidak ada ringkasan harian dan tidak ada pilihan per orang.
+- **Opsi:** (a) seperti sekarang; (b) tambah pilihan per orang untuk mematikan jenis tertentu; (c) ringkasan harian, bukan email per peristiwa.
+- **Rekomendasi Claude Code (usulan):** (a) untuk dicoba. (b) atau (c) bila pengguna merasa email terlalu banyak sesudah dipakai.
+- **Asumsi sementara di kode (ASUMSI E-127):** (a), kecuali E-128 yang belum diubah di kode.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-128 · Akun Viewer belum bisa membuka dokumen terbit dan tab Check
+
+- **Tanggal dan milestone:** 15 November 2026, M1.2, M4.9, M8.1.
+- **Jenis:** Celah
+- **Rujukan:** R-SEC-12 [DECIDED], D-41, D-65, D-70, D-137, UC-57.
+- **Temuan:** R-SEC-12 menyebut viewer melihat dokumen terbit semua customer, dan L-1 adalah "lihat dokumen rilis". Tetapi halaman dokumen dan tab Check (PFMEA dan CP berdampingan) butuh L-4, yang tidak dimiliki Viewer. Akibatnya internal audit, QA, QC, dan produksi dengan akun Viewer hanya bisa membuka halaman verifikasi, bukan isi dokumen. Memberi tanda dicek di tab Check butuh V-2 (peran Pemeriksa PFMEA–CP), yang saat ini dipegang PPAP Engineer (D-65). Admin sudah bisa memberikan peran itu ke akun lain, atau menambahkan V-2 ke peran lain di layar Roles, tanpa perubahan kode. Row-level security sudah siap: database mengizinkan dokumen yang pernah terbit untuk semua akun.
+- **Opsi:** (a) layar baca dokumen terbit untuk akun tanpa L-4: isi revisi yang berlaku (snapshot), termasuk tab Check baca saja, tanpa draft; (b) beri akun internal audit dan produksi peran kerja (misalnya Pemeriksa PFMEA–CP) supaya mendapat L-4, yang juga membuka draft; (c) bangun tampilan genba (D-137) sebagai layar baca untuk produksi.
+- **Rekomendasi Claude Code (usulan):** (a) segera, karena memenuhi aturan yang sudah diputuskan (R-SEC-12) tanpa membuka draft. Lalu (c) untuk produksi di lini. (b) hanya untuk orang yang memang ikut memeriksa draft.
+- **Asumsi sementara di kode (ASUMSI E-128):** (a), kecuali E-128 yang belum diubah di kode.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
 
 ## Usulan desain UI (UX-01 sampai UX-07): dampak ke M0 sampai M3 dan saran
 

@@ -53,11 +53,22 @@ type Notifier struct {
 	// baseURL adalah alamat aplikasi untuk tautan di email, misalnya
 	// http://192.168.1.10:8080. Kosong berarti tanpa tautan.
 	baseURL string
+	// strict membuat sasaran yang tidak ditemukan menjadi error. Dipakai test,
+	// supaya peristiwa yang salah dipetakan langsung ketahuan.
+	strict bool
 }
 
 // NewNotifier membuat Notifier. baseURL dipakai untuk tautan di email.
 func NewNotifier(baseURL string) *Notifier {
 	return &Notifier{baseURL: strings.TrimRight(baseURL, "/")}
+}
+
+// Strict memberi salinan Notifier yang tidak memaafkan sasaran yang tidak
+// ditemukan. Hanya untuk test.
+func (n *Notifier) Strict() *Notifier {
+	c := *n
+	c.strict = true
+	return &c
 }
 
 // Listener memberi fungsi untuk audit.SetListener.
@@ -88,6 +99,17 @@ func text(s *string) string {
 
 // handle memetakan satu peristiwa audit ke email. Peristiwa lain diabaikan.
 func (n *Notifier) handle(ctx context.Context, q *db.Queries, actor access.Actor, e audit.Event) error {
+	err := n.dispatch(ctx, q, actor, e)
+	// Sasaran yang tidak ditemukan tidak boleh menggagalkan aksi orangnya:
+	// emailnya saja yang tidak ditulis. Error database lain diteruskan.
+	if errors.Is(err, pgx.ErrNoRows) && !n.strict {
+		return nil
+	}
+	return err
+}
+
+// dispatch memilih penyusun email untuk satu peristiwa.
+func (n *Notifier) dispatch(ctx context.Context, q *db.Queries, actor access.Actor, e audit.Event) error {
 	switch e.Action {
 	case audit.ActionChangeCreated, audit.ActionChangeProposed:
 		return n.changeSubmitted(ctx, q, actor, e.TargetID)
@@ -103,7 +125,8 @@ func (n *Notifier) handle(ctx context.Context, q *db.Queries, actor access.Actor
 	case audit.ActionFormatVersionApproved:
 		return n.formApproval(ctx, q, actor, false, e.TargetID)
 	case audit.ActionYokotenCreated:
-		return n.yokotenCreated(ctx, q, actor, e.TargetID)
+		// Sasaran peristiwa ini perubahan sumber; ID yokoten ada di rincian.
+		return n.yokotenCreated(ctx, q, actor, e.Details["yokoten"])
 	case audit.ActionDocumentMigrated:
 		return n.migrationWaiting(ctx, q, actor, e.TargetID)
 	}

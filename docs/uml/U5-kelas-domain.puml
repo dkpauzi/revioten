@@ -1,11 +1,10 @@
-' U5 · Diagram kelas domain (draft 0.14, 4 November 2026, sumber brief v1.21 bagian 4, kode sampai M3.2
-' dan migrasi 00014, serta usulan-desain-ui.md). Draft 0.12 menambah diagram U5-E berisi usulan yang
-' belum dibangun. Draft 0.13 menambah tanda automatic pada Symbol di U5-C (tinjauan desain UI).
-' Draft 0.14 menambah jenis kolom terisi otomatis pada Field di U5-C (D-122, D-123).
+' U5 · Diagram kelas domain (draft 0.16, 15 November 2026, sumber brief v1.34 dan kode sampai Tahap 9,
+' migrasi 00046). Draft 0.12 menambah diagram U5-E berisi usulan desain UI yang belum dibangun.
+' Draft 0.13 dan 0.14 menambah tanda automatic dan kolom terisi otomatis di U5-C. Draft 0.16 menambah
+' U5-F sampai U5-I untuk Tahap 4 sampai 9 dan email notifikasi; U5-A sampai U5-E tidak berubah.
 ' Diagram konseptual: entitas, atribut penting, dan hubungannya, tanpa tipe database (R-UML-02).
-' Menurut D-80, UML diperbarui mengikuti kode: draft ini hanya memuat entitas yang sudah dibangun
-' sampai M3.2. Entitas brief bagian 4 yang lain (dokumen, revisi, baris, template, perubahan, dan
-' seterusnya) ditambah saat tahapnya dibangun; Document digambar abu-abu sebagai titik sambung.
+' Menurut D-80, UML diperbarui mengikuti kode: draft ini memuat entitas yang sudah dibangun sampai
+' Tahap 9. Portal customer (Tahap 10) tidak digambar, karena ditunda ke masa depan (D-192).
 ' Tabel fisiknya ada di U8-erd.puml.
 '
 ' Render dari folder docs/uml (sintaks dicek dengan PlantUML 1.2022.12 pada 3 November 2026, lihat README):
@@ -721,4 +720,350 @@ note bottom of SyncCheckMark
   Hasil hanya menandai; tanda dicek tetap manusia
   (D-65, UC-36).
 end note
+@enduml
+
+' ---------------------------------------------------------------------------
+@startuml U5-F-dokumen-dan-baris
+hide circle
+hide empty methods
+skinparam shadowing false
+skinparam ArrowColor #444444
+skinparam class {
+  BorderColor #1F4E79
+  BackgroundColor #FFFFFF
+  BackgroundColor<<lihat U5-A>> #F4F4F4
+  BackgroundColor<<lihat U5-C>> #F4F4F4
+  BackgroundColor<<lihat U5-D>> #F4F4F4
+}
+
+title U5-F · Dokumen, baris, bagian per PCB, dan cek PFMEA–CP (Tahap 4)
+
+class FormSet {
+  name : Teks
+}
+
+class FormSetVersion {
+  version : Bilangan
+  status : draft | published
+}
+
+class Document {
+  revision : Bilangan (revisi yang dikerjakan)
+  releasedRevision : Bilangan, boleh kosong
+  status : draft | released
+  origin : new | migrated
+  header : isi per kolom header
+}
+
+class Row {
+  position : Bilangan
+  operationNumber : Teks (diisi sistem atau diketik)
+  content : isi per ID kolom format
+  version : Bilangan (penguncian optimistik)
+  detached : Ya/Tidak, dengan alasan
+}
+
+class Section {
+  name : Teks, misalnya PCB A
+  key : sama di PFD, PFMEA, dan CP satu set
+}
+
+class PfmeaCpCheck {
+  checkedBy : Orang
+  checkedAt : Waktu
+  rowsFingerprint : sidik jari baris saat dicek
+}
+
+class TemplateMode {
+  mode : follow | pinned | detached
+  reason : Teks
+}
+
+class DocumentNumber <<lihat U5-A>>
+class Model <<lihat U5-A>>
+class PartNumber <<lihat U5-A>>
+class Process <<lihat U5-A>>
+class FormatVersion <<lihat U5-C>>
+class Point <<lihat U5-D>>
+class ProcessTemplate <<lihat U5-D>>
+
+FormSet "1" *-- "1..*" FormSetVersion
+FormSetVersion "1" -- "3" FormatVersion : PFD, PFMEA, CP >
+DocumentNumber "1" -- "0..1" Document : satu dokumen per nomor >
+Document "*" -- "1" FormSetVersion
+Document "*" -- "1..*" Model
+Document "*" -- "0..*" PartNumber
+Document "1" *-- "0..*" Section
+Section "*" -- "1..*" PartNumber
+Document "1" *-- "0..*" Row
+Row "*" -- "0..1" Section
+Row "*" -- "0..1" Process : nama proses selalu dari master (D-122) >
+Row "*" -- "0..1" Point : baris hasil perakitan tertaut (R-CMP-04) >
+Document "1" -- "0..*" TemplateMode
+TemplateMode "*" -- "1" ProcessTemplate
+Document "2" -- "0..*" PfmeaCpCheck : PFMEA dan CP satu set >
+
+note right of Row
+  ID baris tetap selamanya (R-DOC-02). Isi divalidasi
+  terhadap versi format dokumen (R-DOC-01). Nomor
+  operasi, proses, dan Process Flow tidak diketik
+  (D-122, D-123). Isi yang berbeda dari poin template
+  adalah perbedaan lokal (M4.8), dihitung saat dilihat.
+end note
+
+note right of Document
+  Database menyaring dokumen per akun (row-level
+  security, M8.1, D-182): draft hanya untuk pemegang
+  L-4 customer itu; dokumen yang pernah terbit untuk
+  semua akun yang login.
+end note
+
+@enduml
+
+' ---------------------------------------------------------------------------
+@startuml U5-G-perubahan-revisi-yokoten
+hide circle
+hide empty methods
+skinparam shadowing false
+skinparam ArrowColor #444444
+skinparam class {
+  BorderColor #1F4E79
+  BackgroundColor #FFFFFF
+  BackgroundColor<<lihat U5-B>> #F4F4F4
+  BackgroundColor<<lihat U5-F>> #F4F4F4
+}
+
+title U5-G · Perubahan, verifikasi, revisi, rilis, dan yokoten (Tahap 5 dan 6)
+
+class Change {
+  ref : CHG-nnnn
+  mechanism : manual | yokoten | template | sqam | integration
+  reason : Teks
+  sourceReference : Teks, misalnya nomor ECR
+  status : submitted | accepted | rejected
+  verificationNote : Teks wajib
+}
+
+class ChangeDocument {
+  merged : Ya/Tidak (masuk ke draft yang sudah terbuka)
+}
+
+class Attachment {
+  fileName : Teks
+  sha256 : Teks
+}
+
+class Impact {
+  kind : wi | sop | qep | lainnya
+  decision : affected | not_affected
+}
+
+class Revision {
+  revision : Bilangan (-00, -01, ...)
+  status : draft | released
+  snapshot : isi beku
+  sha256 : Teks
+  releaseDate : Tanggal
+  scan : scan bertanda tangan
+  migrated : Ya/Tidak
+}
+
+class Yokoten {
+  ref : YKT-nnnn
+  reason : Teks
+}
+
+class YokotenTarget {
+  decision : pending | apply | adapt | not_applicable
+  reason : Teks
+}
+
+class Person <<lihat U5-B>>
+class ChangeSource <<lihat U5-B>>
+class ChangeType <<lihat U5-B>>
+class Document <<lihat U5-F>>
+class Model <<lihat U5-F>>
+
+Change "*" -- "0..1" ChangeSource : pemicu, misalnya ECR >
+Change "*" -- "1" ChangeType
+Change "*" -- "0..1" Person : pemohon (atau service account) >
+Change "*" -- "0..1" Person : verifikator, bukan pemohon (R-SEC-11) >
+Change "1" *-- "1..*" ChangeDocument
+ChangeDocument "*" -- "1" Document
+ChangeDocument "*" -- "0..1" Revision : draft yang dibuka >
+Change "1" *-- "0..*" Attachment
+Change "1" *-- "0..*" Impact
+Document "1" *-- "1..*" Revision
+Revision "*" -- "0..1" Person : pencatat rilis, bukan penyusun (R-APR-02) >
+Change "1" -- "0..*" Yokoten : sumber >
+Yokoten "1" *-- "1..*" YokotenTarget
+YokotenTarget "*" -- "1" Model
+YokotenTarget "*" -- "0..1" Change : perubahan untuk model target >
+
+note right of Revision
+  Revisi terbit tidak pernah berubah: snapshot dan
+  SHA-256 dijaga trigger database (R-REV-02). Rilis
+  biasa butuh scan bertanda tangan (D-173); baseline
+  migrasi tidak (D-186). Paling banyak satu draft
+  terbuka per dokumen.
+end note
+
+@enduml
+
+' ---------------------------------------------------------------------------
+@startuml U5-H-cetak-migrasi-ukuran
+hide circle
+hide empty methods
+skinparam shadowing false
+skinparam ArrowColor #444444
+skinparam class {
+  BorderColor #1F4E79
+  BackgroundColor #FFFFFF
+  BackgroundColor<<lihat U5-A>> #F4F4F4
+  BackgroundColor<<lihat U5-F>> #F4F4F4
+  BackgroundColor<<lihat U5-G>> #F4F4F4
+}
+
+title U5-H · Cetak, layout, migrasi dokumen lama, dan dasbor (Tahap 6 dan 7)
+
+class PrintLayout {
+  name : Teks
+  paper : A3 | A4
+  orientation : landscape | portrait
+  fontSize, margins, widths per key kolom
+}
+
+class PrintLog {
+  purpose : draft | signature | reference | controlled
+  format : xlsx | pdf
+  copyNumber : Bilangan (salinan terkendali)
+  contentSha256 : Teks
+}
+
+class Baseline {
+  revision : revisi di hardcopy, misalnya 4
+  effectiveDate : Tanggal
+  preparedBy, approvedBy : Teks seperti di hardcopy
+  verifiedBy : petugas migrasi lain
+  effortMinutes : Bilangan
+}
+
+class HistoryEntry {
+  revision : Teks, misalnya -03
+  date : Tanggal, boleh kosong
+  description : Teks
+}
+
+class Metrics <<dihitung>> {
+  barisMengikutiTemplate : persen
+  dokumenPerStatus
+  targetYokotenPerKeputusan
+  waktuRevisi : rata-rata, median
+  usahaMigrasi : menit
+}
+
+class DocumentType <<lihat U5-A>>
+class Customer <<lihat U5-A>>
+class Document <<lihat U5-F>>
+class Revision <<lihat U5-G>>
+
+DocumentType "1" -- "1" PrintLayout : layout bawaan >
+Customer "*" -- "0..*" PrintLayout : layout khusus customer >
+Revision "1" -- "0..*" PrintLog
+Document "1" -- "0..1" Baseline : dokumen lama (origin migrated) >
+Baseline "1" *-- "0..200" HistoryEntry
+
+note right of Metrics
+  Tidak disimpan: dihitung dari data setiap kali
+  dasbor dibuka (M7.7, D-181).
+end note
+
+@enduml
+
+' ---------------------------------------------------------------------------
+@startuml U5-I-integrasi-dan-notifikasi
+hide circle
+hide empty methods
+skinparam shadowing false
+skinparam ArrowColor #444444
+skinparam class {
+  BorderColor #1F4E79
+  BackgroundColor #FFFFFF
+  BackgroundColor<<lihat U5-A>> #F4F4F4
+  BackgroundColor<<lihat U5-B>> #F4F4F4
+  BackgroundColor<<lihat U5-F>> #F4F4F4
+  BackgroundColor<<lihat U5-G>> #F4F4F4
+}
+
+title U5-I · API integrasi (Tahap 9) dan email notifikasi (D-194)
+
+class ServiceAccount {
+  name : Teks, misalnya MES atau ECR web
+  ownerTeam, contact, purpose : Teks
+  scopes : documents:read, revisions:read,\n  changes:read, changes:propose, exports:create
+  networks : CIDR, boleh kosong
+  disabled : Ya/Tidak
+}
+
+class Token {
+  prefix : Teks (bukan rahasia)
+  hash : SHA-256 (nilainya tidak disimpan)
+  expiresAt : Waktu (bawaan 90 hari)
+  revokedAt : Waktu
+}
+
+class Proposal {
+  baseRevision : revisi berlaku yang dibaca
+  sourceApplication : Teks
+  onBehalfOf : Teks, hanya dicatat (R-API-09)
+  operations : add | modify | remove, boleh kosong
+}
+
+class ExportJob {
+  status : queued | running | done | failed
+  file : Excel
+}
+
+class NotificationEvent {
+  key : change_submitted, change_verified,\n  release_ready, revision_released, ...
+  enabled : Ya/Tidak
+}
+
+class OutboxEmail {
+  subject, body : Teks
+  status : pending | sending | sent | failed | skipped
+  attempts : Bilangan
+}
+
+class Customer <<lihat U5-A>>
+class Person <<lihat U5-B>> {
+  email : boleh kosong
+}
+class Document <<lihat U5-F>>
+class Change <<lihat U5-G>>
+
+ServiceAccount "*" -- "1..*" Customer : hanya customer ini >
+ServiceAccount "1" *-- "0..*" Token
+ServiceAccount "1" -- "0..*" Proposal
+Proposal "1" -- "1" Change : mechanism integration >
+Proposal "*" -- "1" Document
+ServiceAccount "1" -- "0..*" ExportJob
+ExportJob "*" -- "1" Document
+NotificationEvent "1" -- "0..*" OutboxEmail
+OutboxEmail "*" -- "1" Person : penerima >
+
+note bottom of Proposal
+  Aplikasi lain hanya membaca data terbit dan
+  mengusulkan. Usulan menunggu verifikasi orang; tidak
+  ada jalur API untuk verifikasi, approval, atau rilis
+  (R-API-07). Usulan ECR boleh tanpa operasi dan
+  mencakup satu set (D-193).
+end note
+
+note bottom of OutboxEmail
+  Ditulis di transaksi yang sama dengan peristiwanya,
+  dikirim pekerja lewat Microsoft Graph atau SMTP
+  (D-194). Tidak pernah memuat password atau token.
+end note
+
 @enduml
