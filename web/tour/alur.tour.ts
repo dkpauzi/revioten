@@ -1,5 +1,6 @@
 // Tur otomatis alur web, dari database kosong sampai dokumen terbit, direvisi,
-// dicetak, dokumen lama dimigrasi, dan dasbor (Tahap 0 sampai Tahap 8).
+// dicetak, dokumen lama dimigrasi, dasbor, dan aplikasi lain lewat API
+// integrasi (Tahap 0 sampai Tahap 9).
 // Mengikuti docs/panduan/skenario-alur-web.md langkah demi langkah. Semua
 // dikerjakan lewat layar (klik dan ketik), tidak lewat API, supaya yang
 // terlihat sama dengan yang dikerjakan orang.
@@ -98,7 +99,7 @@ async function uploadScan(page: Page, file: string): Promise<void> {
 	await expect(revisions.getByRole('status')).toHaveText(en.scanUploaded.replace('{file}', file));
 }
 
-test('alur dari admin sampai dokumen terbit, revisi, migrasi, dan dasbor', async ({ page }) => {
+test('alur dari admin sampai dokumen terbit, revisi, migrasi, dasbor, dan API integrasi', async ({ page, playwright }) => {
 	// Tur ini panjang; batas waktunya mengikuti kecepatan tur.
 	test.setTimeout(15 * 60 * 1000);
 	const engineer = { login: 'ppap.engineer', name: 'Contoh PPAP Engineer', password: 'kopi pagi di pabrik' };
@@ -502,9 +503,30 @@ test('alur dari admin sampai dokumen terbit, revisi, migrasi, dan dasbor', async
 	await openFromMenu(page, en.navGroupAdmin, en.navRoles);
 	await expect(page.getByRole('heading', { name: en.rolesTitle, level: 1 })).toBeVisible();
 	await say(page, 'Langkah 31', 'Admin > Roles. Admin mengatur hak setiap peran kerja; hak admin dan hak dasar terkunci.');
+	await openFromMenu(page, en.navGroupAdmin, en.navServiceAccounts);
+	await say(page, 'Langkah 32', 'Admin > Service accounts. Aplikasi lain (misalnya MES) mendapat token dengan scope dan customer terbatas.');
+	await page.getByLabel(en.serviceAccountName, { exact: true }).fill('Contoh MES');
+	await page.getByLabel(en.serviceAccountTeam, { exact: true }).fill('Tim MES');
+	await page.getByLabel(en.serviceAccountContact, { exact: true }).fill('mes@contoh.test');
+	await page.getByLabel(en.serviceAccountPurpose, { exact: true }).fill('Membaca CP terbit untuk lini');
+	await page.getByRole('checkbox', { name: en.scope_documents_read }).check();
+	await page.getByRole('checkbox', { name: en.scope_revisions_read }).check();
+	await page.getByRole('checkbox', { name: 'LM · Contoh Customer LM' }).check();
+	await page.getByRole('button', { name: en.serviceAccountCreate }).click();
+	await expect(page.getByRole('status').last()).toHaveText(en.serviceAccountCreated.replace('{name}', 'Contoh MES'));
+	const mes = page.locator('section', { has: page.getByRole('heading', { name: 'Contoh MES', level: 2 }) });
+	await mes.getByRole('button', { name: en.serviceTokenIssue }).click();
+	const token = (await page.locator('.issued code').textContent()) ?? '';
+	await say(page, 'Langkah 32', 'Token tampil SATU KALI dan disalin ke clipboard. Server hanya menyimpan hash-nya.');
+	const app = await playwright.request.newContext({ baseURL: new URL(page.url()).origin, extraHTTPHeaders: { Authorization: `Bearer ${token}` } });
+	const docs = await (await app.get('/integration/v1/documents')).json();
+	await app.dispose();
+	expect(docs.items.length).toBeGreaterThan(0);
+	await say(page, 'Langkah 32', `Aplikasi itu membaca ${docs.items.length} dokumen terbit customer LM lewat /integration/v1. Draft tidak pernah ikut.`);
+
 	await openFromMenu(page, en.navGroupAdmin, en.navAuditLog);
-	await say(page, 'Langkah 32', 'Semua langkah tadi tercatat: siapa, kapan, dan apa. Catatan ini tidak bisa diubah.');
+	await say(page, 'Langkah 33', 'Semua langkah tadi tercatat: siapa, kapan, dan apa. Catatan ini tidak bisa diubah.');
 	await page.getByRole('button', { name: en.auditVerify }).click();
 	await expect(page.getByRole('status')).toContainText(en.auditChainValid.split('{entries}')[0]);
-	await say(page, 'Selesai', 'Rantai audit utuh. Alur dari master data sampai rilis, revisi, migrasi, dan dasbor selesai.');
+	await say(page, 'Selesai', 'Rantai audit utuh. Alur dari master data sampai rilis, revisi, migrasi, dasbor, dan API integrasi selesai.');
 });

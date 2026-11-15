@@ -33,6 +33,8 @@ import (
 	"github.com/dkpauzi/revioten/internal/customer"
 	"github.com/dkpauzi/revioten/internal/db"
 	"github.com/dkpauzi/revioten/internal/document"
+	"github.com/dkpauzi/revioten/internal/integration"
+	"github.com/dkpauzi/revioten/internal/integrationapi"
 	"github.com/dkpauzi/revioten/internal/metrics"
 	"github.com/dkpauzi/revioten/internal/numbering"
 	"github.com/dkpauzi/revioten/internal/printout"
@@ -108,6 +110,10 @@ func runServer(args []string) error {
 	// Cetak memakai folder lampiran yang sama untuk scan bertanda tangan (M6.7).
 	printing := printout.NewService(pool, checker, docs, attachments, cfg.PDFBrowser).WithBaseURL(cmp.Or(cfg.PublicBaseURL, "http://"+*addr))
 	authSvc := auth.NewService(pool, checker)
+	// API integrasi (Tahap 9). Ekspor dikerjakan di latar belakang, supaya
+	// ekspor besar tidak menahan permintaan dan layar pengguna (M9.5).
+	integrations := integration.NewService(pool, checker, attachments, printing)
+	go integrations.RunExports(ctx, 2*time.Second, func(err error) { slog.Error("ekspor gagal", "error", err.Error()) })
 	srv := &http.Server{
 		Addr: *addr,
 		// web.Files berisi hasil build SvelteKit yang di-embed ke binary ini.
@@ -116,6 +122,8 @@ func runServer(args []string) error {
 			Customers:        customer.NewService(pool, checker),
 			Auth:             authSvc,
 			Roles:            authSvc,
+			ServiceAccounts:  integrations,
+			Integration:      integrationapi.NewHandler(integrations, cfg.IntegrationRate, nil),
 			Access:           checker,
 			Audit:            audit.NewService(pool, checker),
 			Products:         product.NewService(pool, checker),

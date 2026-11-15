@@ -210,7 +210,7 @@ func (a *api) GetReleasedRevision(ctx context.Context, req GetReleasedRevisionRe
 		out.Header = map[string]any{}
 	}
 	for _, f := range r.Fields {
-		out.Fields = append(out.Fields, Field{Id: f.ID, Key: optional(f.Key), Label: f.Label, Area: FieldArea(f.Area)})
+		out.Fields = append(out.Fields, Field{Id: f.ID, Key: optional(f.Key), Label: f.Label, Area: FieldArea(f.Area), Automatic: f.Automatic})
 	}
 	for _, sec := range s.Sections {
 		out.Sections = append(out.Sections, Section{Id: sec.ID, Name: sec.Name, PartNumbers: orEmpty(sec.PartNumbers)})

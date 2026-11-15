@@ -227,7 +227,10 @@ type ExportJobStatus string
 // Field defines model for Field.
 type Field struct {
 	Area FieldArea `json:"area"`
-	Id   string    `json:"id"`
+
+	// Automatic True when the value is computed or filled by the system (for example the process flow or the RPN). Do not send it in a proposal.
+	Automatic bool   `json:"automatic"`
+	Id        string `json:"id"`
 
 	// Key A stable name shared between forms, when the column has one.
 	Key   *string `json:"key,omitempty"`

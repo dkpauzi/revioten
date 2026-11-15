@@ -137,6 +137,8 @@ type Field struct {
 	Key   string
 	Label string
 	Area  string // header atau row
+	// Automatic: dihitung atau diisi sistem, jadi tidak boleh dikirim dalam usulan.
+	Automatic bool
 }
 
 // Revision adalah satu revisi terbit lengkap dengan isinya.
@@ -213,7 +215,7 @@ func (s *Service) GetRevision(ctx context.Context, c Client, documentID string, 
 	}
 	for _, f := range format.Fields {
 		if !f.Hidden {
-			out.Fields = append(out.Fields, Field{ID: f.ID, Key: f.Key, Label: f.Label, Area: f.Area})
+			out.Fields = append(out.Fields, Field{ID: f.ID, Key: f.Key, Label: f.Label, Area: f.Area, Automatic: !template.Typed(f.Kind)})
 		}
 	}
 	return out, nil

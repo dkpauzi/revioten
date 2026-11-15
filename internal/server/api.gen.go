@@ -3087,6 +3087,14 @@ type HistoryEntryList struct {
 	Entries []HistoryEntry `json:"entries"`
 }
 
+// IssuedServiceToken defines model for IssuedServiceToken.
+type IssuedServiceToken struct {
+	Info ServiceToken `json:"info"`
+
+	// Token The token value. Shown once; copy it now.
+	Token string `json:"token"`
+}
+
 // LegacyDocument defines model for LegacyDocument.
 type LegacyDocument struct {
 	// ApprovedBy The approvers as written on the hard copy.
@@ -3467,6 +3475,25 @@ type NewReferencedDocumentLink struct {
 	// ScopeLevel general (when left out), customer, model_group, or model.
 	ScopeLevel    *string `json:"scope_level,omitempty"`
 	ScopeTargetId *string `json:"scope_target_id,omitempty"`
+}
+
+// NewServiceAccount defines model for NewServiceAccount.
+type NewServiceAccount struct {
+	Contact     string   `json:"contact"`
+	CustomerIds []string `json:"customer_ids"`
+	Name        string   `json:"name"`
+
+	// Networks Allowed source networks as CIDR. Leave it out for any address.
+	Networks  *[]string `json:"networks,omitempty"`
+	OwnerTeam string    `json:"owner_team"`
+	Purpose   string    `json:"purpose"`
+	Scopes    []string  `json:"scopes"`
+}
+
+// NewServiceToken defines model for NewServiceToken.
+type NewServiceToken struct {
+	// Days Lifetime in days, 1 to 365. The default is 90.
+	Days *int `json:"days,omitempty"`
 }
 
 // NewSpecialCode defines model for NewSpecialCode.
@@ -4339,6 +4366,42 @@ type SequenceRange struct {
 	Last string `json:"last"`
 }
 
+// ServiceAccount defines model for ServiceAccount.
+type ServiceAccount struct {
+	Contact       string         `json:"contact"`
+	CreatedAt     time.Time      `json:"created_at"`
+	CustomerCodes []string       `json:"customer_codes"`
+	CustomerIds   []string       `json:"customer_ids"`
+	Disabled      bool           `json:"disabled"`
+	Id            string         `json:"id"`
+	Name          string         `json:"name"`
+	Networks      []string       `json:"networks"`
+	OwnerTeam     string         `json:"owner_team"`
+	Purpose       string         `json:"purpose"`
+	Scopes        []string       `json:"scopes"`
+	Tokens        []ServiceToken `json:"tokens"`
+}
+
+// ServiceAccountList defines model for ServiceAccountList.
+type ServiceAccountList struct {
+	Items []ServiceAccount `json:"items"`
+
+	// Scopes Every scope that can be given.
+	Scopes []string `json:"scopes"`
+}
+
+// ServiceToken defines model for ServiceToken.
+type ServiceToken struct {
+	CreatedAt  time.Time  `json:"created_at"`
+	ExpiresAt  time.Time  `json:"expires_at"`
+	Id         string     `json:"id"`
+	LastUsedAt *time.Time `json:"last_used_at,omitempty"`
+
+	// Prefix The first part of the token, to recognise it. Not a secret.
+	Prefix    string     `json:"prefix"`
+	RevokedAt *time.Time `json:"revoked_at,omitempty"`
+}
+
 // Session defines model for Session.
 type Session struct {
 	Account Account `json:"account"`
@@ -4662,6 +4725,9 @@ type RowId = string
 
 // SectionId defines model for SectionId.
 type SectionId = string
+
+// ServiceAccountId defines model for ServiceAccountId.
+type ServiceAccountId = string
 
 // SpecialCodeId defines model for SpecialCodeId.
 type SpecialCodeId = string
@@ -5076,6 +5142,12 @@ type AddReferencedDocumentLinkJSONRequestBody = NewReferencedDocumentLink
 
 // SetRolePermissionsJSONRequestBody defines body for SetRolePermissions for application/json ContentType.
 type SetRolePermissionsJSONRequestBody = RolePermissions
+
+// CreateServiceAccountJSONRequestBody defines body for CreateServiceAccount for application/json ContentType.
+type CreateServiceAccountJSONRequestBody = NewServiceAccount
+
+// IssueServiceTokenJSONRequestBody defines body for IssueServiceToken for application/json ContentType.
+type IssueServiceTokenJSONRequestBody = NewServiceToken
 
 // LoginJSONRequestBody defines body for Login for application/json ContentType.
 type LoginJSONRequestBody = Credentials
@@ -5556,6 +5628,21 @@ type ServerInterface interface {
 	// SetRolePermissions Replace the permissions of one work role (A-1, M8.1, D-66)
 	// (PUT /api/v1/roles/{roleId}/permissions)
 	SetRolePermissions(w http.ResponseWriter, r *http.Request, roleId string)
+	// ListServiceAccounts Service accounts of the integration API with their tokens (A-1, M9.1)
+	// (GET /api/v1/service-accounts)
+	ListServiceAccounts(w http.ResponseWriter, r *http.Request)
+	// CreateServiceAccount Make a service account for another application (A-1, M9.1, R-API-04)
+	// (POST /api/v1/service-accounts)
+	CreateServiceAccount(w http.ResponseWriter, r *http.Request)
+	// DisableServiceAccount Disable a service account (A-1). All its tokens are refused; it is never deleted.
+	// (POST /api/v1/service-accounts/{serviceAccountId}/disable)
+	DisableServiceAccount(w http.ResponseWriter, r *http.Request, serviceAccountId ServiceAccountId)
+	// IssueServiceToken Issue a token (A-1). The token value is shown in this answer only.
+	// (POST /api/v1/service-accounts/{serviceAccountId}/tokens)
+	IssueServiceToken(w http.ResponseWriter, r *http.Request, serviceAccountId ServiceAccountId)
+	// RevokeServiceToken Revoke a token (A-1). It is refused at once.
+	// (DELETE /api/v1/service-accounts/{serviceAccountId}/tokens/{tokenId})
+	RevokeServiceToken(w http.ResponseWriter, r *http.Request, serviceAccountId ServiceAccountId, tokenId string)
 	// Logout Log out and end the session
 	// (DELETE /api/v1/session)
 	Logout(w http.ResponseWriter, r *http.Request)
@@ -9559,6 +9646,121 @@ func (siw *ServerInterfaceWrapper) SetRolePermissions(w http.ResponseWriter, r *
 	handler.ServeHTTP(w, r)
 }
 
+// ListServiceAccounts operation middleware
+func (siw *ServerInterfaceWrapper) ListServiceAccounts(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListServiceAccounts(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateServiceAccount operation middleware
+func (siw *ServerInterfaceWrapper) CreateServiceAccount(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateServiceAccount(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DisableServiceAccount operation middleware
+func (siw *ServerInterfaceWrapper) DisableServiceAccount(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "serviceAccountId" -------------
+	var serviceAccountId ServiceAccountId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "serviceAccountId", r.PathValue("serviceAccountId"), &serviceAccountId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "serviceAccountId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DisableServiceAccount(w, r, serviceAccountId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// IssueServiceToken operation middleware
+func (siw *ServerInterfaceWrapper) IssueServiceToken(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "serviceAccountId" -------------
+	var serviceAccountId ServiceAccountId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "serviceAccountId", r.PathValue("serviceAccountId"), &serviceAccountId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "serviceAccountId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.IssueServiceToken(w, r, serviceAccountId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RevokeServiceToken operation middleware
+func (siw *ServerInterfaceWrapper) RevokeServiceToken(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "serviceAccountId" -------------
+	var serviceAccountId ServiceAccountId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "serviceAccountId", r.PathValue("serviceAccountId"), &serviceAccountId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "serviceAccountId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "tokenId" -------------
+	var tokenId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "tokenId", r.PathValue("tokenId"), &tokenId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tokenId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RevokeServiceToken(w, r, serviceAccountId, tokenId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // Logout operation middleware
 func (siw *ServerInterfaceWrapper) Logout(w http.ResponseWriter, r *http.Request) {
 
@@ -9968,6 +10170,11 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/roles", wrapper.ListRoles)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/permissions", wrapper.ListPermissions)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/roles/{roleId}/permissions", wrapper.SetRolePermissions)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/service-accounts", wrapper.ListServiceAccounts)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/service-accounts", wrapper.CreateServiceAccount)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/service-accounts/{serviceAccountId}/tokens", wrapper.IssueServiceToken)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/service-accounts/{serviceAccountId}/tokens/{tokenId}", wrapper.RevokeServiceToken)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/service-accounts/{serviceAccountId}/disable", wrapper.DisableServiceAccount)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/accounts", wrapper.ListAccounts)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/accounts", wrapper.CreateAccount)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/accounts/{accountId}/roles", wrapper.SetAccountRoles)
@@ -16220,6 +16427,190 @@ func (response SetRolePermissionsdefaultJSONResponse) VisitSetRolePermissionsRes
 	return err
 }
 
+type ListServiceAccountsRequestObject struct {
+}
+
+type ListServiceAccountsResponseObject interface {
+	VisitListServiceAccountsResponse(w http.ResponseWriter) error
+}
+
+type ListServiceAccounts200JSONResponse ServiceAccountList
+
+func (response ListServiceAccounts200JSONResponse) VisitListServiceAccountsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListServiceAccountsdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ListServiceAccountsdefaultJSONResponse) VisitListServiceAccountsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateServiceAccountRequestObject struct {
+	Body *CreateServiceAccountJSONRequestBody
+}
+
+type CreateServiceAccountResponseObject interface {
+	VisitCreateServiceAccountResponse(w http.ResponseWriter) error
+}
+
+type CreateServiceAccount201JSONResponse ServiceAccount
+
+func (response CreateServiceAccount201JSONResponse) VisitCreateServiceAccountResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateServiceAccountdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response CreateServiceAccountdefaultJSONResponse) VisitCreateServiceAccountResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DisableServiceAccountRequestObject struct {
+	ServiceAccountId ServiceAccountId `json:"serviceAccountId"`
+}
+
+type DisableServiceAccountResponseObject interface {
+	VisitDisableServiceAccountResponse(w http.ResponseWriter) error
+}
+
+type DisableServiceAccount204Response struct {
+}
+
+func (response DisableServiceAccount204Response) VisitDisableServiceAccountResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DisableServiceAccountdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response DisableServiceAccountdefaultJSONResponse) VisitDisableServiceAccountResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type IssueServiceTokenRequestObject struct {
+	ServiceAccountId ServiceAccountId `json:"serviceAccountId"`
+	Body             *IssueServiceTokenJSONRequestBody
+}
+
+type IssueServiceTokenResponseObject interface {
+	VisitIssueServiceTokenResponse(w http.ResponseWriter) error
+}
+
+type IssueServiceToken201JSONResponse IssuedServiceToken
+
+func (response IssueServiceToken201JSONResponse) VisitIssueServiceTokenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type IssueServiceTokendefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response IssueServiceTokendefaultJSONResponse) VisitIssueServiceTokenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RevokeServiceTokenRequestObject struct {
+	ServiceAccountId ServiceAccountId `json:"serviceAccountId"`
+	TokenId          string           `json:"tokenId"`
+}
+
+type RevokeServiceTokenResponseObject interface {
+	VisitRevokeServiceTokenResponse(w http.ResponseWriter) error
+}
+
+type RevokeServiceToken204Response struct {
+}
+
+func (response RevokeServiceToken204Response) VisitRevokeServiceTokenResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type RevokeServiceTokendefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response RevokeServiceTokendefaultJSONResponse) VisitRevokeServiceTokenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type LogoutRequestObject struct {
 }
 
@@ -17333,6 +17724,21 @@ type StrictServerInterface interface {
 	// SetRolePermissions Replace the permissions of one work role (A-1, M8.1, D-66)
 	// (PUT /api/v1/roles/{roleId}/permissions)
 	SetRolePermissions(ctx context.Context, request SetRolePermissionsRequestObject) (SetRolePermissionsResponseObject, error)
+	// ListServiceAccounts Service accounts of the integration API with their tokens (A-1, M9.1)
+	// (GET /api/v1/service-accounts)
+	ListServiceAccounts(ctx context.Context, request ListServiceAccountsRequestObject) (ListServiceAccountsResponseObject, error)
+	// CreateServiceAccount Make a service account for another application (A-1, M9.1, R-API-04)
+	// (POST /api/v1/service-accounts)
+	CreateServiceAccount(ctx context.Context, request CreateServiceAccountRequestObject) (CreateServiceAccountResponseObject, error)
+	// DisableServiceAccount Disable a service account (A-1). All its tokens are refused; it is never deleted.
+	// (POST /api/v1/service-accounts/{serviceAccountId}/disable)
+	DisableServiceAccount(ctx context.Context, request DisableServiceAccountRequestObject) (DisableServiceAccountResponseObject, error)
+	// IssueServiceToken Issue a token (A-1). The token value is shown in this answer only.
+	// (POST /api/v1/service-accounts/{serviceAccountId}/tokens)
+	IssueServiceToken(ctx context.Context, request IssueServiceTokenRequestObject) (IssueServiceTokenResponseObject, error)
+	// RevokeServiceToken Revoke a token (A-1). It is refused at once.
+	// (DELETE /api/v1/service-accounts/{serviceAccountId}/tokens/{tokenId})
+	RevokeServiceToken(ctx context.Context, request RevokeServiceTokenRequestObject) (RevokeServiceTokenResponseObject, error)
 	// Logout Log out and end the session
 	// (DELETE /api/v1/session)
 	Logout(ctx context.Context, request LogoutRequestObject) (LogoutResponseObject, error)
@@ -21879,6 +22285,147 @@ func (sh *strictHandler) SetRolePermissions(w http.ResponseWriter, r *http.Reque
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(SetRolePermissionsResponseObject); ok {
 		if err := validResponse.VisitSetRolePermissionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListServiceAccounts operation middleware
+func (sh *strictHandler) ListServiceAccounts(w http.ResponseWriter, r *http.Request) {
+	var request ListServiceAccountsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListServiceAccounts(ctx, request.(ListServiceAccountsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListServiceAccounts")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListServiceAccountsResponseObject); ok {
+		if err := validResponse.VisitListServiceAccountsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateServiceAccount operation middleware
+func (sh *strictHandler) CreateServiceAccount(w http.ResponseWriter, r *http.Request) {
+	var request CreateServiceAccountRequestObject
+
+	var body CreateServiceAccountJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateServiceAccount(ctx, request.(CreateServiceAccountRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateServiceAccount")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateServiceAccountResponseObject); ok {
+		if err := validResponse.VisitCreateServiceAccountResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DisableServiceAccount operation middleware
+func (sh *strictHandler) DisableServiceAccount(w http.ResponseWriter, r *http.Request, serviceAccountId ServiceAccountId) {
+	var request DisableServiceAccountRequestObject
+
+	request.ServiceAccountId = serviceAccountId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DisableServiceAccount(ctx, request.(DisableServiceAccountRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DisableServiceAccount")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DisableServiceAccountResponseObject); ok {
+		if err := validResponse.VisitDisableServiceAccountResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// IssueServiceToken operation middleware
+func (sh *strictHandler) IssueServiceToken(w http.ResponseWriter, r *http.Request, serviceAccountId ServiceAccountId) {
+	var request IssueServiceTokenRequestObject
+
+	request.ServiceAccountId = serviceAccountId
+
+	var body IssueServiceTokenJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.IssueServiceToken(ctx, request.(IssueServiceTokenRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "IssueServiceToken")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(IssueServiceTokenResponseObject); ok {
+		if err := validResponse.VisitIssueServiceTokenResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RevokeServiceToken operation middleware
+func (sh *strictHandler) RevokeServiceToken(w http.ResponseWriter, r *http.Request, serviceAccountId ServiceAccountId, tokenId string) {
+	var request RevokeServiceTokenRequestObject
+
+	request.ServiceAccountId = serviceAccountId
+	request.TokenId = tokenId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RevokeServiceToken(ctx, request.(RevokeServiceTokenRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RevokeServiceToken")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RevokeServiceTokenResponseObject); ok {
+		if err := validResponse.VisitRevokeServiceTokenResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

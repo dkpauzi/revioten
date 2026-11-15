@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/dkpauzi/revioten/internal/db"
@@ -38,6 +39,9 @@ type config struct {
 	// ClamAVAddr dari CLAMAV_ADDR: alamat daemon clamd untuk memindai
 	// unggahan (M8.2), misalnya 127.0.0.1:3310. Kosong berarti tanpa pemindaian.
 	ClamAVAddr string
+	// IntegrationRate dari INTEGRATION_RATE_PER_MINUTE: batas permintaan per
+	// token API integrasi per menit (M9.5). Kosong berarti 120.
+	IntegrationRate int
 	// PDFBrowser dari PDF_BROWSER: lokasi Chrome atau Edge untuk PDF (M6.3);
 	// kosong berarti dicari otomatis.
 	PDFBrowser string
@@ -119,13 +123,21 @@ func loadConfig(getenv func(string) string, envFile string) (config, error) {
 	if ownerURL == "" {
 		ownerURL = owner.String()
 	}
+	rate := 0
+	if v := get("INTEGRATION_RATE_PER_MINUTE"); v != "" {
+		n, err := strconv.Atoi(v)
+		if err != nil || n < 1 {
+			return config{}, errors.New("INTEGRATION_RATE_PER_MINUTE harus bilangan bulat positif")
+		}
+		rate = n
+	}
 	return config{
 		OwnerURL: ownerURL, AppURL: app.String(), AppPassword: get("APP_DB_PASSWORD"),
 		OwnerUser: owner.User.Username(), Database: strings.TrimPrefix(owner.Path, "/"),
 		BackupDir: get("BACKUP_DIR"), BackupPassphrase: get("BACKUP_PASSPHRASE"),
 		AttachmentDir: cmp.Or(get("ATTACHMENT_DIR"), filepath.Join("data", "attachments")),
 		PDFBrowser:    get("PDF_BROWSER"), PublicBaseURL: get("PUBLIC_BASE_URL"),
-		ClamAVAddr: get("CLAMAV_ADDR"),
+		ClamAVAddr: get("CLAMAV_ADDR"), IntegrationRate: rate,
 	}, nil
 }
 

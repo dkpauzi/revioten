@@ -145,7 +145,11 @@ import type {
 	MigratableNumberList,
 	RowLink,
 	PermissionList,
-	Role
+	Role,
+	IssuedServiceToken,
+	NewServiceAccount,
+	ServiceAccount,
+	ServiceAccountList
 } from './gen/index.ts';
 
 // ApiFailure menjelaskan panggilan yang gagal: status HTTP (0 bila server
@@ -1303,6 +1307,34 @@ export function listPermissions(fetchFn: typeof fetch = fetch): Promise<ApiResul
 // setRolePermissions memanggil PUT /api/v1/roles/{id}/permissions (A-1, M8.1).
 export function setRolePermissions(roleId: string, permissions: string[], fetchFn: typeof fetch = fetch): Promise<ApiResult<Role>> {
 	return call<Role>(fetchFn, itemPath('roles', roleId) + '/permissions', jsonRequest('PUT', { permissions }));
+}
+
+// Tahap 9: service account API integrasi (A-1).
+
+// listServiceAccounts memanggil GET /api/v1/service-accounts.
+export function listServiceAccounts(fetchFn: typeof fetch = fetch): Promise<ApiResult<ServiceAccountList>> {
+	return call<ServiceAccountList>(fetchFn, '/api/v1/service-accounts', { method: 'GET' });
+}
+
+// createServiceAccount memanggil POST /api/v1/service-accounts.
+export function createServiceAccount(input: NewServiceAccount, fetchFn: typeof fetch = fetch): Promise<ApiResult<ServiceAccount>> {
+	return call<ServiceAccount>(fetchFn, '/api/v1/service-accounts', jsonRequest('POST', input));
+}
+
+// issueServiceToken memanggil POST /api/v1/service-accounts/{id}/tokens. days
+// kosong berarti 90 hari.
+export function issueServiceToken(id: string, days: number | undefined, fetchFn: typeof fetch = fetch): Promise<ApiResult<IssuedServiceToken>> {
+	return call<IssuedServiceToken>(fetchFn, itemPath('service-accounts', id) + '/tokens', jsonRequest('POST', { days }));
+}
+
+// revokeServiceToken memanggil DELETE /api/v1/service-accounts/{id}/tokens/{tokenId}.
+export function revokeServiceToken(id: string, tokenId: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<void>> {
+	return call<void>(fetchFn, `${itemPath('service-accounts', id)}/tokens/${encodeURIComponent(tokenId)}`, { method: 'DELETE' });
+}
+
+// disableServiceAccount memanggil POST /api/v1/service-accounts/{id}/disable.
+export function disableServiceAccount(id: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<void>> {
+	return call<void>(fetchFn, itemPath('service-accounts', id) + '/disable', { method: 'POST' });
 }
 
 // listAccounts memanggil GET /api/v1/accounts (A-1).

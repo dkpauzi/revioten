@@ -185,6 +185,85 @@ paths:
                 $ref: '#/components/schemas/Role'
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/service-accounts:
+    get:
+      operationId: listServiceAccounts
+      summary: Service accounts of the integration API with their tokens (A-1, M9.1)
+      responses:
+        '200':
+          description: All service accounts.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceAccountList'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: createServiceAccount
+      summary: Make a service account for another application (A-1, M9.1, R-API-04)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewServiceAccount'
+      responses:
+        '201':
+          description: The service account was made. Issue a token next.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceAccount'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/service-accounts/{serviceAccountId}/tokens:
+    post:
+      operationId: issueServiceToken
+      summary: Issue a token (A-1). The token value is shown in this answer only.
+      parameters:
+        - $ref: '#/components/parameters/ServiceAccountId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewServiceToken'
+      responses:
+        '201':
+          description: The token. Only its hash is stored.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IssuedServiceToken'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/service-accounts/{serviceAccountId}/tokens/{tokenId}:
+    delete:
+      operationId: revokeServiceToken
+      summary: Revoke a token (A-1). It is refused at once.
+      parameters:
+        - $ref: '#/components/parameters/ServiceAccountId'
+        - name: tokenId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: The token was revoked.
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/service-accounts/{serviceAccountId}/disable:
+    post:
+      operationId: disableServiceAccount
+      summary: Disable a service account (A-1). All its tokens are refused; it is never deleted.
+      parameters:
+        - $ref: '#/components/parameters/ServiceAccountId'
+      responses:
+        '204':
+          description: The service account was disabled.
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/accounts:
     get:
       operationId: listAccounts
@@ -3370,6 +3449,12 @@ paths:
           $ref: '#/components/responses/Error'
 components:
   parameters:
+    ServiceAccountId:
+      name: serviceAccountId
+      in: path
+      required: true
+      schema:
+        type: string
     AccountId:
       name: accountId
       in: path
@@ -3808,6 +3893,119 @@ components:
           type: array
           items:
             type: string
+    ServiceAccount:
+      type: object
+      required: [id, name, owner_team, contact, purpose, scopes, customer_ids, customer_codes, networks, disabled, created_at, tokens]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        owner_team:
+          type: string
+        contact:
+          type: string
+        purpose:
+          type: string
+        scopes:
+          type: array
+          items:
+            type: string
+        customer_ids:
+          type: array
+          items:
+            type: string
+        customer_codes:
+          type: array
+          items:
+            type: string
+        networks:
+          type: array
+          items:
+            type: string
+        disabled:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        tokens:
+          type: array
+          items:
+            $ref: '#/components/schemas/ServiceToken'
+    ServiceToken:
+      type: object
+      required: [id, prefix, expires_at, created_at]
+      properties:
+        id:
+          type: string
+        prefix:
+          type: string
+          description: The first part of the token, to recognise it. Not a secret.
+        expires_at:
+          type: string
+          format: date-time
+        revoked_at:
+          type: string
+          format: date-time
+        last_used_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+    ServiceAccountList:
+      type: object
+      required: [items, scopes]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ServiceAccount'
+        scopes:
+          type: array
+          description: Every scope that can be given.
+          items:
+            type: string
+    NewServiceAccount:
+      type: object
+      required: [name, owner_team, contact, purpose, scopes, customer_ids]
+      properties:
+        name:
+          type: string
+        owner_team:
+          type: string
+        contact:
+          type: string
+        purpose:
+          type: string
+        scopes:
+          type: array
+          items:
+            type: string
+        customer_ids:
+          type: array
+          items:
+            type: string
+        networks:
+          type: array
+          description: Allowed source networks as CIDR. Leave it out for any address.
+          items:
+            type: string
+    NewServiceToken:
+      type: object
+      properties:
+        days:
+          type: integer
+          description: Lifetime in days, 1 to 365. The default is 90.
+    IssuedServiceToken:
+      type: object
+      required: [token, info]
+      properties:
+        token:
+          type: string
+          description: The token value. Shown once; copy it now.
+        info:
+          $ref: '#/components/schemas/ServiceToken'
     RoleList:
       type: object
       required: [items]

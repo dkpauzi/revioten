@@ -306,6 +306,10 @@ type Deps struct {
 	Metrics   MetricsService
 	// Roles adalah katalog hak dan isi peran (M8.1).
 	Roles RoleService
+	// ServiceAccounts dan Integration adalah API integrasi (Tahap 9).
+	// Integration adalah handler /integration/v1; nil berarti tidak dipasang.
+	ServiceAccounts ServiceAccountService
+	Integration     http.Handler
 	// Logger untuk log server. Bila nil, dipakai slog.Default().
 	Logger *slog.Logger
 }
@@ -326,7 +330,8 @@ func NewHandler(ui fs.FS, deps Deps) http.Handler {
 		audit: deps.Audit, products: deps.Products, processes: deps.Processes,
 		numbering: deps.Numbering, changes: deps.Changes, approval: deps.Approval, settings: deps.Settings,
 		templates: deps.Templates, processTemplates: deps.ProcessTemplates, documents: deps.Documents, refDocs: deps.RefDocs, changeRequests: deps.ChangeRequests, printing: deps.Printing,
-		migration: deps.Migration, metrics: deps.Metrics, roles: deps.Roles, log: log,
+		migration: deps.Migration, metrics: deps.Metrics, roles: deps.Roles,
+		serviceAccounts: deps.ServiceAccounts, log: log,
 	}
 
 	// Route dari kontrak didaftarkan oleh kode hasil generate ke mux khusus API.
@@ -350,6 +355,11 @@ func NewHandler(ui fs.FS, deps Deps) http.Handler {
 	// di luar /api/v1, dan tercatat di kontrak sejak M0.5.
 	mux.Handle("/health", api)
 	mux.Handle("/api/", api)
+	// API integrasi untuk aplikasi lain (Tahap 9): kontrak, token, dan
+	// format error sendiri, tanpa sesi cookie (R-API-02).
+	if deps.Integration != nil {
+		mux.Handle("/integration/", deps.Integration)
+	}
 	// Pola "/" sengaja tanpa method. Pola "GET /" ditolak ServeMux karena
 	// bentrok dengan "/api/": untuk GET /api/x, yang satu lebih sempit di
 	// method, yang lain lebih sempit di path, jadi tidak ada yang menang.
@@ -389,5 +399,6 @@ type apiServer struct {
 	migration        MigrationService
 	metrics          MetricsService
 	roles            RoleService
+	serviceAccounts  ServiceAccountService
 	log              *slog.Logger
 }

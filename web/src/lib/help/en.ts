@@ -380,6 +380,27 @@ export const helpEn: HelpContent = {
 			imageAlt: 'The Roles page with one column per role and one line per right.'
 		},
 		{
+			id: 'service-accounts',
+			title: 'Other applications (integration API)',
+			who: 'Admin',
+			intro: 'Another application, for example a MES, can read released documents and propose changes through the integration API. It never edits a document directly: a proposal becomes a change that a verifier accepts or rejects as usual.',
+			steps: [
+				'Open {navGroupAdmin}, then {navServiceAccounts}. Under {serviceAccountAdd}, fill in the name, the owning team, the contact, and the purpose.',
+				'Tick only the scopes the application needs, and the customers whose documents it may see. Press {serviceAccountCreate}.',
+				'Press {serviceTokenIssue}. The token is shown once and copied to the clipboard. Give it to the owning team through a safe channel.',
+				'To rotate, issue a new token, let the team switch to it, then press {serviceTokenRevoke} on the old one.',
+				'If the application is no longer used, press {serviceAccountDisable}. All its tokens are refused at once.'
+			],
+			tips: [
+				'A token expires after 90 days unless you choose another lifetime.',
+				'The application sees only released revisions, never drafts.',
+				'Proposals from an application appear under {navChanges} with the application as requester. The verifier must not be the person the application named.',
+				'The contract for the other team is the file api/integration.yaml.'
+			],
+			image: 'service-accounts',
+			imageAlt: 'The Service accounts page with one application, its scopes, customers, and tokens.'
+		},
+		{
 			id: 'audit',
 			title: 'Audit log',
 			who: 'Admin',

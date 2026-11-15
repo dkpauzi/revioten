@@ -70,6 +70,8 @@ const groups: { id: MenuGroup['id']; label: MessageKey; entries: Entry[] }[] = [
 			{ href: '/admin/accounts', label: 'navAccounts', permission: 'A-1' },
 			// Isi peran diatur admin (M8.1, D-66).
 			{ href: '/admin/roles', label: 'navRoles', permission: 'A-1' },
+			// Aplikasi lain yang memakai API integrasi (Tahap 9).
+			{ href: '/admin/service-accounts', label: 'navServiceAccounts', permission: 'A-1' },
 			// Audit log hanya lewat akun admin (A-4, D-75).
 			{ href: '/admin/audit', label: 'navAuditLog', permission: 'A-4' },
 			// Pengaturan sistem untuk pemegang A-3 (UC-07).

@@ -326,8 +326,11 @@ components:
             $ref: '#/components/schemas/Row'
     Field:
       type: object
-      required: [id, label, area]
+      required: [id, label, area, automatic]
       properties:
+        automatic:
+          type: boolean
+          description: True when the value is computed or filled by the system (for example the process flow or the RPN). Do not send it in a proposal.
         id:
           type: string
         key:

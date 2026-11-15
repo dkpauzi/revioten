@@ -796,3 +796,11 @@ func sortFields(fields []Field) {
 		return a.Position - b.Position
 	})
 }
+
+// Typed melaporkan apakah isi kolom berjenis kind diketik orang. Kolom yang
+// dihitung (RPN, AP) atau diisi sistem (nomor operasi, proses, Process Flow,
+// nomor dokumen) tidak pernah diketik (D-122, D-123). Dipakai API integrasi
+// supaya aplikasi lain tahu kolom mana yang boleh diisi.
+func Typed(kind string) bool {
+	return !slices.Contains(notTyped, kind)
+}

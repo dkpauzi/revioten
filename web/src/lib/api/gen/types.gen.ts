@@ -138,6 +138,69 @@ export type RolePermissions = {
     permissions: Array<string>;
 };
 
+export type ServiceAccount = {
+    id: string;
+    name: string;
+    owner_team: string;
+    contact: string;
+    purpose: string;
+    scopes: Array<string>;
+    customer_ids: Array<string>;
+    customer_codes: Array<string>;
+    networks: Array<string>;
+    disabled: boolean;
+    created_at: string;
+    tokens: Array<ServiceToken>;
+};
+
+export type ServiceToken = {
+    id: string;
+    /**
+     * The first part of the token, to recognise it. Not a secret.
+     */
+    prefix: string;
+    expires_at: string;
+    revoked_at?: string;
+    last_used_at?: string;
+    created_at: string;
+};
+
+export type ServiceAccountList = {
+    items: Array<ServiceAccount>;
+    /**
+     * Every scope that can be given.
+     */
+    scopes: Array<string>;
+};
+
+export type NewServiceAccount = {
+    name: string;
+    owner_team: string;
+    contact: string;
+    purpose: string;
+    scopes: Array<string>;
+    customer_ids: Array<string>;
+    /**
+     * Allowed source networks as CIDR. Leave it out for any address.
+     */
+    networks?: Array<string>;
+};
+
+export type NewServiceToken = {
+    /**
+     * Lifetime in days, 1 to 365. The default is 90.
+     */
+    days?: number;
+};
+
+export type IssuedServiceToken = {
+    /**
+     * The token value. Shown once; copy it now.
+     */
+    token: string;
+    info: ServiceToken;
+};
+
 export type RoleList = {
     items: Array<Role>;
 };
@@ -2684,6 +2747,8 @@ export type FormatSymbolWritable = {
     name: string;
 };
 
+export type ServiceAccountId = string;
+
 export type AccountId = string;
 
 export type CustomerId = string;
@@ -3077,6 +3142,178 @@ export type SetRolePermissionsResponses = {
 };
 
 export type SetRolePermissionsResponse = SetRolePermissionsResponses[keyof SetRolePermissionsResponses];
+
+export type ListServiceAccountsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/service-accounts';
+};
+
+export type ListServiceAccountsErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ListServiceAccountsError = ListServiceAccountsErrors[keyof ListServiceAccountsErrors];
+
+export type ListServiceAccountsResponses = {
+    /**
+     * All service accounts.
+     */
+    200: ServiceAccountList;
+};
+
+export type ListServiceAccountsResponse = ListServiceAccountsResponses[keyof ListServiceAccountsResponses];
+
+export type CreateServiceAccountData = {
+    body: NewServiceAccount;
+    path?: never;
+    query?: never;
+    url: '/api/v1/service-accounts';
+};
+
+export type CreateServiceAccountErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type CreateServiceAccountError = CreateServiceAccountErrors[keyof CreateServiceAccountErrors];
+
+export type CreateServiceAccountResponses = {
+    /**
+     * The service account was made. Issue a token next.
+     */
+    201: ServiceAccount;
+};
+
+export type CreateServiceAccountResponse = CreateServiceAccountResponses[keyof CreateServiceAccountResponses];
+
+export type IssueServiceTokenData = {
+    body: NewServiceToken;
+    path: {
+        serviceAccountId: string;
+    };
+    query?: never;
+    url: '/api/v1/service-accounts/{serviceAccountId}/tokens';
+};
+
+export type IssueServiceTokenErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type IssueServiceTokenError = IssueServiceTokenErrors[keyof IssueServiceTokenErrors];
+
+export type IssueServiceTokenResponses = {
+    /**
+     * The token. Only its hash is stored.
+     */
+    201: IssuedServiceToken;
+};
+
+export type IssueServiceTokenResponse = IssueServiceTokenResponses[keyof IssueServiceTokenResponses];
+
+export type RevokeServiceTokenData = {
+    body?: never;
+    path: {
+        serviceAccountId: string;
+        tokenId: string;
+    };
+    query?: never;
+    url: '/api/v1/service-accounts/{serviceAccountId}/tokens/{tokenId}';
+};
+
+export type RevokeServiceTokenErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type RevokeServiceTokenError = RevokeServiceTokenErrors[keyof RevokeServiceTokenErrors];
+
+export type RevokeServiceTokenResponses = {
+    /**
+     * The token was revoked.
+     */
+    204: void;
+};
+
+export type RevokeServiceTokenResponse = RevokeServiceTokenResponses[keyof RevokeServiceTokenResponses];
+
+export type DisableServiceAccountData = {
+    body?: never;
+    path: {
+        serviceAccountId: string;
+    };
+    query?: never;
+    url: '/api/v1/service-accounts/{serviceAccountId}/disable';
+};
+
+export type DisableServiceAccountErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type DisableServiceAccountError = DisableServiceAccountErrors[keyof DisableServiceAccountErrors];
+
+export type DisableServiceAccountResponses = {
+    /**
+     * The service account was disabled.
+     */
+    204: void;
+};
+
+export type DisableServiceAccountResponse = DisableServiceAccountResponses[keyof DisableServiceAccountResponses];
 
 export type ListAccountsData = {
     body?: never;

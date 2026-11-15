@@ -143,6 +143,10 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-119 | Isi peran diatur admin: aturan yang dikunci | Celah | M8.1 | Tidak | Diputuskan (D-183) |
 | E-120 | Pemindai antivirus dan PDF di deploy Docker | Sulit dibangun | M8.2, M8.3 | Tidak | Diputuskan (D-184) |
 | E-121 | Kriteria M8.2, M8.4, dan M8.5 yang butuh pemilik atau pihak lain | Celah | M8.2, M8.4, M8.5 | Tidak | Diputuskan (D-185) |
+| E-122 | Antrean ekspor tanpa River | Penyederhanaan | M9.5 | Tidak | Terbuka |
+| E-123 | Batas jaringan token di belakang Caddy | Celah | M9.1, M8.3 | Tidak | Terbuka |
+| E-124 | Aturan usulan dari luar yang belum tertulis | Celah | M9.4 | Tidak | Terbuka |
+| E-125 | Hal Tahap 9 yang tidak dibangun | Celah | M9.2, M9.6, Gerbang 9 | Tidak | Terbuka |
 
 ## Keputusan 4 November 2026
 
@@ -2159,6 +2163,58 @@ Salin blok ini untuk setiap temuan baru.
 - **Menghambat milestone?** Tidak
 - **Status:** Diputuskan (D-185)
 - **Keputusan pemilik:** 15 November 2026, "terima semua saran" (D-185).
+
+### E-122 · Antrean ekspor tanpa River
+
+- **Tanggal dan milestone:** 15 November 2026, M9.5.
+- **Jenis:** Penyederhanaan
+- **Rujukan:** Brief bagian 7 (River v0.49.0), R-API-14, R-API-16.
+- **Temuan:** Stack di brief menyebut River sebagai antrean job di PostgreSQL. Untuk ekspor M9.5 yang dibangun lebih sederhana: tabel `export_jobs`, satu goroutine di server yang mengambil job dengan `FOR UPDATE SKIP LOCKED` setiap dua detik, dan status queued, running, done, atau failed. Tidak ada percobaan ulang otomatis, prioritas, atau pembersihan berkas lama. Job yang sedang running saat server mati tetap running. River belum ditambahkan ke go.mod.
+- **Opsi:** (a) tabel sederhana seperti sekarang; (b) pakai River untuk ekspor dan nanti webhook (M9.6); (c) tabel sederhana plus pemulihan job yang macet saat server mulai.
+- **Rekomendasi Claude Code (usulan):** (c) untuk demo: satu baris tambahan yang mengembalikan job running ke queued saat server mulai. (b) baru bila webhook dibangun, karena webhook butuh percobaan ulang dan outbox.
+- **Asumsi sementara di kode (ASUMSI E-122):** (a).
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-123 · Batas jaringan token di belakang Caddy
+
+- **Tanggal dan milestone:** 15 November 2026, M9.1, M8.3.
+- **Jenis:** Celah
+- **Rujukan:** R-API-04, D-36.
+- **Temuan:** Token bisa dibatasi ke jaringan tertentu (CIDR). Alamat yang diperiksa adalah alamat koneksi langsung. Di deploy Docker (M8.3) semua permintaan datang dari container Caddy, jadi batas jaringan tidak berguna di sana; di `go run` tanpa proxy batas itu bekerja. Membaca header X-Forwarded-For tanpa syarat juga salah, karena header itu bisa diisi siapa saja.
+- **Opsi:** (a) seperti sekarang, dengan catatan di panduan; (b) percayai X-Forwarded-For hanya dari alamat proxy yang disebut di pengaturan (`TRUSTED_PROXY`); (c) Caddy yang membatasi jaringan.
+- **Rekomendasi Claude Code (usulan):** (b) untuk versi perusahaan. Untuk demo (a), karena API integrasi hanya dicoba dari komputer yang sama.
+- **Asumsi sementara di kode (ASUMSI E-123):** (a).
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-124 · Aturan usulan dari luar yang belum tertulis
+
+- **Tanggal dan milestone:** 15 November 2026, M9.4.
+- **Jenis:** Celah
+- **Rujukan:** R-API-07, R-API-09, R-API-10, R-API-11.
+- **Temuan:** Beberapa hal tidak disebut brief. Yang dibangun: (1) satu usulan menyentuh satu dokumen, paling banyak 200 operasi; (2) revisi dasar harus revisi yang berlaku, selain itu 409; (3) operasi diperiksa terhadap revisi dasar saat diterima dari luar, lalu diperiksa lagi terhadap draft saat verifikator menerima; bila baris yang dituju sudah tidak ada di draft, penerimaan ditolak dan verifikator harus menolak usulan itu; (4) `on_behalf_of` dicocokkan dengan login dan nama verifikator, karena orang yang disebut belum tentu punya akun; (5) kunci idempoten disimpan tanpa batas waktu; (6) jenis perubahan bawaan content, tanpa pemicu (sumber perubahan) dan kategori 4M; (7) pemohon perubahan adalah service account, tidak ada orang di kolom pemohon.
+- **Opsi:** (a) seperti sekarang; (b) satu usulan boleh beberapa dokumen satu set; (c) kunci idempoten dihapus sesudah 30 hari; (d) usulan dari luar wajib menyebut pemicu dan 4M.
+- **Rekomendasi Claude Code (usulan):** (a) sampai konsumen nyata ditetapkan (Q-22). (c) murah ditambah bersama pembersihan job ekspor. (d) layak bila laporan perubahan per pemicu dipakai di QCC.
+- **Asumsi sementara di kode (ASUMSI E-124):** (a).
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-125 · Hal Tahap 9 yang tidak dibangun
+
+- **Tanggal dan milestone:** 15 November 2026, M9.2, M9.6, Gerbang 9.
+- **Jenis:** Celah
+- **Rujukan:** R-API-15, R-API-16, Q-22, Q-26.
+- **Temuan:** Yang tidak dibangun: webhook (M9.6, opsional); konsumen tiruan berupa skrip kecil (masih usulan di milestone; test E2E dan tur memakai permintaan HTTP langsung sebagai gantinya); CI, sehingga contract test berjalan di `go test ./...`, bukan di server CI; header Deprecation dan Sunset, karena belum ada versi yang ditinggalkan; OAuth2 atau mutual TLS (R-API-04, menunggu IT, Q-25). Batas laju disimpan di memori satu proses server; versi dengan beberapa server butuh penghitung bersama.
+- **Opsi:** (a) Tahap 9 dianggap selesai di kode dengan daftar ini; (b) bangun webhook dan konsumen tiruan sekarang.
+- **Rekomendasi Claude Code (usulan):** (a). Webhook baru berguna bila ada konsumen nyata yang memintanya; polling dengan updated_since sudah cukup untuk sinkronisasi.
+- **Asumsi sementara di kode (ASUMSI E-125):** (a).
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
 
 ## Usulan desain UI (UX-01 sampai UX-07): dampak ke M0 sampai M3 dan saran
 

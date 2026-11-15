@@ -18,7 +18,9 @@ export async function logIn(page: Page, password: string = admin.password): Prom
 // masih berjalan (terlihat di Windows, 8 November 2026).
 export async function logOut(page: Page): Promise<void> {
 	await page.getByRole('button', { name: en.logout }).click();
-	await expect(page).toHaveURL('/login');
+	// Permintaan yang masih berjalan saat logout bisa mendapat 401 dan menambah
+	// ?next= ke alamat login; keduanya berarti sudah keluar.
+	await expect(page).toHaveURL(/\/login(\?.*)?$/);
 }
 
 // mainMenu adalah menu atas berkelompok (D-127).

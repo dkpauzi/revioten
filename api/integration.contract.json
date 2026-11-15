@@ -74,6 +74,7 @@
       "fields": [
         {
           "area": "string",
+          "automatic": "boolean",
           "id": "string",
           "key": "string",
           "label": "string"

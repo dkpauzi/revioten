@@ -140,6 +140,24 @@ test('potret layar untuk halaman Help', async ({ page }) => {
 	await expect(page.getByRole('row').nth(3)).toBeVisible();
 	await shot(page, 'roles');
 
+	// Service account API integrasi (Tahap 9), dengan satu token aktif.
+	await openFromMenu(page, en.navGroupAdmin, en.navServiceAccounts);
+	await page.getByLabel(en.serviceAccountName, { exact: true }).fill('Contoh MES');
+	await page.getByLabel(en.serviceAccountTeam, { exact: true }).fill('Tim MES');
+	await page.getByLabel(en.serviceAccountContact, { exact: true }).fill('mes@contoh.test');
+	await page.getByLabel(en.serviceAccountPurpose, { exact: true }).fill('Membaca CP terbit untuk lini');
+	await page.getByRole('checkbox', { name: en.scope_documents_read }).check();
+	await page.getByRole('checkbox', { name: en.scope_revisions_read }).check();
+	await page.getByRole('checkbox', { name: 'LM · Contoh Customer LM' }).check();
+	await page.getByRole('button', { name: en.serviceAccountCreate }).click();
+	await expect(page.getByRole('status').last()).toHaveText(en.serviceAccountCreated.replace('{name}', 'Contoh MES'));
+	const mes = page.locator('section', { has: page.getByRole('heading', { name: 'Contoh MES', level: 2 }) });
+	await mes.getByRole('button', { name: en.serviceTokenIssue }).click();
+	await expect(mes.getByRole('cell', { name: en.serviceTokenActive })).toBeVisible();
+	// Nilai token ditutup kotak abu-abu, seperti kata sandi sementara.
+	await page.evaluate(() => document.querySelectorAll('.issued').forEach((el) => el.remove()));
+	await shot(page, 'service-accounts');
+
 	// Pengelola template.
 	await logOut(page);
 	await logInAs(page, engineer.login, temporary);

@@ -380,6 +380,27 @@ export const helpId: HelpContent = {
 			imageAlt: 'Halaman Peran dengan satu kolom per peran dan satu baris per hak.'
 		},
 		{
+			id: 'service-accounts',
+			title: 'Aplikasi lain (API integrasi)',
+			who: 'Admin',
+			intro: 'Aplikasi lain, misalnya MES, bisa membaca dokumen terbit dan mengusulkan perubahan lewat API integrasi. Aplikasi itu tidak pernah mengubah dokumen secara langsung: usulannya menjadi perubahan yang diterima atau ditolak verifikator seperti biasa.',
+			steps: [
+				'Buka {navGroupAdmin}, lalu {navServiceAccounts}. Di {serviceAccountAdd}, isi nama, tim pemilik, kontak, dan tujuan.',
+				'Centang hanya scope yang dibutuhkan aplikasi itu, dan customer yang dokumennya boleh dilihat. Tekan {serviceAccountCreate}.',
+				'Tekan {serviceTokenIssue}. Token tampil sekali dan disalin ke clipboard. Berikan ke tim pemilik lewat jalur yang aman.',
+				'Untuk mengganti token, terbitkan token baru, tunggu tim pindah ke token itu, lalu tekan {serviceTokenRevoke} pada token lama.',
+				'Bila aplikasi tidak dipakai lagi, tekan {serviceAccountDisable}. Semua tokennya langsung ditolak.'
+			],
+			tips: [
+				'Token kedaluwarsa sesudah 90 hari, kecuali Anda memilih masa berlaku lain.',
+				'Aplikasi hanya melihat revisi terbit, tidak pernah draft.',
+				'Usulan dari aplikasi tampil di {navChanges} dengan nama aplikasi sebagai pemohon. Verifikatornya tidak boleh orang yang disebut aplikasi itu.',
+				'Kontrak untuk tim lain adalah berkas api/integration.yaml.'
+			],
+			image: 'service-accounts',
+			imageAlt: 'Halaman Service account dengan satu aplikasi, scope, customer, dan tokennya.'
+		},
+		{
 			id: 'audit',
 			title: 'Audit log',
 			who: 'Admin',

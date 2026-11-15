@@ -362,7 +362,10 @@ Buka **Documents → Dashboard**: baris yang mengikuti template, dokumen per sta
 ### Langkah 31 · Roles
 Login sebagai `admin.contoh`. Buka **Admin → Roles**. Setiap kolom satu peran, setiap baris satu hak. Kotak yang abu-abu terkunci: peran Admin dan Viewer, hak admin, dan hak dasar.
 
-### Langkah 32 · Audit log
+### Langkah 32 · Aplikasi lain (API integrasi, Tahap 9)
+Buka **Admin → Service accounts**. Di **Add a service account**, isi nama aplikasi, tim pemilik, kontak, dan tujuan; centang scope **Read the list of released documents** dan **Read released revisions with their rows**, centang customer LM, lalu **Add the service account**. Tekan **Issue a token**: token tampil SATU KALI dan disalin ke clipboard. Aplikasi lain memanggil `GET /integration/v1/documents` dengan header `Authorization: Bearer <token>` dan hanya melihat dokumen terbit customer LM.
+
+### Langkah 33 · Audit log
 Buka **Admin → Audit log**.
 
 1. Setiap langkah di atas tercatat: siapa, kapan, apa, dan akun mana (termasuk orang pemegangnya).
@@ -387,4 +390,5 @@ Buka **Admin → Audit log**.
 | Milestone | Langkah yang akan muncul |
 |---|---|
 | Belum diputuskan | Konfirmasi slot saat rilis (R-APR-10) dan pembekuan rute saat cetak (R-APR-11) |
-| Tahap 9 dan 10 | API integrasi dan portal customer (latihan, sesudah MVP) |
+| Tahap 10 | Portal customer (latihan) |
+| M9.6 | Webhook (opsional, belum dibangun) |
