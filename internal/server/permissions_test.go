@@ -76,7 +76,7 @@ func TestPermissionsPerOperation(t *testing.T) {
 		Documents: document.NewService(pool, checker), RefDocs: template.NewRefDocService(pool, checker),
 		ChangeRequests: change.NewRequestService(pool, checker).WithStorage(attachmentStore),
 		Printing:       printout.NewService(pool, checker, document.NewService(pool, checker), attachmentStore, "missing-browser"),
-		Migration:      document.NewService(pool, checker), Metrics: metrics.NewService(pool, checker),
+		Migration:      document.NewService(pool, checker), Metrics: metrics.NewService(pool, checker), Roles: authSvc,
 	})
 
 	// Admin pertama, satu akun kerja tanpa peran (hanya hak dasar Viewer), dan
@@ -331,7 +331,7 @@ func TestPermissionsPerOperation(t *testing.T) {
 		"viewerPersonId": viewerInfo.PersonID,
 		"accountId":      viewerInfo.ID, "projectGroupId": group.ID, "customerId": cust.ID,
 		"modelGroupId": modelGroup.ID, "modelId": model.ID, "partNumberId": part.ID,
-		"processId": proc.ID, "documentTypeId": docTypes[0].ID, "cpTypeId": docTypes[2].ID, "documentNumberId": reg.Numbers[0].ID, "documentId": doc.ID, "rowId": doc.Rows[0].ID, "freeNumberId": reserved[1], "specialCodeId": specialCodes[0].ID,
+		"processId": proc.ID, "documentTypeId": docTypes[0].ID, "cpTypeId": docTypes[2].ID, "documentNumberId": reg.Numbers[0].ID, "roleId": access.RolePFMEACPChecker, "documentId": doc.ID, "rowId": doc.Rows[0].ID, "freeNumberId": reserved[1], "specialCodeId": specialCodes[0].ID,
 		"changeTypeId": changeTypes[0].ID, "changeSourceId": sources[0].ID, "fourMCategoryId": categories[0].ID,
 		"formatTemplateId": pfmeaFormat.ID, "formatVersionId": pfmeaVersion.ID, "formSetId": formSet.ID, "formSetVersionId": formSet.Versions[0].ID, "pfdSheetId": formSet.Versions[0].PFD.FormatVersionID, "pfmeaSheetId": formSet.Versions[0].PFMEA.FormatVersionID, "cpSheetId": formSet.Versions[0].CP.FormatVersionID, "formatFieldId": pfmeaVersion.Fields[0].ID,
 		"freeProcessId": reflow.ID, "refDocId": refDoc.ID, "linkId": refDoc.Links[0].ID, "changeId": changeReq.ID, "triggerId": triggerID, "contentTypeId": contentTypeID, "sectionId": "01900000-0000-7000-8000-000000000000", "attachmentId": "01900000-0000-7000-8000-000000000000", "yokotenId": "01900000-0000-7000-8000-000000000000", "targetId": "01900000-0000-7000-8000-000000000000", "processVersionId": iqcVersion.ID, "processTemplateId": iqcVersion.TemplateID, "subprocessId": iqcVersion.Subprocesses[0].ID,
@@ -508,6 +508,9 @@ func TestPermissionsPerOperation(t *testing.T) {
 		{http.MethodGet, "/api/v1/system-settings", "", http.StatusOK, http.StatusOK, http.StatusOK},
 		{http.MethodPut, "/api/v1/system-settings", `{"sign_dates_enabled":true}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
 		{http.MethodGet, "/api/v1/roles", "", http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		// Isi peran (M8.1, D-66): hanya admin. Peran pemeriksa PFMEA dan CP tidak dipegang akun uji, jadi aman diubah.
+		{http.MethodGet, "/api/v1/permissions", "", http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodPut, "/api/v1/roles/{roleId}/permissions", `{"permissions":["L-4","V-2"]}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
 		{http.MethodGet, "/api/v1/accounts", "", http.StatusForbidden, http.StatusForbidden, http.StatusOK},
 		{http.MethodPost, "/api/v1/accounts", `{"person_name":"Orang Baru","kind":"work","login":"orang.baru"}`, http.StatusForbidden, http.StatusForbidden, http.StatusCreated},
 		{http.MethodPut, "/api/v1/accounts/{accountId}/roles", `{"roles":[{"role":"author","scope":"all"}]}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
@@ -573,8 +576,15 @@ func TestPermissionsPerOperation(t *testing.T) {
 			req.AddCookie(&http.Cookie{Name: sessionCookieName, Value: token})
 			rec := httptest.NewRecorder()
 			handler.ServeHTTP(rec, req)
-			if rec.Code != want(tc) {
-				t.Errorf("%s: %s %s status %d, ingin %d: %s", who, tc.method, tc.path, rec.Code, want(tc), rec.Body.String())
+			expected := want(tc)
+			// Row-level security (M8.1): dokumen uji masih draft, jadi akun tanpa L-4
+			// tidak melihatnya sama sekali. Jawabannya 404, bukan 403, supaya
+			// keberadaan dokumen customer lain pun tidak bocor.
+			if expected == http.StatusForbidden && strings.HasPrefix(tc.path, "/api/v1/documents/{documentId}") {
+				expected = http.StatusNotFound
+			}
+			if rec.Code != expected {
+				t.Errorf("%s: %s %s status %d, ingin %d: %s", who, tc.method, tc.path, rec.Code, expected, rec.Body.String())
 			}
 		}
 	}

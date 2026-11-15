@@ -143,7 +143,9 @@ import type {
 	LinkSuggestionList,
 	Metrics,
 	MigratableNumberList,
-	RowLink
+	RowLink,
+	PermissionList,
+	Role
 } from './gen/index.ts';
 
 // ApiFailure menjelaskan panggilan yang gagal: status HTTP (0 bila server
@@ -1291,6 +1293,16 @@ export function changePassword(
 // listRoles memanggil GET /api/v1/roles: katalog peran (A-1).
 export function listRoles(fetchFn: typeof fetch = fetch): Promise<ApiResult<RoleList>> {
 	return call<RoleList>(fetchFn, '/api/v1/roles', { method: 'GET' });
+}
+
+// listPermissions memanggil GET /api/v1/permissions: katalog hak (A-1, M8.1).
+export function listPermissions(fetchFn: typeof fetch = fetch): Promise<ApiResult<PermissionList>> {
+	return call<PermissionList>(fetchFn, '/api/v1/permissions', { method: 'GET' });
+}
+
+// setRolePermissions memanggil PUT /api/v1/roles/{id}/permissions (A-1, M8.1).
+export function setRolePermissions(roleId: string, permissions: string[], fetchFn: typeof fetch = fetch): Promise<ApiResult<Role>> {
+	return call<Role>(fetchFn, itemPath('roles', roleId) + '/permissions', jsonRequest('PUT', { permissions }));
 }
 
 // listAccounts memanggil GET /api/v1/accounts (A-1).

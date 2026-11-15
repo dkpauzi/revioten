@@ -100,13 +100,15 @@ func runServer(args []string) error {
 	docs := document.NewService(pool, checker)
 	// Cetak memakai folder lampiran yang sama untuk scan bertanda tangan (M6.7).
 	printing := printout.NewService(pool, checker, docs, attachments, cfg.PDFBrowser).WithBaseURL(cmp.Or(cfg.PublicBaseURL, "http://"+*addr))
+	authSvc := auth.NewService(pool, checker)
 	srv := &http.Server{
 		Addr: *addr,
 		// web.Files berisi hasil build SvelteKit yang di-embed ke binary ini.
 		Handler: server.NewHandler(web.Files(), server.Deps{
 			DB:               pool,
 			Customers:        customer.NewService(pool, checker),
-			Auth:             auth.NewService(pool, checker),
+			Auth:             authSvc,
+			Roles:            authSvc,
 			Access:           checker,
 			Audit:            audit.NewService(pool, checker),
 			Products:         product.NewService(pool, checker),

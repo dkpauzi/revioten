@@ -23,6 +23,9 @@ func Connect(ctx context.Context, databaseURL string) (*pgxpool.Pool, error) {
 		return nil, errors.New("alamat database tidak bisa dibaca: periksa format postgres://user:password@host:port/database")
 	}
 
+	// Subjek row-level security ditulis ke koneksi setiap kali dipinjam (M8.1, subject.go).
+	config.PrepareConn = prepareConn
+
 	pool, err := pgxpool.NewWithConfig(ctx, config)
 	if err != nil {
 		return nil, fmt.Errorf("membuat pool database: %w", err)

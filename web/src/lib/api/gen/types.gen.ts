@@ -125,6 +125,19 @@ export type Role = {
     permissions: Array<string>;
 };
 
+export type PermissionInfo = {
+    code: string;
+    level: 'view' | 'edit' | 'verify' | 'admin';
+};
+
+export type PermissionList = {
+    items: Array<PermissionInfo>;
+};
+
+export type RolePermissions = {
+    permissions: Array<string>;
+};
+
 export type RoleList = {
     items: Array<Role>;
 };
@@ -2996,6 +3009,74 @@ export type ListRolesResponses = {
 };
 
 export type ListRolesResponse = ListRolesResponses[keyof ListRolesResponses];
+
+export type ListPermissionsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/permissions';
+};
+
+export type ListPermissionsErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ListPermissionsError = ListPermissionsErrors[keyof ListPermissionsErrors];
+
+export type ListPermissionsResponses = {
+    /**
+     * All permissions.
+     */
+    200: PermissionList;
+};
+
+export type ListPermissionsResponse = ListPermissionsResponses[keyof ListPermissionsResponses];
+
+export type SetRolePermissionsData = {
+    body: RolePermissions;
+    path: {
+        roleId: string;
+    };
+    query?: never;
+    url: '/api/v1/roles/{roleId}/permissions';
+};
+
+export type SetRolePermissionsErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type SetRolePermissionsError = SetRolePermissionsErrors[keyof SetRolePermissionsErrors];
+
+export type SetRolePermissionsResponses = {
+    /**
+     * The role with its new permissions.
+     */
+    200: Role;
+};
+
+export type SetRolePermissionsResponse = SetRolePermissionsResponses[keyof SetRolePermissionsResponses];
 
 export type ListAccountsData = {
     body?: never;

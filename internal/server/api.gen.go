@@ -1232,6 +1232,30 @@ func (e NumberSettingsSequenceFormat) Valid() bool {
 	}
 }
 
+// Defines values for PermissionInfoLevel.
+const (
+	PermissionInfoLevelAdmin  PermissionInfoLevel = "admin"
+	PermissionInfoLevelEdit   PermissionInfoLevel = "edit"
+	PermissionInfoLevelVerify PermissionInfoLevel = "verify"
+	PermissionInfoLevelView   PermissionInfoLevel = "view"
+)
+
+// Valid indicates whether the value is a known member of the PermissionInfoLevel enum.
+func (e PermissionInfoLevel) Valid() bool {
+	switch e {
+	case PermissionInfoLevelAdmin:
+		return true
+	case PermissionInfoLevelEdit:
+		return true
+	case PermissionInfoLevelVerify:
+		return true
+	case PermissionInfoLevelView:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PointScopeLevel.
 const (
 	PointScopeLevelCustomer   PointScopeLevel = "customer"
@@ -3640,6 +3664,20 @@ type PasswordChange struct {
 	NewPassword string `json:"new_password"`
 }
 
+// PermissionInfo defines model for PermissionInfo.
+type PermissionInfo struct {
+	Code  string              `json:"code"`
+	Level PermissionInfoLevel `json:"level"`
+}
+
+// PermissionInfoLevel defines model for PermissionInfo.Level.
+type PermissionInfoLevel string
+
+// PermissionList defines model for PermissionList.
+type PermissionList struct {
+	Items []PermissionInfo `json:"items"`
+}
+
 // Person defines model for Person.
 type Person struct {
 	// Id Opaque stable ID.
@@ -4193,6 +4231,11 @@ type RoleGrantScope string
 // RoleList defines model for RoleList.
 type RoleList struct {
 	Items []Role `json:"items"`
+}
+
+// RolePermissions defines model for RolePermissions.
+type RolePermissions struct {
+	Permissions []string `json:"permissions"`
 }
 
 // RolesUpdate defines model for RolesUpdate.
@@ -5031,6 +5074,9 @@ type UpdateReferencedDocumentJSONRequestBody = ReferencedDocumentUpdate
 // AddReferencedDocumentLinkJSONRequestBody defines body for AddReferencedDocumentLink for application/json ContentType.
 type AddReferencedDocumentLinkJSONRequestBody = NewReferencedDocumentLink
 
+// SetRolePermissionsJSONRequestBody defines body for SetRolePermissions for application/json ContentType.
+type SetRolePermissionsJSONRequestBody = RolePermissions
+
 // LoginJSONRequestBody defines body for Login for application/json ContentType.
 type LoginJSONRequestBody = Credentials
 
@@ -5402,6 +5448,9 @@ type ServerInterface interface {
 	// UpdatePartNumber Change the number and name of a part number (A-2)
 	// (PUT /api/v1/part-numbers/{partNumberId})
 	UpdatePartNumber(w http.ResponseWriter, r *http.Request, partNumberId PartNumberId)
+	// ListPermissions The permission catalog in the order of the user map (A-1, M8.1)
+	// (GET /api/v1/permissions)
+	ListPermissions(w http.ResponseWriter, r *http.Request)
 	// ListPositions Positions of the NPI organization chart with their holders (D-54, D-58)
 	// (GET /api/v1/positions)
 	ListPositions(w http.ResponseWriter, r *http.Request)
@@ -5504,6 +5553,9 @@ type ServerInterface interface {
 	// ListRoles The role catalog with the rights of each role (A-1)
 	// (GET /api/v1/roles)
 	ListRoles(w http.ResponseWriter, r *http.Request)
+	// SetRolePermissions Replace the permissions of one work role (A-1, M8.1, D-66)
+	// (PUT /api/v1/roles/{roleId}/permissions)
+	SetRolePermissions(w http.ResponseWriter, r *http.Request, roleId string)
 	// Logout Log out and end the session
 	// (DELETE /api/v1/session)
 	Logout(w http.ResponseWriter, r *http.Request)
@@ -8641,6 +8693,20 @@ func (siw *ServerInterfaceWrapper) UpdatePartNumber(w http.ResponseWriter, r *ht
 	handler.ServeHTTP(w, r)
 }
 
+// ListPermissions operation middleware
+func (siw *ServerInterfaceWrapper) ListPermissions(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListPermissions(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListPositions operation middleware
 func (siw *ServerInterfaceWrapper) ListPositions(w http.ResponseWriter, r *http.Request) {
 
@@ -9467,6 +9533,32 @@ func (siw *ServerInterfaceWrapper) ListRoles(w http.ResponseWriter, r *http.Requ
 	handler.ServeHTTP(w, r)
 }
 
+// SetRolePermissions operation middleware
+func (siw *ServerInterfaceWrapper) SetRolePermissions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "roleId" -------------
+	var roleId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "roleId", r.PathValue("roleId"), &roleId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "roleId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetRolePermissions(w, r, roleId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // Logout operation middleware
 func (siw *ServerInterfaceWrapper) Logout(w http.ResponseWriter, r *http.Request) {
 
@@ -9874,6 +9966,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/session", wrapper.Login)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/account/password", wrapper.ChangePassword)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/roles", wrapper.ListRoles)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/permissions", wrapper.ListPermissions)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/roles/{roleId}/permissions", wrapper.SetRolePermissions)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/accounts", wrapper.ListAccounts)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/accounts", wrapper.CreateAccount)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/accounts/{accountId}/roles", wrapper.SetAccountRoles)
@@ -14713,6 +14807,44 @@ func (response UpdatePartNumberdefaultJSONResponse) VisitUpdatePartNumberRespons
 	return err
 }
 
+type ListPermissionsRequestObject struct {
+}
+
+type ListPermissionsResponseObject interface {
+	VisitListPermissionsResponse(w http.ResponseWriter) error
+}
+
+type ListPermissions200JSONResponse PermissionList
+
+func (response ListPermissions200JSONResponse) VisitListPermissionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPermissionsdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ListPermissionsdefaultJSONResponse) VisitListPermissionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListPositionsRequestObject struct {
 }
 
@@ -16048,6 +16180,46 @@ func (response ListRolesdefaultJSONResponse) VisitListRolesResponse(w http.Respo
 	return err
 }
 
+type SetRolePermissionsRequestObject struct {
+	RoleId string `json:"roleId"`
+	Body   *SetRolePermissionsJSONRequestBody
+}
+
+type SetRolePermissionsResponseObject interface {
+	VisitSetRolePermissionsResponse(w http.ResponseWriter) error
+}
+
+type SetRolePermissions200JSONResponse Role
+
+func (response SetRolePermissions200JSONResponse) VisitSetRolePermissionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetRolePermissionsdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response SetRolePermissionsdefaultJSONResponse) VisitSetRolePermissionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type LogoutRequestObject struct {
 }
 
@@ -17053,6 +17225,9 @@ type StrictServerInterface interface {
 	// UpdatePartNumber Change the number and name of a part number (A-2)
 	// (PUT /api/v1/part-numbers/{partNumberId})
 	UpdatePartNumber(ctx context.Context, request UpdatePartNumberRequestObject) (UpdatePartNumberResponseObject, error)
+	// ListPermissions The permission catalog in the order of the user map (A-1, M8.1)
+	// (GET /api/v1/permissions)
+	ListPermissions(ctx context.Context, request ListPermissionsRequestObject) (ListPermissionsResponseObject, error)
 	// ListPositions Positions of the NPI organization chart with their holders (D-54, D-58)
 	// (GET /api/v1/positions)
 	ListPositions(ctx context.Context, request ListPositionsRequestObject) (ListPositionsResponseObject, error)
@@ -17155,6 +17330,9 @@ type StrictServerInterface interface {
 	// ListRoles The role catalog with the rights of each role (A-1)
 	// (GET /api/v1/roles)
 	ListRoles(ctx context.Context, request ListRolesRequestObject) (ListRolesResponseObject, error)
+	// SetRolePermissions Replace the permissions of one work role (A-1, M8.1, D-66)
+	// (PUT /api/v1/roles/{roleId}/permissions)
+	SetRolePermissions(ctx context.Context, request SetRolePermissionsRequestObject) (SetRolePermissionsResponseObject, error)
 	// Logout Log out and end the session
 	// (DELETE /api/v1/session)
 	Logout(ctx context.Context, request LogoutRequestObject) (LogoutResponseObject, error)
@@ -20650,6 +20828,30 @@ func (sh *strictHandler) UpdatePartNumber(w http.ResponseWriter, r *http.Request
 	}
 }
 
+// ListPermissions operation middleware
+func (sh *strictHandler) ListPermissions(w http.ResponseWriter, r *http.Request) {
+	var request ListPermissionsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListPermissions(ctx, request.(ListPermissionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListPermissions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListPermissionsResponseObject); ok {
+		if err := validResponse.VisitListPermissionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListPositions operation middleware
 func (sh *strictHandler) ListPositions(w http.ResponseWriter, r *http.Request) {
 	var request ListPositionsRequestObject
@@ -21644,6 +21846,39 @@ func (sh *strictHandler) ListRoles(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ListRolesResponseObject); ok {
 		if err := validResponse.VisitListRolesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SetRolePermissions operation middleware
+func (sh *strictHandler) SetRolePermissions(w http.ResponseWriter, r *http.Request, roleId string) {
+	var request SetRolePermissionsRequestObject
+
+	request.RoleId = roleId
+
+	var body SetRolePermissionsJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetRolePermissions(ctx, request.(SetRolePermissionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetRolePermissions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetRolePermissionsResponseObject); ok {
+		if err := validResponse.VisitSetRolePermissionsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

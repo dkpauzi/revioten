@@ -24,6 +24,20 @@ func (q *Queries) AddAccountRole(ctx context.Context, arg AddAccountRoleParams) 
 	return err
 }
 
+const addRolePermission = `-- name: AddRolePermission :exec
+INSERT INTO role_permissions (role_id, permission_code) VALUES ($1, $2)
+`
+
+type AddRolePermissionParams struct {
+	RoleID         string
+	PermissionCode string
+}
+
+func (q *Queries) AddRolePermission(ctx context.Context, arg AddRolePermissionParams) error {
+	_, err := q.db.Exec(ctx, addRolePermission, arg.RoleID, arg.PermissionCode)
+	return err
+}
+
 const deleteAccountRoles = `-- name: DeleteAccountRoles :exec
 DELETE FROM account_roles WHERE account_id = $1
 `
@@ -126,6 +140,63 @@ func (q *Queries) ListGrants(ctx context.Context, accountID string) ([]ListGrant
 	return items, nil
 }
 
+const listPermissions = `-- name: ListPermissions :many
+
+SELECT code, level FROM permissions ORDER BY sort_order
+`
+
+type ListPermissionsRow struct {
+	Code  string
+	Level string
+}
+
+// M8.1: isi peran diatur admin (D-66).
+func (q *Queries) ListPermissions(ctx context.Context) ([]ListPermissionsRow, error) {
+	rows, err := q.db.Query(ctx, listPermissions)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListPermissionsRow{}
+	for rows.Next() {
+		var i ListPermissionsRow
+		if err := rows.Scan(&i.Code, &i.Level); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listPermissionsOfRole = `-- name: ListPermissionsOfRole :many
+SELECT rp.permission_code
+FROM role_permissions rp JOIN permissions p ON p.code = rp.permission_code
+WHERE rp.role_id = $1 ORDER BY p.sort_order
+`
+
+func (q *Queries) ListPermissionsOfRole(ctx context.Context, roleID string) ([]string, error) {
+	rows, err := q.db.Query(ctx, listPermissionsOfRole, roleID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var permission_code string
+		if err := rows.Scan(&permission_code); err != nil {
+			return nil, err
+		}
+		items = append(items, permission_code)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listRolePermissions = `-- name: ListRolePermissions :many
 SELECT rp.role_id, rp.permission_code
 FROM role_permissions rp
@@ -213,4 +284,34 @@ func (q *Queries) ListRolesOfAccount(ctx context.Context, accountID string) ([]L
 		return nil, err
 	}
 	return items, nil
+}
+
+const lockRole = `-- name: LockRole :one
+SELECT r.level
+FROM roles r, pg_advisory_xact_lock(hashtext('role:' || $1::text))
+WHERE r.id = $1
+`
+
+// LockRole memberi level satu peran dan memegang kunci penasihat (advisory
+// lock) atas peran itu sampai transaksi selesai, supaya dua admin bergantian.
+// Role aplikasi tidak punya UPDATE pada roles, jadi FOR UPDATE tidak dipakai.
+func (q *Queries) LockRole(ctx context.Context, id string) (string, error) {
+	row := q.db.QueryRow(ctx, lockRole, id)
+	var level string
+	err := row.Scan(&level)
+	return level, err
+}
+
+const removeRolePermission = `-- name: RemoveRolePermission :exec
+DELETE FROM role_permissions WHERE role_id = $1 AND permission_code = $2
+`
+
+type RemoveRolePermissionParams struct {
+	RoleID         string
+	PermissionCode string
+}
+
+func (q *Queries) RemoveRolePermission(ctx context.Context, arg RemoveRolePermissionParams) error {
+	_, err := q.db.Exec(ctx, removeRolePermission, arg.RoleID, arg.PermissionCode)
+	return err
 }

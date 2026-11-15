@@ -476,6 +476,9 @@ type Verification struct {
 
 // Verify membaca status satu revisi untuk halaman verifikasi (L-1).
 func (s *Service) Verify(ctx context.Context, actor access.Actor, revisionID string) (Verification, error) {
+	// Halaman verifikasi menjawab status revisi mana pun, juga draft customer
+	// lain (L-1, D-32), jadi row-level security dilepas untuk bacaan ini.
+	ctx = db.AsSystem(ctx)
 	if !db.IsUUID(revisionID) {
 		return Verification{}, problem.ErrNotFound
 	}

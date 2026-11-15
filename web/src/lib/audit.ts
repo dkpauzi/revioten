@@ -11,6 +11,7 @@ const actionKeys: Record<string, MessageKey> = {
 	'account.password_change_failed': 'auditActionPasswordChangeFailed',
 	'account.created': 'auditActionAccountCreated',
 	'account.roles_changed': 'auditActionRolesChanged',
+	'role.permissions_changed': 'auditActionRolePermissionsChanged',
 	'account.password_reset': 'auditActionPasswordReset',
 	'account.disabled': 'auditActionAccountDisabled',
 	'account.enabled': 'auditActionAccountEnabled',

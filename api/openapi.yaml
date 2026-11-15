@@ -144,6 +144,47 @@ paths:
                 $ref: '#/components/schemas/RoleList'
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/permissions:
+    get:
+      operationId: listPermissions
+      summary: The permission catalog in the order of the user map (A-1, M8.1)
+      responses:
+        '200':
+          description: All permissions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionList'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/roles/{roleId}/permissions:
+    put:
+      operationId: setRolePermissions
+      summary: Replace the permissions of one work role (A-1, M8.1, D-66)
+      description: >-
+        The admin and viewer roles cannot be changed, a work role never holds admin rights (A-1 to A-4), and the
+        basic rights L-1 to L-3 always stay (R-SEC-11). Every change is audit-logged.
+      parameters:
+        - name: roleId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RolePermissions'
+      responses:
+        '200':
+          description: The role with its new permissions.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/accounts:
     get:
       operationId: listAccounts
@@ -3738,6 +3779,31 @@ components:
         level:
           type: string
           enum: [view, edit, verify, admin]
+        permissions:
+          type: array
+          items:
+            type: string
+    PermissionInfo:
+      type: object
+      required: [code, level]
+      properties:
+        code:
+          type: string
+        level:
+          type: string
+          enum: [view, edit, verify, admin]
+    PermissionList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PermissionInfo'
+    RolePermissions:
+      type: object
+      required: [permissions]
+      properties:
         permissions:
           type: array
           items:

@@ -7,6 +7,7 @@ import (
 
 	"github.com/dkpauzi/revioten/internal/access"
 	"github.com/dkpauzi/revioten/internal/auth"
+	"github.com/dkpauzi/revioten/internal/db"
 )
 
 // sessionCookieName adalah nama cookie sesi. Awalan __Host- membuat browser
@@ -92,6 +93,8 @@ func (a *apiServer) requireSession(next http.Handler) http.Handler {
 		}
 
 		ctx := context.WithValue(r.Context(), sessionKey{}, session{actor: actor, token: token})
+		// Database menyaring baris dokumen untuk akun ini (row-level security, M8.1).
+		ctx = db.WithSubject(ctx, actor.AccountID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

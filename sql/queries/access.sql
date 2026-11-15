@@ -53,3 +53,27 @@ SELECT EXISTS (
     WHERE h.person_id = sqlc.arg(person_id) AND c.id = sqlc.arg(customer_id)
       AND p.key IN ('project_leader', 'project_engineer')
 );
+
+-- M8.1: isi peran diatur admin (D-66).
+
+-- name: ListPermissions :many
+SELECT code, level FROM permissions ORDER BY sort_order;
+
+-- name: LockRole :one
+-- LockRole memberi level satu peran dan memegang kunci penasihat (advisory
+-- lock) atas peran itu sampai transaksi selesai, supaya dua admin bergantian.
+-- Role aplikasi tidak punya UPDATE pada roles, jadi FOR UPDATE tidak dipakai.
+SELECT r.level
+FROM roles r, pg_advisory_xact_lock(hashtext('role:' || sqlc.arg(id)::text))
+WHERE r.id = sqlc.arg(id);
+
+-- name: ListPermissionsOfRole :many
+SELECT rp.permission_code
+FROM role_permissions rp JOIN permissions p ON p.code = rp.permission_code
+WHERE rp.role_id = $1 ORDER BY p.sort_order;
+
+-- name: AddRolePermission :exec
+INSERT INTO role_permissions (role_id, permission_code) VALUES ($1, $2);
+
+-- name: RemoveRolePermission :exec
+DELETE FROM role_permissions WHERE role_id = $1 AND permission_code = $2;

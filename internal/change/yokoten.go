@@ -114,6 +114,10 @@ type candidate struct {
 // Target hanya dari customer yang boleh diajukan perubahannya oleh pembuat
 // (D-118), dan model yang dokumennya sudah di perubahan sumber tidak ikut.
 func (s *RequestService) CreateYokoten(ctx context.Context, actor access.Actor, in NewYokoten) (Yokoten, error) {
+	// Yokoten memang lintas customer (M5.9): target bisa ada di Project Group
+	// lain. Fungsi izin tetap memeriksa setiap langkah; row-level security
+	// dilepas di sini supaya nomor dokumen target terbaca (ASUMSI E-118).
+	ctx = db.AsSystem(ctx)
 	source, err := s.Get(ctx, actor, in.SourceChangeID)
 	if err != nil {
 		return Yokoten{}, err
@@ -273,6 +277,10 @@ func escapeLike(s string) string {
 // Apply dan adapt membuat perubahan bermekanisme yokoten untuk dokumen target;
 // not applicable wajib alasan. Keputusan tidak bisa diubah (ASUMSI E-106).
 func (s *RequestService) Decide(ctx context.Context, actor access.Actor, yokotenID, targetID, decision, reason string) (Yokoten, error) {
+	// Yokoten memang lintas customer (M5.9): target bisa ada di Project Group
+	// lain. Fungsi izin tetap memeriksa setiap langkah; row-level security
+	// dilepas di sini supaya nomor dokumen target terbaca (ASUMSI E-118).
+	ctx = db.AsSystem(ctx)
 	y, err := s.GetYokoten(ctx, actor, yokotenID)
 	if err != nil {
 		return Yokoten{}, err
@@ -361,6 +369,10 @@ func truncate(s string, n int) string {
 // target, supaya pemilik target di Project Group lain bisa memutuskan
 // targetnya. Target customer yang tidak boleh dilihat pembaca tidak tampil (D-118).
 func (s *RequestService) GetYokoten(ctx context.Context, actor access.Actor, id string) (Yokoten, error) {
+	// Yokoten memang lintas customer (M5.9): target bisa ada di Project Group
+	// lain. Fungsi izin tetap memeriksa setiap langkah; row-level security
+	// dilepas di sini supaya nomor dokumen target terbaca (ASUMSI E-118).
+	ctx = db.AsSystem(ctx)
 	if !db.IsUUID(id) {
 		return Yokoten{}, problem.ErrNotFound
 	}
@@ -450,6 +462,10 @@ func progress(t YokotenTarget, changeStatus string) string {
 // ListYokotens memberi yokoten yang perubahan sumbernya boleh dilihat, yang
 // terbaru dulu (L-4).
 func (s *RequestService) ListYokotens(ctx context.Context, actor access.Actor) ([]Yokoten, error) {
+	// Yokoten memang lintas customer (M5.9): target bisa ada di Project Group
+	// lain. Fungsi izin tetap memeriksa setiap langkah; row-level security
+	// dilepas di sini supaya nomor dokumen target terbaca (ASUMSI E-118).
+	ctx = db.AsSystem(ctx)
 	ids, err := s.q.ListYokotenIDs(ctx)
 	if err != nil {
 		return nil, err
