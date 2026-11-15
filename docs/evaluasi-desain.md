@@ -139,6 +139,10 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-115 | Mode migrasi: bawaan dan cakupan saklarnya | Celah | M7.5, UC-07 | Tidak | Diputuskan (D-179) |
 | E-116 | Form dokumen lama dan riwayat teks: field dan aturannya | Celah | M7.1, M7.2 | Tidak | Diputuskan (D-180) |
 | E-117 | Dasbor ukuran: definisi setiap angka | Ambigu | M7.6, M7.7 | Tidak | Diputuskan (D-181) |
+| E-118 | Row-level security: tabel mana, dan apa yang terjadi tanpa subjek | Sulit dibangun | M8.1 | Tidak | Terbuka |
+| E-119 | Isi peran diatur admin: aturan yang dikunci | Celah | M8.1 | Tidak | Terbuka |
+| E-120 | Pemindai antivirus dan PDF di deploy Docker | Sulit dibangun | M8.2, M8.3 | Tidak | Terbuka |
+| E-121 | Kriteria M8.2, M8.4, dan M8.5 yang butuh pemilik atau pihak lain | Celah | M8.2, M8.4, M8.5 | Tidak | Terbuka |
 
 ## Keputusan 4 November 2026
 
@@ -2103,6 +2107,58 @@ Salin blok ini untuk setiap temuan baru.
 - **Menghambat milestone?** Tidak
 - **Status:** Diputuskan (D-181)
 - **Keputusan pemilik:** 15 November 2026, "Ya, terima semua" (D-181).
+
+### E-118 · Row-level security: tabel mana, dan apa yang terjadi tanpa subjek
+
+- **Tanggal dan milestone:** 15 November 2026, M8.1.
+- **Jenis:** Sulit dibangun
+- **Rujukan:** R-SEC-02, R-SEC-12, D-71, D-81, RK-14.
+- **Temuan:** M8.1 meminta row-level security (RLS) tanpa menyebut tabelnya. Aplikasi memakai satu role database dan satu connection pool, jadi database tidak tahu akun mana yang dilayani kecuali diberi tahu. Yang dibangun: ID akun ditulis ke variabel sesi `app.account_id` setiap kali koneksi dipinjam dari pool, dan kebijakan RLS dipasang pada `documents`, `document_rows`, dan `document_revisions`. Dokumen yang pernah terbit terlihat semua akun (L-1); dokumen yang belum pernah terbit hanya terlihat akun yang memegang L-4 untuk customer itu. Akibatnya akun tanpa hak mendapat 404, bukan 403. Tiga hal yang perlu diketahui: (1) tanpa subjek (perintah CLI, migrasi, job, test layanan) RLS tidak menyaring; (2) yokoten dan halaman verifikasi sengaja melepas RLS, karena memang lintas customer, dan tetap dijaga fungsi izin; (3) tabel lain yang memuat data customer (perubahan, lampiran, nomor, catatan cetak, yokoten) belum diberi RLS dan hanya dijaga fungsi izin.
+- **Opsi:** (a) seperti sekarang: RLS pada tiga tabel isi dokumen, tanpa subjek tidak disaring; (b) perluas RLS ke semua tabel ber-customer; (c) tanpa subjek berarti ditolak, dengan role database terpisah untuk CLI dan job.
+- **Rekomendasi Claude Code (usulan):** (a) untuk demo. Untuk versi perusahaan (b) dan (c), terutama sebelum ada token integrasi atau portal customer (D-19, RK-31).
+- **Asumsi sementara di kode (ASUMSI E-118):** (a).
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-119 · Isi peran diatur admin: aturan yang dikunci
+
+- **Tanggal dan milestone:** 15 November 2026, M8.1.
+- **Jenis:** Celah
+- **Rujukan:** D-66, R-SEC-10, R-SEC-11, RK-63, U3-peta-pengguna.
+- **Temuan:** D-66 memberi admin hak mengubah isi peran, tetapi tidak menyebut batasnya. Yang dibangun: halaman Admin → Roles berupa matriks peran dan hak. Dikunci di layar, di kode, dan di trigger database: peran Admin dan Viewer tidak bisa diubah; hak admin (A-1 sampai A-4) tidak bisa diberikan ke peran kerja; hak dasar L-1 sampai L-3 tidak bisa dicabut. Peran baru tidak bisa dibuat dan peran tidak bisa dihapus. Setiap perubahan dicatat di audit log dengan hak yang ditambah dan dicabut. Yang tidak dijaga: admin bisa memberi satu peran gabungan hak yang melemahkan pemisahan tugas, misalnya E-2 dan E-7 sekaligus; aturan per dokumen (pencatat rilis bukan penyusun) tetap berlaku.
+- **Opsi:** (a) seperti sekarang; (b) tambah peringatan di layar untuk gabungan hak yang berisiko; (c) perubahan isi peran butuh persetujuan orang kedua.
+- **Rekomendasi Claude Code (usulan):** (a), dengan tinjauan berkala isi peran terhadap U3 (peta pengguna sebagai baseline yang disetujui). (b) murah dan layak ditambah bila admin sering mengubah peran.
+- **Asumsi sementara di kode (ASUMSI E-119):** (a).
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-120 · Pemindai antivirus dan PDF di deploy Docker
+
+- **Tanggal dan milestone:** 15 November 2026, M8.2, M8.3.
+- **Jenis:** Sulit dibangun
+- **Rujukan:** R-SEC-04 [PROPOSED], R-PRT-03, D-172, RK-58.
+- **Temuan:** Dua hal muncul saat membangun deploy lokal. (1) Pemindaian: yang dibangun adalah klien clamd (perintah INSTREAM) yang aktif bila `CLAMAV_ADDR` diisi; tanpa itu unggahan tidak dipindai dan server menulis peringatan. Bila pemindai dipasang tetapi mati, unggahan ditolak. Container ClamAV ada di `compose.deploy.yaml` sebagai profil opsional dan belum dijalankan di komputer pemilik, karena butuh internet untuk basis tanda virus dan RAM cukup besar. (2) PDF: D-172 memilih Chrome atau Edge yang terpasang. Image aplikasi tidak memuat browser, jadi di deploy Docker cetak PDF tidak tersedia dan hanya Excel yang jalan. Memasang Chromium di image butuh `--no-sandbox` atau pengaturan container khusus.
+- **Opsi:** Pemindaian: (a) opsional seperti sekarang; (b) wajib, server menolak mulai tanpa pemindai. PDF di container: (a) Excel saja; (b) Chromium di dalam image; (c) layanan PDF terpisah (misalnya Gotenberg).
+- **Rekomendasi Claude Code (usulan):** Pemindaian (a) untuk demo dan (b) untuk versi perusahaan, dengan antivirus perusahaan bila IT memintanya. PDF (a) untuk demo, karena demo sehari-hari berjalan lewat `go run` di Windows dengan Edge; (c) untuk versi perusahaan, supaya browser terpisah dari aplikasi.
+- **Asumsi sementara di kode (ASUMSI E-120):** (a).
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-121 · Kriteria M8.2, M8.4, dan M8.5 yang butuh pemilik atau pihak lain
+
+- **Tanggal dan milestone:** 15 November 2026, M8.2, M8.4, M8.5.
+- **Jenis:** Celah
+- **Rujukan:** M8.2, M8.4, M8.5, Q-16, Q-44, RK-50.
+- **Temuan:** Tiga kriteria selesai tidak bisa dipenuhi dari kode. M8.2 "restore berhasil di mesin lain" butuh komputer kedua. M8.4 "IT bisa menilai tanpa melihat kode" butuh tinjauan IT, dan peninjaunya belum ditetapkan (Q-44); paket UML juga belum lengkap (U4, U6, U7, U9, U12, U13, U14). M8.5 "semua angka berasal dari pengukuran nyata" butuh baseline Excel (S7) dan pilot (M7.6) yang belum diukur. Yang dibuat: langkah uji pemulihan di panduan operasional, dokumen untuk IT versi 1.0, dan kerangka QCC dengan kotak [ukur] yang sengaja kosong.
+- **Opsi:** (a) Tahap 8 dianggap selesai di kode dan ketiga kriteria menjadi tugas pemilik; (b) Tahap 8 tetap terbuka sampai ketiganya terpenuhi.
+- **Rekomendasi Claude Code (usulan):** (a), dengan ketiganya dicatat sebagai syarat sebelum presentasi QCC.
+- **Asumsi sementara di kode (ASUMSI E-121):** (a).
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
 
 ## Usulan desain UI (UX-01 sampai UX-07): dampak ke M0 sampai M3 dan saran
 

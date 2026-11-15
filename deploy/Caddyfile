@@ -1,0 +1,19 @@
+# Caddy di depan aplikasi (M8.3): HTTPS lokal untuk demo di localhost (D-36).
+# "tls internal" membuat sertifikat dari CA lokal milik Caddy, jadi browser
+# memberi peringatan sampai CA itu dipercaya di komputer ini. Sertifikat
+# perusahaan berlaku untuk versi IT, bukan untuk demo.
+localhost {
+	tls internal
+	encode zstd gzip
+
+	header {
+		# Browser hanya memakai HTTPS untuk alamat ini.
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "same-origin"
+		-Server
+	}
+
+	reverse_proxy app:8080
+}

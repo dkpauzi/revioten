@@ -35,6 +35,9 @@ type config struct {
 	// AttachmentDir dari ATTACHMENT_DIR: folder privat lampiran perubahan
 	// (M5.2). Bawaannya data/attachments, yang tidak di-commit.
 	AttachmentDir string
+	// ClamAVAddr dari CLAMAV_ADDR: alamat daemon clamd untuk memindai
+	// unggahan (M8.2), misalnya 127.0.0.1:3310. Kosong berarti tanpa pemindaian.
+	ClamAVAddr string
 	// PDFBrowser dari PDF_BROWSER: lokasi Chrome atau Edge untuk PDF (M6.3);
 	// kosong berarti dicari otomatis.
 	PDFBrowser string
@@ -122,6 +125,7 @@ func loadConfig(getenv func(string) string, envFile string) (config, error) {
 		BackupDir: get("BACKUP_DIR"), BackupPassphrase: get("BACKUP_PASSPHRASE"),
 		AttachmentDir: cmp.Or(get("ATTACHMENT_DIR"), filepath.Join("data", "attachments")),
 		PDFBrowser:    get("PDF_BROWSER"), PublicBaseURL: get("PUBLIC_BASE_URL"),
+		ClamAVAddr: get("CLAMAV_ADDR"),
 	}, nil
 }
 

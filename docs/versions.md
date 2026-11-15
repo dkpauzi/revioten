@@ -114,6 +114,7 @@ Hasil `npm audit` setelah M0.5: 8 temuan (4 rendah, 4 tinggi). Yang rendah masih
 | Caddy | v2.11.7 | 2026-10-03 | 2026-10-27 | proxy.golang.org | Terbaru. Dipakai di M8.3. |
 | Gotenberg (PDF opsi A) | v8.39.0 | 2026-10-26 | 2026-10-28 | proxy.golang.org | Diperbarui dari v8.38.1 (E-13). Hanya dipakai bila uji S5 memilihnya. Dicek ulang saat S5. |
 | ClamAV | 1.5.4 | 2026-08-06 | 2026-10-27 | Tag GitHub Cisco-Talos/clamav (`clamav-1.5.4`) | Terbaru. Dipakai di M8.2. |
+| Image Docker untuk deploy (M8.3) | `golang:1.27.3-bookworm`, `node:24.22.1-bookworm-slim`, `debian:bookworm-slim`, `caddy:2.11.7`, `clamav/clamav:1.5.4` | | 2026-11-15 | `docker manifest inspect` terhadap Docker Hub | Semua tag ada. Tag bisa dibangun ulang untuk patch OS; digest belum dicatat. `debian:bookworm-slim` tanpa nomor rilis titik. |
 | Spesifikasi OpenAPI | 3.0.4 | 2024-10-24 | 2026-10-27 | Tag GitHub OAI/OpenAPI-Specification | Versi spesifikasi terbaru 3.2.1 (2026-09-10). Tetap 3.0.4 (D-38). |
 
 ## Alat di komputer pengembang (tidak ada di brief bagian 7)

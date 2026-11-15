@@ -20,6 +20,8 @@
 	let message = $state('');
 	let failure = $state('');
 
+	// selected kosong selama daftar revisi belum dimuat; tombol cetak menunggu
+	// sampai ada, supaya tidak mengirim revisi yang salah.
 	let selected = $derived(revisions.find((r) => String(r.revision) === choice));
 	let released = $derived(selected?.status === 'released');
 	let purposes = $derived(
@@ -91,8 +93,8 @@
 				{#each purposes as p (p.key)}<option value={p.key}>{t(`printPurpose_${p.key}` as 'printPurpose_draft')}</option>{/each}
 			</select>
 		</div>
-		<button type="button" disabled={busy || purposes.length === 0} onclick={() => print('xlsx')}>{t('printExcel')}</button>
-		<button type="button" disabled={busy || purposes.length === 0} onclick={() => print('pdf')}>{t('printPdf')}</button>
+		<button type="button" disabled={busy || !selected || purposes.length === 0} onclick={() => print('xlsx')}>{t('printExcel')}</button>
+		<button type="button" disabled={busy || !selected || purposes.length === 0} onclick={() => print('pdf')}>{t('printPdf')}</button>
 	</div>
 
 	<h3>{t('printLog')}</h3>

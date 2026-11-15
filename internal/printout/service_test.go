@@ -2,8 +2,11 @@ package printout_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"strings"
 	"testing"
 
@@ -232,5 +235,30 @@ func TestPrintMigratedHistory(t *testing.T) {
 	}
 	if _, err := s.UploadScan(ctx, e.Author, d.ID, "hardcopy.pdf", strings.NewReader("%PDF-1.4 hardcopy")); !errors.Is(err, access.ErrForbidden) {
 		t.Errorf("penyusun tanpa E-10 mengunggah scan baseline: %v", err)
+	}
+}
+
+// infected adalah pemindai tiruan yang selalu menemukan malware.
+type infected struct{}
+
+func (infected) Scan(context.Context, io.Reader) error {
+	return fmt.Errorf("%w: Eicar-Test-Signature", storage.ErrInfected)
+}
+
+// TestUploadScanIsVirusScanned: M8.2. Scan bertanda tangan yang terdeteksi
+// berbahaya ditolak, dan nama temuannya tidak sampai ke pesan untuk pengguna.
+func TestUploadScanIsVirusScanned(t *testing.T) {
+	e := doctest.Setup(t)
+	ctx := t.Context()
+	store, err := storage.New(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := printout.NewService(e.Pool, e.Checker, e.Docs, store.WithScanner(infected{}), "")
+	cp := e.NewSet(t, "ab", e.CustomerAB, e.ModelK125)["cp"]
+	dcc := doctest.NewActor(t, e.Pool, "dcc.uji", "work", doctest.All(access.RoleDocumentControl))
+	_, err = s.UploadScan(ctx, dcc, cp.ID, "signed.pdf", strings.NewReader("%PDF-1.4 signed"))
+	if code(t, err) != "file:not_allowed" || strings.Contains(err.Error(), "Eicar") {
+		t.Errorf("scan berbahaya: %v", err)
 	}
 }

@@ -10,7 +10,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { en } from '../src/lib/i18n/en.ts';
 import { admin } from '../e2e/account.mjs';
-import { logOut, openFromMenu } from '../e2e/helpers.ts';
+import { createWorkAccount, logInFirstTime, logOut, openFromMenu } from '../e2e/helpers.ts';
 
 const languages = ['en', 'id'] as const;
 
@@ -49,6 +49,8 @@ async function logInAs(page: Page, login: string, password: string): Promise<voi
 }
 
 test('potret layar untuk halaman Help', async ({ page }) => {
+	test.setTimeout(8 * 60 * 1000);
+	const control = { login: 'dok.kontrol', password: 'rilis selalu dengan scan' };
 	const engineer = { login: 'ppap.engineer', name: 'Contoh PPAP Engineer', password: 'kopi pagi di pabrik' };
 
 	await page.goto('/login');
@@ -95,6 +97,8 @@ test('potret layar untuk halaman Help', async ({ page }) => {
 	await form.getByLabel(en.roleAuthor, { exact: true }).check();
 	await form.getByLabel(en.roleTemplateMaintainer, { exact: true }).check();
 	await form.getByLabel(en.roleDocumentControl, { exact: true }).check();
+	await form.getByLabel(en.roleFormApprover, { exact: true }).check();
+	await form.getByLabel(en.roleMigration, { exact: true }).check();
 	await form.getByRole('button', { name: en.accountCreate }).click();
 	const notice = page.getByRole('status');
 	await expect(notice).toContainText(en.accountTemporaryPassword.replace('{login}', engineer.login));
@@ -117,6 +121,24 @@ test('potret layar untuk halaman Help', async ({ page }) => {
 	await openFromMenu(page, en.navGroupTemplates, en.navFormSets);
 	await expect(page.getByRole('heading', { name: en.formSetCustomersTitle })).toBeVisible();
 	await shot(page, 'form-sets');
+
+	// Persiapan untuk gambar Tahap 4 sampai 8: format terbit, akun dokumen
+	// kontrol, dan mode migrasi. Disiapkan lewat API supaya singkat.
+	await openFromMenu(page, en.navGroupTemplates, en.navFormatTemplates);
+	for (const name of ['PFD · PFD', 'PFMEA AIAG 4th · PFMEA', 'CP · CP']) {
+		await page.getByLabel(en.formatChoose, { exact: true }).selectOption({ label: name });
+		page.once('dialog', (dialog) => dialog.accept());
+		await page.getByRole('button', { name: en.versionPublish.replace('{version}', '1') }).click();
+		await expect(page.getByRole('status')).toHaveText(en.versionPublished.replace('{version}', '1'));
+	}
+	const controlTemporary = await createWorkAccount(page, 'Contoh Dokumen Kontrol', control.login, ['document_control', 'migration']);
+	await page.evaluate(() =>
+		fetch('/api/v1/system-settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ migration_mode: true }) })
+	);
+	await openFromMenu(page, en.navGroupAdmin, en.navRoles);
+	await expect(page.getByRole('heading', { name: en.rolesTitle, level: 1 })).toBeVisible();
+	await expect(page.getByRole('row').nth(3)).toBeVisible();
+	await shot(page, 'roles');
 
 	// Pengelola template.
 	await logOut(page);
@@ -173,6 +195,83 @@ test('potret layar untuk halaman Help', async ({ page }) => {
 	await page.getByRole('button', { name: en.numberRegister, exact: true }).click();
 	await expect(page.getByRole('status')).toContainText('SH-LM-001');
 	await shot(page, 'numbers');
+
+	// Dokumen: form set terbit, dokumen PFD dibuat dan dirakit (poin contoh tadi poin PFD).
+	await openFromMenu(page, en.navGroupTemplates, en.navFormSets);
+	const formSet = page.locator('section').filter({ has: page.getByRole('heading', { name: /^AIAG 4th set/ }) });
+	page.once('dialog', (dialog) => dialog.accept());
+	await formSet.getByRole('button', { name: en.versionPublish.replace('{version}', '1') }).click();
+	await expect(page.getByRole('status')).toHaveText(en.formSetPublished.replace('{version}', '1').replace('{name}', 'AIAG 4th set'));
+	await openFromMenu(page, en.navGroupDocuments, en.navDocuments);
+	await page.getByLabel(en.documentCustomer, { exact: true }).selectOption({ label: 'LM · Contoh Customer LM' });
+	await page.getByLabel(en.documentNumber, { exact: true }).selectOption({ label: 'SH-LM-001 · PFD' });
+	await page.getByLabel('K-125').first().check();
+	await page.getByRole('button', { name: en.documentCreate }).click();
+	await expect(page.getByRole('status')).toHaveText(en.documentCreated.replace('{number}', 'SH-LM-001'));
+	await page.getByRole('link', { name: 'SH-LM-001' }).click();
+	await expect(page.getByRole('heading', { name: 'SH-LM-001', level: 1 })).toBeVisible();
+	await page.getByRole('button', { name: en.composeOpen }).click();
+	await page.getByLabel(en.composeProcess).selectOption({ label: `Laser marking · ${en.composeVersion.replace('{version}', '1')}` });
+	await page.getByRole('checkbox', { name: en.composeAll.replace('{name}', 'Marking') }).check();
+	await page.getByRole('button', { name: en.composeApply }).click();
+	await expect(page.getByRole('status')).toHaveText(en.composeDone.replace('{process}', 'Laser marking'));
+	await expect(page.locator('.workbook .tabulator-row')).toHaveCount(1);
+	await shot(page, 'documents', page.getByRole('heading', { name: en.documentRowsTitle, exact: true }));
+	await shot(page, 'printing', page.getByRole('heading', { name: en.printTitle, exact: true }));
+	const cpUrl = page.url();
+
+	// Dokumen kontrol mencatat rilis, supaya perubahan bisa diajukan.
+	await logOut(page);
+	await logInFirstTime(page, control.login, controlTemporary, control.password);
+	await page.goto(cpUrl);
+	const revisions = page.locator('section', { has: page.getByRole('heading', { name: en.revisions, exact: true }) });
+	await revisions.getByLabel(en.scanUpload).setInputFiles({ name: 'SH-LM-001-00-signed.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 contoh scan') });
+	await revisions.getByRole('button', { name: en.scanUploadButton }).click();
+	await expect(revisions.getByRole('status')).toHaveText(en.scanUploaded.replace('{file}', 'SH-LM-001-00-signed.pdf'));
+	page.once('dialog', (dialog) => dialog.accept());
+	await page.getByRole('button', { name: en.revisionRelease.replace('{revision}', '0') }).click();
+	await expect(page.getByText(en.documentNoDraft)).toBeVisible();
+	await shot(page, 'document-control', page.getByRole('heading', { name: en.revisions, exact: true }));
+
+	// Penyusun mengajukan perubahan, lalu memasukkan dokumen lama.
+	await logOut(page);
+	await logInAs(page, engineer.login, engineer.password);
+	await expect(page.getByRole('button', { name: en.logout })).toBeVisible();
+	await openFromMenu(page, en.navGroupDocuments, en.navChanges);
+	await page.getByLabel(en.documentCustomer, { exact: true }).selectOption({ label: 'LM · Contoh Customer LM' });
+	await page.getByLabel(en.changeTrigger, { exact: true }).selectOption({ label: 'Customer claim' });
+	await page.getByLabel(en.changeType, { exact: true }).selectOption({ index: 1 });
+	await page.getByLabel(en.changeFourM, { exact: true }).selectOption({ label: 'Method' });
+	await page.getByLabel(en.changeReason, { exact: true }).fill('Contoh: tambah pemeriksaan fokus laser');
+	await page.getByRole('checkbox', { name: /SH-LM-001/ }).check();
+	await page.getByRole('button', { name: en.changeSubmit }).click();
+	await expect(page.getByRole('status')).toHaveText(en.changeCreated.replace('{ref}', 'CHG-0001'));
+	await shot(page, 'changes');
+
+	await openFromMenu(page, en.navGroupDocuments, en.navDocuments);
+	await page.getByLabel(en.documentCustomer, { exact: true }).selectOption({ label: 'LM · Contoh Customer LM' });
+	const legacy = page.locator('section', { has: page.getByRole('heading', { name: en.migrateTitle }) });
+	await legacy.getByLabel(en.migrateNumber, { exact: true }).selectOption({ label: 'SC-LM-001 · CP' });
+	await legacy.getByRole('checkbox', { name: 'K-125' }).check();
+	await legacy.getByLabel(en.migrateRevision, { exact: true }).fill('4');
+	await legacy.getByLabel(en.migrateEffectiveDate, { exact: true }).fill('2025-03-10');
+	await legacy.getByLabel(en.migratePreparedBy, { exact: true }).fill('Contoh Penyusun Lama');
+	await legacy.getByLabel(en.migrateApprovedBy, { exact: true }).fill('Contoh NPI Manager, Contoh QA Manager');
+	await legacy.getByRole('button', { name: en.migrateSubmit }).click();
+	await expect(page.getByRole('status')).toHaveText(en.migrateDone.replace('{number}', 'SC-LM-001').replace('{revision}', '4'));
+	await page.getByRole('link', { name: 'SC-LM-001' }).click();
+	const baseline = page.locator('section', { has: page.getByRole('heading', { name: en.migrationTitle, exact: true }) });
+	await baseline.getByRole('button', { name: en.historyAdd }).click();
+	await baseline.getByLabel(`${en.historyRevision} 1`).fill('-00');
+	await baseline.getByLabel(`${en.historyDate} 1`).fill('2023-01-05');
+	await baseline.getByLabel(`${en.historyDescription} 1`).fill('Initial release');
+	await baseline.getByRole('button', { name: en.historySave }).click();
+	await expect(baseline.getByRole('status')).toHaveText(en.historySaved);
+	await shot(page, 'migration', page.getByRole('heading', { name: en.migrationTitle, exact: true }));
+
+	await openFromMenu(page, en.navGroupDocuments, en.navDashboard);
+	await expect(page.getByRole('heading', { name: en.dashboardRows })).toBeVisible();
+	await shot(page, 'dashboard');
 
 	// Admin: audit log.
 	await logOut(page);

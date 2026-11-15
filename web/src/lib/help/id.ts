@@ -258,7 +258,9 @@ export const helpId: HelpContent = {
 				'Nomor operasi dan nama proses adalah kolom yang diisi dari baris; keduanya tidak diketik di kolomnya sendiri.',
 				'RPN dan Action Priority dihitung dan tidak bisa diketik.',
 				'Kolom abu-abu diisi atau dihitung sistem dan tidak bisa diketik.'
-			]
+			],
+			image: 'documents',
+			imageAlt: 'Workbook sebuah PFD dengan satu baris hasil perakitan.'
 		},
 		{
 			id: 'document-control',
@@ -273,7 +275,9 @@ export const helpId: HelpContent = {
 				'Tekan {numberImportPreview} dan baca laporannya: baris mana yang akan diimpor, mana yang ditolak dan alasannya.',
 				'Bila laporannya sudah benar, tekan {numberImportRun}.'
 			],
-			tips: ['Nomor yang dibatalkan tetap ada di register beserta alasannya. Nomor itu tidak pernah diberikan ke dokumen lain.']
+			tips: ['Nomor yang dibatalkan tetap ada di register beserta alasannya. Nomor itu tidak pernah diberikan ke dokumen lain.'],
+			image: 'document-control',
+			imageAlt: 'Bagian Revisi dengan satu revisi terbit dan scan bertanda tangannya.'
 		},
 		{
 			id: 'changes',
@@ -290,7 +294,9 @@ export const helpId: HelpContent = {
 				'Di {impactTitle}, catat untuk setiap dokumen terkait (PFD, PFMEA, CP, WI, standar inspeksi) apakah terdampak, dengan alasan bila tidak, lalu tekan {impactSave}. WI atau standar inspeksi dipilih dari master dokumen terkait, jadi nomornya sama persis dengan sumbernya; ketik sendiri hanya bila tidak ada di daftar. Daftar ini masih bisa dilengkapi sesudah perubahan diterima.',
 				'Verifikator (Project Engineer atau Project Leader dari Project Group customer, atau APQP/PPAP Controller) membuka perubahan, menulis {changeVerifyNote}, lalu menekan {changeAccept} atau {changeReject}. Pemohon tidak bisa memverifikasi perubahannya sendiri.'
 			],
-			tips: ['Perubahan selalu menunjuk paling sedikit satu dokumen, jadi dokumen terakhir tidak bisa dilepas.', 'Lampiran paling besar 20 MB. Lampiran yang dilepas tetap tercatat di audit log.', 'Saat perubahan diterima, setiap dokumen terdampak mendapat draft: dokumen yang sudah punya draft terbuka menerima perubahan itu ke draft-nya, dan dokumen yang sudah terbit membuka revisi berikutnya. Revisi yang berlaku tetap sampai draft itu terbit.', 'Sesudah revisi ditandatangani di kertas, pemegang dokumen kontrol membuka dokumen dan mencatat rilisnya di bagian Revisi. Isinya dibekukan dengan hash SHA-256; orang yang menyusun draft tidak bisa mencatat rilisnya.', 'Di Bandingkan revisi, pilih revisi terbit dan draft terbuka atau revisi terbit lain, dan bila perlu satu proses, untuk melihat setiap baris yang ditambah, dihapus, diubah, atau dipindah beserta isi sel sebelum dan sesudahnya.']
+			tips: ['Perubahan selalu menunjuk paling sedikit satu dokumen, jadi dokumen terakhir tidak bisa dilepas.', 'Lampiran paling besar 20 MB. Lampiran yang dilepas tetap tercatat di audit log.', 'Saat perubahan diterima, setiap dokumen terdampak mendapat draft: dokumen yang sudah punya draft terbuka menerima perubahan itu ke draft-nya, dan dokumen yang sudah terbit membuka revisi berikutnya. Revisi yang berlaku tetap sampai draft itu terbit.', 'Sesudah revisi ditandatangani di kertas, pemegang dokumen kontrol membuka dokumen dan mencatat rilisnya di bagian Revisi. Isinya dibekukan dengan hash SHA-256; orang yang menyusun draft tidak bisa mencatat rilisnya.', 'Di Bandingkan revisi, pilih revisi terbit dan draft terbuka atau revisi terbit lain, dan bila perlu satu proses, untuk melihat setiap baris yang ditambah, dihapus, diubah, atau dipindah beserta isi sel sebelum dan sesudahnya.'],
+			image: 'changes',
+			imageAlt: 'Halaman Perubahan dengan daftar perubahan dan formulir perubahan baru.'
 		},
 		{
 			id: 'yokoten',
@@ -318,7 +324,9 @@ export const helpId: HelpContent = {
 				'Revisi terbit dicetak sebagai {printPurpose_reference} atau {printPurpose_controlled}. Salinan terkendali bernomor, dan setiap cetakan tampil di {printLog}.',
 				'Admin mengubah kertas, huruf, margin, dan lebar kolom di {navGroupTemplates}, lalu {navPrintLayouts}, dan bisa memberi satu customer layout lain.'
 			],
-			tips: ['Draft selalu dicetak dengan UNCONTROLLED COPY.', 'Baris yang berubah di revisi yang dicetak diberi segitiga dengan nomor revisi.', 'PDF butuh Chrome atau Edge di komputer server; Excel selalu bisa.']
+			tips: ['Draft selalu dicetak dengan UNCONTROLLED COPY.', 'Baris yang berubah di revisi yang dicetak diberi segitiga dengan nomor revisi.', 'PDF butuh Chrome atau Edge di komputer server; Excel selalu bisa.'],
+			image: 'printing',
+			imageAlt: 'Bagian Cetak sebuah dokumen dengan tujuan cetak dan tombol Excel dan PDF.'
 		},
 		{
 			id: 'migration',
@@ -333,7 +341,9 @@ export const helpId: HelpContent = {
 				'Di {linkTitle}, tekan {linkFind}, centang pasangan yang benar, lalu tekan {linkConfirm}. Baris yang tertaut menerima pembaruan template berikutnya.',
 				'Unggah scan hardcopy bertanda tangan di {revisions}. Petugas migrasi lain membuka dokumen itu, mengisi {migrationEffort}, lalu menekan {migrationVerify}. Statusnya menjadi {documentStatusReleasedMigrated}.'
 			],
-			tips: ['Orang yang memasukkan dokumen tidak bisa memverifikasinya.', 'Sesudah diverifikasi, baseline dan riwayatnya tidak bisa diubah; perubahan berikutnya lewat permintaan perubahan biasa.', 'Matikan mode migrasi setelah migrasi selesai.']
+			tips: ['Orang yang memasukkan dokumen tidak bisa memverifikasinya.', 'Sesudah diverifikasi, baseline dan riwayatnya tidak bisa diubah; perubahan berikutnya lewat permintaan perubahan biasa.', 'Matikan mode migrasi setelah migrasi selesai.'],
+			image: 'migration',
+			imageAlt: 'Baseline migrasi sebuah dokumen lama dengan baris riwayat revisinya.'
 		},
 		{
 			id: 'dashboard',
@@ -346,7 +356,28 @@ export const helpId: HelpContent = {
 				'Baca {dashboardRows}: bagian baris yang tertaut ke poin template.',
 				'Baca {dashboardRevision} dan {dashboardMigration} untuk angka waktu.'
 			],
-			tips: ['Waktu revisi hanya menghitung revisi yang dibuka perubahan yang diterima.', 'Menit migrasi adalah angka yang diketik saat verifikasi.']
+			tips: ['Waktu revisi hanya menghitung revisi yang dibuka perubahan yang diterima.', 'Menit migrasi adalah angka yang diketik saat verifikasi.'],
+			image: 'dashboard',
+			imageAlt: 'Dasbor dengan kartu baris, dokumen, yokoten, waktu revisi, dan migrasi.'
+		},
+		{
+			id: 'roles',
+			title: 'Peran dan hak',
+			who: 'Admin',
+			intro: 'Peran adalah kumpulan hak. Katalog hak tetap; admin menentukan hak mana yang dipegang setiap peran kerja, jadi akses bisa berubah tanpa mengubah program.',
+			steps: [
+				'Buka {navGroupAdmin}, lalu {navRoles}. Setiap kolom adalah satu peran dan setiap baris satu hak.',
+				'Centang atau hilangkan centang satu hak di kolom peran kerja, lalu tekan {rolesSave} di bawah kolom itu.',
+				'Berikan peran ke orang lewat {navAccounts}. Perubahan langsung berlaku untuk semua akun yang memegang peran itu.'
+			],
+			tips: [
+				'Peran Admin dan Viewer tetap, dan hak admin (A-1 sampai A-4) tidak bisa diberikan ke peran kerja.',
+				'Hak dasar L-1 sampai L-3 selalu tercentang.',
+				'Beberapa aturan tidak bisa dimatikan peran mana pun: pemohon tidak memverifikasi permintaannya sendiri, dan penyusun draft tidak mencatat rilisnya.',
+				'Dokumen customer di luar Project Group Anda tidak tampil sama sekali, dan alamatnya menjawab "tidak ada".'
+			],
+			image: 'roles',
+			imageAlt: 'Halaman Peran dengan satu kolom per peran dan satu baris per hak.'
 		},
 		{
 			id: 'audit',

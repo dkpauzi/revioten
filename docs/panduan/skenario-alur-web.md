@@ -322,15 +322,53 @@ Cara lain mengisi baris:
 ### Langkah 21 · Diagram PFD
 Buka tab **PFD**, lalu tekan **Show the diagram**. Satu kotak per baris menurut urutan, bentuknya mengikuti **Flow Symbol**, dan **NG Disposition** digambar di samping langkahnya. Diagram hanya untuk dilihat; ubah barisnya di tabel.
 
-## 8. Admin: periksa jejak
+## 8. Cetak dan rilis (Tahap 6)
 
-### Langkah 22 · Audit log
-Logout, lalu login lagi sebagai `admin.contoh`. Buka **Admin → Audit log**.
+Sebelum bagian ini, admin membuat dua akun lagi di **Admin → Accounts**: `dok.kontrol` (Document control dan Migration) dan `apqp.controller` (Verifier). Di **Master data → Positions**, catat pemegang `apqp.controller` sebagai **APQP/PPAP Controller**. Di **Admin → Settings**, centang **Migration mode**. Akun `ppap.engineer` juga diberi peran Migration.
+
+### Langkah 22 · Cetak draft
+Di dokumen SC-LM-002, bagian **Print**, tekan **Excel**. Berkas `SC-LM-002-00-draft.xlsx` terunduh dengan tanda UNCONTROLLED COPY, dan cetakan itu tercatat di **Print log**.
+
+### Langkah 23 · Catat rilis
+Login sebagai `dok.kontrol`. Buka dokumen SC-LM-002, bagian **Revisions**. Pilih scan bertanda tangan, tekan **Upload the scan**, lalu **Record release of revision 0**. Tanpa scan, tombol rilis mati. Penyusun tidak bisa merilis draftnya sendiri.
+
+## 9. Perubahan dan revisi (Tahap 5)
+
+### Langkah 24 · Ajukan perubahan
+Login sebagai `ppap.engineer`. Buka **Documents → Changes**, pilih customer, isi **Triggered by**, **Type of change**, **4M category**, dan **Reason**, centang SC-LM-002, lalu **Submit change**. Nomornya CHG-0001.
+
+### Langkah 25 · Verifikasi
+Login sebagai `apqp.controller`. Buka CHG-0001, isi **Verification note**, lalu **Accept**. Dokumen terdampak mendapat draft revisi 1. Pemohon tidak bisa memverifikasi permintaannya sendiri.
+
+### Langkah 26 · Ubah draft dan bandingkan
+Login sebagai `ppap.engineer`. Ubah satu sel di SC-LM-002, lalu lihat **Compare revisions**: beda revisi 0 dan draft tampil per baris dan per sel.
+
+### Langkah 27 · Rilis revisi 1 dan cetak
+Login sebagai `dok.kontrol`. Unggah scan revisi 1, **Record release of revision 1**, lalu di **Print** pilih **Reference copy** dan tekan **Excel**.
+
+## 10. Dokumen lama (Tahap 7)
+
+### Langkah 28 · Masukkan dokumen lama
+Login sebagai `ppap.engineer`. Daftarkan satu set nomor lagi. Di **Documents → Documents**, bagian **Enter a legacy document**: pilih SC-LM-003, centang K-200, isi **Current revision** 4, **Effective date**, dan nama di hardcopy, lalu **Enter the legacy document**. Buka dokumennya, tambah baris riwayat di **Revision history from the legacy table**, simpan, lalu unggah scan hardcopy di **Revisions**.
+
+### Langkah 29 · Verifikasi hardcopy
+Login sebagai `dok.kontrol`. Buka SC-LM-003, isi **Minutes spent**, lalu **Verify against the hard copy**. Statusnya menjadi Released (migrated). Orang yang memasukkan dokumen tidak bisa memverifikasinya.
+
+### Langkah 30 · Dasbor
+Buka **Documents → Dashboard**: baris yang mengikuti template, dokumen per status, target yokoten, waktu revisi, dan usaha migrasi.
+
+## 11. Admin: periksa peran dan jejak (Tahap 8)
+
+### Langkah 31 · Roles
+Login sebagai `admin.contoh`. Buka **Admin → Roles**. Setiap kolom satu peran, setiap baris satu hak. Kotak yang abu-abu terkunci: peran Admin dan Viewer, hak admin, dan hak dasar.
+
+### Langkah 32 · Audit log
+Buka **Admin → Audit log**.
 
 1. Setiap langkah di atas tercatat: siapa, kapan, apa, dan akun mana (termasuk orang pemegangnya).
 2. Tekan **Check the chain** untuk memastikan catatan tidak pernah diubah. Audit log tidak bisa diedit siapa pun, juga lewat database.
 
-## 9. Bila ada masalah
+## 12. Bila ada masalah
 
 | Masalah | Penyebab yang biasa | Yang dilakukan |
 |---|---|---|
@@ -344,12 +382,9 @@ Logout, lalu login lagi sebagai `admin.contoh`. Buka **Admin → Audit log**.
 | Tombol Compose tidak menampilkan proses | Process template belum punya versi terbit | Langkah 12 |
 | Tab Check tidak ada | Dokumen bukan bagian set yang punya PFMEA dan CP | Daftarkan nomor sebagai set (langkah 16) |
 
-## 10. Yang belum ada di sistem (urutan milestone)
-
-Langkah ini akan ditambahkan ke panduan saat milestone-nya selesai.
+## 13. Yang belum ada di sistem
 
 | Milestone | Langkah yang akan muncul |
 |---|---|
-| Belum dijadwalkan | Doc ref (Relevant Document) terisi dari master dokumen terkait (D-130, R-DOC-11) |
-| Tahap 5 | Permintaan perubahan, verifikasi, dan draft revisi |
-| Tahap 6 | Cetak untuk tanda tangan basah, catat dokumen kembali, dan catat rilis (pencatat rilis harus berbeda dari penyusun) |
+| Belum diputuskan | Konfirmasi slot saat rilis (R-APR-10) dan pembekuan rute saat cetak (R-APR-11) |
+| Tahap 9 dan 10 | API integrasi dan portal customer (latihan, sesudah MVP) |

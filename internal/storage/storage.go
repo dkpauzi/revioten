@@ -6,6 +6,7 @@
 package storage
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
@@ -27,7 +28,17 @@ var hashPattern = regexp.MustCompile(`^[0-9a-f]{64}$`)
 // Store adalah folder penyimpanan berkas.
 type Store struct {
 	dir string
+	// scanner memindai unggahan sebelum disimpan (M8.2); nil berarti tanpa pemindaian.
+	scanner Scanner
 }
+
+// WithScanner memberi salinan Store yang memindai setiap unggahan dengan sc.
+func (s *Store) WithScanner(sc Scanner) *Store {
+	return &Store{dir: s.dir, scanner: sc}
+}
+
+// Scanning melaporkan apakah unggahan dipindai.
+func (s *Store) Scanning() bool { return s.scanner != nil }
 
 // New membuat penyimpanan di folder dir. Folder dibuat bila belum ada.
 func New(dir string) (*Store, error) {
@@ -43,6 +54,13 @@ func New(dir string) (*Store, error) {
 // Put menyimpan isi r dan memberi SHA-256 serta ukurannya. Isi yang lebih
 // dari maxBytes ditolak dengan ErrTooLarge dan tidak tersimpan.
 func (s *Store) Put(r io.Reader, maxBytes int64) (string, int64, error) {
+	return s.PutScanned(context.Background(), r, maxBytes)
+}
+
+// PutScanned seperti Put, dan memindai isi dengan pemindai Store sebelum
+// berkas masuk ke folder penyimpanan (M8.2). Berkas berbahaya ditolak dengan
+// ErrInfected; pemindai yang tidak bisa dihubungi dengan ErrScanUnavailable.
+func (s *Store) PutScanned(ctx context.Context, r io.Reader, maxBytes int64) (string, int64, error) {
 	tmp, err := os.CreateTemp(s.dir, "upload-*")
 	if err != nil {
 		return "", 0, fmt.Errorf("membuat berkas sementara: %w", err)
@@ -61,6 +79,17 @@ func (s *Store) Put(r io.Reader, maxBytes int64) (string, int64, error) {
 	}
 	if n > maxBytes {
 		return "", 0, ErrTooLarge
+	}
+	if s.scanner != nil {
+		f, err := os.Open(tmp.Name())
+		if err != nil {
+			return "", 0, fmt.Errorf("membuka berkas untuk dipindai: %w", err)
+		}
+		err = s.scanner.Scan(ctx, f)
+		f.Close()
+		if err != nil {
+			return "", 0, err
+		}
 	}
 	sum := hex.EncodeToString(h.Sum(nil))
 	final := s.path(sum)

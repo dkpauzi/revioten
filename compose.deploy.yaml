@@ -1,0 +1,73 @@
+# M8.3 · Aplikasi lengkap di localhost lewat Docker Compose (D-36):
+# PostgreSQL, aplikasi, dan Caddy dengan HTTPS lokal. Terpisah dari compose.yaml
+# (database untuk pengembangan), dengan nama proyek dan volume sendiri.
+#
+#   docker compose -f compose.deploy.yaml up -d --build
+#   buka https://localhost:8443
+#
+# Nilai rahasia dibaca dari file .env yang sama (lihat .env.example).
+name: revioten-deploy
+
+services:
+  db:
+    image: postgres:18.6
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?isi POSTGRES_USER di file .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?isi POSTGRES_PASSWORD di file .env}
+      POSTGRES_DB: ${POSTGRES_DB:?isi POSTGRES_DB di file .env}
+    # Tanpa ports: database hanya terjangkau dari container aplikasi.
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # Password hanya huruf dan angka (lihat .env.example), jadi aman di dalam alamat ini.
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?sslmode=disable
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?isi APP_DB_PASSWORD di file .env}
+      PUBLIC_BASE_URL: https://localhost:${HTTPS_PORT:-8443}
+      # Diisi "clamav:3310" bila profil clamav dinyalakan (M8.2).
+      CLAMAV_ADDR: ${DEPLOY_CLAMAV_ADDR:-}
+    volumes:
+      - attachments:/data/attachments
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2.11.7
+    depends_on:
+      - app
+    ports:
+      # Hanya bisa dibuka dari komputer ini, tidak dari jaringan (D-36).
+      - "127.0.0.1:${HTTPS_PORT:-8443}:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+
+  # Pemindai antivirus (M8.2). Tidak ikut jalan kecuali diminta, karena butuh
+  # RAM cukup besar dan mengunduh basis data tanda virus saat pertama jalan.
+  # Isi DEPLOY_CLAMAV_ADDR=clamav:3310 di .env, lalu:
+  #   docker compose -f compose.deploy.yaml --profile clamav up -d
+  clamav:
+    image: clamav/clamav:1.5.4
+    profiles: ["clamav"]
+    volumes:
+      - clamav_db:/var/lib/clamav
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  attachments:
+  caddy_data:
+  caddy_config:
+  clamav_db:

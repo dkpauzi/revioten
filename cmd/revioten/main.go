@@ -97,6 +97,13 @@ func runServer(args []string) error {
 	if err != nil {
 		return err
 	}
+	// Unggahan dipindai antivirus bila CLAMAV_ADDR diisi (M8.2, R-SEC-04).
+	if cfg.ClamAVAddr != "" {
+		attachments = attachments.WithScanner(storage.ClamAV{Addr: cfg.ClamAVAddr})
+		slog.Info("unggahan dipindai antivirus", "clamd", cfg.ClamAVAddr)
+	} else {
+		slog.Warn("unggahan tidak dipindai antivirus: CLAMAV_ADDR kosong")
+	}
 	docs := document.NewService(pool, checker)
 	// Cetak memakai folder lampiran yang sama untuk scan bertanda tangan (M6.7).
 	printing := printout.NewService(pool, checker, docs, attachments, cfg.PDFBrowser).WithBaseURL(cmp.Or(cfg.PublicBaseURL, "http://"+*addr))

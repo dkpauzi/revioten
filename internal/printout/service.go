@@ -378,12 +378,17 @@ func (s *Service) UploadScan(ctx context.Context, actor access.Actor, id, fileNa
 	if s.store == nil {
 		return Scan{}, errors.New("penyimpanan scan belum dipasang")
 	}
-	sum, size, err := s.store.Put(r, MaxScanBytes)
+	sum, size, err := s.store.PutScanned(ctx, r, MaxScanBytes)
 	switch {
 	case errors.Is(err, storage.ErrEmpty):
 		return Scan{}, invalid("file", problem.Required, "The file is empty.")
 	case errors.Is(err, storage.ErrTooLarge):
 		return Scan{}, invalid("file", problem.TooLong, "A scan can be at most 30 MB.")
+	case errors.Is(err, storage.ErrInfected):
+		// Nama temuan hanya masuk log server, bukan ke layar (R-API-13).
+		return Scan{}, invalid("file", problem.NotAllowed, "The antivirus scanner found malware in this file. It was not stored.")
+	case errors.Is(err, storage.ErrScanUnavailable):
+		return Scan{}, invalid("file", problem.NotAllowed, "The antivirus scanner cannot be reached, so the file was not stored. Try again or tell the admin.")
 	case err != nil:
 		return Scan{}, err
 	}

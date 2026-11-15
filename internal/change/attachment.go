@@ -79,12 +79,17 @@ func (s *RequestService) AddAttachment(ctx context.Context, actor access.Actor, 
 	}
 	// Berkas disimpan dulu, di luar transaksi. Bila pencatatan gagal, berkas
 	// tanpa catatan tidak berbahaya: namanya hash, dan tidak bisa diunduh.
-	sum, size, err := s.store.Put(r, MaxAttachmentBytes)
+	sum, size, err := s.store.PutScanned(ctx, r, MaxAttachmentBytes)
 	switch {
 	case errors.Is(err, storage.ErrEmpty):
 		return Change{}, problems(invalid("file", problem.Required, "The file is empty."))
 	case errors.Is(err, storage.ErrTooLarge):
 		return Change{}, problems(invalid("file", problem.TooLong, "A file can be at most 20 MB."))
+	case errors.Is(err, storage.ErrInfected):
+		// Nama temuan hanya masuk log server, bukan ke layar (R-API-13).
+		return Change{}, problems(invalid("file", problem.NotAllowed, "The antivirus scanner found malware in this file. It was not stored."))
+	case errors.Is(err, storage.ErrScanUnavailable):
+		return Change{}, problems(invalid("file", problem.NotAllowed, "The antivirus scanner cannot be reached, so the file was not stored. Try again or tell the admin."))
 	case err != nil:
 		return Change{}, err
 	}

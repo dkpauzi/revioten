@@ -1,0 +1,14 @@
+# Berkas yang tidak dikirim ke Docker saat build image (M8.3).
+.git
+.env
+.env.*
+!.env.example
+data/
+catatan-pribadi/
+bin/
+docs/
+**/node_modules/
+web/build/app/
+web/.svelte-kit/
+web/test-results/
+web/playwright-report/

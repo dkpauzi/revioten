@@ -258,7 +258,9 @@ export const helpEn: HelpContent = {
 				'The operation number and the process name are columns filled from the row; they are never typed in the column itself.',
 				'RPN and Action Priority are calculated and cannot be typed.',
 				'Grey columns are filled or calculated by the system and cannot be typed.'
-			]
+			],
+			image: 'documents',
+			imageAlt: 'The workbook of a PFD with one composed row.'
 		},
 		{
 			id: 'document-control',
@@ -273,7 +275,9 @@ export const helpEn: HelpContent = {
 				'Press {numberImportPreview} and read the report: which lines will be imported, which are refused and why.',
 				'When the report is right, press {numberImportRun}.'
 			],
-			tips: ['A voided number stays in the register with its reason. It is never given to another document.']
+			tips: ['A voided number stays in the register with its reason. It is never given to another document.'],
+			image: 'document-control',
+			imageAlt: 'The Revisions section with a released revision and its signed scan.'
 		},
 		{
 			id: 'changes',
@@ -290,7 +294,9 @@ export const helpEn: HelpContent = {
 				'Under {impactTitle}, record for each related document (PFD, PFMEA, CP, WI, inspection standard) whether it is affected, with a reason when it is not, and press {impactSave}. A WI or inspection standard is picked from the master list of referenced documents, so its number stays exactly as in the source; type it only when it is not in the list. The checklist can still be completed after the change is accepted.',
 				'A verifier (the Project Engineer or the Project Leader of the customer’s project group, or the APQP/PPAP Controller) opens the change, writes a {changeVerifyNote}, and presses {changeAccept} or {changeReject}. The requester cannot verify their own change.'
 			],
-			tips: ['A change always affects at least one document, so the last one cannot be removed.', 'An attachment can be at most 20 MB. A removed attachment stays in the audit log.', 'When a change is accepted, every affected document gets a draft: a document that already has an open draft takes the change into it, and a released document opens the next revision. The revision in force stays as it is until the draft is released.', 'After the revision is signed on paper, a document control holder opens the document and records the release under Revisions. The content is frozen with a SHA-256 hash; the person who prepared the draft cannot record its release.', 'Under Compare revisions, choose a released revision and the open draft or another released revision, and optionally one process, to see every added, removed, changed, or moved row with the cells before and after.']
+			tips: ['A change always affects at least one document, so the last one cannot be removed.', 'An attachment can be at most 20 MB. A removed attachment stays in the audit log.', 'When a change is accepted, every affected document gets a draft: a document that already has an open draft takes the change into it, and a released document opens the next revision. The revision in force stays as it is until the draft is released.', 'After the revision is signed on paper, a document control holder opens the document and records the release under Revisions. The content is frozen with a SHA-256 hash; the person who prepared the draft cannot record its release.', 'Under Compare revisions, choose a released revision and the open draft or another released revision, and optionally one process, to see every added, removed, changed, or moved row with the cells before and after.'],
+			image: 'changes',
+			imageAlt: 'The Changes page with the list of changes and the form for a new change.'
 		},
 		{
 			id: 'yokoten',
@@ -318,7 +324,9 @@ export const helpEn: HelpContent = {
 				'Released revisions print as {printPurpose_reference} or {printPurpose_controlled}. Controlled copies are numbered, and every print shows in the {printLog}.',
 				'The admin changes paper, fonts, margins, and column widths under {navGroupTemplates}, then {navPrintLayouts}, and can give one customer another layout.'
 			],
-			tips: ['Drafts always print with UNCONTROLLED COPY.', 'Rows changed in the printed revision carry a triangle with the revision number.', 'PDF needs Chrome or Edge on the server computer; Excel always works.']
+			tips: ['Drafts always print with UNCONTROLLED COPY.', 'Rows changed in the printed revision carry a triangle with the revision number.', 'PDF needs Chrome or Edge on the server computer; Excel always works.'],
+			image: 'printing',
+			imageAlt: 'The Print section of a document with the purpose and the Excel and PDF buttons.'
 		},
 		{
 			id: 'migration',
@@ -333,7 +341,9 @@ export const helpEn: HelpContent = {
 				'Under {linkTitle}, press {linkFind}, tick the pairs that are right, and press {linkConfirm}. Linked rows receive later template updates.',
 				'Upload the scan of the signed hard copy under {revisions}. Another migration officer opens the document, fills in {migrationEffort}, and presses {migrationVerify}. The status becomes {documentStatusReleasedMigrated}.'
 			],
-			tips: ['The person who entered a document cannot verify it.', 'After verification the baseline and its history cannot be changed; the next change goes through a normal change request.', 'Switch migration mode off when the migration is finished.']
+			tips: ['The person who entered a document cannot verify it.', 'After verification the baseline and its history cannot be changed; the next change goes through a normal change request.', 'Switch migration mode off when the migration is finished.'],
+			image: 'migration',
+			imageAlt: 'The migration baseline of a legacy document with its revision history lines.'
 		},
 		{
 			id: 'dashboard',
@@ -346,7 +356,28 @@ export const helpEn: HelpContent = {
 				'Read {dashboardRows}: the share of rows that are linked to a template point.',
 				'Read {dashboardRevision} and {dashboardMigration} for the time numbers.'
 			],
-			tips: ['Revision time counts only revisions opened by an accepted change.', 'Migration minutes are the ones typed in at verification.']
+			tips: ['Revision time counts only revisions opened by an accepted change.', 'Migration minutes are the ones typed in at verification.'],
+			image: 'dashboard',
+			imageAlt: 'The dashboard with cards for rows, documents, yokoten, revision time, and migration.'
+		},
+		{
+			id: 'roles',
+			title: 'Roles and rights',
+			who: 'Admin',
+			intro: 'A role is a set of rights. The catalog of rights is fixed; the admin decides which rights each work role holds, so access can change without changing the program.',
+			steps: [
+				'Open {navGroupAdmin}, then {navRoles}. Each column is a role and each line is a right.',
+				'Tick or untick a right in the column of a work role, then press {rolesSave} under that column.',
+				'Give the role to people under {navAccounts}. The change applies at once to every account that holds the role.'
+			],
+			tips: [
+				'The Admin and Viewer roles are fixed, and admin rights (A-1 to A-4) cannot be given to a work role.',
+				'The basic rights L-1 to L-3 always stay ticked.',
+				'Some rules cannot be switched off by any role: a requester never verifies their own request, and the person who prepared a draft never records its release.',
+				'Documents of a customer outside your project group do not show at all, and their address answers "not found".'
+			],
+			image: 'roles',
+			imageAlt: 'The Roles page with one column per role and one line per right.'
 		},
 		{
 			id: 'audit',

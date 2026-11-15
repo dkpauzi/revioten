@@ -1,5 +1,5 @@
-// Tur otomatis alur web, dari database kosong sampai dokumen draft yang dirakit,
-// dibandingkan, dan dicek (M0 sampai M4.10).
+// Tur otomatis alur web, dari database kosong sampai dokumen terbit, direvisi,
+// dicetak, dokumen lama dimigrasi, dan dasbor (Tahap 0 sampai Tahap 8).
 // Mengikuti docs/panduan/skenario-alur-web.md langkah demi langkah. Semua
 // dikerjakan lewat layar (klik dan ketik), tidak lewat API, supaya yang
 // terlihat sama dengan yang dikerjakan orang.
@@ -47,10 +47,63 @@ async function logInAs(page: Page, login: string, password: string): Promise<voi
 	await page.getByRole('button', { name: en.loginSubmit }).click();
 }
 
-test('alur dari admin sampai dokumen draft', async ({ page }) => {
+// createAccount mengisi formulir akun kerja di halaman Accounts dan
+// mengembalikan password sementaranya. roles berisi nama peran di layar.
+async function createAccount(page: Page, name: string, login: string, roles: string[]): Promise<string> {
+	const form = page.locator('form');
+	await form.getByLabel(en.accountPersonNew).check();
+	await form.getByLabel(en.accountPersonName).fill(name);
+	await form.getByLabel(en.accountKindWork).check();
+	await form.getByLabel(en.accountLogin).fill(login);
+	for (const role of roles) {
+		await form.getByLabel(role, { exact: true }).check();
+	}
+	await form.getByRole('button', { name: en.accountCreate }).click();
+	const notice = page.getByRole('status');
+	await expect(notice).toContainText(en.accountTemporaryPassword.replace('{login}', login));
+	return (await notice.locator('code').textContent()) ?? '';
+}
+
+// firstLogin masuk dengan password sementara dan langsung menggantinya.
+async function firstLogin(page: Page, login: string, temporary: string, password: string): Promise<void> {
+	await logInAs(page, login, temporary);
+	await expect(page).toHaveURL('/account/password');
+	await page.getByLabel(en.passwordCurrent, { exact: true }).fill(temporary);
+	await page.getByLabel(en.passwordNew, { exact: true }).fill(password);
+	await page.getByLabel(en.passwordConfirm, { exact: true }).fill(password);
+	await page.getByRole('button', { name: en.passwordSave }).click();
+	await expect(page.getByRole('status')).toHaveText(en.passwordChanged);
+}
+
+// switchTo keluar, lalu masuk sebagai akun lain yang passwordnya sudah diganti.
+async function switchTo(page: Page, login: string, password: string): Promise<void> {
+	await logOut(page);
+	await logInAs(page, login, password);
+	await expect(page.getByRole('button', { name: en.logout })).toBeVisible();
+}
+
+// openDocument membuka satu dokumen customer LM dari halaman Documents.
+async function openDocument(page: Page, number: string): Promise<void> {
+	await openFromMenu(page, en.navGroupDocuments, en.navDocuments);
+	await page.getByLabel(en.documentCustomer, { exact: true }).selectOption({ label: 'LM · Contoh Customer LM' });
+	await page.getByRole('link', { name: number }).click();
+	await expect(page.getByRole('heading', { name: number, level: 1 })).toBeVisible();
+}
+
+// uploadScan mengunggah scan bertanda tangan contoh di bagian Revisions.
+async function uploadScan(page: Page, file: string): Promise<void> {
+	const revisions = page.locator('section', { has: page.getByRole('heading', { name: en.revisions, exact: true }) });
+	await revisions.getByLabel(en.scanUpload).setInputFiles({ name: file, mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 contoh scan') });
+	await revisions.getByRole('button', { name: en.scanUploadButton }).click();
+	await expect(revisions.getByRole('status')).toHaveText(en.scanUploaded.replace('{file}', file));
+}
+
+test('alur dari admin sampai dokumen terbit, revisi, migrasi, dan dasbor', async ({ page }) => {
 	// Tur ini panjang; batas waktunya mengikuti kecepatan tur.
-	test.setTimeout(6 * 60 * 1000);
+	test.setTimeout(15 * 60 * 1000);
 	const engineer = { login: 'ppap.engineer', name: 'Contoh PPAP Engineer', password: 'kopi pagi di pabrik' };
+	const control = { login: 'dok.kontrol', name: 'Contoh Dokumen Kontrol', password: 'rilis selalu dengan scan' };
+	const verifier = { login: 'apqp.controller', name: 'Contoh APQP Controller', password: 'verifikasi dengan catatan' };
 
 	// ---------- Bagian A: admin ----------
 	await page.goto('/login');
@@ -103,11 +156,15 @@ test('alur dari admin sampai dokumen draft', async ({ page }) => {
 	await say(page, 'Langkah 4', 'Untuk contoh ini akun yang sama juga Form approver (biasanya PPAP Supervisor) dan PFMEA-CP checker (D-65).');
 	await accountForm.getByLabel(en.roleFormApprover, { exact: true }).check();
 	await accountForm.getByLabel(en.rolePfmeaCpChecker, { exact: true }).check();
+	await accountForm.getByLabel(en.roleMigration, { exact: true }).check();
 	await accountForm.getByRole('button', { name: en.accountCreate }).click();
 	const notice = page.getByRole('status');
 	await expect(notice).toContainText(en.accountTemporaryPassword.replace('{login}', engineer.login));
 	const temporary = (await notice.locator('code').textContent()) ?? '';
 	await say(page, 'Langkah 4', 'Password sementara tampil SATU KALI. Berikan ke orangnya; ia wajib menggantinya.');
+	await say(page, 'Langkah 4', 'Dua akun lagi: Dokumen kontrol (mencatat rilis, juga petugas migrasi) dan Verifikator. Penyusun tidak boleh merilis atau memverifikasi pekerjaannya sendiri.');
+	const controlTemporary = await createAccount(page, control.name, control.login, [en.roleDocumentControl, en.roleMigration]);
+	const verifierTemporary = await createAccount(page, verifier.name, verifier.login, [en.roleVerifier]);
 
 	await openFromMenu(page, en.navGroupMaster, en.navPositions);
 	await say(page, 'Langkah 5', 'Master data > Positions. Catat siapa memegang jabatan PPAP Engineer.');
@@ -117,6 +174,20 @@ test('alur dari admin sampai dokumen draft', async ({ page }) => {
 	await expect(
 		page.getByText(en.holderAdded.replace('{name}', engineer.name).replace('{position}', 'PPAP Engineer'))
 	).toBeVisible();
+
+	await say(page, 'Langkah 5', 'Verifikator perubahan harus memegang jabatan: di sini APQP/PPAP Controller.');
+	await page.getByLabel(en.positionName, { exact: true }).selectOption({ label: 'APQP/PPAP Controller' });
+	await page.getByLabel(en.holderPerson, { exact: true }).selectOption({ label: verifier.name });
+	await page.getByRole('button', { name: en.holderAdd }).click();
+	await expect(
+		page.getByText(en.holderAdded.replace('{name}', verifier.name).replace('{position}', 'APQP/PPAP Controller'))
+	).toBeVisible();
+
+	await openFromMenu(page, en.navGroupAdmin, en.navSettings);
+	await say(page, 'Langkah 5', 'Admin > Settings. Mode migrasi dinyalakan selama dokumen lama dimasukkan (bawaannya mati).');
+	await page.getByLabel(en.settingsMigration, { exact: true }).check();
+	await page.getByRole('button', { name: en.settingsSave }).click();
+	await expect(page.getByRole('status')).toHaveText(en.settingsSaved);
 
 	await openFromMenu(page, en.navGroupTemplates, en.navFormatTemplates);
 	await say(page, 'Langkah 6', 'Format template sudah terisi sejak awal. Admin memeriksa labelnya, lalu menerbitkan versi 1.');
@@ -259,7 +330,7 @@ test('alur dari admin sampai dokumen draft', async ({ page }) => {
 		['SC-LM-002', 'CP']
 	]) {
 		await page.getByLabel(en.documentNumber, { exact: true }).selectOption({ label: `${number} · ${type}` });
-		await page.getByLabel('K-125').check();
+		await page.getByLabel('K-125').first().check();
 		await page.getByRole('button', { name: en.documentCreate }).click();
 		await expect(page.getByRole('status')).toHaveText(en.documentCreated.replace('{number}', number));
 	}
@@ -283,7 +354,7 @@ test('alur dari admin sampai dokumen draft', async ({ page }) => {
 	await rows.first().locator(`.tabulator-cell[tabulator-field="${product}"]`).click();
 	await page.keyboard.press('ControlOrMeta+a');
 	await page.keyboard.type('Laser type dan daya');
-	await page.getByRole('heading', { name: en.documentRowsTitle }).click();
+	await page.getByRole('heading', { name: en.documentRowsTitle, exact: true }).click();
 	await expect(page.getByRole('status')).toHaveText(en.documentRowSaved);
 	await page.getByRole('button', { name: en.compareOpen }).click();
 	await expect(page.locator('.compare tbody tr').first()).toContainText(en.compareDifferent);
@@ -300,14 +371,141 @@ test('alur dari admin sampai dokumen draft', async ({ page }) => {
 	await page.getByRole('button', { name: en.diagramOpen }).click();
 	await expect(page.getByTestId('pfd-diagram').locator('.svelte-flow__node')).toHaveCount(1);
 	await say(page, 'Langkah 21', 'Diagram PFD digambar otomatis dari baris PFD, menurut urutannya.');
-	// ---------- Bagian D: admin memeriksa jejak ----------
+	// ---------- Bagian D: cetak dan rilis (Tahap 6) ----------
+	await page.getByRole('link', { name: 'CP', exact: true }).click();
+	await expect(page.getByRole('heading', { name: 'SC-LM-002', level: 1 })).toBeVisible();
+	const print = page.locator('section', { has: page.getByRole('heading', { name: en.printTitle, exact: true }) });
+	await print.getByRole('heading', { name: en.printTitle, exact: true }).scrollIntoViewIfNeeded();
+	await say(page, 'Langkah 22', 'Bagian Print. Draft dicetak ke Excel atau PDF dan selalu bertanda UNCONTROLLED COPY.');
+	let download = page.waitForEvent('download');
+	await print.getByRole('button', { name: en.printExcel, exact: true }).click();
+	await download;
+	await expect(print.getByRole('status')).toContainText('SC-LM-002-00-draft.xlsx');
+	await say(page, 'Langkah 22', 'Setiap cetakan tercatat di Print log: siapa, kapan, revisi, dan tujuannya.');
+
 	await logOut(page);
-	await say(page, 'Langkah 22', 'Admin login lagi untuk memeriksa audit log.');
+	await say(page, 'Langkah 23', 'Dokumen kontrol login pertama kali. Ia mencatat rilis; penyusun tidak bisa merilis draftnya sendiri.');
+	await firstLogin(page, control.login, controlTemporary, control.password);
+	await openDocument(page, 'SC-LM-002');
+	await page.getByRole('heading', { name: en.revisions, exact: true }).scrollIntoViewIfNeeded();
+	await say(page, 'Langkah 23', 'Sesudah kertasnya ditandatangani, scan diunggah. Tanpa scan, rilis ditolak.');
+	await uploadScan(page, 'SC-LM-002-00-signed.pdf');
+	page.once('dialog', (dialog) => dialog.accept());
+	await page.getByRole('button', { name: en.revisionRelease.replace('{revision}', '0') }).click();
+	await expect(page.getByText(en.documentNoDraft)).toBeVisible();
+	await say(page, 'Langkah 23', 'Revisi 0 terbit. Isinya dibekukan dengan SHA-256 dan tidak bisa diubah lagi.');
+
+	// ---------- Bagian E: perubahan dan revisi (Tahap 5) ----------
+	await switchTo(page, engineer.login, engineer.password);
+	await openFromMenu(page, en.navGroupDocuments, en.navChanges);
+	await say(page, 'Langkah 24', 'Documents > Changes. Dokumen terbit hanya berubah lewat permintaan perubahan.');
+	await page.getByLabel(en.documentCustomer, { exact: true }).selectOption({ label: 'LM · Contoh Customer LM' });
+	await page.getByLabel(en.changeTrigger, { exact: true }).selectOption({ label: 'Customer claim' });
+	await page.getByLabel(en.changeType, { exact: true }).selectOption({ index: 1 });
+	await page.getByLabel(en.changeFourM, { exact: true }).selectOption({ label: 'Method' });
+	await page.getByLabel(en.changeReason, { exact: true }).fill('Contoh: tambah pemeriksaan fokus laser');
+	await page.getByRole('checkbox', { name: /SC-LM-002/ }).check();
+	await say(page, 'Langkah 24', 'Pemicu, jenis perubahan, alasan, dan dokumen yang terdampak.');
+	await page.getByRole('button', { name: en.changeSubmit }).click();
+	await expect(page.getByRole('status')).toHaveText(en.changeCreated.replace('{ref}', 'CHG-0001'));
+	await say(page, 'Langkah 24', 'Perubahan CHG-0001 diajukan dan menunggu verifikasi atasan.');
+
+	await logOut(page);
+	await say(page, 'Langkah 25', 'Verifikator login pertama kali. Pemohon tidak bisa memverifikasi permintaannya sendiri.');
+	await firstLogin(page, verifier.login, verifierTemporary, verifier.password);
+	await openFromMenu(page, en.navGroupDocuments, en.navChanges);
+	await page.getByLabel(en.documentCustomer, { exact: true }).selectOption({ label: 'LM · Contoh Customer LM' });
+	await page.getByRole('row', { name: /CHG-0001/ }).getByRole('link', { name: 'CHG-0001' }).click();
+	await expect(page.getByRole('heading', { name: en.changeVerify })).toBeVisible();
+	await page.getByLabel(en.changeVerifyNote).fill('Contoh: klaim sudah diperiksa, pemeriksaan fokus diperlukan');
+	await say(page, 'Langkah 25', 'Catatan verifikasi wajib diisi, lalu Accept atau Reject.');
+	await page.getByRole('button', { name: en.changeAccept, exact: true }).click();
+	await expect(page.getByRole('status')).toHaveText(en.changeAccepted.replace('{ref}', 'CHG-0001'));
+	await say(page, 'Langkah 25', 'Diterima. Dokumen terdampak mendapat draft revisi 1; revisi 0 tetap berlaku sampai revisi 1 terbit.');
+
+	await switchTo(page, engineer.login, engineer.password);
+	await openDocument(page, 'SC-LM-002');
+	await say(page, 'Langkah 26', 'Penyusun mengubah isi draft revisi 1.');
+	await rows.first().locator(`.tabulator-cell[tabulator-field="${product}"]`).click();
+	await page.keyboard.press('ControlOrMeta+a');
+	await page.keyboard.type('Laser type, daya, dan fokus');
+	await page.getByRole('heading', { name: en.documentRowsTitle, exact: true }).click();
+	await expect(page.getByText(en.documentRowSaved).first()).toBeVisible();
+	await page.getByRole('heading', { name: en.diffTitle }).scrollIntoViewIfNeeded();
+	await say(page, 'Langkah 26', 'Compare revisions menunjukkan beda revisi 0 dan draft, baris demi baris dan sel demi sel.');
+
+	await switchTo(page, control.login, control.password);
+	await openDocument(page, 'SC-LM-002');
+	await page.getByRole('heading', { name: en.revisions, exact: true }).scrollIntoViewIfNeeded();
+	await say(page, 'Langkah 27', 'Dokumen kontrol mengunggah scan revisi 1 dan mencatat rilisnya.');
+	await uploadScan(page, 'SC-LM-002-01-signed.pdf');
+	page.once('dialog', (dialog) => dialog.accept());
+	await page.getByRole('button', { name: en.revisionRelease.replace('{revision}', '1') }).click();
+	await expect(page.getByText(en.documentNoDraft)).toBeVisible();
+	await print.getByRole('heading', { name: en.printTitle, exact: true }).scrollIntoViewIfNeeded();
+	await print.getByLabel(en.printPurpose, { exact: true }).selectOption('reference');
+	download = page.waitForEvent('download');
+	await print.getByRole('button', { name: en.printExcel, exact: true }).click();
+	await download;
+	await say(page, 'Langkah 27', 'Revisi 1 berlaku. Cetakan revisi terbit memuat riwayat revisi dan tanda segitiga pada baris yang berubah.');
+
+	// ---------- Bagian F: dokumen lama (Tahap 7) ----------
+	await switchTo(page, engineer.login, engineer.password);
+	await openFromMenu(page, en.navGroupDocuments, en.navNumbers);
+	await expect(page.getByRole('button', { name: en.numberRegister, exact: true })).toBeVisible();
+	await page.getByLabel(en.numberCustomer, { exact: true }).first().selectOption({ label: 'LM · Contoh Customer LM' });
+	await page.getByRole('button', { name: en.numberRegister, exact: true }).click();
+	await expect(page.getByRole('status')).toContainText('SH-LM-003');
+	await say(page, 'Langkah 28', 'Nomor untuk dokumen lama. Di pabrik, nomor lama masuk lewat Import legacy numbers.');
+	await openFromMenu(page, en.navGroupDocuments, en.navDocuments);
+	await page.getByLabel(en.documentCustomer, { exact: true }).selectOption({ label: 'LM · Contoh Customer LM' });
+	const legacy = page.locator('section', { has: page.getByRole('heading', { name: en.migrateTitle }) });
+	await legacy.getByRole('heading', { name: en.migrateTitle }).scrollIntoViewIfNeeded();
+	await legacy.getByLabel(en.migrateNumber, { exact: true }).selectOption({ label: 'SC-LM-003 · CP' });
+	await legacy.getByRole('checkbox', { name: 'K-200' }).check();
+	await legacy.getByLabel(en.migrateRevision, { exact: true }).fill('4');
+	await legacy.getByLabel(en.migrateEffectiveDate, { exact: true }).fill('2025-03-10');
+	await legacy.getByLabel(en.migratePreparedBy, { exact: true }).fill('Contoh Penyusun Lama');
+	await legacy.getByLabel(en.migrateApprovedBy, { exact: true }).fill('Contoh NPI Manager, Contoh QA Manager');
+	await say(page, 'Langkah 28', 'Enter a legacy document: dokumen kertas masuk di revisinya yang sekarang, di sini revisi 4.');
+	await legacy.getByRole('button', { name: en.migrateSubmit }).click();
+	await expect(page.getByRole('status')).toHaveText(en.migrateDone.replace('{number}', 'SC-LM-003').replace('{revision}', '4'));
+	await page.getByRole('link', { name: 'SC-LM-003' }).click();
+	const baseline = page.locator('section', { has: page.getByRole('heading', { name: en.migrationTitle, exact: true }) });
+	await baseline.getByRole('button', { name: en.historyAdd }).click();
+	await baseline.getByLabel(`${en.historyRevision} 1`).fill('-00');
+	await baseline.getByLabel(`${en.historyDate} 1`).fill('2023-01-05');
+	await baseline.getByLabel(`${en.historyDescription} 1`).fill('Initial release');
+	await baseline.getByRole('button', { name: en.historySave }).click();
+	await expect(baseline.getByRole('status')).toHaveText(en.historySaved);
+	await say(page, 'Langkah 28', 'Riwayat revisi lama disalin sebagai teks. Isi dokumen diketik atau dirakit sampai sama dengan hardcopy.');
+	await uploadScan(page, 'SC-LM-003-hardcopy.pdf');
+	await say(page, 'Langkah 28', 'Scan hardcopy bertanda tangan diunggah sebagai bukti.');
+
+	await switchTo(page, control.login, control.password);
+	await openDocument(page, 'SC-LM-003');
+	await baseline.getByLabel(en.migrationEffort, { exact: true }).fill('25');
+	await say(page, 'Langkah 29', 'Petugas migrasi lain mencocokkan layar dengan hardcopy dan mengisi menit kerjanya.');
+	page.once('dialog', (dialog) => dialog.accept());
+	await baseline.getByRole('button', { name: en.migrationVerify }).click();
+	await expect(baseline.getByRole('status')).toHaveText(en.migrationVerified.replace('{number}', 'SC-LM-003'));
+	await say(page, 'Langkah 29', 'Status menjadi Released (migrated). Perubahan berikutnya lewat permintaan perubahan biasa.');
+
+	await openFromMenu(page, en.navGroupDocuments, en.navDashboard);
+	await expect(page.getByRole('heading', { name: en.dashboardTitle, level: 1 })).toBeVisible();
+	await say(page, 'Langkah 30', 'Documents > Dashboard. Angka dihitung dari data: baris yang mengikuti template, status dokumen, waktu revisi, dan usaha migrasi.');
+
+	// ---------- Bagian G: admin memeriksa peran dan jejak (Tahap 8) ----------
+	await logOut(page);
+	await say(page, 'Langkah 31', 'Admin login lagi untuk memeriksa isi peran dan audit log.');
 	await logInAs(page, admin.login, admin.password);
 	await expect(page.getByRole('button', { name: en.logout })).toBeVisible();
+	await openFromMenu(page, en.navGroupAdmin, en.navRoles);
+	await expect(page.getByRole('heading', { name: en.rolesTitle, level: 1 })).toBeVisible();
+	await say(page, 'Langkah 31', 'Admin > Roles. Admin mengatur hak setiap peran kerja; hak admin dan hak dasar terkunci.');
 	await openFromMenu(page, en.navGroupAdmin, en.navAuditLog);
-	await say(page, 'Langkah 22', 'Semua langkah tadi tercatat: siapa, kapan, dan apa. Catatan ini tidak bisa diubah.');
+	await say(page, 'Langkah 32', 'Semua langkah tadi tercatat: siapa, kapan, dan apa. Catatan ini tidak bisa diubah.');
 	await page.getByRole('button', { name: en.auditVerify }).click();
 	await expect(page.getByRole('status')).toContainText(en.auditChainValid.split('{entries}')[0]);
-	await say(page, 'Selesai', 'Rantai audit utuh. Langkah berikutnya (revisi, verifikasi, dan rilis) dibangun di Tahap 5.');
+	await say(page, 'Selesai', 'Rantai audit utuh. Alur dari master data sampai rilis, revisi, migrasi, dan dasbor selesai.');
 });
