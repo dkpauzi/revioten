@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sync/atomic"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -48,37 +49,41 @@ const (
 	ActionChangeProposed         = "change.proposed"
 	ActionChangeProposalApplied  = "change.proposal_applied"
 	ActionExportRequested        = "export.requested"
-	ActionPasswordReset          = "account.password_reset"
-	ActionAccountDisabled        = "account.disabled"
-	ActionAccountEnabled         = "account.enabled"
-	ActionCustomerCreated        = "customer.created"
-	ActionCustomerUpdated        = "customer.updated"
-	ActionCustomerCodeChanged    = "customer.code_changed"
-	ActionProjectGroupCreated    = "project_group.created"
-	ActionProjectGroupUpdated    = "project_group.updated"
-	ActionModelGroupCreated      = "model_group.created"
-	ActionModelGroupUpdated      = "model_group.updated"
-	ActionModelCreated           = "model.created"
-	ActionModelUpdated           = "model.updated"
-	ActionPartNumberCreated      = "part_number.created"
-	ActionPartNumberUpdated      = "part_number.updated"
-	ActionProcessCreated         = "process.created"
-	ActionProcessUpdated         = "process.updated"
-	ActionNumberSettingsUpdated  = "number_settings.updated"
-	ActionDocumentTypeCreated    = "document_type.created"
-	ActionDocumentTypeUpdated    = "document_type.updated"
-	ActionSpecialCodeCreated     = "special_code.created"
-	ActionSpecialCodeUpdated     = "special_code.updated"
-	ActionChangeTypeUpdated      = "change_type.updated"
-	ActionChangeSourceCreated    = "change_source.created"
-	ActionChangeSourceUpdated    = "change_source.updated"
-	ActionFourMCategoryUpdated   = "four_m_category.updated"
-	ActionPositionUpdated        = "position.updated"
-	ActionPositionHolderAdded    = "position.holder_added"
-	ActionPositionHolderRemoved  = "position.holder_removed"
-	ActionApprovalRouteCreated   = "approval_route.created"
-	ActionApprovalRouteUpdated   = "approval_route.updated"
-	ActionCustomerRouteChanged   = "customer.default_route_changed"
+	// D-194: email notifikasi.
+	ActionNotificationEventChanged = "notification.event_changed"
+	ActionNotificationTestSent     = "notification.test_sent"
+	ActionPersonEmailChanged       = "account.email_changed"
+	ActionPasswordReset            = "account.password_reset"
+	ActionAccountDisabled          = "account.disabled"
+	ActionAccountEnabled           = "account.enabled"
+	ActionCustomerCreated          = "customer.created"
+	ActionCustomerUpdated          = "customer.updated"
+	ActionCustomerCodeChanged      = "customer.code_changed"
+	ActionProjectGroupCreated      = "project_group.created"
+	ActionProjectGroupUpdated      = "project_group.updated"
+	ActionModelGroupCreated        = "model_group.created"
+	ActionModelGroupUpdated        = "model_group.updated"
+	ActionModelCreated             = "model.created"
+	ActionModelUpdated             = "model.updated"
+	ActionPartNumberCreated        = "part_number.created"
+	ActionPartNumberUpdated        = "part_number.updated"
+	ActionProcessCreated           = "process.created"
+	ActionProcessUpdated           = "process.updated"
+	ActionNumberSettingsUpdated    = "number_settings.updated"
+	ActionDocumentTypeCreated      = "document_type.created"
+	ActionDocumentTypeUpdated      = "document_type.updated"
+	ActionSpecialCodeCreated       = "special_code.created"
+	ActionSpecialCodeUpdated       = "special_code.updated"
+	ActionChangeTypeUpdated        = "change_type.updated"
+	ActionChangeSourceCreated      = "change_source.created"
+	ActionChangeSourceUpdated      = "change_source.updated"
+	ActionFourMCategoryUpdated     = "four_m_category.updated"
+	ActionPositionUpdated          = "position.updated"
+	ActionPositionHolderAdded      = "position.holder_added"
+	ActionPositionHolderRemoved    = "position.holder_removed"
+	ActionApprovalRouteCreated     = "approval_route.created"
+	ActionApprovalRouteUpdated     = "approval_route.updated"
+	ActionCustomerRouteChanged     = "customer.default_route_changed"
 	// Form set (langkah D, D-133, D-139).
 	ActionCustomerFormSetChanged  = "customer.default_form_set_changed"
 	ActionFormSetCreated          = "form_set.created"
@@ -299,7 +304,30 @@ func Record(ctx context.Context, q *db.Queries, actor access.Actor, e Event) err
 	if err != nil {
 		return fmt.Errorf("menulis entri audit %s: %w", e.Action, err)
 	}
+	// Pendengar (misalnya notifikasi email, D-194) berjalan di transaksi yang
+	// sama, jadi email tidak pernah tertulis untuk aksi yang batal.
+	if l := listener.Load(); l != nil {
+		if err := (*l)(ctx, q, actor, e); err != nil {
+			return fmt.Errorf("pendengar audit %s: %w", e.Action, err)
+		}
+	}
 	return nil
+}
+
+// Listener dipanggil sesudah setiap entri audit tertulis, dengan queries
+// transaksi yang sama.
+type Listener func(ctx context.Context, q *db.Queries, actor access.Actor, e Event) error
+
+var listener atomic.Pointer[Listener]
+
+// SetListener memasang pendengar untuk seluruh program; nil melepasnya.
+// Dipasang sekali saat server mulai (notifikasi email, D-194).
+func SetListener(l Listener) {
+	if l == nil {
+		listener.Store(nil)
+		return
+	}
+	listener.Store(&l)
 }
 
 // nullable mengubah teks kosong menjadi NULL di database.

@@ -12,6 +12,8 @@ import (
 	"strings"
 
 	"github.com/dkpauzi/revioten/internal/db"
+
+	"github.com/dkpauzi/revioten/internal/notify"
 )
 
 // config berisi pengaturan program. Semua nilainya memuat password, jadi tidak
@@ -42,6 +44,9 @@ type config struct {
 	// IntegrationRate dari INTEGRATION_RATE_PER_MINUTE: batas permintaan per
 	// token API integrasi per menit (M9.5). Kosong berarti 120.
 	IntegrationRate int
+	// Mail adalah pengaturan email notifikasi (D-194), dari MAIL_PROVIDER,
+	// MAIL_FROM, SMTP_*, dan GRAPH_*. Diisi IT; lihat .env.example.
+	Mail notify.Config
 	// PDFBrowser dari PDF_BROWSER: lokasi Chrome atau Edge untuk PDF (M6.3);
 	// kosong berarti dicari otomatis.
 	PDFBrowser string
@@ -131,7 +136,23 @@ func loadConfig(getenv func(string) string, envFile string) (config, error) {
 		}
 		rate = n
 	}
+	mail := notify.Config{
+		Provider: strings.ToLower(strings.TrimSpace(get("MAIL_PROVIDER"))), From: get("MAIL_FROM"),
+		SMTPHost: get("SMTP_HOST"), SMTPPort: 587, SMTPUsername: get("SMTP_USERNAME"), SMTPPassword: get("SMTP_PASSWORD"), SMTPStartTLS: true,
+		GraphTenantID: get("GRAPH_TENANT_ID"), GraphClientID: get("GRAPH_CLIENT_ID"), GraphClientSecret: get("GRAPH_CLIENT_SECRET"),
+	}
+	if v := get("SMTP_PORT"); v != "" {
+		n, err := strconv.Atoi(v)
+		if err != nil || n < 1 || n > 65535 {
+			return config{}, errors.New("SMTP_PORT harus nomor port 1 sampai 65535")
+		}
+		mail.SMTPPort = n
+	}
+	if v := strings.ToLower(get("SMTP_STARTTLS")); v == "false" || v == "0" || v == "no" {
+		mail.SMTPStartTLS = false
+	}
 	return config{
+		Mail:     mail,
 		OwnerURL: ownerURL, AppURL: app.String(), AppPassword: get("APP_DB_PASSWORD"),
 		OwnerUser: owner.User.Username(), Database: strings.TrimPrefix(owner.Path, "/"),
 		BackupDir: get("BACKUP_DIR"), BackupPassphrase: get("BACKUP_PASSPHRASE"),

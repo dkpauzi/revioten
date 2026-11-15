@@ -105,6 +105,109 @@ paths:
                 type: string
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/account/email:
+    get:
+      operationId: getOwnEmail
+      summary: The email address of the caller (D-104, D-194)
+      responses:
+        '200':
+          description: The email address; empty when none is set.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailAddress'
+        default:
+          $ref: '#/components/responses/Error'
+    put:
+      operationId: setOwnEmail
+      summary: Set the email address of the caller for notifications (D-104, D-194)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailAddress'
+      responses:
+        '200':
+          description: The saved address.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailAddress'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/accounts/{accountId}/email:
+    put:
+      operationId: setAccountEmail
+      summary: Set the email address of the person of an account (A-1, D-194)
+      parameters:
+        - name: accountId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailAddress'
+      responses:
+        '200':
+          description: The saved address.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmailAddress'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/notifications:
+    get:
+      operationId: getNotifications
+      summary: Email settings, events, and the latest 100 emails of the outbox (A-3, D-194)
+      responses:
+        '200':
+          description: The overview.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationOverview'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/notifications/events/{event}:
+    put:
+      operationId: setNotificationEvent
+      summary: Switch one notification event on or off (A-3)
+      parameters:
+        - name: event
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [enabled]
+              properties:
+                enabled:
+                  type: boolean
+      responses:
+        '204':
+          description: Saved.
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/notifications/test:
+    post:
+      operationId: sendTestEmail
+      summary: Put a test email for the caller in the outbox (A-3)
+      responses:
+        '204':
+          description: The test email waits in the outbox.
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/account/password:
     put:
       operationId: changePassword
@@ -4006,6 +4109,65 @@ components:
           description: The token value. Shown once; copy it now.
         info:
           $ref: '#/components/schemas/ServiceToken'
+    EmailAddress:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          description: Empty removes the address.
+    NotificationOverview:
+      type: object
+      required: [provider, from, server, events, outbox]
+      properties:
+        provider:
+          type: string
+          description: graph, smtp, log, or empty when email is not set up. Set by IT in the server settings.
+        from:
+          type: string
+        server:
+          type: string
+        events:
+          type: array
+          items:
+            type: object
+            required: [key, enabled]
+            properties:
+              key:
+                type: string
+              enabled:
+                type: boolean
+        outbox:
+          type: array
+          items:
+            $ref: '#/components/schemas/OutboxEntry'
+    OutboxEntry:
+      type: object
+      required: [id, event, recipient, subject, status, attempts, created_at]
+      properties:
+        id:
+          type: string
+        event:
+          type: string
+        recipient:
+          type: string
+        email:
+          type: string
+        subject:
+          type: string
+        status:
+          type: string
+          enum: [pending, sending, sent, failed, skipped]
+        reason:
+          type: string
+        attempts:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        sent_at:
+          type: string
+          format: date-time
     RoleList:
       type: object
       required: [items]
@@ -4054,6 +4216,9 @@ components:
           type: string
         employee_number:
           type: string
+        email:
+          type: string
+          description: Address for email notifications (D-194).
     AccountList:
       type: object
       required: [items]

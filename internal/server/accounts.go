@@ -105,7 +105,7 @@ func toAPIAccount(info auth.AccountInfo) AccountInfo {
 		Id:                 info.ID,
 		Kind:               AccountInfoKind(info.Kind),
 		Login:              info.Login,
-		Person:             PersonInfo{Id: info.PersonID, Name: info.PersonName, EmployeeNumber: employeeNumber},
+		Person:             PersonInfo{Id: info.PersonID, Name: info.PersonName, EmployeeNumber: employeeNumber, Email: optional(info.Email)},
 		Roles:              roles,
 		MustChangePassword: info.MustChangePassword,
 		LockedUntil:        info.LockedUntil,

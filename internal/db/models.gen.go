@@ -455,6 +455,27 @@ type ModelGroup struct {
 	CreatedAt  time.Time
 }
 
+type NotificationEvent struct {
+	Key      string
+	Position int16
+	Enabled  bool
+}
+
+type NotificationOutbox struct {
+	ID                string
+	Event             string
+	RecipientPersonID string
+	RecipientEmail    *string
+	Subject           string
+	Body              string
+	Status            string
+	Reason            *string
+	Attempts          int16
+	NextAttemptAt     time.Time
+	CreatedAt         time.Time
+	SentAt            *time.Time
+}
+
 type NumberBatch struct {
 	ID             string
 	Kind           string
@@ -500,6 +521,7 @@ type Person struct {
 	Name           string
 	EmployeeNumber *string
 	CreatedAt      time.Time
+	Email          *string
 }
 
 type PfmeaCpCheck struct {
@@ -696,6 +718,7 @@ type ServiceToken struct {
 	LastUsedAt        *time.Time
 	CreatedByPersonID string
 	CreatedAt         time.Time
+	ExpiryNotifiedAt  *time.Time
 }
 
 type Session struct {

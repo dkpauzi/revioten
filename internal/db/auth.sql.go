@@ -75,9 +75,16 @@ type CreatePersonParams struct {
 	EmployeeNumber *string
 }
 
-func (q *Queries) CreatePerson(ctx context.Context, arg CreatePersonParams) (Person, error) {
+type CreatePersonRow struct {
+	ID             string
+	Name           string
+	EmployeeNumber *string
+	CreatedAt      time.Time
+}
+
+func (q *Queries) CreatePerson(ctx context.Context, arg CreatePersonParams) (CreatePersonRow, error) {
 	row := q.db.QueryRow(ctx, createPerson, arg.Name, arg.EmployeeNumber)
-	var i Person
+	var i CreatePersonRow
 	err := row.Scan(
 		&i.ID,
 		&i.Name,

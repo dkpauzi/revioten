@@ -32,7 +32,7 @@ func (q *Queries) EnableAccount(ctx context.Context, id string) error {
 
 const getAccountInfo = `-- name: GetAccountInfo :one
 SELECT a.id, a.kind, a.login, a.must_change_password, a.locked_until, a.disabled_at, a.created_at,
-       p.id AS person_id, p.name AS person_name, p.employee_number
+       p.id AS person_id, p.name AS person_name, p.employee_number, p.email
 FROM accounts a
 JOIN people p ON p.id = a.person_id
 WHERE a.id = $1
@@ -49,6 +49,7 @@ type GetAccountInfoRow struct {
 	PersonID           string
 	PersonName         string
 	EmployeeNumber     *string
+	Email              *string
 }
 
 func (q *Queries) GetAccountInfo(ctx context.Context, id string) (GetAccountInfoRow, error) {
@@ -65,12 +66,13 @@ func (q *Queries) GetAccountInfo(ctx context.Context, id string) (GetAccountInfo
 		&i.PersonID,
 		&i.PersonName,
 		&i.EmployeeNumber,
+		&i.Email,
 	)
 	return i, err
 }
 
 const getPerson = `-- name: GetPerson :one
-SELECT id, name, employee_number, created_at FROM people WHERE id = $1
+SELECT id, name, employee_number, created_at, email FROM people WHERE id = $1
 `
 
 func (q *Queries) GetPerson(ctx context.Context, id string) (Person, error) {
@@ -81,13 +83,14 @@ func (q *Queries) GetPerson(ctx context.Context, id string) (Person, error) {
 		&i.Name,
 		&i.EmployeeNumber,
 		&i.CreatedAt,
+		&i.Email,
 	)
 	return i, err
 }
 
 const listAccounts = `-- name: ListAccounts :many
 SELECT a.id, a.kind, a.login, a.must_change_password, a.locked_until, a.disabled_at, a.created_at,
-       p.id AS person_id, p.name AS person_name, p.employee_number
+       p.id AS person_id, p.name AS person_name, p.employee_number, p.email
 FROM accounts a
 JOIN people p ON p.id = a.person_id
 ORDER BY p.name, a.kind
@@ -104,6 +107,7 @@ type ListAccountsRow struct {
 	PersonID           string
 	PersonName         string
 	EmployeeNumber     *string
+	Email              *string
 }
 
 // ListAccounts mengambil semua akun beserta orangnya, untuk layar admin (A-1).
@@ -127,6 +131,7 @@ func (q *Queries) ListAccounts(ctx context.Context) ([]ListAccountsRow, error) {
 			&i.PersonID,
 			&i.PersonName,
 			&i.EmployeeNumber,
+			&i.Email,
 		); err != nil {
 			return nil, err
 		}

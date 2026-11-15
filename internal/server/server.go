@@ -310,6 +310,8 @@ type Deps struct {
 	// Integration adalah handler /integration/v1; nil berarti tidak dipasang.
 	ServiceAccounts ServiceAccountService
 	Integration     http.Handler
+	// Notifications adalah email notifikasi (D-194).
+	Notifications NotificationService
 	// Logger untuk log server. Bila nil, dipakai slog.Default().
 	Logger *slog.Logger
 }
@@ -331,7 +333,7 @@ func NewHandler(ui fs.FS, deps Deps) http.Handler {
 		numbering: deps.Numbering, changes: deps.Changes, approval: deps.Approval, settings: deps.Settings,
 		templates: deps.Templates, processTemplates: deps.ProcessTemplates, documents: deps.Documents, refDocs: deps.RefDocs, changeRequests: deps.ChangeRequests, printing: deps.Printing,
 		migration: deps.Migration, metrics: deps.Metrics, roles: deps.Roles,
-		serviceAccounts: deps.ServiceAccounts, log: log,
+		serviceAccounts: deps.ServiceAccounts, notifications: deps.Notifications, log: log,
 	}
 
 	// Route dari kontrak didaftarkan oleh kode hasil generate ke mux khusus API.
@@ -400,5 +402,6 @@ type apiServer struct {
 	metrics          MetricsService
 	roles            RoleService
 	serviceAccounts  ServiceAccountService
+	notifications    NotificationService
 	log              *slog.Logger
 }

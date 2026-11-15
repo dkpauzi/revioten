@@ -21,6 +21,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/document"
 	"github.com/dkpauzi/revioten/internal/integration"
 	"github.com/dkpauzi/revioten/internal/metrics"
+	"github.com/dkpauzi/revioten/internal/notify"
 	"github.com/dkpauzi/revioten/internal/numbering"
 	"github.com/dkpauzi/revioten/internal/printout"
 	"github.com/dkpauzi/revioten/internal/process"
@@ -79,6 +80,7 @@ func TestPermissionsPerOperation(t *testing.T) {
 		Printing:       printout.NewService(pool, checker, document.NewService(pool, checker), attachmentStore, "missing-browser"),
 		Migration:      document.NewService(pool, checker), Metrics: metrics.NewService(pool, checker), Roles: authSvc,
 		ServiceAccounts: integration.NewService(pool, checker, nil, nil),
+		Notifications:   notify.NewService(pool, checker, nil, notify.Config{}, nil),
 	})
 
 	// Admin pertama, satu akun kerja tanpa peran (hanya hak dasar Viewer), dan
@@ -333,7 +335,7 @@ func TestPermissionsPerOperation(t *testing.T) {
 		"viewerPersonId": viewerInfo.PersonID,
 		"accountId":      viewerInfo.ID, "projectGroupId": group.ID, "customerId": cust.ID,
 		"modelGroupId": modelGroup.ID, "modelId": model.ID, "partNumberId": part.ID,
-		"processId": proc.ID, "documentTypeId": docTypes[0].ID, "cpTypeId": docTypes[2].ID, "documentNumberId": reg.Numbers[0].ID, "roleId": access.RolePFMEACPChecker, "serviceAccountId": "01900000-0000-7000-8000-000000000000", "tokenId": "01900000-0000-7000-8000-000000000001", "documentId": doc.ID, "rowId": doc.Rows[0].ID, "freeNumberId": reserved[1], "specialCodeId": specialCodes[0].ID,
+		"processId": proc.ID, "documentTypeId": docTypes[0].ID, "cpTypeId": docTypes[2].ID, "documentNumberId": reg.Numbers[0].ID, "roleId": access.RolePFMEACPChecker, "event": "change_submitted", "serviceAccountId": "01900000-0000-7000-8000-000000000000", "tokenId": "01900000-0000-7000-8000-000000000001", "documentId": doc.ID, "rowId": doc.Rows[0].ID, "freeNumberId": reserved[1], "specialCodeId": specialCodes[0].ID,
 		"changeTypeId": changeTypes[0].ID, "changeSourceId": sources[0].ID, "fourMCategoryId": categories[0].ID,
 		"formatTemplateId": pfmeaFormat.ID, "formatVersionId": pfmeaVersion.ID, "formSetId": formSet.ID, "formSetVersionId": formSet.Versions[0].ID, "pfdSheetId": formSet.Versions[0].PFD.FormatVersionID, "pfmeaSheetId": formSet.Versions[0].PFMEA.FormatVersionID, "cpSheetId": formSet.Versions[0].CP.FormatVersionID, "formatFieldId": pfmeaVersion.Fields[0].ID,
 		"freeProcessId": reflow.ID, "refDocId": refDoc.ID, "linkId": refDoc.Links[0].ID, "changeId": changeReq.ID, "triggerId": triggerID, "contentTypeId": contentTypeID, "sectionId": "01900000-0000-7000-8000-000000000000", "attachmentId": "01900000-0000-7000-8000-000000000000", "yokotenId": "01900000-0000-7000-8000-000000000000", "targetId": "01900000-0000-7000-8000-000000000000", "processVersionId": iqcVersion.ID, "processTemplateId": iqcVersion.TemplateID, "subprocessId": iqcVersion.Subprocesses[0].ID,
@@ -516,6 +518,15 @@ func TestPermissionsPerOperation(t *testing.T) {
 		{http.MethodPost, "/api/v1/service-accounts/{serviceAccountId}/tokens", `{}`, http.StatusForbidden, http.StatusForbidden, http.StatusNotFound},
 		{http.MethodDelete, "/api/v1/service-accounts/{serviceAccountId}/tokens/{tokenId}", "", http.StatusForbidden, http.StatusForbidden, http.StatusNotFound},
 		{http.MethodPost, "/api/v1/service-accounts/{serviceAccountId}/disable", "", http.StatusForbidden, http.StatusForbidden, http.StatusNotFound},
+		// Email notifikasi (D-194): alamat sendiri untuk semua akun, alamat orang lain lewat A-1,
+		// pengaturan lewat A-3. Email uji butuh alamat sendiri, yang belum diisi (422).
+		{http.MethodGet, "/api/v1/account/email", "", http.StatusOK, http.StatusOK, http.StatusOK},
+		{http.MethodPut, "/api/v1/account/email", `{"email":""}`, http.StatusOK, http.StatusOK, http.StatusOK},
+		// {accountId} adalah akun viewer sendiri: viewer boleh (D-104), engineer tidak, admin boleh (A-1).
+		{http.MethodPut, "/api/v1/accounts/{accountId}/email", `{"email":"uji@contoh.test"}`, http.StatusOK, http.StatusForbidden, http.StatusOK},
+		{http.MethodGet, "/api/v1/notifications", "", http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodPut, "/api/v1/notifications/events/{event}", `{"enabled":true}`, http.StatusForbidden, http.StatusForbidden, http.StatusNoContent},
+		{http.MethodPost, "/api/v1/notifications/test", "", http.StatusForbidden, http.StatusForbidden, http.StatusUnprocessableEntity},
 		// Isi peran (M8.1, D-66): hanya admin. Peran pemeriksa PFMEA dan CP tidak dipegang akun uji, jadi aman diubah.
 		{http.MethodGet, "/api/v1/permissions", "", http.StatusForbidden, http.StatusForbidden, http.StatusOK},
 		{http.MethodPut, "/api/v1/roles/{roleId}/permissions", `{"permissions":["L-4","V-2"]}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},

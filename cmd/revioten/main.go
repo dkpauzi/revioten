@@ -36,6 +36,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/integration"
 	"github.com/dkpauzi/revioten/internal/integrationapi"
 	"github.com/dkpauzi/revioten/internal/metrics"
+	"github.com/dkpauzi/revioten/internal/notify"
 	"github.com/dkpauzi/revioten/internal/numbering"
 	"github.com/dkpauzi/revioten/internal/printout"
 	"github.com/dkpauzi/revioten/internal/process"
@@ -113,6 +114,19 @@ func runServer(args []string) error {
 	// API integrasi (Tahap 9). Ekspor dikerjakan di latar belakang, supaya
 	// ekspor besar tidak menahan permintaan dan layar pengguna (M9.5).
 	integrations := integration.NewService(pool, checker, attachments, printing)
+	// Email notifikasi (D-194): peristiwa menulis kotak keluar, pekerja mengirimnya.
+	mailer, err := notify.NewMailer(cfg.Mail, nil)
+	if err != nil {
+		return err
+	}
+	if mailer == nil {
+		slog.Warn("email notifikasi tidak dikirim: MAIL_PROVIDER kosong")
+	} else {
+		slog.Info("email notifikasi aktif", "provider", cfg.Mail.Provider)
+	}
+	notifications := notify.NewService(pool, checker, mailer, cfg.Mail, nil)
+	audit.SetListener(notify.NewNotifier(cmp.Or(cfg.PublicBaseURL, "http://"+*addr)).Listener())
+	go notifications.Run(ctx, 15*time.Second)
 	go integrations.RunExports(ctx, 2*time.Second, func(err error) { slog.Error("ekspor gagal", "error", err.Error()) })
 	srv := &http.Server{
 		Addr: *addr,
@@ -123,6 +137,7 @@ func runServer(args []string) error {
 			Auth:             authSvc,
 			Roles:            authSvc,
 			ServiceAccounts:  integrations,
+			Notifications:    notifications,
 			Integration:      integrationapi.NewHandler(integrations, cfg.IntegrationRate, nil),
 			Access:           checker,
 			Audit:            audit.NewService(pool, checker),

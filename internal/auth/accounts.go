@@ -26,6 +26,7 @@ type AccountInfo struct {
 	PersonID           string
 	PersonName         string
 	EmployeeNumber     string // kosong bila tidak diisi
+	Email              string // kosong bila tidak diisi (D-194)
 	Roles              []access.RoleGrant
 	MustChangePassword bool
 	LockedUntil        *time.Time
@@ -62,7 +63,7 @@ func (s *Service) ListAccounts(ctx context.Context, actor access.Actor) ([]Accou
 	for _, r := range rows {
 		info := AccountInfo{
 			ID: r.ID, Kind: r.Kind, Login: r.Login, PersonID: r.PersonID, PersonName: r.PersonName,
-			EmployeeNumber: deref(r.EmployeeNumber), MustChangePassword: r.MustChangePassword,
+			EmployeeNumber: deref(r.EmployeeNumber), Email: deref(r.Email), MustChangePassword: r.MustChangePassword,
 			LockedUntil: r.LockedUntil, Disabled: r.DisabledAt != nil, CreatedAt: r.CreatedAt.UTC(),
 			Roles: []access.RoleGrant{},
 		}
@@ -436,7 +437,7 @@ func (s *Service) accountInfo(ctx context.Context, accountID string) (AccountInf
 	}
 	return AccountInfo{
 		ID: r.ID, Kind: r.Kind, Login: r.Login, PersonID: r.PersonID, PersonName: r.PersonName,
-		EmployeeNumber: deref(r.EmployeeNumber), MustChangePassword: r.MustChangePassword,
+		EmployeeNumber: deref(r.EmployeeNumber), Email: deref(r.Email), MustChangePassword: r.MustChangePassword,
 		LockedUntil: r.LockedUntil, Disabled: r.DisabledAt != nil, CreatedAt: r.CreatedAt.UTC(),
 		Roles: roles,
 	}, nil

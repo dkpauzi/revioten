@@ -1232,6 +1232,33 @@ func (e NumberSettingsSequenceFormat) Valid() bool {
 	}
 }
 
+// Defines values for OutboxEntryStatus.
+const (
+	OutboxEntryStatusFailed  OutboxEntryStatus = "failed"
+	OutboxEntryStatusPending OutboxEntryStatus = "pending"
+	OutboxEntryStatusSending OutboxEntryStatus = "sending"
+	OutboxEntryStatusSent    OutboxEntryStatus = "sent"
+	OutboxEntryStatusSkipped OutboxEntryStatus = "skipped"
+)
+
+// Valid indicates whether the value is a known member of the OutboxEntryStatus enum.
+func (e OutboxEntryStatus) Valid() bool {
+	switch e {
+	case OutboxEntryStatusFailed:
+		return true
+	case OutboxEntryStatusPending:
+		return true
+	case OutboxEntryStatusSending:
+		return true
+	case OutboxEntryStatusSent:
+		return true
+	case OutboxEntryStatusSkipped:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PermissionInfoLevel.
 const (
 	PermissionInfoLevelAdmin  PermissionInfoLevel = "admin"
@@ -2755,6 +2782,12 @@ type DocumentTypeRef struct {
 // DocumentTypeRefKey defines model for DocumentTypeRef.Key.
 type DocumentTypeRefKey string
 
+// EmailAddress defines model for EmailAddress.
+type EmailAddress struct {
+	// Email Empty removes the address.
+	Email string `json:"email"`
+}
+
 // Error defines model for Error.
 type Error struct {
 	Code    ErrorCode      `json:"code"`
@@ -3537,6 +3570,20 @@ type NextDocumentNumber struct {
 	Number string `json:"number"`
 }
 
+// NotificationOverview defines model for NotificationOverview.
+type NotificationOverview struct {
+	Events []struct {
+		Enabled bool   `json:"enabled"`
+		Key     string `json:"key"`
+	} `json:"events"`
+	From   string        `json:"from"`
+	Outbox []OutboxEntry `json:"outbox"`
+
+	// Provider graph, smtp, log, or empty when email is not set up. Set by IT in the server settings.
+	Provider string `json:"provider"`
+	Server   string `json:"server"`
+}
+
 // NumberImportGroup defines model for NumberImportGroup.
 type NumberImportGroup struct {
 	// Count Numbers in the register, all statuses.
@@ -3658,6 +3705,23 @@ type NumberSettingsUpdate struct {
 	RevisionDigits *int `json:"revision_digits,omitempty"`
 }
 
+// OutboxEntry defines model for OutboxEntry.
+type OutboxEntry struct {
+	Attempts  int               `json:"attempts"`
+	CreatedAt time.Time         `json:"created_at"`
+	Email     *string           `json:"email,omitempty"`
+	Event     string            `json:"event"`
+	Id        string            `json:"id"`
+	Reason    *string           `json:"reason,omitempty"`
+	Recipient string            `json:"recipient"`
+	SentAt    *time.Time        `json:"sent_at,omitempty"`
+	Status    OutboxEntryStatus `json:"status"`
+	Subject   string            `json:"subject"`
+}
+
+// OutboxEntryStatus defines model for OutboxEntry.Status.
+type OutboxEntryStatus string
+
 // PartNumber defines model for PartNumber.
 type PartNumber struct {
 	CreatedAt  time.Time `json:"created_at"`
@@ -3714,6 +3778,8 @@ type Person struct {
 
 // PersonInfo defines model for PersonInfo.
 type PersonInfo struct {
+	// Email Address for email notifications (D-194).
+	Email          *string `json:"email,omitempty"`
 	EmployeeNumber *string `json:"employee_number,omitempty"`
 
 	// Id Opaque stable ID.
@@ -4872,6 +4938,11 @@ type ListModelsParams struct {
 	CustomerId CustomerIdQuery `form:"customer_id" json:"customer_id"`
 }
 
+// SetNotificationEventJSONBody defines parameters for SetNotificationEvent.
+type SetNotificationEventJSONBody struct {
+	Enabled bool `json:"enabled"`
+}
+
 // ListPartNumbersParams defines parameters for ListPartNumbers.
 type ListPartNumbersParams struct {
 	// CustomerId The customer whose master data is listed.
@@ -4888,11 +4959,17 @@ type ResolveProcessTemplatePointsParams struct {
 	ModelId string `form:"model_id" json:"model_id"`
 }
 
+// SetOwnEmailJSONRequestBody defines body for SetOwnEmail for application/json ContentType.
+type SetOwnEmailJSONRequestBody = EmailAddress
+
 // ChangePasswordJSONRequestBody defines body for ChangePassword for application/json ContentType.
 type ChangePasswordJSONRequestBody = PasswordChange
 
 // CreateAccountJSONRequestBody defines body for CreateAccount for application/json ContentType.
 type CreateAccountJSONRequestBody = NewAccount
+
+// SetAccountEmailJSONRequestBody defines body for SetAccountEmail for application/json ContentType.
+type SetAccountEmailJSONRequestBody = EmailAddress
 
 // SetAccountRolesJSONRequestBody defines body for SetAccountRoles for application/json ContentType.
 type SetAccountRolesJSONRequestBody = RolesUpdate
@@ -5074,6 +5151,9 @@ type CreateModelJSONRequestBody = NewModel
 // UpdateModelJSONRequestBody defines body for UpdateModel for application/json ContentType.
 type UpdateModelJSONRequestBody = ModelUpdate
 
+// SetNotificationEventJSONRequestBody defines body for SetNotificationEvent for application/json ContentType.
+type SetNotificationEventJSONRequestBody SetNotificationEventJSONBody
+
 // UpdateNumberSettingsJSONRequestBody defines body for UpdateNumberSettings for application/json ContentType.
 type UpdateNumberSettingsJSONRequestBody = NumberSettingsUpdate
 
@@ -5175,6 +5255,12 @@ type DecideYokotenTargetJSONRequestBody = YokotenDecision
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// GetOwnEmail The email address of the caller (D-104, D-194)
+	// (GET /api/v1/account/email)
+	GetOwnEmail(w http.ResponseWriter, r *http.Request)
+	// SetOwnEmail Set the email address of the caller for notifications (D-104, D-194)
+	// (PUT /api/v1/account/email)
+	SetOwnEmail(w http.ResponseWriter, r *http.Request)
 	// ChangePassword Change the password of the caller
 	// (PUT /api/v1/account/password)
 	ChangePassword(w http.ResponseWriter, r *http.Request)
@@ -5187,6 +5273,9 @@ type ServerInterface interface {
 	// DisableAccount Disable another account and end its sessions (A-1)
 	// (POST /api/v1/accounts/{accountId}/disable)
 	DisableAccount(w http.ResponseWriter, r *http.Request, accountId AccountId)
+	// SetAccountEmail Set the email address of the person of an account (A-1, D-194)
+	// (PUT /api/v1/accounts/{accountId}/email)
+	SetAccountEmail(w http.ResponseWriter, r *http.Request, accountId string)
 	// EnableAccount Enable an account again and unlock it (A-1)
 	// (POST /api/v1/accounts/{accountId}/enable)
 	EnableAccount(w http.ResponseWriter, r *http.Request, accountId AccountId)
@@ -5505,6 +5594,15 @@ type ServerInterface interface {
 	// UpdateModel Rename a model or move it to another model group of the same customer (A-2)
 	// (PUT /api/v1/models/{modelId})
 	UpdateModel(w http.ResponseWriter, r *http.Request, modelId ModelId)
+	// GetNotifications Email settings, events, and the latest 100 emails of the outbox (A-3, D-194)
+	// (GET /api/v1/notifications)
+	GetNotifications(w http.ResponseWriter, r *http.Request)
+	// SetNotificationEvent Switch one notification event on or off (A-3)
+	// (PUT /api/v1/notifications/events/{event})
+	SetNotificationEvent(w http.ResponseWriter, r *http.Request, event string)
+	// SendTestEmail Put a test email for the caller in the outbox (A-3)
+	// (POST /api/v1/notifications/test)
+	SendTestEmail(w http.ResponseWriter, r *http.Request)
 	// GetNumberSettings Number settings - factory code, number pattern, running number format, and revision digits (D-89)
 	// (GET /api/v1/number-settings)
 	GetNumberSettings(w http.ResponseWriter, r *http.Request)
@@ -5702,6 +5800,34 @@ type ServerInterfaceWrapper struct {
 
 type MiddlewareFunc func(http.Handler) http.Handler
 
+// GetOwnEmail operation middleware
+func (siw *ServerInterfaceWrapper) GetOwnEmail(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetOwnEmail(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetOwnEmail operation middleware
+func (siw *ServerInterfaceWrapper) SetOwnEmail(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetOwnEmail(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ChangePassword operation middleware
 func (siw *ServerInterfaceWrapper) ChangePassword(w http.ResponseWriter, r *http.Request) {
 
@@ -5761,6 +5887,32 @@ func (siw *ServerInterfaceWrapper) DisableAccount(w http.ResponseWriter, r *http
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.DisableAccount(w, r, accountId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetAccountEmail operation middleware
+func (siw *ServerInterfaceWrapper) SetAccountEmail(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "accountId" -------------
+	var accountId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "accountId", r.PathValue("accountId"), &accountId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "accountId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetAccountEmail(w, r, accountId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -8679,6 +8831,60 @@ func (siw *ServerInterfaceWrapper) UpdateModel(w http.ResponseWriter, r *http.Re
 	handler.ServeHTTP(w, r)
 }
 
+// GetNotifications operation middleware
+func (siw *ServerInterfaceWrapper) GetNotifications(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetNotifications(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetNotificationEvent operation middleware
+func (siw *ServerInterfaceWrapper) SetNotificationEvent(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "event" -------------
+	var event string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "event", r.PathValue("event"), &event, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "event", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetNotificationEvent(w, r, event)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SendTestEmail operation middleware
+func (siw *ServerInterfaceWrapper) SendTestEmail(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SendTestEmail(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetNumberSettings operation middleware
 func (siw *ServerInterfaceWrapper) GetNumberSettings(w http.ResponseWriter, r *http.Request) {
 
@@ -10166,6 +10372,12 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/session", wrapper.Logout)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/session", wrapper.GetSession)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/session", wrapper.Login)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/account/email", wrapper.GetOwnEmail)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/account/email", wrapper.SetOwnEmail)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/accounts/{accountId}/email", wrapper.SetAccountEmail)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/notifications", wrapper.GetNotifications)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/notifications/events/{event}", wrapper.SetNotificationEvent)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/notifications/test", wrapper.SendTestEmail)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/account/password", wrapper.ChangePassword)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/roles", wrapper.ListRoles)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/permissions", wrapper.ListPermissions)
@@ -10339,6 +10551,83 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 }
 
 type ErrorJSONResponse Error
+
+type GetOwnEmailRequestObject struct {
+}
+
+type GetOwnEmailResponseObject interface {
+	VisitGetOwnEmailResponse(w http.ResponseWriter) error
+}
+
+type GetOwnEmail200JSONResponse EmailAddress
+
+func (response GetOwnEmail200JSONResponse) VisitGetOwnEmailResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetOwnEmaildefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response GetOwnEmaildefaultJSONResponse) VisitGetOwnEmailResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetOwnEmailRequestObject struct {
+	Body *SetOwnEmailJSONRequestBody
+}
+
+type SetOwnEmailResponseObject interface {
+	VisitSetOwnEmailResponse(w http.ResponseWriter) error
+}
+
+type SetOwnEmail200JSONResponse EmailAddress
+
+func (response SetOwnEmail200JSONResponse) VisitSetOwnEmailResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetOwnEmaildefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response SetOwnEmaildefaultJSONResponse) VisitSetOwnEmailResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
 
 type ChangePasswordRequestObject struct {
 	Body *ChangePasswordJSONRequestBody
@@ -10514,6 +10803,46 @@ type DisableAccountdefaultJSONResponse struct {
 }
 
 func (response DisableAccountdefaultJSONResponse) VisitDisableAccountResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetAccountEmailRequestObject struct {
+	AccountId string `json:"accountId"`
+	Body      *SetAccountEmailJSONRequestBody
+}
+
+type SetAccountEmailResponseObject interface {
+	VisitSetAccountEmailResponse(w http.ResponseWriter) error
+}
+
+type SetAccountEmail200JSONResponse EmailAddress
+
+func (response SetAccountEmail200JSONResponse) VisitSetAccountEmailResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetAccountEmaildefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response SetAccountEmaildefaultJSONResponse) VisitSetAccountEmailResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -14819,6 +15148,110 @@ func (response UpdateModeldefaultJSONResponse) VisitUpdateModelResponse(w http.R
 	return err
 }
 
+type GetNotificationsRequestObject struct {
+}
+
+type GetNotificationsResponseObject interface {
+	VisitGetNotificationsResponse(w http.ResponseWriter) error
+}
+
+type GetNotifications200JSONResponse NotificationOverview
+
+func (response GetNotifications200JSONResponse) VisitGetNotificationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetNotificationsdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response GetNotificationsdefaultJSONResponse) VisitGetNotificationsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetNotificationEventRequestObject struct {
+	Event string `json:"event"`
+	Body  *SetNotificationEventJSONRequestBody
+}
+
+type SetNotificationEventResponseObject interface {
+	VisitSetNotificationEventResponse(w http.ResponseWriter) error
+}
+
+type SetNotificationEvent204Response struct {
+}
+
+func (response SetNotificationEvent204Response) VisitSetNotificationEventResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type SetNotificationEventdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response SetNotificationEventdefaultJSONResponse) VisitSetNotificationEventResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SendTestEmailRequestObject struct {
+}
+
+type SendTestEmailResponseObject interface {
+	VisitSendTestEmailResponse(w http.ResponseWriter) error
+}
+
+type SendTestEmail204Response struct {
+}
+
+func (response SendTestEmail204Response) VisitSendTestEmailResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type SendTestEmaildefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response SendTestEmaildefaultJSONResponse) VisitSendTestEmailResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetNumberSettingsRequestObject struct {
 }
 
@@ -17271,6 +17704,12 @@ func (response GetHealth503JSONResponse) VisitGetHealthResponse(w http.ResponseW
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
+	// GetOwnEmail The email address of the caller (D-104, D-194)
+	// (GET /api/v1/account/email)
+	GetOwnEmail(ctx context.Context, request GetOwnEmailRequestObject) (GetOwnEmailResponseObject, error)
+	// SetOwnEmail Set the email address of the caller for notifications (D-104, D-194)
+	// (PUT /api/v1/account/email)
+	SetOwnEmail(ctx context.Context, request SetOwnEmailRequestObject) (SetOwnEmailResponseObject, error)
 	// ChangePassword Change the password of the caller
 	// (PUT /api/v1/account/password)
 	ChangePassword(ctx context.Context, request ChangePasswordRequestObject) (ChangePasswordResponseObject, error)
@@ -17283,6 +17722,9 @@ type StrictServerInterface interface {
 	// DisableAccount Disable another account and end its sessions (A-1)
 	// (POST /api/v1/accounts/{accountId}/disable)
 	DisableAccount(ctx context.Context, request DisableAccountRequestObject) (DisableAccountResponseObject, error)
+	// SetAccountEmail Set the email address of the person of an account (A-1, D-194)
+	// (PUT /api/v1/accounts/{accountId}/email)
+	SetAccountEmail(ctx context.Context, request SetAccountEmailRequestObject) (SetAccountEmailResponseObject, error)
 	// EnableAccount Enable an account again and unlock it (A-1)
 	// (POST /api/v1/accounts/{accountId}/enable)
 	EnableAccount(ctx context.Context, request EnableAccountRequestObject) (EnableAccountResponseObject, error)
@@ -17601,6 +18043,15 @@ type StrictServerInterface interface {
 	// UpdateModel Rename a model or move it to another model group of the same customer (A-2)
 	// (PUT /api/v1/models/{modelId})
 	UpdateModel(ctx context.Context, request UpdateModelRequestObject) (UpdateModelResponseObject, error)
+	// GetNotifications Email settings, events, and the latest 100 emails of the outbox (A-3, D-194)
+	// (GET /api/v1/notifications)
+	GetNotifications(ctx context.Context, request GetNotificationsRequestObject) (GetNotificationsResponseObject, error)
+	// SetNotificationEvent Switch one notification event on or off (A-3)
+	// (PUT /api/v1/notifications/events/{event})
+	SetNotificationEvent(ctx context.Context, request SetNotificationEventRequestObject) (SetNotificationEventResponseObject, error)
+	// SendTestEmail Put a test email for the caller in the outbox (A-3)
+	// (POST /api/v1/notifications/test)
+	SendTestEmail(ctx context.Context, request SendTestEmailRequestObject) (SendTestEmailResponseObject, error)
 	// GetNumberSettings Number settings - factory code, number pattern, running number format, and revision digits (D-89)
 	// (GET /api/v1/number-settings)
 	GetNumberSettings(ctx context.Context, request GetNumberSettingsRequestObject) (GetNumberSettingsResponseObject, error)
@@ -17828,6 +18279,61 @@ type strictHandler struct {
 	options     StrictHTTPServerOptions
 }
 
+// GetOwnEmail operation middleware
+func (sh *strictHandler) GetOwnEmail(w http.ResponseWriter, r *http.Request) {
+	var request GetOwnEmailRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetOwnEmail(ctx, request.(GetOwnEmailRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetOwnEmail")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetOwnEmailResponseObject); ok {
+		if err := validResponse.VisitGetOwnEmailResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SetOwnEmail operation middleware
+func (sh *strictHandler) SetOwnEmail(w http.ResponseWriter, r *http.Request) {
+	var request SetOwnEmailRequestObject
+
+	var body SetOwnEmailJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetOwnEmail(ctx, request.(SetOwnEmailRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetOwnEmail")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetOwnEmailResponseObject); ok {
+		if err := validResponse.VisitSetOwnEmailResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ChangePassword operation middleware
 func (sh *strictHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	var request ChangePasswordRequestObject
@@ -17933,6 +18439,39 @@ func (sh *strictHandler) DisableAccount(w http.ResponseWriter, r *http.Request, 
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(DisableAccountResponseObject); ok {
 		if err := validResponse.VisitDisableAccountResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SetAccountEmail operation middleware
+func (sh *strictHandler) SetAccountEmail(w http.ResponseWriter, r *http.Request, accountId string) {
+	var request SetAccountEmailRequestObject
+
+	request.AccountId = accountId
+
+	var body SetAccountEmailJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetAccountEmail(ctx, request.(SetAccountEmailRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetAccountEmail")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetAccountEmailResponseObject); ok {
+		if err := validResponse.VisitSetAccountEmailResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -21082,6 +21621,87 @@ func (sh *strictHandler) UpdateModel(w http.ResponseWriter, r *http.Request, mod
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UpdateModelResponseObject); ok {
 		if err := validResponse.VisitUpdateModelResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetNotifications operation middleware
+func (sh *strictHandler) GetNotifications(w http.ResponseWriter, r *http.Request) {
+	var request GetNotificationsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetNotifications(ctx, request.(GetNotificationsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetNotifications")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetNotificationsResponseObject); ok {
+		if err := validResponse.VisitGetNotificationsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SetNotificationEvent operation middleware
+func (sh *strictHandler) SetNotificationEvent(w http.ResponseWriter, r *http.Request, event string) {
+	var request SetNotificationEventRequestObject
+
+	request.Event = event
+
+	var body SetNotificationEventJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetNotificationEvent(ctx, request.(SetNotificationEventRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetNotificationEvent")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetNotificationEventResponseObject); ok {
+		if err := validResponse.VisitSetNotificationEventResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SendTestEmail operation middleware
+func (sh *strictHandler) SendTestEmail(w http.ResponseWriter, r *http.Request) {
+	var request SendTestEmailRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SendTestEmail(ctx, request.(SendTestEmailRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SendTestEmail")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SendTestEmailResponseObject); ok {
+		if err := validResponse.VisitSendTestEmailResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
