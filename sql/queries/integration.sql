@@ -105,9 +105,14 @@ FOR UPDATE;
 INSERT INTO integration_requests (service_account_id, idempotency_key, request_hash, change_id) VALUES ($1, $2, $3, $4);
 
 -- name: CreateIntegrationChange :one
-INSERT INTO changes (customer_id, mechanism, change_type_id, reason, source_reference, requested_by_service_account_id)
-VALUES ($1, 'integration', $2, $3, $4, $5)
+INSERT INTO changes (customer_id, mechanism, change_type_id, reason, source_reference, requested_by_service_account_id, trigger_source_id)
+VALUES ($1, 'integration', $2, $3, $4, $5, sqlc.narg(trigger_source_id))
 RETURNING id, seq;
+
+-- name: TriggerSourceByName :one
+-- TriggerSourceByName mencari pemicu perubahan yang dipilih orang (bukan
+-- mekanisme sistem), misalnya ECR, menurut namanya (D-193).
+SELECT id FROM change_sources WHERE lower(name) = lower($1) AND active AND mechanism IS NULL;
 
 -- name: CreateChangeProposal :exec
 INSERT INTO change_proposals (change_id, document_id, base_revision, source_application, on_behalf_of, operations)

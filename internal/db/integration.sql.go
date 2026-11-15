@@ -131,8 +131,8 @@ func (q *Queries) CreateExportJob(ctx context.Context, arg CreateExportJobParams
 }
 
 const createIntegrationChange = `-- name: CreateIntegrationChange :one
-INSERT INTO changes (customer_id, mechanism, change_type_id, reason, source_reference, requested_by_service_account_id)
-VALUES ($1, 'integration', $2, $3, $4, $5)
+INSERT INTO changes (customer_id, mechanism, change_type_id, reason, source_reference, requested_by_service_account_id, trigger_source_id)
+VALUES ($1, 'integration', $2, $3, $4, $5, $6)
 RETURNING id, seq
 `
 
@@ -142,6 +142,7 @@ type CreateIntegrationChangeParams struct {
 	Reason                      string
 	SourceReference             *string
 	RequestedByServiceAccountID *string
+	TriggerSourceID             *string
 }
 
 type CreateIntegrationChangeRow struct {
@@ -156,6 +157,7 @@ func (q *Queries) CreateIntegrationChange(ctx context.Context, arg CreateIntegra
 		arg.Reason,
 		arg.SourceReference,
 		arg.RequestedByServiceAccountID,
+		arg.TriggerSourceID,
 	)
 	var i CreateIntegrationChangeRow
 	err := row.Scan(&i.ID, &i.Seq)
@@ -785,4 +787,17 @@ UPDATE service_tokens SET last_used_at = now() WHERE id = $1
 func (q *Queries) TouchServiceToken(ctx context.Context, id string) error {
 	_, err := q.db.Exec(ctx, touchServiceToken, id)
 	return err
+}
+
+const triggerSourceByName = `-- name: TriggerSourceByName :one
+SELECT id FROM change_sources WHERE lower(name) = lower($1) AND active AND mechanism IS NULL
+`
+
+// TriggerSourceByName mencari pemicu perubahan yang dipilih orang (bukan
+// mekanisme sistem), misalnya ECR, menurut namanya (D-193).
+func (q *Queries) TriggerSourceByName(ctx context.Context, lower string) (string, error) {
+	row := q.db.QueryRow(ctx, triggerSourceByName, lower)
+	var id string
+	err := row.Scan(&id)
+	return id, err
 }

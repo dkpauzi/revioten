@@ -376,8 +376,14 @@ components:
           description: Cell values by field ID.
     ChangeProposal:
       type: object
-      required: [document_id, base_revision, source_application, reason, operations]
+      required: [document_id, base_revision, source_application, reason]
       properties:
+        trigger:
+          type: string
+          description: The name of the change trigger, for example ECR (D-193). Leave it out when there is none.
+        include_set:
+          type: boolean
+          description: When true, the change covers every document of the set of document_id (PFD, PFMEA, and CP). Operations still apply to document_id only.
         document_id:
           type: string
         base_revision:
@@ -396,8 +402,12 @@ components:
           type: string
         reference:
           type: string
+          description: Your own reference, for example the ECR number.
         operations:
           type: array
+          description: >-
+            Row operations against the revision in force. Leave it out or empty for a change request without a patch,
+            for example an ECR; the author then edits the draft after a verifier accepts it.
           items:
             $ref: '#/components/schemas/PatchOperation'
     PatchOperation:

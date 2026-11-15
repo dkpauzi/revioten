@@ -171,12 +171,22 @@ type ChangeProposal struct {
 	ChangeType *ChangeProposalChangeType `json:"change_type,omitempty"`
 	DocumentId string                    `json:"document_id"`
 
+	// IncludeSet When true, the change covers every document of the set of document_id (PFD, PFMEA, and CP). Operations still apply to document_id only.
+	IncludeSet *bool `json:"include_set,omitempty"`
+
 	// OnBehalfOf The person the proposal is for. Recorded and shown as asserted, never trusted for authorization (R-API-09).
-	OnBehalfOf        *string          `json:"on_behalf_of,omitempty"`
-	Operations        []PatchOperation `json:"operations"`
-	Reason            string           `json:"reason"`
-	Reference         *string          `json:"reference,omitempty"`
-	SourceApplication string           `json:"source_application"`
+	OnBehalfOf *string `json:"on_behalf_of,omitempty"`
+
+	// Operations Row operations against the revision in force. Leave it out or empty for a change request without a patch, for example an ECR; the author then edits the draft after a verifier accepts it.
+	Operations *[]PatchOperation `json:"operations,omitempty"`
+	Reason     string            `json:"reason"`
+
+	// Reference Your own reference, for example the ECR number.
+	Reference         *string `json:"reference,omitempty"`
+	SourceApplication string  `json:"source_application"`
+
+	// Trigger The name of the change trigger, for example ECR (D-193). Leave it out when there is none.
+	Trigger *string `json:"trigger,omitempty"`
 }
 
 // ChangeProposalChangeType The default is content.

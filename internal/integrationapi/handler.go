@@ -241,11 +241,14 @@ func toProposed(c integration.ProposedChange) ProposedChange {
 func (a *api) ProposeChange(ctx context.Context, req ProposeChangeRequestObject) (ProposeChangeResponseObject, error) {
 	b := req.Body
 	in := integration.Proposal{DocumentID: b.DocumentId, BaseRevision: b.BaseRevision, SourceApplication: b.SourceApplication,
-		OnBehalfOf: deref(b.OnBehalfOf), Reason: b.Reason, Reference: deref(b.Reference)}
+		OnBehalfOf: deref(b.OnBehalfOf), Reason: b.Reason, Reference: deref(b.Reference), Trigger: deref(b.Trigger)}
+	if b.IncludeSet != nil {
+		in.IncludeSet = *b.IncludeSet
+	}
 	if b.ChangeType != nil {
 		in.ChangeType = string(*b.ChangeType)
 	}
-	for _, op := range b.Operations {
+	for _, op := range deref2(b.Operations) {
 		item := document.PatchOp{Op: string(op.Op), RowID: deref(op.RowId), ProcessID: deref(op.ProcessId), SectionID: deref(op.SectionId)}
 		if op.Content != nil {
 			item.Content = *op.Content
@@ -351,4 +354,12 @@ func (l *limiter) take(key string) (int, bool) {
 	}
 	u.count++
 	return 0, false
+}
+
+// deref2 memberi isi daftar operasi, atau daftar kosong bila tidak dikirim.
+func deref2(ops *[]PatchOperation) []PatchOperation {
+	if ops == nil {
+		return nil
+	}
+	return *ops
 }

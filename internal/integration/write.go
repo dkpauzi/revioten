@@ -29,9 +29,18 @@ type Proposal struct {
 	SourceApplication string // nama aplikasi pemanggil
 	OnBehalfOf        string // orang yang disebut pemanggil; hanya dicatat (R-API-09)
 	ChangeType        string // content, layout, atau administrative; kosong berarti content
-	Reason            string
-	Reference         string
-	Operations        []document.PatchOp
+	// Trigger adalah nama pemicu perubahan, misalnya ECR (D-193); kosong
+	// berarti tanpa pemicu. Hanya pemicu yang dipilih orang, bukan mekanisme
+	// sistem seperti yokoten.
+	Trigger   string
+	Reason    string
+	Reference string // misalnya nomor ECR
+	// IncludeSet: perubahan mencakup semua dokumen satu set (PFD, PFMEA, CP)
+	// dari dokumen yang disebut. Operasi tetap hanya untuk DocumentID.
+	IncludeSet bool
+	// Operations boleh kosong (D-193): perubahan menunggu verifikasi, lalu
+	// penyusun mengubah draftnya sendiri.
+	Operations []document.PatchOp
 }
 
 // ProposedChange adalah hasil satu usulan: perubahan yang menunggu verifikasi orang.
@@ -126,8 +135,21 @@ func (s *Service) Propose(ctx context.Context, c Client, key string, in Proposal
 			return &problem.ConflictError{Problems: []problem.Problem{{Field: "base_revision", Code: problem.Changed,
 				Message: fmt.Sprintf("The revision in force is %d. Read it again and send the proposal against it.", r.Revision)}}}
 		}
-		if err := document.CheckPatchAgainstSnapshot(ctx, q, snap, in.Operations); err != nil {
-			return err
+		if len(in.Operations) > 0 {
+			if err := document.CheckPatchAgainstSnapshot(ctx, q, snap, in.Operations); err != nil {
+				return err
+			}
+		}
+		var trigger *string
+		if name := strings.TrimSpace(in.Trigger); name != "" {
+			id, err := q.TriggerSourceByName(ctx, name)
+			if errors.Is(err, pgx.ErrNoRows) {
+				return invalid("trigger", problem.InvalidFormat, "Use the name of an active change trigger, for example ECR.")
+			}
+			if err != nil {
+				return err
+			}
+			trigger = &id
 		}
 		typeID, err := q.ChangeTypeByKey(ctx, changeType)
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -142,6 +164,7 @@ func (s *Service) Propose(ctx context.Context, c Client, key string, in Proposal
 		}
 		created, err := q.CreateIntegrationChange(ctx, db.CreateIntegrationChangeParams{
 			CustomerID: r.CustomerID, ChangeTypeID: typeID, Reason: reason, SourceReference: ref, RequestedByServiceAccountID: &c.ServiceAccountID,
+			TriggerSourceID: trigger,
 		})
 		if err != nil {
 			return err
@@ -149,7 +172,29 @@ func (s *Service) Propose(ctx context.Context, c Client, key string, in Proposal
 		if err := q.AddChangeDocument(ctx, db.AddChangeDocumentParams{ChangeID: created.ID, DocumentID: in.DocumentID}); err != nil {
 			return err
 		}
-		ops, err := json.Marshal(in.Operations)
+		affected := 1
+		if in.IncludeSet {
+			// Dokumen lain satu set ikut terdampak. Semuanya milik customer yang
+			// sama, karena satu set didaftarkan untuk satu customer (M2.4).
+			members, err := q.ListDocumentSet(ctx, in.DocumentID)
+			if err != nil {
+				return err
+			}
+			for _, m := range members {
+				if m.ID == in.DocumentID {
+					continue
+				}
+				if err := q.AddChangeDocument(ctx, db.AddChangeDocumentParams{ChangeID: created.ID, DocumentID: m.ID}); err != nil {
+					return err
+				}
+				affected++
+			}
+		}
+		list := in.Operations
+		if list == nil {
+			list = []document.PatchOp{} // disimpan sebagai array kosong, bukan null
+		}
+		ops, err := json.Marshal(list)
 		if err != nil {
 			return err
 		}
@@ -166,7 +211,10 @@ func (s *Service) Propose(ctx context.Context, c Client, key string, in Proposal
 			return err
 		}
 		details := c.details(map[string]string{"ref": changeRef(created.Seq), "document": r.Number, "base_revision": strconv.Itoa(in.BaseRevision),
-			"operations": strconv.Itoa(len(in.Operations)), "source_application": app})
+			"operations": strconv.Itoa(len(in.Operations)), "source_application": app, "documents": strconv.Itoa(affected)})
+		if in.Trigger != "" {
+			details["trigger"] = strings.TrimSpace(in.Trigger)
+		}
 		if behalf != "" {
 			details["on_behalf_of"] = behalf // pernyataan pemanggil, bukan bukti
 		}

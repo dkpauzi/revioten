@@ -175,6 +175,11 @@ func applyProposal(ctx context.Context, q *db.Queries, actor access.Actor, c Cha
 	if err := json.Unmarshal(p.Operations, &ops); err != nil {
 		return fmt.Errorf("membaca operasi usulan: %w", err)
 	}
+	if len(ops) == 0 {
+		// Usulan tanpa operasi (misalnya ECR, D-193): draft dibuka, isinya
+		// diubah penyusun sendiri.
+		return q.MarkProposalApplied(ctx, c.ID)
+	}
 	added, modified, removed, err := document.ApplyPatch(ctx, q, docID, ops)
 	if err != nil {
 		return err

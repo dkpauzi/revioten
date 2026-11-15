@@ -362,6 +362,30 @@ func TestPropose(t *testing.T) {
 		t.Errorf("status sesudah diterima: %+v", st)
 	}
 
+	// Usulan ECR (D-193): pemicu ECR, nomor ECR, seluruh set, tanpa operasi baris.
+	set := e.released(t, "ecr", e.CustomerAB, e.ModelK200, "pfd", "pfmea", "cp")
+	ecr := integration.Proposal{DocumentID: set["cp"].ID, BaseRevision: 0, SourceApplication: "ECR web", OnBehalfOf: "Engineer ECR",
+		Trigger: "ecr", Reason: "Customer changes the connector", Reference: "ECR-2026-118", IncludeSet: true}
+	bad := ecr
+	bad.Trigger = "Yokoten" // mekanisme sistem, bukan pemicu pilihan orang
+	if _, _, err := e.svc.Propose(ctx, c, "k-ecr-bad", bad); code(t, err) != "trigger:invalid_format" {
+		t.Errorf("pemicu mekanisme sistem: %v", err)
+	}
+	ecrChange, _, err := e.svc.Propose(ctx, c, "k-ecr", ecr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	seenECR, err := changes.Get(ctx, e.Author, ecrChange.ID)
+	if err != nil || len(seenECR.Documents) != 3 || seenECR.Trigger == nil || seenECR.Trigger.Name != "ECR" || seenECR.SourceReference != "ECR-2026-118" {
+		t.Fatalf("perubahan ECR: %+v, %v", seenECR, err)
+	}
+	if _, err := changes.Verify(ctx, controller, ecrChange.ID, true, "ECR diterima"); err != nil {
+		t.Fatal(err)
+	}
+	if d, _ := e.Docs.Get(ctx, e.Author, set["pfd"].ID); d.Status != document.StatusDraft || d.Revision != 1 {
+		t.Errorf("PFD satu set sesudah ECR diterima: %s %d", d.Status, d.Revision)
+	}
+
 	// Orang yang disebut pemanggil sebagai pemohon tidak memverifikasinya (R-API-09).
 	behalf := in
 	behalf.OnBehalfOf = controller.Login
