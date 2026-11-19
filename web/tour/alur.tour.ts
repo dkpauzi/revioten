@@ -150,22 +150,16 @@ test('alur dari admin sampai dokumen terbit, revisi, migrasi, dasbor, dan API in
 	await accountForm.getByLabel(en.accountPersonName).fill(engineer.name);
 	await accountForm.getByLabel(en.accountKindWork).check();
 	await accountForm.getByLabel(en.accountLogin).fill(engineer.login);
-	await say(page, 'Langkah 4', 'Peran menentukan hak: Author (nomor, dokumen), Template maintainer (template), Document control (Void).');
-	await accountForm.getByLabel(en.roleAuthor, { exact: true }).check();
-	await accountForm.getByLabel(en.roleTemplateMaintainer, { exact: true }).check();
-	await accountForm.getByLabel(en.roleDocumentControl, { exact: true }).check();
-	await say(page, 'Langkah 4', 'Untuk contoh ini akun yang sama juga Form approver (biasanya PPAP Supervisor) dan PFMEA-CP checker (D-65).');
-	await accountForm.getByLabel(en.roleFormApprover, { exact: true }).check();
-	await accountForm.getByLabel(en.rolePfmeaCpChecker, { exact: true }).check();
-	await accountForm.getByLabel(en.roleMigration, { exact: true }).check();
+	await say(page, 'Langkah 4', 'Peran menentukan hak (D-199): PPAP Engineer menyusun, mengelola template, mencatat rilis, dan migrasi. Isi setiap peran diatur di Admin > Roles.');
+	await accountForm.getByLabel(en.rolePpapEngineer, { exact: true }).check();
 	await accountForm.getByRole('button', { name: en.accountCreate }).click();
 	const notice = page.getByRole('status');
 	await expect(notice).toContainText(en.accountTemporaryPassword.replace('{login}', engineer.login));
 	const temporary = (await notice.locator('code').textContent()) ?? '';
 	await say(page, 'Langkah 4', 'Password sementara tampil SATU KALI. Berikan ke orangnya; ia wajib menggantinya.');
-	await say(page, 'Langkah 4', 'Dua akun lagi: Dokumen kontrol (mencatat rilis, juga petugas migrasi) dan Verifikator. Penyusun tidak boleh merilis atau memverifikasi pekerjaannya sendiri.');
-	const controlTemporary = await createAccount(page, control.name, control.login, [en.roleDocumentControl, en.roleMigration]);
-	const verifierTemporary = await createAccount(page, verifier.name, verifier.login, [en.roleVerifier]);
+	await say(page, 'Langkah 4', 'Dua akun lagi: PPAP Engineer kedua (mencatat rilis, juga petugas migrasi) dan PPAP Engineer Supervisor (verifikasi dan penyetujuan form set). Penyusun tidak boleh merilis atau memverifikasi pekerjaannya sendiri.');
+	const controlTemporary = await createAccount(page, control.name, control.login, [en.rolePpapEngineer]);
+	const verifierTemporary = await createAccount(page, verifier.name, verifier.login, [en.rolePpapEngineerSupervisor]);
 
 	await openFromMenu(page, en.navGroupMaster, en.navPositions);
 	await say(page, 'Langkah 5', 'Master data > Positions. Catat siapa memegang jabatan PPAP Engineer.');
@@ -307,13 +301,17 @@ test('alur dari admin sampai dokumen terbit, revisi, migrasi, dasbor, dan API in
 	await say(page, 'Langkah 14', 'SH-LM-001 sekarang Void, tetapi tetap ada di register beserta alasannya.');
 
 	// ---------- Bagian C: dokumen draft (Tahap 4) ----------
+	await say(page, 'Langkah 15', 'PPAP Engineer Supervisor login pertama kali untuk menyetujui form set (V-3, D-139).');
+	await logOut(page);
+	await firstLogin(page, verifier.login, verifierTemporary, verifier.password);
 	await openFromMenu(page, en.navGroupTemplates, en.navFormSets);
-	await say(page, 'Langkah 15', 'Template library > Form sets. Form approver menerbitkan form set AIAG 4th (D-139).');
+	await say(page, 'Langkah 15', 'Template library > Form sets. Supervisor menerbitkan form set AIAG 4th.');
 	const formSet = page.locator('section').filter({ has: page.getByRole('heading', { name: /^AIAG 4th set/ }) });
 	page.once('dialog', (dialog) => dialog.accept());
 	await formSet.getByRole('button', { name: en.versionPublish.replace('{version}', '1') }).click();
 	await expect(page.getByRole('status')).toHaveText(en.formSetPublished.replace('{version}', '1').replace('{name}', 'AIAG 4th set'));
 	await say(page, 'Langkah 15', 'Dokumen baru memakai form set customer yang sudah terbit.');
+	await switchTo(page, engineer.login, engineer.password);
 
 	await openFromMenu(page, en.navGroupDocuments, en.navNumbers);
 	await say(page, 'Langkah 16', 'Set nomor kedua untuk dokumen: SH-LM-002, SF-LM-002, dan SC-LM-002.');
@@ -412,8 +410,9 @@ test('alur dari admin sampai dokumen terbit, revisi, migrasi, dasbor, dan API in
 	await say(page, 'Langkah 24', 'Perubahan CHG-0001 diajukan dan menunggu verifikasi atasan.');
 
 	await logOut(page);
-	await say(page, 'Langkah 25', 'Verifikator login pertama kali. Pemohon tidak bisa memverifikasi permintaannya sendiri.');
-	await firstLogin(page, verifier.login, verifierTemporary, verifier.password);
+	await say(page, 'Langkah 25', 'Verifikator login. Pemohon tidak bisa memverifikasi permintaannya sendiri.');
+	await logInAs(page, verifier.login, verifier.password);
+	await expect(page.getByRole('button', { name: en.logout })).toBeVisible();
 	await openFromMenu(page, en.navGroupDocuments, en.navChanges);
 	await page.getByLabel(en.documentCustomer, { exact: true }).selectOption({ label: 'LM · Contoh Customer LM' });
 	await page.getByRole('row', { name: /CHG-0001/ }).getByRole('link', { name: 'CHG-0001' }).click();

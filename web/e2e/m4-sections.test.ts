@@ -28,7 +28,7 @@ test('CP satu nomor dengan bagian per PCB: tambah bagian, rakit per bagian, dan 
 			await post('/api/v1/part-numbers', { model_id: model.id, number, name });
 		}
 	});
-	const temporary = await createWorkAccount(page, 'Penyusun KT', 'penyusun.kt.e2e', ['author', 'template_maintainer', 'pfmea_cp_checker']);
+	const temporary = await createWorkAccount(page, 'Penyusun KT', 'penyusun.kt.e2e', ['ppap_engineer']);
 	await logOut(page);
 	await logInFirstTime(page, 'penyusun.kt.e2e', temporary, 'satu nomor tiga pcb dalam satu dokumen');
 

@@ -38,7 +38,7 @@ test('M5.1 dan M5.2: penyusun mengajukan perubahan dengan beberapa dokumen dan l
 		const customer = await post('/api/v1/customers', { code: 'CH', name: 'Customer CH', project_group_id: group.id });
 		await post('/api/v1/models', { customer_id: customer.id, name: 'C-1' });
 	});
-	const temporary = await createWorkAccount(page, 'Pemohon perubahan', 'pemohon.e2e', ['author']);
+	const temporary = await createWorkAccount(page, 'Pemohon perubahan', 'pemohon.e2e', ['ppap_engineer']);
 	await logOut(page);
 	await logInFirstTime(page, 'pemohon.e2e', temporary, 'perubahan selalu punya alasan');
 	const numbers = await setupSet(page);
@@ -100,7 +100,7 @@ test('M5.1 dan M5.2: penyusun mengajukan perubahan dengan beberapa dokumen dan l
 
 test('M5.3: APQP/PPAP Controller menerima perubahan dengan catatan wajib', async ({ page }) => {
 	await logIn(page);
-	const temporary = await createWorkAccount(page, 'APQP PPAP Controller E2E', 'verifikator.e2e', ['verifier']);
+	const temporary = await createWorkAccount(page, 'APQP PPAP Controller E2E', 'verifikator.e2e', ['ppap_engineer_supervisor']);
 	// Catat orangnya sebagai pemegang jabatan APQP/PPAP Controller (D-51, D-54).
 	await page.evaluate(async () => {
 		const accounts = await (await fetch('/api/v1/accounts')).json();
@@ -136,7 +136,7 @@ test('M5.3: APQP/PPAP Controller menerima perubahan dengan catatan wajib', async
 
 test('M5.5: dokumen kontrol mencatat rilis, dan revisi terbit tidak bisa diubah', async ({ page }) => {
 	await logIn(page);
-	const temporary = await createWorkAccount(page, 'Dokumen kontrol E2E', 'dcc.e2e', ['document_control']);
+	const temporary = await createWorkAccount(page, 'Dokumen kontrol E2E', 'dcc.e2e', ['ppap_engineer']);
 	await logOut(page);
 	await logInFirstTime(page, 'dcc.e2e', temporary, 'rilis selalu dibekukan');
 

@@ -64,7 +64,7 @@ func (s *Service) SetRolePermissions(ctx context.Context, actor access.Actor, ro
 	err := db.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
 		q := s.q.WithTx(tx)
 		// Baris peran dikunci, supaya dua admin tidak mengubah peran yang sama bersamaan.
-		level, err := q.LockRole(ctx, roleID)
+		_, err := q.LockRole(ctx, roleID)
 		if err == pgx.ErrNoRows {
 			return problem.ErrNotFound
 		}
@@ -113,7 +113,7 @@ func (s *Service) SetRolePermissions(ctx context.Context, actor access.Actor, ro
 				}
 			}
 		}
-		role = access.Role{ID: roleID, Level: level, Permissions: want}
+		role = access.Role{ID: roleID, Permissions: want}
 		if len(added) == 0 && len(removed) == 0 {
 			return nil // tidak ada yang berubah, jadi tidak dicatat
 		}
@@ -129,5 +129,5 @@ func (s *Service) SetRolePermissions(ctx context.Context, actor access.Actor, ro
 		}
 		return access.Role{}, fmt.Errorf("menyimpan isi peran: %w", err)
 	}
-	return role, nil
+	return s.role(ctx, role.ID)
 }

@@ -15,7 +15,7 @@ func (a *apiServer) ListRoles(ctx context.Context, _ ListRolesRequestObject) (Li
 	}
 	items := make([]Role, 0, len(roles))
 	for _, r := range roles {
-		items = append(items, Role{Id: r.ID, Level: RoleLevel(r.Level), Permissions: permissionCodes(r.Permissions)})
+		items = append(items, toAPIRole(r))
 	}
 	return ListRoles200JSONResponse{Items: items}, nil
 }

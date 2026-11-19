@@ -38,7 +38,7 @@ test('admin menyusun, penyetuju form menerbitkan, lalu form set dipilih per cust
 			body: JSON.stringify({ code: 'FS', name: 'Customer FS', project_group_id: group.id })
 		});
 	});
-	const temporary = await createWorkAccount(page, 'PPAP Supervisor E2E', 'ppap.supervisor.e2e', ['form_approver']);
+	const temporary = await createWorkAccount(page, 'PPAP Supervisor E2E', 'ppap.supervisor.e2e', ['ppap_engineer_supervisor']);
 
 	// Ketiga format set AIAG 4th diterbitkan admin dulu; form set baru bisa
 	// terbit setelah isinya tidak bisa berubah lagi.
@@ -83,7 +83,7 @@ test('admin menyusun, penyetuju form menerbitkan, lalu form set dipilih per cust
 
 test('admin mengubah tabel AP, dan hanya penyetuju form yang menerbitkannya', async ({ page }) => {
 	await logIn(page);
-	const temporary = await createWorkAccount(page, 'Penyetuju AP E2E', 'penyetuju.ap.e2e', ['form_approver']);
+	const temporary = await createWorkAccount(page, 'Penyetuju AP E2E', 'penyetuju.ap.e2e', ['ppap_engineer_supervisor']);
 	await openFromMenu(page, en.navGroupTemplates, en.navFormatTemplates);
 	await page.getByLabel(en.formatName, { exact: true }).fill('PFMEA AP ubah');
 	await page.getByLabel(en.formatDocumentType, { exact: true }).selectOption({ index: 2 });

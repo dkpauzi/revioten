@@ -12,8 +12,8 @@ test('M7: dokumen lama masuk di revisi 4, diverifikasi orang lain, dan tampil di
 	await page.getByLabel(en.settingsMigration, { exact: true }).check();
 	await page.getByRole('button', { name: en.settingsSave }).click();
 	await expect(page.getByRole('status')).toHaveText(en.settingsSaved);
-	const first = await createWorkAccount(page, 'Petugas migrasi satu', 'migrasi1.e2e', ['migration', 'author']);
-	const second = await createWorkAccount(page, 'Petugas migrasi dua', 'migrasi2.e2e', ['migration']);
+	const first = await createWorkAccount(page, 'Petugas migrasi satu', 'migrasi1.e2e', ['ppap_engineer']);
+	const second = await createWorkAccount(page, 'Petugas migrasi dua', 'migrasi2.e2e', ['ppap_engineer']);
 	await logOut(page);
 
 	// Petugas pertama mendaftarkan nomor dan memasukkan CP lama di revisi 4.

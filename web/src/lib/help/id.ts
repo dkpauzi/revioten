@@ -86,8 +86,9 @@ export const helpId: HelpContent = {
 			image: 'accounts',
 			imageAlt: 'Halaman Accounts dengan kotak kata sandi sementara di atas formulir.',
 			tips: [
-				'{roleAuthor}: mendaftarkan nomor dokumen. {roleTemplateMaintainer}: mengelola proses dan process template. {roleDocumentControl}: membatalkan nomor, menjadikannya obsolete, dan mengimpor nomor lama.',
-				'{roleFormApprover}: menerbitkan form set dan tabel AP; untuk saat ini PPAP Supervisor. {roleVerifier}, {rolePfmeaCpChecker}, dan {roleMigration} untuk layar yang dibangun nanti.',
+				'{rolePpapEngineer}: menyusun, mencetak, mencatat rilis, mengelola template dan nomor, dan memasukkan dokumen lama. {rolePpapEngineerSupervisor}: sama, ditambah memverifikasi perubahan dan menerbitkan form set serta tabel AP.',
+				'{roleProjectLeader}: menyusun, mencetak, dan memverifikasi untuk customer di Project Group sendiri; cakupannya terpilih otomatis. {roleManager}: menandatangani dan melihat laporan kinerja. Akun tanpa peran bisa melihat dan memberi catatan genba.',
+				'Admin menentukan isi setiap peran di {navRoles}, dan bisa menambah peran di sana.',
 				'Kata sandi sementara hanya tampil satu kali. Bila hilang, atur ulang kata sandi akun itu.',
 				'Akun admin tidak memegang peran kerja. Pemegangnya memakai akun kerja terpisah untuk pekerjaan sehari-hari.',
 				'Akun tidak pernah dihapus, hanya dinonaktifkan.'
@@ -134,7 +135,7 @@ export const helpId: HelpContent = {
 		{
 			id: 'processes',
 			title: 'Proses',
-			who: 'Pengelola template',
+			who: 'PPAP Engineer',
 			intro: 'Daftar proses adalah master nama proses. Dokumen menunjuk proses lewat ID tetapnya, jadi nama proses aman diganti.',
 			steps: [
 				'Buka {navGroupTemplates}, lalu {navProcesses}.',
@@ -149,7 +150,7 @@ export const helpId: HelpContent = {
 		{
 			id: 'process-templates',
 			title: 'Process template: sub-proses, poin, dan varian',
-			who: 'Pengelola template',
+			who: 'PPAP Engineer',
 			intro: 'Process template berisi sub-proses satu proses dan poinnya untuk PFD, PFMEA, dan Control Plan. Satu proses punya satu template.',
 			steps: [
 				'Buka {navGroupTemplates}, lalu {navProcessTemplates}, dan pilih {processTemplateChoose}.',
@@ -172,7 +173,7 @@ export const helpId: HelpContent = {
 		{
 			id: 'versions',
 			title: 'Menerbitkan versi dan membuat versi baru',
-			who: 'Pengelola template, dan admin untuk format template',
+			who: 'PPAP Engineer, dan admin untuk format template',
 			intro: 'Template baru berstatus draft. Draft bebas diubah. Versi yang sudah terbit tidak bisa diubah lagi, jadi perubahan sesudahnya masuk ke versi baru.',
 			steps: [
 				'Buka templatenya dan lihat baris {versionChoose} di atas isinya.',
@@ -192,7 +193,7 @@ export const helpId: HelpContent = {
 		{
 			id: 'form-sets',
 			title: 'Form set',
-			who: 'Admin, dan penyetuju form untuk menerbitkan',
+			who: 'Admin, dan PPAP Engineer Supervisor untuk menerbitkan',
 			intro: 'Form set adalah satu paket form untuk PFD, PFMEA, dan Control Plan. Sistem punya dua: set AIAG 4th (RPN) dan set AIAG-VDA (Action Priority). Setiap customer memakai satu form set untuk dokumen barunya.',
 			steps: [
 				'Buka {navGroupTemplates}, lalu {navFormSets}.',
@@ -207,13 +208,13 @@ export const helpId: HelpContent = {
 			tips: [
 				'Format PFMEA dengan Action Priority juga diterbitkan penyetuju form, karena tabel AP-nya menentukan prioritas tindakan.',
 				'Admin bisa mengubah tabel AP versi draft: tekan {apEdit} di format template, klik satu prioritas untuk mengubahnya, lalu tekan {apSave}.',
-				'Berikan peran {roleFormApprover} ke akun lain di {navAccounts} bila penyetujunya bertambah, misalnya para Project Leader.'
+				'Setiap {rolePpapEngineerSupervisor} bisa menerbitkan. Supaya penyetujunya bertambah, centang V-3 untuk perannya di {navRoles}.'
 			]
 		},
 		{
 			id: 'numbers',
 			title: 'Mendaftarkan nomor dokumen',
-			who: 'Penyusun',
+			who: 'PPAP Engineer, Project Leader',
 			intro: 'Sistem yang memberi setiap nomor PFD, PFMEA, dan Control Plan. Nomor tidak pernah dipakai ulang atau dihapus.',
 			steps: [
 				'Buka {navGroupDocuments}, lalu {navNumbers}.',
@@ -232,7 +233,7 @@ export const helpId: HelpContent = {
 		{
 			id: 'documents',
 			title: 'Dokumen',
-			who: 'Penyusun',
+			who: 'PPAP Engineer, Project Leader',
 			intro: 'Dokumen adalah satu PFD, PFMEA, atau Control Plan dengan nomornya sendiri. Dokumen memakai form set customer-nya yang sudah terbit, jadi langkah terbit di bab Form set dikerjakan lebih dulu.',
 			steps: [
 				'Daftarkan dulu nomornya di {navNumbers}. Dokumen butuh nomor berstatus {numberStatusReserved}.',
@@ -265,8 +266,8 @@ export const helpId: HelpContent = {
 		{
 			id: 'document-control',
 			title: 'Void, obsolete, dan nomor lama',
-			who: 'Dokumen kontrol',
-			intro: 'Dokumen kontrol mengubah status nomor dan memasukkan nomor dari register lama.',
+			who: 'PPAP Engineer',
+			intro: 'PPAP Engineer, yang kini juga mengerjakan dokumen kontrol (D-199), mengubah status nomor dan memasukkan nomor dari register lama.',
 			steps: [
 				'Buka {navGroupDocuments}, lalu {navNumbers}.',
 				'Pada baris nomornya, tekan {numberVoid} atau {numberObsolete}, isi alasannya, dan tekan {numberStatusConfirm}.',
@@ -282,7 +283,7 @@ export const helpId: HelpContent = {
 		{
 			id: 'changes',
 			title: 'Perubahan',
-			who: 'Penyusun, Verifikator',
+			who: 'PPAP Engineer dan Project Leader mengajukan; PPAP Engineer Supervisor dan Project Leader memverifikasi',
 			intro: 'Setiap revisi PFD, PFMEA, atau CP berangkat dari satu perubahan: pemicunya, jenis perubahan, alasannya, dan dokumen yang terdampak.',
 			steps: [
 				'Buka {navGroupDocuments}, lalu {navChanges}, dan pilih customer.',
@@ -301,7 +302,7 @@ export const helpId: HelpContent = {
 		{
 			id: 'yokoten',
 			title: 'Yokoten',
-			who: 'Penyusun, Project Engineer, Project Leader',
+			who: 'PPAP Engineer, Project Leader',
 			intro: 'Yokoten menyebarkan perbaikan yang sudah diterima ke model lain, dengan keputusan per model dan papan status.',
 			steps: [
 				'Buka perubahan yang sudah diterima, lalu tekan {yokotenSpread}.',
@@ -315,7 +316,7 @@ export const helpId: HelpContent = {
 		{
 			id: 'printing',
 			title: 'Cetak dan rilis',
-			who: 'Penyusun, Dokumen kontrol, Admin untuk layout',
+			who: 'PPAP Engineer, Project Leader, Admin untuk layout',
 			intro: 'Cetakan berasal dari isi yang sama dengan layar, dalam Excel atau PDF, A3 atau A4 sesuai layout. Approval tetap tanda tangan basah di kertas.',
 			steps: [
 				'Buka dokumen. Di {printTitle}, pilih revisi dan {printPurpose}, lalu tekan {printExcel} atau {printPdf}.',
@@ -331,7 +332,7 @@ export const helpId: HelpContent = {
 		{
 			id: 'migration',
 			title: 'Dokumen lama',
-			who: 'Petugas migrasi, Admin untuk saklarnya',
+			who: 'PPAP Engineer, Admin untuk saklarnya',
 			intro: 'Dokumen yang sudah ada di kertas masuk di revisinya yang sekarang dan terbit setelah orang lain mencocokkannya dengan hardcopy bertanda tangan. Isinya tidak dirapikan saat masuk.',
 			steps: [
 				'Admin menyalakan {settingsMigration} di {navGroupAdmin}, lalu {navSettings}.',
@@ -384,7 +385,7 @@ export const helpId: HelpContent = {
 				'Buka {navGroupDocuments}, lalu {navPeriodicReviews}. Kartu menghitung set yang lewat jatuh tempo, segera jatuh tempo, jatuh tempo dalam setahun, dan sudah direview tahun ini.',
 				'Pilih {reviewTabDue}, {reviewTabYear}, atau {reviewTabAll}. Saring menurut customer atau engineer, dan centang {reviewShowEol} untuk melihat model end of life. {reviewDownload} menyimpan daftarnya.',
 				'Tekan {reviewStart} pada satu set. Pilih {reviewChangesNeeded} lalu tekan {reviewOpenChange}: permintaan perubahan terbuka dengan pemicu Periodic review dan dokumen set itu.',
-				'Atau pilih {reviewNoChange}, isi {reviewDate}, {reviewParticipants}, setiap butir daftar periksa, dan {reviewConclusion}, lalu tekan {reviewSave}. Orang kedua berperan Verifikator menekan {reviewConfirm} di {reviewWaitingTitle}; jam lalu mulai lagi.'
+				'Atau pilih {reviewNoChange}, isi {reviewDate}, {reviewParticipants}, setiap butir daftar periksa, dan {reviewConclusion}, lalu tekan {reviewSave}. Orang kedua yang memegang hak V-1, misalnya {rolePpapEngineerSupervisor}, menekan {reviewConfirm} di {reviewWaitingTitle}; jam lalu mulai lagi.'
 			],
 			tips: ['Setiap dokumen punya jamnya sendiri: rilis terakhirnya, atau review terakhir set-nya yang dikonfirmasi.', 'PPAP Engineer atau Project Leader menandai model EOL di Master data → Models ({modelEolMark}). Set-nya keluar dari review.', 'Orang yang mencatat review tidak bisa mengonfirmasinya. Review yang dikonfirmasi tidak bisa diubah.'],
 			image: 'periodic-review',
@@ -409,13 +410,18 @@ export const helpId: HelpContent = {
 			id: 'roles',
 			title: 'Peran dan hak',
 			who: 'Admin',
-			intro: 'Peran adalah kumpulan hak. Katalog hak tetap; admin menentukan hak mana yang dipegang setiap peran kerja, jadi akses bisa berubah tanpa mengubah program.',
+			intro: 'Peran adalah kumpulan hak. Katalog hak tetap; admin menentukan hak mana yang dipegang setiap peran kerja, dan bisa menambah peran, jadi akses bisa berubah tanpa mengubah program.',
 			steps: [
-				'Buka {navGroupAdmin}, lalu {navRoles}. Setiap kolom adalah satu peran dan setiap baris satu hak.',
+				'Buka {navGroupAdmin}, lalu {navRoles}. Setiap kolom adalah satu peran dan setiap baris satu hak; di bawah nama peran tampil jumlah akun pemegangnya.',
 				'Centang atau hilangkan centang satu hak di kolom peran kerja, lalu tekan {rolesSave} di bawah kolom itu.',
+				'Untuk menambah peran, isi {rolesNameEn} dan {rolesNameId} di {rolesAddTitle}, pilih {rolesCopyFrom} untuk mulai dari peran lain, lalu tekan {rolesAdd}.',
+				'Tekan {rolesRename} di bawah kolom untuk mengganti nama. Tekan {rolesDeactivate} bila tidak ada lagi akun yang memegang peran itu; centang {rolesShowInactive} untuk melihatnya lagi.',
 				'Berikan peran ke orang lewat {navAccounts}. Perubahan langsung berlaku untuk semua akun yang memegang peran itu.'
 			],
 			tips: [
+				'Ajukan perubahan adalah hak E-3: hilangkan centangnya untuk mencabut dari satu peran, atau centang untuk memberikannya ke peran lain.',
+				'S-1 (tanda tangan digital) dan G-1 (catatan genba) sudah bisa diatur; layarnya menyusul.',
+				'Peran tidak pernah dihapus, supaya audit log tetap terbaca. Peran lama sebelum D-199 nonaktif.',
 				'Peran Admin dan Viewer tetap, dan hak admin (A-1 sampai A-4) tidak bisa diberikan ke peran kerja.',
 				'Hak dasar L-1 sampai L-3 selalu tercentang.',
 				'Beberapa aturan tidak bisa dimatikan peran mana pun: pemohon tidak memverifikasi permintaannya sendiri, dan penyusun draft tidak mencatat rilisnya.',

@@ -21,9 +21,7 @@ async function processIdOf(page: Page, name: string): Promise<string> {
 
 test('nama proses diganti tanpa memutus rujukan', async ({ page }) => {
 	await logIn(page);
-	const temporary = await createWorkAccount(page, 'PPAP Engineer E2E', 'ppap.engineer.e2e', [
-		'template_maintainer'
-	]);
+	const temporary = await createWorkAccount(page, 'PPAP Engineer E2E', 'ppap.engineer.e2e', ['ppap_engineer']);
 
 	// Akun admin tidak memegang E-6: daftar terlihat, formulir tidak (D-64).
 	await openFromMenu(page, en.navGroupTemplates, en.navProcesses);

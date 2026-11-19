@@ -38,6 +38,53 @@ func (q *Queries) AddRolePermission(ctx context.Context, arg AddRolePermissionPa
 	return err
 }
 
+const countRoleHolders = `-- name: CountRoleHolders :one
+SELECT count(*)::integer FROM account_roles WHERE role_id = $1
+`
+
+func (q *Queries) CountRoleHolders(ctx context.Context, roleID string) (int32, error) {
+	row := q.db.QueryRow(ctx, countRoleHolders, roleID)
+	var column_1 int32
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
+const countScopedRoleHolders = `-- name: CountScopedRoleHolders :one
+SELECT count(*)::integer FROM account_roles WHERE role_id = $1 AND scope = 'own_project_group'
+`
+
+func (q *Queries) CountScopedRoleHolders(ctx context.Context, roleID string) (int32, error) {
+	row := q.db.QueryRow(ctx, countScopedRoleHolders, roleID)
+	var column_1 int32
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
+const createRole = `-- name: CreateRole :exec
+INSERT INTO roles (id, level, sort_order, name_en, name_id, builtin, group_scope)
+SELECT $1, 'edit',
+       coalesce((SELECT max(sort_order) FROM roles WHERE sort_order < 100), 0) + 1,
+       $2, $3, false, $4
+`
+
+type CreateRoleParams struct {
+	ID         string
+	NameEn     string
+	NameID     string
+	GroupScope bool
+}
+
+// Peran baru ditaruh sesudah peran aktif terakhir dan sebelum peran lama.
+func (q *Queries) CreateRole(ctx context.Context, arg CreateRoleParams) error {
+	_, err := q.db.Exec(ctx, createRole,
+		arg.ID,
+		arg.NameEn,
+		arg.NameID,
+		arg.GroupScope,
+	)
+	return err
+}
+
 const deleteAccountRoles = `-- name: DeleteAccountRoles :exec
 DELETE FROM account_roles WHERE account_id = $1
 `
@@ -45,6 +92,40 @@ DELETE FROM account_roles WHERE account_id = $1
 func (q *Queries) DeleteAccountRoles(ctx context.Context, accountID string) error {
 	_, err := q.db.Exec(ctx, deleteAccountRoles, accountID)
 	return err
+}
+
+const getRole = `-- name: GetRole :one
+SELECT r.id, r.level, r.name_en, r.name_id, r.active, r.builtin, r.group_scope,
+       (SELECT count(*) FROM account_roles ar WHERE ar.role_id = r.id)::integer AS holders
+FROM roles r
+WHERE r.id = $1
+`
+
+type GetRoleRow struct {
+	ID         string
+	Level      string
+	NameEn     string
+	NameID     string
+	Active     bool
+	Builtin    bool
+	GroupScope bool
+	Holders    int32
+}
+
+func (q *Queries) GetRole(ctx context.Context, id string) (GetRoleRow, error) {
+	row := q.db.QueryRow(ctx, getRole, id)
+	var i GetRoleRow
+	err := row.Scan(
+		&i.ID,
+		&i.Level,
+		&i.NameEn,
+		&i.NameID,
+		&i.Active,
+		&i.Builtin,
+		&i.GroupScope,
+		&i.Holders,
+	)
+	return i, err
 }
 
 const inOwnProjectGroup = `-- name: InOwnProjectGroup :one
@@ -109,7 +190,7 @@ UNION
 SELECT rp.permission_code, 'all'
 FROM role_permissions rp
 JOIN accounts a ON a.id = $1
-WHERE rp.role_id = 'viewer' AND a.disabled_at IS NULL
+WHERE rp.role_id = 'viewer' AND a.disabled_at IS NULL AND a.kind = 'work'
 `
 
 type ListGrantsRow struct {
@@ -118,7 +199,8 @@ type ListGrantsRow struct {
 }
 
 // ListGrants mengambil semua hak sebuah akun beserta cakupannya: dari peran
-// yang dipegang akun, ditambah hak peran Viewer yang dimiliki semua akun.
+// yang dipegang akun, ditambah hak peran Viewer yang dimiliki semua akun
+// kerja (akun admin memegang hak dasar lewat peran Admin, D-199).
 // Akun yang nonaktif (atau tidak ada) tidak punya hak apa pun.
 func (q *Queries) ListGrants(ctx context.Context, accountID string) ([]ListGrantsRow, error) {
 	rows, err := q.db.Query(ctx, listGrants, accountID)
@@ -225,14 +307,24 @@ func (q *Queries) ListRolePermissions(ctx context.Context) ([]RolePermission, er
 }
 
 const listRoles = `-- name: ListRoles :many
-SELECT id, level FROM roles ORDER BY sort_order
+SELECT r.id, r.level, r.name_en, r.name_id, r.active, r.builtin, r.group_scope,
+       (SELECT count(*) FROM account_roles ar WHERE ar.role_id = r.id)::integer AS holders
+FROM roles r
+ORDER BY r.sort_order
 `
 
 type ListRolesRow struct {
-	ID    string
-	Level string
+	ID         string
+	Level      string
+	NameEn     string
+	NameID     string
+	Active     bool
+	Builtin    bool
+	GroupScope bool
+	Holders    int32
 }
 
+// ListRoles memberi katalog peran beserta jumlah akun pemegangnya (D-199).
 func (q *Queries) ListRoles(ctx context.Context) ([]ListRolesRow, error) {
 	rows, err := q.db.Query(ctx, listRoles)
 	if err != nil {
@@ -242,7 +334,16 @@ func (q *Queries) ListRoles(ctx context.Context) ([]ListRolesRow, error) {
 	items := []ListRolesRow{}
 	for rows.Next() {
 		var i ListRolesRow
-		if err := rows.Scan(&i.ID, &i.Level); err != nil {
+		if err := rows.Scan(
+			&i.ID,
+			&i.Level,
+			&i.NameEn,
+			&i.NameID,
+			&i.Active,
+			&i.Builtin,
+			&i.GroupScope,
+			&i.Holders,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -287,19 +388,45 @@ func (q *Queries) ListRolesOfAccount(ctx context.Context, accountID string) ([]L
 }
 
 const lockRole = `-- name: LockRole :one
-SELECT r.level
+SELECT r.level, r.active, r.builtin, r.group_scope
 FROM roles r, pg_advisory_xact_lock(hashtext('role:' || $1::text))
 WHERE r.id = $1
 `
 
+type LockRoleRow struct {
+	Level      string
+	Active     bool
+	Builtin    bool
+	GroupScope bool
+}
+
 // LockRole memberi level satu peran dan memegang kunci penasihat (advisory
 // lock) atas peran itu sampai transaksi selesai, supaya dua admin bergantian.
 // Role aplikasi tidak punya UPDATE pada roles, jadi FOR UPDATE tidak dipakai.
-func (q *Queries) LockRole(ctx context.Context, id string) (string, error) {
+func (q *Queries) LockRole(ctx context.Context, id string) (LockRoleRow, error) {
 	row := q.db.QueryRow(ctx, lockRole, id)
-	var level string
-	err := row.Scan(&level)
-	return level, err
+	var i LockRoleRow
+	err := row.Scan(
+		&i.Level,
+		&i.Active,
+		&i.Builtin,
+		&i.GroupScope,
+	)
+	return i, err
+}
+
+const lockRoleCatalog = `-- name: LockRoleCatalog :exec
+
+SELECT pg_advisory_xact_lock(hashtext('role-catalog'))
+`
+
+// D-199: admin menambah, mengganti nama, dan menonaktifkan peran.
+// LockRoleCatalog memegang kunci penasihat atas katalog peran sampai
+// transaksi selesai: dua admin yang menambah peran bersamaan bergantian,
+// supaya urutan dan pemeriksaan nama tidak bertabrakan.
+func (q *Queries) LockRoleCatalog(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, lockRoleCatalog)
+	return err
 }
 
 const removeRolePermission = `-- name: RemoveRolePermission :exec
@@ -313,5 +440,74 @@ type RemoveRolePermissionParams struct {
 
 func (q *Queries) RemoveRolePermission(ctx context.Context, arg RemoveRolePermissionParams) error {
 	_, err := q.db.Exec(ctx, removeRolePermission, arg.RoleID, arg.PermissionCode)
+	return err
+}
+
+const roleIDTaken = `-- name: RoleIDTaken :one
+SELECT EXISTS (SELECT 1 FROM roles WHERE id = $1)
+`
+
+func (q *Queries) RoleIDTaken(ctx context.Context, id string) (bool, error) {
+	row := q.db.QueryRow(ctx, roleIDTaken, id)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
+const roleNameTaken = `-- name: RoleNameTaken :one
+SELECT EXISTS (
+    SELECT 1 FROM roles
+    WHERE id <> $1::text
+      AND (lower(name_en) = lower($2::text) OR lower(name_id) = lower($3::text))
+)
+`
+
+type RoleNameTakenParams struct {
+	ID     string
+	NameEn string
+	NameID string
+}
+
+// RoleNameTaken melaporkan apakah nama Inggris atau Indonesia sudah dipakai
+// peran lain (huruf besar dan kecil dianggap sama).
+func (q *Queries) RoleNameTaken(ctx context.Context, arg RoleNameTakenParams) (bool, error) {
+	row := q.db.QueryRow(ctx, roleNameTaken, arg.ID, arg.NameEn, arg.NameID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
+const setRoleActive = `-- name: SetRoleActive :exec
+UPDATE roles SET active = $2 WHERE id = $1
+`
+
+type SetRoleActiveParams struct {
+	ID     string
+	Active bool
+}
+
+func (q *Queries) SetRoleActive(ctx context.Context, arg SetRoleActiveParams) error {
+	_, err := q.db.Exec(ctx, setRoleActive, arg.ID, arg.Active)
+	return err
+}
+
+const updateRole = `-- name: UpdateRole :exec
+UPDATE roles SET name_en = $2, name_id = $3, group_scope = $4 WHERE id = $1
+`
+
+type UpdateRoleParams struct {
+	ID         string
+	NameEn     string
+	NameID     string
+	GroupScope bool
+}
+
+func (q *Queries) UpdateRole(ctx context.Context, arg UpdateRoleParams) error {
+	_, err := q.db.Exec(ctx, updateRole,
+		arg.ID,
+		arg.NameEn,
+		arg.NameID,
+		arg.GroupScope,
+	)
 	return err
 }

@@ -74,6 +74,8 @@ const (
 	VerifyChanges     Permission = "V-1"  // verifikasi permintaan perubahan
 	CheckPFMEACP      Permission = "V-2"  // tanda dicek PFMEA dan CP
 	ApproveForms      Permission = "V-3"  // setujui (terbitkan) form set dan tabel AP (D-139)
+	SignDigitally     Permission = "S-1"  // tanda tangan digital pada slot rute (D-198, dipakai fase 3)
+	GenbaNotes        Permission = "G-1"  // catatan di tampilan genba (D-137, dipakai saat tampilan genba dibangun)
 	ManageUsers       Permission = "A-1"  // kelola pengguna dan hak akses
 	ManageMasterData  Permission = "A-2"  // kelola master data
 	ManageSettings    Permission = "A-3"  // kelola pengaturan sistem
@@ -86,8 +88,18 @@ const (
 	ManageOwnAccount Permission = "own-account"
 )
 
-// ID peran (tetap). Isinya ada di tabel role_permissions.
+// ID peran bawaan (tetap). Isinya ada di tabel role_permissions dan diatur
+// admin di layar Roles; admin juga bisa menambah peran sendiri (D-199).
 const (
+	RolePPAPEngineer           = "ppap_engineer"            // PPAP Engineer (D-199)
+	RolePPAPEngineerSupervisor = "ppap_engineer_supervisor" // PPAP Engineer Supervisor
+	RoleProjectLeader          = "project_leader"           // Project Leader, cakupan Project Group sendiri
+	RoleManager                = "manager"                  // Manager, penanda tangan
+
+	// Peran lama (sebelum D-199), nonaktif sejak migrasi 00049: tidak bisa
+	// diberikan lagi lewat layar, dan semua pemegangnya sudah dipindah. Test
+	// unit masih memakainya lewat SQL langsung, karena satu peran lama
+	// memegang sedikit hak sehingga satu hak bisa diuji terpisah (ASUMSI E-133).
 	RoleAuthor             = "author"              // Penyusun
 	RoleTemplateMaintainer = "template_maintainer" // Pengelola template
 	RolePFMEACPChecker     = "pfmea_cp_checker"    // Pemeriksa PFMEA–CP

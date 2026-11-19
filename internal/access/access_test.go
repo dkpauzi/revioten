@@ -38,8 +38,19 @@ var u3Matrix = map[string][]Permission{
 	RoleFormApprover:    {ViewReleased, ViewRegister, ExportReleased, ViewDrafts, ViewPerformance, ApproveForms},
 	RoleDocumentControl: {ViewReleased, ViewRegister, ExportReleased, ViewDrafts, RecordRelease, ManageNumbers, ControlledCopies},
 	RoleMigration:       {ViewReleased, ViewRegister, ExportReleased, ViewDrafts, MigrateDocuments},
-	RoleViewer:          {ViewReleased, ViewRegister, ExportReleased},
-	RoleAdmin:           {ViewReleased, ViewRegister, ExportReleased, ManageUsers, ManageMasterData, ManageSettings, ViewAuditLog},
+	// Viewer mendapat G-1 (D-199, migrasi 00049).
+	RoleViewer: {ViewReleased, ViewRegister, ExportReleased, GenbaNotes},
+	RoleAdmin:  {ViewReleased, ViewRegister, ExportReleased, ManageUsers, ManageMasterData, ManageSettings, ViewAuditLog},
+	// Peran D-199 (docs/rencana/matriks-peran-dan-hak.md bagian 4).
+	RolePPAPEngineer: {ViewReleased, ViewRegister, ExportReleased, ViewDrafts, ViewPerformance, RegisterNumbers, EditDrafts, ProposeChanges,
+		WorkRevisions, PrintForSignature, ManageTemplates, RecordRelease, ManageNumbers, ControlledCopies, MigrateDocuments, CheckPFMEACP,
+		SignDigitally, GenbaNotes},
+	RolePPAPEngineerSupervisor: {ViewReleased, ViewRegister, ExportReleased, ViewDrafts, ViewPerformance, RegisterNumbers, EditDrafts, ProposeChanges,
+		WorkRevisions, PrintForSignature, ManageTemplates, RecordRelease, ManageNumbers, ControlledCopies, MigrateDocuments, VerifyChanges,
+		CheckPFMEACP, ApproveForms, SignDigitally, GenbaNotes},
+	RoleProjectLeader: {ViewReleased, ViewRegister, ExportReleased, ViewDrafts, RegisterNumbers, EditDrafts, ProposeChanges, WorkRevisions,
+		PrintForSignature, VerifyChanges, SignDigitally, GenbaNotes},
+	RoleManager: {ViewReleased, ViewRegister, ExportReleased, ViewDrafts, ViewPerformance, SignDigitally, GenbaNotes},
 }
 
 // newAccount membuat orang dan akun langsung lewat query, lalu memberi peran.
@@ -233,7 +244,7 @@ func TestPermissions(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Permissions: %v", err)
 	}
-	want := u3Matrix[RoleDocumentControl]
+	want := append(slices.Clone(u3Matrix[RoleDocumentControl]), GenbaNotes)
 	if !slices.Equal(got, want) {
 		t.Errorf("Permissions %v, ingin %v", got, want)
 	}

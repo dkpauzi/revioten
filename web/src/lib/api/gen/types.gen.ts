@@ -106,13 +106,13 @@ export type PasswordChange = {
 
 export type RoleGrant = {
     /**
-     * Role ID, for example author or verifier.
+     * Role ID, for example ppap_engineer or project_leader.
      */
     role: string;
     /**
      * `all` for all customers, or `own_project_group` for the customers
      * of the project group where the person is Project Leader or
-     * Project Engineer (D-71). Only author and verifier can use
+     * Project Engineer (D-71). Only roles with `group_scope` can use
      * `own_project_group`.
      *
      */
@@ -122,7 +122,45 @@ export type RoleGrant = {
 export type Role = {
     id: string;
     level: 'view' | 'edit' | 'verify' | 'admin';
+    name_en: string;
+    name_id: string;
+    /**
+     * An inactive role cannot be given to an account (D-199).
+     */
+    active: boolean;
+    /**
+     * Seeded by the system, not added by an admin.
+     */
+    builtin: boolean;
+    /**
+     * The role can be limited to the own project group (D-71).
+     */
+    group_scope: boolean;
+    /**
+     * Number of accounts that hold the role.
+     */
+    holders: number;
     permissions: Array<string>;
+};
+
+export type NewRole = {
+    name_en: string;
+    name_id: string;
+    group_scope?: boolean;
+    /**
+     * ID of a role whose rights are copied.
+     */
+    copy_from?: string;
+};
+
+export type RoleChange = {
+    name_en: string;
+    name_id: string;
+    group_scope: boolean;
+};
+
+export type RoleActive = {
+    active: boolean;
 };
 
 export type PermissionInfo = {
@@ -3567,12 +3605,115 @@ export type ListRolesError = ListRolesErrors[keyof ListRolesErrors];
 
 export type ListRolesResponses = {
     /**
-     * All roles.
+     * All roles, active and inactive.
      */
     200: RoleList;
 };
 
 export type ListRolesResponse = ListRolesResponses[keyof ListRolesResponses];
+
+export type CreateRoleData = {
+    body: NewRole;
+    path?: never;
+    query?: never;
+    url: '/api/v1/roles';
+};
+
+export type CreateRoleErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type CreateRoleError = CreateRoleErrors[keyof CreateRoleErrors];
+
+export type CreateRoleResponses = {
+    /**
+     * The new role.
+     */
+    201: Role;
+};
+
+export type CreateRoleResponse = CreateRoleResponses[keyof CreateRoleResponses];
+
+export type UpdateRoleData = {
+    body: RoleChange;
+    path: {
+        roleId: string;
+    };
+    query?: never;
+    url: '/api/v1/roles/{roleId}';
+};
+
+export type UpdateRoleErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type UpdateRoleError = UpdateRoleErrors[keyof UpdateRoleErrors];
+
+export type UpdateRoleResponses = {
+    /**
+     * The changed role.
+     */
+    200: Role;
+};
+
+export type UpdateRoleResponse = UpdateRoleResponses[keyof UpdateRoleResponses];
+
+export type SetRoleActiveData = {
+    body: RoleActive;
+    path: {
+        roleId: string;
+    };
+    query?: never;
+    url: '/api/v1/roles/{roleId}/active';
+};
+
+export type SetRoleActiveErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type SetRoleActiveError = SetRoleActiveErrors[keyof SetRoleActiveErrors];
+
+export type SetRoleActiveResponses = {
+    /**
+     * The role.
+     */
+    200: Role;
+};
+
+export type SetRoleActiveResponse = SetRoleActiveResponses[keyof SetRoleActiveResponses];
 
 export type ListPermissionsData = {
     body?: never;

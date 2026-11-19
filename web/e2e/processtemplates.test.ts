@@ -25,7 +25,7 @@ async function ensureProcess(page: Page, name: string): Promise<void> {
 
 test('PPAP Engineer menyimpan contoh IQC dengan lima sub-proses beserta poinnya', async ({ page }) => {
 	await logIn(page);
-	const temporary = await createWorkAccount(page, 'PPAP Engineer template', 'ppap.template.e2e', ['template_maintainer']);
+	const temporary = await createWorkAccount(page, 'PPAP Engineer template', 'ppap.template.e2e', ['ppap_engineer']);
 	await logOut(page);
 	await logInFirstTime(page, 'ppap.template.e2e', temporary, 'pustaka proses dengan id tetap');
 	await ensureProcess(page, 'IQC');

@@ -94,11 +94,7 @@ test('potret layar untuk halaman Help', async ({ page }) => {
 	await form.getByLabel(en.accountPersonName).fill(engineer.name);
 	await form.getByLabel(en.accountKindWork).check();
 	await form.getByLabel(en.accountLogin).fill(engineer.login);
-	await form.getByLabel(en.roleAuthor, { exact: true }).check();
-	await form.getByLabel(en.roleTemplateMaintainer, { exact: true }).check();
-	await form.getByLabel(en.roleDocumentControl, { exact: true }).check();
-	await form.getByLabel(en.roleFormApprover, { exact: true }).check();
-	await form.getByLabel(en.roleMigration, { exact: true }).check();
+	await form.getByLabel(en.rolePpapEngineerSupervisor, { exact: true }).check();
 	await form.getByRole('button', { name: en.accountCreate }).click();
 	const notice = page.getByRole('status');
 	await expect(notice).toContainText(en.accountTemporaryPassword.replace('{login}', engineer.login));
@@ -131,7 +127,7 @@ test('potret layar untuk halaman Help', async ({ page }) => {
 		await page.getByRole('button', { name: en.versionPublish.replace('{version}', '1') }).click();
 		await expect(page.getByRole('status')).toHaveText(en.versionPublished.replace('{version}', '1'));
 	}
-	const controlTemporary = await createWorkAccount(page, 'Contoh Dokumen Kontrol', control.login, ['document_control', 'migration']);
+	const controlTemporary = await createWorkAccount(page, 'Contoh Dokumen Kontrol', control.login, ['ppap_engineer']);
 	await page.evaluate(() =>
 		fetch('/api/v1/system-settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ migration_mode: true }) })
 	);

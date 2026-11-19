@@ -22,7 +22,7 @@ test('penyusun merakit CP, PFMEA, dan PFD dari process template IQC', async ({ p
 		await post('/api/v1/models', { customer_id: customer.id, name: 'M-45' });
 		await post('/api/v1/models', { customer_id: customer.id, name: 'M-46' });
 	});
-	const temporary = await createWorkAccount(page, 'Perakit dokumen', 'perakit.e2e', ['author', 'template_maintainer', 'pfmea_cp_checker']);
+	const temporary = await createWorkAccount(page, 'Perakit dokumen', 'perakit.e2e', ['ppap_engineer']);
 	await logOut(page);
 	await logInFirstTime(page, 'perakit.e2e', temporary, 'baris dirakit dari process template');
 

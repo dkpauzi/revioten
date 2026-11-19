@@ -113,16 +113,9 @@ func TestPermissionsPerOperation(t *testing.T) {
 	}
 	_, temporary, err = authSvc.CreateAccount(ctx, admin, auth.NewAccount{
 		PersonName: "PPAP Engineer Uji", Kind: auth.KindWork, Login: "ppap.engineer.uji",
-		Roles: []access.RoleGrant{
-			{Role: access.RoleAuthor, Scope: access.ScopeAll},
-			{Role: access.RoleTemplateMaintainer, Scope: access.ScopeAll},
-			{Role: access.RoleDocumentControl, Scope: access.ScopeAll},
-			{Role: access.RoleMigration, Scope: access.ScopeAll},
-			// Penyetuju form (V-3, D-139), untuk operasi menerbitkan form set.
-			{Role: access.RoleFormApprover, Scope: access.ScopeAll},
-			// Pemeriksa PFMEA-CP (V-2, D-65), untuk tanda dicek (M4.9).
-			{Role: access.RolePFMEACPChecker, Scope: access.ScopeAll},
-		},
+		// PPAP Engineer Supervisor memegang semua hak kerja (D-199), termasuk
+		// V-3 untuk menerbitkan form set dan V-2 untuk tanda dicek.
+		Roles: []access.RoleGrant{{Role: access.RolePPAPEngineerSupervisor, Scope: access.ScopeAll}},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -537,9 +530,12 @@ func TestPermissionsPerOperation(t *testing.T) {
 		// Isi peran (M8.1, D-66): hanya admin. Peran pemeriksa PFMEA dan CP tidak dipegang akun uji, jadi aman diubah.
 		{http.MethodGet, "/api/v1/permissions", "", http.StatusForbidden, http.StatusForbidden, http.StatusOK},
 		{http.MethodPut, "/api/v1/roles/{roleId}/permissions", `{"permissions":["L-4","V-2"]}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodPost, "/api/v1/roles", `{"name_en":"QA Auditor","name_id":"Auditor QA","copy_from":"manager"}`, http.StatusForbidden, http.StatusForbidden, http.StatusCreated},
+		{http.MethodPatch, "/api/v1/roles/{roleId}", `{"name_en":"PFMEA-CP checker (old)","name_id":"Pemeriksa PFMEA-CP (lama)","group_scope":false}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodPut, "/api/v1/roles/{roleId}/active", `{"active":false}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
 		{http.MethodGet, "/api/v1/accounts", "", http.StatusForbidden, http.StatusForbidden, http.StatusOK},
 		{http.MethodPost, "/api/v1/accounts", `{"person_name":"Orang Baru","kind":"work","login":"orang.baru"}`, http.StatusForbidden, http.StatusForbidden, http.StatusCreated},
-		{http.MethodPut, "/api/v1/accounts/{accountId}/roles", `{"roles":[{"role":"author","scope":"all"}]}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodPut, "/api/v1/accounts/{accountId}/roles", `{"roles":[{"role":"manager","scope":"all"}]}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
 		{http.MethodPost, "/api/v1/accounts/{accountId}/password-reset", "", http.StatusForbidden, http.StatusForbidden, http.StatusOK},
 		{http.MethodPost, "/api/v1/accounts/{accountId}/disable", "", http.StatusForbidden, http.StatusForbidden, http.StatusOK},
 		{http.MethodPost, "/api/v1/accounts/{accountId}/enable", "", http.StatusForbidden, http.StatusForbidden, http.StatusOK},
@@ -555,8 +551,9 @@ func TestPermissionsPerOperation(t *testing.T) {
 		{http.MethodDelete, "/api/v1/changes/{changeId}/documents/{documentId}", "", http.StatusForbidden, http.StatusUnprocessableEntity, http.StatusForbidden},
 		// Daftar periksa dampak (M5.7) lewat E-3; engineer (Penyusun) boleh selama perubahan diajukan.
 		{http.MethodPut, "/api/v1/changes/{changeId}/impacts", `{"items":[{"kind":"wi","document_reference":"SW-ZZ-116","decision":"affected"}]}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
-		// Verifikasi (M5.3): engineer (Penyusun) tanpa V-1 ditolak, seperti admin dan viewer.
-		{http.MethodPost, "/api/v1/changes/{changeId}/verification", `{"decision":"accept","note":"OK"}`, http.StatusForbidden, http.StatusForbidden, http.StatusForbidden},
+		// Verifikasi (M5.3): engineer kini PPAP Engineer Supervisor dengan V-1 (D-199), tetapi
+		// pemohon tidak memverifikasi perubahannya sendiri (R-SEC-11), jadi 422.
+		{http.MethodPost, "/api/v1/changes/{changeId}/verification", `{"decision":"accept","note":"OK"}`, http.StatusForbidden, http.StatusUnprocessableEntity, http.StatusForbidden},
 		// Lampiran (M5.2): body multipart ditandai awalan --revioten. ID lampiran palsu: 404.
 		{http.MethodPost, "/api/v1/changes/{changeId}/attachments", multipartBody, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/changes/{changeId}/attachments/{attachmentId}", "", http.StatusForbidden, http.StatusNotFound, http.StatusForbidden},

@@ -191,7 +191,11 @@ func (s *Service) checkNewAccount(ctx context.Context, in NewAccount) ([]problem
 		problems = append(problems, problem.Problem{Field: "kind", Code: problem.InvalidFormat,
 			Message: "Choose a work account or an admin account."})
 	} else {
-		problems = append(problems, access.ValidateRoles(in.Kind, in.Roles)...)
+		catalog, err := access.LoadRoles(ctx, s.q)
+		if err != nil {
+			return nil, err
+		}
+		problems = append(problems, access.ValidateRoles(in.Kind, in.Roles, catalog)...)
 	}
 	return problems, nil
 }
@@ -362,7 +366,11 @@ func (s *Service) SetRoles(ctx context.Context, actor access.Actor, accountID st
 			Field: "roles", Code: problem.NotAllowed, Message: "The roles of an admin account cannot be changed.",
 		}}}
 	}
-	if problems := access.ValidateRoles(target.Kind, grants); len(problems) > 0 {
+	catalog, err := access.LoadRoles(ctx, s.q)
+	if err != nil {
+		return err
+	}
+	if problems := access.ValidateRoles(target.Kind, grants, catalog); len(problems) > 0 {
 		return &problem.ValidationError{Problems: problems}
 	}
 

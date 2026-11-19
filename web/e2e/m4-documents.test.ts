@@ -21,7 +21,7 @@ test('penyusun membuat dokumen CP, lalu baris dan header tersimpan', async ({ pa
 		const customer = await post('/api/v1/customers', { code: 'DC', name: 'Customer DC', project_group_id: group.id });
 		await post('/api/v1/models', { customer_id: customer.id, name: 'D-100' });
 	});
-	const temporary = await createWorkAccount(page, 'Penyusun dokumen', 'penyusun.dokumen.e2e', ['author', 'template_maintainer']);
+	const temporary = await createWorkAccount(page, 'Penyusun dokumen', 'penyusun.dokumen.e2e', ['ppap_engineer']);
 	await logOut(page);
 	await logInFirstTime(page, 'penyusun.dokumen.e2e', temporary, 'dokumen draft disimpan per baris');
 

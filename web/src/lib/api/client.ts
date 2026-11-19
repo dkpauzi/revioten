@@ -135,6 +135,8 @@ import type {
 	PasswordChange,
 	RoleGrant,
 	RoleList,
+	NewRole,
+	RoleChange,
 	Session,
 	TemporaryPassword,
 	ExcelComparison,
@@ -1315,6 +1317,23 @@ export function listPermissions(fetchFn: typeof fetch = fetch): Promise<ApiResul
 // setRolePermissions memanggil PUT /api/v1/roles/{id}/permissions (A-1, M8.1).
 export function setRolePermissions(roleId: string, permissions: string[], fetchFn: typeof fetch = fetch): Promise<ApiResult<Role>> {
 	return call<Role>(fetchFn, itemPath('roles', roleId) + '/permissions', jsonRequest('PUT', { permissions }));
+}
+
+// D-199: admin menambah, mengganti nama, dan menonaktifkan peran.
+
+// createRole memanggil POST /api/v1/roles.
+export function createRole(input: NewRole, fetchFn: typeof fetch = fetch): Promise<ApiResult<Role>> {
+	return call<Role>(fetchFn, '/api/v1/roles', jsonRequest('POST', input));
+}
+
+// updateRole memanggil PATCH /api/v1/roles/{id}: nama dan cakupan Project Group.
+export function updateRole(roleId: string, change: RoleChange, fetchFn: typeof fetch = fetch): Promise<ApiResult<Role>> {
+	return call<Role>(fetchFn, itemPath('roles', roleId), jsonRequest('PATCH', change));
+}
+
+// setRoleActive memanggil PUT /api/v1/roles/{id}/active.
+export function setRoleActive(roleId: string, active: boolean, fetchFn: typeof fetch = fetch): Promise<ApiResult<Role>> {
+	return call<Role>(fetchFn, itemPath('roles', roleId) + '/active', jsonRequest('PUT', { active }));
 }
 
 // D-194: email notifikasi.

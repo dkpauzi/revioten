@@ -23,7 +23,7 @@ const optionText = (version: string, status: string) =>
 
 test('process template: terbitkan versi 1, lalu ubah di versi 2 tanpa mengubah versi 1', async ({ page }) => {
 	await logIn(page);
-	const temporary = await createWorkAccount(page, 'PPAP Engineer versi', 'ppap.versi.e2e', ['template_maintainer']);
+	const temporary = await createWorkAccount(page, 'PPAP Engineer versi', 'ppap.versi.e2e', ['ppap_engineer']);
 	await logOut(page);
 	await logInFirstTime(page, 'ppap.versi.e2e', temporary, 'versi terbit tidak bisa diubah');
 	await page.evaluate(async () => {

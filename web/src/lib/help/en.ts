@@ -86,8 +86,9 @@ export const helpEn: HelpContent = {
 			image: 'accounts',
 			imageAlt: 'The Accounts page with the box of the temporary password above the form.',
 			tips: [
-				'{roleAuthor}: registers document numbers. {roleTemplateMaintainer}: manages processes and process templates. {roleDocumentControl}: voids numbers, makes them obsolete, and imports legacy numbers.',
-				'{roleFormApprover}: publishes form sets and AP tables; for now the PPAP Supervisor. {roleVerifier}, {rolePfmeaCpChecker}, and {roleMigration} are for screens that come later.',
+				'{rolePpapEngineer}: composes, prints, records releases, manages templates and numbers, and enters legacy documents. {rolePpapEngineerSupervisor}: the same, and also verifies changes and publishes form sets and AP tables.',
+				'{roleProjectLeader}: composes, prints, and verifies for the customers of the own project group; the scope is chosen automatically. {roleManager}: signs and views the performance report. An account without a role can view and add genba notes.',
+				'The admin decides what each role holds under {navRoles}, and can add a role there.',
 				'The temporary password is shown only once. If it is lost, reset the password of the account.',
 				'An admin account holds no work role. The person who holds it uses a separate work account for daily work.',
 				'An account is never deleted, only disabled.'
@@ -134,7 +135,7 @@ export const helpEn: HelpContent = {
 		{
 			id: 'processes',
 			title: 'Processes',
-			who: 'Template maintainer',
+			who: 'PPAP Engineer',
 			intro: 'The process list is the master of process names. Documents refer to a process by its fixed ID, so a process can be renamed safely.',
 			steps: [
 				'Open {navGroupTemplates}, then {navProcesses}.',
@@ -149,7 +150,7 @@ export const helpEn: HelpContent = {
 		{
 			id: 'process-templates',
 			title: 'Process templates: sub-processes, points, and variants',
-			who: 'Template maintainer',
+			who: 'PPAP Engineer',
 			intro: 'A process template lists the sub-processes of one process and their points for PFD, PFMEA, and Control Plan. One process has one template.',
 			steps: [
 				'Open {navGroupTemplates}, then {navProcessTemplates}, and choose the {processTemplateChoose}.',
@@ -172,7 +173,7 @@ export const helpEn: HelpContent = {
 		{
 			id: 'versions',
 			title: 'Publish a version and make a new one',
-			who: 'Template maintainer, and the admin for format templates',
+			who: 'PPAP Engineer, and the admin for format templates',
 			intro: 'A new template is a draft. A draft can be changed freely. A published version can never be changed, so changes after that go into a new version.',
 			steps: [
 				'Open the template and look at the {versionChoose} row above its content.',
@@ -192,7 +193,7 @@ export const helpEn: HelpContent = {
 		{
 			id: 'form-sets',
 			title: 'Form sets',
-			who: 'Admin, and the form approver to publish',
+			who: 'Admin, and the PPAP Engineer Supervisor to publish',
 			intro: 'A form set is one package of forms for PFD, PFMEA, and Control Plan. The system has two: the AIAG 4th set (RPN) and the AIAG-VDA set (Action Priority). Each customer uses one form set for its new documents.',
 			steps: [
 				'Open {navGroupTemplates}, then {navFormSets}.',
@@ -207,13 +208,13 @@ export const helpEn: HelpContent = {
 			tips: [
 				'A PFMEA format with Action Priority is also published by the form approver, because its AP table decides the priority of actions.',
 				'The admin can change the AP table of a draft version: press {apEdit} on the format template, click a priority to change it, then press {apSave}.',
-				'Give the role {roleFormApprover} to more accounts under {navAccounts} when more people approve, for example the Project Leaders.'
+				'Every {rolePpapEngineerSupervisor} can publish. To let more people approve, tick V-3 for their role under {navRoles}.'
 			]
 		},
 		{
 			id: 'numbers',
 			title: 'Register document numbers',
-			who: 'Author',
+			who: 'PPAP Engineer, Project Leader',
 			intro: 'The system gives every PFD, PFMEA, and Control Plan number. A number is never reused or deleted.',
 			steps: [
 				'Open {navGroupDocuments}, then {navNumbers}.',
@@ -232,7 +233,7 @@ export const helpEn: HelpContent = {
 		{
 			id: 'documents',
 			title: 'Documents',
-			who: 'Author',
+			who: 'PPAP Engineer, Project Leader',
 			intro: 'A document is one PFD, PFMEA, or Control Plan with its own number. It uses the published form set of its customer, so the publish steps under Form sets come first.',
 			steps: [
 				'Register the number first under {navNumbers}. A document needs a number with the status {numberStatusReserved}.',
@@ -265,8 +266,8 @@ export const helpEn: HelpContent = {
 		{
 			id: 'document-control',
 			title: 'Void, obsolete, and legacy numbers',
-			who: 'Document control',
-			intro: 'Document control changes the status of numbers and brings in the numbers of the old register.',
+			who: 'PPAP Engineer',
+			intro: 'The PPAP Engineer, who now also does document control (D-199), changes the status of numbers and brings in the numbers of the old register.',
 			steps: [
 				'Open {navGroupDocuments}, then {navNumbers}.',
 				'On the row of the number, press {numberVoid} or {numberObsolete}, give the reason, and press {numberStatusConfirm}.',
@@ -282,7 +283,7 @@ export const helpEn: HelpContent = {
 		{
 			id: 'changes',
 			title: 'Changes',
-			who: 'Author, Verifier',
+			who: 'PPAP Engineer and Project Leader request; PPAP Engineer Supervisor and Project Leader verify',
 			intro: 'Every revision of a PFD, PFMEA, or CP starts from a change: what triggered it, the type of change, the reason, and the documents it affects.',
 			steps: [
 				'Open {navGroupDocuments}, then {navChanges}, and choose the customer.',
@@ -301,7 +302,7 @@ export const helpEn: HelpContent = {
 		{
 			id: 'yokoten',
 			title: 'Yokoten',
-			who: 'Author, Project Engineer, Project Leader',
+			who: 'PPAP Engineer, Project Leader',
 			intro: 'Yokoten spreads an accepted improvement to other models, with a decision per model and a status board.',
 			steps: [
 				'Open an accepted change and press {yokotenSpread}.',
@@ -315,7 +316,7 @@ export const helpEn: HelpContent = {
 		{
 			id: 'printing',
 			title: 'Print and release',
-			who: 'Author, Document control, Admin for layouts',
+			who: 'PPAP Engineer, Project Leader, Admin for layouts',
 			intro: 'Prints come from the same content as the screen, in Excel or PDF, A3 or A4 as the layout says. Approval stays a wet signature on paper.',
 			steps: [
 				'Open the document. Under {printTitle}, choose the revision and the {printPurpose}, then press {printExcel} or {printPdf}.',
@@ -331,7 +332,7 @@ export const helpEn: HelpContent = {
 		{
 			id: 'migration',
 			title: 'Legacy documents',
-			who: 'Migration, Admin for the switch',
+			who: 'PPAP Engineer, Admin for the switch',
 			intro: 'A document that already exists on paper enters at its current revision and is released after another person checks it against the signed hard copy. Nothing is cleaned up on the way in.',
 			steps: [
 				'The admin switches on {settingsMigration} under {navGroupAdmin}, then {navSettings}.',
@@ -384,7 +385,7 @@ export const helpEn: HelpContent = {
 				'Open {navGroupDocuments}, then {navPeriodicReviews}. The cards count the sets that are overdue, due soon, due within a year, and reviewed this year.',
 				'Choose {reviewTabDue}, {reviewTabYear}, or {reviewTabAll}. Filter by customer or engineer, and tick {reviewShowEol} to see models that are end of life. {reviewDownload} saves the list.',
 				'Press {reviewStart} on a set. Choose {reviewChangesNeeded} and press {reviewOpenChange}: the change request opens with the trigger Periodic review and the documents of the set.',
-				'Or choose {reviewNoChange}, fill in {reviewDate}, {reviewParticipants}, every checklist item, and {reviewConclusion}, then press {reviewSave}. Another person with the Verifier role presses {reviewConfirm} under {reviewWaitingTitle}; the clock then starts again.'
+				'Or choose {reviewNoChange}, fill in {reviewDate}, {reviewParticipants}, every checklist item, and {reviewConclusion}, then press {reviewSave}. Another person with the right V-1, for example the {rolePpapEngineerSupervisor}, presses {reviewConfirm} under {reviewWaitingTitle}; the clock then starts again.'
 			],
 			tips: ['Each document has its own clock: its last release, or the last confirmed review of its set.', 'The PPAP Engineer or the Project Leader marks a model end of life in Master data → Models ({modelEolMark}). Its sets leave the review.', 'The person who recorded a review cannot confirm it. A confirmed review cannot be changed.'],
 			image: 'periodic-review',
@@ -409,13 +410,18 @@ export const helpEn: HelpContent = {
 			id: 'roles',
 			title: 'Roles and rights',
 			who: 'Admin',
-			intro: 'A role is a set of rights. The catalog of rights is fixed; the admin decides which rights each work role holds, so access can change without changing the program.',
+			intro: 'A role is a set of rights. The catalog of rights is fixed; the admin decides which rights each work role holds, and can add roles, so access can change without changing the program.',
 			steps: [
-				'Open {navGroupAdmin}, then {navRoles}. Each column is a role and each line is a right.',
+				'Open {navGroupAdmin}, then {navRoles}. Each column is a role and each line is a right; under the name you see how many accounts hold it.',
 				'Tick or untick a right in the column of a work role, then press {rolesSave} under that column.',
+				'To add a role, fill in {rolesNameEn} and {rolesNameId} under {rolesAddTitle}, choose {rolesCopyFrom} to start from another role, and press {rolesAdd}.',
+				'Press {rolesRename} under a column to change its name. Press {rolesDeactivate} when no account holds the role any more; tick {rolesShowInactive} to see it again.',
 				'Give the role to people under {navAccounts}. The change applies at once to every account that holds the role.'
 			],
 			tips: [
+				'Request a change is the right E-3: untick it to take it from a role, or tick it to give it to another role.',
+				'S-1 (digital signature) and G-1 (genba notes) can already be set; their screens come later.',
+				'Roles are never deleted, so the audit log stays readable. The old roles from before D-199 are inactive.',
 				'The Admin and Viewer roles are fixed, and admin rights (A-1 to A-4) cannot be given to a work role.',
 				'The basic rights L-1 to L-3 always stay ticked.',
 				'Some rules cannot be switched off by any role: a requester never verifies their own request, and the person who prepared a draft never records its release.',

@@ -240,11 +240,85 @@ paths:
       summary: The role catalog with the rights of each role (A-1)
       responses:
         '200':
-          description: All roles.
+          description: All roles, active and inactive.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/RoleList'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: createRole
+      summary: Add a work role (A-1, D-199)
+      description: >-
+        The new role holds the basic rights L-1 to L-3, plus the rights of `copy_from` when given (never admin
+        rights). Its ID comes from the English name and never changes. Audit-logged.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewRole'
+      responses:
+        '201':
+          description: The new role.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/roles/{roleId}:
+    patch:
+      operationId: updateRole
+      summary: Rename a work role, or change whether it can be limited to the own project group (A-1, D-199)
+      parameters:
+        - name: roleId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleChange'
+      responses:
+        '200':
+          description: The changed role.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/roles/{roleId}/active:
+    put:
+      operationId: setRoleActive
+      summary: Deactivate or activate a work role (A-1, D-199)
+      description: >-
+        A role can be deactivated only when no account holds it. Roles are never deleted, so the audit log stays
+        readable. The admin and viewer roles cannot be changed.
+      parameters:
+        - name: roleId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleActive'
+      responses:
+        '200':
+          description: The role.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
         default:
           $ref: '#/components/responses/Error'
   /api/v1/permissions:
@@ -4257,28 +4331,77 @@ components:
       properties:
         role:
           type: string
-          description: Role ID, for example author or verifier.
+          description: Role ID, for example ppap_engineer or project_leader.
         scope:
           type: string
           description: |
             `all` for all customers, or `own_project_group` for the customers
             of the project group where the person is Project Leader or
-            Project Engineer (D-71). Only author and verifier can use
+            Project Engineer (D-71). Only roles with `group_scope` can use
             `own_project_group`.
           enum: [all, own_project_group]
     Role:
       type: object
-      required: [id, level, permissions]
+      required: [id, level, name_en, name_id, active, builtin, group_scope, holders, permissions]
       properties:
         id:
           type: string
         level:
           type: string
           enum: [view, edit, verify, admin]
+        name_en:
+          type: string
+        name_id:
+          type: string
+        active:
+          type: boolean
+          description: An inactive role cannot be given to an account (D-199).
+        builtin:
+          type: boolean
+          description: Seeded by the system, not added by an admin.
+        group_scope:
+          type: boolean
+          description: The role can be limited to the own project group (D-71).
+        holders:
+          type: integer
+          description: Number of accounts that hold the role.
         permissions:
           type: array
           items:
             type: string
+    NewRole:
+      type: object
+      required: [name_en, name_id]
+      properties:
+        name_en:
+          type: string
+          maxLength: 60
+        name_id:
+          type: string
+          maxLength: 60
+        group_scope:
+          type: boolean
+        copy_from:
+          type: string
+          description: ID of a role whose rights are copied.
+    RoleChange:
+      type: object
+      required: [name_en, name_id, group_scope]
+      properties:
+        name_en:
+          type: string
+          maxLength: 60
+        name_id:
+          type: string
+          maxLength: 60
+        group_scope:
+          type: boolean
+    RoleActive:
+      type: object
+      required: [active]
+      properties:
+        active:
+          type: boolean
     PermissionInfo:
       type: object
       required: [code, level]

@@ -39,7 +39,7 @@ test('admin mengganti label kolom PFMEA, menyembunyikan kolom, dan mengisi krite
 
 test('Penyusun hanya melihat format template', async ({ page }) => {
 	await logIn(page);
-	const temporary = await createWorkAccount(page, 'Penyusun format', 'penyusun.format', ['author']);
+	const temporary = await createWorkAccount(page, 'Penyusun format', 'penyusun.format', ['ppap_engineer']);
 	await logOut(page);
 	await logInFirstTime(page, 'penyusun.format', temporary, 'kolom punya ID yang tetap selamanya');
 

@@ -17,7 +17,7 @@ func TestSetRolePermissions(t *testing.T) {
 	checker := access.NewChecker(s.pool)
 	info, temporary, err := s.CreateAccount(ctx, admin, NewAccount{
 		PersonName: "DCC Uji", Kind: KindWork, Login: "dcc.uji",
-		Roles: []access.RoleGrant{{Role: access.RoleDocumentControl, Scope: access.ScopeAll}},
+		Roles: []access.RoleGrant{{Role: access.RoleManager, Scope: access.ScopeAll}},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -29,36 +29,36 @@ func TestSetRolePermissions(t *testing.T) {
 	_ = info
 
 	catalog, err := s.ListPermissions(ctx, admin)
-	if err != nil || len(catalog) != 22 || catalog[0].Code != access.ViewReleased {
+	if err != nil || len(catalog) != 24 || catalog[0].Code != access.ViewReleased {
 		t.Fatalf("katalog: %d hak, %v", len(catalog), err)
 	}
 	if _, err := s.ListPermissions(ctx, dcc); !errors.Is(err, access.ErrForbidden) {
 		t.Errorf("akun kerja membaca katalog: %v", err)
 	}
 
-	// Contoh D-66: dokumen kontrol diberi hak edit draft tanpa mengubah kode.
+	// Contoh D-66: Manager diberi hak edit draft tanpa mengubah kode.
 	if err := checker.Authorize(ctx, dcc, access.EditDrafts, access.Resource{}); !errors.Is(err, access.ErrForbidden) {
 		t.Fatalf("sebelum diubah: %v", err)
 	}
-	role, err := s.SetRolePermissions(ctx, admin, access.RoleDocumentControl,
-		[]access.Permission{access.EditDrafts, access.RecordRelease, access.ViewDrafts})
+	role, err := s.SetRolePermissions(ctx, admin, access.RoleManager,
+		[]access.Permission{access.EditDrafts, access.ViewDrafts, access.ViewPerformance, access.GenbaNotes})
 	if err != nil {
 		t.Fatal(err)
 	}
 	// Hak dasar L-1 sampai L-3 tetap ada, dan urutannya seperti katalog.
-	want := []access.Permission{access.ViewReleased, access.ViewRegister, access.ExportReleased, access.ViewDrafts, access.EditDrafts, access.RecordRelease}
+	want := []access.Permission{access.ViewReleased, access.ViewRegister, access.ExportReleased, access.ViewDrafts, access.ViewPerformance, access.EditDrafts, access.GenbaNotes}
 	if !slices.Equal(role.Permissions, want) {
 		t.Errorf("isi peran: %v", role.Permissions)
 	}
 	if err := checker.Authorize(ctx, dcc, access.EditDrafts, access.Resource{}); err != nil {
 		t.Errorf("hak baru belum berlaku: %v", err)
 	}
-	if err := checker.Authorize(ctx, dcc, access.ManageNumbers, access.Resource{}); !errors.Is(err, access.ErrForbidden) {
+	if err := checker.Authorize(ctx, dcc, access.SignDigitally, access.Resource{}); !errors.Is(err, access.ErrForbidden) {
 		t.Errorf("hak yang dicabut masih berlaku: %v", err)
 	}
 	var details string
 	if err := s.pool.QueryRow(ctx, `SELECT details::text FROM audit_log WHERE action = 'role.permissions_changed'`).Scan(&details); err != nil ||
-		details != `{"added":"E-2","removed":"E-8, E-9","role":"document_control"}` {
+		details != `{"added":"E-2","removed":"S-1","role":"manager"}` {
 		t.Errorf("audit: %s, %v", details, err)
 	}
 

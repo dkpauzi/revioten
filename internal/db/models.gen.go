@@ -700,9 +700,21 @@ type ReferencedDocumentLink struct {
 }
 
 type Role struct {
-	ID        string
-	Level     string
-	SortOrder int32
+	ID         string
+	Level      string
+	SortOrder  int32
+	NameEn     string
+	NameID     string
+	Active     bool
+	Builtin    bool
+	GroupScope bool
+}
+
+type RoleMove struct {
+	AccountID  string
+	Supervisor bool
+	Engineer   bool
+	Leader     bool
 }
 
 type RolePermission struct {

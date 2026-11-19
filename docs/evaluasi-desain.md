@@ -153,7 +153,8 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-129 | Tanda "perlu dicek ulang" pada PFMEA dan CP terbit | Celah | D-195, M4.9 | Tidak | Terbuka |
 | E-130 | Laporan kinerja: siapa yang dihitung dan titik waktunya | Ambigu | D-197 | Tidak | Terbuka |
 | E-131 | Zona waktu pabrik untuk tanggal dan periode laporan | Celah | D-196, D-197 | Tidak | Terbuka |
-| E-132 | Penanggung jawab model (engineer) di daftar review dan laporan | Celah | D-202 | Tidak | Terbuka |
+| E-132 | Penanggung jawab model (engineer) di daftar review dan laporan | Celah | D-202 | Tidak | Diputuskan (D-203) |
+| E-133 | Peran lama sesudah matriks D-199 | Penyederhanaan | D-199 | Tidak | Terbuka |
 
 ## Keputusan 4 November 2026
 
@@ -2310,6 +2311,19 @@ Salin blok ini untuk setiap temuan baru.
 - **Opsi:** (a) orang yang membuat dokumen pertama set itu; (b) penanggung jawab per customer di master data; (c) penanggung jawab per model di master data.
 - **Rekomendasi Claude Code (usulan):** (b), karena pembagian kerja PPAP biasanya per customer; (c) bila per model.
 - **Asumsi sementara di kode (ASUMSI E-132):** (a).
+- **Menghambat milestone?** Tidak
+- **Status:** Diputuskan (D-203)
+- **Keputusan pemilik (20 November 2026):** Engineer dipilih saat dokumen diajukan untuk tanda tangan, seperti memilih Manager; pilihannya akun berperan PPAP Engineer atau Project Leader. Dibangun di fase 3; sampai itu asumsi (a) tetap dipakai.
+
+### E-133 · Peran lama sesudah matriks D-199
+
+- **Tanggal dan milestone:** 20 November 2026, D-199 fase 2.
+- **Jenis:** Penyederhanaan
+- **Rujukan:** D-199, D-66, R-SEC-11, migrasi 00049.
+- **Temuan:** Tujuh peran lama (Penyusun, Pengelola template, Pemeriksa PFMEA–CP, Verifikator, Penyetuju form, Dokumen kontrol, Petugas migrasi) diganti peran baru. Peran tidak boleh dihapus supaya audit log tetap terbaca. Test unit Go memakai peran lama untuk menguji satu hak terpisah (misalnya akun yang hanya memegang E-7).
+- **Opsi:** (a) peran lama nonaktif: tidak bisa diberikan lewat layar atau API, semua pemegangnya dipindah migrasi, tetapi haknya tetap dihitung bila ada akun yang memegangnya (hanya bisa lewat SQL langsung, seperti di test); (b) peran nonaktif tidak memberi hak sama sekali, dan test unit diubah ke peran buatan test; (c) peran lama dihapus.
+- **Rekomendasi Claude Code (usulan):** (a) untuk sekarang. Database menolak menonaktifkan peran yang masih dipegang, jadi di data nyata peran nonaktif selalu tanpa pemegang.
+- **Asumsi sementara di kode (ASUMSI E-133):** (a).
 - **Menghambat milestone?** Tidak
 - **Status:** Terbuka
 - **Keputusan pemilik:**

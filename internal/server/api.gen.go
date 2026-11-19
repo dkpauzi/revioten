@@ -3749,6 +3749,15 @@ type NewReferencedDocumentLink struct {
 	ScopeTargetId *string `json:"scope_target_id,omitempty"`
 }
 
+// NewRole defines model for NewRole.
+type NewRole struct {
+	// CopyFrom ID of a role whose rights are copied.
+	CopyFrom   *string `json:"copy_from,omitempty"`
+	GroupScope *bool   `json:"group_scope,omitempty"`
+	NameEn     string  `json:"name_en"`
+	NameId     string  `json:"name_id"`
+}
+
 // NewServiceAccount defines model for NewServiceAccount.
 type NewServiceAccount struct {
 	Contact     string   `json:"contact"`
@@ -4753,29 +4762,54 @@ type RevisionVerificationStatus string
 
 // Role defines model for Role.
 type Role struct {
+	// Active An inactive role cannot be given to an account (D-199).
+	Active bool `json:"active"`
+
+	// Builtin Seeded by the system, not added by an admin.
+	Builtin bool `json:"builtin"`
+
+	// GroupScope The role can be limited to the own project group (D-71).
+	GroupScope bool `json:"group_scope"`
+
+	// Holders Number of accounts that hold the role.
+	Holders     int       `json:"holders"`
 	Id          string    `json:"id"`
 	Level       RoleLevel `json:"level"`
+	NameEn      string    `json:"name_en"`
+	NameId      string    `json:"name_id"`
 	Permissions []string  `json:"permissions"`
 }
 
 // RoleLevel defines model for Role.Level.
 type RoleLevel string
 
+// RoleActive defines model for RoleActive.
+type RoleActive struct {
+	Active bool `json:"active"`
+}
+
+// RoleChange defines model for RoleChange.
+type RoleChange struct {
+	GroupScope bool   `json:"group_scope"`
+	NameEn     string `json:"name_en"`
+	NameId     string `json:"name_id"`
+}
+
 // RoleGrant defines model for RoleGrant.
 type RoleGrant struct {
-	// Role Role ID, for example author or verifier.
+	// Role Role ID, for example ppap_engineer or project_leader.
 	Role string `json:"role"`
 
 	// Scope `all` for all customers, or `own_project_group` for the customers
 	// of the project group where the person is Project Leader or
-	// Project Engineer (D-71). Only author and verifier can use
+	// Project Engineer (D-71). Only roles with `group_scope` can use
 	// `own_project_group`.
 	Scope RoleGrantScope `json:"scope"`
 }
 
 // RoleGrantScope `all` for all customers, or `own_project_group` for the customers
 // of the project group where the person is Project Leader or
-// Project Engineer (D-71). Only author and verifier can use
+// Project Engineer (D-71). Only roles with `group_scope` can use
 // `own_project_group`.
 type RoleGrantScope string
 
@@ -5746,6 +5780,15 @@ type UpdateReferencedDocumentJSONRequestBody = ReferencedDocumentUpdate
 // AddReferencedDocumentLinkJSONRequestBody defines body for AddReferencedDocumentLink for application/json ContentType.
 type AddReferencedDocumentLinkJSONRequestBody = NewReferencedDocumentLink
 
+// CreateRoleJSONRequestBody defines body for CreateRole for application/json ContentType.
+type CreateRoleJSONRequestBody = NewRole
+
+// UpdateRoleJSONRequestBody defines body for UpdateRole for application/json ContentType.
+type UpdateRoleJSONRequestBody = RoleChange
+
+// SetRoleActiveJSONRequestBody defines body for SetRoleActive for application/json ContentType.
+type SetRoleActiveJSONRequestBody = RoleActive
+
 // SetRolePermissionsJSONRequestBody defines body for SetRolePermissions for application/json ContentType.
 type SetRolePermissionsJSONRequestBody = RolePermissions
 
@@ -6288,6 +6331,15 @@ type ServerInterface interface {
 	// ListRoles The role catalog with the rights of each role (A-1)
 	// (GET /api/v1/roles)
 	ListRoles(w http.ResponseWriter, r *http.Request)
+	// CreateRole Add a work role (A-1, D-199)
+	// (POST /api/v1/roles)
+	CreateRole(w http.ResponseWriter, r *http.Request)
+	// UpdateRole Rename a work role, or change whether it can be limited to the own project group (A-1, D-199)
+	// (PATCH /api/v1/roles/{roleId})
+	UpdateRole(w http.ResponseWriter, r *http.Request, roleId string)
+	// SetRoleActive Deactivate or activate a work role (A-1, D-199)
+	// (PUT /api/v1/roles/{roleId}/active)
+	SetRoleActive(w http.ResponseWriter, r *http.Request, roleId string)
 	// SetRolePermissions Replace the permissions of one work role (A-1, M8.1, D-66)
 	// (PUT /api/v1/roles/{roleId}/permissions)
 	SetRolePermissions(w http.ResponseWriter, r *http.Request, roleId string)
@@ -10903,6 +10955,72 @@ func (siw *ServerInterfaceWrapper) ListRoles(w http.ResponseWriter, r *http.Requ
 	handler.ServeHTTP(w, r)
 }
 
+// CreateRole operation middleware
+func (siw *ServerInterfaceWrapper) CreateRole(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateRole(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateRole operation middleware
+func (siw *ServerInterfaceWrapper) UpdateRole(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "roleId" -------------
+	var roleId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "roleId", r.PathValue("roleId"), &roleId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "roleId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateRole(w, r, roleId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetRoleActive operation middleware
+func (siw *ServerInterfaceWrapper) SetRoleActive(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "roleId" -------------
+	var roleId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "roleId", r.PathValue("roleId"), &roleId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "roleId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetRoleActive(w, r, roleId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // SetRolePermissions operation middleware
 func (siw *ServerInterfaceWrapper) SetRolePermissions(w http.ResponseWriter, r *http.Request) {
 
@@ -11457,6 +11575,9 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/notifications/test", wrapper.SendTestEmail)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/account/password", wrapper.ChangePassword)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/roles", wrapper.ListRoles)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/roles", wrapper.CreateRole)
+	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/api/v1/roles/{roleId}", wrapper.UpdateRole)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/roles/{roleId}/active", wrapper.SetRoleActive)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/permissions", wrapper.ListPermissions)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/roles/{roleId}/permissions", wrapper.SetRolePermissions)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/service-accounts", wrapper.ListServiceAccounts)
@@ -18445,6 +18566,125 @@ func (response ListRolesdefaultJSONResponse) VisitListRolesResponse(w http.Respo
 	return err
 }
 
+type CreateRoleRequestObject struct {
+	Body *CreateRoleJSONRequestBody
+}
+
+type CreateRoleResponseObject interface {
+	VisitCreateRoleResponse(w http.ResponseWriter) error
+}
+
+type CreateRole201JSONResponse Role
+
+func (response CreateRole201JSONResponse) VisitCreateRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateRoledefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response CreateRoledefaultJSONResponse) VisitCreateRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateRoleRequestObject struct {
+	RoleId string `json:"roleId"`
+	Body   *UpdateRoleJSONRequestBody
+}
+
+type UpdateRoleResponseObject interface {
+	VisitUpdateRoleResponse(w http.ResponseWriter) error
+}
+
+type UpdateRole200JSONResponse Role
+
+func (response UpdateRole200JSONResponse) VisitUpdateRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateRoledefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response UpdateRoledefaultJSONResponse) VisitUpdateRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetRoleActiveRequestObject struct {
+	RoleId string `json:"roleId"`
+	Body   *SetRoleActiveJSONRequestBody
+}
+
+type SetRoleActiveResponseObject interface {
+	VisitSetRoleActiveResponse(w http.ResponseWriter) error
+}
+
+type SetRoleActive200JSONResponse Role
+
+func (response SetRoleActive200JSONResponse) VisitSetRoleActiveResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetRoleActivedefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response SetRoleActivedefaultJSONResponse) VisitSetRoleActiveResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type SetRolePermissionsRequestObject struct {
 	RoleId string `json:"roleId"`
 	Body   *SetRolePermissionsJSONRequestBody
@@ -19836,6 +20076,15 @@ type StrictServerInterface interface {
 	// ListRoles The role catalog with the rights of each role (A-1)
 	// (GET /api/v1/roles)
 	ListRoles(ctx context.Context, request ListRolesRequestObject) (ListRolesResponseObject, error)
+	// CreateRole Add a work role (A-1, D-199)
+	// (POST /api/v1/roles)
+	CreateRole(ctx context.Context, request CreateRoleRequestObject) (CreateRoleResponseObject, error)
+	// UpdateRole Rename a work role, or change whether it can be limited to the own project group (A-1, D-199)
+	// (PATCH /api/v1/roles/{roleId})
+	UpdateRole(ctx context.Context, request UpdateRoleRequestObject) (UpdateRoleResponseObject, error)
+	// SetRoleActive Deactivate or activate a work role (A-1, D-199)
+	// (PUT /api/v1/roles/{roleId}/active)
+	SetRoleActive(ctx context.Context, request SetRoleActiveRequestObject) (SetRoleActiveResponseObject, error)
 	// SetRolePermissions Replace the permissions of one work role (A-1, M8.1, D-66)
 	// (PUT /api/v1/roles/{roleId}/permissions)
 	SetRolePermissions(ctx context.Context, request SetRolePermissionsRequestObject) (SetRolePermissionsResponseObject, error)
@@ -24884,6 +25133,103 @@ func (sh *strictHandler) ListRoles(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ListRolesResponseObject); ok {
 		if err := validResponse.VisitListRolesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateRole operation middleware
+func (sh *strictHandler) CreateRole(w http.ResponseWriter, r *http.Request) {
+	var request CreateRoleRequestObject
+
+	var body CreateRoleJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateRole(ctx, request.(CreateRoleRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateRole")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateRoleResponseObject); ok {
+		if err := validResponse.VisitCreateRoleResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateRole operation middleware
+func (sh *strictHandler) UpdateRole(w http.ResponseWriter, r *http.Request, roleId string) {
+	var request UpdateRoleRequestObject
+
+	request.RoleId = roleId
+
+	var body UpdateRoleJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateRole(ctx, request.(UpdateRoleRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateRole")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateRoleResponseObject); ok {
+		if err := validResponse.VisitUpdateRoleResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SetRoleActive operation middleware
+func (sh *strictHandler) SetRoleActive(w http.ResponseWriter, r *http.Request, roleId string) {
+	var request SetRoleActiveRequestObject
+
+	request.RoleId = roleId
+
+	var body SetRoleActiveJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetRoleActive(ctx, request.(SetRoleActiveRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetRoleActive")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetRoleActiveResponseObject); ok {
+		if err := validResponse.VisitSetRoleActiveResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

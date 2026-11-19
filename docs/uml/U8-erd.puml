@@ -1,4 +1,4 @@
-' U8 · ERD fisik (draft 0.16, 2026-11-19), dibangkitkan dari skema database sampai migrasi 00048
+' U8 · ERD fisik (draft 0.16, 2026-11-20), dibangkitkan dari skema database sampai migrasi 00049
 ' oleh docs/uml/tools/u8_dari_database.py. Jangan diedit tangan: ubah migrasinya, lalu jalankan skrip itu lagi.
 ' Menggambarkan tabel PostgreSQL 18 yang sudah dibangun (R-UML-03: diagram fisik mengikuti kode).
 ' Tim IT boleh memakai stack lain (R-UML-02); aturan yang wajib dipertahankan ada di brief dan U5.
@@ -170,6 +170,11 @@ entity "roles" as roles {
   --
   * level : text
   * sort_order : integer
+  * name_en : text
+  * name_id : text
+  * active : boolean
+  * builtin : boolean
+  * group_scope : boolean
 }
 
 entity "permissions" as permissions {

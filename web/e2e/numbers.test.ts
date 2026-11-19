@@ -36,7 +36,7 @@ async function logInAuthor(page: Page, login: string, roles: string[], customer 
 }
 
 test('Penyusun mendaftarkan nomor CP dan mendapat nomor berurutan', async ({ page }) => {
-	await logInAuthor(page, 'penyusun.nomor', ['author']);
+	await logInAuthor(page, 'penyusun.nomor', ['ppap_engineer']);
 	await openFromMenu(page, en.navGroupDocuments, en.navNumbers);
 
 	// Satu nomor, bukan set. .first(): formulir pendaftaran ada di atas
@@ -81,7 +81,7 @@ test('admin mengubah pola nomor di master data', async ({ page }) => {
 
 test('dokumen kontrol membatalkan nomor dengan alasan, dan nomornya tetap di register', async ({ page }) => {
 	// Seperti PPAP Engineer: Penyusun sekaligus Dokumen kontrol (U3 bagian 2).
-	await logInAuthor(page, 'ppap.nomor', ['author', 'document_control']);
+	await logInAuthor(page, 'ppap.nomor', ['ppap_engineer']);
 	await openFromMenu(page, en.navGroupDocuments, en.navNumbers);
 	await page.getByLabel(en.numberAsSet).uncheck();
 	// Tunggu formulir daftar tampil dulu: saringan register juga punya kotak "Customer".
@@ -111,7 +111,7 @@ test('dokumen kontrol membatalkan nomor dengan alasan, dan nomornya tetap di reg
 });
 
 test('Penyusun mendaftarkan set dengan revisi awal -04, dan nomor yang dilewati tercatat', async ({ page }) => {
-	await logInAuthor(page, 'penyusun.set', ['author']);
+	await logInAuthor(page, 'penyusun.set', ['ppap_engineer']);
 	await openFromMenu(page, en.navGroupDocuments, en.navNumbers);
 	await expect(page.getByLabel(en.numberAsSet)).toBeChecked();
 	// Tunggu formulir daftar tampil dulu: saringan register juga punya kotak "Customer".
@@ -132,7 +132,7 @@ test('Penyusun mendaftarkan set dengan revisi awal -04, dan nomor yang dilewati 
 });
 
 test('dokumen kontrol mengimpor nomor lama: pratinjau, laporan, lalu impor', async ({ page }) => {
-	await logInAuthor(page, 'dokumen.impor', ['document_control'], 'LG');
+	await logInAuthor(page, 'dokumen.impor', ['ppap_engineer'], 'LG');
 	await openFromMenu(page, en.navGroupDocuments, en.navNumbers);
 	await page.getByRole('link', { name: en.numberImportLink }).click();
 	await expect(page.getByRole('heading', { name: en.numberImportTitle })).toBeVisible();

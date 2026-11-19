@@ -39,13 +39,13 @@ func TestAuditTrail(t *testing.T) {
 
 	info, temporary, err := s.CreateAccount(ctx, admin, NewAccount{
 		PersonName: "Penyusun Uji", Kind: KindWork, Login: "penyusun.uji",
-		Roles: []access.RoleGrant{{Role: access.RoleAuthor, Scope: access.ScopeAll}},
+		Roles: []access.RoleGrant{{Role: access.RolePPAPEngineer, Scope: access.ScopeAll}},
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	err = s.SetRoles(ctx, admin, info.ID, []access.RoleGrant{
-		{Role: access.RoleAuthor, Scope: access.ScopeAll}, {Role: access.RoleVerifier, Scope: access.ScopeOwnProjectGroup},
+		{Role: access.RolePPAPEngineer, Scope: access.ScopeAll}, {Role: access.RoleProjectLeader, Scope: access.ScopeOwnProjectGroup},
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -97,8 +97,8 @@ func TestAuditTrail(t *testing.T) {
 		{audit.ActionAccountCreated, "system", "", a, `{"kind":"admin","login":"admin.uji","roles":"admin(all)","via":"create-admin"}`},
 		{audit.ActionLogin, "human", a, a, `{}`},
 		{audit.ActionLoginFailed, "anonymous", "", a, `{"failed_logins":"1"}`},
-		{audit.ActionAccountCreated, "human", a, w, `{"kind":"work","login":"penyusun.uji","roles":"author(all)"}`},
-		{audit.ActionRolesChanged, "human", a, w, `{"after":"author(all), verifier(own_project_group)","before":"author(all)"}`},
+		{audit.ActionAccountCreated, "human", a, w, `{"kind":"work","login":"penyusun.uji","roles":"ppap_engineer(all)"}`},
+		{audit.ActionRolesChanged, "human", a, w, `{"after":"ppap_engineer(all), project_leader(own_project_group)","before":"ppap_engineer(all)"}`},
 		{audit.ActionLogin, "human", w, w, `{}`},
 		{audit.ActionPasswordChangeFailed, "human", w, w, `{"failed_logins":"1"}`},
 		{audit.ActionPasswordChanged, "human", w, w, `{}`},

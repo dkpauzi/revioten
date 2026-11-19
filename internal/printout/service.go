@@ -25,6 +25,7 @@ import (
 
 	"github.com/dkpauzi/revioten/internal/access"
 	"github.com/dkpauzi/revioten/internal/audit"
+	"github.com/dkpauzi/revioten/internal/clock"
 	"github.com/dkpauzi/revioten/internal/db"
 	"github.com/dkpauzi/revioten/internal/document"
 	"github.com/dkpauzi/revioten/internal/problem"
@@ -165,7 +166,8 @@ func (s *Service) Print(ctx context.Context, actor access.Actor, id string, req 
 		}
 		if req.Purpose == PurposeSignature {
 			// Tanggal rilis diisi saat dicetak untuk tanda tangan (D-59).
-			today := time.Now()
+			// Tanggal kalender WIB, bukan zona komputer server (clock.Zone).
+			today := clock.Date(time.Now())
 			if err := q.SetRevisionReleaseDate(ctx, db.SetRevisionReleaseDateParams{ID: info.ID, ReleaseDate: pgtype.Date{Time: today, Valid: true}}); err != nil {
 				return err
 			}

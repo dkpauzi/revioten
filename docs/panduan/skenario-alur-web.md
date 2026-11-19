@@ -85,10 +85,10 @@ Setiap akun yang login otomatis bisa **melihat** dokumen rilis, register nomor, 
 | Akun contoh | Jenis akun | Peran | Cakupan |
 |---|---|---|---|
 | `admin.contoh` | Admin account | Admin (otomatis) | — |
-| `ppap.engineer` | Work account | Author, Template maintainer, PFMEA–CP checker, Document control, Migration | All customers |
-| `ppap.staff` | Work account | Author, Document control, Migration | All customers |
-| `pl.gr1` (Project Leader GR1) | Work account | Author, Verifier | Own project group |
-| `pe.gr1` (Project Engineer GR1) | Work account | Author, Verifier | Own project group |
+| `ppap.engineer` | Work account | PPAP Engineer | All customers |
+| `ppap.staff` | Work account | PPAP Engineer | All customers |
+| `pl.gr1` (Project Leader GR1) | Work account | Project Leader | Own project group |
+| `pe.gr1` (Project Engineer GR1) | Work account | Project Leader | Own project group |
 | `ppap.controller` (APQP/PPAP Controller) | Work account | Verifier | All customers |
 | `npi.manager` | Work account | Tanpa peran (otomatis Viewer) | — |
 
@@ -277,13 +277,13 @@ Logout, lalu login dengan `ppap.staff` dan ganti password seperti langkah 8.
 
 ## 7. Penyusun: dokumen draft (Tahap 4)
 
-Akun `ppap.engineer` di contoh ini memegang peran Author, Template maintainer, Form approver, dan PFMEA–CP checker. Dalam pemakaian sebenarnya, Form approver biasanya PPAP Supervisor (D-139) dan tanda dicek diberikan PPAP Engineer (D-65).
+Akun `ppap.engineer` di contoh ini memegang peran PPAP Engineer (D-199). Form set diterbitkan PPAP Engineer Supervisor (V-3); bawaannya semua pemegang V-3 harus setuju (D-148).
 
 ### Langkah 15 · Terbitkan form set
 Dokumen hanya bisa dibuat dari form set customer yang sudah terbit.
 
 1. Sebagai admin, buka **Template library → Format templates**. Pilih **PFD · PFD**, tekan **Publish version 1**, lalu jawab **OK**. Ulangi untuk **PFMEA AIAG 4th · PFMEA** dan **CP · CP**.
-2. Sebagai Form approver, buka **Template library → Form sets**. Pada **AIAG 4th set**, tekan **Publish version 1**, lalu jawab **OK**. Penyusun draft form set tidak bisa menerbitkannya sendiri.
+2. Login sebagai `apqp.controller` (PPAP Engineer Supervisor, pemegang V-3), buka **Template library → Form sets**. Pada **AIAG 4th set**, tekan **Publish version 1**, lalu jawab **OK**. Penyusun draft form set tidak bisa menerbitkannya sendiri.
 
 ### Langkah 16 · Set nomor untuk dokumen
 Di **Documents → Numbers**, daftarkan satu set untuk customer `LM` seperti langkah 13. Hasilnya, misalnya, SH-LM-002, SF-LM-002, dan SC-LM-002 berstatus Reserved.
@@ -324,7 +324,7 @@ Buka tab **PFD**, lalu tekan **Show the diagram**. Satu kotak per baris menurut 
 
 ## 8. Cetak dan rilis (Tahap 6)
 
-Sebelum bagian ini, admin membuat dua akun lagi di **Admin → Accounts**: `dok.kontrol` (Document control dan Migration) dan `apqp.controller` (Verifier). Di **Master data → Positions**, catat pemegang `apqp.controller` sebagai **APQP/PPAP Controller**. Di **Admin → Settings**, centang **Migration mode**. Akun `ppap.engineer` juga diberi peran Migration.
+Sebelum bagian ini, admin membuat dua akun lagi di **Admin → Accounts**: `dok.kontrol` (PPAP Engineer, yang kini juga mengerjakan dokumen kontrol) dan `apqp.controller` (PPAP Engineer Supervisor). Di **Master data → Positions**, catat pemegang `apqp.controller` sebagai **APQP/PPAP Controller**. Di **Admin → Settings**, centang **Migration mode**. Hak migrasi (E-10) sudah termasuk di peran PPAP Engineer.
 
 ### Langkah 22 · Cetak draft
 Di dokumen SC-LM-002, bagian **Print**, tekan **Excel**. Berkas `SC-LM-002-00-draft.xlsx` terunduh dengan tanda UNCONTROLLED COPY, dan cetakan itu tercatat di **Print log**.

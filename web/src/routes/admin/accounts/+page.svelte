@@ -338,7 +338,7 @@
 								{:else if account.roles.length === 0}
 									{t('accountNoRoles')}
 								{:else}
-									{account.roles.map(grantLabel).join(', ')}
+									{account.roles.map((g) => grantLabel(g, roles)).join(', ')}
 								{/if}
 							</td>
 							<td>{accountStatus(account).join(', ')}</td>

@@ -1,7 +1,7 @@
 # Rancangan · Matriks peran dan hak (gaya Spatie Laravel Permission)
 
 - **Dibuat:** 19 November 2026, dari permintaan pemilik.
-- **Status:** **diputuskan 19 November 2026 (D-199)**, dibangun di fase 2. Jawaban pertanyaan bagian 7: dokumen kontrol digabung ke PPAP Engineer, Manager boleh melihat laporan kinerja, Project Leader boleh menyusun dan mencetak.
+- **Status:** **diputuskan 19 November 2026 (D-199)**, **dibangun 20 November 2026 di fase 2** (migrasi 00049, catatan `docs/catatan/D-199-fase-2-matriks-peran.md`). Jawaban pertanyaan bagian 7: dokumen kontrol digabung ke PPAP Engineer, Manager boleh melihat laporan kinerja, Project Leader boleh menyusun dan mencetak.
 
 ## 1. Permintaan pemilik
 
@@ -65,7 +65,8 @@ Engineer dan Supervisor Project Leader **berhak sama**. Bedanya hanya di kolom t
 Catatan matriks:
 - **S-1** hanya membuka tombol tanda tangan. **Slot mana** yang boleh ditandatangani seseorang tetap ditentukan jabatannya di rute approval (R-APR-07, R-APR-08): Prepared, Checked, NPI Manager, QA QC Manager, GM.
 - **E-3** bisa dicentang untuk Manager atau Viewer bila suatu saat mereka boleh mengajukan perubahan; tidak perlu kode baru.
-- **G-1** baru berguna setelah tampilan genba (D-137) dibangun.
+- **G-1** baru berguna setelah tampilan genba (D-137, langkah L) dibangun; sampai 20 November 2026 tampilan genba belum ada.
+- **Engineer di kolom tanda tangan** dipilih saat dokumen diajukan untuk tanda tangan, dari akun berperan PPAP Engineer atau Project Leader (D-203, fase 3).
 
 ## 5. Aturan yang tetap tidak bisa dimatikan (R-SEC-11)
 

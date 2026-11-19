@@ -46,7 +46,7 @@ func TestCreateAccount(t *testing.T) {
 
 	info, temporary, err := s.CreateAccount(ctx, admin, NewAccount{
 		PersonName: " Penyusun Uji ", EmployeeNumber: "K-001", Kind: KindWork, Login: "Penyusun.Uji",
-		Roles: []access.RoleGrant{{Role: access.RoleAuthor, Scope: access.ScopeOwnProjectGroup}},
+		Roles: []access.RoleGrant{{Role: access.RoleProjectLeader, Scope: access.ScopeOwnProjectGroup}},
 	})
 	if err != nil {
 		t.Fatalf("CreateAccount: %v", err)
@@ -55,7 +55,7 @@ func TestCreateAccount(t *testing.T) {
 		!info.MustChangePassword || info.Disabled || info.Kind != KindWork {
 		t.Errorf("info %+v", info)
 	}
-	if !slices.Equal(info.Roles, []access.RoleGrant{{Role: access.RoleAuthor, Scope: access.ScopeOwnProjectGroup}}) {
+	if !slices.Equal(info.Roles, []access.RoleGrant{{Role: access.RoleProjectLeader, Scope: access.ScopeOwnProjectGroup}}) {
 		t.Errorf("peran %+v", info.Roles)
 	}
 	if len(temporary) < minPasswordLength {
@@ -142,9 +142,8 @@ func TestAccountManagementRequiresAdmin(t *testing.T) {
 	s, admin := newAdminActor(t)
 	ctx := t.Context()
 	allWork := []access.RoleGrant{
-		{Role: access.RoleAuthor, Scope: access.ScopeAll}, {Role: access.RoleTemplateMaintainer, Scope: access.ScopeAll},
-		{Role: access.RolePFMEACPChecker, Scope: access.ScopeAll}, {Role: access.RoleVerifier, Scope: access.ScopeAll},
-		{Role: access.RoleDocumentControl, Scope: access.ScopeAll}, {Role: access.RoleMigration, Scope: access.ScopeAll},
+		{Role: access.RolePPAPEngineer, Scope: access.ScopeAll}, {Role: access.RolePPAPEngineerSupervisor, Scope: access.ScopeAll},
+		{Role: access.RoleProjectLeader, Scope: access.ScopeAll}, {Role: access.RoleManager, Scope: access.ScopeAll},
 	}
 	info, temporary, err := s.CreateAccount(ctx, admin, NewAccount{PersonName: "Pekerja Uji", Kind: KindWork, Login: "pekerja.uji", Roles: allWork})
 	if err != nil {
@@ -176,7 +175,7 @@ func TestListAccounts(t *testing.T) {
 	s, admin := newAdminActor(t)
 	ctx := t.Context()
 	if _, _, err := s.CreateAccount(ctx, admin, NewAccount{PersonName: "Penyusun Uji", Kind: KindWork, Login: "penyusun.uji",
-		Roles: []access.RoleGrant{{Role: access.RoleVerifier, Scope: access.ScopeAll}}}); err != nil {
+		Roles: []access.RoleGrant{{Role: access.RoleManager, Scope: access.ScopeAll}}}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -191,7 +190,7 @@ func TestListAccounts(t *testing.T) {
 	if !slices.Equal(logins, []string{adminLogin, "penyusun.uji"}) {
 		t.Errorf("login %v", logins)
 	}
-	if !slices.Equal(list[1].Roles, []access.RoleGrant{{Role: access.RoleVerifier, Scope: access.ScopeAll}}) {
+	if !slices.Equal(list[1].Roles, []access.RoleGrant{{Role: access.RoleManager, Scope: access.ScopeAll}}) {
 		t.Errorf("peran %+v", list[1].Roles)
 	}
 }
@@ -404,8 +403,8 @@ func TestSetRoles(t *testing.T) {
 	}
 
 	grants := []access.RoleGrant{
-		{Role: access.RoleAuthor, Scope: access.ScopeOwnProjectGroup},
-		{Role: access.RoleVerifier, Scope: access.ScopeAll},
+		{Role: access.RolePPAPEngineerSupervisor, Scope: access.ScopeAll},
+		{Role: access.RoleProjectLeader, Scope: access.ScopeOwnProjectGroup},
 	}
 	if err := s.SetRoles(ctx, admin, info.ID, grants); err != nil {
 		t.Fatalf("SetRoles: %v", err)
@@ -430,9 +429,10 @@ func TestSetRoles(t *testing.T) {
 		{"akun kerja tidak boleh memegang Admin", info.ID, []access.RoleGrant{{Role: access.RoleAdmin, Scope: access.ScopeAll}}},
 		{"Viewer tidak diberikan karena sudah dimiliki semua", info.ID, []access.RoleGrant{{Role: access.RoleViewer, Scope: access.ScopeAll}}},
 		{"peran yang tidak ada", info.ID, []access.RoleGrant{{Role: "approver", Scope: access.ScopeAll}}},
-		{"peran ganda", info.ID, []access.RoleGrant{{Role: access.RoleAuthor, Scope: access.ScopeAll}, {Role: access.RoleAuthor, Scope: access.ScopeOwnProjectGroup}}},
-		{"cakupan group hanya untuk Penyusun dan Verifikator", info.ID, []access.RoleGrant{{Role: access.RoleDocumentControl, Scope: access.ScopeOwnProjectGroup}}},
-		{"cakupan yang tidak dikenal", info.ID, []access.RoleGrant{{Role: access.RoleAuthor, Scope: "gr1"}}},
+		{"peran ganda", info.ID, []access.RoleGrant{{Role: access.RoleProjectLeader, Scope: access.ScopeAll}, {Role: access.RoleProjectLeader, Scope: access.ScopeOwnProjectGroup}}},
+		{"cakupan group hanya untuk peran yang mengizinkannya", info.ID, []access.RoleGrant{{Role: access.RolePPAPEngineer, Scope: access.ScopeOwnProjectGroup}}},
+		{"peran lama yang nonaktif", info.ID, []access.RoleGrant{{Role: access.RoleAuthor, Scope: access.ScopeAll}}},
+		{"cakupan yang tidak dikenal", info.ID, []access.RoleGrant{{Role: access.RoleProjectLeader, Scope: "gr1"}}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

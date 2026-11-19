@@ -15,33 +15,45 @@ type RoleGrant struct {
 	Scope string // ScopeAll atau ScopeOwnProjectGroup
 }
 
-// Role adalah satu peran di katalog beserta hak-haknya.
+// Role adalah satu peran di katalog beserta hak-haknya. Sejak D-199 peran
+// punya nama sendiri dalam dua bahasa, dan admin boleh menambah peran.
 type Role struct {
 	ID          string
 	Level       string // view, edit, verify, atau admin
+	NameEN      string
+	NameID      string
+	Active      bool // peran nonaktif tidak bisa diberikan lagi
+	Builtin     bool // peran bawaan sistem, bukan tambahan admin
+	GroupScope  bool // boleh dibatasi ke Project Group sendiri (D-71)
+	Holders     int  // jumlah akun yang memegangnya
 	Permissions []Permission
 }
-
-// groupScopedRoles adalah peran yang boleh bercakupan Project Group sendiri:
-// Penyusun dan Verifikator milik Project Leader dan Project Engineer (U3 bagian 2).
-var groupScopedRoles = []string{RoleAuthor, RoleVerifier}
 
 // ListRoles mengembalikan katalog peran beserta haknya (A-1).
 func (c *Checker) ListRoles(ctx context.Context, actor Actor) ([]Role, error) {
 	if err := c.Authorize(ctx, actor, ManageUsers, Resource{}); err != nil {
 		return nil, err
 	}
-	roles, err := c.q.ListRoles(ctx)
+	return LoadRoles(ctx, c.q)
+}
+
+// LoadRoles membaca katalog peran tanpa pemeriksaan izin. Hanya dipanggil
+// operasi yang sudah lolos Authorize.
+func LoadRoles(ctx context.Context, q *db.Queries) ([]Role, error) {
+	roles, err := q.ListRoles(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("membaca katalog peran: %w", err)
 	}
-	perms, err := c.q.ListRolePermissions(ctx)
+	perms, err := q.ListRolePermissions(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("membaca katalog hak: %w", err)
 	}
 	list := make([]Role, 0, len(roles))
 	for _, r := range roles {
-		role := Role{ID: r.ID, Level: r.Level}
+		role := Role{
+			ID: r.ID, Level: r.Level, NameEN: r.NameEn, NameID: r.NameID,
+			Active: r.Active, Builtin: r.Builtin, GroupScope: r.GroupScope, Holders: int(r.Holders),
+		}
 		for _, p := range perms {
 			if p.RoleID == r.ID {
 				role.Permissions = append(role.Permissions, Permission(p.PermissionCode))
@@ -52,11 +64,12 @@ func (c *Checker) ListRoles(ctx context.Context, actor Actor) ([]Role, error) {
 	return list, nil
 }
 
-// ValidateRoles memeriksa peran yang akan diberikan ke akun berjenis kind.
-// Aturan ini tidak bisa dimatikan siapa pun (R-SEC-11 butir 8, D-72):
-// akun admin hanya memegang peran Admin, yang dipasang otomatis, dan akun
-// kerja tidak pernah memegang peran Admin.
-func ValidateRoles(kind string, grants []RoleGrant) []problem.Problem {
+// ValidateRoles memeriksa peran yang akan diberikan ke akun berjenis kind,
+// terhadap katalog peran. Aturan ini tidak bisa dimatikan siapa pun
+// (R-SEC-11 butir 8, D-72): akun admin hanya memegang peran Admin, yang
+// dipasang otomatis, dan akun kerja tidak pernah memegang peran Admin.
+// Peran nonaktif tidak bisa diberikan (D-199).
+func ValidateRoles(kind string, grants []RoleGrant, catalog []Role) []problem.Problem {
 	notAllowed := func(message string) []problem.Problem {
 		return []problem.Problem{{Field: "roles", Code: problem.NotAllowed, Message: message}}
 	}
@@ -69,28 +82,26 @@ func ValidateRoles(kind string, grants []RoleGrant) []problem.Problem {
 
 	var seen []string
 	for _, g := range grants {
+		i := slices.IndexFunc(catalog, func(r Role) bool { return r.ID == g.Role })
 		switch {
 		case g.Role == RoleAdmin:
 			return notAllowed("A work account cannot hold the admin role. Use a separate admin account.")
 		case g.Role == RoleViewer:
 			return notAllowed("Every account already has the viewer rights.")
-		case !slices.Contains(workRoles, g.Role):
+		case i < 0:
 			return []problem.Problem{{Field: "roles", Code: problem.InvalidFormat, Message: "Unknown role: " + g.Role + "."}}
+		case !catalog[i].Active:
+			return notAllowed("The role " + catalog[i].NameEN + " is inactive and cannot be given.")
 		case slices.Contains(seen, g.Role):
 			return []problem.Problem{{Field: "roles", Code: problem.InvalidFormat, Message: "A role is listed twice: " + g.Role + "."}}
 		case g.Scope != ScopeAll && g.Scope != ScopeOwnProjectGroup:
 			return []problem.Problem{{Field: "roles", Code: problem.InvalidFormat, Message: "Unknown scope for role " + g.Role + "."}}
-		case g.Scope == ScopeOwnProjectGroup && !slices.Contains(groupScopedRoles, g.Role):
-			return notAllowed("Only the author and verifier roles can be limited to the own project group.")
+		case g.Scope == ScopeOwnProjectGroup && !catalog[i].GroupScope:
+			return notAllowed("The role " + catalog[i].NameEN + " cannot be limited to the own project group.")
 		}
 		seen = append(seen, g.Role)
 	}
 	return nil
-}
-
-// workRoles adalah peran yang boleh dipegang akun kerja.
-var workRoles = []string{
-	RoleAuthor, RoleTemplateMaintainer, RolePFMEACPChecker, RoleVerifier, RoleFormApprover, RoleDocumentControl, RoleMigration,
 }
 
 // ReplaceRoles mengganti seluruh peran akun dengan grants. Dipanggil di dalam

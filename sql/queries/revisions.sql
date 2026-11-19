@@ -39,7 +39,7 @@ ORDER BY c.seq;
 
 -- name: ReleaseDocumentRevision :execrows
 UPDATE document_revisions
-SET status = 'released', released_at = now(), release_date = coalesce(release_date, current_date),
+SET status = 'released', released_at = now(), release_date = coalesce(release_date, (now() AT TIME ZONE 'Asia/Jakarta')::date),
     snapshot = sqlc.arg(snapshot), snapshot_sha256 = sqlc.arg(sha256),
     released_by_person_id = sqlc.arg(person_id), released_by_account_id = sqlc.arg(account_id)
 WHERE id = sqlc.arg(id) AND status = 'draft';

@@ -286,7 +286,7 @@ func (q *Queries) PreparedDraft(ctx context.Context, arg PreparedDraftParams) (b
 const releaseDocumentRevision = `-- name: ReleaseDocumentRevision :execrows
 
 UPDATE document_revisions
-SET status = 'released', released_at = now(), release_date = coalesce(release_date, current_date),
+SET status = 'released', released_at = now(), release_date = coalesce(release_date, (now() AT TIME ZONE 'Asia/Jakarta')::date),
     snapshot = $1, snapshot_sha256 = $2,
     released_by_person_id = $3, released_by_account_id = $4
 WHERE id = $5 AND status = 'draft'

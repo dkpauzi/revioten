@@ -74,7 +74,7 @@ test('slot GM dipindah dari Advisor ke Factory Manager lewat master data', async
 test('Project Leader dipegang satu orang per Project Group', async ({ page }) => {
 	await logIn(page);
 	await ensureProjectGroup(page, 'GR1');
-	await createWorkAccount(page, 'Project Leader E2E', 'pl.e2e', ['author']);
+	await createWorkAccount(page, 'Project Leader E2E', 'pl.e2e', ['ppap_engineer']);
 	await openFromMenu(page, en.navGroupMaster, en.navPositions);
 
 	await page.getByLabel(en.positionName, { exact: true }).selectOption({ label: 'Project Leader' });

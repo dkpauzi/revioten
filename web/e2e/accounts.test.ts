@@ -54,14 +54,14 @@ test('akun baru wajib ganti password, lalu hanya mendapat hak dari perannya', as
 	await openFromMenu(page, en.navGroupAdmin, en.navAccounts);
 	await expect(page.getByRole('heading', { name: en.accountsTitle, exact: true })).toBeVisible();
 
-	// Penyusun yang dibatasi ke Project Group sendiri (D-71).
-	const form = page.locator('form');
+	// Project Leader, bawaannya dibatasi ke Project Group sendiri (D-71, D-199).
+	const form = page.locator('form').first();
 	await form.getByLabel(en.accountPersonName).fill('Author E2E');
 	await form.getByLabel(en.accountLogin).fill('author.e2e');
-	await form.getByLabel(en.roleAuthor, { exact: true }).check();
-	await form
-		.getByLabel(en.accountRoleScope.replace('{role}', en.roleAuthor))
-		.selectOption('own_project_group');
+	await form.getByLabel(en.roleProjectLeader, { exact: true }).check();
+	await expect(form.getByLabel(en.accountRoleScope.replace('{role}', en.roleProjectLeader))).toHaveValue('own_project_group');
+	// Peran lama yang nonaktif tidak ditawarkan lagi.
+	await expect(form.getByLabel(en.roleAuthor, { exact: true })).toHaveCount(0);
 	await form.getByRole('button', { name: en.accountCreate }).click();
 	const temporary = await temporaryPasswordFor(page, 'author.e2e');
 
@@ -74,7 +74,7 @@ test('akun baru wajib ganti password, lalu hanya mendapat hak dari perannya', as
 	await expect(page.getByRole('button', { name: en.accountCopyPassword })).toBeVisible();
 
 	const row = page.getByRole('row', { name: /author\.e2e/ });
-	await expect(row).toContainText(`${en.roleAuthor} (${en.scopeOwnProjectGroup})`);
+	await expect(row).toContainText(`${en.roleProjectLeader} (${en.scopeOwnProjectGroup})`);
 	await expect(row).toContainText(en.accountStatusMustChange);
 
 	// Pemilik akun login dengan password sementara dan wajib menggantinya dulu.
@@ -126,7 +126,7 @@ test('admin mengubah peran, menonaktifkan, mengaktifkan, dan mereset akun', asyn
 	await page.goto('/admin/accounts');
 
 	// PPAP Staff punya akun kerja dan akun admin terpisah (D-72).
-	const first = await createWorkAccount(page, 'PPAP Staff E2E', 'ppap.staff.e2e', [en.roleAuthor]);
+	const first = await createWorkAccount(page, 'PPAP Staff E2E', 'ppap.staff.e2e', [en.rolePpapEngineer]);
 	const form = page.locator('form');
 	await form.getByLabel(en.accountPersonExisting).check();
 	await form.getByLabel(en.accountPersonChoose).selectOption({ label: 'PPAP Staff E2E' });
@@ -140,12 +140,12 @@ test('admin mengubah peran, menonaktifkan, mengaktifkan, dan mereset akun', asyn
 	// Akun admin selalu hanya memegang peran Admin: perannya tidak bisa diubah.
 	await expect(adminRow.getByRole('button', { name: en.accountEditRoles })).toHaveCount(0);
 
-	// Ubah peran: tambah Verifikator.
+	// Ubah peran: tambah Manager.
 	const row = page.getByRole('row', { name: /ppap\.staff\.e2e/ });
 	await row.getByRole('button', { name: en.accountEditRoles }).click();
-	await row.getByLabel(en.roleVerifier, { exact: true }).check();
+	await row.getByLabel(en.roleManager, { exact: true }).check();
 	await row.getByRole('button', { name: en.accountSaveRoles }).click();
-	await expect(row).toContainText(`${en.roleAuthor}, ${en.roleVerifier}`);
+	await expect(row).toContainText(`${en.rolePpapEngineer}, ${en.roleManager}`);
 
 	// Nonaktifkan, lalu aktifkan lagi. Setiap aksi yang mengakhiri sesi minta konfirmasi.
 	let dialog = acceptNextDialog(page);

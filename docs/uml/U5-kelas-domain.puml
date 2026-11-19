@@ -232,6 +232,13 @@ class Permission {
 class Role {
   id : Teks tetap
   level : Lihat | Buat/Edit | Verifikasi | Admin
+  name_en, name_id : Teks tampilan (D-199)
+  active : Ya/Tidak
+  builtin : Ya/Tidak
+  group_scope : Ya/Tidak
+  --
+  ditambah, diganti nama, dinonaktifkan admin;
+  tidak pernah dihapus
 }
 
 class RoleGrant {

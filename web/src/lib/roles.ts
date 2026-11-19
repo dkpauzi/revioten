@@ -1,11 +1,16 @@
-// Teks layar untuk peran dan cakupannya. Peran adalah data di server (D-66),
-// jadi ID yang belum punya teks tetap ditampilkan apa adanya.
-// E-19 (D-98): nama Inggris mengikuti kolom istilah layar di glosarium U1
-// bagian 7, yang diisi dari brief bagian 1 (D-78).
+// Teks layar untuk peran dan cakupannya. Sejak D-199 peran punya nama sendiri
+// dalam dua bahasa di server, karena admin bisa menambah dan mengganti nama
+// peran. Teks di katalog layar hanya cadangan bila katalog peran belum dimuat.
+// E-19 (D-98): nama Inggris mengikuti kolom istilah layar di glosarium U1.
 import type { Role, RoleGrant } from './api/gen/index.ts';
 import { t, type MessageKey } from './i18n/index.ts';
+import { language } from './i18n/language.svelte.ts';
 
 const roleKeys: Record<string, MessageKey> = {
+	ppap_engineer: 'rolePpapEngineer',
+	ppap_engineer_supervisor: 'rolePpapEngineerSupervisor',
+	project_leader: 'roleProjectLeader',
+	manager: 'roleManager',
 	author: 'roleAuthor',
 	template_maintainer: 'roleTemplateMaintainer',
 	pfmea_cp_checker: 'rolePfmeaCpChecker',
@@ -17,10 +22,17 @@ const roleKeys: Record<string, MessageKey> = {
 	admin: 'roleAdmin'
 };
 
-// roleLabel memberi nama tampilan sebuah peran.
-export function roleLabel(roleId: string): string {
-	const key = roleKeys[roleId];
-	return key ? t(key) : roleId;
+// roleLabel memberi nama tampilan sebuah peran dalam bahasa yang aktif. role
+// boleh berupa peran dari katalog server (dengan nama), atau hanya ID-nya;
+// ID yang tidak dikenal ditampilkan apa adanya.
+export function roleLabel(role: Role | string, catalog: Role[] = []): string {
+	const found = typeof role === 'string' ? catalog.find((r) => r.id === role) : role;
+	if (found) {
+		return language.current === 'id' ? found.name_id : found.name_en;
+	}
+	const id = typeof role === 'string' ? role : '';
+	const key = roleKeys[id];
+	return key ? t(key) : id;
 }
 
 // scopeLabel memberi nama tampilan cakupan peran.
@@ -31,24 +43,24 @@ export function scopeLabel(scope: string): string {
 // grantLabel memberi nama tampilan satu peran yang dipegang akun. Cakupan hanya
 // disebut bila peran dibatasi ke Project Group sendiri; tanpa keterangan
 // berarti semua customer.
-export function grantLabel(grant: RoleGrant): string {
+export function grantLabel(grant: RoleGrant, catalog: Role[] = []): string {
+	const name = roleLabel(grant.role, catalog);
 	if (grant.scope === 'own_project_group') {
-		return t('roleWithScope', { role: roleLabel(grant.role), scope: scopeLabel(grant.scope) });
+		return t('roleWithScope', { role: name, scope: scopeLabel(grant.scope) });
 	}
-	return roleLabel(grant.role);
+	return name;
 }
 
-// groupScopedRoles adalah peran yang boleh dibatasi ke Project Group sendiri
-// (U3 bagian 2). Server tetap memeriksa aturan ini.
-export const groupScopedRoles = ['author', 'verifier'];
-
 // notAssignable adalah peran yang tidak pernah diberikan ke akun kerja: Viewer
-// dimiliki semua akun tanpa diberikan (U3 bagian 1), dan Admin hanya untuk akun
-// admin (D-72). Server tetap menolak keduanya (R-SEC-11).
+// dimiliki semua akun kerja tanpa diberikan (U3 bagian 1), dan Admin hanya
+// untuk akun admin (D-72). Server tetap menolak keduanya (R-SEC-11).
 const notAssignable = ['viewer', 'admin'];
 
 // assignableRoles menyaring katalog peran menjadi peran yang bisa dipilih untuk
-// akun kerja. Urutan katalog dari server dipertahankan.
-export function assignableRoles(catalog: Role[]): Role[] {
-	return catalog.filter((role) => !notAssignable.includes(role.id));
+// akun kerja: peran aktif, ditambah peran nonaktif yang masih dipegang akun
+// itu (supaya tetap tampil dan bisa dilepas). Urutan katalog dipertahankan.
+export function assignableRoles(catalog: Role[], held: RoleGrant[] = []): Role[] {
+	return catalog.filter(
+		(role) => !notAssignable.includes(role.id) && (role.active || held.some((g) => g.role === role.id))
+	);
 }

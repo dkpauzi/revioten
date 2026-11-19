@@ -40,6 +40,10 @@ const (
 	ActionAccountCreated         = "account.created"
 	ActionRolesChanged           = "account.roles_changed"
 	ActionRolePermissionsChanged = "role.permissions_changed" // M8.1
+	ActionRoleCreated            = "role.created"             // D-199
+	ActionRoleUpdated            = "role.updated"             // D-199: nama atau cakupan
+	ActionRoleDeactivated        = "role.deactivated"         // D-199
+	ActionRoleActivated          = "role.activated"           // D-199
 	// Tahap 9: API integrasi.
 	ActionServiceAccountCreated  = "service_account.created"
 	ActionServiceAccountDisabled = "service_account.disabled"

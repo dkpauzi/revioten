@@ -26,7 +26,7 @@ async function setupModels(page: Page): Promise<void> {
 test('varian model K-125 menang atas poin umum, model lain tetap umum', async ({ page }) => {
 	await logIn(page);
 	await setupModels(page);
-	const temporary = await createWorkAccount(page, 'PPAP Engineer laser', 'ppap.laser.e2e', ['template_maintainer']);
+	const temporary = await createWorkAccount(page, 'PPAP Engineer laser', 'ppap.laser.e2e', ['ppap_engineer']);
 	await logOut(page);
 	await logInFirstTime(page, 'ppap.laser.e2e', temporary, 'laser marking per model berbeda');
 	await page.evaluate(async () => {
