@@ -29,6 +29,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/product"
 	"github.com/dkpauzi/revioten/internal/review"
 	"github.com/dkpauzi/revioten/internal/settings"
+	"github.com/dkpauzi/revioten/internal/signature"
 	"github.com/dkpauzi/revioten/internal/storage"
 	"github.com/dkpauzi/revioten/internal/template"
 )
@@ -88,6 +89,7 @@ func TestPermissionsPerOperation(t *testing.T) {
 		Notifications:   notify.NewService(pool, checker, nil, notify.Config{}, nil),
 		Reviews:         review.NewService(pool, checker),
 		Inbox:           inbox.NewService(pool, checker),
+		Signatures:      signature.NewService(pool, checker, authSvc),
 	})
 
 	// Admin pertama, satu akun kerja tanpa peran (hanya hak dasar Viewer), dan
@@ -335,7 +337,7 @@ func TestPermissionsPerOperation(t *testing.T) {
 		"viewerPersonId": viewerInfo.PersonID,
 		"accountId":      viewerInfo.ID, "projectGroupId": group.ID, "customerId": cust.ID,
 		"modelGroupId": modelGroup.ID, "modelId": model.ID, "partNumberId": part.ID,
-		"processId": proc.ID, "documentTypeId": docTypes[0].ID, "cpTypeId": docTypes[2].ID, "documentNumberId": reg.Numbers[0].ID, "roleId": access.RolePFMEACPChecker, "event": "change_submitted", "serviceAccountId": "01900000-0000-7000-8000-000000000000", "tokenId": "01900000-0000-7000-8000-000000000001", "documentId": doc.ID, "rowId": doc.Rows[0].ID, "freeNumberId": reserved[1], "specialCodeId": specialCodes[0].ID,
+		"processId": proc.ID, "documentTypeId": docTypes[0].ID, "cpTypeId": docTypes[2].ID, "documentNumberId": reg.Numbers[0].ID, "roleId": access.RolePFMEACPChecker, "event": "change_submitted", "serviceAccountId": "01900000-0000-7000-8000-000000000000", "tokenId": "01900000-0000-7000-8000-000000000001", "requestId": "01900000-0000-7000-8000-000000000002", "documentId": doc.ID, "rowId": doc.Rows[0].ID, "freeNumberId": reserved[1], "specialCodeId": specialCodes[0].ID,
 		"changeTypeId": changeTypes[0].ID, "changeSourceId": sources[0].ID, "fourMCategoryId": categories[0].ID,
 		"formatTemplateId": pfmeaFormat.ID, "formatVersionId": pfmeaVersion.ID, "formSetId": formSet.ID, "formSetVersionId": formSet.Versions[0].ID, "pfdSheetId": formSet.Versions[0].PFD.FormatVersionID, "pfmeaSheetId": formSet.Versions[0].PFMEA.FormatVersionID, "cpSheetId": formSet.Versions[0].CP.FormatVersionID, "formatFieldId": pfmeaVersion.Fields[0].ID,
 		"freeProcessId": reflow.ID, "refDocId": refDoc.ID, "linkId": refDoc.Links[0].ID, "changeId": changeReq.ID, "triggerId": triggerID, "contentTypeId": contentTypeID, "sectionId": "01900000-0000-7000-8000-000000000000", "attachmentId": "01900000-0000-7000-8000-000000000000", "reviewId": "01900000-0000-7000-8000-000000000000", "yokotenId": "01900000-0000-7000-8000-000000000000", "targetId": "01900000-0000-7000-8000-000000000000", "processVersionId": iqcVersion.ID, "processTemplateId": iqcVersion.TemplateID, "subprocessId": iqcVersion.Subprocesses[0].ID,
@@ -559,6 +561,17 @@ func TestPermissionsPerOperation(t *testing.T) {
 		{http.MethodGet, "/api/v1/changes/{changeId}/attachments/{attachmentId}", "", http.StatusForbidden, http.StatusNotFound, http.StatusForbidden},
 		{http.MethodDelete, "/api/v1/changes/{changeId}/attachments/{attachmentId}", "", http.StatusForbidden, http.StatusNotFound, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/documents/{documentId}/changes", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		// Tanda tangan digital (D-198). Dokumen uji belum punya rute: kirim ditolak 422
+		// sesudah password benar. Permintaan palsu: 404 untuk semua.
+		{http.MethodPut, "/api/v1/customers/{customerId}/signature-mode", `{"mode":"digital"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodGet, "/api/v1/documents/{documentId}/signature-plan", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		{http.MethodGet, "/api/v1/documents/{documentId}/signature-requests", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		{http.MethodPost, "/api/v1/documents/{documentId}/signature-requests", `{"signers":[],"password":"perahu kertas di sungai jernih"}`, http.StatusForbidden, http.StatusUnprocessableEntity, http.StatusForbidden},
+		{http.MethodGet, "/api/v1/signature-requests", "", http.StatusOK, http.StatusOK, http.StatusOK},
+		{http.MethodGet, "/api/v1/signature-requests/{requestId}", "", http.StatusNotFound, http.StatusNotFound, http.StatusNotFound},
+		{http.MethodPost, "/api/v1/signature-requests/{requestId}/sign", `{"password":"x"}`, http.StatusNotFound, http.StatusNotFound, http.StatusNotFound},
+		{http.MethodPost, "/api/v1/signature-requests/{requestId}/reject", `{"reason":"x","password":"x"}`, http.StatusNotFound, http.StatusNotFound, http.StatusNotFound},
+		{http.MethodPost, "/api/v1/signature-requests/{requestId}/withdraw", "", http.StatusNotFound, http.StatusNotFound, http.StatusNotFound},
 		// Tahap 7. Dasbor untuk semua akun (L-2). Migrasi lewat E-10, yang dipegang engineer (D-69);
 		// mode migrasi mati (bawaan), jadi sesudah haknya lolos operasinya ditolak 422 (R-MIG-06).
 		{http.MethodGet, "/api/v1/metrics", "", http.StatusOK, http.StatusOK, http.StatusOK},

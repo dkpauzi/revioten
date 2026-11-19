@@ -315,3 +315,30 @@ func (s *Service) ChangePassword(ctx context.Context, actor access.Actor, curren
 	}
 	return token, nil
 }
+
+// ConfirmPassword memeriksa ulang password akun actor sebelum aksi penting,
+// misalnya tanda tangan digital (D-198, brief bagian 8: masuk ulang saat
+// menandatangani). Password salah dihitung seperti gagal login, supaya sesi
+// yang dicuri tidak bisa dipakai untuk menebak password tanpa batas.
+func (s *Service) ConfirmPassword(ctx context.Context, actor access.Actor, password string) error {
+	if err := s.authz.Authorize(ctx, actor, access.ManageOwnAccount, access.Resource{AccountID: actor.AccountID}); err != nil {
+		return err
+	}
+	acc, err := s.q.GetAccountByID(ctx, actor.AccountID)
+	if err != nil {
+		return fmt.Errorf("mengambil akun: %w", err)
+	}
+	match, _, err := verifyPassword(password, acc.PasswordHash)
+	if err != nil {
+		return fmt.Errorf("memeriksa password akun %s: %w", acc.Login, err)
+	}
+	if match {
+		return nil
+	}
+	if err := s.recordFailure(ctx, acc.ID, acc.Login, acc.Kind, actor, audit.ActionPasswordConfirmFailed, s.now()); err != nil {
+		return err
+	}
+	return &problem.ValidationError{Problems: []problem.Problem{{
+		Field: "password", Code: problem.Incorrect, Message: "The password is not correct.",
+	}}}
+}

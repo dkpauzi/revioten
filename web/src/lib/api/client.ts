@@ -135,6 +135,11 @@ import type {
 	PasswordChange,
 	RoleGrant,
 	RoleList,
+	SignaturePlan,
+	SignatureRequest,
+	SignatureRequestList,
+	SignatureOverview,
+	SignatureSend,
 	NewRole,
 	RoleChange,
 	Session,
@@ -1334,6 +1339,53 @@ export function updateRole(roleId: string, change: RoleChange, fetchFn: typeof f
 // setRoleActive memanggil PUT /api/v1/roles/{id}/active.
 export function setRoleActive(roleId: string, active: boolean, fetchFn: typeof fetch = fetch): Promise<ApiResult<Role>> {
 	return call<Role>(fetchFn, itemPath('roles', roleId) + '/active', jsonRequest('PUT', { active }));
+}
+
+// Fase 3: tanda tangan digital (D-198, D-203, D-204).
+
+// setCustomerSignatureMode memanggil PUT /api/v1/customers/{id}/signature-mode (A-2).
+export function setCustomerSignatureMode(customerId: string, mode: 'digital' | 'wet_only', fetchFn: typeof fetch = fetch): Promise<ApiResult<Customer>> {
+	return call<Customer>(fetchFn, itemPath('customers', customerId) + '/signature-mode', jsonRequest('PUT', { mode }));
+}
+
+// getSignaturePlan memanggil GET /api/v1/documents/{id}/signature-plan (E-5).
+export function getSignaturePlan(documentId: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<SignaturePlan>> {
+	return call<SignaturePlan>(fetchFn, itemPath('documents', documentId) + '/signature-plan', { method: 'GET' });
+}
+
+// listDocumentSignatureRequests memanggil GET /api/v1/documents/{id}/signature-requests.
+export function listDocumentSignatureRequests(documentId: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<SignatureRequestList>> {
+	return call<SignatureRequestList>(fetchFn, itemPath('documents', documentId) + '/signature-requests', { method: 'GET' });
+}
+
+// sendForSignature memanggil POST /api/v1/documents/{id}/signature-requests.
+export function sendForSignature(documentId: string, input: SignatureSend, fetchFn: typeof fetch = fetch): Promise<ApiResult<SignatureRequest>> {
+	return call<SignatureRequest>(fetchFn, itemPath('documents', documentId) + '/signature-requests', jsonRequest('POST', input));
+}
+
+// listSignatureRequests memanggil GET /api/v1/signature-requests.
+export function listSignatureRequests(fetchFn: typeof fetch = fetch): Promise<ApiResult<SignatureOverview>> {
+	return call<SignatureOverview>(fetchFn, '/api/v1/signature-requests', { method: 'GET' });
+}
+
+// getSignatureRequest memanggil GET /api/v1/signature-requests/{id}.
+export function getSignatureRequest(requestId: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<SignatureRequest>> {
+	return call<SignatureRequest>(fetchFn, itemPath('signature-requests', requestId), { method: 'GET' });
+}
+
+// signSignatureRequest memanggil POST /api/v1/signature-requests/{id}/sign.
+export function signSignatureRequest(requestId: string, password: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<SignatureRequest>> {
+	return call<SignatureRequest>(fetchFn, itemPath('signature-requests', requestId) + '/sign', jsonRequest('POST', { password }));
+}
+
+// rejectSignatureRequest memanggil POST /api/v1/signature-requests/{id}/reject.
+export function rejectSignatureRequest(requestId: string, reason: string, password: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<SignatureRequest>> {
+	return call<SignatureRequest>(fetchFn, itemPath('signature-requests', requestId) + '/reject', jsonRequest('POST', { reason, password }));
+}
+
+// withdrawSignatureRequest memanggil POST /api/v1/signature-requests/{id}/withdraw.
+export function withdrawSignatureRequest(requestId: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<SignatureRequest>> {
+	return call<SignatureRequest>(fetchFn, itemPath('signature-requests', requestId) + '/withdraw', { method: 'POST' });
 }
 
 // D-194: email notifikasi.

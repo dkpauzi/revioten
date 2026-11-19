@@ -13,6 +13,7 @@
 	import OrderPanel from '#lib/documents/OrderPanel.svelte';
 	import PastePanel from '#lib/documents/PastePanel.svelte';
 	import RevisionsPanel from '#lib/documents/RevisionsPanel.svelte';
+	import SignaturePanel from '#lib/documents/SignaturePanel.svelte';
 	import PrintPanel from '#lib/documents/PrintPanel.svelte';
 	import TemplateLinksPanel from '#lib/documents/TemplateLinksPanel.svelte';
 	import MigrationPanel from '#lib/documents/MigrationPanel.svelte';
@@ -35,7 +36,8 @@
 	let failure = $state('');
 	let fieldErrors = $state<Record<string, string>>({});
 	// Dokumen tanpa draft terbuka hanya bisa dibaca (M5.4): isinya berubah lewat perubahan.
-	let canEdit = $derived(can('E-2') && doc?.status !== 'released');
+	// Draft yang sedang atau sudah ditandatangani digital terkunci (D-198).
+	let canEdit = $derived(can('E-2') && doc?.status !== 'released' && !doc?.signing);
 
 	let typedHeader = $derived(format ? typedFields(format.fields, 'header') : []);
 
@@ -344,6 +346,7 @@
 	{/if}
 
 	<MigrationPanel {doc} onchanged={(d) => (doc = d)} />
+	<SignaturePanel {doc} onchanged={() => doc && load(doc.id)} />
 	<RevisionsPanel {doc} onreleased={(d) => (doc = d)} />
 	<PrintPanel {doc} />
 	<TemplateLinksPanel {doc} />

@@ -31,6 +31,8 @@ const groups: { id: MenuGroup['id']; label: MessageKey; entries: Entry[] }[] = [
 			{ href: '/documents', label: 'navDocuments', permission: 'L-4' },
 			{ href: '/changes', label: 'navChanges', permission: 'L-4' },
 			{ href: '/yokoten', label: 'navYokoten', permission: 'L-4' },
+			// Tanda tangan digital (D-198): yang menunggu saya, yang saya kirim.
+			{ href: '/signatures', label: 'navSignatures', permission: 'L-4' },
 			// Dasbor ukuran (M7.7): semua akun (L-2).
 			{ href: '/dashboard', label: 'navDashboard' },
 			// Dokumen terbit untuk semua akun (L-1, D-195).

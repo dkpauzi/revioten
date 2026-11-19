@@ -1,7 +1,7 @@
 # Rancangan · Fase 3: tanda tangan digital (D-198, D-203)
 
 - **Dibuat:** 20 November 2026.
-- **Status:** **usulan, menunggu persetujuan pemilik.** Belum ada kode. D-198 meminta desain layar lebih dulu; desainnya ada di kanvas "Desain UI Sistem PFD PFMEA CP" (https://claude.ai/artifact/UzNGNNQq69sPLzHS9fQPAU), baris "Digital signature": SendForSignature, SignDocument, SignatureStatus.
+- **Status:** **disetujui 20 November 2026** dengan jawaban pemilik di bagian 4 (D-203 diperbarui, D-204). Dibangun di fase 3. D-198 meminta desain layar lebih dulu; desainnya ada di kanvas "Desain UI Sistem PFD PFMEA CP" (https://claude.ai/artifact/UzNGNNQq69sPLzHS9fQPAU), baris "Digital signature": SendForSignature, SignDocument, SignatureStatus.
 - **Keputusan yang dipakai:** D-198 (tanda tangan digital boleh, tanpa sertifikat; cetak basah tetap ada; tanggal revisi tidak ikut tanggal cetak), D-199 (hak S-1), D-203 (Engineer dipilih saat mengajukan), D-47 dan D-116 (rute default customer), D-49 (urutan berurutan), D-52 (tanggal tanda tangan per slot, saklar), R-APR-07 sampai R-APR-12, R-REV-06, R-REV-08.
 
 ## 1. Alur
@@ -24,7 +24,7 @@ Draft ──Ready to print──► Draft siap
               │
               ▼
       Ditandatangani lengkap ──► Catat rilis (hak E-7, bukan penyusun) ──► Released
-                                  tanpa scan; tanggal rilis = tanggal tanda tangan terakhir (usulan)
+                                  tanpa scan; tanggal rilis = tanggal dikirim (D-204)
 ```
 
 Cara **Basah** tetap seperti sekarang: cetak untuk tanda tangan, unggah scan, catat rilis.
@@ -55,12 +55,14 @@ Cara **Basah** tetap seperti sekarang: cetak untuk tanda tangan, unggah scan, ca
 5. **Master data → Customers:** kolom cara tanda tangan.
 6. **Cetakan:** blok tanda tangan dengan "Signed digitally" dan tanggal.
 
-## 4. Pertanyaan untuk pemilik
+## 4. Jawaban pemilik (20 November 2026)
 
-1. **Kolom Engineer.** Di cover TR-020 slot kedua (Checked) berjudul cetak **"Engineer"**. Apakah "kolom Engineer" yang Anda maksud adalah slot ini? Usulan: ya, slot Checked boleh dipilih dari PPAP Engineer atau Project Leader (sekarang hanya Project Engineer atau Project Leader), dan orang yang dipilih juga menjadi "engineer" set di daftar review 3 tahun.
-2. **Tanggal rilis digital.** Usulan: tanggal tanda tangan terakhir. Alternatif: tanggal dikirim untuk tanda tangan (seperti cetak basah, R-REV-08).
-3. **Slot Prepared.** Usulan: pengirim otomatis menjadi Prepared dan tanda tangannya tercatat saat mengirim.
-4. **Penandatanganan berurutan atau bebas urutan** untuk slot Approved. Usulan: berurutan (D-49).
+1. **Kolom Engineer = slot Prepared** (judul cetak "Process. Eng"). Prepared dipilih: pengirim, atau Project Leader tingkat Leader (jabatan Project Engineer) Project Group customer itu.
+2. **Slot Checked** (judul cetak "Engineer") hanya Project Leader tingkat Leader (jabatan Project Engineer) atau tingkat Supervisor (jabatan Project Leader). Bila Project Leader tingkat Leader menjadi Prepared, Checked otomatis Project Leader tingkat Supervisor.
+3. **Tanggal rilis** revisi bertanda tangan digital = tanggal dikirim untuk tanda tangan (WIB). Tidak berubah saat dicetak ulang (D-204).
+4. **Berurutan**, sesuai D-49.
+
+Aturan T-3 dan T-10 di atas mengikuti jawaban ini. Orang Prepared menjadi "engineer" set di daftar review 3 tahun dan laporan kinerja.
 
 ## 5. Urutan pembangunan (usulan, satu langkah per sesi bila panjang)
 

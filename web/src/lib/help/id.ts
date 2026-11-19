@@ -317,7 +317,7 @@ export const helpId: HelpContent = {
 			id: 'printing',
 			title: 'Cetak dan rilis',
 			who: 'PPAP Engineer, Project Leader, Admin untuk layout',
-			intro: 'Cetakan berasal dari isi yang sama dengan layar, dalam Excel atau PDF, A3 atau A4 sesuai layout. Approval tetap tanda tangan basah di kertas.',
+			intro: 'Cetakan berasal dari isi yang sama dengan layar, dalam Excel atau PDF, A3 atau A4 sesuai layout. Approval berupa tanda tangan basah di kertas, atau tanda tangan digital (lihat Tanda tangan digital).',
 			steps: [
 				'Buka dokumen. Di {printTitle}, pilih revisi dan {printPurpose}, lalu tekan {printExcel} atau {printPdf}.',
 				'Untuk approval di kertas, cetak {printPurpose_signature}. Tanggal rilis terisi, dan cover memuat slot approval dari rute.',
@@ -328,6 +328,24 @@ export const helpId: HelpContent = {
 			tips: ['Draft selalu dicetak dengan UNCONTROLLED COPY.', 'Baris yang berubah di revisi yang dicetak diberi segitiga dengan nomor revisi.', 'PDF butuh Chrome atau Edge di komputer server; Excel selalu bisa.'],
 			image: 'printing',
 			imageAlt: 'Bagian Cetak sebuah dokumen dengan tujuan cetak dan tombol Excel dan PDF.'
+		},
+		{
+			id: 'signatures',
+			title: 'Tanda tangan digital',
+			who: 'PPAP Engineer dan Project Leader mengirim; orang di rute menandatangani; PPAP Engineer lain mencatat rilis',
+			intro: 'Penanda tangan rute approval menandatangani di sistem, bukan di kertas (D-198). Isi dibekukan saat dikirim, tanda tangan berurutan menurut rute, dan tanggal revisinya adalah tanggal dikirim.',
+			steps: [
+				'Buka draft. Di {sigTitle}, pilih penanda tangan setiap slot: {sigPreparedHint} Untuk slot Engineer, {sigCheckedHint} Slot yang dipegang satu orang sudah terisi.',
+				'Ketik password Anda lalu tekan {sigSend}. Draft terkunci dan penanda tangan pertama mendapat email dan tugas di Home.',
+				'Setiap penanda tangan membuka {navGroupDocuments}, lalu {navSignatures}, menekan {sigOpenSign}, membaca dokumennya, mengetik password, lalu menekan {signButton}. {signReject} butuh alasan dan membuka draft lagi.',
+				'Pengirim bisa menekan {sigWithdraw} selama tanda tangan belum lengkap.',
+				'Bila semua slot sudah ditandatangani, PPAP Engineer lain membuka dokumen dan mencatat rilis di {revisions}. Scan tidak perlu.'
+			],
+			tips: [
+				'Admin menentukan per customer di {navGroupMaster}, lalu {navCustomers}: {signatureModeDigital} atau {signatureModeWetOnly}. Customer wajib basah tetap memakai alur kertas di {printTitle}.',
+				'Setiap dokumen, juga yang sudah ditandatangani digital, tetap bisa dicetak untuk tanda tangan basah. Tanggal revisi di cetakan tidak pernah menjadi tanggal cetak.',
+				'Tanda tangan tidak bisa diubah atau dihapus, juga oleh admin.'
+			]
 		},
 		{
 			id: 'migration',

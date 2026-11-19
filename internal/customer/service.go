@@ -54,7 +54,7 @@ func (s *Service) List(ctx context.Context, actor access.Actor) ([]Customer, err
 		c := Customer{
 			ID: r.ID, Code: r.Code, Name: r.Name, ProjectGroupID: deref(r.ProjectGroupID),
 			ProjectGroupCode: deref(r.ProjectGroupCode), Active: r.Active, CreatedAt: r.CreatedAt.UTC(),
-			DefaultRouteID: deref(r.DefaultRouteID), DefaultRouteName: deref(r.DefaultRouteName),
+			DefaultRouteID: deref(r.DefaultRouteID), DefaultRouteName: deref(r.DefaultRouteName), SignatureMode: r.SignatureMode,
 			Codes: codes[r.ID],
 		}
 		list = append(list, c)
@@ -401,7 +401,7 @@ func get(ctx context.Context, q *db.Queries, id string) (Customer, error) {
 	return Customer{
 		ID: r.ID, Code: r.Code, Name: r.Name, ProjectGroupID: deref(r.ProjectGroupID),
 		ProjectGroupCode: deref(r.ProjectGroupCode), Active: r.Active, CreatedAt: r.CreatedAt.UTC(),
-		DefaultRouteID: deref(r.DefaultRouteID), DefaultRouteName: deref(r.DefaultRouteName),
+		DefaultRouteID: deref(r.DefaultRouteID), DefaultRouteName: deref(r.DefaultRouteName), SignatureMode: r.SignatureMode,
 		Codes: codes,
 	}, nil
 }

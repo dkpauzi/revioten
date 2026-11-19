@@ -41,6 +41,9 @@ const (
 	EventTokenExpiring       = "token_expiring"
 	EventReviewDue           = "review_due"
 	EventReviewWaiting       = "review_waiting"
+	EventSignatureRequested  = "signature_requested"
+	EventSignatureRejected   = "signature_rejected"
+	EventSignatureCompleted  = "signature_completed"
 	EventTest                = "test"
 )
 
@@ -134,6 +137,12 @@ func (n *Notifier) dispatch(ctx context.Context, q *db.Queries, actor access.Act
 		return n.migrationWaiting(ctx, q, actor, e.TargetID)
 	case audit.ActionPeriodicReviewRecorded:
 		return n.reviewWaiting(ctx, q, actor, e.TargetID)
+	case audit.ActionSignatureSent, audit.ActionSignatureSigned:
+		return n.signatureRequested(ctx, q, actor, e.Details["request"])
+	case audit.ActionSignatureRejected:
+		return n.signatureRejected(ctx, q, actor, e.Details["request"])
+	case audit.ActionSignatureCompleted:
+		return n.signatureCompleted(ctx, q, actor, e.Details["request"])
 	}
 	return nil
 }
@@ -347,6 +356,68 @@ func (n *Notifier) reviewWaiting(ctx context.Context, q *db.Queries, actor acces
 		subject: fmt.Sprintf("[%s] Periodic review of set %s waits for confirmation", strings.ToUpper(r.CustomerCode), set),
 		body: fmt.Sprintf("%s recorded a periodic review with no change for the document set %s (reviewed on %s). Another person confirms it.\nReview berkala tanpa perubahan untuk set %s menunggu konfirmasi.",
 			r.RecordedBy, set, r.ReviewedOn.Time.Format(time.DateOnly), set) + n.link("/periodic-reviews"),
+	}
+	return enqueue(ctx, q, actor, m, people)
+}
+
+// signatureRequested memberi tahu penanda tangan berikutnya bahwa dokumen
+// menunggu tanda tangannya (D-198). Sesudah tanda tangan terakhir tidak ada
+// penanda tangan berikutnya, jadi tidak ada email.
+func (n *Notifier) signatureRequested(ctx context.Context, q *db.Queries, actor access.Actor, id string) error {
+	r, err := q.GetSignatureRequest(ctx, id)
+	if err != nil {
+		return err
+	}
+	if r.Status != "waiting" {
+		return nil
+	}
+	next, err := q.NextSignerOf(ctx, id)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	m := message{
+		event:   EventSignatureRequested,
+		subject: fmt.Sprintf("[%s] %s revision %d waits for your signature", r.CustomerCode, r.Number, r.Revision),
+		body: fmt.Sprintf("%s sent %s revision %d for signature. You sign as %q.\n%s revisi %d menunggu tanda tangan Anda sebagai %q.\n\nNote: %s",
+			r.SentBy, r.Number, r.Revision, next.PrintTitle, r.Number, r.Revision, next.PrintTitle, text(r.Note)) + n.link("/signatures/sign?id="+r.ID),
+	}
+	return enqueue(ctx, q, actor, m, []string{next.PersonID})
+}
+
+// signatureRejected memberi tahu pengirim bahwa permintaannya ditolak.
+func (n *Notifier) signatureRejected(ctx context.Context, q *db.Queries, actor access.Actor, id string) error {
+	r, err := q.GetSignatureRequest(ctx, id)
+	if err != nil {
+		return err
+	}
+	m := message{
+		event:   EventSignatureRejected,
+		subject: fmt.Sprintf("[%s] %s revision %d is rejected", r.CustomerCode, r.Number, r.Revision),
+		body: fmt.Sprintf("%s rejected %s revision %d. The draft is open for editing again.\n%s revisi %d ditolak; draft bisa diubah lagi.\n\nReason: %s",
+			actor.PersonName, r.Number, r.Revision, r.Number, r.Revision, text(r.RejectReason)) + n.link("/documents/view?id="+r.DocumentID),
+	}
+	return enqueue(ctx, q, actor, m, []string{r.SentByPersonID})
+}
+
+// signatureCompleted memberi tahu pencatat rilis customer itu bahwa semua
+// slot sudah bertanda tangan.
+func (n *Notifier) signatureCompleted(ctx context.Context, q *db.Queries, actor access.Actor, id string) error {
+	r, err := q.GetSignatureRequest(ctx, id)
+	if err != nil {
+		return err
+	}
+	people, err := q.PeopleWithPermission(ctx, db.PeopleWithPermissionParams{Permission: string(access.RecordRelease), CustomerID: &r.CustomerID})
+	if err != nil {
+		return err
+	}
+	m := message{
+		event:   EventSignatureCompleted,
+		subject: fmt.Sprintf("[%s] %s revision %d is signed and ready to release", r.CustomerCode, r.Number, r.Revision),
+		body: fmt.Sprintf("Every slot of %s revision %d is signed digitally. Record the release; no scan is needed.\nSemua slot %s revisi %d sudah ditandatangani digital; catat rilisnya tanpa scan.",
+			r.Number, r.Revision, r.Number, r.Revision) + n.link("/documents/view?id="+r.DocumentID),
 	}
 	return enqueue(ctx, q, actor, m, people)
 }

@@ -2,7 +2,7 @@
 -- ListCustomers mengambil semua customer beserta Project Group dan rute
 -- default-nya (M1.8), urut menurut kode.
 SELECT c.id, c.code, c.name, c.active, c.created_at, c.project_group_id, g.code AS project_group_code,
-       c.default_route_id, r.name AS default_route_name
+       c.default_route_id, r.name AS default_route_name, c.signature_mode
 FROM customers c
 LEFT JOIN project_groups g ON g.id = c.project_group_id
 LEFT JOIN approval_routes r ON r.id = c.default_route_id
@@ -10,7 +10,7 @@ ORDER BY c.code;
 
 -- name: GetCustomer :one
 SELECT c.id, c.code, c.name, c.active, c.created_at, c.project_group_id, g.code AS project_group_code,
-       c.default_route_id, r.name AS default_route_name
+       c.default_route_id, r.name AS default_route_name, c.signature_mode
 FROM customers c
 LEFT JOIN project_groups g ON g.id = c.project_group_id
 LEFT JOIN approval_routes r ON r.id = c.default_route_id

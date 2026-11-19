@@ -1103,6 +1103,33 @@ class DocumentSet {
 class Model <<lihat U5-A>> {
   eol_at (D-200)
 }
+class SignatureRequest <<D-198>> {
+  revision (draft yang dibekukan)
+  content_sha256
+  release_date = tanggal dikirim (D-204)
+  status : waiting, completed, rejected, withdrawn
+  route_name
+  reject_reason
+}
+class SignatureSlot <<tambah saja>> {
+  slot_order
+  stage : prepared, checked, approved
+  print_title
+  person (dipilih saat dikirim, D-203)
+}
+class Signature <<tambah saja>> {
+  signed_at
+  content_sha256
+  source_ip
+}
+SignatureRequest "*" -- "1" Revision : membekukan >
+SignatureRequest "1" *-- "2..10" SignatureSlot
+SignatureSlot "1" -- "0..1" Signature
+note bottom of SignatureRequest
+  Berurutan menurut rute (D-49). Selama waiting atau
+  completed, isi draft dikunci. Rilis digital tanpa scan
+  memakai permintaan yang completed.
+end note
 class PeriodicReview {
   ref : PRV-0001
   reviewed_on

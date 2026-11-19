@@ -152,6 +152,7 @@ type Customer struct {
 	Active           bool
 	DefaultRouteID   *string
 	DefaultFormSetID *string
+	SignatureMode    string
 }
 
 type CustomerCode struct {
@@ -268,6 +269,7 @@ type DocumentRevision struct {
 	Migrated               bool
 	ReadyAt                *time.Time
 	ReadyByPersonID        *string
+	SignatureRequestID     *string
 }
 
 type DocumentRow struct {
@@ -772,6 +774,51 @@ type Session struct {
 	CreatedAt  time.Time
 	LastSeenAt time.Time
 	ExpiresAt  time.Time
+}
+
+type Signature struct {
+	ID            string
+	RequestID     string
+	SlotOrder     int16
+	PersonID      string
+	AccountID     string
+	PersonName    string
+	PrintTitle    string
+	Stage         string
+	ContentSha256 string
+	SignedAt      time.Time
+	SourceIp      *string
+}
+
+type SignatureRequest struct {
+	ID               string
+	DocumentID       string
+	RevisionID       string
+	Revision         int16
+	CustomerID       string
+	RouteID          string
+	RouteName        string
+	Snapshot         string
+	ContentSha256    string
+	ReleaseDate      pgtype.Date
+	Note             *string
+	Status           string
+	SentByPersonID   string
+	SentByAccountID  string
+	SentAt           time.Time
+	ClosedAt         *time.Time
+	ClosedByPersonID *string
+	RejectReason     *string
+}
+
+type SignatureSlot struct {
+	RequestID    string
+	SlotOrder    int16
+	Stage        string
+	PrintTitle   string
+	PositionName string
+	PersonID     string
+	PersonName   string
 }
 
 type SpecialCode struct {

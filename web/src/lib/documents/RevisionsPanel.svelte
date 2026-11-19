@@ -19,11 +19,12 @@
 	// Baseline migrasi yang belum diverifikasi (M7.5): scan diunggah petugas
 	// migrasi (E-10), dan revisinya terbit lewat verifikasi hardcopy, bukan rilis biasa.
 	let openBaseline = $derived(doc.baseline !== undefined && doc.baseline.verified_at === undefined);
-	let canUpload = $derived(doc.status === 'draft' && can(openBaseline ? 'E-10' : 'E-7'));
+	// Draft bertanda tangan digital tidak butuh scan (D-198).
+	let canUpload = $derived(doc.status === 'draft' && !doc.signing && can(openBaseline ? 'E-10' : 'E-7'));
 	let canRelease = $derived(can('E-7') && doc.status === 'draft' && !openBaseline);
 	let draft = $derived(items.find((r) => r.status === 'draft'));
 	// Tanda siap cetak (D-202): hanya dicatat untuk laporan kinerja.
-	let canReady = $derived(can('E-2') && doc.status === 'draft');
+	let canReady = $derived(can('E-2') && doc.status === 'draft' && !doc.signing);
 
 	async function ready() {
 		message = '';
@@ -137,8 +138,8 @@
 		</form>
 	{/if}
 	{#if canRelease}
-		<p class="hint">{t('revisionReleaseHint')}</p>
-		<button type="button" class="primary" disabled={!draft?.scan_file_name} onclick={release}>{t('revisionRelease', { revision: String(doc.revision) })}</button>
+		<p class="hint">{t(doc.signing === 'completed' ? 'revisionSignedDigitally' : 'revisionReleaseHint')}</p>
+		<button type="button" class="primary" disabled={doc.signing === 'waiting' || (doc.signing !== 'completed' && !draft?.scan_file_name)} onclick={release}>{t('revisionRelease', { revision: String(doc.revision) })}</button>
 	{/if}
 
 	<h3>{t('diffTitle')}</h3>

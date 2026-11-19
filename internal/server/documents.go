@@ -127,6 +127,10 @@ func toAPIDocument(d document.Document) Document {
 		Set: make([]DocumentSetMember, 0, len(d.Set)), Sections: make([]DocumentSection, 0, len(d.Sections)),
 		Origin: DocumentOrigin(orNew(d.Origin)), ReleasedMigrated: d.ReleasedMigrated, Baseline: toAPIBaseline(d.Baseline),
 	}
+	if d.Signing != "" {
+		signing := DocumentSigning(d.Signing)
+		out.Signing = &signing
+	}
 	for _, s := range d.Sections {
 		section := DocumentSection{Id: s.ID, Key: s.Key, Position: s.Position, Name: s.Name, PartNumbers: make([]DocumentPartNumber, 0, len(s.PartNumbers))}
 		for _, p := range s.PartNumbers {

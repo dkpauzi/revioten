@@ -114,6 +114,106 @@ func (q *Queries) InboxScansReady(ctx context.Context) ([]InboxScansReadyRow, er
 	return items, nil
 }
 
+const inboxSignaturesCompleted = `-- name: InboxSignaturesCompleted :many
+SELECT sr.document_id, n.number, sr.revision, sr.customer_id, sr.closed_at
+FROM signature_requests sr
+JOIN document_revisions r ON r.id = sr.revision_id
+JOIN documents d ON d.id = sr.document_id
+JOIN document_numbers n ON n.id = d.document_number_id
+WHERE sr.status = 'completed' AND r.status = 'draft'
+ORDER BY sr.closed_at
+`
+
+type InboxSignaturesCompletedRow struct {
+	DocumentID string
+	Number     string
+	Revision   int16
+	CustomerID string
+	ClosedAt   *time.Time
+}
+
+// InboxSignaturesCompleted memberi draft yang sudah lengkap ditandatangani
+// digital dan menunggu rilis dicatat.
+func (q *Queries) InboxSignaturesCompleted(ctx context.Context) ([]InboxSignaturesCompletedRow, error) {
+	rows, err := q.db.Query(ctx, inboxSignaturesCompleted)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []InboxSignaturesCompletedRow{}
+	for rows.Next() {
+		var i InboxSignaturesCompletedRow
+		if err := rows.Scan(
+			&i.DocumentID,
+			&i.Number,
+			&i.Revision,
+			&i.CustomerID,
+			&i.ClosedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const inboxSignaturesWaiting = `-- name: InboxSignaturesWaiting :many
+SELECT sr.id, sr.document_id, n.number, sr.revision, c.code AS customer_code, sr.sent_at, sl.print_title
+FROM signature_requests sr
+JOIN signature_slots sl ON sl.request_id = sr.id
+JOIN documents d ON d.id = sr.document_id
+JOIN document_numbers n ON n.id = d.document_number_id
+JOIN customers c ON c.id = sr.customer_id
+WHERE sr.status = 'waiting' AND sl.person_id = $1
+  AND sl.slot_order = (SELECT min(x.slot_order) FROM signature_slots x
+                       WHERE x.request_id = sr.id
+                         AND NOT EXISTS (SELECT 1 FROM signatures g WHERE g.request_id = x.request_id AND g.slot_order = x.slot_order))
+ORDER BY sr.sent_at
+`
+
+type InboxSignaturesWaitingRow struct {
+	ID           string
+	DocumentID   string
+	Number       string
+	Revision     int16
+	CustomerCode string
+	SentAt       time.Time
+	PrintTitle   string
+}
+
+// InboxSignaturesWaiting memberi permintaan tanda tangan yang menunggu orang
+// ini sekarang (D-198): slotnya adalah slot belum bertanda tangan pertama.
+func (q *Queries) InboxSignaturesWaiting(ctx context.Context, personID string) ([]InboxSignaturesWaitingRow, error) {
+	rows, err := q.db.Query(ctx, inboxSignaturesWaiting, personID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []InboxSignaturesWaitingRow{}
+	for rows.Next() {
+		var i InboxSignaturesWaitingRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.DocumentID,
+			&i.Number,
+			&i.Revision,
+			&i.CustomerCode,
+			&i.SentAt,
+			&i.PrintTitle,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const inboxYokotenPending = `-- name: InboxYokotenPending :many
 SELECT y.id, y.seq, y.reason, t.customer_id,
        count(*)::int AS targets,

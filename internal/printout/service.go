@@ -115,10 +115,19 @@ func (s *Service) Print(ctx context.Context, actor access.Actor, id string, req 
 		return File{}, err
 	}
 	released := info.Status == "released"
+	// Tanda tangan digital yang lengkap untuk revisi ini (D-198), bila ada.
+	digital, err := s.q.CompletedSignatureOfRevision(ctx, info.ID)
+	signedDigitally := err == nil
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return File{}, err
+	}
 	need := map[string]access.Permission{PurposeDraft: access.ViewDrafts, PurposeSignature: access.PrintForSignature, PurposeReference: access.ExportReleased, PurposeControlled: access.ControlledCopies}[req.Purpose]
 	switch {
 	case need == "":
 		return File{}, invalid("purpose", problem.InvalidFormat, "Choose what the print is for.")
+	// Revisi bertanda tangan digital tetap boleh dicetak untuk tanda tangan
+	// basah, dengan tanggal revisinya sendiri (D-198).
+	case released && req.Purpose == PurposeSignature && signedDigitally:
 	case released && (req.Purpose == PurposeDraft || req.Purpose == PurposeSignature):
 		return File{}, invalid("purpose", problem.NotAllowed, "A released revision prints as a reference or a controlled copy.")
 	case !released && (req.Purpose == PurposeReference || req.Purpose == PurposeControlled):
@@ -152,6 +161,15 @@ func (s *Service) Print(ctx context.Context, actor access.Actor, id string, req 
 	if err != nil {
 		return File{}, err
 	}
+	if signedDigitally {
+		if err := s.digitalSlots(ctx, &in, digital.ID, req.Purpose == PurposeSignature); err != nil {
+			return File{}, err
+		}
+		if released {
+			in.ReleaseNote = fmt.Sprintf("Released %s, recorded by %s, record %s, signed digitally (sha256 %s)",
+				in.ReleaseDate, deref(info.ReleasedBy), info.ID[:8], digital.ContentSha256[:12])
+		}
+	}
 
 	var copyNumber *int32
 	err = db.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
@@ -164,8 +182,10 @@ func (s *Service) Print(ctx context.Context, actor access.Actor, id string, req 
 			copyNumber = &n
 			in.Watermark = fmt.Sprintf("CONTROLLED COPY No. %d", n)
 		}
-		if req.Purpose == PurposeSignature {
-			// Tanggal rilis diisi saat dicetak untuk tanda tangan (D-59).
+		if req.Purpose == PurposeSignature && !released && d.Signing == "" {
+			// Tanggal rilis diisi saat dicetak untuk tanda tangan (D-59). Draft
+			// yang dikirim untuk tanda tangan digital memakai tanggal kirimnya
+			// (D-204), jadi tidak ditimpa tanggal cetak.
 			// Tanggal kalender WIB, bukan zona komputer server (clock.Zone).
 			today := clock.Date(time.Now())
 			if err := q.SetRevisionReleaseDate(ctx, db.SetRevisionReleaseDateParams{ID: info.ID, ReleaseDate: pgtype.Date{Time: today, Valid: true}}); err != nil {
@@ -574,4 +594,24 @@ func (s *Service) ExportReleased(ctx context.Context, documentID string, revisio
 		return File{}, fmt.Errorf("menulis Excel: %w", err)
 	}
 	return File{Name: fmt.Sprintf("%s%s-export.xlsx", d.Number, in.RevisionLabel), ContentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", Body: body}, nil
+}
+
+// digitalSlots mengganti slot cetak dengan penanda tangan digital revisi itu
+// (D-198): nama orang yang menandatangani dan "Signed digitally" dengan
+// tanggalnya. Cetak untuk tanda tangan basah (wet) menulis nama tanpa
+// keterangan itu, supaya bisa ditandatangani dengan pena.
+func (s *Service) digitalSlots(ctx context.Context, in *Input, requestID string, wet bool) error {
+	slots, err := s.q.ListSignatureSlots(ctx, requestID)
+	if err != nil {
+		return fmt.Errorf("membaca tanda tangan: %w", err)
+	}
+	in.Slots = in.Slots[:0]
+	for _, sl := range slots {
+		slot := Slot{Title: sl.PrintTitle, Stage: sl.Stage, Names: []string{sl.PersonName}}
+		if !wet && sl.SignedAt != nil {
+			slot.Signed = "Signed digitally " + clock.Date(*sl.SignedAt).Format(time.DateOnly)
+		}
+		in.Slots = append(in.Slots, slot)
+	}
+	return nil
 }

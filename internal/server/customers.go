@@ -106,6 +106,10 @@ func toAPICustomer(c customer.Customer) Customer {
 	if c.DefaultRouteID != "" {
 		out.DefaultRoute = &ApprovalRouteRef{Id: c.DefaultRouteID, Name: c.DefaultRouteName}
 	}
+	if c.SignatureMode != "" {
+		mode := CustomerSignatureMode(c.SignatureMode)
+		out.SignatureMode = &mode
+	}
 	for _, p := range c.Codes {
 		out.Codes = append(out.Codes, CustomerCode{Code: p.Code, ValidFrom: p.ValidFrom, ValidUntil: p.ValidUntil})
 	}

@@ -8,6 +8,7 @@
 		createCustomer,
 		listCustomers,
 		listProjectGroups,
+		setCustomerSignatureMode,
 		updateCustomer
 	} from '#lib/api/client.ts';
 	import type { ApiFailure } from '#lib/api/client.ts';
@@ -45,6 +46,22 @@
 	let rowErrors = $state<Record<string, string>>({});
 	let rowMessage = $state('');
 	let rowFailure = $state('');
+
+	// Cara tanda tangan customer (D-198): digital boleh, atau wajib basah.
+	async function setMode(customer: Customer, mode: 'digital' | 'wet_only') {
+		rowMessage = '';
+		rowFailure = '';
+		const result = await setCustomerSignatureMode(customer.id, mode);
+		if (!result.ok) {
+			rowFailure = failureText(result.error);
+			return;
+		}
+		customers = (customers ?? []).map((c) => (c.id === customer.id ? result.data : c));
+		rowMessage = t('customerSignatureModeSaved', {
+			code: customer.code,
+			mode: t(mode === 'digital' ? 'signatureModeDigital' : 'signatureModeWetOnly')
+		});
+	}
 
 	async function load() {
 		// Dua permintaan dijalankan bersamaan, lalu ditunggu keduanya.
@@ -244,6 +261,7 @@
 							<th>{t('customerName')}</th>
 							<th>{t('customerProjectGroup')}</th>
 							<th>{t('customerStatus')}</th>
+							<th>{t('customerSignatureMode')}</th>
 							<th>{t('customerPreviousCodes')}</th>
 							<th>{t('customerCreated')}</th>
 							{#if canEdit}
@@ -295,6 +313,20 @@
 									<td>{customer.project_group?.code ?? t('customerProjectGroupNone')}</td>
 									<td>{customer.active ? t('customerStatusActive') : t('customerStatusInactive')}</td>
 								{/if}
+								<td>
+									{#if canEdit}
+										<select
+											aria-label={t('customerSignatureModeFor', { code: customer.code })}
+											value={customer.signature_mode ?? 'digital'}
+											onchange={(event) => setMode(customer, event.currentTarget.value as 'digital' | 'wet_only')}
+										>
+											<option value="digital">{t('signatureModeDigital')}</option>
+											<option value="wet_only">{t('signatureModeWetOnly')}</option>
+										</select>
+									{:else}
+										{t(customer.signature_mode === 'wet_only' ? 'signatureModeWetOnly' : 'signatureModeDigital')}
+									{/if}
+								</td>
 								<td>{previousCodes(customer)}</td>
 								<td>{formatDateTime(customer.created_at)}</td>
 								{#if canEdit}

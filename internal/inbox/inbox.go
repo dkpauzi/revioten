@@ -24,6 +24,7 @@ const (
 	KindReview        = "review"         // set dokumen jatuh tempo review berkala (E-3)
 	KindConfirmReview = "confirm_review" // catatan review menunggu konfirmasi (V-1)
 	KindYokoten       = "yokoten"        // target yokoten belum diputuskan (E-4)
+	KindSign          = "sign"           // dokumen menunggu tanda tangan digital orang ini (S-1, D-198)
 )
 
 // Task adalah satu pekerjaan yang menunggu.
@@ -73,6 +74,18 @@ func (s *Service) Tasks(ctx context.Context, actor access.Actor) ([]Task, int, e
 			out = append(out, t)
 			*count++
 		}
+	}
+
+	// Tanda tangan digital yang menunggu orang ini: paling atas, karena
+	// orang berikutnya di rute menunggunya (D-49).
+	signs, err := s.q.InboxSignaturesWaiting(ctx, actor.PersonID)
+	if err != nil {
+		return nil, 0, fmt.Errorf("membaca tanda tangan: %w", err)
+	}
+	signCount := 0
+	for _, r := range signs {
+		add(Task{Kind: KindSign, Title: fmt.Sprintf("%s rev %02d", r.Number, r.Revision),
+			Detail: fmt.Sprintf("%s · %s", strings.ToUpper(r.CustomerCode), r.PrintTitle), Link: "/signatures/sign?id=" + r.ID, At: r.SentAt}, &signCount)
 	}
 
 	// Review berkala yang jatuh tempo: yang paling mendesak dulu.
@@ -135,6 +148,21 @@ func (s *Service) Tasks(ctx context.Context, actor access.Actor) ([]Task, int, e
 		at := time.Time{}
 		if r.ScanUploadedAt != nil {
 			at = *r.ScanUploadedAt
+		}
+		add(Task{Kind: KindRelease, Title: fmt.Sprintf("%s rev %02d", r.Number, r.Revision), Link: "/documents/view?id=" + r.DocumentID, At: at}, &n)
+	}
+	// Draft yang lengkap ditandatangani digital juga menunggu rilis (D-198).
+	signed, err := s.q.InboxSignaturesCompleted(ctx)
+	if err != nil {
+		return nil, 0, fmt.Errorf("membaca tanda tangan lengkap: %w", err)
+	}
+	for _, r := range signed {
+		if !can(access.RecordRelease, r.CustomerID) {
+			continue
+		}
+		at := time.Time{}
+		if r.ClosedAt != nil {
+			at = *r.ClosedAt
 		}
 		add(Task{Kind: KindRelease, Title: fmt.Sprintf("%s rev %02d", r.Number, r.Revision), Link: "/documents/view?id=" + r.DocumentID, At: at}, &n)
 	}

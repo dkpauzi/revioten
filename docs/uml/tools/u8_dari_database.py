@@ -46,9 +46,10 @@ GROUPS = [
     ("U8-G-dokumen", "Dokumen, baris, bagian per PCB, dan cek PFMEA-CP", [
         "documents", "document_models", "document_part_numbers", "document_rows", "document_sections",
         "document_section_part_numbers", "document_point_exclusions", "document_template_modes", "pfmea_cp_checks"]),
-    ("U8-H-perubahan-revisi-yokoten", "Perubahan, revisi, rilis, dan yokoten", [
+    ("U8-H-perubahan-revisi-yokoten", "Perubahan, revisi, rilis, yokoten, dan tanda tangan digital", [
         "changes", "change_documents", "change_attachments", "change_impacts", "document_revisions",
-        "yokotens", "yokoten_targets", "yokoten_target_documents"]),
+        "yokotens", "yokoten_targets", "yokoten_target_documents",
+        "signature_requests", "signature_slots", "signatures"]),
     ("U8-I-cetak-dan-migrasi", "Cetak, layout, dan migrasi dokumen lama", [
         "print_layouts", "customer_print_layouts", "print_logs", "document_baselines", "document_history_entries"]),
     ("U8-J-integrasi-dan-notifikasi", "API integrasi dan email notifikasi", [

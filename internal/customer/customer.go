@@ -19,6 +19,8 @@ type Customer struct {
 	// Admin (E-39, D-116).
 	DefaultRouteID   string
 	DefaultRouteName string
+	// SignatureMode: digital atau wet_only (D-198).
+	SignatureMode string
 	// Active false berarti customer dinonaktifkan. Customer tidak pernah dihapus (E-09).
 	Active    bool
 	CreatedAt time.Time // selalu UTC

@@ -324,6 +324,8 @@ type Deps struct {
 	Reviews ReviewService
 	// Inbox adalah daftar "Waiting for you" di Home (D-202).
 	Inbox InboxService
+	// Signatures adalah tanda tangan digital (D-198).
+	Signatures SignatureService
 	// Logger untuk log server. Bila nil, dipakai slog.Default().
 	Logger *slog.Logger
 }
@@ -344,7 +346,7 @@ func NewHandler(ui fs.FS, deps Deps) http.Handler {
 		audit: deps.Audit, products: deps.Products, processes: deps.Processes,
 		numbering: deps.Numbering, changes: deps.Changes, approval: deps.Approval, settings: deps.Settings,
 		templates: deps.Templates, processTemplates: deps.ProcessTemplates, documents: deps.Documents, refDocs: deps.RefDocs, changeRequests: deps.ChangeRequests, printing: deps.Printing,
-		migration: deps.Migration, metrics: deps.Metrics, reviews: deps.Reviews, inbox: deps.Inbox, roles: deps.Roles,
+		migration: deps.Migration, metrics: deps.Metrics, reviews: deps.Reviews, inbox: deps.Inbox, signatures: deps.Signatures, roles: deps.Roles,
 		serviceAccounts: deps.ServiceAccounts, notifications: deps.Notifications, log: log,
 	}
 
@@ -414,6 +416,7 @@ type apiServer struct {
 	metrics          MetricsService
 	reviews          ReviewService
 	inbox            InboxService
+	signatures       SignatureService
 	roles            RoleService
 	serviceAccounts  ServiceAccountService
 	notifications    NotificationService

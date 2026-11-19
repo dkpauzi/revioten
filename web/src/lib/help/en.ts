@@ -317,7 +317,7 @@ export const helpEn: HelpContent = {
 			id: 'printing',
 			title: 'Print and release',
 			who: 'PPAP Engineer, Project Leader, Admin for layouts',
-			intro: 'Prints come from the same content as the screen, in Excel or PDF, A3 or A4 as the layout says. Approval stays a wet signature on paper.',
+			intro: 'Prints come from the same content as the screen, in Excel or PDF, A3 or A4 as the layout says. Approval is a wet signature on paper, or a digital signature (see Digital signature).',
 			steps: [
 				'Open the document. Under {printTitle}, choose the revision and the {printPurpose}, then press {printExcel} or {printPdf}.',
 				'For the paper approval, print {printPurpose_signature}. The release date is filled in, and the cover carries the approval slots of the route.',
@@ -328,6 +328,24 @@ export const helpEn: HelpContent = {
 			tips: ['Drafts always print with UNCONTROLLED COPY.', 'Rows changed in the printed revision carry a triangle with the revision number.', 'PDF needs Chrome or Edge on the server computer; Excel always works.'],
 			image: 'printing',
 			imageAlt: 'The Print section of a document with the purpose and the Excel and PDF buttons.'
+		},
+		{
+			id: 'signatures',
+			title: 'Digital signature',
+			who: 'PPAP Engineer and Project Leader send; the people of the route sign; another PPAP Engineer records the release',
+			intro: 'Signers of the approval route sign in the system instead of on paper (D-198). The content is frozen when it is sent, signing goes in route order, and the revision date is the date it was sent.',
+			steps: [
+				'Open the draft. Under {sigTitle}, choose who signs each slot: {sigPreparedHint} For the Engineer slot, {sigCheckedHint} Slots held by one person are filled in already.',
+				'Type your password and press {sigSend}. The draft is locked and the first signer gets an email and a task on Home.',
+				'Each signer opens {navGroupDocuments}, then {navSignatures}, presses {sigOpenSign}, reads the document, types the password, and presses {signButton}. {signReject} needs a reason and opens the draft again.',
+				'The sender can press {sigWithdraw} while signatures are still missing.',
+				'When every slot is signed, another PPAP Engineer opens the document and records the release under {revisions}. No scan is needed.'
+			],
+			tips: [
+				'The admin decides per customer under {navGroupMaster}, then {navCustomers}: {signatureModeDigital} or {signatureModeWetOnly}. Wet-only customers keep the paper flow under {printTitle}.',
+				'Every document, also one signed digitally, can still be printed for wet signature. The revision date on the print never becomes the print date.',
+				'Signatures cannot be changed or deleted, also not by the admin.'
+			]
 		},
 		{
 			id: 'migration',

@@ -37,6 +37,7 @@ const (
 	ActionLogout                 = "account.logout"
 	ActionPasswordChanged        = "account.password_changed"
 	ActionPasswordChangeFailed   = "account.password_change_failed"
+	ActionPasswordConfirmFailed  = "account.password_confirm_failed" // D-198: password salah saat menandatangani
 	ActionAccountCreated         = "account.created"
 	ActionRolesChanged           = "account.roles_changed"
 	ActionRolePermissionsChanged = "role.permissions_changed" // M8.1
@@ -44,6 +45,13 @@ const (
 	ActionRoleUpdated            = "role.updated"             // D-199: nama atau cakupan
 	ActionRoleDeactivated        = "role.deactivated"         // D-199
 	ActionRoleActivated          = "role.activated"           // D-199
+	// Fase 3: tanda tangan digital (D-198).
+	ActionSignatureSent      = "signature.sent"
+	ActionSignatureSigned    = "signature.signed"
+	ActionSignatureCompleted = "signature.completed"
+	ActionSignatureRejected  = "signature.rejected"
+	ActionSignatureWithdrawn = "signature.withdrawn"
+	ActionSignatureModeSet   = "customer.signature_mode_changed"
 	// Tahap 9: API integrasi.
 	ActionServiceAccountCreated  = "service_account.created"
 	ActionServiceAccountDisabled = "service_account.disabled"

@@ -152,8 +152,10 @@ func (s *Service) Release(ctx context.Context, actor access.Actor, id string) (D
 		if err != nil {
 			return err
 		}
-		if err := requireDraft(d); err != nil {
-			return err
+		// Draft yang sudah ditandatangani digital boleh dirilis, jadi hanya
+		// statusnya yang diperiksa di sini; tanda tangannya di bawah.
+		if d.Status != StatusDraft {
+			return problems(invalid("status", problem.NotAllowed, fmt.Sprintf("%s has no open draft.", d.Number)))
 		}
 		// Baseline migrasi terbit lewat verifikasi hardcopy, bukan rilis biasa (R-MIG-06).
 		if d.Baseline != nil && d.Baseline.VerifiedAt == nil {
@@ -171,21 +173,40 @@ func (s *Service) Release(ctx context.Context, actor access.Actor, id string) (D
 		if err != nil {
 			return fmt.Errorf("membaca draft: %w", err)
 		}
-		// Rilis dicatat sesudah scan bertanda tangan diunggah (M6.7, R-APR-02).
-		info, err := q.GetRevisionPrintInfo(ctx, db.GetRevisionPrintInfoParams{DocumentID: id, Revision: draft.Revision})
-		if err != nil {
-			return fmt.Errorf("membaca draft: %w", err)
-		}
-		if info.ScanSha256 == nil {
-			return problems(invalid("scan", problem.Required, "Upload the signed scan before recording the release."))
-		}
 		text, sum, err := makeSnapshot(d)
 		if err != nil {
 			return err
 		}
+		// Tanda tangan digital (D-198): rilis butuh semua slot bertanda tangan,
+		// dan isinya harus sama dengan isi yang ditandatangani. Tanpa scan.
+		var signatureID *string
+		switch d.Signing {
+		case SigningWaiting:
+			return problems(invalid("signatures", problem.NotAllowed, "The draft is still waiting for signatures."))
+		case SigningCompleted:
+			sig, err := q.ActiveSignatureRequestOfDraft(ctx, id)
+			if err != nil {
+				return fmt.Errorf("membaca tanda tangan: %w", err)
+			}
+			if sig.ContentSha256 != sum {
+				return problems(invalid("signatures", problem.NotAllowed, "The content differs from the signed content. Send it for signature again."))
+			}
+			signatureID = &sig.ID
+		default:
+			// Tanda tangan basah: rilis dicatat sesudah scan bertanda tangan
+			// diunggah (M6.7, R-APR-02).
+			info, err := q.GetRevisionPrintInfo(ctx, db.GetRevisionPrintInfoParams{DocumentID: id, Revision: draft.Revision})
+			if err != nil {
+				return fmt.Errorf("membaca draft: %w", err)
+			}
+			if info.ScanSha256 == nil {
+				return problems(invalid("scan", problem.Required, "Upload the signed scan before recording the release."))
+			}
+		}
 		snapshot := string(text)
 		n, err := q.ReleaseDocumentRevision(ctx, db.ReleaseDocumentRevisionParams{
 			ID: draft.ID, Snapshot: &snapshot, Sha256: &sum, PersonID: &actor.PersonID, AccountID: &actor.AccountID,
+			SignatureRequestID: signatureID,
 		})
 		if err != nil {
 			return err

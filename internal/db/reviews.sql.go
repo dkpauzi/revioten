@@ -297,8 +297,14 @@ SELECT docs.customer_id, cu.code AS customer_current_code, docs.customer_code, d
        -- Set EOL: semua model dokumennya sudah ditandai EOL (D-200).
        coalesce((SELECT bool_and(m.eol_at IS NOT NULL) FROM document_models dm JOIN models m ON m.id = dm.model_id
                  WHERE dm.document_id = ANY (array_agg(docs.id))), false)::boolean AS eol,
-       -- Engineer set: orang yang membuat dokumen pertama set itu (ASUMSI E-132).
-       coalesce((SELECT p.name FROM documents dx JOIN people p ON p.id = dx.created_by_person_id
+       -- Engineer set (D-203): orang Prepared ("Process. Eng") di tanda tangan
+       -- digital lengkap terakhir dokumen set itu; bila belum ada, orang yang
+       -- membuat dokumen pertama set itu.
+       coalesce((SELECT sl.person_name FROM signature_requests sr
+                 JOIN signature_slots sl ON sl.request_id = sr.id AND sl.stage = 'prepared'
+                 WHERE sr.document_id = ANY (array_agg(docs.id)) AND sr.status = 'completed'
+                 ORDER BY sr.closed_at DESC LIMIT 1),
+                (SELECT p.name FROM documents dx JOIN people p ON p.id = dx.created_by_person_id
                  WHERE dx.id = ANY (array_agg(docs.id)) ORDER BY dx.created_at LIMIT 1), '')::text AS engineer
 FROM docs JOIN customers cu ON cu.id = docs.customer_id
 GROUP BY docs.customer_id, cu.code, docs.customer_code, docs.sequence

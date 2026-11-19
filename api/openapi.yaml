@@ -1502,6 +1502,27 @@ paths:
                 $ref: '#/components/schemas/Customer'
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/customers/{customerId}/signature-mode:
+    put:
+      operationId: setCustomerSignatureMode
+      summary: Allow digital signatures for a customer, or require wet signatures (A-2, D-198)
+      parameters:
+        - $ref: '#/components/parameters/CustomerId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignatureModeChoice'
+      responses:
+        '200':
+          description: The customer with its signature mode.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/change-types/{changeTypeId}/approval-route:
     put:
       operationId: setChangeTypeRoute
@@ -2941,6 +2962,144 @@ paths:
                 $ref: '#/components/schemas/DocumentRevisionList'
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/documents/{documentId}/signature-plan:
+    get:
+      operationId: getSignaturePlan
+      summary: The slots of the document's route with the people who may sign each one (E-5, D-203)
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      responses:
+        '200':
+          description: The plan for "Send for signature".
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignaturePlan'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/documents/{documentId}/signature-requests:
+    get:
+      operationId: listDocumentSignatureRequests
+      summary: Signature requests of one document, newest first (L-4, D-198)
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      responses:
+        '200':
+          description: The requests.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignatureRequestList'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: sendForSignature
+      summary: Send the open draft for digital signature (E-5, D-198, D-203, D-204)
+      description: >-
+        Freezes the content with SHA-256 and the route. The release date becomes today's date (WIB). The sender
+        re-enters the password; when the sender is the Prepared signer, that signature is recorded at once.
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignatureSend'
+      responses:
+        '201':
+          description: The new request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignatureRequest'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/signature-requests:
+    get:
+      operationId: listSignatureRequests
+      summary: Signature requests waiting for me, sent by me, and signed ones waiting for release (D-198)
+      responses:
+        '200':
+          description: The overview.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignatureOverview'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/signature-requests/{requestId}:
+    get:
+      operationId: getSignatureRequest
+      summary: One signature request with its slots (L-4)
+      parameters:
+        - $ref: '#/components/parameters/SignatureRequestId'
+      responses:
+        '200':
+          description: The request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignatureRequest'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/signature-requests/{requestId}/sign:
+    post:
+      operationId: signSignatureRequest
+      summary: Sign the slot that waits for me (S-1); the password is re-entered (D-198)
+      parameters:
+        - $ref: '#/components/parameters/SignatureRequestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordConfirmation'
+      responses:
+        '200':
+          description: The request after signing.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignatureRequest'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/signature-requests/{requestId}/reject:
+    post:
+      operationId: rejectSignatureRequest
+      summary: Reject the request when my signature is awaited (S-1); the draft opens again
+      parameters:
+        - $ref: '#/components/parameters/SignatureRequestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignatureRejection'
+      responses:
+        '200':
+          description: The rejected request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignatureRequest'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/signature-requests/{requestId}/withdraw:
+    post:
+      operationId: withdrawSignatureRequest
+      summary: Withdraw a waiting request (the sender, E-5); the draft opens again
+      parameters:
+        - $ref: '#/components/parameters/SignatureRequestId'
+      responses:
+        '200':
+          description: The withdrawn request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignatureRequest'
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/inbox:
     get:
       operationId: getInbox
@@ -4114,6 +4273,12 @@ components:
       required: true
       schema:
         type: string
+    SignatureRequestId:
+      name: requestId
+      in: path
+      required: true
+      schema:
+        type: string
     RowId:
       name: rowId
       in: path
@@ -4224,6 +4389,10 @@ components:
           $ref: '#/components/schemas/ApprovalRouteRef'
         project_group:
           $ref: '#/components/schemas/ProjectGroupRef'
+        signature_mode:
+          type: string
+          enum: [digital, wet_only]
+          description: digital allows digital signatures; wet_only requires wet signatures (D-198).
         active:
           type: boolean
           description: Customers are never deleted; inactive customers get no new models (E-09).
@@ -6317,13 +6486,205 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PerformanceTrendPoint'
+    SignatureModeChoice:
+      type: object
+      required: [mode]
+      properties:
+        mode:
+          type: string
+          enum: [digital, wet_only]
+    SignatureCandidate:
+      type: object
+      required: [person_id, name, position_key, position]
+      properties:
+        person_id:
+          type: string
+        name:
+          type: string
+        position_key:
+          type: string
+        position:
+          type: string
+    SignaturePlanSlot:
+      type: object
+      required: [order, stage, print_title, candidates]
+      properties:
+        order:
+          type: integer
+        stage:
+          type: string
+          enum: [prepared, checked, approved]
+        print_title:
+          type: string
+        candidates:
+          type: array
+          items:
+            $ref: '#/components/schemas/SignatureCandidate'
+    SignaturePlan:
+      type: object
+      required: [document_id, number, revision, mode, slots]
+      properties:
+        document_id:
+          type: string
+        number:
+          type: string
+        revision:
+          type: integer
+        mode:
+          type: string
+          enum: [digital, wet_only]
+        route:
+          $ref: '#/components/schemas/ApprovalRouteRef'
+        slots:
+          type: array
+          items:
+            $ref: '#/components/schemas/SignaturePlanSlot'
+    SignerChoice:
+      type: object
+      required: [slot, person_id]
+      properties:
+        slot:
+          type: integer
+        person_id:
+          type: string
+    SignatureSend:
+      type: object
+      required: [signers, password]
+      properties:
+        signers:
+          type: array
+          items:
+            $ref: '#/components/schemas/SignerChoice'
+        note:
+          type: string
+          maxLength: 1000
+        password:
+          type: string
+          format: password
+    PasswordConfirmation:
+      type: object
+      required: [password]
+      properties:
+        password:
+          type: string
+          format: password
+    SignatureRejection:
+      type: object
+      required: [reason, password]
+      properties:
+        reason:
+          type: string
+          maxLength: 1000
+        password:
+          type: string
+          format: password
+    SignatureSlot:
+      type: object
+      required: [order, stage, print_title, position, person_id, person_name]
+      properties:
+        order:
+          type: integer
+        stage:
+          type: string
+          enum: [prepared, checked, approved]
+        print_title:
+          type: string
+        position:
+          type: string
+        person_id:
+          type: string
+        person_name:
+          type: string
+        signed_at:
+          type: string
+          format: date-time
+    SignatureRequest:
+      type: object
+      required: [id, document_id, number, document_type, customer_id, customer_code, revision, route_name, content_sha256, release_date, status, sent_by, sent_by_id, sent_at, slots, next_slot, changes]
+      properties:
+        id:
+          type: string
+        document_id:
+          type: string
+        number:
+          type: string
+        document_type:
+          type: string
+        customer_id:
+          type: string
+        customer_code:
+          type: string
+        revision:
+          type: integer
+        route_name:
+          type: string
+        content_sha256:
+          type: string
+        release_date:
+          type: string
+          format: date
+          description: The date the request was sent (D-204); the revision date on every print.
+        note:
+          type: string
+        status:
+          type: string
+          enum: [waiting, completed, rejected, withdrawn]
+        sent_by:
+          type: string
+        sent_by_id:
+          type: string
+        sent_at:
+          type: string
+          format: date-time
+        closed_at:
+          type: string
+          format: date-time
+        closed_by:
+          type: string
+        reject_reason:
+          type: string
+        slots:
+          type: array
+          items:
+            $ref: '#/components/schemas/SignatureSlot'
+        next_slot:
+          type: integer
+          description: Order of the slot that waits; 0 when none.
+        changes:
+          type: array
+          items:
+            type: string
+    SignatureRequestList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SignatureRequest'
+    SignatureOverview:
+      type: object
+      required: [waiting, sent, to_release]
+      properties:
+        waiting:
+          type: array
+          items:
+            $ref: '#/components/schemas/SignatureRequest'
+        sent:
+          type: array
+          items:
+            $ref: '#/components/schemas/SignatureRequest'
+        to_release:
+          type: array
+          items:
+            $ref: '#/components/schemas/SignatureRequest'
     InboxTask:
       type: object
       required: [kind, title, link, days]
       properties:
         kind:
           type: string
-          enum: [verify, release, review, confirm_review, yokoten]
+          enum: [verify, release, review, confirm_review, yokoten, sign]
         title:
           type: string
         detail:
@@ -6473,6 +6834,10 @@ components:
       type: object
       required: [id, document_number_id, number, customer_id, customer_code, document_type, revision, status, form_set_version_id, form_set_name, format_version_id, models, part_numbers, header, header_version, rows, sections, set, created_at, updated_at, origin, released_migrated]
       properties:
+        signing:
+          type: string
+          enum: [waiting, completed]
+          description: The open draft is waiting for digital signatures or is fully signed; its content is locked (D-198).
         origin:
           type: string
           enum: [new, migrated]

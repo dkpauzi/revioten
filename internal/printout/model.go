@@ -37,6 +37,9 @@ type Slot struct {
 	Title string   // judul cetak, misalnya "QA / QC Mgr."
 	Stage string   // prepared, checked, atau approved
 	Names []string // pemegang jabatan; satu nama tercetak, lebih dari satu dibiarkan kosong untuk ditulis tangan
+	// Signed: "Signed digitally <tanggal>" untuk slot yang sudah ditandatangani
+	// digital (D-198); kosong untuk tanda tangan basah.
+	Signed string
 }
 
 // Name memberi nama yang dicetak di slot: satu pemegang, atau kosong.

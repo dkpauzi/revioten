@@ -406,3 +406,14 @@ Buka **Admin → Audit log**.
 | Belum diputuskan | Konfirmasi slot saat rilis (R-APR-10) dan pembekuan rute saat cetak (R-APR-11) |
 | Tahap 10 | Portal customer (latihan) |
 | M9.6 | Webhook (opsional, belum dibangun) |
+
+
+## Tanda tangan digital (fase 3, D-198)
+
+Belum masuk tur otomatis; test E2E `web/e2e/m6-signatures.test.ts` menjalankan alur ini.
+
+1. Admin: **Master data → Customers**, kolom **Signatures** customer itu **Digital allowed**. Pastikan customer punya rute default (**Approval routes**).
+2. Admin: **Admin → Accounts**, buat akun Project Leader (peran Project Leader), NPI Manager dan QA QC Manager (peran Manager). Di **Master data → Positions**, catat mereka sebagai pemegang jabatan Project Leader (Project Group customer), NPI Manager, dan QA QC Manager. Catat juga PPAP Engineer sebagai pemegang jabatan PPAP Engineer.
+3. PPAP Engineer: buka dokumen draft, bagian **Digital signature**. Pilih **Process. Eng** (diri sendiri atau Project Leader tingkat Leader) dan **Engineer** (Project Leader), ketik password, tekan **Send for digital signature**. Draft terkunci.
+4. Project Leader, NPI Manager, lalu QA QC Manager: **Documents → Signatures**, **Open and sign**, ketik password, **Sign**. Urutannya tidak bisa dilompati.
+5. PPAP Engineer lain: buka dokumen, bagian **Revisions**, **Record release of revision 0**, tanpa scan. Cetakannya menulis "Signed digitally" dengan tanggalnya.

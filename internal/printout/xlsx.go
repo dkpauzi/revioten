@@ -243,7 +243,7 @@ func writeData(f *excelize.File, name string, sh Sheet, st styles) error {
 			_ = f.SetCellValue(name, cell(start, row), s.Title)
 			_ = f.SetCellStyle(name, cell(start, row), cell(end, row), st.head)
 			_ = f.MergeCell(name, cell(start, row+1), cell(end, row+1))
-			sign := ""
+			sign := s.Signed
 			if sh.Layout.Cover {
 				sign = "Refer approval sheet"
 			}
@@ -376,7 +376,7 @@ func writeCover(f *excelize.File, name string, sh Sheet, st styles) error {
 			if i == len(sh.Slots)-1 {
 				end = cols
 			}
-			for r, v := range []string{s.Title, "", s.Name()} {
+			for r, v := range []string{s.Title, s.Signed, s.Name()} {
 				_ = f.MergeCell(name, cell(start, row+r), cell(end, row+r))
 				_ = f.SetCellValue(name, cell(start, row+r), v)
 				style := st.value

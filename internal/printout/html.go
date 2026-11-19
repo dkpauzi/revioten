@@ -70,7 +70,7 @@ tr { break-inside: avoid; }
     <tbody>{{range .History}}<tr><td>{{.No}}</td><td>{{.Date}}</td><td>{{.Revision}}</td><td>{{.Description}}</td></tr>{{end}}</tbody>
   </table>
   <p></p>
-  {{if .Slots}}<table class="slots"><tr>{{range .Slots}}<th>{{.Title}}</th>{{end}}</tr><tr>{{range .Slots}}<td class="sign"></td>{{end}}</tr><tr>{{range .Slots}}<td>{{.Name}}</td>{{end}}</tr></table>{{end}}
+  {{if .Slots}}<table class="slots"><tr>{{range .Slots}}<th>{{.Title}}</th>{{end}}</tr><tr>{{range .Slots}}<td class="sign">{{.Signed}}</td>{{end}}</tr><tr>{{range .Slots}}<td>{{.Name}}</td>{{end}}</tr></table>{{end}}
   <p></p>
   <table><tr><th>CUSTOMER APPROVAL</th></tr><tr><td class="approval"></td></tr></table>
   <div class="customer">{{.CustomerName}}</div>
@@ -78,7 +78,7 @@ tr { break-inside: avoid; }
 {{end}}
 <div class="top"><h1>{{.Title}}</h1><b>{{.Number}} {{.RevisionLabel}}</b></div>
 <table class="head"><tr>{{range $i, $p := .Header}}{{if and $i (eq (mod4 $i) 0)}}</tr><tr>{{end}}<td class="l">{{$p.Label}}</td><td>{{$p.Value}}</td>{{end}}</tr></table>
-{{if .Slots}}<table class="slots" style="margin-top:2mm"><tr>{{range .Slots}}<th>{{.Title}}</th>{{end}}</tr><tr>{{range .Slots}}<td class="sign">{{if $.Layout.Cover}}Refer approval sheet{{end}}</td>{{end}}</tr><tr>{{range .Slots}}<td>{{.Name}}</td>{{end}}</tr></table>{{end}}
+{{if .Slots}}<table class="slots" style="margin-top:2mm"><tr>{{range .Slots}}<th>{{.Title}}</th>{{end}}</tr><tr>{{range .Slots}}<td class="sign">{{if $.Layout.Cover}}Refer approval sheet{{else}}{{.Signed}}{{end}}</td>{{end}}</tr><tr>{{range .Slots}}<td>{{.Name}}</td>{{end}}</tr></table>{{end}}
 <table style="margin-top:2mm">
   <colgroup>{{if .Layout.RevisionMarks}}<col style="width:{{pct 0.35 .TotalWidth}}%">{{end}}{{range .Columns}}<col style="width:{{pct .Width $.TotalWidth}}%">{{end}}</colgroup>
   <thead>

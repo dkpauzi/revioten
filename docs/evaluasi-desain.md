@@ -2313,7 +2313,7 @@ Salin blok ini untuk setiap temuan baru.
 - **Asumsi sementara di kode (ASUMSI E-132):** (a).
 - **Menghambat milestone?** Tidak
 - **Status:** Diputuskan (D-203)
-- **Keputusan pemilik (20 November 2026):** Engineer dipilih saat dokumen diajukan untuk tanda tangan, seperti memilih Manager; pilihannya akun berperan PPAP Engineer atau Project Leader. Dibangun di fase 3; sampai itu asumsi (a) tetap dipakai.
+- **Keputusan pemilik (20 November 2026):** Engineer adalah slot Prepared ("Process. Eng"), dipilih saat dokumen diajukan untuk tanda tangan: pengirim, atau Project Leader tingkat Leader (D-203, diperbarui). Dibangun di fase 3: daftar review memakai orang Prepared dari tanda tangan digital terakhir; tanpa itu tetap pembuat dokumen pertama.
 
 ### E-133 · Peran lama sesudah matriks D-199
 

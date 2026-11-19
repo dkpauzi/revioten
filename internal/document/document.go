@@ -132,6 +132,10 @@ type Document struct {
 	// Baseline adalah data hardcopy dokumen migrasi; nil untuk dokumen baru.
 	Baseline  *Baseline
 	UpdatedAt time.Time
+	// Signing: status permintaan tanda tangan digital untuk draft terbuka
+	// (D-198): "" bila tidak ada, waiting, atau completed. Selama ada, isi
+	// draft dikunci (R-REV-06).
+	Signing string
 }
 
 // SetMember adalah satu dokumen di set yang sama (M4.2): nomornya didaftarkan
@@ -691,6 +695,15 @@ func getDocument(ctx context.Context, q *db.Queries, id string) (Document, error
 		v := int(*r.ReleasedRevision)
 		d.ReleasedRevision = &v
 	}
+	if d.Status == StatusDraft {
+		sig, err := q.ActiveSignatureRequestOfDraft(ctx, id)
+		switch {
+		case err == nil:
+			d.Signing = sig.Status
+		case !errors.Is(err, pgx.ErrNoRows):
+			return Document{}, fmt.Errorf("membaca permintaan tanda tangan: %w", err)
+		}
+	}
 	if r.ApprovalRouteID != nil {
 		d.Route = &Ref{ID: *r.ApprovalRouteID, Name: deref(r.RouteName)}
 	}
@@ -766,8 +779,29 @@ func requireDraft(d Document) error {
 		return problems(invalid("status", problem.NotAllowed,
 			fmt.Sprintf("%s has no open draft. Submit a change; when it is accepted, the next revision opens as a draft.", d.Number)))
 	}
+	return requireUnsigned(d)
+}
+
+// requireUnsigned menolak perubahan isi draft yang sedang atau sudah
+// ditandatangani digital (R-REV-06, D-198). Database menjaga hal yang sama
+// (migrasi 00050).
+func requireUnsigned(d Document) error {
+	switch d.Signing {
+	case SigningWaiting:
+		return problems(invalid("status", problem.NotAllowed,
+			fmt.Sprintf("%s is waiting for signatures and cannot be edited. Withdraw the request first.", d.Number)))
+	case SigningCompleted:
+		return problems(invalid("status", problem.NotAllowed,
+			fmt.Sprintf("%s is signed and waits for its release; it cannot be edited.", d.Number)))
+	}
 	return nil
 }
+
+// Status permintaan tanda tangan digital pada draft (Document.Signing).
+const (
+	SigningWaiting   = "waiting"
+	SigningCompleted = "completed"
+)
 
 // Load membaca satu dokumen lengkap tanpa memeriksa hak. Hanya untuk layanan
 // lain yang sudah memeriksa izin dengan caranya sendiri, misalnya API

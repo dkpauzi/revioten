@@ -175,7 +175,7 @@ func TestNotifications(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if view.Provider != "log" || len(view.Events) != 10 || view.Outbox[0].Status != "skipped" || view.Outbox[0].Reason != "no_email" {
+	if view.Provider != "log" || len(view.Events) != 13 || view.Outbox[0].Status != "skipped" || view.Outbox[0].Reason != "no_email" {
 		t.Errorf("layar admin: %+v", view.Outbox[0])
 	}
 

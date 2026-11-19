@@ -350,6 +350,24 @@ func (e ComposedPointState) Valid() bool {
 	}
 }
 
+// Defines values for CustomerSignatureMode.
+const (
+	CustomerSignatureModeDigital CustomerSignatureMode = "digital"
+	CustomerSignatureModeWetOnly CustomerSignatureMode = "wet_only"
+)
+
+// Valid indicates whether the value is a known member of the CustomerSignatureMode enum.
+func (e CustomerSignatureMode) Valid() bool {
+	switch e {
+	case CustomerSignatureModeDigital:
+		return true
+	case CustomerSignatureModeWetOnly:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for DocumentOrigin.
 const (
 	DocumentOriginMigrated DocumentOrigin = "migrated"
@@ -362,6 +380,24 @@ func (e DocumentOrigin) Valid() bool {
 	case DocumentOriginMigrated:
 		return true
 	case DocumentOriginNew:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for DocumentSigning.
+const (
+	DocumentSigningCompleted DocumentSigning = "completed"
+	DocumentSigningWaiting   DocumentSigning = "waiting"
+)
+
+// Valid indicates whether the value is a known member of the DocumentSigning enum.
+func (e DocumentSigning) Valid() bool {
+	switch e {
+	case DocumentSigningCompleted:
+		return true
+	case DocumentSigningWaiting:
 		return true
 	default:
 		return false
@@ -949,6 +985,7 @@ const (
 	InboxTaskKindConfirmReview InboxTaskKind = "confirm_review"
 	InboxTaskKindRelease       InboxTaskKind = "release"
 	InboxTaskKindReview        InboxTaskKind = "review"
+	InboxTaskKindSign          InboxTaskKind = "sign"
 	InboxTaskKindVerify        InboxTaskKind = "verify"
 	InboxTaskKindYokoten       InboxTaskKind = "yokoten"
 )
@@ -961,6 +998,8 @@ func (e InboxTaskKind) Valid() bool {
 	case InboxTaskKindRelease:
 		return true
 	case InboxTaskKindReview:
+		return true
+	case InboxTaskKindSign:
 		return true
 	case InboxTaskKindVerify:
 		return true
@@ -1847,6 +1886,108 @@ func (e RowDifferenceStatus) Valid() bool {
 	}
 }
 
+// Defines values for SignatureModeChoiceMode.
+const (
+	SignatureModeChoiceModeDigital SignatureModeChoiceMode = "digital"
+	SignatureModeChoiceModeWetOnly SignatureModeChoiceMode = "wet_only"
+)
+
+// Valid indicates whether the value is a known member of the SignatureModeChoiceMode enum.
+func (e SignatureModeChoiceMode) Valid() bool {
+	switch e {
+	case SignatureModeChoiceModeDigital:
+		return true
+	case SignatureModeChoiceModeWetOnly:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SignaturePlanMode.
+const (
+	SignaturePlanModeDigital SignaturePlanMode = "digital"
+	SignaturePlanModeWetOnly SignaturePlanMode = "wet_only"
+)
+
+// Valid indicates whether the value is a known member of the SignaturePlanMode enum.
+func (e SignaturePlanMode) Valid() bool {
+	switch e {
+	case SignaturePlanModeDigital:
+		return true
+	case SignaturePlanModeWetOnly:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SignaturePlanSlotStage.
+const (
+	SignaturePlanSlotStageApproved SignaturePlanSlotStage = "approved"
+	SignaturePlanSlotStageChecked  SignaturePlanSlotStage = "checked"
+	SignaturePlanSlotStagePrepared SignaturePlanSlotStage = "prepared"
+)
+
+// Valid indicates whether the value is a known member of the SignaturePlanSlotStage enum.
+func (e SignaturePlanSlotStage) Valid() bool {
+	switch e {
+	case SignaturePlanSlotStageApproved:
+		return true
+	case SignaturePlanSlotStageChecked:
+		return true
+	case SignaturePlanSlotStagePrepared:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SignatureRequestStatus.
+const (
+	SignatureRequestStatusCompleted SignatureRequestStatus = "completed"
+	SignatureRequestStatusRejected  SignatureRequestStatus = "rejected"
+	SignatureRequestStatusWaiting   SignatureRequestStatus = "waiting"
+	SignatureRequestStatusWithdrawn SignatureRequestStatus = "withdrawn"
+)
+
+// Valid indicates whether the value is a known member of the SignatureRequestStatus enum.
+func (e SignatureRequestStatus) Valid() bool {
+	switch e {
+	case SignatureRequestStatusCompleted:
+		return true
+	case SignatureRequestStatusRejected:
+		return true
+	case SignatureRequestStatusWaiting:
+		return true
+	case SignatureRequestStatusWithdrawn:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SignatureSlotStage.
+const (
+	SignatureSlotStageApproved SignatureSlotStage = "approved"
+	SignatureSlotStageChecked  SignatureSlotStage = "checked"
+	SignatureSlotStagePrepared SignatureSlotStage = "prepared"
+)
+
+// Valid indicates whether the value is a known member of the SignatureSlotStage enum.
+func (e SignatureSlotStage) Valid() bool {
+	switch e {
+	case SignatureSlotStageApproved:
+		return true
+	case SignatureSlotStageChecked:
+		return true
+	case SignatureSlotStagePrepared:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SystemSettingsFormApprovalMode.
 const (
 	SystemSettingsFormApprovalModeAll SystemSettingsFormApprovalMode = "all"
@@ -2504,7 +2645,13 @@ type Customer struct {
 	// ProjectGroup The project group of the customer (D-54). Missing only for customers
 	// added before project groups existed.
 	ProjectGroup *ProjectGroupRef `json:"project_group,omitempty"`
+
+	// SignatureMode digital allows digital signatures; wet_only requires wet signatures (D-198).
+	SignatureMode *CustomerSignatureMode `json:"signature_mode,omitempty"`
 }
+
+// CustomerSignatureMode digital allows digital signatures; wet_only requires wet signatures (D-198).
+type CustomerSignatureMode string
 
 // CustomerCode defines model for CustomerCode.
 type CustomerCode struct {
@@ -2619,6 +2766,9 @@ type Document struct {
 	// Set The documents of the same set, this one included, by document type (M4.2). Documents from numbers registered as a set of PFD, PFMEA, and CP know each other; a single number gives only this document.
 	Set []DocumentSetMember `json:"set"`
 
+	// Signing The open draft is waiting for digital signatures or is fully signed; its content is locked (D-198).
+	Signing *DocumentSigning `json:"signing,omitempty"`
+
 	// Status Draft while a draft revision is open; released when there is none (M5.4).
 	Status    DocumentStatus `json:"status"`
 	UpdatedAt time.Time      `json:"updated_at"`
@@ -2626,6 +2776,9 @@ type Document struct {
 
 // DocumentOrigin Migrated for a legacy document entered as a migration baseline (stage 7).
 type DocumentOrigin string
+
+// DocumentSigning The open draft is waiting for digital signatures or is fully signed; its content is locked (D-198).
+type DocumentSigning string
 
 // DocumentStatus Draft while a draft revision is open; released when there is none (M5.4).
 type DocumentStatus string
@@ -4003,6 +4156,11 @@ type PasswordChange struct {
 	NewPassword string `json:"new_password"`
 }
 
+// PasswordConfirmation defines model for PasswordConfirmation.
+type PasswordConfirmation struct {
+	Password string `json:"password"`
+}
+
 // Performance defines model for Performance.
 type Performance struct {
 	Accepted int `json:"accepted"`
@@ -4975,6 +5133,117 @@ type Session struct {
 	Person      Person   `json:"person"`
 }
 
+// SignatureCandidate defines model for SignatureCandidate.
+type SignatureCandidate struct {
+	Name        string `json:"name"`
+	PersonId    string `json:"person_id"`
+	Position    string `json:"position"`
+	PositionKey string `json:"position_key"`
+}
+
+// SignatureModeChoice defines model for SignatureModeChoice.
+type SignatureModeChoice struct {
+	Mode SignatureModeChoiceMode `json:"mode"`
+}
+
+// SignatureModeChoiceMode defines model for SignatureModeChoice.Mode.
+type SignatureModeChoiceMode string
+
+// SignatureOverview defines model for SignatureOverview.
+type SignatureOverview struct {
+	Sent      []SignatureRequest `json:"sent"`
+	ToRelease []SignatureRequest `json:"to_release"`
+	Waiting   []SignatureRequest `json:"waiting"`
+}
+
+// SignaturePlan defines model for SignaturePlan.
+type SignaturePlan struct {
+	DocumentId string              `json:"document_id"`
+	Mode       SignaturePlanMode   `json:"mode"`
+	Number     string              `json:"number"`
+	Revision   int                 `json:"revision"`
+	Route      *ApprovalRouteRef   `json:"route,omitempty"`
+	Slots      []SignaturePlanSlot `json:"slots"`
+}
+
+// SignaturePlanMode defines model for SignaturePlan.Mode.
+type SignaturePlanMode string
+
+// SignaturePlanSlot defines model for SignaturePlanSlot.
+type SignaturePlanSlot struct {
+	Candidates []SignatureCandidate   `json:"candidates"`
+	Order      int                    `json:"order"`
+	PrintTitle string                 `json:"print_title"`
+	Stage      SignaturePlanSlotStage `json:"stage"`
+}
+
+// SignaturePlanSlotStage defines model for SignaturePlanSlot.Stage.
+type SignaturePlanSlotStage string
+
+// SignatureRejection defines model for SignatureRejection.
+type SignatureRejection struct {
+	Password string `json:"password"`
+	Reason   string `json:"reason"`
+}
+
+// SignatureRequest defines model for SignatureRequest.
+type SignatureRequest struct {
+	Changes       []string   `json:"changes"`
+	ClosedAt      *time.Time `json:"closed_at,omitempty"`
+	ClosedBy      *string    `json:"closed_by,omitempty"`
+	ContentSha256 string     `json:"content_sha256"`
+	CustomerCode  string     `json:"customer_code"`
+	CustomerId    string     `json:"customer_id"`
+	DocumentId    string     `json:"document_id"`
+	DocumentType  string     `json:"document_type"`
+	Id            string     `json:"id"`
+
+	// NextSlot Order of the slot that waits; 0 when none.
+	NextSlot     int     `json:"next_slot"`
+	Note         *string `json:"note,omitempty"`
+	Number       string  `json:"number"`
+	RejectReason *string `json:"reject_reason,omitempty"`
+
+	// ReleaseDate The date the request was sent (D-204); the revision date on every print.
+	ReleaseDate openapi_types.Date     `json:"release_date"`
+	Revision    int                    `json:"revision"`
+	RouteName   string                 `json:"route_name"`
+	SentAt      time.Time              `json:"sent_at"`
+	SentBy      string                 `json:"sent_by"`
+	SentById    string                 `json:"sent_by_id"`
+	Slots       []SignatureSlot        `json:"slots"`
+	Status      SignatureRequestStatus `json:"status"`
+}
+
+// SignatureRequestStatus defines model for SignatureRequest.Status.
+type SignatureRequestStatus string
+
+// SignatureRequestList defines model for SignatureRequestList.
+type SignatureRequestList struct {
+	Items []SignatureRequest `json:"items"`
+}
+
+// SignatureSend defines model for SignatureSend.
+type SignatureSend struct {
+	Note     *string        `json:"note,omitempty"`
+	Password string         `json:"password"`
+	Signers  []SignerChoice `json:"signers"`
+}
+
+// SignatureSlot defines model for SignatureSlot.
+type SignatureSlot struct {
+	Order      int                `json:"order"`
+	PersonId   string             `json:"person_id"`
+	PersonName string             `json:"person_name"`
+	Position   string             `json:"position"`
+	PrintTitle string             `json:"print_title"`
+	SignedAt   *time.Time         `json:"signed_at,omitempty"`
+	Stage      SignatureSlotStage `json:"stage"`
+}
+
+// SignatureSlotStage defines model for SignatureSlot.Stage.
+type SignatureSlotStage string
+
 // SignedScan defines model for SignedScan.
 type SignedScan struct {
 	ContentType string    `json:"content_type"`
@@ -4984,6 +5253,12 @@ type SignedScan struct {
 	Size        int64     `json:"size"`
 	UploadedAt  time.Time `json:"uploaded_at"`
 	UploadedBy  string    `json:"uploaded_by"`
+}
+
+// SignerChoice defines model for SignerChoice.
+type SignerChoice struct {
+	PersonId string `json:"person_id"`
+	Slot     int    `json:"slot"`
 }
 
 // SpecialCode defines model for SpecialCode.
@@ -5294,6 +5569,9 @@ type SectionId = string
 // ServiceAccountId defines model for ServiceAccountId.
 type ServiceAccountId = string
 
+// SignatureRequestId defines model for SignatureRequestId.
+type SignatureRequestId = string
+
 // SpecialCodeId defines model for SpecialCodeId.
 type SpecialCodeId = string
 
@@ -5579,6 +5857,9 @@ type SetCustomerDefaultRouteJSONRequestBody = RouteChoice
 // SetCustomerPrintLayoutJSONRequestBody defines body for SetCustomerPrintLayout for application/json ContentType.
 type SetCustomerPrintLayoutJSONRequestBody = CustomerPrintLayoutInput
 
+// SetCustomerSignatureModeJSONRequestBody defines body for SetCustomerSignatureMode for application/json ContentType.
+type SetCustomerSignatureModeJSONRequestBody = SignatureModeChoice
+
 // ImportDocumentNumbersJSONRequestBody defines body for ImportDocumentNumbers for application/json ContentType.
 type ImportDocumentNumbersJSONRequestBody = NumberImportRequest
 
@@ -5653,6 +5934,9 @@ type AddDocumentSectionJSONRequestBody = NewDocumentSection
 
 // UpdateDocumentSectionJSONRequestBody defines body for UpdateDocumentSection for application/json ContentType.
 type UpdateDocumentSectionJSONRequestBody = DocumentSectionUpdate
+
+// SendForSignatureJSONRequestBody defines body for SendForSignature for application/json ContentType.
+type SendForSignatureJSONRequestBody = SignatureSend
 
 // SetDocumentTemplateModeJSONRequestBody defines body for SetDocumentTemplateMode for application/json ContentType.
 type SetDocumentTemplateModeJSONRequestBody = DocumentTemplateModeInput
@@ -5801,6 +6085,12 @@ type IssueServiceTokenJSONRequestBody = NewServiceToken
 // LoginJSONRequestBody defines body for Login for application/json ContentType.
 type LoginJSONRequestBody = Credentials
 
+// RejectSignatureRequestJSONRequestBody defines body for RejectSignatureRequest for application/json ContentType.
+type RejectSignatureRequestJSONRequestBody = SignatureRejection
+
+// SignSignatureRequestJSONRequestBody defines body for SignSignatureRequest for application/json ContentType.
+type SignSignatureRequestJSONRequestBody = PasswordConfirmation
+
 // CreateSpecialCodeJSONRequestBody defines body for CreateSpecialCode for application/json ContentType.
 type CreateSpecialCodeJSONRequestBody = NewSpecialCode
 
@@ -5941,6 +6231,9 @@ type ServerInterface interface {
 	// SetCustomerPrintLayout Choose the layout of a customer for one document type; no layout_id means the default (A-2, M6.1)
 	// (PUT /api/v1/customers/{customerId}/print-layouts/{documentTypeId})
 	SetCustomerPrintLayout(w http.ResponseWriter, r *http.Request, customerId CustomerId, documentTypeId string)
+	// SetCustomerSignatureMode Allow digital signatures for a customer, or require wet signatures (A-2, D-198)
+	// (PUT /api/v1/customers/{customerId}/signature-mode)
+	SetCustomerSignatureMode(w http.ResponseWriter, r *http.Request, customerId CustomerId)
 	// ImportDocumentNumbers Import legacy numbers of one customer, with a report (E-8, UC-14, R-NUM-06)
 	// (POST /api/v1/document-number-imports)
 	ImportDocumentNumbers(w http.ResponseWriter, r *http.Request)
@@ -6073,6 +6366,15 @@ type ServerInterface interface {
 	// UpdateDocumentSection Rename, move, or change the part numbers of a section in every document of the set (E-2, D-155)
 	// (PUT /api/v1/documents/{documentId}/sections/{sectionId})
 	UpdateDocumentSection(w http.ResponseWriter, r *http.Request, documentId DocumentId, sectionId SectionId)
+	// GetSignaturePlan The slots of the document's route with the people who may sign each one (E-5, D-203)
+	// (GET /api/v1/documents/{documentId}/signature-plan)
+	GetSignaturePlan(w http.ResponseWriter, r *http.Request, documentId DocumentId)
+	// ListDocumentSignatureRequests Signature requests of one document, newest first (L-4, D-198)
+	// (GET /api/v1/documents/{documentId}/signature-requests)
+	ListDocumentSignatureRequests(w http.ResponseWriter, r *http.Request, documentId DocumentId)
+	// SendForSignature Send the open draft for digital signature (E-5, D-198, D-203, D-204)
+	// (POST /api/v1/documents/{documentId}/signature-requests)
+	SendForSignature(w http.ResponseWriter, r *http.Request, documentId DocumentId)
 	// ListDocumentTemplates The process templates the rows of a document use, with the link mode (L-4, M5.8)
 	// (GET /api/v1/documents/{documentId}/templates)
 	ListDocumentTemplates(w http.ResponseWriter, r *http.Request, documentId DocumentId)
@@ -6367,6 +6669,21 @@ type ServerInterface interface {
 	// Login Log in with a login name and password
 	// (POST /api/v1/session)
 	Login(w http.ResponseWriter, r *http.Request)
+	// ListSignatureRequests Signature requests waiting for me, sent by me, and signed ones waiting for release (D-198)
+	// (GET /api/v1/signature-requests)
+	ListSignatureRequests(w http.ResponseWriter, r *http.Request)
+	// GetSignatureRequest One signature request with its slots (L-4)
+	// (GET /api/v1/signature-requests/{requestId})
+	GetSignatureRequest(w http.ResponseWriter, r *http.Request, requestId SignatureRequestId)
+	// RejectSignatureRequest Reject the request when my signature is awaited (S-1); the draft opens again
+	// (POST /api/v1/signature-requests/{requestId}/reject)
+	RejectSignatureRequest(w http.ResponseWriter, r *http.Request, requestId SignatureRequestId)
+	// SignSignatureRequest Sign the slot that waits for me (S-1); the password is re-entered (D-198)
+	// (POST /api/v1/signature-requests/{requestId}/sign)
+	SignSignatureRequest(w http.ResponseWriter, r *http.Request, requestId SignatureRequestId)
+	// WithdrawSignatureRequest Withdraw a waiting request (the sender, E-5); the draft opens again
+	// (POST /api/v1/signature-requests/{requestId}/withdraw)
+	WithdrawSignatureRequest(w http.ResponseWriter, r *http.Request, requestId SignatureRequestId)
 	// ListSpecialCodes Special codes used in place of a customer code, ordered by code (E-12)
 	// (GET /api/v1/special-codes)
 	ListSpecialCodes(w http.ResponseWriter, r *http.Request)
@@ -7317,6 +7634,32 @@ func (siw *ServerInterfaceWrapper) SetCustomerPrintLayout(w http.ResponseWriter,
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.SetCustomerPrintLayout(w, r, customerId, documentTypeId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetCustomerSignatureMode operation middleware
+func (siw *ServerInterfaceWrapper) SetCustomerSignatureMode(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "customerId" -------------
+	var customerId CustomerId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "customerId", r.PathValue("customerId"), &customerId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customerId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetCustomerSignatureMode(w, r, customerId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -8667,6 +9010,84 @@ func (siw *ServerInterfaceWrapper) UpdateDocumentSection(w http.ResponseWriter, 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UpdateDocumentSection(w, r, documentId, sectionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetSignaturePlan operation middleware
+func (siw *ServerInterfaceWrapper) GetSignaturePlan(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", r.PathValue("documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetSignaturePlan(w, r, documentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListDocumentSignatureRequests operation middleware
+func (siw *ServerInterfaceWrapper) ListDocumentSignatureRequests(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", r.PathValue("documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListDocumentSignatureRequests(w, r, documentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SendForSignature operation middleware
+func (siw *ServerInterfaceWrapper) SendForSignature(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", r.PathValue("documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SendForSignature(w, r, documentId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -11204,6 +11625,124 @@ func (siw *ServerInterfaceWrapper) Login(w http.ResponseWriter, r *http.Request)
 	handler.ServeHTTP(w, r)
 }
 
+// ListSignatureRequests operation middleware
+func (siw *ServerInterfaceWrapper) ListSignatureRequests(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListSignatureRequests(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetSignatureRequest operation middleware
+func (siw *ServerInterfaceWrapper) GetSignatureRequest(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "requestId" -------------
+	var requestId SignatureRequestId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "requestId", r.PathValue("requestId"), &requestId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "requestId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetSignatureRequest(w, r, requestId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RejectSignatureRequest operation middleware
+func (siw *ServerInterfaceWrapper) RejectSignatureRequest(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "requestId" -------------
+	var requestId SignatureRequestId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "requestId", r.PathValue("requestId"), &requestId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "requestId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RejectSignatureRequest(w, r, requestId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SignSignatureRequest operation middleware
+func (siw *ServerInterfaceWrapper) SignSignatureRequest(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "requestId" -------------
+	var requestId SignatureRequestId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "requestId", r.PathValue("requestId"), &requestId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "requestId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SignSignatureRequest(w, r, requestId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// WithdrawSignatureRequest operation middleware
+func (siw *ServerInterfaceWrapper) WithdrawSignatureRequest(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "requestId" -------------
+	var requestId SignatureRequestId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "requestId", r.PathValue("requestId"), &requestId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "requestId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.WithdrawSignatureRequest(w, r, requestId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListSpecialCodes operation middleware
 func (siw *ServerInterfaceWrapper) ListSpecialCodes(w http.ResponseWriter, r *http.Request) {
 
@@ -11641,6 +12180,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/approval-routes", wrapper.CreateApprovalRoute)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/approval-routes/{approvalRouteId}", wrapper.UpdateApprovalRoute)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/customers/{customerId}/default-route", wrapper.SetCustomerDefaultRoute)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/customers/{customerId}/signature-mode", wrapper.SetCustomerSignatureMode)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/change-types/{changeTypeId}/approval-route", wrapper.SetChangeTypeRoute)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/format-templates", wrapper.ListFormatTemplates)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/format-templates", wrapper.CreateFormatTemplate)
@@ -11708,6 +12248,14 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/performance/export", wrapper.ExportPerformance)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/models/{modelId}/eol", wrapper.SetModelEol)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/ready", wrapper.MarkDocumentReady)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/documents/{documentId}/signature-plan", wrapper.GetSignaturePlan)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/documents/{documentId}/signature-requests", wrapper.ListDocumentSignatureRequests)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/signature-requests", wrapper.SendForSignature)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/signature-requests", wrapper.ListSignatureRequests)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/signature-requests/{requestId}", wrapper.GetSignatureRequest)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/signature-requests/{requestId}/sign", wrapper.SignSignatureRequest)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/signature-requests/{requestId}/reject", wrapper.RejectSignatureRequest)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/signature-requests/{requestId}/withdraw", wrapper.WithdrawSignatureRequest)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/inbox", wrapper.GetInbox)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/metrics", wrapper.GetMetrics)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/release", wrapper.ReleaseDocument)
@@ -13365,6 +13913,46 @@ type SetCustomerPrintLayoutdefaultJSONResponse struct {
 }
 
 func (response SetCustomerPrintLayoutdefaultJSONResponse) VisitSetCustomerPrintLayoutResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetCustomerSignatureModeRequestObject struct {
+	CustomerId CustomerId `json:"customerId"`
+	Body       *SetCustomerSignatureModeJSONRequestBody
+}
+
+type SetCustomerSignatureModeResponseObject interface {
+	VisitSetCustomerSignatureModeResponse(w http.ResponseWriter) error
+}
+
+type SetCustomerSignatureMode200JSONResponse Customer
+
+func (response SetCustomerSignatureMode200JSONResponse) VisitSetCustomerSignatureModeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetCustomerSignatureModedefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response SetCustomerSignatureModedefaultJSONResponse) VisitSetCustomerSignatureModeResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -15166,6 +15754,124 @@ type UpdateDocumentSectiondefaultJSONResponse struct {
 }
 
 func (response UpdateDocumentSectiondefaultJSONResponse) VisitUpdateDocumentSectionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetSignaturePlanRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+}
+
+type GetSignaturePlanResponseObject interface {
+	VisitGetSignaturePlanResponse(w http.ResponseWriter) error
+}
+
+type GetSignaturePlan200JSONResponse SignaturePlan
+
+func (response GetSignaturePlan200JSONResponse) VisitGetSignaturePlanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetSignaturePlandefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response GetSignaturePlandefaultJSONResponse) VisitGetSignaturePlanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDocumentSignatureRequestsRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+}
+
+type ListDocumentSignatureRequestsResponseObject interface {
+	VisitListDocumentSignatureRequestsResponse(w http.ResponseWriter) error
+}
+
+type ListDocumentSignatureRequests200JSONResponse SignatureRequestList
+
+func (response ListDocumentSignatureRequests200JSONResponse) VisitListDocumentSignatureRequestsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListDocumentSignatureRequestsdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ListDocumentSignatureRequestsdefaultJSONResponse) VisitListDocumentSignatureRequestsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SendForSignatureRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+	Body       *SendForSignatureJSONRequestBody
+}
+
+type SendForSignatureResponseObject interface {
+	VisitSendForSignatureResponse(w http.ResponseWriter) error
+}
+
+type SendForSignature201JSONResponse SignatureRequest
+
+func (response SendForSignature201JSONResponse) VisitSendForSignatureResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SendForSignaturedefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response SendForSignaturedefaultJSONResponse) VisitSendForSignatureResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -19064,6 +19770,202 @@ func (response LogindefaultJSONResponse) VisitLoginResponse(w http.ResponseWrite
 	return err
 }
 
+type ListSignatureRequestsRequestObject struct {
+}
+
+type ListSignatureRequestsResponseObject interface {
+	VisitListSignatureRequestsResponse(w http.ResponseWriter) error
+}
+
+type ListSignatureRequests200JSONResponse SignatureOverview
+
+func (response ListSignatureRequests200JSONResponse) VisitListSignatureRequestsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListSignatureRequestsdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ListSignatureRequestsdefaultJSONResponse) VisitListSignatureRequestsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetSignatureRequestRequestObject struct {
+	RequestId SignatureRequestId `json:"requestId"`
+}
+
+type GetSignatureRequestResponseObject interface {
+	VisitGetSignatureRequestResponse(w http.ResponseWriter) error
+}
+
+type GetSignatureRequest200JSONResponse SignatureRequest
+
+func (response GetSignatureRequest200JSONResponse) VisitGetSignatureRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetSignatureRequestdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response GetSignatureRequestdefaultJSONResponse) VisitGetSignatureRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RejectSignatureRequestRequestObject struct {
+	RequestId SignatureRequestId `json:"requestId"`
+	Body      *RejectSignatureRequestJSONRequestBody
+}
+
+type RejectSignatureRequestResponseObject interface {
+	VisitRejectSignatureRequestResponse(w http.ResponseWriter) error
+}
+
+type RejectSignatureRequest200JSONResponse SignatureRequest
+
+func (response RejectSignatureRequest200JSONResponse) VisitRejectSignatureRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RejectSignatureRequestdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response RejectSignatureRequestdefaultJSONResponse) VisitRejectSignatureRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SignSignatureRequestRequestObject struct {
+	RequestId SignatureRequestId `json:"requestId"`
+	Body      *SignSignatureRequestJSONRequestBody
+}
+
+type SignSignatureRequestResponseObject interface {
+	VisitSignSignatureRequestResponse(w http.ResponseWriter) error
+}
+
+type SignSignatureRequest200JSONResponse SignatureRequest
+
+func (response SignSignatureRequest200JSONResponse) VisitSignSignatureRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SignSignatureRequestdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response SignSignatureRequestdefaultJSONResponse) VisitSignSignatureRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type WithdrawSignatureRequestRequestObject struct {
+	RequestId SignatureRequestId `json:"requestId"`
+}
+
+type WithdrawSignatureRequestResponseObject interface {
+	VisitWithdrawSignatureRequestResponse(w http.ResponseWriter) error
+}
+
+type WithdrawSignatureRequest200JSONResponse SignatureRequest
+
+func (response WithdrawSignatureRequest200JSONResponse) VisitWithdrawSignatureRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type WithdrawSignatureRequestdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response WithdrawSignatureRequestdefaultJSONResponse) VisitWithdrawSignatureRequestResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListSpecialCodesRequestObject struct {
 }
 
@@ -19686,6 +20588,9 @@ type StrictServerInterface interface {
 	// SetCustomerPrintLayout Choose the layout of a customer for one document type; no layout_id means the default (A-2, M6.1)
 	// (PUT /api/v1/customers/{customerId}/print-layouts/{documentTypeId})
 	SetCustomerPrintLayout(ctx context.Context, request SetCustomerPrintLayoutRequestObject) (SetCustomerPrintLayoutResponseObject, error)
+	// SetCustomerSignatureMode Allow digital signatures for a customer, or require wet signatures (A-2, D-198)
+	// (PUT /api/v1/customers/{customerId}/signature-mode)
+	SetCustomerSignatureMode(ctx context.Context, request SetCustomerSignatureModeRequestObject) (SetCustomerSignatureModeResponseObject, error)
 	// ImportDocumentNumbers Import legacy numbers of one customer, with a report (E-8, UC-14, R-NUM-06)
 	// (POST /api/v1/document-number-imports)
 	ImportDocumentNumbers(ctx context.Context, request ImportDocumentNumbersRequestObject) (ImportDocumentNumbersResponseObject, error)
@@ -19818,6 +20723,15 @@ type StrictServerInterface interface {
 	// UpdateDocumentSection Rename, move, or change the part numbers of a section in every document of the set (E-2, D-155)
 	// (PUT /api/v1/documents/{documentId}/sections/{sectionId})
 	UpdateDocumentSection(ctx context.Context, request UpdateDocumentSectionRequestObject) (UpdateDocumentSectionResponseObject, error)
+	// GetSignaturePlan The slots of the document's route with the people who may sign each one (E-5, D-203)
+	// (GET /api/v1/documents/{documentId}/signature-plan)
+	GetSignaturePlan(ctx context.Context, request GetSignaturePlanRequestObject) (GetSignaturePlanResponseObject, error)
+	// ListDocumentSignatureRequests Signature requests of one document, newest first (L-4, D-198)
+	// (GET /api/v1/documents/{documentId}/signature-requests)
+	ListDocumentSignatureRequests(ctx context.Context, request ListDocumentSignatureRequestsRequestObject) (ListDocumentSignatureRequestsResponseObject, error)
+	// SendForSignature Send the open draft for digital signature (E-5, D-198, D-203, D-204)
+	// (POST /api/v1/documents/{documentId}/signature-requests)
+	SendForSignature(ctx context.Context, request SendForSignatureRequestObject) (SendForSignatureResponseObject, error)
 	// ListDocumentTemplates The process templates the rows of a document use, with the link mode (L-4, M5.8)
 	// (GET /api/v1/documents/{documentId}/templates)
 	ListDocumentTemplates(ctx context.Context, request ListDocumentTemplatesRequestObject) (ListDocumentTemplatesResponseObject, error)
@@ -20112,6 +21026,21 @@ type StrictServerInterface interface {
 	// Login Log in with a login name and password
 	// (POST /api/v1/session)
 	Login(ctx context.Context, request LoginRequestObject) (LoginResponseObject, error)
+	// ListSignatureRequests Signature requests waiting for me, sent by me, and signed ones waiting for release (D-198)
+	// (GET /api/v1/signature-requests)
+	ListSignatureRequests(ctx context.Context, request ListSignatureRequestsRequestObject) (ListSignatureRequestsResponseObject, error)
+	// GetSignatureRequest One signature request with its slots (L-4)
+	// (GET /api/v1/signature-requests/{requestId})
+	GetSignatureRequest(ctx context.Context, request GetSignatureRequestRequestObject) (GetSignatureRequestResponseObject, error)
+	// RejectSignatureRequest Reject the request when my signature is awaited (S-1); the draft opens again
+	// (POST /api/v1/signature-requests/{requestId}/reject)
+	RejectSignatureRequest(ctx context.Context, request RejectSignatureRequestRequestObject) (RejectSignatureRequestResponseObject, error)
+	// SignSignatureRequest Sign the slot that waits for me (S-1); the password is re-entered (D-198)
+	// (POST /api/v1/signature-requests/{requestId}/sign)
+	SignSignatureRequest(ctx context.Context, request SignSignatureRequestRequestObject) (SignSignatureRequestResponseObject, error)
+	// WithdrawSignatureRequest Withdraw a waiting request (the sender, E-5); the draft opens again
+	// (POST /api/v1/signature-requests/{requestId}/withdraw)
+	WithdrawSignatureRequest(ctx context.Context, request WithdrawSignatureRequestRequestObject) (WithdrawSignatureRequestResponseObject, error)
 	// ListSpecialCodes Special codes used in place of a customer code, ordered by code (E-12)
 	// (GET /api/v1/special-codes)
 	ListSpecialCodes(ctx context.Context, request ListSpecialCodesRequestObject) (ListSpecialCodesResponseObject, error)
@@ -21329,6 +22258,39 @@ func (sh *strictHandler) SetCustomerPrintLayout(w http.ResponseWriter, r *http.R
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(SetCustomerPrintLayoutResponseObject); ok {
 		if err := validResponse.VisitSetCustomerPrintLayoutResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SetCustomerSignatureMode operation middleware
+func (sh *strictHandler) SetCustomerSignatureMode(w http.ResponseWriter, r *http.Request, customerId CustomerId) {
+	var request SetCustomerSignatureModeRequestObject
+
+	request.CustomerId = customerId
+
+	var body SetCustomerSignatureModeJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetCustomerSignatureMode(ctx, request.(SetCustomerSignatureModeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetCustomerSignatureMode")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetCustomerSignatureModeResponseObject); ok {
+		if err := validResponse.VisitSetCustomerSignatureModeResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -22648,6 +23610,91 @@ func (sh *strictHandler) UpdateDocumentSection(w http.ResponseWriter, r *http.Re
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UpdateDocumentSectionResponseObject); ok {
 		if err := validResponse.VisitUpdateDocumentSectionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetSignaturePlan operation middleware
+func (sh *strictHandler) GetSignaturePlan(w http.ResponseWriter, r *http.Request, documentId DocumentId) {
+	var request GetSignaturePlanRequestObject
+
+	request.DocumentId = documentId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetSignaturePlan(ctx, request.(GetSignaturePlanRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetSignaturePlan")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetSignaturePlanResponseObject); ok {
+		if err := validResponse.VisitGetSignaturePlanResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListDocumentSignatureRequests operation middleware
+func (sh *strictHandler) ListDocumentSignatureRequests(w http.ResponseWriter, r *http.Request, documentId DocumentId) {
+	var request ListDocumentSignatureRequestsRequestObject
+
+	request.DocumentId = documentId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListDocumentSignatureRequests(ctx, request.(ListDocumentSignatureRequestsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListDocumentSignatureRequests")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListDocumentSignatureRequestsResponseObject); ok {
+		if err := validResponse.VisitListDocumentSignatureRequestsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SendForSignature operation middleware
+func (sh *strictHandler) SendForSignature(w http.ResponseWriter, r *http.Request, documentId DocumentId) {
+	var request SendForSignatureRequestObject
+
+	request.DocumentId = documentId
+
+	var body SendForSignatureJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SendForSignature(ctx, request.(SendForSignatureRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SendForSignature")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SendForSignatureResponseObject); ok {
+		if err := validResponse.VisitSendForSignatureResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -25483,6 +26530,148 @@ func (sh *strictHandler) Login(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(LoginResponseObject); ok {
 		if err := validResponse.VisitLoginResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListSignatureRequests operation middleware
+func (sh *strictHandler) ListSignatureRequests(w http.ResponseWriter, r *http.Request) {
+	var request ListSignatureRequestsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListSignatureRequests(ctx, request.(ListSignatureRequestsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListSignatureRequests")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListSignatureRequestsResponseObject); ok {
+		if err := validResponse.VisitListSignatureRequestsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetSignatureRequest operation middleware
+func (sh *strictHandler) GetSignatureRequest(w http.ResponseWriter, r *http.Request, requestId SignatureRequestId) {
+	var request GetSignatureRequestRequestObject
+
+	request.RequestId = requestId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetSignatureRequest(ctx, request.(GetSignatureRequestRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetSignatureRequest")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetSignatureRequestResponseObject); ok {
+		if err := validResponse.VisitGetSignatureRequestResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RejectSignatureRequest operation middleware
+func (sh *strictHandler) RejectSignatureRequest(w http.ResponseWriter, r *http.Request, requestId SignatureRequestId) {
+	var request RejectSignatureRequestRequestObject
+
+	request.RequestId = requestId
+
+	var body RejectSignatureRequestJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RejectSignatureRequest(ctx, request.(RejectSignatureRequestRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RejectSignatureRequest")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RejectSignatureRequestResponseObject); ok {
+		if err := validResponse.VisitRejectSignatureRequestResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SignSignatureRequest operation middleware
+func (sh *strictHandler) SignSignatureRequest(w http.ResponseWriter, r *http.Request, requestId SignatureRequestId) {
+	var request SignSignatureRequestRequestObject
+
+	request.RequestId = requestId
+
+	var body SignSignatureRequestJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SignSignatureRequest(ctx, request.(SignSignatureRequestRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SignSignatureRequest")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SignSignatureRequestResponseObject); ok {
+		if err := validResponse.VisitSignSignatureRequestResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// WithdrawSignatureRequest operation middleware
+func (sh *strictHandler) WithdrawSignatureRequest(w http.ResponseWriter, r *http.Request, requestId SignatureRequestId) {
+	var request WithdrawSignatureRequestRequestObject
+
+	request.RequestId = requestId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.WithdrawSignatureRequest(ctx, request.(WithdrawSignatureRequestRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "WithdrawSignatureRequest")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(WithdrawSignatureRequestResponseObject); ok {
+		if err := validResponse.VisitWithdrawSignatureRequestResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

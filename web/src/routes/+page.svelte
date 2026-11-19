@@ -36,7 +36,8 @@
 		verify: 'homeKindVerify',
 		confirm_review: 'homeKindConfirm',
 		release: 'homeKindRelease',
-		yokoten: 'homeKindYokoten'
+		yokoten: 'homeKindYokoten',
+		sign: 'homeKindSign'
 	};
 
 	function taskText(task: InboxTask): string {
@@ -51,6 +52,8 @@
 				return t('homeTaskRelease');
 			case 'yokoten':
 				return t('homeTaskYokoten', { decided: task.detail ?? '' });
+			case 'sign':
+				return t('homeTaskSign', { detail: task.detail ?? '' });
 		}
 	}
 
@@ -113,7 +116,7 @@
 							<strong>{task.title}</strong>
 							<span class="sub">{taskText(task)}</span>
 						</span>
-						<a class="button" class:primary={task.kind === 'review' || task.kind === 'verify'} href={task.link}>{t('homeOpen')}</a>
+						<a class="button" class:primary={task.kind === 'review' || task.kind === 'verify' || task.kind === 'sign'} href={task.link}>{t('homeOpen')}</a>
 					</li>
 				{/each}
 			</ul>

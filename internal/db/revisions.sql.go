@@ -287,22 +287,25 @@ const releaseDocumentRevision = `-- name: ReleaseDocumentRevision :execrows
 
 UPDATE document_revisions
 SET status = 'released', released_at = now(), release_date = coalesce(release_date, (now() AT TIME ZONE 'Asia/Jakarta')::date),
-    snapshot = $1, snapshot_sha256 = $2,
-    released_by_person_id = $3, released_by_account_id = $4
-WHERE id = $5 AND status = 'draft'
+    signature_request_id = $1,
+    snapshot = $2, snapshot_sha256 = $3,
+    released_by_person_id = $4, released_by_account_id = $5
+WHERE id = $6 AND status = 'draft'
 `
 
 type ReleaseDocumentRevisionParams struct {
-	Snapshot  *string
-	Sha256    *string
-	PersonID  *string
-	AccountID *string
-	ID        string
+	SignatureRequestID *string
+	Snapshot           *string
+	Sha256             *string
+	PersonID           *string
+	AccountID          *string
+	ID                 string
 }
 
 // M5.5: rilis dengan snapshot (R-REV-02).
 func (q *Queries) ReleaseDocumentRevision(ctx context.Context, arg ReleaseDocumentRevisionParams) (int64, error) {
 	result, err := q.db.Exec(ctx, releaseDocumentRevision,
+		arg.SignatureRequestID,
 		arg.Snapshot,
 		arg.Sha256,
 		arg.PersonID,

@@ -415,6 +415,27 @@ kbd {
 	background: currentColor;
 }
 
+/* Tanda tangan digital (D-198): menunggu kuning, lengkap hijau, ditolak merah. */
+.badge[data-signature='waiting'] {
+	background: var(--warning-weak);
+	color: var(--warning);
+}
+
+.badge[data-signature='completed'] {
+	background: var(--success-weak);
+	color: var(--success);
+}
+
+.badge[data-signature='rejected'] {
+	background: var(--danger-weak);
+	color: var(--danger);
+}
+
+.badge[data-signature='withdrawn'] {
+	background: #f2f4f7;
+	color: var(--text-3);
+}
+
 /* Review berkala (D-196): kuning dalam masa peringatan. Merah ikut Void di bawah. */
 .badge[data-review='due_soon'] {
 	background: var(--warning-weak);

@@ -31,7 +31,7 @@ describe('buildMenu', () => {
 	});
 
 	it('menampilkan Documents hanya untuk akun yang melihat draft (L-4, M4.1)', () => {
-		expect(hrefs(['L-1', 'L-4']).documents).toEqual(['/documents', '/changes', '/yokoten', '/dashboard', '/documents/released', '/periodic-reviews', '/numbers']);
+		expect(hrefs(['L-1', 'L-4']).documents).toEqual(['/documents', '/changes', '/yokoten', '/signatures', '/dashboard', '/documents/released', '/periodic-reviews', '/numbers']);
 	});
 
 	it('menampilkan impor nomor lama hanya untuk document control (E-8)', () => {

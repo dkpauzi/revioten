@@ -22,6 +22,10 @@ export type Customer = {
     default_route?: ApprovalRouteRef;
     project_group?: ProjectGroupRef;
     /**
+     * digital allows digital signatures; wet_only requires wet signatures (D-198).
+     */
+    signature_mode?: 'digital' | 'wet_only';
+    /**
      * Customers are never deleted; inactive customers get no new models (E-09).
      */
     active: boolean;
@@ -1483,8 +1487,105 @@ export type Performance = {
     trend: Array<PerformanceTrendPoint>;
 };
 
+export type SignatureModeChoice = {
+    mode: 'digital' | 'wet_only';
+};
+
+export type SignatureCandidate = {
+    person_id: string;
+    name: string;
+    position_key: string;
+    position: string;
+};
+
+export type SignaturePlanSlot = {
+    order: number;
+    stage: 'prepared' | 'checked' | 'approved';
+    print_title: string;
+    candidates: Array<SignatureCandidate>;
+};
+
+export type SignaturePlan = {
+    document_id: string;
+    number: string;
+    revision: number;
+    mode: 'digital' | 'wet_only';
+    route?: ApprovalRouteRef;
+    slots: Array<SignaturePlanSlot>;
+};
+
+export type SignerChoice = {
+    slot: number;
+    person_id: string;
+};
+
+export type SignatureSend = {
+    signers: Array<SignerChoice>;
+    note?: string;
+    password: string;
+};
+
+export type PasswordConfirmation = {
+    password: string;
+};
+
+export type SignatureRejection = {
+    reason: string;
+    password: string;
+};
+
+export type SignatureSlot = {
+    order: number;
+    stage: 'prepared' | 'checked' | 'approved';
+    print_title: string;
+    position: string;
+    person_id: string;
+    person_name: string;
+    signed_at?: string;
+};
+
+export type SignatureRequest = {
+    id: string;
+    document_id: string;
+    number: string;
+    document_type: string;
+    customer_id: string;
+    customer_code: string;
+    revision: number;
+    route_name: string;
+    content_sha256: string;
+    /**
+     * The date the request was sent (D-204); the revision date on every print.
+     */
+    release_date: string;
+    note?: string;
+    status: 'waiting' | 'completed' | 'rejected' | 'withdrawn';
+    sent_by: string;
+    sent_by_id: string;
+    sent_at: string;
+    closed_at?: string;
+    closed_by?: string;
+    reject_reason?: string;
+    slots: Array<SignatureSlot>;
+    /**
+     * Order of the slot that waits; 0 when none.
+     */
+    next_slot: number;
+    changes: Array<string>;
+};
+
+export type SignatureRequestList = {
+    items: Array<SignatureRequest>;
+};
+
+export type SignatureOverview = {
+    waiting: Array<SignatureRequest>;
+    sent: Array<SignatureRequest>;
+    to_release: Array<SignatureRequest>;
+};
+
 export type InboxTask = {
-    kind: 'verify' | 'release' | 'review' | 'confirm_review' | 'yokoten';
+    kind: 'verify' | 'release' | 'review' | 'confirm_review' | 'yokoten' | 'sign';
     title: string;
     detail?: string;
     link: string;
@@ -1573,6 +1674,10 @@ export type NewDocument = {
 };
 
 export type Document = {
+    /**
+     * The open draft is waiting for digital signatures or is fully signed; its content is locked (D-198).
+     */
+    signing?: 'waiting' | 'completed';
     /**
      * Migrated for a legacy document entered as a migration baseline (stage 7).
      */
@@ -3149,6 +3254,8 @@ export type RefDocId = string;
 export type LinkId = string;
 
 export type DocumentId = string;
+
+export type SignatureRequestId = string;
 
 export type RowId = string;
 
@@ -5954,6 +6061,41 @@ export type SetCustomerDefaultRouteResponses = {
 
 export type SetCustomerDefaultRouteResponse = SetCustomerDefaultRouteResponses[keyof SetCustomerDefaultRouteResponses];
 
+export type SetCustomerSignatureModeData = {
+    body: SignatureModeChoice;
+    path: {
+        customerId: string;
+    };
+    query?: never;
+    url: '/api/v1/customers/{customerId}/signature-mode';
+};
+
+export type SetCustomerSignatureModeErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type SetCustomerSignatureModeError = SetCustomerSignatureModeErrors[keyof SetCustomerSignatureModeErrors];
+
+export type SetCustomerSignatureModeResponses = {
+    /**
+     * The customer with its signature mode.
+     */
+    200: Customer;
+};
+
+export type SetCustomerSignatureModeResponse = SetCustomerSignatureModeResponses[keyof SetCustomerSignatureModeResponses];
+
 export type SetChangeTypeRouteData = {
     body: ChangeTypeRouteChoice;
     path: {
@@ -8313,6 +8455,284 @@ export type MarkDocumentReadyResponses = {
 };
 
 export type MarkDocumentReadyResponse = MarkDocumentReadyResponses[keyof MarkDocumentReadyResponses];
+
+export type GetSignaturePlanData = {
+    body?: never;
+    path: {
+        documentId: string;
+    };
+    query?: never;
+    url: '/api/v1/documents/{documentId}/signature-plan';
+};
+
+export type GetSignaturePlanErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type GetSignaturePlanError = GetSignaturePlanErrors[keyof GetSignaturePlanErrors];
+
+export type GetSignaturePlanResponses = {
+    /**
+     * The plan for "Send for signature".
+     */
+    200: SignaturePlan;
+};
+
+export type GetSignaturePlanResponse = GetSignaturePlanResponses[keyof GetSignaturePlanResponses];
+
+export type ListDocumentSignatureRequestsData = {
+    body?: never;
+    path: {
+        documentId: string;
+    };
+    query?: never;
+    url: '/api/v1/documents/{documentId}/signature-requests';
+};
+
+export type ListDocumentSignatureRequestsErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ListDocumentSignatureRequestsError = ListDocumentSignatureRequestsErrors[keyof ListDocumentSignatureRequestsErrors];
+
+export type ListDocumentSignatureRequestsResponses = {
+    /**
+     * The requests.
+     */
+    200: SignatureRequestList;
+};
+
+export type ListDocumentSignatureRequestsResponse = ListDocumentSignatureRequestsResponses[keyof ListDocumentSignatureRequestsResponses];
+
+export type SendForSignatureData = {
+    body: SignatureSend;
+    path: {
+        documentId: string;
+    };
+    query?: never;
+    url: '/api/v1/documents/{documentId}/signature-requests';
+};
+
+export type SendForSignatureErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type SendForSignatureError = SendForSignatureErrors[keyof SendForSignatureErrors];
+
+export type SendForSignatureResponses = {
+    /**
+     * The new request.
+     */
+    201: SignatureRequest;
+};
+
+export type SendForSignatureResponse = SendForSignatureResponses[keyof SendForSignatureResponses];
+
+export type ListSignatureRequestsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/signature-requests';
+};
+
+export type ListSignatureRequestsErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ListSignatureRequestsError = ListSignatureRequestsErrors[keyof ListSignatureRequestsErrors];
+
+export type ListSignatureRequestsResponses = {
+    /**
+     * The overview.
+     */
+    200: SignatureOverview;
+};
+
+export type ListSignatureRequestsResponse = ListSignatureRequestsResponses[keyof ListSignatureRequestsResponses];
+
+export type GetSignatureRequestData = {
+    body?: never;
+    path: {
+        requestId: string;
+    };
+    query?: never;
+    url: '/api/v1/signature-requests/{requestId}';
+};
+
+export type GetSignatureRequestErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type GetSignatureRequestError = GetSignatureRequestErrors[keyof GetSignatureRequestErrors];
+
+export type GetSignatureRequestResponses = {
+    /**
+     * The request.
+     */
+    200: SignatureRequest;
+};
+
+export type GetSignatureRequestResponse = GetSignatureRequestResponses[keyof GetSignatureRequestResponses];
+
+export type SignSignatureRequestData = {
+    body: PasswordConfirmation;
+    path: {
+        requestId: string;
+    };
+    query?: never;
+    url: '/api/v1/signature-requests/{requestId}/sign';
+};
+
+export type SignSignatureRequestErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type SignSignatureRequestError = SignSignatureRequestErrors[keyof SignSignatureRequestErrors];
+
+export type SignSignatureRequestResponses = {
+    /**
+     * The request after signing.
+     */
+    200: SignatureRequest;
+};
+
+export type SignSignatureRequestResponse = SignSignatureRequestResponses[keyof SignSignatureRequestResponses];
+
+export type RejectSignatureRequestData = {
+    body: SignatureRejection;
+    path: {
+        requestId: string;
+    };
+    query?: never;
+    url: '/api/v1/signature-requests/{requestId}/reject';
+};
+
+export type RejectSignatureRequestErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type RejectSignatureRequestError = RejectSignatureRequestErrors[keyof RejectSignatureRequestErrors];
+
+export type RejectSignatureRequestResponses = {
+    /**
+     * The rejected request.
+     */
+    200: SignatureRequest;
+};
+
+export type RejectSignatureRequestResponse = RejectSignatureRequestResponses[keyof RejectSignatureRequestResponses];
+
+export type WithdrawSignatureRequestData = {
+    body?: never;
+    path: {
+        requestId: string;
+    };
+    query?: never;
+    url: '/api/v1/signature-requests/{requestId}/withdraw';
+};
+
+export type WithdrawSignatureRequestErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type WithdrawSignatureRequestError = WithdrawSignatureRequestErrors[keyof WithdrawSignatureRequestErrors];
+
+export type WithdrawSignatureRequestResponses = {
+    /**
+     * The withdrawn request.
+     */
+    200: SignatureRequest;
+};
+
+export type WithdrawSignatureRequestResponse = WithdrawSignatureRequestResponses[keyof WithdrawSignatureRequestResponses];
 
 export type GetInboxData = {
     body?: never;

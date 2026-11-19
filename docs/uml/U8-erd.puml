@@ -1,4 +1,4 @@
-' U8 · ERD fisik (draft 0.16, 2026-11-20), dibangkitkan dari skema database sampai migrasi 00049
+' U8 · ERD fisik (draft 0.16, 2026-11-20), dibangkitkan dari skema database sampai migrasi 00050
 ' oleh docs/uml/tools/u8_dari_database.py. Jangan diedit tangan: ubah migrasinya, lalu jalankan skrip itu lagi.
 ' Menggambarkan tabel PostgreSQL 18 yang sudah dibangun (R-UML-03: diagram fisik mengikuti kode).
 ' Tim IT boleh memakai stack lain (R-UML-02); aturan yang wajib dipertahankan ada di brief dan U5.
@@ -42,6 +42,7 @@ entity "customers" as customers {
   * active : boolean
   default_route_id : uuid <<FK>>
   default_form_set_id : uuid <<FK>>
+  * signature_mode : text
 }
 
 entity "customer_codes" as customer_codes {
@@ -851,7 +852,7 @@ skinparam ArrowColor #444444
 skinparam ClassBorderColor #1F4E79
 skinparam ClassBackgroundColor #FFFFFF
 
-title U8-H · Perubahan, revisi, rilis, dan yokoten
+title U8-H · Perubahan, revisi, rilis, yokoten, dan tanda tangan digital
 
 entity "changes" as changes {
   * id : uuid <<PK>>
@@ -945,6 +946,7 @@ entity "document_revisions" as document_revisions <<RLS>> {
   * migrated : boolean
   ready_at : timestamptz
   ready_by_person_id : uuid <<FK>>
+  signature_request_id : uuid <<FK>>
 }
 
 entity "yokotens" as yokotens {
@@ -979,7 +981,56 @@ entity "yokoten_target_documents" as yokoten_target_documents {
   --
 }
 
+entity "signature_requests" as signature_requests <<RLS>> {
+  * id : uuid <<PK>>
+  --
+  * document_id : uuid <<FK>>
+  * revision_id : uuid <<FK>>
+  * revision : smallint
+  * customer_id : uuid <<FK>>
+  * route_id : uuid <<FK>>
+  * route_name : text
+  * snapshot : text
+  * content_sha256 : text
+  * release_date : date
+  note : text
+  * status : text
+  * sent_by_person_id : uuid <<FK>>
+  * sent_by_account_id : uuid <<FK>>
+  * sent_at : timestamptz
+  closed_at : timestamptz
+  closed_by_person_id : uuid <<FK>>
+  reject_reason : text
+}
+
+entity "signature_slots" as signature_slots {
+  * request_id : uuid <<FK>> <<PK>>
+  * slot_order : smallint <<PK>>
+  --
+  * stage : text
+  * print_title : text
+  * position_name : text
+  * person_id : uuid <<FK>>
+  * person_name : text
+}
+
+entity "signatures" as signatures {
+  * id : uuid <<PK>>
+  --
+  * request_id : uuid <<FK>>
+  * slot_order : smallint <<FK>>
+  * person_id : uuid <<FK>>
+  * account_id : uuid <<FK>>
+  * person_name : text
+  * print_title : text
+  * stage : text
+  * content_sha256 : text
+  * signed_at : timestamptz
+  source_ip : text
+}
+
 entity "accounts" as accounts #EEEEEE
+entity "approval_routes" as approval_routes #EEEEEE
 entity "change_sources" as change_sources #EEEEEE
 entity "change_types" as change_types #EEEEEE
 entity "customers" as customers #EEEEEE
@@ -1011,6 +1062,18 @@ service_accounts ||--o{ changes
 accounts ||--o{ document_revisions
 documents ||--o{ document_revisions
 people ||--o{ document_revisions
+signature_requests ||--o{ document_revisions
+accounts ||--o{ signature_requests
+approval_routes ||--o{ signature_requests
+customers ||--o{ signature_requests
+document_revisions ||--o{ signature_requests
+documents ||--o{ signature_requests
+people ||--o{ signature_requests
+people ||--o{ signature_slots
+signature_requests ||--o{ signature_slots
+accounts ||--o{ signatures
+people ||--o{ signatures
+signature_slots ||--o{ signatures
 documents ||--o{ yokoten_target_documents
 yokoten_targets ||--o{ yokoten_target_documents
 changes ||--o{ yokoten_targets
