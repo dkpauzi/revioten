@@ -18,7 +18,7 @@ export const helpEn: HelpContent = {
 			intro: 'Every page needs a login. A new account gets a temporary password from the admin and must change it at the first login.',
 			steps: [
 				'Open the address of the system in your browser. The {loginTitle} page appears.',
-				'Fill in {loginName} and {loginPassword}, then press {loginSubmit}. Press {loginShow} next to the password to check what you typed.',
+				'Fill in {loginName} and {loginPassword}, then press {loginSubmit}. Press the eye icon ({loginShow}) in the password box to check what you typed.',
 				'At the first login the {passwordTitle} page opens by itself. Fill in {passwordCurrent} with the temporary password.',
 				'Fill in {passwordNew} and {passwordConfirm} with your own password of at least 8 characters, then press {passwordSave}.',
 				'To change your password later, press {navAccount} in the top bar.',
@@ -381,27 +381,27 @@ export const helpEn: HelpContent = {
 			who: 'PPAP Engineer records, a verifier confirms; everyone sees the warnings',
 			intro: 'A PFD, PFMEA, and Control Plan set with no revision for 3 years must be reviewed. The warning appears on {navHome}, on the dashboard, on the document page, in {navPeriodicReviews}, and as an email to the authors of the customer: yellow 90 days before the due date, red after it.',
 			steps: [
-				'Open {navGroupDocuments}, then {navPeriodicReviews}. The most urgent sets are at the top.',
-				'If something must change, press {reviewWithChanges}. The change request opens with the trigger Periodic review and the documents of the set.',
-				'If nothing must change, press {reviewNoChange}, fill in {reviewDate}, {reviewParticipants}, every checklist item, and {reviewConclusion}, then press {reviewSave}.',
-				'A second person with the Verifier role presses {reviewConfirm} under {reviewWaitingTitle}. The review period then starts again from the review date.'
+				'Open {navGroupDocuments}, then {navPeriodicReviews}. The cards count the sets that are overdue, due soon, due within a year, and reviewed this year.',
+				'Choose {reviewTabDue}, {reviewTabYear}, or {reviewTabAll}. Filter by customer or engineer, and tick {reviewShowEol} to see models that are end of life. {reviewDownload} saves the list.',
+				'Press {reviewStart} on a set. Choose {reviewChangesNeeded} and press {reviewOpenChange}: the change request opens with the trigger Periodic review and the documents of the set.',
+				'Or choose {reviewNoChange}, fill in {reviewDate}, {reviewParticipants}, every checklist item, and {reviewConclusion}, then press {reviewSave}. Another person with the Verifier role presses {reviewConfirm} under {reviewWaitingTitle}; the clock then starts again.'
 			],
-			tips: ['The person who recorded a review cannot confirm it.', 'A confirmed review cannot be changed. The document revision does not go up.', 'A new release also starts the period again.'],
+			tips: ['Each document has its own clock: its last release, or the last confirmed review of its set.', 'The PPAP Engineer or the Project Leader marks a model end of life in Master data → Models ({modelEolMark}). Its sets leave the review.', 'The person who recorded a review cannot confirm it. A confirmed review cannot be changed.'],
 			image: 'periodic-review',
 			imageAlt: 'The Periodic review page with a document set that is overdue.'
 		},
 		{
 			id: 'performance',
 			title: 'Performance report',
-			who: 'PPAP Engineer and supervisor',
+			who: 'PPAP Engineer, supervisor, and manager',
 			intro: 'The weekly, monthly, or yearly numbers of the PPAP work, counted from the recorded changes, prints, signed scans, and releases. A week runs from Friday to Thursday, so the Friday report covers the week that just ended.',
 			steps: [
 				'Open {navGroupDocuments}, then {navPerformance}.',
-				'Choose {performanceWeek}, {performanceMonth}, or {performanceYear}, and a date in the period. {performancePrevious} and {performanceNext} move one period.',
-				'Read {performanceChanges} and {performanceByTrigger} for customer claims and audit findings, and {performanceYokoten} for yokoten.',
-				'Read {performanceTimes}: {performanceAcceptedToRelease}, {performanceEditToPrint}, and {performancePrintToSigned}, in total and {performancePeople}.'
+				'Choose {performanceWeek}, {performanceMonth}, or {performanceYear}. The arrows move one period; choose an engineer or a customer to narrow it. The download button saves the report as Excel.',
+				'Read {performanceReceived}, {performanceReleased}, and {performanceApprovedToReleased}, each compared with the period before.',
+				'Read {performanceWhere}: {performanceStageEdit}, {performanceStageWaiting}, {performanceStagePrint}, and {performanceStageRelease}; then the triggers, the trend, yokoten, and {performancePeopleTitle}.'
 			],
-			tips: ['Times count revisions released in the period through an accepted change.', 'Editing starts when the draft revision opens; ready to print is the last print for signature before the signed scan.'],
+			tips: ['No targets are set: the report only collects how long each stage takes.', 'Press {revisionReady} in the Revisions section of a draft when it is complete, so {performanceStageWaiting} can be measured.'],
 			image: 'performance',
 			imageAlt: 'The Performance report for one week with the change counts and the time per stage.'
 		},

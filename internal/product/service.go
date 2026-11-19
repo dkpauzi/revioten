@@ -134,7 +134,7 @@ func (s *Service) ListModels(ctx context.Context, actor access.Actor, customerID
 	for _, r := range rows {
 		list = append(list, Model{
 			ID: r.ID, CustomerID: r.CustomerID, ModelGroupID: deref(r.ModelGroupID),
-			ModelGroupName: deref(r.ModelGroupName), Name: r.Name, CreatedAt: r.CreatedAt.UTC(),
+			ModelGroupName: deref(r.ModelGroupName), Name: r.Name, CreatedAt: r.CreatedAt.UTC(), EOLAt: utc(r.EolAt),
 		})
 	}
 	return list, nil

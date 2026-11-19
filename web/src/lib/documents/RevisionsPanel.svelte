@@ -3,7 +3,7 @@
 	// dan SHA-256 snapshot. Pemegang E-7 (Dokumen kontrol) mencatat rilis draft
 	// yang terbuka; isinya dibekukan dan tidak bisa diubah lagi (R-REV-02).
 	// Sejak M6.7 rilis butuh scan bertanda tangan yang diunggah lebih dulu.
-	import { listDocumentRevisions, releaseDocument, signedScanUrl, uploadSignedScan } from '#lib/api/client.ts';
+	import { listDocumentRevisions, markDocumentReady, releaseDocument, signedScanUrl, uploadSignedScan } from '#lib/api/client.ts';
 	import DiffPanel from '#lib/documents/DiffPanel.svelte';
 	import type { Document, DocumentRevision } from '#lib/api/gen/index.ts';
 	import { failureText, problemText } from '#lib/errors.ts';
@@ -22,6 +22,20 @@
 	let canUpload = $derived(doc.status === 'draft' && can(openBaseline ? 'E-10' : 'E-7'));
 	let canRelease = $derived(can('E-7') && doc.status === 'draft' && !openBaseline);
 	let draft = $derived(items.find((r) => r.status === 'draft'));
+	// Tanda siap cetak (D-202): hanya dicatat untuk laporan kinerja.
+	let canReady = $derived(can('E-2') && doc.status === 'draft');
+
+	async function ready() {
+		message = '';
+		failure = '';
+		const result = await markDocumentReady(doc.id);
+		if (!result.ok) {
+			failure = failureText(result.error);
+			return;
+		}
+		items = result.data.items;
+		message = t('revisionReadyDone', { revision: String(doc.revision) });
+	}
 	let scanInput = $state<HTMLInputElement | null>(null);
 
 	// Daftar dimuat ulang setiap kali revisi atau status dokumen berubah.
@@ -107,6 +121,12 @@
 			{/each}
 		</tbody>
 	</table>
+	{#if canReady}
+		<p class="hint">
+			{draft?.ready_at ? t('revisionReadyAt', { at: formatDateTime(draft.ready_at) }) : t('revisionReadyHint')}
+		</p>
+		<button type="button" onclick={ready}>{t('revisionReady')}</button>
+	{/if}
 	{#if canUpload}
 		<form class="row" onsubmit={upload} novalidate>
 			<div class="field">

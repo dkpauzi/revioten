@@ -1,4 +1,5 @@
 <script lang="ts">
+	import PasswordInput from '#lib/PasswordInput.svelte';
 	import { onMount } from 'svelte';
 	import { changePassword, getOwnEmail, getSession, setOwnEmail } from '#lib/api/client.ts';
 	import { failureText, problemText } from '#lib/errors.ts';
@@ -87,13 +88,7 @@
 <form onsubmit={submit} novalidate>
 	<div class="field">
 		<label for="current-password">{t('passwordCurrent')}</label>
-		<input
-			id="current-password"
-			type="password"
-			autocomplete="current-password"
-			bind:value={current}
-			aria-invalid={fieldErrors.current_password ? 'true' : undefined}
-		/>
+		<PasswordInput id="current-password" autocomplete="current-password" bind:value={current} invalid={Boolean(fieldErrors.current_password)} />
 		{#if fieldErrors.current_password}
 			<p class="error">{fieldErrors.current_password}</p>
 		{/if}
@@ -101,14 +96,7 @@
 
 	<div class="field">
 		<label for="new-password">{t('passwordNew')}</label>
-		<input
-			id="new-password"
-			type="password"
-			autocomplete="new-password"
-			aria-describedby="new-password-hint"
-			bind:value={newPassword}
-			aria-invalid={fieldErrors.new_password ? 'true' : undefined}
-		/>
+		<PasswordInput id="new-password" autocomplete="new-password" describedby="new-password-hint" bind:value={newPassword} invalid={Boolean(fieldErrors.new_password)} />
 		<small id="new-password-hint">{t('passwordNewHint')}</small>
 		{#if fieldErrors.new_password}
 			<p class="error">{fieldErrors.new_password}</p>
@@ -117,13 +105,7 @@
 
 	<div class="field">
 		<label for="confirm-password">{t('passwordConfirm')}</label>
-		<input
-			id="confirm-password"
-			type="password"
-			autocomplete="new-password"
-			bind:value={confirm}
-			aria-invalid={fieldErrors.confirm ? 'true' : undefined}
-		/>
+		<PasswordInput id="confirm-password" autocomplete="new-password" bind:value={confirm} invalid={Boolean(fieldErrors.confirm)} />
 		{#if fieldErrors.confirm}
 			<p class="error">{fieldErrors.confirm}</p>
 		{/if}

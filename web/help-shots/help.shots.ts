@@ -308,12 +308,12 @@ test('potret layar untuk halaman Help', async ({ page }) => {
 	await shot(page, 'released-documents');
 
 	await openFromMenu(page, en.navGroupDocuments, en.navPeriodicReviews);
-	await page.getByLabel(en.reviewShowAll).check();
+	await page.getByRole('button', { name: en.reviewTabAll, exact: true }).click();
 	await expect(page.getByRole('link', { name: 'SH-LM-001' })).toBeVisible();
 	await shot(page, 'periodic-review');
 
 	await openFromMenu(page, en.navGroupDocuments, en.navPerformance);
-	await expect(page.getByRole('heading', { name: en.performanceChanges })).toBeVisible();
+	await expect(page.getByRole('heading', { name: en.performanceReceived, exact: true })).toBeVisible();
 	await shot(page, 'performance');
 
 	// Admin: audit log.

@@ -488,6 +488,10 @@ export type Model = {
     model_group?: ModelGroupRef;
     name: string;
     created_at: string;
+    /**
+     * Set when the model is end of life (D-200).
+     */
+    eol_at?: string;
 };
 
 /**
@@ -1214,6 +1218,12 @@ export type ReviewSetDocument = {
     number: string;
     document_type: string;
     revision: number;
+    last_release: string;
+    /**
+     * The review clock runs per document (D-202).
+     */
+    due_on: string;
+    overdue: boolean;
 };
 
 export type ReviewSet = {
@@ -1225,7 +1235,7 @@ export type ReviewSet = {
     last_release: string;
     last_review?: string;
     due_on: string;
-    status: 'ok' | 'due_soon' | 'overdue';
+    status: 'ok' | 'due_year' | 'due_soon' | 'overdue' | 'eol';
     /**
      * Negative when overdue.
      */
@@ -1235,6 +1245,11 @@ export type ReviewSet = {
      */
     open_review_id?: string;
     draft_open: boolean;
+    eol: boolean;
+    /**
+     * The person who made the first document of the set.
+     */
+    engineer: string;
 };
 
 export type ReviewSetList = {
@@ -1242,6 +1257,15 @@ export type ReviewSetList = {
     warning_days: number;
     due_soon: number;
     overdue: number;
+    due_year: number;
+    /**
+     * Confirmed reviews with no change since 1 January.
+     */
+    reviewed_no_change: number;
+    /**
+     * Accepted changes with the trigger Periodic review since 1 January.
+     */
+    reviewed_revised: number;
     items: Array<ReviewSet>;
 };
 
@@ -1304,6 +1328,27 @@ export type DurationSummary = {
     median_hours: number;
 };
 
+export type TriggerCount = {
+    name: string;
+    mechanism: string;
+    count: number;
+};
+
+export type PerformanceStages = {
+    accepted_to_release: DurationSummary;
+    edit_to_ready: DurationSummary;
+    waiting_to_print: DurationSummary;
+    print_to_signed: DurationSummary;
+    signed_to_released: DurationSummary;
+};
+
+/**
+ * Counts per trigger group (ecr, customer_claim, audit_finding, yokoten, periodic_review, other).
+ */
+export type CategoryCounts = {
+    [key: string]: number;
+};
+
 export type PerformancePerson = {
     /**
      * Left out for requests from another application.
@@ -1313,11 +1358,13 @@ export type PerformancePerson = {
     submitted: number;
     accepted: number;
     rejected: number;
+    open: number;
     yokotens: number;
     releases: number;
-    accepted_to_release: DurationSummary;
-    edit_to_print: DurationSummary;
-    print_to_signed: DurationSummary;
+    customer_claim: number;
+    audit_finding: number;
+    yokoten: number;
+    stages: PerformanceStages;
 };
 
 export type PerformanceRelease = {
@@ -1325,20 +1372,43 @@ export type PerformanceRelease = {
     number: string;
     document_type: string;
     revision: number;
+    category: string;
     printed_by?: string;
     accepted_at: string;
     printed_at?: string;
     scan_at?: string;
     released_at: string;
     accepted_to_release_hours?: number;
-    edit_to_print_hours?: number;
+    edit_to_ready_hours?: number;
+    waiting_to_print_hours?: number;
     print_to_signed_hours?: number;
+    signed_to_released_hours?: number;
 };
 
-export type TriggerCount = {
-    name: string;
-    mechanism: string;
-    count: number;
+export type PerformanceYokoten = {
+    ref: string;
+    reason: string;
+    started: string;
+    targets: number;
+    applied: number;
+    not_applicable: number;
+    pending: number;
+    /**
+     * Left out while a target is still undecided.
+     */
+    days_to_close?: number;
+};
+
+export type PerformanceTrendPoint = {
+    label: string;
+    from: string;
+    /**
+     * The last day of the point (inclusive).
+     */
+    to: string;
+    releases: number;
+    accepted_to_release_median: number;
+    by_category: CategoryCounts;
 };
 
 export type Performance = {
@@ -1348,19 +1418,48 @@ export type Performance = {
      * The last day of the period (inclusive).
      */
     to: string;
+    /**
+     * The report week number (ISO week of its Thursday).
+     */
+    week: number;
     submitted: number;
     accepted: number;
     rejected: number;
+    waiting: number;
     by_trigger: Array<TriggerCount>;
+    by_category: CategoryCounts;
     yokotens: number;
     yokoten_targets: number;
     yokoten_changes: number;
+    yokoten_items: Array<PerformanceYokoten>;
     releases: number;
-    accepted_to_release: DurationSummary;
-    edit_to_print: DurationSummary;
-    print_to_signed: DurationSummary;
+    open_at_end: number;
+    stages: PerformanceStages;
+    previous: {
+        submitted: number;
+        releases: number;
+        accepted_to_release_median: number;
+    };
     people: Array<PerformancePerson>;
     release_items: Array<PerformanceRelease>;
+    trend: Array<PerformanceTrendPoint>;
+};
+
+export type InboxTask = {
+    kind: 'verify' | 'release' | 'review' | 'confirm_review' | 'yokoten';
+    title: string;
+    detail?: string;
+    link: string;
+    /**
+     * Days overdue for a periodic review; 0 otherwise.
+     */
+    days: number;
+    at?: string;
+};
+
+export type Inbox = {
+    total: number;
+    items: Array<InboxTask>;
 };
 
 export type Metrics = {
@@ -2052,6 +2151,10 @@ export type DocumentRevision = {
      * True when the revision was released by verification against the hard copy (M7.5).
      */
     migrated?: boolean;
+    /**
+     * When the draft was marked ready to print (D-202).
+     */
+    ready_at?: string;
     /**
      * Reference numbers of the changes that went into this revision (M5.6).
      */
@@ -7747,6 +7850,10 @@ export type ListReviewSetsData = {
         customer_id?: string;
         document_id?: string;
         all?: boolean;
+        /**
+         * Also the sets whose models are all end of life (D-200).
+         */
+        eol?: boolean;
     };
     url: '/api/v1/periodic-reviews/sets';
 };
@@ -7888,6 +7995,7 @@ export type GetPerformanceData = {
         period: 'week' | 'month' | 'year';
         date?: string;
         customer_id?: string;
+        person_id?: string;
     };
     url: '/api/v1/performance';
 };
@@ -7917,6 +8025,186 @@ export type GetPerformanceResponses = {
 };
 
 export type GetPerformanceResponse = GetPerformanceResponses[keyof GetPerformanceResponses];
+
+export type ExportReviewSetsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        customer_id?: string;
+        all?: boolean;
+        eol?: boolean;
+    };
+    url: '/api/v1/periodic-reviews/sets/export';
+};
+
+export type ExportReviewSetsErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ExportReviewSetsError = ExportReviewSetsErrors[keyof ExportReviewSetsErrors];
+
+export type ExportReviewSetsResponses = {
+    /**
+     * The Excel file.
+     */
+    200: Blob | File;
+};
+
+export type ExportReviewSetsResponse = ExportReviewSetsResponses[keyof ExportReviewSetsResponses];
+
+export type ExportPerformanceData = {
+    body?: never;
+    path?: never;
+    query: {
+        period: 'week' | 'month' | 'year';
+        date?: string;
+        customer_id?: string;
+        person_id?: string;
+    };
+    url: '/api/v1/performance/export';
+};
+
+export type ExportPerformanceErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ExportPerformanceError = ExportPerformanceErrors[keyof ExportPerformanceErrors];
+
+export type ExportPerformanceResponses = {
+    /**
+     * The Excel file.
+     */
+    200: Blob | File;
+};
+
+export type ExportPerformanceResponse = ExportPerformanceResponses[keyof ExportPerformanceResponses];
+
+export type SetModelEolData = {
+    body: {
+        eol: boolean;
+    };
+    path: {
+        modelId: string;
+    };
+    query?: never;
+    url: '/api/v1/models/{modelId}/eol';
+};
+
+export type SetModelEolErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type SetModelEolError = SetModelEolErrors[keyof SetModelEolErrors];
+
+export type SetModelEolResponses = {
+    /**
+     * The model.
+     */
+    200: Model;
+};
+
+export type SetModelEolResponse = SetModelEolResponses[keyof SetModelEolResponses];
+
+export type MarkDocumentReadyData = {
+    body?: never;
+    path: {
+        documentId: string;
+    };
+    query?: never;
+    url: '/api/v1/documents/{documentId}/ready';
+};
+
+export type MarkDocumentReadyErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type MarkDocumentReadyError = MarkDocumentReadyErrors[keyof MarkDocumentReadyErrors];
+
+export type MarkDocumentReadyResponses = {
+    /**
+     * The revisions of the document.
+     */
+    200: DocumentRevisionList;
+};
+
+export type MarkDocumentReadyResponse = MarkDocumentReadyResponses[keyof MarkDocumentReadyResponses];
+
+export type GetInboxData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/inbox';
+};
+
+export type GetInboxErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type GetInboxError = GetInboxErrors[keyof GetInboxErrors];
+
+export type GetInboxResponses = {
+    /**
+     * The waiting work.
+     */
+    200: Inbox;
+};
+
+export type GetInboxResponse = GetInboxResponses[keyof GetInboxResponses];
 
 export type GetMetricsData = {
     body?: never;

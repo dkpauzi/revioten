@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 
@@ -115,8 +116,16 @@ func getModel(ctx context.Context, q *db.Queries, id string) (Model, error) {
 	}
 	return Model{
 		ID: r.ID, CustomerID: r.CustomerID, ModelGroupID: deref(r.ModelGroupID),
-		ModelGroupName: deref(r.ModelGroupName), Name: r.Name, CreatedAt: r.CreatedAt.UTC(),
+		ModelGroupName: deref(r.ModelGroupName), Name: r.Name, CreatedAt: r.CreatedAt.UTC(), EOLAt: utc(r.EolAt),
 	}, nil
+}
+
+func utc(t *time.Time) *time.Time {
+	if t == nil {
+		return nil
+	}
+	u := t.UTC()
+	return &u
 }
 
 // getPartNumber membaca satu part number beserta nama modelnya.

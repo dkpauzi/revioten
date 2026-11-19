@@ -106,7 +106,7 @@ func (q *Queries) LinkChangeDraft(ctx context.Context, arg LinkChangeDraftParams
 
 const listDocumentRevisions = `-- name: ListDocumentRevisions :many
 SELECT r.id, r.revision, r.status, p.name AS created_by, r.created_at, r.released_at,
-       r.snapshot_sha256, rp.name AS released_by, r.release_date, r.scan_file_name, r.migrated
+       r.snapshot_sha256, rp.name AS released_by, r.release_date, r.scan_file_name, r.migrated, r.ready_at
 FROM document_revisions r JOIN people p ON p.id = r.created_by_person_id
 LEFT JOIN people rp ON rp.id = r.released_by_person_id
 WHERE r.document_id = $1
@@ -125,6 +125,7 @@ type ListDocumentRevisionsRow struct {
 	ReleaseDate    pgtype.Date
 	ScanFileName   *string
 	Migrated       bool
+	ReadyAt        *time.Time
 }
 
 func (q *Queries) ListDocumentRevisions(ctx context.Context, documentID string) ([]ListDocumentRevisionsRow, error) {
@@ -148,6 +149,7 @@ func (q *Queries) ListDocumentRevisions(ctx context.Context, documentID string) 
 			&i.ReleaseDate,
 			&i.ScanFileName,
 			&i.Migrated,
+			&i.ReadyAt,
 		); err != nil {
 			return nil, err
 		}
@@ -205,6 +207,26 @@ type MarkDocumentReleasedParams struct {
 func (q *Queries) MarkDocumentReleased(ctx context.Context, arg MarkDocumentReleasedParams) error {
 	_, err := q.db.Exec(ctx, markDocumentReleased, arg.ID, arg.ReleasedRevision)
 	return err
+}
+
+const markRevisionReady = `-- name: MarkRevisionReady :execrows
+UPDATE document_revisions SET ready_at = now(), ready_by_person_id = $2
+WHERE document_id = $1 AND status = 'draft'
+`
+
+type MarkRevisionReadyParams struct {
+	DocumentID      string
+	ReadyByPersonID *string
+}
+
+// MarkRevisionReady memberi tanda "siap cetak" pada draft terbuka satu
+// dokumen (D-202). Menandai lagi memperbarui waktunya.
+func (q *Queries) MarkRevisionReady(ctx context.Context, arg MarkRevisionReadyParams) (int64, error) {
+	result, err := q.db.Exec(ctx, markRevisionReady, arg.DocumentID, arg.ReadyByPersonID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const maxDocumentRevision = `-- name: MaxDocumentRevision :one

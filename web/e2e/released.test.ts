@@ -32,9 +32,9 @@ test('D-195: akun Viewer membaca revisi terbit, bukan draft, tanpa tombol ubah',
 
 	// Daftar review berkala: dokumen baru terbit belum jatuh tempo.
 	await openFromMenu(page, en.navGroupDocuments, en.navPeriodicReviews);
-	await page.getByLabel(en.reviewShowAll).check();
-	await expect(page.getByRole('link', { name: /^SC-CH-/ }).first()).toBeVisible();
-	await expect(page.getByRole('button', { name: en.reviewNoChange })).toHaveCount(0);
+	await page.getByRole('button', { name: en.reviewTabAll, exact: true }).click();
+	await expect(page.getByRole('link', { name: /SC-CH-/ }).first()).toBeVisible();
+	await expect(page.getByRole('button', { name: en.reviewStart })).toHaveCount(0);
 
 	// Menu draft (L-4) dan laporan kinerja (L-5) tidak untuk Viewer.
 	await mainMenu(page).getByRole('button', { name: en.navGroupDocuments, exact: true }).click();
@@ -51,8 +51,8 @@ test('D-197: PPAP Engineer membaca laporan kinerja minggu ini dan tahun ini', as
 	await expect(page.getByRole('button', { name: en.logout })).toBeVisible();
 
 	await openFromMenu(page, en.navGroupDocuments, en.navPerformance);
-	await expect(page.getByRole('heading', { name: en.performanceChanges })).toBeVisible();
-	await page.getByLabel(en.performancePeriod, { exact: true }).selectOption('year');
+	await expect(page.getByRole('heading', { name: en.performanceReceived, exact: true })).toBeVisible();
+	await page.getByRole('button', { name: en.performanceYear, exact: true }).click();
 	// Perubahan di m5-changes diajukan tahun ini oleh orang ini.
 	await expect(page.getByTestId('perf-submitted')).not.toHaveText('0');
 	await expect(page.getByRole('cell', { name: 'Pemohon perubahan' })).toBeVisible();

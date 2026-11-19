@@ -363,10 +363,10 @@ Buka **Documents → Dashboard**: baris yang mengikuti template, dokumen per sta
 Buka **Documents → Released documents**, pilih customer LM. Setiap akun, juga akun Viewer tanpa peran kerja (internal audit, QA, QC, produksi), membaca revisi yang berlaku. Tekan nomor dokumen untuk membaca isinya, dan tab **Check** untuk PFMEA dan CP terbit berdampingan. Tidak ada tombol ubah, dan draft tidak pernah tampil.
 
 ### Langkah 32 · Review berkala
-Buka **Documents → Periodic review**. Set PFD, PFMEA, dan CP yang 36 bulan tidak direvisi tampil kuning 90 hari sebelum jatuh tempo dan merah sesudahnya. Peringatan yang sama muncul di **Home**, di **Dashboard**, di halaman dokumen, dan sebagai email ke penyusun customer itu. Centang **Show sets that are not due** untuk melihat semua set. Untuk set yang jatuh tempo, penyusun menekan **Review with changes** (permintaan perubahan dengan pemicu Periodic review) atau **Reviewed, no change** (daftar periksa, peserta, kesimpulan), lalu verifikator menekan **Confirm**.
+Buka **Documents → Periodic review**. Set PFD, PFMEA, dan CP yang 36 bulan tidak direvisi tampil kuning 90 hari sebelum jatuh tempo dan merah sesudahnya. Peringatan yang sama muncul di **Home**, di **Dashboard**, di halaman dokumen, dan sebagai email ke penyusun customer itu. Tekan tab **All active** untuk melihat semua set. Untuk set yang jatuh tempo, penyusun menekan **Start review**, lalu **Changes needed** (permintaan perubahan dengan pemicu Periodic review) atau **Reviewed, no change** (daftar periksa, peserta, kesimpulan), lalu verifikator menekan **Confirm**. Model yang sudah tidak diproduksi ditandai **Mark EOL** di Master data → Models.
 
 ### Langkah 33 · Laporan kinerja
-Login sebagai `ppap.engineer`. Buka **Documents → Performance report**. Pilih **Week (Friday to Thursday)**, **Month**, atau **Year**: jumlah permintaan perubahan per pemicu (termasuk Customer claim dan Audit finding), yokoten, dan waktu dari diterima sampai rilis, dari mulai edit sampai siap cetak, dan dari cetak sampai ditandatangani, total dan per orang.
+Login sebagai `ppap.engineer`. Buka **Documents → PPAP performance**. Pilih **Week**, **Month**, atau **Year** (minggu laporan Jumat sampai Kamis), lalu **Download weekly report** untuk Excel: jumlah permintaan perubahan per pemicu (termasuk Customer claim dan Audit finding), yokoten, dan waktu dari diterima sampai rilis, dari mulai edit sampai siap cetak, dan dari cetak sampai ditandatangani, total dan per orang.
 
 ## 11. Admin: periksa peran dan jejak (Tahap 8)
 

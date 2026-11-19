@@ -29,7 +29,8 @@ type MigrationService interface {
 // MetricsService menghitung ukuran dasbor (M7.7).
 type MetricsService interface {
 	Get(ctx context.Context, actor access.Actor, customerID string) (metrics.Metrics, error)
-	Performance(ctx context.Context, actor access.Actor, kind string, date time.Time, customerID string) (metrics.Performance, error)
+	Performance(ctx context.Context, actor access.Actor, kind string, date time.Time, customerID, personID string) (metrics.Performance, error)
+	Export(ctx context.Context, actor access.Actor, kind string, date time.Time, customerID, personID string) ([]byte, string, error)
 }
 
 // ListMigratableNumbers menjawab GET /api/v1/migration/numbers.

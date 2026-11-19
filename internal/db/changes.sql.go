@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"time"
 )
 
 const createChangeSource = `-- name: CreateChangeSource :one
@@ -24,9 +25,17 @@ const getChangeSource = `-- name: GetChangeSource :one
 SELECT id, name, mechanism, active, created_at FROM change_sources WHERE id = $1
 `
 
-func (q *Queries) GetChangeSource(ctx context.Context, id string) (ChangeSource, error) {
+type GetChangeSourceRow struct {
+	ID        string
+	Name      string
+	Mechanism *string
+	Active    bool
+	CreatedAt time.Time
+}
+
+func (q *Queries) GetChangeSource(ctx context.Context, id string) (GetChangeSourceRow, error) {
 	row := q.db.QueryRow(ctx, getChangeSource, id)
-	var i ChangeSource
+	var i GetChangeSourceRow
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
@@ -86,16 +95,24 @@ const listChangeSources = `-- name: ListChangeSources :many
 SELECT id, name, mechanism, active, created_at FROM change_sources ORDER BY lower(name)
 `
 
+type ListChangeSourcesRow struct {
+	ID        string
+	Name      string
+	Mechanism *string
+	Active    bool
+	CreatedAt time.Time
+}
+
 // ListChangeSources mengambil semua sumber perubahan, urut menurut nama.
-func (q *Queries) ListChangeSources(ctx context.Context) ([]ChangeSource, error) {
+func (q *Queries) ListChangeSources(ctx context.Context) ([]ListChangeSourcesRow, error) {
 	rows, err := q.db.Query(ctx, listChangeSources)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []ChangeSource{}
+	items := []ListChangeSourcesRow{}
 	for rows.Next() {
-		var i ChangeSource
+		var i ListChangeSourcesRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,

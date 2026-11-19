@@ -60,6 +60,8 @@ type ProductService interface {
 	ListPartNumbers(ctx context.Context, actor access.Actor, customerID string) ([]product.PartNumber, error)
 	CreatePartNumber(ctx context.Context, actor access.Actor, in product.NewPartNumber) (product.PartNumber, error)
 	UpdatePartNumber(ctx context.Context, actor access.Actor, id string, in product.PartNumberUpdate) (product.PartNumber, error)
+	// SetEOL menandai model end of life (D-200).
+	SetEOL(ctx context.Context, actor access.Actor, id string, eol bool) (product.Model, error)
 }
 
 // ProcessService adalah operasi master proses yang dipakai API (M1.5).
@@ -174,6 +176,8 @@ type DocumentService interface {
 	ListReleased(ctx context.Context, actor access.Actor, customerID string) ([]document.Summary, error)
 	Released(ctx context.Context, actor access.Actor, id string) (document.Document, error)
 	ReleasedComparison(ctx context.Context, actor access.Actor, id string) (document.Comparison, error)
+	// MarkReady memberi tanda siap cetak pada draft (D-202).
+	MarkReady(ctx context.Context, actor access.Actor, id string) ([]document.Revision, error)
 	SetHeader(ctx context.Context, actor access.Actor, id string, header map[string]any, version int) (document.Document, error)
 	AddRow(ctx context.Context, actor access.Actor, id string, in document.NewRow) (document.Document, error)
 	AddRows(ctx context.Context, actor access.Actor, id string, rows []document.NewRow) (document.Document, error)
@@ -318,6 +322,8 @@ type Deps struct {
 	Notifications NotificationService
 	// Reviews adalah review berkala (D-196).
 	Reviews ReviewService
+	// Inbox adalah daftar "Waiting for you" di Home (D-202).
+	Inbox InboxService
 	// Logger untuk log server. Bila nil, dipakai slog.Default().
 	Logger *slog.Logger
 }
@@ -338,7 +344,7 @@ func NewHandler(ui fs.FS, deps Deps) http.Handler {
 		audit: deps.Audit, products: deps.Products, processes: deps.Processes,
 		numbering: deps.Numbering, changes: deps.Changes, approval: deps.Approval, settings: deps.Settings,
 		templates: deps.Templates, processTemplates: deps.ProcessTemplates, documents: deps.Documents, refDocs: deps.RefDocs, changeRequests: deps.ChangeRequests, printing: deps.Printing,
-		migration: deps.Migration, metrics: deps.Metrics, reviews: deps.Reviews, roles: deps.Roles,
+		migration: deps.Migration, metrics: deps.Metrics, reviews: deps.Reviews, inbox: deps.Inbox, roles: deps.Roles,
 		serviceAccounts: deps.ServiceAccounts, notifications: deps.Notifications, log: log,
 	}
 
@@ -407,6 +413,7 @@ type apiServer struct {
 	migration        MigrationService
 	metrics          MetricsService
 	reviews          ReviewService
+	inbox            InboxService
 	roles            RoleService
 	serviceAccounts  ServiceAccountService
 	notifications    NotificationService

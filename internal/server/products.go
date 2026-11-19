@@ -112,7 +112,7 @@ func toAPIModelGroup(g product.ModelGroup) ModelGroup {
 // toAPIModel mengubah Model domain menjadi bentuk kontrak API. Group hanya
 // ditulis bila model masuk group.
 func toAPIModel(m product.Model) Model {
-	out := Model{Id: m.ID, CustomerId: m.CustomerID, Name: m.Name, CreatedAt: m.CreatedAt}
+	out := Model{Id: m.ID, CustomerId: m.CustomerID, Name: m.Name, CreatedAt: m.CreatedAt, EolAt: m.EOLAt}
 	if m.ModelGroupID != "" {
 		out.ModelGroup = &ModelGroupRef{Id: m.ModelGroupID, Name: m.ModelGroupName}
 	}

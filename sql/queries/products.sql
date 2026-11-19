@@ -17,14 +17,14 @@ UPDATE model_groups SET name = $2 WHERE id = $1;
 
 -- name: ListModels :many
 -- ListModels mengambil model satu customer beserta nama group-nya, urut menurut nama.
-SELECT m.id, m.customer_id, m.model_group_id, g.name AS model_group_name, m.name, m.created_at
+SELECT m.id, m.customer_id, m.model_group_id, g.name AS model_group_name, m.name, m.created_at, m.eol_at
 FROM models m
 LEFT JOIN model_groups g ON g.id = m.model_group_id
 WHERE m.customer_id = $1
 ORDER BY m.name;
 
 -- name: GetModel :one
-SELECT m.id, m.customer_id, m.model_group_id, g.name AS model_group_name, m.name, m.created_at
+SELECT m.id, m.customer_id, m.model_group_id, g.name AS model_group_name, m.name, m.created_at, m.eol_at
 FROM models m
 LEFT JOIN model_groups g ON g.id = m.model_group_id
 WHERE m.id = $1;
@@ -62,3 +62,12 @@ RETURNING id;
 
 -- name: UpdatePartNumber :exec
 UPDATE part_numbers SET number = $2, name = $3 WHERE id = $1;
+
+-- name: SetModelEOL :execrows
+-- SetModelEOL menandai model end of life, atau mencabut tandanya (D-200).
+UPDATE models SET eol_at = CASE WHEN sqlc.arg(eol)::boolean THEN now() END,
+                  eol_by_person_id = CASE WHEN sqlc.arg(eol)::boolean THEN sqlc.arg(person_id)::uuid END
+WHERE id = sqlc.arg(id);
+
+-- name: ModelCustomer :one
+SELECT customer_id FROM models WHERE id = $1;

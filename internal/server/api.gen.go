@@ -944,6 +944,33 @@ func (e HealthStatus) Valid() bool {
 	}
 }
 
+// Defines values for InboxTaskKind.
+const (
+	InboxTaskKindConfirmReview InboxTaskKind = "confirm_review"
+	InboxTaskKindRelease       InboxTaskKind = "release"
+	InboxTaskKindReview        InboxTaskKind = "review"
+	InboxTaskKindVerify        InboxTaskKind = "verify"
+	InboxTaskKindYokoten       InboxTaskKind = "yokoten"
+)
+
+// Valid indicates whether the value is a known member of the InboxTaskKind enum.
+func (e InboxTaskKind) Valid() bool {
+	switch e {
+	case InboxTaskKindConfirmReview:
+		return true
+	case InboxTaskKindRelease:
+		return true
+	case InboxTaskKindReview:
+		return true
+	case InboxTaskKindVerify:
+		return true
+	case InboxTaskKindYokoten:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for MetricsDocumentsStatus.
 const (
 	MetricsDocumentsStatusDraft            MetricsDocumentsStatus = "draft"
@@ -1664,6 +1691,8 @@ func (e ReviewAnswerItem) Valid() bool {
 // Defines values for ReviewSetStatus.
 const (
 	ReviewSetStatusDueSoon ReviewSetStatus = "due_soon"
+	ReviewSetStatusDueYear ReviewSetStatus = "due_year"
+	ReviewSetStatusEol     ReviewSetStatus = "eol"
 	ReviewSetStatusOk      ReviewSetStatus = "ok"
 	ReviewSetStatusOverdue ReviewSetStatus = "overdue"
 )
@@ -1672,6 +1701,10 @@ const (
 func (e ReviewSetStatus) Valid() bool {
 	switch e {
 	case ReviewSetStatusDueSoon:
+		return true
+	case ReviewSetStatusDueYear:
+		return true
+	case ReviewSetStatusEol:
 		return true
 	case ReviewSetStatusOk:
 		return true
@@ -1955,6 +1988,27 @@ func (e GetPerformanceParamsPeriod) Valid() bool {
 	}
 }
 
+// Defines values for ExportPerformanceParamsPeriod.
+const (
+	ExportPerformanceParamsPeriodMonth ExportPerformanceParamsPeriod = "month"
+	ExportPerformanceParamsPeriodWeek  ExportPerformanceParamsPeriod = "week"
+	ExportPerformanceParamsPeriodYear  ExportPerformanceParamsPeriod = "year"
+)
+
+// Valid indicates whether the value is a known member of the ExportPerformanceParamsPeriod enum.
+func (e ExportPerformanceParamsPeriod) Valid() bool {
+	switch e {
+	case ExportPerformanceParamsPeriodMonth:
+		return true
+	case ExportPerformanceParamsPeriodWeek:
+		return true
+	case ExportPerformanceParamsPeriodYear:
+		return true
+	default:
+		return false
+	}
+}
+
 // Account defines model for Account.
 type Account struct {
 	// Id Opaque stable ID.
@@ -2161,6 +2215,9 @@ type AuditVerification struct {
 // `link_mismatch`: prev_hash differs from the hash of the entry before.
 // `hash_mismatch`: the content no longer matches the hash, so it was changed.
 type AuditVerificationReason string
+
+// CategoryCounts Counts per trigger group (ecr, customer_claim, audit_finding, yokoten, periodic_review, other).
+type CategoryCounts map[string]int
 
 // Change defines model for Change.
 type Change struct {
@@ -2705,6 +2762,9 @@ type DocumentRevision struct {
 
 	// Migrated True when the revision was released by verification against the hard copy (M7.5).
 	Migrated *bool `json:"migrated,omitempty"`
+
+	// ReadyAt When the draft was marked ready to print (D-202).
+	ReadyAt *time.Time `json:"ready_at,omitempty"`
 
 	// ReleaseDate Filled when the revision is printed for signature (D-59).
 	ReleaseDate *openapi_types.Date `json:"release_date,omitempty"`
@@ -3262,6 +3322,27 @@ type HistoryEntryList struct {
 	Entries []HistoryEntry `json:"entries"`
 }
 
+// Inbox defines model for Inbox.
+type Inbox struct {
+	Items []InboxTask `json:"items"`
+	Total int         `json:"total"`
+}
+
+// InboxTask defines model for InboxTask.
+type InboxTask struct {
+	At *time.Time `json:"at,omitempty"`
+
+	// Days Days overdue for a periodic review; 0 otherwise.
+	Days   int           `json:"days"`
+	Detail *string       `json:"detail,omitempty"`
+	Kind   InboxTaskKind `json:"kind"`
+	Link   string        `json:"link"`
+	Title  string        `json:"title"`
+}
+
+// InboxTaskKind defines model for InboxTask.Kind.
+type InboxTaskKind string
+
 // IssuedServiceToken defines model for IssuedServiceToken.
 type IssuedServiceToken struct {
 	Info ServiceToken `json:"info"`
@@ -3374,7 +3455,10 @@ type MigrationVerification struct {
 type Model struct {
 	CreatedAt  time.Time `json:"created_at"`
 	CustomerId string    `json:"customer_id"`
-	Id         string    `json:"id"`
+
+	// EolAt Set when the model is end of life (D-200).
+	EolAt *time.Time `json:"eol_at,omitempty"`
+	Id    string     `json:"id"`
 
 	// ModelGroup The model group of the model. Missing when the model is in no group.
 	ModelGroup *ModelGroupRef `json:"model_group,omitempty"`
@@ -3912,24 +3996,37 @@ type PasswordChange struct {
 
 // Performance defines model for Performance.
 type Performance struct {
-	Accepted          int                  `json:"accepted"`
-	AcceptedToRelease DurationSummary      `json:"accepted_to_release"`
-	ByTrigger         []TriggerCount       `json:"by_trigger"`
-	EditToPrint       DurationSummary      `json:"edit_to_print"`
-	From              openapi_types.Date   `json:"from"`
-	People            []PerformancePerson  `json:"people"`
-	Period            PerformancePeriod    `json:"period"`
-	PrintToSigned     DurationSummary      `json:"print_to_signed"`
-	Rejected          int                  `json:"rejected"`
-	ReleaseItems      []PerformanceRelease `json:"release_items"`
-	Releases          int                  `json:"releases"`
-	Submitted         int                  `json:"submitted"`
+	Accepted int `json:"accepted"`
+
+	// ByCategory Counts per trigger group (ecr, customer_claim, audit_finding, yokoten, periodic_review, other).
+	ByCategory CategoryCounts      `json:"by_category"`
+	ByTrigger  []TriggerCount      `json:"by_trigger"`
+	From       openapi_types.Date  `json:"from"`
+	OpenAtEnd  int                 `json:"open_at_end"`
+	People     []PerformancePerson `json:"people"`
+	Period     PerformancePeriod   `json:"period"`
+	Previous   struct {
+		AcceptedToReleaseMedian float32 `json:"accepted_to_release_median"`
+		Releases                int     `json:"releases"`
+		Submitted               int     `json:"submitted"`
+	} `json:"previous"`
+	Rejected     int                  `json:"rejected"`
+	ReleaseItems []PerformanceRelease `json:"release_items"`
+	Releases     int                  `json:"releases"`
+	Stages       PerformanceStages    `json:"stages"`
+	Submitted    int                  `json:"submitted"`
 
 	// To The last day of the period (inclusive).
-	To             openapi_types.Date `json:"to"`
-	YokotenChanges int                `json:"yokoten_changes"`
-	YokotenTargets int                `json:"yokoten_targets"`
-	Yokotens       int                `json:"yokotens"`
+	To      openapi_types.Date      `json:"to"`
+	Trend   []PerformanceTrendPoint `json:"trend"`
+	Waiting int                     `json:"waiting"`
+
+	// Week The report week number (ISO week of its Thursday).
+	Week           int                  `json:"week"`
+	YokotenChanges int                  `json:"yokoten_changes"`
+	YokotenItems   []PerformanceYokoten `json:"yokoten_items"`
+	YokotenTargets int                  `json:"yokoten_targets"`
+	Yokotens       int                  `json:"yokotens"`
 }
 
 // PerformancePeriod defines model for Performance.Period.
@@ -3937,26 +4034,29 @@ type PerformancePeriod string
 
 // PerformancePerson defines model for PerformancePerson.
 type PerformancePerson struct {
-	Accepted          int             `json:"accepted"`
-	AcceptedToRelease DurationSummary `json:"accepted_to_release"`
-	EditToPrint       DurationSummary `json:"edit_to_print"`
-	Name              string          `json:"name"`
+	Accepted      int    `json:"accepted"`
+	AuditFinding  int    `json:"audit_finding"`
+	CustomerClaim int    `json:"customer_claim"`
+	Name          string `json:"name"`
+	Open          int    `json:"open"`
 
 	// PersonId Left out for requests from another application.
-	PersonId      *string         `json:"person_id,omitempty"`
-	PrintToSigned DurationSummary `json:"print_to_signed"`
-	Rejected      int             `json:"rejected"`
-	Releases      int             `json:"releases"`
-	Submitted     int             `json:"submitted"`
-	Yokotens      int             `json:"yokotens"`
+	PersonId  *string           `json:"person_id,omitempty"`
+	Rejected  int               `json:"rejected"`
+	Releases  int               `json:"releases"`
+	Stages    PerformanceStages `json:"stages"`
+	Submitted int               `json:"submitted"`
+	Yokoten   int               `json:"yokoten"`
+	Yokotens  int               `json:"yokotens"`
 }
 
 // PerformanceRelease defines model for PerformanceRelease.
 type PerformanceRelease struct {
 	AcceptedAt             time.Time  `json:"accepted_at"`
 	AcceptedToReleaseHours *float32   `json:"accepted_to_release_hours,omitempty"`
+	Category               string     `json:"category"`
 	DocumentType           string     `json:"document_type"`
-	EditToPrintHours       *float32   `json:"edit_to_print_hours,omitempty"`
+	EditToReadyHours       *float32   `json:"edit_to_ready_hours,omitempty"`
 	Number                 string     `json:"number"`
 	PrintToSignedHours     *float32   `json:"print_to_signed_hours,omitempty"`
 	PrintedAt              *time.Time `json:"printed_at,omitempty"`
@@ -3965,6 +4065,45 @@ type PerformanceRelease struct {
 	Revision               int        `json:"revision"`
 	RevisionId             string     `json:"revision_id"`
 	ScanAt                 *time.Time `json:"scan_at,omitempty"`
+	SignedToReleasedHours  *float32   `json:"signed_to_released_hours,omitempty"`
+	WaitingToPrintHours    *float32   `json:"waiting_to_print_hours,omitempty"`
+}
+
+// PerformanceStages defines model for PerformanceStages.
+type PerformanceStages struct {
+	AcceptedToRelease DurationSummary `json:"accepted_to_release"`
+	EditToReady       DurationSummary `json:"edit_to_ready"`
+	PrintToSigned     DurationSummary `json:"print_to_signed"`
+	SignedToReleased  DurationSummary `json:"signed_to_released"`
+	WaitingToPrint    DurationSummary `json:"waiting_to_print"`
+}
+
+// PerformanceTrendPoint defines model for PerformanceTrendPoint.
+type PerformanceTrendPoint struct {
+	AcceptedToReleaseMedian float32 `json:"accepted_to_release_median"`
+
+	// ByCategory Counts per trigger group (ecr, customer_claim, audit_finding, yokoten, periodic_review, other).
+	ByCategory CategoryCounts     `json:"by_category"`
+	From       openapi_types.Date `json:"from"`
+	Label      string             `json:"label"`
+	Releases   int                `json:"releases"`
+
+	// To The last day of the point (inclusive).
+	To openapi_types.Date `json:"to"`
+}
+
+// PerformanceYokoten defines model for PerformanceYokoten.
+type PerformanceYokoten struct {
+	Applied int `json:"applied"`
+
+	// DaysToClose Left out while a target is still undecided.
+	DaysToClose   *int      `json:"days_to_close,omitempty"`
+	NotApplicable int       `json:"not_applicable"`
+	Pending       int       `json:"pending"`
+	Reason        string    `json:"reason"`
+	Ref           string    `json:"ref"`
+	Started       time.Time `json:"started"`
+	Targets       int       `json:"targets"`
 }
 
 // PeriodicReview defines model for PeriodicReview.
@@ -4537,10 +4676,14 @@ type ReviewSet struct {
 	CustomerId   string `json:"customer_id"`
 
 	// DaysLeft Negative when overdue.
-	DaysLeft    int                 `json:"days_left"`
-	Documents   []ReviewSetDocument `json:"documents"`
-	DraftOpen   bool                `json:"draft_open"`
-	DueOn       openapi_types.Date  `json:"due_on"`
+	DaysLeft  int                 `json:"days_left"`
+	Documents []ReviewSetDocument `json:"documents"`
+	DraftOpen bool                `json:"draft_open"`
+	DueOn     openapi_types.Date  `json:"due_on"`
+
+	// Engineer The person who made the first document of the set.
+	Engineer    string              `json:"engineer"`
+	Eol         bool                `json:"eol"`
 	LastRelease openapi_types.Date  `json:"last_release"`
 	LastReview  *openapi_types.Date `json:"last_review,omitempty"`
 	Models      []string            `json:"models"`
@@ -4557,18 +4700,30 @@ type ReviewSetStatus string
 // ReviewSetDocument defines model for ReviewSetDocument.
 type ReviewSetDocument struct {
 	DocumentType string `json:"document_type"`
-	Id           string `json:"id"`
-	Number       string `json:"number"`
-	Revision     int    `json:"revision"`
+
+	// DueOn The review clock runs per document (D-202).
+	DueOn       openapi_types.Date `json:"due_on"`
+	Id          string             `json:"id"`
+	LastRelease openapi_types.Date `json:"last_release"`
+	Number      string             `json:"number"`
+	Overdue     bool               `json:"overdue"`
+	Revision    int                `json:"revision"`
 }
 
 // ReviewSetList defines model for ReviewSetList.
 type ReviewSetList struct {
 	DueSoon      int         `json:"due_soon"`
+	DueYear      int         `json:"due_year"`
 	Items        []ReviewSet `json:"items"`
 	Overdue      int         `json:"overdue"`
 	PeriodMonths int         `json:"period_months"`
-	WarningDays  int         `json:"warning_days"`
+
+	// ReviewedNoChange Confirmed reviews with no change since 1 January.
+	ReviewedNoChange int `json:"reviewed_no_change"`
+
+	// ReviewedRevised Accepted changes with the trigger Periodic review since 1 January.
+	ReviewedRevised int `json:"reviewed_revised"`
+	WarningDays     int `json:"warning_days"`
 }
 
 // ReviewedRevision defines model for ReviewedRevision.
@@ -5248,6 +5403,11 @@ type ListModelsParams struct {
 	CustomerId CustomerIdQuery `form:"customer_id" json:"customer_id"`
 }
 
+// SetModelEolJSONBody defines parameters for SetModelEol.
+type SetModelEolJSONBody struct {
+	Eol bool `json:"eol"`
+}
+
 // SetNotificationEventJSONBody defines parameters for SetNotificationEvent.
 type SetNotificationEventJSONBody struct {
 	Enabled bool `json:"enabled"`
@@ -5264,10 +5424,22 @@ type GetPerformanceParams struct {
 	Period     GetPerformanceParamsPeriod `form:"period" json:"period"`
 	Date       *openapi_types.Date        `form:"date,omitempty" json:"date,omitempty"`
 	CustomerId *string                    `form:"customer_id,omitempty" json:"customer_id,omitempty"`
+	PersonId   *string                    `form:"person_id,omitempty" json:"person_id,omitempty"`
 }
 
 // GetPerformanceParamsPeriod defines parameters for GetPerformance.
 type GetPerformanceParamsPeriod string
+
+// ExportPerformanceParams defines parameters for ExportPerformance.
+type ExportPerformanceParams struct {
+	Period     ExportPerformanceParamsPeriod `form:"period" json:"period"`
+	Date       *openapi_types.Date           `form:"date,omitempty" json:"date,omitempty"`
+	CustomerId *string                       `form:"customer_id,omitempty" json:"customer_id,omitempty"`
+	PersonId   *string                       `form:"person_id,omitempty" json:"person_id,omitempty"`
+}
+
+// ExportPerformanceParamsPeriod defines parameters for ExportPerformance.
+type ExportPerformanceParamsPeriod string
 
 // ListPeriodicReviewsParams defines parameters for ListPeriodicReviews.
 type ListPeriodicReviewsParams struct {
@@ -5280,6 +5452,16 @@ type ListReviewSetsParams struct {
 	CustomerId *string `form:"customer_id,omitempty" json:"customer_id,omitempty"`
 	DocumentId *string `form:"document_id,omitempty" json:"document_id,omitempty"`
 	All        *bool   `form:"all,omitempty" json:"all,omitempty"`
+
+	// Eol Also the sets whose models are all end of life (D-200).
+	Eol *bool `form:"eol,omitempty" json:"eol,omitempty"`
+}
+
+// ExportReviewSetsParams defines parameters for ExportReviewSets.
+type ExportReviewSetsParams struct {
+	CustomerId *string `form:"customer_id,omitempty" json:"customer_id,omitempty"`
+	All        *bool   `form:"all,omitempty" json:"all,omitempty"`
+	Eol        *bool   `form:"eol,omitempty" json:"eol,omitempty"`
 }
 
 // PreviewPropagationParams defines parameters for PreviewPropagation.
@@ -5488,6 +5670,9 @@ type CreateModelJSONRequestBody = NewModel
 
 // UpdateModelJSONRequestBody defines body for UpdateModel for application/json ContentType.
 type UpdateModelJSONRequestBody = ModelUpdate
+
+// SetModelEolJSONRequestBody defines body for SetModelEol for application/json ContentType.
+type SetModelEolJSONRequestBody SetModelEolJSONBody
 
 // SetNotificationEventJSONRequestBody defines body for SetNotificationEvent for application/json ContentType.
 type SetNotificationEventJSONRequestBody SetNotificationEventJSONBody
@@ -5803,6 +5988,9 @@ type ServerInterface interface {
 	// ListDocumentPrints The print log of one document, newest first (L-4, M6.6)
 	// (GET /api/v1/documents/{documentId}/prints)
 	ListDocumentPrints(w http.ResponseWriter, r *http.Request, documentId DocumentId)
+	// MarkDocumentReady Mark the open draft ready to print (E-2, D-202)
+	// (POST /api/v1/documents/{documentId}/ready)
+	MarkDocumentReady(w http.ResponseWriter, r *http.Request, documentId DocumentId)
 	// FillDocumentReferences Fill the empty Relevant Document cells from the master list (E-2, D-130)
 	// (POST /api/v1/documents/{documentId}/references)
 	FillDocumentReferences(w http.ResponseWriter, r *http.Request, documentId DocumentId)
@@ -5908,6 +6096,9 @@ type ServerInterface interface {
 	// UpdateFourMCategory Rename a 4M category (A-2)
 	// (PUT /api/v1/four-m-categories/{fourMCategoryId})
 	UpdateFourMCategory(w http.ResponseWriter, r *http.Request, fourMCategoryId FourMCategoryId)
+	// GetInbox The work waiting for the signed-in person (D-202)
+	// (GET /api/v1/inbox)
+	GetInbox(w http.ResponseWriter, r *http.Request)
 	// GetMetrics The measurement dashboard (L-2, M7.7)
 	// (GET /api/v1/metrics)
 	GetMetrics(w http.ResponseWriter, r *http.Request, params GetMetricsParams)
@@ -5935,6 +6126,9 @@ type ServerInterface interface {
 	// UpdateModel Rename a model or move it to another model group of the same customer (A-2)
 	// (PUT /api/v1/models/{modelId})
 	UpdateModel(w http.ResponseWriter, r *http.Request, modelId ModelId)
+	// SetModelEol Mark a model end of life, or clear the mark (E-2, D-200)
+	// (PUT /api/v1/models/{modelId}/eol)
+	SetModelEol(w http.ResponseWriter, r *http.Request, modelId ModelId)
 	// GetNotifications Email settings, events, and the latest 100 emails of the outbox (A-3, D-194)
 	// (GET /api/v1/notifications)
 	GetNotifications(w http.ResponseWriter, r *http.Request)
@@ -5962,6 +6156,9 @@ type ServerInterface interface {
 	// GetPerformance The performance report of PPAP Engineers (L-5, D-197)
 	// (GET /api/v1/performance)
 	GetPerformance(w http.ResponseWriter, r *http.Request, params GetPerformanceParams)
+	// ExportPerformance The performance report as an Excel file (L-5, D-202)
+	// (GET /api/v1/performance/export)
+	ExportPerformance(w http.ResponseWriter, r *http.Request, params ExportPerformanceParams)
 	// ListPeriodicReviews Recent periodic review records (L-2, D-196)
 	// (GET /api/v1/periodic-reviews)
 	ListPeriodicReviews(w http.ResponseWriter, r *http.Request, params ListPeriodicReviewsParams)
@@ -5971,6 +6168,9 @@ type ServerInterface interface {
 	// ListReviewSets Document sets and their periodic review status (L-2, D-138, D-196)
 	// (GET /api/v1/periodic-reviews/sets)
 	ListReviewSets(w http.ResponseWriter, r *http.Request, params ListReviewSetsParams)
+	// ExportReviewSets The periodic review list as an Excel file (L-2, D-202)
+	// (GET /api/v1/periodic-reviews/sets/export)
+	ExportReviewSets(w http.ResponseWriter, r *http.Request, params ExportReviewSetsParams)
 	// ConfirmPeriodicReview Confirm a periodic review record (V-1, D-196)
 	// (POST /api/v1/periodic-reviews/{reviewId}/confirm)
 	ConfirmPeriodicReview(w http.ResponseWriter, r *http.Request, reviewId string)
@@ -8006,6 +8206,32 @@ func (siw *ServerInterfaceWrapper) ListDocumentPrints(w http.ResponseWriter, r *
 	handler.ServeHTTP(w, r)
 }
 
+// MarkDocumentReady operation middleware
+func (siw *ServerInterfaceWrapper) MarkDocumentReady(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", r.PathValue("documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.MarkDocumentReady(w, r, documentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // FillDocumentReferences operation middleware
 func (siw *ServerInterfaceWrapper) FillDocumentReferences(w http.ResponseWriter, r *http.Request) {
 
@@ -8970,6 +9196,20 @@ func (siw *ServerInterfaceWrapper) UpdateFourMCategory(w http.ResponseWriter, r 
 	handler.ServeHTTP(w, r)
 }
 
+// GetInbox operation middleware
+func (siw *ServerInterfaceWrapper) GetInbox(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetInbox(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetMetrics operation middleware
 func (siw *ServerInterfaceWrapper) GetMetrics(w http.ResponseWriter, r *http.Request) {
 
@@ -9196,6 +9436,32 @@ func (siw *ServerInterfaceWrapper) UpdateModel(w http.ResponseWriter, r *http.Re
 	handler.ServeHTTP(w, r)
 }
 
+// SetModelEol operation middleware
+func (siw *ServerInterfaceWrapper) SetModelEol(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "modelId" -------------
+	var modelId ModelId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "modelId", r.PathValue("modelId"), &modelId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "modelId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetModelEol(w, r, modelId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetNotifications operation middleware
 func (siw *ServerInterfaceWrapper) GetNotifications(w http.ResponseWriter, r *http.Request) {
 
@@ -9399,8 +9665,93 @@ func (siw *ServerInterfaceWrapper) GetPerformance(w http.ResponseWriter, r *http
 		return
 	}
 
+	// ------------- Optional query parameter "person_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "person_id", r.URL.Query(), &params.PersonId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "person_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "person_id", Err: err})
+		}
+		return
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetPerformance(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ExportPerformance operation middleware
+func (siw *ServerInterfaceWrapper) ExportPerformance(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ExportPerformanceParams
+
+	// ------------- Required query parameter "period" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "period", r.URL.Query(), &params.Period, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "period"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "period", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "date" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "date", r.URL.Query(), &params.Date, runtime.BindQueryParameterOptions{Type: "string", Format: "date"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "date"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "date", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "customer_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "customer_id", r.URL.Query(), &params.CustomerId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "customer_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customer_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "person_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "person_id", r.URL.Query(), &params.PersonId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "person_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "person_id", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ExportPerformance(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -9518,8 +9869,80 @@ func (siw *ServerInterfaceWrapper) ListReviewSets(w http.ResponseWriter, r *http
 		return
 	}
 
+	// ------------- Optional query parameter "eol" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "eol", r.URL.Query(), &params.Eol, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "eol"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "eol", Err: err})
+		}
+		return
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListReviewSets(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ExportReviewSets operation middleware
+func (siw *ServerInterfaceWrapper) ExportReviewSets(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ExportReviewSetsParams
+
+	// ------------- Optional query parameter "customer_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "customer_id", r.URL.Query(), &params.CustomerId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "customer_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customer_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "all" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "all", r.URL.Query(), &params.All, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "all"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "all", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "eol" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "eol", r.URL.Query(), &params.Eol, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "eol"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "eol", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ExportReviewSets(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -11160,6 +11583,11 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/periodic-reviews", wrapper.RecordPeriodicReview)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/periodic-reviews/{reviewId}/confirm", wrapper.ConfirmPeriodicReview)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/performance", wrapper.GetPerformance)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/periodic-reviews/sets/export", wrapper.ExportReviewSets)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/performance/export", wrapper.ExportPerformance)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/models/{modelId}/eol", wrapper.SetModelEol)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/ready", wrapper.MarkDocumentReady)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/inbox", wrapper.GetInbox)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/metrics", wrapper.GetMetrics)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/release", wrapper.ReleaseDocument)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/print", wrapper.PrintDocument)
@@ -14055,6 +14483,45 @@ func (response ListDocumentPrintsdefaultJSONResponse) VisitListDocumentPrintsRes
 	return err
 }
 
+type MarkDocumentReadyRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+}
+
+type MarkDocumentReadyResponseObject interface {
+	VisitMarkDocumentReadyResponse(w http.ResponseWriter) error
+}
+
+type MarkDocumentReady200JSONResponse DocumentRevisionList
+
+func (response MarkDocumentReady200JSONResponse) VisitMarkDocumentReadyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type MarkDocumentReadydefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response MarkDocumentReadydefaultJSONResponse) VisitMarkDocumentReadyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type FillDocumentReferencesRequestObject struct {
 	DocumentId DocumentId `json:"documentId"`
 }
@@ -15457,6 +15924,44 @@ func (response UpdateFourMCategorydefaultJSONResponse) VisitUpdateFourMCategoryR
 	return err
 }
 
+type GetInboxRequestObject struct {
+}
+
+type GetInboxResponseObject interface {
+	VisitGetInboxResponse(w http.ResponseWriter) error
+}
+
+type GetInbox200JSONResponse Inbox
+
+func (response GetInbox200JSONResponse) VisitGetInboxResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetInboxdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response GetInboxdefaultJSONResponse) VisitGetInboxResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetMetricsRequestObject struct {
 	Params GetMetricsParams
 }
@@ -15810,6 +16315,46 @@ func (response UpdateModeldefaultJSONResponse) VisitUpdateModelResponse(w http.R
 	return err
 }
 
+type SetModelEolRequestObject struct {
+	ModelId ModelId `json:"modelId"`
+	Body    *SetModelEolJSONRequestBody
+}
+
+type SetModelEolResponseObject interface {
+	VisitSetModelEolResponse(w http.ResponseWriter) error
+}
+
+type SetModelEol200JSONResponse Model
+
+func (response SetModelEol200JSONResponse) VisitSetModelEolResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetModelEoldefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response SetModelEoldefaultJSONResponse) VisitSetModelEolResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetNotificationsRequestObject struct {
 }
 
@@ -16148,6 +16693,59 @@ func (response GetPerformancedefaultJSONResponse) VisitGetPerformanceResponse(w 
 	return err
 }
 
+type ExportPerformanceRequestObject struct {
+	Params ExportPerformanceParams
+}
+
+type ExportPerformanceResponseObject interface {
+	VisitExportPerformanceResponse(w http.ResponseWriter) error
+}
+
+type ExportPerformance200ResponseHeaders struct {
+	ContentDisposition *string
+}
+
+type ExportPerformance200ApplicationoctetStreamResponse struct {
+	Body          io.Reader
+	Headers       ExportPerformance200ResponseHeaders
+	ContentLength int64
+}
+
+func (response ExportPerformance200ApplicationoctetStreamResponse) VisitExportPerformanceResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "application/octet-stream")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	if response.Headers.ContentDisposition != nil {
+		w.Header().Set("Content-Disposition", fmt.Sprint(*response.Headers.ContentDisposition))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type ExportPerformancedefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ExportPerformancedefaultJSONResponse) VisitExportPerformanceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListPeriodicReviewsRequestObject struct {
 	Params ListPeriodicReviewsParams
 }
@@ -16254,6 +16852,59 @@ type ListReviewSetsdefaultJSONResponse struct {
 }
 
 func (response ListReviewSetsdefaultJSONResponse) VisitListReviewSetsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ExportReviewSetsRequestObject struct {
+	Params ExportReviewSetsParams
+}
+
+type ExportReviewSetsResponseObject interface {
+	VisitExportReviewSetsResponse(w http.ResponseWriter) error
+}
+
+type ExportReviewSets200ResponseHeaders struct {
+	ContentDisposition *string
+}
+
+type ExportReviewSets200ApplicationoctetStreamResponse struct {
+	Body          io.Reader
+	Headers       ExportReviewSets200ResponseHeaders
+	ContentLength int64
+}
+
+func (response ExportReviewSets200ApplicationoctetStreamResponse) VisitExportReviewSetsResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "application/octet-stream")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	if response.Headers.ContentDisposition != nil {
+		w.Header().Set("Content-Disposition", fmt.Sprint(*response.Headers.ContentDisposition))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type ExportReviewSetsdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ExportReviewSetsdefaultJSONResponse) VisitExportReviewSetsResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -18885,6 +19536,9 @@ type StrictServerInterface interface {
 	// ListDocumentPrints The print log of one document, newest first (L-4, M6.6)
 	// (GET /api/v1/documents/{documentId}/prints)
 	ListDocumentPrints(ctx context.Context, request ListDocumentPrintsRequestObject) (ListDocumentPrintsResponseObject, error)
+	// MarkDocumentReady Mark the open draft ready to print (E-2, D-202)
+	// (POST /api/v1/documents/{documentId}/ready)
+	MarkDocumentReady(ctx context.Context, request MarkDocumentReadyRequestObject) (MarkDocumentReadyResponseObject, error)
 	// FillDocumentReferences Fill the empty Relevant Document cells from the master list (E-2, D-130)
 	// (POST /api/v1/documents/{documentId}/references)
 	FillDocumentReferences(ctx context.Context, request FillDocumentReferencesRequestObject) (FillDocumentReferencesResponseObject, error)
@@ -18990,6 +19644,9 @@ type StrictServerInterface interface {
 	// UpdateFourMCategory Rename a 4M category (A-2)
 	// (PUT /api/v1/four-m-categories/{fourMCategoryId})
 	UpdateFourMCategory(ctx context.Context, request UpdateFourMCategoryRequestObject) (UpdateFourMCategoryResponseObject, error)
+	// GetInbox The work waiting for the signed-in person (D-202)
+	// (GET /api/v1/inbox)
+	GetInbox(ctx context.Context, request GetInboxRequestObject) (GetInboxResponseObject, error)
 	// GetMetrics The measurement dashboard (L-2, M7.7)
 	// (GET /api/v1/metrics)
 	GetMetrics(ctx context.Context, request GetMetricsRequestObject) (GetMetricsResponseObject, error)
@@ -19017,6 +19674,9 @@ type StrictServerInterface interface {
 	// UpdateModel Rename a model or move it to another model group of the same customer (A-2)
 	// (PUT /api/v1/models/{modelId})
 	UpdateModel(ctx context.Context, request UpdateModelRequestObject) (UpdateModelResponseObject, error)
+	// SetModelEol Mark a model end of life, or clear the mark (E-2, D-200)
+	// (PUT /api/v1/models/{modelId}/eol)
+	SetModelEol(ctx context.Context, request SetModelEolRequestObject) (SetModelEolResponseObject, error)
 	// GetNotifications Email settings, events, and the latest 100 emails of the outbox (A-3, D-194)
 	// (GET /api/v1/notifications)
 	GetNotifications(ctx context.Context, request GetNotificationsRequestObject) (GetNotificationsResponseObject, error)
@@ -19044,6 +19704,9 @@ type StrictServerInterface interface {
 	// GetPerformance The performance report of PPAP Engineers (L-5, D-197)
 	// (GET /api/v1/performance)
 	GetPerformance(ctx context.Context, request GetPerformanceRequestObject) (GetPerformanceResponseObject, error)
+	// ExportPerformance The performance report as an Excel file (L-5, D-202)
+	// (GET /api/v1/performance/export)
+	ExportPerformance(ctx context.Context, request ExportPerformanceRequestObject) (ExportPerformanceResponseObject, error)
 	// ListPeriodicReviews Recent periodic review records (L-2, D-196)
 	// (GET /api/v1/periodic-reviews)
 	ListPeriodicReviews(ctx context.Context, request ListPeriodicReviewsRequestObject) (ListPeriodicReviewsResponseObject, error)
@@ -19053,6 +19716,9 @@ type StrictServerInterface interface {
 	// ListReviewSets Document sets and their periodic review status (L-2, D-138, D-196)
 	// (GET /api/v1/periodic-reviews/sets)
 	ListReviewSets(ctx context.Context, request ListReviewSetsRequestObject) (ListReviewSetsResponseObject, error)
+	// ExportReviewSets The periodic review list as an Excel file (L-2, D-202)
+	// (GET /api/v1/periodic-reviews/sets/export)
+	ExportReviewSets(ctx context.Context, request ExportReviewSetsRequestObject) (ExportReviewSetsResponseObject, error)
 	// ConfirmPeriodicReview Confirm a periodic review record (V-1, D-196)
 	// (POST /api/v1/periodic-reviews/{reviewId}/confirm)
 	ConfirmPeriodicReview(ctx context.Context, request ConfirmPeriodicReviewRequestObject) (ConfirmPeriodicReviewResponseObject, error)
@@ -21321,6 +21987,32 @@ func (sh *strictHandler) ListDocumentPrints(w http.ResponseWriter, r *http.Reque
 	}
 }
 
+// MarkDocumentReady operation middleware
+func (sh *strictHandler) MarkDocumentReady(w http.ResponseWriter, r *http.Request, documentId DocumentId) {
+	var request MarkDocumentReadyRequestObject
+
+	request.DocumentId = documentId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.MarkDocumentReady(ctx, request.(MarkDocumentReadyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "MarkDocumentReady")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(MarkDocumentReadyResponseObject); ok {
+		if err := validResponse.VisitMarkDocumentReadyResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // FillDocumentReferences operation middleware
 func (sh *strictHandler) FillDocumentReferences(w http.ResponseWriter, r *http.Request, documentId DocumentId) {
 	var request FillDocumentReferencesRequestObject
@@ -22363,6 +23055,30 @@ func (sh *strictHandler) UpdateFourMCategory(w http.ResponseWriter, r *http.Requ
 	}
 }
 
+// GetInbox operation middleware
+func (sh *strictHandler) GetInbox(w http.ResponseWriter, r *http.Request) {
+	var request GetInboxRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetInbox(ctx, request.(GetInboxRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetInbox")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetInboxResponseObject); ok {
+		if err := validResponse.VisitGetInboxResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetMetrics operation middleware
 func (sh *strictHandler) GetMetrics(w http.ResponseWriter, r *http.Request, params GetMetricsParams) {
 	var request GetMetricsRequestObject
@@ -22626,6 +23342,39 @@ func (sh *strictHandler) UpdateModel(w http.ResponseWriter, r *http.Request, mod
 	}
 }
 
+// SetModelEol operation middleware
+func (sh *strictHandler) SetModelEol(w http.ResponseWriter, r *http.Request, modelId ModelId) {
+	var request SetModelEolRequestObject
+
+	request.ModelId = modelId
+
+	var body SetModelEolJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetModelEol(ctx, request.(SetModelEolRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetModelEol")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetModelEolResponseObject); ok {
+		if err := validResponse.VisitSetModelEolResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetNotifications operation middleware
 func (sh *strictHandler) GetNotifications(w http.ResponseWriter, r *http.Request) {
 	var request GetNotificationsRequestObject
@@ -22878,6 +23627,32 @@ func (sh *strictHandler) GetPerformance(w http.ResponseWriter, r *http.Request, 
 	}
 }
 
+// ExportPerformance operation middleware
+func (sh *strictHandler) ExportPerformance(w http.ResponseWriter, r *http.Request, params ExportPerformanceParams) {
+	var request ExportPerformanceRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ExportPerformance(ctx, request.(ExportPerformanceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ExportPerformance")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ExportPerformanceResponseObject); ok {
+		if err := validResponse.VisitExportPerformanceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListPeriodicReviews operation middleware
 func (sh *strictHandler) ListPeriodicReviews(w http.ResponseWriter, r *http.Request, params ListPeriodicReviewsParams) {
 	var request ListPeriodicReviewsRequestObject
@@ -22954,6 +23729,32 @@ func (sh *strictHandler) ListReviewSets(w http.ResponseWriter, r *http.Request, 
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ListReviewSetsResponseObject); ok {
 		if err := validResponse.VisitListReviewSetsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ExportReviewSets operation middleware
+func (sh *strictHandler) ExportReviewSets(w http.ResponseWriter, r *http.Request, params ExportReviewSetsParams) {
+	var request ExportReviewSetsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ExportReviewSets(ctx, request.(ExportReviewSetsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ExportReviewSets")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ExportReviewSetsResponseObject); ok {
+		if err := validResponse.VisitExportReviewSetsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

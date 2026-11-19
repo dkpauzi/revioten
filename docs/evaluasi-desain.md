@@ -153,6 +153,7 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-129 | Tanda "perlu dicek ulang" pada PFMEA dan CP terbit | Celah | D-195, M4.9 | Tidak | Terbuka |
 | E-130 | Laporan kinerja: siapa yang dihitung dan titik waktunya | Ambigu | D-197 | Tidak | Terbuka |
 | E-131 | Zona waktu pabrik untuk tanggal dan periode laporan | Celah | D-196, D-197 | Tidak | Terbuka |
+| E-132 | Penanggung jawab model (engineer) di daftar review dan laporan | Celah | D-202 | Tidak | Terbuka |
 
 ## Keputusan 4 November 2026
 
@@ -2282,7 +2283,7 @@ Salin blok ini untuk setiap temuan baru.
 - **Temuan:** Permintaan pemilik menyebut angka, tetapi tidak menyebut kepada siapa angka itu dihitung dan kapan setiap tahap dimulai. Yang dipakai sekarang: (1) jumlah permintaan dihitung untuk pemohon, dan masuk periode menurut tanggal diajukan atau diverifikasi; (2) waktu tahap dihitung untuk revisi yang terbit dalam periode lewat perubahan yang diterima, dan dikaitkan ke orang yang mencetak untuk tanda tangan; (3) "mulai mengedit" adalah saat draft revisi dibuka (perubahan diterima), bukan saat sel pertama diubah; (4) "siap cetak" dan "mulai tanda tangan" adalah cetakan terakhir untuk tanda tangan sebelum scan diunggah; (5) "selesai ditandatangani" adalah saat scan bertanda tangan diunggah; (6) "request yang diterima" dibaca sebagai diterima verifikator (accepted). Revisi awal dokumen baru dan dokumen lama tidak dihitung.
 - **Opsi:** pemilik memastikan butir (1) sampai (6), atau menyebut yang lain. Bila "diterima" berarti masuk ke PPAP Engineer, angka "diajukan" yang dipakai.
 - **Rekomendasi Claude Code (usulan):** pakai seperti sekarang untuk percobaan satu bulan, lalu bandingkan dengan laporan mingguan manual.
-- **Asumsi sementara di kode (ASUMSI E-130):** butir (1) sampai (6) di atas.
+- **Asumsi sementara di kode (ASUMSI E-130):** butir (1) sampai (6) di atas. Sejak D-202 (19 November 2026): "mulai edit" adalah edit pertama draft menurut audit log, "siap cetak" adalah tombol Ready to print (atau cetakan untuk tanda tangan bila tidak ditekan), dan waktunya kalender, bukan hari kerja, karena kalender libur belum ada.
 - **Menghambat milestone?** Tidak
 - **Status:** Terbuka
 - **Keputusan pemilik:**
@@ -2296,6 +2297,19 @@ Salin blok ini untuk setiap temuan baru.
 - **Opsi:** (a) WIB tetap di kode; (b) pengaturan zona waktu di Settings.
 - **Rekomendasi Claude Code (usulan):** (a) untuk demo; (b) bila ada pabrik di zona lain.
 - **Asumsi sementara di kode (ASUMSI E-131):** (a) WIB (UTC+7), `internal/clock`.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
+### E-132 · Penanggung jawab model (engineer) di daftar review dan laporan
+
+- **Tanggal dan milestone:** 19 November 2026, D-202.
+- **Jenis:** Celah
+- **Rujukan:** D-202, D-200, U5-J.
+- **Temuan:** Desain menampilkan kolom Engineer dan saringan "All engineers" di daftar review 3 tahun. Sistem belum mencatat siapa PPAP Engineer yang bertanggung jawab atas satu model atau customer.
+- **Opsi:** (a) orang yang membuat dokumen pertama set itu; (b) penanggung jawab per customer di master data; (c) penanggung jawab per model di master data.
+- **Rekomendasi Claude Code (usulan):** (b), karena pembagian kerja PPAP biasanya per customer; (c) bila per model.
+- **Asumsi sementara di kode (ASUMSI E-132):** (a).
 - **Menghambat milestone?** Tidak
 - **Status:** Terbuka
 - **Keputusan pemilik:**

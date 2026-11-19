@@ -1,7 +1,8 @@
 <script lang="ts">
 	// Model satu customer (M1.4): daftar, tambah, dan ubah nama serta group.
 	// Satu model paling banyak masuk satu group milik customer yang sama (D-42).
-	import { createModel, updateModel } from '../api/client.ts';
+	import { createModel, setModelEol, updateModel } from '../api/client.ts';
+	import { can } from '../session.svelte.ts';
 	import type { Model, ModelGroup } from '../api/gen/index.ts';
 	import { failureText, problemText } from '../errors.ts';
 	import { t } from '../i18n/index.ts';
@@ -19,6 +20,20 @@
 		canEdit: boolean;
 		onsaved: () => void;
 	} = $props();
+
+	// Tanda EOL (D-200): PPAP Engineer dan Project Leader (E-2), bukan admin.
+	let canEol = $derived(can('E-2'));
+
+	async function toggleEol(model: Model) {
+		message = '';
+		const result = await setModelEol(model.id, !model.eol_at);
+		if (!result.ok) {
+			message = failureText(result.error);
+			return;
+		}
+		message = t(result.data.eol_at ? 'modelEolMarked' : 'modelEolCleared', { name: model.name });
+		onsaved();
+	}
 
 	let name = $state('');
 	// Pilihan group: '' berarti tanpa group.
@@ -78,6 +93,7 @@
 					<tr>
 						<th>{t('modelName')}</th>
 						<th>{t('modelGroup')}</th>
+						<th>{t('modelEol')}</th>
 						{#if canEdit}<th>{t('masterActions')}</th>{/if}
 					</tr>
 				</thead>
@@ -105,6 +121,12 @@
 							{:else}
 								<td>{model.name}</td>
 								<td>{model.model_group?.name ?? t('modelGroupNone')}</td>
+								<td>
+									{#if model.eol_at}<span class="badge" data-review="eol">EOL</span>{/if}
+									{#if canEol}
+										<button type="button" onclick={() => toggleEol(model)}>{model.eol_at ? t('modelEolClear') : t('modelEolMark')}</button>
+									{/if}
+								</td>
 								{#if canEdit}
 									<td><button type="button" onclick={() => startEdit(model)}>{t('modelEdit')}</button></td>
 								{/if}

@@ -75,7 +75,7 @@ func (q *Queries) CreatePartNumber(ctx context.Context, arg CreatePartNumberPara
 }
 
 const getModel = `-- name: GetModel :one
-SELECT m.id, m.customer_id, m.model_group_id, g.name AS model_group_name, m.name, m.created_at
+SELECT m.id, m.customer_id, m.model_group_id, g.name AS model_group_name, m.name, m.created_at, m.eol_at
 FROM models m
 LEFT JOIN model_groups g ON g.id = m.model_group_id
 WHERE m.id = $1
@@ -88,6 +88,7 @@ type GetModelRow struct {
 	ModelGroupName *string
 	Name           string
 	CreatedAt      time.Time
+	EolAt          *time.Time
 }
 
 func (q *Queries) GetModel(ctx context.Context, id string) (GetModelRow, error) {
@@ -100,6 +101,7 @@ func (q *Queries) GetModel(ctx context.Context, id string) (GetModelRow, error) 
 		&i.ModelGroupName,
 		&i.Name,
 		&i.CreatedAt,
+		&i.EolAt,
 	)
 	return i, err
 }
@@ -183,7 +185,7 @@ func (q *Queries) ListModelGroups(ctx context.Context, customerID string) ([]Mod
 }
 
 const listModels = `-- name: ListModels :many
-SELECT m.id, m.customer_id, m.model_group_id, g.name AS model_group_name, m.name, m.created_at
+SELECT m.id, m.customer_id, m.model_group_id, g.name AS model_group_name, m.name, m.created_at, m.eol_at
 FROM models m
 LEFT JOIN model_groups g ON g.id = m.model_group_id
 WHERE m.customer_id = $1
@@ -197,6 +199,7 @@ type ListModelsRow struct {
 	ModelGroupName *string
 	Name           string
 	CreatedAt      time.Time
+	EolAt          *time.Time
 }
 
 // ListModels mengambil model satu customer beserta nama group-nya, urut menurut nama.
@@ -216,6 +219,7 @@ func (q *Queries) ListModels(ctx context.Context, customerID string) ([]ListMode
 			&i.ModelGroupName,
 			&i.Name,
 			&i.CreatedAt,
+			&i.EolAt,
 		); err != nil {
 			return nil, err
 		}
@@ -301,6 +305,17 @@ func (q *Queries) LockPartNumber(ctx context.Context, id string) error {
 	return err
 }
 
+const modelCustomer = `-- name: ModelCustomer :one
+SELECT customer_id FROM models WHERE id = $1
+`
+
+func (q *Queries) ModelCustomer(ctx context.Context, id string) (string, error) {
+	row := q.db.QueryRow(ctx, modelCustomer, id)
+	var customer_id string
+	err := row.Scan(&customer_id)
+	return customer_id, err
+}
+
 const renameModelGroup = `-- name: RenameModelGroup :exec
 UPDATE model_groups SET name = $2 WHERE id = $1
 `
@@ -313,6 +328,27 @@ type RenameModelGroupParams struct {
 func (q *Queries) RenameModelGroup(ctx context.Context, arg RenameModelGroupParams) error {
 	_, err := q.db.Exec(ctx, renameModelGroup, arg.ID, arg.Name)
 	return err
+}
+
+const setModelEOL = `-- name: SetModelEOL :execrows
+UPDATE models SET eol_at = CASE WHEN $1::boolean THEN now() END,
+                  eol_by_person_id = CASE WHEN $1::boolean THEN $2::uuid END
+WHERE id = $3
+`
+
+type SetModelEOLParams struct {
+	Eol      bool
+	PersonID string
+	ID       string
+}
+
+// SetModelEOL menandai model end of life, atau mencabut tandanya (D-200).
+func (q *Queries) SetModelEOL(ctx context.Context, arg SetModelEOLParams) (int64, error) {
+	result, err := q.db.Exec(ctx, setModelEOL, arg.Eol, arg.PersonID, arg.ID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const updateModel = `-- name: UpdateModel :exec

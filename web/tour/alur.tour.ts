@@ -502,15 +502,15 @@ test('alur dari admin sampai dokumen terbit, revisi, migrasi, dasbor, dan API in
 	await say(page, 'Langkah 31', 'Documents > Released documents. Semua akun, juga Viewer (internal audit, QA, produksi), membaca revisi yang berlaku. Draft tidak pernah tampil.');
 
 	await openFromMenu(page, en.navGroupDocuments, en.navPeriodicReviews);
-	await page.getByLabel(en.reviewShowAll).check();
-	await say(page, 'Langkah 32', 'Documents > Periodic review. Set yang 3 tahun tidak direvisi muncul kuning 90 hari sebelumnya dan merah sesudahnya, juga di Home, dasbor, halaman dokumen, dan email.');
+	await page.getByRole('button', { name: en.reviewTabAll, exact: true }).click();
+	await say(page, 'Langkah 32', 'Documents > 3-year review. Jam dihitung per dokumen: kuning 90 hari sebelum jatuh tempo, merah sesudahnya. Peringatan juga di Home, dasbor, halaman dokumen, dan email. Model EOL tidak ikut.');
 
 	await logOut(page);
 	await logInAs(page, engineer.login, engineer.password);
 	await expect(page.getByRole('button', { name: en.logout })).toBeVisible();
 	await openFromMenu(page, en.navGroupDocuments, en.navPerformance);
-	await expect(page.getByRole('heading', { name: en.performanceChanges })).toBeVisible();
-	await say(page, 'Langkah 33', 'Documents > Performance report. PPAP Engineer dan supervisor melihat angka per minggu (Jumat sampai Kamis), bulan, dan tahun.');
+	await expect(page.getByRole('heading', { name: en.performanceReceived, exact: true })).toBeVisible();
+	await say(page, 'Langkah 33', 'Documents > PPAP performance. PPAP Engineer, supervisor, dan manager melihat angka per minggu (Jumat sampai Kamis), bulan, dan tahun, lalu mengunduhnya sebagai Excel.');
 
 	// ---------- Bagian G: admin memeriksa peran dan jejak (Tahap 8) ----------
 	await logOut(page);

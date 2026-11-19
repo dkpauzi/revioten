@@ -2,6 +2,7 @@ package metrics_test
 
 import (
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -75,6 +76,9 @@ func TestPerformance(t *testing.T) {
 	if _, err := changes.Verify(ctx, controller, c.ID, true, "OK"); err != nil {
 		t.Fatal(err)
 	}
+	if _, err := e.Docs.MarkReady(ctx, e.Author, cp.ID); err != nil {
+		t.Fatal(err)
+	}
 	// Penyusun mencetak untuk tanda tangan; scan bertanda tangan diunggah dua
 	// jam kemudian (kolom scan boleh diisi role aplikasi).
 	if _, err := e.Pool.Exec(ctx, `INSERT INTO print_logs (document_id, revision_id, revision, purpose, format, content_sha256, printed_by_person_id, printed_by_account_id)
@@ -92,10 +96,10 @@ func TestPerformance(t *testing.T) {
 	}
 
 	// Viewer tidak punya L-5; Penyusun (PPAP Engineer) punya.
-	if _, err := s.Performance(ctx, e.Viewer, metrics.PeriodWeek, time.Now(), ""); !errors.Is(err, access.ErrForbidden) {
+	if _, err := s.Performance(ctx, e.Viewer, metrics.PeriodWeek, time.Now(), "", ""); !errors.Is(err, access.ErrForbidden) {
 		t.Errorf("viewer: %v", err)
 	}
-	p, err := s.Performance(ctx, e.Author, metrics.PeriodWeek, time.Now(), "")
+	p, err := s.Performance(ctx, e.Author, metrics.PeriodWeek, time.Now(), "", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -105,11 +109,18 @@ func TestPerformance(t *testing.T) {
 	if len(p.ByTrigger) != 1 || p.ByTrigger[0].Name != "Customer claim" || p.ByTrigger[0].Count != 1 {
 		t.Errorf("pemicu: %+v", p.ByTrigger)
 	}
-	if d := p.PrintToSigned; d.Count != 1 || d.AverageHours < 1.9 || d.AverageHours > 2.1 {
+	if d := p.Stages.PrintToSigned; d.Count != 1 || d.AverageHours < 1.9 || d.AverageHours > 2.1 {
 		t.Errorf("cetak sampai tanda tangan: %+v", d)
 	}
-	if p.EditToPrint.Count != 1 || p.AcceptedToRelease.Count != 1 {
-		t.Errorf("tahap lain: %+v %+v", p.EditToPrint, p.AcceptedToRelease)
+	// Siap cetak ditandai sebelum dicetak: tahap menunggu cetak ikut dihitung.
+	if st := p.Stages; st.EditToReady.Count != 1 || st.WaitingToPrint.Count != 1 || st.AcceptedToRelease.Count != 1 || st.SignedToReleased.Count != 0 {
+		t.Errorf("tahap lain: %+v", st)
+	}
+	if p.ByCategory[metrics.CategoryCustomerClaim] != 1 || p.ReleaseItems[0].Category != metrics.CategoryCustomerClaim {
+		t.Errorf("kelompok pemicu: %+v", p.ByCategory)
+	}
+	if len(p.Trend) != 8 || p.Trend[7].Releases != 1 || p.Previous.Submitted != 0 || p.OpenAtEnd != 0 {
+		t.Errorf("tren dan pembanding: %+v %+v %d", p.Trend, p.Previous, p.OpenAtEnd)
 	}
 	if len(p.ReleaseItems) != 1 || p.ReleaseItems[0].PrintedBy != "Orang penyusun.uji" {
 		t.Errorf("rincian rilis: %+v", p.ReleaseItems)
@@ -120,19 +131,34 @@ func TestPerformance(t *testing.T) {
 			author = &p.People[i]
 		}
 	}
-	if author == nil || author.Submitted != 1 || author.Accepted != 1 || author.Releases != 1 || author.PrintToSigned.Count != 1 {
+	if author == nil || author.Submitted != 1 || author.Accepted != 1 || author.Releases != 1 || author.Stages.PrintToSigned.Count != 1 || author.CustomerClaim != 1 {
 		t.Errorf("per orang: %+v", p.People)
 	}
 
+	// Saringan satu orang: orang lain kosong.
+	if p, err = s.Performance(ctx, e.Author, metrics.PeriodWeek, time.Now(), "", controller.PersonID); err != nil || p.Submitted != 0 || p.Releases != 0 {
+		t.Errorf("orang lain: %+v, %v", p, err)
+	}
+	if _, err := s.Performance(ctx, e.Author, metrics.PeriodWeek, time.Now(), "", "bukan-uuid"); err == nil {
+		t.Error("orang salah diterima")
+	}
+	// Tahun: 12 titik bulan, dan unduhan Excel bisa dibuat.
+	if p, err = s.Performance(ctx, e.Author, metrics.PeriodYear, time.Now(), "", ""); err != nil || len(p.Trend) != 12 {
+		t.Errorf("tren tahun: %d, %v", len(p.Trend), err)
+	}
+	if body, name, err := s.Export(ctx, e.Author, metrics.PeriodWeek, time.Now(), "", ""); err != nil || len(body) < 100 || !strings.HasSuffix(name, ".xlsx") {
+		t.Errorf("Excel: %d %s %v", len(body), name, err)
+	}
+
 	// Customer lain dan minggu lalu kosong.
-	if p, err = s.Performance(ctx, e.Author, metrics.PeriodWeek, time.Now(), e.CustomerCD); err != nil || p.Submitted != 0 || p.Releases != 0 {
+	if p, err = s.Performance(ctx, e.Author, metrics.PeriodWeek, time.Now(), e.CustomerCD, ""); err != nil || p.Submitted != 0 || p.Releases != 0 {
 		t.Errorf("customer CD: %+v, %v", p, err)
 	}
-	if p, err = s.Performance(ctx, e.Author, metrics.PeriodWeek, time.Now().AddDate(0, 0, -7), ""); err != nil || p.Submitted != 0 {
+	if p, err = s.Performance(ctx, e.Author, metrics.PeriodWeek, time.Now().AddDate(0, 0, -7), "", ""); err != nil || p.Submitted != 0 {
 		t.Errorf("minggu lalu: %+v, %v", p, err)
 	}
 	// Tahun ini memuat minggu ini.
-	if p, err = s.Performance(ctx, e.Author, metrics.PeriodYear, time.Now(), ""); err != nil || p.Submitted != 1 || p.Releases != 1 {
+	if p, err = s.Performance(ctx, e.Author, metrics.PeriodYear, time.Now(), "", ""); err != nil || p.Submitted != 1 || p.Releases != 1 {
 		t.Errorf("tahun: %+v, %v", p, err)
 	}
 }

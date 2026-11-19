@@ -30,9 +30,14 @@ import (
 // Status jatuh tempo satu set.
 const (
 	StatusOK      = "ok"       // belum jatuh tempo
+	StatusDueYear = "due_year" // jatuh tempo dalam satu tahun (rencana, D-202)
 	StatusDueSoon = "due_soon" // jatuh tempo dalam masa peringatan (kuning)
 	StatusOverdue = "overdue"  // lewat jatuh tempo (merah)
+	StatusEOL     = "eol"      // semua model set ini EOL; tidak direview (D-200)
 )
+
+// planDays adalah batas "jatuh tempo dalam satu tahun" di daftar review.
+const planDays = 365
 
 // Jawaban satu butir daftar periksa. "Perlu perubahan" tidak ada di sini:
 // butir yang perlu diubah berarti review dengan perubahan.
@@ -56,10 +61,13 @@ var ChecklistItems = []string{
 
 // SetDocument adalah satu dokumen di set beserta revisi yang berlaku.
 type SetDocument struct {
-	ID       string
-	Number   string
-	TypeKey  string
-	Revision int
+	ID          string
+	Number      string
+	TypeKey     string
+	Revision    int
+	LastRelease time.Time // tanggal rilis terakhir dokumen ini
+	DueOn       time.Time // jatuh tempo dokumen ini (D-202: jam per dokumen)
+	Overdue     bool
 }
 
 // Set adalah satu set dokumen dan status review-nya.
@@ -76,6 +84,8 @@ type Set struct {
 	DaysLeft     int    // negatif bila lewat jatuh tempo
 	OpenReviewID string // catatan yang menunggu konfirmasi; "" bila tidak ada
 	DraftOpen    bool   // salah satu dokumen sedang punya draft revisi
+	EOL          bool   // semua model set ini EOL (D-200)
+	Engineer     string // penyusun dokumen pertama set (ASUMSI E-132)
 }
 
 // Overview adalah daftar set beserta pengaturannya.
@@ -84,7 +94,11 @@ type Overview struct {
 	WarningDays  int
 	DueSoon      int
 	Overdue      int
-	Sets         []Set // tidak pernah nil
+	DueYear      int // jatuh tempo dalam satu tahun, di luar masa peringatan
+	// Direview sejak 1 Januari tahun ini: tanpa perubahan dan dengan perubahan.
+	ReviewedNoChange int
+	ReviewedRevised  int
+	Sets             []Set // tidak pernah nil
 }
 
 // Filter memilih set yang dibaca.
@@ -93,6 +107,8 @@ type Filter struct {
 	DocumentID string // "" untuk semua dokumen; selain itu hanya set dokumen ini
 	// All juga memberi set yang belum jatuh tempo.
 	All bool
+	// EOL juga memberi set yang semua modelnya EOL (D-200).
+	EOL bool
 }
 
 // Answer adalah jawaban satu butir daftar periksa.
@@ -195,34 +211,62 @@ func Compute(ctx context.Context, q *db.Queries, f Filter, now time.Time) (Overv
 		set := Set{
 			CustomerID: r.CustomerID, CustomerCode: r.CustomerCode, Sequence: int(r.Sequence), Models: r.Models,
 			LastRelease: dateOf(r.LastRelease.Time), OpenReviewID: r.OpenReviewID, DraftOpen: r.DraftOpen,
+			EOL: r.Eol, Engineer: r.Engineer,
 		}
-		for i := range r.DocumentIds {
-			set.Documents = append(set.Documents, SetDocument{ID: r.DocumentIds[i], Number: r.Numbers[i], TypeKey: r.TypeKeys[i], Revision: int(r.Revisions[i])})
-		}
-		anchor := set.LastRelease
+		var review time.Time
 		if r.LastReview.Valid {
 			d := dateOf(r.LastReview.Time)
 			set.LastReview = &d
-			if d.After(anchor) {
-				anchor = d
-			}
+			review = d
 		}
-		set.DueOn = anchor.AddDate(0, out.PeriodMonths, 0)
+		// Jam dihitung per dokumen dari yang lebih baru: rilis terakhir dokumen
+		// itu atau review terakhir set-nya (D-202). Set jatuh tempo pada
+		// dokumen yang paling dulu jatuh tempo.
+		for i := range r.DocumentIds {
+			doc := SetDocument{ID: r.DocumentIds[i], Number: r.Numbers[i], TypeKey: r.TypeKeys[i], Revision: int(r.Revisions[i])}
+			if i < len(r.ReleaseDates) && r.ReleaseDates[i].Valid {
+				doc.LastRelease = dateOf(r.ReleaseDates[i].Time)
+			} else {
+				doc.LastRelease = set.LastRelease
+			}
+			anchor := doc.LastRelease
+			if review.After(anchor) {
+				anchor = review
+			}
+			doc.DueOn = anchor.AddDate(0, out.PeriodMonths, 0)
+			doc.Overdue = doc.DueOn.Before(today)
+			if set.DueOn.IsZero() || doc.DueOn.Before(set.DueOn) {
+				set.DueOn = doc.DueOn
+			}
+			set.Documents = append(set.Documents, doc)
+		}
 		set.DaysLeft = clock.Days(today, set.DueOn)
 		switch {
+		case set.EOL:
+			set.Status = StatusEOL
 		case set.DaysLeft < 0:
 			set.Status = StatusOverdue
 			out.Overdue++
 		case set.DaysLeft <= out.WarningDays:
 			set.Status = StatusDueSoon
 			out.DueSoon++
+		case set.DaysLeft <= planDays:
+			set.Status = StatusDueYear
+			out.DueYear++
 		default:
 			set.Status = StatusOK
 		}
-		if set.Status != StatusOK || f.All {
+		show := set.Status == StatusOverdue || set.Status == StatusDueSoon || (f.All && set.Status != StatusEOL) || (f.EOL && set.Status == StatusEOL)
+		if show {
 			out.Sets = append(out.Sets, set)
 		}
 	}
+	yearStart := time.Date(today.Year(), 1, 1, 0, 0, 0, 0, clock.Zone)
+	reviewed, err := q.ReviewedThisYear(ctx, db.ReviewedThisYearParams{FromAt: &yearStart, CustomerID: optional(f.CustomerID)})
+	if err != nil {
+		return Overview{}, fmt.Errorf("menghitung review tahun ini: %w", err)
+	}
+	out.ReviewedNoChange, out.ReviewedRevised = int(reviewed.NoChange), int(reviewed.Revised)
 	// Yang paling mendesak di atas.
 	slices.SortStableFunc(out.Sets, func(a, b Set) int { return a.DaysLeft - b.DaysLeft })
 	return out, nil

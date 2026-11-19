@@ -38,6 +38,8 @@ type Revision struct {
 	ScanFileName string
 	// Migrated: revisi ini terbit lewat verifikasi hardcopy (M7.5).
 	Migrated bool
+	// ReadyAt: draft ditandai siap cetak (D-202); nil bila belum.
+	ReadyAt *time.Time
 	// Changes adalah nomor rujukan perubahan yang masuk ke revisi ini (M5.6),
 	// misalnya CHG-0001; tidak pernah nil.
 	Changes []string
@@ -236,6 +238,10 @@ func (s *Service) Revisions(ctx context.Context, actor access.Actor, id string) 
 		if r.ReleasedAt != nil {
 			at := r.ReleasedAt.UTC()
 			item.ReleasedAt = &at
+		}
+		if r.ReadyAt != nil {
+			at := r.ReadyAt.UTC()
+			item.ReadyAt = &at
 		}
 		out = append(out, item)
 	}

@@ -155,6 +155,81 @@ button:disabled {
 	cursor: not-allowed;
 }
 
+/* Tautan yang tampil sebagai tombol, misalnya unduhan Excel (D-202). */
+a.button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	min-height: var(--control-height);
+	padding: 0 16px;
+	border: 1px solid var(--border-strong);
+	border-radius: var(--radius);
+	background: var(--surface);
+	color: var(--text-2);
+	font-weight: 500;
+	text-decoration: none;
+	white-space: nowrap;
+}
+
+a.button:hover {
+	background: var(--surface-2);
+}
+
+a.button.primary {
+	background: var(--accent);
+	border-color: var(--accent);
+	color: #ffffff;
+}
+
+a.button.primary:hover {
+	background: var(--accent-ink);
+}
+
+/* Tombol yang tampil sebagai tautan di dalam kalimat. */
+button.link {
+	display: inline;
+	min-height: 0;
+	padding: 0;
+	border: none;
+	background: none;
+	color: var(--accent-ink);
+	text-decoration: underline;
+}
+
+/* Pilihan bersebelahan, misalnya Week · Month · Year (D-202). */
+.segmented {
+	display: inline-flex;
+	border: 1px solid var(--border-strong);
+	border-radius: var(--radius);
+	overflow: hidden;
+}
+
+.segmented button {
+	border: none;
+	border-radius: 0;
+	border-left: 1px solid var(--border-strong);
+}
+
+.segmented button:first-child {
+	border-left: none;
+}
+
+.segmented button[aria-pressed='true'] {
+	background: var(--ink);
+	color: #ffffff;
+}
+
+/* Teks hanya untuk pembaca layar. */
+.visually-hidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+	white-space: nowrap;
+}
+
 /* Tombol kecil di dalam tabel, misalnya Edit atau Void pada satu baris. */
 td button {
 	min-height: 32px;
@@ -370,6 +445,8 @@ kbd {
 	color: var(--success);
 }
 
+.badge[data-review='eol'],
+.badge[data-review='due_year'],
 .badge[data-status='obsolete'],
 .badge[data-yokoten='undecided'],
 .badge[data-yokoten='not_applicable'] {

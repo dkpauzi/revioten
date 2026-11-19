@@ -136,10 +136,13 @@ const (
 	// Review berkala tanpa perubahan (D-196). Sasarannya catatan review.
 	ActionPeriodicReviewRecorded  = "periodic_review.recorded"
 	ActionPeriodicReviewConfirmed = "periodic_review.confirmed"
-	ActionDocumentRowChanged      = "document.row_changed"
-	ActionDocumentRowRemoved      = "document.row_removed"
-	ActionChangeTypeRouteChanged  = "change_type.route_changed"
-	ActionSystemSettingsUpdated   = "system_settings.updated"
+	// Fase 1 desain (D-200, D-202).
+	ActionModelEOLChanged        = "model.eol_changed"
+	ActionDocumentMarkedReady    = "document.marked_ready"
+	ActionDocumentRowChanged     = "document.row_changed"
+	ActionDocumentRowRemoved     = "document.row_removed"
+	ActionChangeTypeRouteChanged = "change_type.route_changed"
+	ActionSystemSettingsUpdated  = "system_settings.updated"
 	// Register nomor dokumen (Tahap 2).
 	ActionDocumentNumberRegistered = "document_number.registered"
 	ActionDocumentNumberImported   = "document_number.imported"

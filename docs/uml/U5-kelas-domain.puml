@@ -1089,9 +1089,12 @@ class DocumentSet {
   sequence
   --
   dihitung, tidak disimpan:
-  last_release
-  due_on = acuan + 36 bulan
-  status : ok, due_soon, overdue
+  due_on per dokumen = acuan + 36 bulan (D-202)
+  due_on set = dokumen paling dulu
+  status : ok, due_year, due_soon, overdue, eol
+}
+class Model <<lihat U5-A>> {
+  eol_at (D-200)
 }
 class PeriodicReview {
   ref : PRV-0001
@@ -1111,6 +1114,7 @@ class Person <<lihat U5-B>>
 class Document <<lihat U5-F>>
 
 DocumentSet "*" -- "1" Customer
+DocumentSet "*" -- "1..*" Model : EOL bila semua modelnya EOL >
 DocumentSet "1" o-- "1..3" Document : PFD, PFMEA, CP
 DocumentSet "1" -- "0..*" PeriodicReview
 DocumentSet "1" -- "0..*" ReviewNotice : email sekali per tahap >

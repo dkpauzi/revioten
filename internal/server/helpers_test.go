@@ -116,6 +116,11 @@ type fakeProducts struct {
 	}
 }
 
+func (f *fakeProducts) SetEOL(_ context.Context, _ access.Actor, id string, eol bool) (product.Model, error) {
+	f.record("SetEOL", id, eol)
+	return product.Model{ID: id}, f.err
+}
+
 func (f *fakeProducts) record(method, id string, input any) {
 	f.got.method, f.got.id, f.got.input = method, id, input
 }
@@ -601,6 +606,11 @@ func (f *fakeDocuments) List(_ context.Context, _ access.Actor, customerID strin
 func (f *fakeDocuments) Create(_ context.Context, _ access.Actor, in document.NewDocument) (document.Document, error) {
 	f.got, f.gotNew = called{method: "Create"}, in
 	return f.doc, f.err
+}
+
+func (f *fakeDocuments) MarkReady(_ context.Context, _ access.Actor, id string) ([]document.Revision, error) {
+	f.got = called{method: "MarkReady", id: id}
+	return f.revisions, f.err
 }
 
 func (f *fakeDocuments) ListReleased(_ context.Context, _ access.Actor, customerID string) ([]document.Summary, error) {

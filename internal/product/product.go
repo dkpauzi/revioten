@@ -23,6 +23,8 @@ type Model struct {
 	ModelGroupName string
 	Name           string
 	CreatedAt      time.Time // selalu UTC
+	// EOLAt diisi bila model sudah end of life (D-200); nil bila masih aktif.
+	EOLAt *time.Time
 }
 
 // PartNumber adalah satu nomor part milik satu model (ASUMSI E-30).

@@ -1,7 +1,7 @@
 # Rancangan · Matriks peran dan hak (gaya Spatie Laravel Permission)
 
 - **Dibuat:** 19 November 2026, dari permintaan pemilik.
-- **Status:** usulan, **belum diputuskan dan belum dibangun**. Mengubah isi awal D-66 dan U3-peta-pengguna; hak S-1 (tanda tangan digital) bergantung pada keputusan yang menggantikan D-07.
+- **Status:** **diputuskan 19 November 2026 (D-199)**, dibangun di fase 2. Jawaban pertanyaan bagian 7: dokumen kontrol digabung ke PPAP Engineer, Manager boleh melihat laporan kinerja, Project Leader boleh menyusun dan mencetak.
 
 ## 1. Permintaan pemilik
 

@@ -157,6 +157,7 @@ import type {
 	PeriodicReview,
 	PeriodicReviewList,
 	ReviewSetList,
+	Inbox,
 } from './gen/index.ts';
 
 // ApiFailure menjelaskan panggilan yang gagal: status HTTP (0 bila server
@@ -1526,13 +1527,26 @@ export function getReleasedPfmeaCpComparison(id: string, fetchFn: typeof fetch =
 
 // listReviewSets memanggil GET /api/v1/periodic-reviews/sets (L-2). Tanpa all,
 // hanya set yang akan atau sudah lewat jatuh tempo.
-export function listReviewSets(filter: { customerId?: string; documentId?: string; all?: boolean }, fetchFn: typeof fetch = fetch): Promise<ApiResult<ReviewSetList>> {
+export type ReviewSetFilter = { customerId?: string; documentId?: string; all?: boolean; eol?: boolean };
+
+function reviewQuery(filter: ReviewSetFilter): string {
 	const query = new URLSearchParams();
 	if (filter.customerId) query.set('customer_id', filter.customerId);
 	if (filter.documentId) query.set('document_id', filter.documentId);
 	if (filter.all) query.set('all', 'true');
+	if (filter.eol) query.set('eol', 'true');
 	const text = query.toString();
-	return call<ReviewSetList>(fetchFn, '/api/v1/periodic-reviews/sets' + (text ? '?' + text : ''), { method: 'GET' });
+	return text ? '?' + text : '';
+}
+
+export function listReviewSets(filter: ReviewSetFilter, fetchFn: typeof fetch = fetch): Promise<ApiResult<ReviewSetList>> {
+	return call<ReviewSetList>(fetchFn, '/api/v1/periodic-reviews/sets' + reviewQuery(filter), { method: 'GET' });
+}
+
+// reviewExportUrl memberi alamat unduhan Excel daftar review (D-202). Unduhan
+// lewat tautan biasa: browser mengirim cookie sesi sendiri.
+export function reviewExportUrl(filter: ReviewSetFilter): string {
+	return '/api/v1/periodic-reviews/sets/export' + reviewQuery(filter);
 }
 
 // listPeriodicReviews memanggil GET /api/v1/periodic-reviews (L-2).
@@ -1554,9 +1568,36 @@ export function confirmPeriodicReview(id: string, fetchFn: typeof fetch = fetch)
 
 // getPerformance memanggil GET /api/v1/performance (L-5). date YYYY-MM-DD
 // memilih periode yang memuatnya; kosong berarti hari ini.
-export function getPerformance(period: 'week' | 'month' | 'year', date: string, customerId: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<Performance>> {
-	const query = new URLSearchParams({ period });
-	if (date) query.set('date', date);
-	if (customerId) query.set('customer_id', customerId);
-	return call<Performance>(fetchFn, '/api/v1/performance?' + query.toString(), { method: 'GET' });
+export type PerformanceQuery = { period: 'week' | 'month' | 'year'; date: string; customerId: string; personId: string };
+
+function performanceQuery(q: PerformanceQuery): string {
+	const query = new URLSearchParams({ period: q.period });
+	if (q.date) query.set('date', q.date);
+	if (q.customerId) query.set('customer_id', q.customerId);
+	if (q.personId) query.set('person_id', q.personId);
+	return '?' + query.toString();
+}
+
+export function getPerformance(q: PerformanceQuery, fetchFn: typeof fetch = fetch): Promise<ApiResult<Performance>> {
+	return call<Performance>(fetchFn, '/api/v1/performance' + performanceQuery(q), { method: 'GET' });
+}
+
+// performanceExportUrl memberi alamat unduhan Excel laporan kinerja (D-202).
+export function performanceExportUrl(q: PerformanceQuery): string {
+	return '/api/v1/performance/export' + performanceQuery(q);
+}
+
+// getInbox memanggil GET /api/v1/inbox: pekerjaan yang menunggu di Home (D-202).
+export function getInbox(fetchFn: typeof fetch = fetch): Promise<ApiResult<Inbox>> {
+	return call<Inbox>(fetchFn, '/api/v1/inbox', { method: 'GET' });
+}
+
+// setModelEol memanggil PUT /api/v1/models/{id}/eol (E-2, D-200).
+export function setModelEol(id: string, eol: boolean, fetchFn: typeof fetch = fetch): Promise<ApiResult<Model>> {
+	return call<Model>(fetchFn, itemPath('models', id) + '/eol', jsonRequest('PUT', { eol }));
+}
+
+// markDocumentReady memanggil POST /api/v1/documents/{id}/ready (E-2, D-202).
+export function markDocumentReady(id: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<DocumentRevisionList>> {
+	return call<DocumentRevisionList>(fetchFn, itemPath('documents', id) + '/ready', { method: 'POST' });
 }

@@ -132,6 +132,7 @@ type ChangeSource struct {
 	Mechanism *string
 	Active    bool
 	CreatedAt time.Time
+	ReportKey *string
 }
 
 type ChangeType struct {
@@ -265,6 +266,8 @@ type DocumentRevision struct {
 	ScanUploadedByPersonID *string
 	ScanUploadedAt         *time.Time
 	Migrated               bool
+	ReadyAt                *time.Time
+	ReadyByPersonID        *string
 }
 
 type DocumentRow struct {
@@ -441,11 +444,13 @@ type IntegrationRequest struct {
 }
 
 type Model struct {
-	ID           string
-	CustomerID   string
-	ModelGroupID *string
-	Name         string
-	CreatedAt    time.Time
+	ID            string
+	CustomerID    string
+	ModelGroupID  *string
+	Name          string
+	CreatedAt     time.Time
+	EolAt         *time.Time
+	EolByPersonID *string
 }
 
 type ModelGroup struct {

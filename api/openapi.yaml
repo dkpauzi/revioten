@@ -2644,6 +2644,11 @@ paths:
           in: query
           schema:
             type: boolean
+        - name: eol
+          in: query
+          description: Also the sets whose models are all end of life (D-200).
+          schema:
+            type: boolean
       responses:
         '200':
           description: The sets.
@@ -2739,6 +2744,10 @@ paths:
           in: query
           schema:
             type: string
+        - name: person_id
+          in: query
+          schema:
+            type: string
       responses:
         '200':
           description: The report.
@@ -2746,6 +2755,130 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Performance'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/periodic-reviews/sets/export:
+    get:
+      operationId: exportReviewSets
+      summary: The periodic review list as an Excel file (L-2, D-202)
+      parameters:
+        - name: customer_id
+          in: query
+          schema:
+            type: string
+        - name: all
+          in: query
+          schema:
+            type: boolean
+        - name: eol
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: The Excel file.
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/performance/export:
+    get:
+      operationId: exportPerformance
+      summary: The performance report as an Excel file (L-5, D-202)
+      parameters:
+        - name: period
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [week, month, year]
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: customer_id
+          in: query
+          schema:
+            type: string
+        - name: person_id
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The Excel file.
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/models/{modelId}/eol:
+    put:
+      operationId: setModelEol
+      summary: Mark a model end of life, or clear the mark (E-2, D-200)
+      parameters:
+        - $ref: '#/components/parameters/ModelId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [eol]
+              properties:
+                eol:
+                  type: boolean
+      responses:
+        '200':
+          description: The model.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Model'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/documents/{documentId}/ready:
+    post:
+      operationId: markDocumentReady
+      summary: Mark the open draft ready to print (E-2, D-202)
+      description: Only recorded for the performance report. Marking again renews the time.
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      responses:
+        '200':
+          description: The revisions of the document.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentRevisionList'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/inbox:
+    get:
+      operationId: getInbox
+      summary: The work waiting for the signed-in person (D-202)
+      description: At most five items of each kind. total counts all items before that limit.
+      responses:
+        '200':
+          description: The waiting work.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Inbox'
         default:
           $ref: '#/components/responses/Error'
   /api/v1/metrics:
@@ -4678,6 +4811,10 @@ components:
         created_at:
           type: string
           format: date-time
+        eol_at:
+          type: string
+          format: date-time
+          description: Set when the model is end of life (D-200).
     ModelGroupRef:
       type: object
       required: [id, name]
@@ -5660,7 +5797,7 @@ components:
           type: boolean
     ReviewSetDocument:
       type: object
-      required: [id, number, document_type, revision]
+      required: [id, number, document_type, revision, last_release, due_on, overdue]
       properties:
         id:
           type: string
@@ -5670,9 +5807,17 @@ components:
           type: string
         revision:
           type: integer
+        last_release:
+          type: string
+          format: date
+        due_on:
+          type: string
+          format: date
+          description: The review clock runs per document (D-202).
+        overdue:
+          type: boolean
     ReviewSet:
       type: object
-      required: [customer_id, customer_code, sequence, documents, models, last_release, due_on, status, days_left, draft_open]
       properties:
         customer_id:
           type: string
@@ -5699,7 +5844,7 @@ components:
           format: date
         status:
           type: string
-          enum: [ok, due_soon, overdue]
+          enum: [ok, due_year, due_soon, overdue, eol]
         days_left:
           type: integer
           description: Negative when overdue.
@@ -5708,9 +5853,15 @@ components:
           description: The record waiting for confirmation, if any.
         draft_open:
           type: boolean
+        eol:
+          type: boolean
+        engineer:
+          type: string
+          description: The person who made the first document of the set.
+      required: [customer_id, customer_code, sequence, documents, models, last_release, due_on, status, days_left, draft_open, eol, engineer]
     ReviewSetList:
       type: object
-      required: [period_months, warning_days, due_soon, overdue, items]
+      required: [period_months, warning_days, due_soon, overdue, due_year, reviewed_no_change, reviewed_revised, items]
       properties:
         period_months:
           type: integer
@@ -5720,6 +5871,14 @@ components:
           type: integer
         overdue:
           type: integer
+        due_year:
+          type: integer
+        reviewed_no_change:
+          type: integer
+          description: Confirmed reviews with no change since 1 January.
+        reviewed_revised:
+          type: integer
+          description: Accepted changes with the trigger Periodic review since 1 January.
         items:
           type: array
           items:
@@ -5829,9 +5988,38 @@ components:
           type: number
         median_hours:
           type: number
+    TriggerCount:
+      type: object
+      required: [name, mechanism, count]
+      properties:
+        name:
+          type: string
+        mechanism:
+          type: string
+        count:
+          type: integer
+    PerformanceStages:
+      type: object
+      required: [accepted_to_release, edit_to_ready, waiting_to_print, print_to_signed, signed_to_released]
+      properties:
+        accepted_to_release:
+          $ref: '#/components/schemas/DurationSummary'
+        edit_to_ready:
+          $ref: '#/components/schemas/DurationSummary'
+        waiting_to_print:
+          $ref: '#/components/schemas/DurationSummary'
+        print_to_signed:
+          $ref: '#/components/schemas/DurationSummary'
+        signed_to_released:
+          $ref: '#/components/schemas/DurationSummary'
+    CategoryCounts:
+      type: object
+      description: Counts per trigger group (ecr, customer_claim, audit_finding, yokoten, periodic_review, other).
+      additionalProperties:
+        type: integer
     PerformancePerson:
       type: object
-      required: [name, submitted, accepted, rejected, yokotens, releases, accepted_to_release, edit_to_print, print_to_signed]
+      required: [name, submitted, accepted, rejected, open, yokotens, releases, customer_claim, audit_finding, yokoten, stages]
       properties:
         person_id:
           type: string
@@ -5844,19 +6032,23 @@ components:
           type: integer
         rejected:
           type: integer
+        open:
+          type: integer
         yokotens:
           type: integer
         releases:
           type: integer
-        accepted_to_release:
-          $ref: '#/components/schemas/DurationSummary'
-        edit_to_print:
-          $ref: '#/components/schemas/DurationSummary'
-        print_to_signed:
-          $ref: '#/components/schemas/DurationSummary'
+        customer_claim:
+          type: integer
+        audit_finding:
+          type: integer
+        yokoten:
+          type: integer
+        stages:
+          $ref: '#/components/schemas/PerformanceStages'
     PerformanceRelease:
       type: object
-      required: [revision_id, number, document_type, revision, accepted_at, released_at]
+      required: [revision_id, number, document_type, revision, category, accepted_at, released_at]
       properties:
         revision_id:
           type: string
@@ -5866,6 +6058,8 @@ components:
           type: string
         revision:
           type: integer
+        category:
+          type: string
         printed_by:
           type: string
         accepted_at:
@@ -5882,23 +6076,58 @@ components:
           format: date-time
         accepted_to_release_hours:
           type: number
-        edit_to_print_hours:
+        edit_to_ready_hours:
+          type: number
+        waiting_to_print_hours:
           type: number
         print_to_signed_hours:
           type: number
-    TriggerCount:
+        signed_to_released_hours:
+          type: number
+    PerformanceYokoten:
       type: object
-      required: [name, mechanism, count]
+      required: [ref, reason, started, targets, applied, not_applicable, pending]
       properties:
-        name:
+        ref:
           type: string
-        mechanism:
+        reason:
           type: string
-        count:
+        started:
+          type: string
+          format: date-time
+        targets:
           type: integer
+        applied:
+          type: integer
+        not_applicable:
+          type: integer
+        pending:
+          type: integer
+        days_to_close:
+          type: integer
+          description: Left out while a target is still undecided.
+    PerformanceTrendPoint:
+      type: object
+      required: [label, from, to, releases, accepted_to_release_median, by_category]
+      properties:
+        label:
+          type: string
+        from:
+          type: string
+          format: date
+        to:
+          type: string
+          format: date
+          description: The last day of the point (inclusive).
+        releases:
+          type: integer
+        accepted_to_release_median:
+          type: number
+        by_category:
+          $ref: '#/components/schemas/CategoryCounts'
     Performance:
       type: object
-      required: [period, from, to, submitted, accepted, rejected, by_trigger, yokotens, yokoten_targets, yokoten_changes, releases, accepted_to_release, edit_to_print, print_to_signed, people, release_items]
+      required: [period, from, to, week, submitted, accepted, rejected, waiting, by_trigger, by_category, yokotens, yokoten_targets, yokoten_changes, yokoten_items, releases, open_at_end, stages, previous, people, release_items, trend]
       properties:
         period:
           type: string
@@ -5910,30 +6139,49 @@ components:
           type: string
           format: date
           description: The last day of the period (inclusive).
+        week:
+          type: integer
+          description: The report week number (ISO week of its Thursday).
         submitted:
           type: integer
         accepted:
           type: integer
         rejected:
           type: integer
+        waiting:
+          type: integer
         by_trigger:
           type: array
           items:
             $ref: '#/components/schemas/TriggerCount'
+        by_category:
+          $ref: '#/components/schemas/CategoryCounts'
         yokotens:
           type: integer
         yokoten_targets:
           type: integer
         yokoten_changes:
           type: integer
+        yokoten_items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PerformanceYokoten'
         releases:
           type: integer
-        accepted_to_release:
-          $ref: '#/components/schemas/DurationSummary'
-        edit_to_print:
-          $ref: '#/components/schemas/DurationSummary'
-        print_to_signed:
-          $ref: '#/components/schemas/DurationSummary'
+        open_at_end:
+          type: integer
+        stages:
+          $ref: '#/components/schemas/PerformanceStages'
+        previous:
+          type: object
+          required: [submitted, releases, accepted_to_release_median]
+          properties:
+            submitted:
+              type: integer
+            releases:
+              type: integer
+            accepted_to_release_median:
+              type: number
         people:
           type: array
           items:
@@ -5942,6 +6190,39 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PerformanceRelease'
+        trend:
+          type: array
+          items:
+            $ref: '#/components/schemas/PerformanceTrendPoint'
+    InboxTask:
+      type: object
+      required: [kind, title, link, days]
+      properties:
+        kind:
+          type: string
+          enum: [verify, release, review, confirm_review, yokoten]
+        title:
+          type: string
+        detail:
+          type: string
+        link:
+          type: string
+        days:
+          type: integer
+          description: Days overdue for a periodic review; 0 otherwise.
+        at:
+          type: string
+          format: date-time
+    Inbox:
+      type: object
+      required: [total, items]
+      properties:
+        total:
+          type: integer
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InboxTask'
     Metrics:
       type: object
       required: [rows, documents, yokoten, revision, migration]
@@ -6934,6 +7215,10 @@ components:
         migrated:
           type: boolean
           description: True when the revision was released by verification against the hard copy (M7.5).
+        ready_at:
+          type: string
+          format: date-time
+          description: When the draft was marked ready to print (D-202).
         changes:
           type: array
           description: Reference numbers of the changes that went into this revision (M5.6).

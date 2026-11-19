@@ -1,4 +1,4 @@
-' U8 · ERD fisik (draft 0.16, 2026-11-15), dibangkitkan dari skema database sampai migrasi 00047
+' U8 · ERD fisik (draft 0.16, 2026-11-19), dibangkitkan dari skema database sampai migrasi 00048
 ' oleh docs/uml/tools/u8_dari_database.py. Jangan diedit tangan: ubah migrasinya, lalu jalankan skrip itu lagi.
 ' Menggambarkan tabel PostgreSQL 18 yang sudah dibangun (R-UML-03: diagram fisik mengikuti kode).
 ' Tim IT boleh memakai stack lain (R-UML-02); aturan yang wajib dipertahankan ada di brief dan U5.
@@ -67,6 +67,8 @@ entity "models" as models {
   model_group_id : uuid <<FK>>
   * name : text
   * created_at : timestamptz
+  eol_at : timestamptz
+  eol_by_person_id : uuid <<FK>>
 }
 
 entity "part_numbers" as part_numbers {
@@ -102,6 +104,7 @@ entity "subprocesses" as subprocesses {
 
 entity "approval_routes" as approval_routes #EEEEEE
 entity "form_sets" as form_sets #EEEEEE
+entity "people" as people #EEEEEE
 
 customers ||--o{ customer_codes
 approval_routes ||--o{ customers
@@ -110,6 +113,7 @@ project_groups ||--o{ customers
 customers ||--o{ model_groups
 customers ||--o{ models
 model_groups ||--o{ models
+people ||--o{ models
 models ||--o{ part_numbers
 processes ||--o{ process_names
 processes ||--o{ subprocesses
@@ -272,6 +276,7 @@ entity "change_sources" as change_sources {
   mechanism : text <<UK>>
   * active : boolean
   * created_at : timestamptz
+  report_key : text
 }
 
 entity "four_m_categories" as four_m_categories {
@@ -933,6 +938,8 @@ entity "document_revisions" as document_revisions <<RLS>> {
   scan_uploaded_by_person_id : uuid <<FK>>
   scan_uploaded_at : timestamptz
   * migrated : boolean
+  ready_at : timestamptz
+  ready_by_person_id : uuid <<FK>>
 }
 
 entity "yokotens" as yokotens {

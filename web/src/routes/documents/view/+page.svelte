@@ -21,6 +21,7 @@
 	import SectionBar from '#lib/documents/SectionBar.svelte';
 	import Workbook from '#lib/documents/Workbook.svelte';
 	import ReviewBanner from '#lib/ReviewBanner.svelte';
+	import { rememberRecent } from '#lib/recent.ts';
 	import { cleanContent, rowsOfSection, typedFields } from '#lib/documents.ts';
 	import { failureText, problemText } from '#lib/errors.ts';
 	import { t } from '#lib/i18n/index.ts';
@@ -114,6 +115,7 @@
 	function use(d: Document) {
 		const sameHeader = doc !== null && doc.id === d.id && doc.header_version === d.header_version;
 		doc = d;
+		rememberRecent({ id: d.id, number: d.number, title: d.models.map((m) => m.name).join(', '), status: d.status === 'draft' ? 'editing' : 'released', revision: d.revision, view: 'draft' });
 		if (!sameHeader) {
 			header = Object.fromEntries(Object.entries(d.header).map(([k, v]) => [k, String(v ?? '')]));
 		}

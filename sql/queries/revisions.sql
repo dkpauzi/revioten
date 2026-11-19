@@ -19,7 +19,7 @@ UPDATE documents SET revision = $2, status = 'draft', updated_at = now() WHERE i
 
 -- name: ListDocumentRevisions :many
 SELECT r.id, r.revision, r.status, p.name AS created_by, r.created_at, r.released_at,
-       r.snapshot_sha256, rp.name AS released_by, r.release_date, r.scan_file_name, r.migrated
+       r.snapshot_sha256, rp.name AS released_by, r.release_date, r.scan_file_name, r.migrated, r.ready_at
 FROM document_revisions r JOIN people p ON p.id = r.created_by_person_id
 LEFT JOIN people rp ON rp.id = r.released_by_person_id
 WHERE r.document_id = $1
@@ -64,3 +64,9 @@ SELECT EXISTS (
 -- name: GetDocumentRevision :one
 SELECT r.id, r.revision, r.status, r.released_at, r.snapshot, r.snapshot_sha256
 FROM document_revisions r WHERE r.document_id = $1 AND r.revision = $2;
+
+-- name: MarkRevisionReady :execrows
+-- MarkRevisionReady memberi tanda "siap cetak" pada draft terbuka satu
+-- dokumen (D-202). Menandai lagi memperbarui waktunya.
+UPDATE document_revisions SET ready_at = now(), ready_by_person_id = $2
+WHERE document_id = $1 AND status = 'draft';

@@ -168,7 +168,7 @@ func (s *Service) ListChangeSources(ctx context.Context, actor access.Actor) ([]
 	}
 	list := make([]ChangeSource, 0, len(rows))
 	for _, r := range rows {
-		list = append(list, fromSource(r))
+		list = append(list, fromSource(db.ChangeSource{ID: r.ID, Name: r.Name, Mechanism: r.Mechanism, Active: r.Active, CreatedAt: r.CreatedAt}))
 	}
 	return list, nil
 }
@@ -327,7 +327,7 @@ func getSource(ctx context.Context, q *db.Queries, id string) (ChangeSource, err
 	if err != nil {
 		return ChangeSource{}, notFound(err)
 	}
-	return fromSource(row), nil
+	return fromSource(db.ChangeSource{ID: row.ID, Name: row.Name, Mechanism: row.Mechanism, Active: row.Active, CreatedAt: row.CreatedAt}), nil
 }
 
 // fromSource mengubah baris hasil sqlc menjadi ChangeSource.

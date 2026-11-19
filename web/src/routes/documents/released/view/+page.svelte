@@ -8,6 +8,7 @@
 	import type { Document, FormatVersion } from '#lib/api/gen/index.ts';
 	import Workbook from '#lib/documents/Workbook.svelte';
 	import ReviewBanner from '#lib/ReviewBanner.svelte';
+	import { rememberRecent } from '#lib/recent.ts';
 	import { rowsOfSection } from '#lib/documents.ts';
 	import { failureText } from '#lib/errors.ts';
 	import { t } from '#lib/i18n/index.ts';
@@ -43,6 +44,7 @@
 		}
 		format = f.data;
 		doc = result.data;
+		rememberRecent({ id: result.data.id, number: result.data.number, title: result.data.models.map((m) => m.name).join(', '), status: 'released', revision: result.data.revision, view: 'released' });
 	}
 
 	function headerText(value: unknown): string {

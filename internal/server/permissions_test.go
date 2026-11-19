@@ -19,6 +19,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/customer"
 	"github.com/dkpauzi/revioten/internal/db/dbtest"
 	"github.com/dkpauzi/revioten/internal/document"
+	"github.com/dkpauzi/revioten/internal/inbox"
 	"github.com/dkpauzi/revioten/internal/integration"
 	"github.com/dkpauzi/revioten/internal/metrics"
 	"github.com/dkpauzi/revioten/internal/notify"
@@ -86,6 +87,7 @@ func TestPermissionsPerOperation(t *testing.T) {
 		ServiceAccounts: integration.NewService(pool, checker, nil, nil),
 		Notifications:   notify.NewService(pool, checker, nil, notify.Config{}, nil),
 		Reviews:         review.NewService(pool, checker),
+		Inbox:           inbox.NewService(pool, checker),
 	})
 
 	// Admin pertama, satu akun kerja tanpa peran (hanya hak dasar Viewer), dan
@@ -577,6 +579,13 @@ func TestPermissionsPerOperation(t *testing.T) {
 		{http.MethodPost, "/api/v1/periodic-reviews/{reviewId}/confirm", "", http.StatusNotFound, http.StatusNotFound, http.StatusNotFound},
 		// D-197: laporan kinerja hanya untuk pemegang L-5 (Penyusun dan Penyetuju form).
 		{http.MethodGet, "/api/v1/performance?period=week", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		// D-202: unduh Excel mengikuti hak lihatnya; EOL model lewat E-2 (D-200); siap cetak lewat E-2 pada
+		// draft (tidak terlihat bagi viewer dan admin: 404); daftar tugas Home untuk semua akun.
+		{http.MethodGet, "/api/v1/periodic-reviews/sets/export", "", http.StatusOK, http.StatusOK, http.StatusOK},
+		{http.MethodGet, "/api/v1/performance/export?period=week", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		{http.MethodPut, "/api/v1/models/{modelId}/eol", `{"eol":false}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		{http.MethodPost, "/api/v1/documents/{documentId}/ready", "", http.StatusNotFound, http.StatusOK, http.StatusNotFound},
+		{http.MethodGet, "/api/v1/inbox", "", http.StatusOK, http.StatusOK, http.StatusOK},
 		{http.MethodGet, "/api/v1/migration/numbers?customer_id={customerId}", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodPost, "/api/v1/migration/documents", `{"document_number_id":"{documentNumberId}","model_ids":[],"revision":4,"effective_date":"2025-03-10","prepared_by":"A","approved_by":"B"}`, http.StatusForbidden, http.StatusUnprocessableEntity, http.StatusForbidden},
 		{http.MethodPut, "/api/v1/documents/{documentId}/history", `{"entries":[]}`, http.StatusForbidden, http.StatusUnprocessableEntity, http.StatusForbidden},

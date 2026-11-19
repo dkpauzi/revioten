@@ -347,15 +347,20 @@ func (a *apiServer) ListDocumentRevisions(ctx context.Context, req ListDocumentR
 	if err != nil {
 		return nil, err
 	}
+	return ListDocumentRevisions200JSONResponse(toAPIRevisions(list)), nil
+}
+
+// toAPIRevisions mengubah daftar revisi domain menjadi bentuk kontrak API.
+func toAPIRevisions(list []document.Revision) DocumentRevisionList {
 	out := DocumentRevisionList{Items: make([]DocumentRevision, 0, len(list))}
 	for _, r := range list {
 		out.Items = append(out.Items, DocumentRevision{
 			Id: r.ID, Revision: r.Revision, Status: DocumentRevisionStatus(r.Status), CreatedBy: r.CreatedBy, CreatedAt: r.CreatedAt,
 			ReleasedBy: optional(r.ReleasedBy), ReleasedAt: r.ReleasedAt, Sha256: optional(r.SHA256), Changes: r.Changes,
-			ScanFileName: optional(r.ScanFileName), ReleaseDate: releaseDate(r.ReleaseDate), Migrated: &r.Migrated,
+			ScanFileName: optional(r.ScanFileName), ReleaseDate: releaseDate(r.ReleaseDate), Migrated: &r.Migrated, ReadyAt: r.ReadyAt,
 		})
 	}
-	return ListDocumentRevisions200JSONResponse(out), nil
+	return out
 }
 
 // GetDocumentDiff menjawab GET /api/v1/documents/{documentId}/diff (M5.6).

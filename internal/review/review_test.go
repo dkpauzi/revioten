@@ -13,6 +13,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/document/doctest"
 	"github.com/dkpauzi/revioten/internal/notify"
 	"github.com/dkpauzi/revioten/internal/problem"
+	"github.com/dkpauzi/revioten/internal/product"
 	"github.com/dkpauzi/revioten/internal/review"
 )
 
@@ -62,6 +63,7 @@ func TestPeriodicReview(t *testing.T) {
 	e.NewSet(t, "cd", e.CustomerCD, e.ModelB1)
 
 	base := review.NewService(e.Pool, e.Checker)
+	products := product.NewService(e.Pool, e.Checker)
 	at := func(months, days int) *review.Service {
 		return base.WithNow(func() time.Time { return time.Now().AddDate(0, months, days) })
 	}
@@ -95,6 +97,34 @@ func TestPeriodicReview(t *testing.T) {
 	if o := sets(late, false); len(o.Sets) != 1 || o.Sets[0].Status != review.StatusOverdue || o.Overdue != 1 || o.Sets[0].DaysLeft != -1 {
 		t.Errorf("lewat jatuh tempo: %+v", o)
 	}
+	// 200 hari sebelum jatuh tempo: rencana satu tahun, hanya di daftar lengkap.
+	if o := sets(at(36, -200), true); len(o.Sets) != 1 || o.Sets[0].Status != review.StatusDueYear || o.DueYear != 1 {
+		t.Errorf("dalam satu tahun: %+v", o)
+	}
+	// Jam per dokumen (D-202): setiap dokumen punya jatuh temponya sendiri.
+	if o := sets(late, false); !o.Sets[0].Documents[2].Overdue || o.Sets[0].Engineer != "Orang penyusun.uji" {
+		t.Errorf("per dokumen: %+v", o.Sets[0])
+	}
+	// Model EOL (D-200): set keluar dari daftar, kecuali diminta.
+	if _, err := products.SetEOL(ctx, e.Viewer, e.ModelK125, true); !errors.Is(err, access.ErrForbidden) {
+		t.Errorf("viewer menandai EOL: %v", err)
+	}
+	if _, err := products.SetEOL(ctx, e.Author, e.ModelK125, true); err != nil {
+		t.Fatal(err)
+	}
+	if o := sets(late, false); len(o.Sets) != 0 || o.Overdue != 0 {
+		t.Errorf("EOL masih diperingatkan: %+v", o)
+	}
+	if o, err := late.Sets(ctx, e.Viewer, review.Filter{EOL: true}); err != nil || len(o.Sets) != 1 || o.Sets[0].Status != review.StatusEOL {
+		t.Errorf("tampilkan EOL: %+v, %v", o, err)
+	}
+	if _, err := products.SetEOL(ctx, e.Author, e.ModelK125, false); err != nil {
+		t.Fatal(err)
+	}
+	if body, name, err := late.Export(ctx, e.Viewer, review.Filter{All: true}); err != nil || len(body) < 100 || name == "" {
+		t.Errorf("Excel: %d %v", len(body), err)
+	}
+
 	// Hanya set satu dokumen.
 	if o, err := late.Sets(ctx, e.Viewer, review.Filter{DocumentID: set["cp"].ID}); err != nil || len(o.Sets) != 1 {
 		t.Errorf("per dokumen: %+v, %v", o, err)

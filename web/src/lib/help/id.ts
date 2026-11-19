@@ -18,7 +18,7 @@ export const helpId: HelpContent = {
 			intro: 'Semua halaman butuh login. Akun baru mendapat kata sandi sementara dari admin dan wajib menggantinya saat login pertama.',
 			steps: [
 				'Buka alamat sistem di browser. Halaman {loginTitle} tampil.',
-				'Isi {loginName} dan {loginPassword}, lalu tekan {loginSubmit}. Tekan {loginShow} di samping kata sandi untuk memeriksa ketikan Anda.',
+				'Isi {loginName} dan {loginPassword}, lalu tekan {loginSubmit}. Tekan ikon mata ({loginShow}) di kotak kata sandi untuk memeriksa ketikan Anda.',
 				'Saat login pertama, halaman {passwordTitle} terbuka sendiri. Isi {passwordCurrent} dengan kata sandi sementara.',
 				'Isi {passwordNew} dan {passwordConfirm} dengan kata sandi Anda sendiri, minimal 8 karakter, lalu tekan {passwordSave}.',
 				'Untuk mengganti kata sandi di lain waktu, tekan {navAccount} di bilah atas.',
@@ -381,27 +381,27 @@ export const helpId: HelpContent = {
 			who: 'PPAP Engineer mencatat, verifikator mengonfirmasi; semua orang melihat peringatannya',
 			intro: 'Set PFD, PFMEA, dan Control Plan yang 3 tahun tidak direvisi harus direview. Peringatannya muncul di {navHome}, di dasbor, di halaman dokumen, di {navPeriodicReviews}, dan sebagai email ke penyusun customer itu: kuning 90 hari sebelum jatuh tempo, merah sesudahnya.',
 			steps: [
-				'Buka {navGroupDocuments}, lalu {navPeriodicReviews}. Set yang paling mendesak ada di atas.',
-				'Bila ada yang harus diubah, tekan {reviewWithChanges}. Permintaan perubahan terbuka dengan pemicu Periodic review dan dokumen set itu.',
-				'Bila tidak ada yang harus diubah, tekan {reviewNoChange}, isi {reviewDate}, {reviewParticipants}, setiap butir daftar periksa, dan {reviewConclusion}, lalu tekan {reviewSave}.',
-				'Orang kedua berperan Verifikator menekan {reviewConfirm} di {reviewWaitingTitle}. Siklus review lalu mulai lagi dari tanggal review.'
+				'Buka {navGroupDocuments}, lalu {navPeriodicReviews}. Kartu menghitung set yang lewat jatuh tempo, segera jatuh tempo, jatuh tempo dalam setahun, dan sudah direview tahun ini.',
+				'Pilih {reviewTabDue}, {reviewTabYear}, atau {reviewTabAll}. Saring menurut customer atau engineer, dan centang {reviewShowEol} untuk melihat model end of life. {reviewDownload} menyimpan daftarnya.',
+				'Tekan {reviewStart} pada satu set. Pilih {reviewChangesNeeded} lalu tekan {reviewOpenChange}: permintaan perubahan terbuka dengan pemicu Periodic review dan dokumen set itu.',
+				'Atau pilih {reviewNoChange}, isi {reviewDate}, {reviewParticipants}, setiap butir daftar periksa, dan {reviewConclusion}, lalu tekan {reviewSave}. Orang kedua berperan Verifikator menekan {reviewConfirm} di {reviewWaitingTitle}; jam lalu mulai lagi.'
 			],
-			tips: ['Orang yang mencatat review tidak bisa mengonfirmasinya.', 'Review yang sudah dikonfirmasi tidak bisa diubah. Revisi dokumen tidak naik.', 'Rilis baru juga memulai lagi siklusnya.'],
+			tips: ['Setiap dokumen punya jamnya sendiri: rilis terakhirnya, atau review terakhir set-nya yang dikonfirmasi.', 'PPAP Engineer atau Project Leader menandai model EOL di Master data → Models ({modelEolMark}). Set-nya keluar dari review.', 'Orang yang mencatat review tidak bisa mengonfirmasinya. Review yang dikonfirmasi tidak bisa diubah.'],
 			image: 'periodic-review',
 			imageAlt: 'Halaman Review berkala dengan satu set dokumen yang lewat jatuh tempo.'
 		},
 		{
 			id: 'performance',
 			title: 'Laporan kinerja',
-			who: 'PPAP Engineer dan supervisor',
+			who: 'PPAP Engineer, supervisor, dan manager',
 			intro: 'Angka mingguan, bulanan, atau tahunan pekerjaan PPAP, dihitung dari perubahan, cetakan, scan bertanda tangan, dan rilis yang tercatat. Satu minggu dari Jumat sampai Kamis, jadi laporan hari Jumat memuat minggu yang baru selesai.',
 			steps: [
 				'Buka {navGroupDocuments}, lalu {navPerformance}.',
-				'Pilih {performanceWeek}, {performanceMonth}, atau {performanceYear}, dan satu tanggal dalam periode itu. {performancePrevious} dan {performanceNext} berpindah satu periode.',
-				'Baca {performanceChanges} dan {performanceByTrigger} untuk claim customer dan temuan audit, serta {performanceYokoten} untuk yokoten.',
-				'Baca {performanceTimes}: {performanceAcceptedToRelease}, {performanceEditToPrint}, dan {performancePrintToSigned}, total dan {performancePeople}.'
+				'Pilih {performanceWeek}, {performanceMonth}, atau {performanceYear}. Tombol panah berpindah satu periode; pilih engineer atau customer untuk mempersempit. Tombol unduh menyimpan laporan sebagai Excel.',
+				'Baca {performanceReceived}, {performanceReleased}, dan {performanceApprovedToReleased}, masing-masing dibandingkan dengan periode sebelumnya.',
+				'Baca {performanceWhere}: {performanceStageEdit}, {performanceStageWaiting}, {performanceStagePrint}, dan {performanceStageRelease}; lalu pemicu, tren, yokoten, dan {performancePeopleTitle}.'
 			],
-			tips: ['Waktu dihitung dari revisi yang terbit dalam periode lewat perubahan yang diterima.', 'Mulai edit dihitung sejak draft revisi dibuka; siap cetak adalah cetakan terakhir untuk tanda tangan sebelum scan bertanda tangan.'],
+			tips: ['Tidak ada target: laporan hanya mengumpulkan lamanya setiap tahap.', 'Tekan {revisionReady} di bagian Revisions pada draft yang sudah selesai, supaya {performanceStageWaiting} bisa diukur.'],
 			image: 'performance',
 			imageAlt: 'Laporan kinerja satu minggu dengan jumlah perubahan dan waktu per tahap.'
 		},

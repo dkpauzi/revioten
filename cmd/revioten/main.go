@@ -33,6 +33,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/customer"
 	"github.com/dkpauzi/revioten/internal/db"
 	"github.com/dkpauzi/revioten/internal/document"
+	"github.com/dkpauzi/revioten/internal/inbox"
 	"github.com/dkpauzi/revioten/internal/integration"
 	"github.com/dkpauzi/revioten/internal/integrationapi"
 	"github.com/dkpauzi/revioten/internal/metrics"
@@ -158,6 +159,7 @@ func runServer(args []string) error {
 			Migration:        docs,
 			Metrics:          metrics.NewService(pool, checker),
 			Reviews:          review.NewService(pool, checker),
+			Inbox:            inbox.NewService(pool, checker),
 		}),
 		// Batas waktu membaca header permintaan. Tanpa batas ini, klien yang
 		// sangat lambat bisa menahan koneksi selamanya (pengaman dasar, G9).
