@@ -90,8 +90,8 @@ test('D-199: admin menambah peran, mengganti namanya, lalu menonaktifkannya', as
 
 	// Peran nonaktif tidak ditawarkan di halaman Accounts.
 	await openFromMenu(page, en.navGroupAdmin, en.navAccounts);
-	await expect(page.locator('form').first().getByLabel('Internal auditor E2E', { exact: true })).toHaveCount(0);
-	await expect(page.locator('form').first().getByLabel(en.rolePpapEngineer, { exact: true })).toBeVisible();
+	await expect(page.locator('main form').first().getByLabel('Internal auditor E2E', { exact: true })).toHaveCount(0);
+	await expect(page.locator('main form').first().getByLabel(en.rolePpapEngineer, { exact: true })).toBeVisible();
 
 	await openFromMenu(page, en.navGroupAdmin, en.navAuditLog);
 	await expect(page.getByText(en.auditActionRoleCreated).first()).toBeVisible();

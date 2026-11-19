@@ -88,11 +88,12 @@ LEFT JOIN customers c ON c.project_group_id = h.project_group_id AND c.id = $1
 JOIN accounts a ON a.person_id = h.person_id AND a.disabled_at IS NULL
 JOIN account_roles ar ON ar.account_id = a.id
 JOIN role_permissions rp ON rp.role_id = ar.role_id AND rp.permission_code = 'V-1'
-WHERE p.key = 'apqp_ppap_controller' OR (p.key IN ('project_leader', 'project_engineer') AND c.id IS NOT NULL)
+WHERE p.key = 'apqp_ppap_controller' OR (p.key IN ('project_leader', 'project_engineer') AND (c.id IS NOT NULL OR ar.scope = 'all'))
 `
 
 // ChangeVerifiers memberi orang yang boleh memverifikasi perubahan customer
 // itu: pemegang V-1 yang juga memegang jabatan verifikator (D-51, D-54).
+// Project Leader Project Group lain ikut bila hak V-1-nya tidak dibatasi (D-206).
 func (q *Queries) ChangeVerifiers(ctx context.Context, customerID string) ([]string, error) {
 	rows, err := q.db.Query(ctx, changeVerifiers, customerID)
 	if err != nil {

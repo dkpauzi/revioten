@@ -75,6 +75,8 @@ const groups: { id: MenuGroup['id']; label: MessageKey; entries: Entry[] }[] = [
 		id: 'admin',
 		label: 'navGroupAdmin',
 		entries: [
+			// Kesehatan web (D-205): tanda tangan tertahan, error, laporan masalah.
+			{ href: '/admin/health', label: 'navAdminHealth', permission: 'A-3' },
 			{ href: '/admin/accounts', label: 'navAccounts', permission: 'A-1' },
 			// Isi peran diatur admin (M8.1, D-66).
 			{ href: '/admin/roles', label: 'navRoles', permission: 'A-1' },

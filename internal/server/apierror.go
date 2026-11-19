@@ -113,6 +113,15 @@ func (a *apiServer) responseError(w http.ResponseWriter, r *http.Request, err er
 	default:
 		a.log.Error("permintaan API gagal",
 			"request_id", requestIDFrom(r.Context()), "method", r.Method, "path", r.URL.Path, "error", err)
+		// Dasbor admin (D-205): error server juga dicatat di database, kecuali
+		// permintaan yang dibatalkan browser sendiri. Pesannya sama dengan log
+		// server, yang tidak memuat password atau token (R-SEC-14).
+		if a.health != nil && !errors.Is(err, context.Canceled) {
+			ctx := context.WithoutCancel(r.Context())
+			if rerr := a.health.RecordError(ctx, requestIDFrom(ctx), r.Method, r.URL.Path, actorFrom(ctx).AccountID, err.Error()); rerr != nil {
+				a.log.Error("gagal mencatat error server", "request_id", requestIDFrom(ctx), "error", rerr)
+			}
+		}
 		a.writeError(w, r, http.StatusInternalServerError, ErrorCodeInternalError,
 			"Something went wrong on the server. Give the request ID to the administrator.", nil)
 	}

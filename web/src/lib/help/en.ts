@@ -89,6 +89,7 @@ export const helpEn: HelpContent = {
 				'{rolePpapEngineer}: composes, prints, records releases, manages templates and numbers, and enters legacy documents. {rolePpapEngineerSupervisor}: the same, and also verifies changes and publishes form sets and AP tables.',
 				'{roleProjectLeader}: composes, prints, and verifies for the customers of the own project group; the scope is chosen automatically. {roleManager}: signs and views the performance report. An account without a role can view and add genba notes.',
 				'The admin decides what each role holds under {navRoles}, and can add a role there.',
+				'A {roleProjectLeader} is limited to the own project group by default. For a Project Leader who helps another group, choose {scopeAll}: the person can then also sign and verify for that group.',
 				'The temporary password is shown only once. If it is lost, reset the password of the account.',
 				'An admin account holds no work role. The person who holds it uses a separate work account for daily work.',
 				'An account is never deleted, only disabled.'
@@ -489,6 +490,25 @@ export const helpEn: HelpContent = {
 			imageAlt: 'The Email notifications page with the email server, the list of events, and the outbox.'
 		},
 		{
+			id: 'admin-health',
+			title: 'Web health (admin)',
+			who: 'Admin',
+			intro: 'The Home of an admin account shows how the web application is doing and where work is stuck. Document content is not shown.',
+			steps: [
+				'Log in with the admin account. Home shows the cards: signatures waiting, server errors, problem reports, email, accounts, the last backup, and the audit log chain.',
+				'Read {adminTopSignatures}: the five digital signatures that wait the longest, with the person who is awaited.',
+				'Open {navGroupAdmin}, then {navAdminHealth} for every waiting signature, every server error with its request ID, and every problem report.',
+				'For a problem report, choose the {adminStatus}, write an {adminNote}, and press {adminSave}.',
+				'{adminProcessed} counts the revisions released this report week and this month, per trigger.'
+			],
+			tips: [
+				'A server error shows the same request ID the user saw on the screen.',
+				'Waiting time counts from the previous signature, or from the time the document was sent when the first slot waits.'
+			],
+			image: 'admin-health',
+			imageAlt: 'The Home of the admin account with the health cards and the signatures waiting the longest.'
+		},
+		{
 			id: 'audit',
 			title: 'Audit log',
 			who: 'Admin',
@@ -511,7 +531,8 @@ export const helpEn: HelpContent = {
 				'You forgot your password, or the account is locked: ask the admin to press {accountResetPassword} for your account.',
 				'A red message appears under a field: correct that field and save again. Nothing was saved yet.',
 				'A message says the version cannot be changed: the version is published. Press {versionNew} and change the new draft.',
-				'The page looks old after an update: reload the page in the browser.'
+				'The page looks old after an update: reload the page in the browser.',
+				'Something else: press {reportProblem} in the top bar and describe it. The admin sees the page and the last request ID.'
 			]
 		}
 	]

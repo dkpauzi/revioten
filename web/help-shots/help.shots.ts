@@ -57,7 +57,9 @@ test('potret layar untuk halaman Help', async ({ page }) => {
 	await shot(page, 'login');
 	await logInAs(page, admin.login, admin.password);
 	await expect(page.getByRole('button', { name: en.logout })).toBeVisible();
-	await shot(page, 'home');
+	// Home akun admin adalah dasbor kesehatan web (D-205).
+	await expect(page.getByRole('heading', { name: en.adminHomeTitle, level: 1 })).toBeVisible();
+	await shot(page, 'admin-health');
 
 	// Master data.
 	await openFromMenu(page, en.navGroupMaster, en.navCustomers);
@@ -173,6 +175,10 @@ test('potret layar untuk halaman Help', async ({ page }) => {
 	await page.getByLabel(en.passwordConfirm, { exact: true }).fill(engineer.password);
 	await page.getByRole('button', { name: en.passwordSave }).click();
 	await expect(page.getByRole('status')).toHaveText(en.passwordChanged);
+	// Home akun kerja.
+	await page.goto('/');
+	await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+	await shot(page, 'home');
 
 	await openFromMenu(page, en.navGroupTemplates, en.navProcesses);
 	for (const [name, aliases] of [

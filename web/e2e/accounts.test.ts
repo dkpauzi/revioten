@@ -55,7 +55,7 @@ test('akun baru wajib ganti password, lalu hanya mendapat hak dari perannya', as
 	await expect(page.getByRole('heading', { name: en.accountsTitle, exact: true })).toBeVisible();
 
 	// Project Leader, bawaannya dibatasi ke Project Group sendiri (D-71, D-199).
-	const form = page.locator('form').first();
+	const form = page.locator('main form').first();
 	await form.getByLabel(en.accountPersonName).fill('Author E2E');
 	await form.getByLabel(en.accountLogin).fill('author.e2e');
 	await form.getByLabel(en.roleProjectLeader, { exact: true }).check();

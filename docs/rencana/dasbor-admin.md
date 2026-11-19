@@ -1,7 +1,7 @@
 # Rancangan · Dasbor admin: kesehatan web, bukan isi dokumen
 
 - **Dibuat:** 20 November 2026, dari pertanyaan pemilik.
-- **Status:** **usulan, menunggu keputusan pemilik.** Belum ada kode.
+- **Status:** **disetujui 20 November 2026 (D-205), dibangun di fase 4** (migrasi 00051). Pertanyaan bagian 5 dijawab dengan usulan Claude: dasbor menggantikan Home akun admin, tombol Report a problem untuk semua pengguna, lama tertahan dihitung sejak slot mulai ditunggu.
 
 ## 1. Permintaan pemilik
 

@@ -322,6 +322,16 @@ type DocumentType struct {
 	Position int16
 }
 
+type ErrorReport struct {
+	ID         string
+	OccurredAt time.Time
+	RequestID  string
+	Method     string
+	Path       string
+	AccountID  *string
+	Message    string
+}
+
 type ExportJob struct {
 	ID               string
 	ServiceAccountID string
@@ -612,6 +622,20 @@ type PrintLog struct {
 	PrintedByPersonID  string
 	PrintedByAccountID string
 	PrintedAt          time.Time
+}
+
+type ProblemReport struct {
+	ID                string
+	CreatedAt         time.Time
+	PersonID          string
+	AccountID         string
+	Page              string
+	Description       string
+	LastRequestID     *string
+	Status            string
+	HandledByPersonID *string
+	HandledAt         *time.Time
+	AdminNote         *string
 }
 
 type Process struct {

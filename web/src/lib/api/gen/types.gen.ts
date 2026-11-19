@@ -1584,6 +1584,112 @@ export type SignatureOverview = {
     to_release: Array<SignatureRequest>;
 };
 
+export type WaitingSignature = {
+    request_id: string;
+    document_id: string;
+    number: string;
+    revision: number;
+    customer_code: string;
+    slot: string;
+    signer: string;
+    sent_by: string;
+    sent_at: string;
+    /**
+     * The previous signature, or the time sent when the first slot waits.
+     */
+    waiting_since: string;
+    hours: number;
+};
+
+export type WaitingSignatureList = {
+    items: Array<WaitingSignature>;
+};
+
+export type ErrorReport = {
+    id: string;
+    occurred_at: string;
+    request_id: string;
+    method: string;
+    path: string;
+    message: string;
+    login?: string;
+};
+
+export type ErrorReportList = {
+    items: Array<ErrorReport>;
+};
+
+export type ProblemReport = {
+    id: string;
+    created_at: string;
+    reported_by: string;
+    login: string;
+    page: string;
+    description: string;
+    last_request_id?: string;
+    status: 'new' | 'checking' | 'done';
+    handled_by?: string;
+    handled_at?: string;
+    admin_note?: string;
+};
+
+export type ProblemReportList = {
+    items: Array<ProblemReport>;
+};
+
+export type NewProblemReport = {
+    page: string;
+    description: string;
+    last_request_id?: string;
+};
+
+export type ProblemReportChange = {
+    status: 'new' | 'checking' | 'done';
+    note?: string;
+};
+
+export type CreatedId = {
+    id: string;
+};
+
+export type ProcessedCount = {
+    category: 'ecr' | 'customer_claim' | 'audit_finding' | 'yokoten' | 'periodic_review' | 'other' | 'initial' | 'migrated';
+    count: number;
+};
+
+export type ProcessedPeriod = {
+    from: string;
+    /**
+     * The last day of the period.
+     */
+    to: string;
+    total: number;
+    counts: Array<ProcessedCount>;
+};
+
+export type AdminHealth = {
+    signatures_waiting: number;
+    top_signatures: Array<WaitingSignature>;
+    errors_24h: number;
+    errors_7d: number;
+    latest_errors: Array<ErrorReport>;
+    problems_open: number;
+    latest_problems: Array<ProblemReport>;
+    week: ProcessedPeriod;
+    month: ProcessedPeriod;
+    email_failed: number;
+    email_pending: number;
+    accounts_locked: number;
+    accounts_disabled: number;
+    failed_logins_24h: number;
+    backup_configured: boolean;
+    backup_found: boolean;
+    backup_at?: string;
+    backup_file?: string;
+    audit_valid: boolean;
+    audit_entries: number;
+};
+
 export type InboxTask = {
     kind: 'verify' | 'release' | 'review' | 'confirm_review' | 'yokoten' | 'sign';
     title: string;
@@ -8733,6 +8839,206 @@ export type WithdrawSignatureRequestResponses = {
 };
 
 export type WithdrawSignatureRequestResponse = WithdrawSignatureRequestResponses[keyof WithdrawSignatureRequestResponses];
+
+export type GetAdminHealthData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/health';
+};
+
+export type GetAdminHealthErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type GetAdminHealthError = GetAdminHealthErrors[keyof GetAdminHealthErrors];
+
+export type GetAdminHealthResponses = {
+    /**
+     * The dashboard.
+     */
+    200: AdminHealth;
+};
+
+export type GetAdminHealthResponse = GetAdminHealthResponses[keyof GetAdminHealthResponses];
+
+export type ListWaitingSignaturesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/waiting-signatures';
+};
+
+export type ListWaitingSignaturesErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ListWaitingSignaturesError = ListWaitingSignaturesErrors[keyof ListWaitingSignaturesErrors];
+
+export type ListWaitingSignaturesResponses = {
+    /**
+     * The waiting signatures.
+     */
+    200: WaitingSignatureList;
+};
+
+export type ListWaitingSignaturesResponse = ListWaitingSignaturesResponses[keyof ListWaitingSignaturesResponses];
+
+export type ListErrorReportsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/error-reports';
+};
+
+export type ListErrorReportsErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ListErrorReportsError = ListErrorReportsErrors[keyof ListErrorReportsErrors];
+
+export type ListErrorReportsResponses = {
+    /**
+     * The errors, newest first.
+     */
+    200: ErrorReportList;
+};
+
+export type ListErrorReportsResponse = ListErrorReportsResponses[keyof ListErrorReportsResponses];
+
+export type ListProblemReportsData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/admin/problem-reports';
+};
+
+export type ListProblemReportsErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ListProblemReportsError = ListProblemReportsErrors[keyof ListProblemReportsErrors];
+
+export type ListProblemReportsResponses = {
+    /**
+     * The reports.
+     */
+    200: ProblemReportList;
+};
+
+export type ListProblemReportsResponse = ListProblemReportsResponses[keyof ListProblemReportsResponses];
+
+export type UpdateProblemReportData = {
+    body: ProblemReportChange;
+    path: {
+        reportId: string;
+    };
+    query?: never;
+    url: '/api/v1/admin/problem-reports/{reportId}';
+};
+
+export type UpdateProblemReportErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type UpdateProblemReportError = UpdateProblemReportErrors[keyof UpdateProblemReportErrors];
+
+export type UpdateProblemReportResponses = {
+    /**
+     * Saved.
+     */
+    204: void;
+};
+
+export type UpdateProblemReportResponse = UpdateProblemReportResponses[keyof UpdateProblemReportResponses];
+
+export type ReportProblemData = {
+    body: NewProblemReport;
+    path?: never;
+    query?: never;
+    url: '/api/v1/problem-reports';
+};
+
+export type ReportProblemErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ReportProblemError = ReportProblemErrors[keyof ReportProblemErrors];
+
+export type ReportProblemResponses = {
+    /**
+     * The report was recorded.
+     */
+    201: CreatedId;
+};
+
+export type ReportProblemResponse = ReportProblemResponses[keyof ReportProblemResponses];
 
 export type GetInboxData = {
     body?: never;

@@ -415,6 +415,22 @@ kbd {
 	background: currentColor;
 }
 
+/* Laporan masalah (D-205): baru kuning, diperiksa biru, selesai hijau. */
+.badge[data-problem='new'] {
+	background: var(--warning-weak);
+	color: var(--warning);
+}
+
+.badge[data-problem='checking'] {
+	background: var(--info-weak);
+	color: var(--info);
+}
+
+.badge[data-problem='done'] {
+	background: var(--success-weak);
+	color: var(--success);
+}
+
 /* Tanda tangan digital (D-198): menunggu kuning, lengkap hijau, ditolak merah. */
 .badge[data-signature='waiting'] {
 	background: var(--warning-weak);

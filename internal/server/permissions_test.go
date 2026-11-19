@@ -19,6 +19,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/customer"
 	"github.com/dkpauzi/revioten/internal/db/dbtest"
 	"github.com/dkpauzi/revioten/internal/document"
+	"github.com/dkpauzi/revioten/internal/health"
 	"github.com/dkpauzi/revioten/internal/inbox"
 	"github.com/dkpauzi/revioten/internal/integration"
 	"github.com/dkpauzi/revioten/internal/metrics"
@@ -90,6 +91,7 @@ func TestPermissionsPerOperation(t *testing.T) {
 		Reviews:         review.NewService(pool, checker),
 		Inbox:           inbox.NewService(pool, checker),
 		Signatures:      signature.NewService(pool, checker, authSvc),
+		Health:          health.NewService(pool, checker, ""),
 	})
 
 	// Admin pertama, satu akun kerja tanpa peran (hanya hak dasar Viewer), dan
@@ -337,7 +339,7 @@ func TestPermissionsPerOperation(t *testing.T) {
 		"viewerPersonId": viewerInfo.PersonID,
 		"accountId":      viewerInfo.ID, "projectGroupId": group.ID, "customerId": cust.ID,
 		"modelGroupId": modelGroup.ID, "modelId": model.ID, "partNumberId": part.ID,
-		"processId": proc.ID, "documentTypeId": docTypes[0].ID, "cpTypeId": docTypes[2].ID, "documentNumberId": reg.Numbers[0].ID, "roleId": access.RolePFMEACPChecker, "event": "change_submitted", "serviceAccountId": "01900000-0000-7000-8000-000000000000", "tokenId": "01900000-0000-7000-8000-000000000001", "requestId": "01900000-0000-7000-8000-000000000002", "documentId": doc.ID, "rowId": doc.Rows[0].ID, "freeNumberId": reserved[1], "specialCodeId": specialCodes[0].ID,
+		"processId": proc.ID, "documentTypeId": docTypes[0].ID, "cpTypeId": docTypes[2].ID, "documentNumberId": reg.Numbers[0].ID, "roleId": access.RolePFMEACPChecker, "event": "change_submitted", "serviceAccountId": "01900000-0000-7000-8000-000000000000", "tokenId": "01900000-0000-7000-8000-000000000001", "requestId": "01900000-0000-7000-8000-000000000002", "reportId": "01900000-0000-7000-8000-000000000003", "documentId": doc.ID, "rowId": doc.Rows[0].ID, "freeNumberId": reserved[1], "specialCodeId": specialCodes[0].ID,
 		"changeTypeId": changeTypes[0].ID, "changeSourceId": sources[0].ID, "fourMCategoryId": categories[0].ID,
 		"formatTemplateId": pfmeaFormat.ID, "formatVersionId": pfmeaVersion.ID, "formSetId": formSet.ID, "formSetVersionId": formSet.Versions[0].ID, "pfdSheetId": formSet.Versions[0].PFD.FormatVersionID, "pfmeaSheetId": formSet.Versions[0].PFMEA.FormatVersionID, "cpSheetId": formSet.Versions[0].CP.FormatVersionID, "formatFieldId": pfmeaVersion.Fields[0].ID,
 		"freeProcessId": reflow.ID, "refDocId": refDoc.ID, "linkId": refDoc.Links[0].ID, "changeId": changeReq.ID, "triggerId": triggerID, "contentTypeId": contentTypeID, "sectionId": "01900000-0000-7000-8000-000000000000", "attachmentId": "01900000-0000-7000-8000-000000000000", "reviewId": "01900000-0000-7000-8000-000000000000", "yokotenId": "01900000-0000-7000-8000-000000000000", "targetId": "01900000-0000-7000-8000-000000000000", "processVersionId": iqcVersion.ID, "processTemplateId": iqcVersion.TemplateID, "subprocessId": iqcVersion.Subprocesses[0].ID,
@@ -568,6 +570,13 @@ func TestPermissionsPerOperation(t *testing.T) {
 		{http.MethodGet, "/api/v1/documents/{documentId}/signature-requests", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodPost, "/api/v1/documents/{documentId}/signature-requests", `{"signers":[],"password":"perahu kertas di sungai jernih"}`, http.StatusForbidden, http.StatusUnprocessableEntity, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/signature-requests", "", http.StatusOK, http.StatusOK, http.StatusOK},
+		// Dasbor admin (D-205): A-3. Laporan masalah boleh dikirim setiap akun.
+		{http.MethodGet, "/api/v1/admin/health", "", http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodGet, "/api/v1/admin/waiting-signatures", "", http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodGet, "/api/v1/admin/error-reports", "", http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodGet, "/api/v1/admin/problem-reports", "", http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodPatch, "/api/v1/admin/problem-reports/{reportId}", `{"status":"done"}`, http.StatusForbidden, http.StatusForbidden, http.StatusNotFound},
+		{http.MethodPost, "/api/v1/problem-reports", `{"page":"/numbers","description":"Tombol tidak bereaksi"}`, http.StatusCreated, http.StatusCreated, http.StatusCreated},
 		{http.MethodGet, "/api/v1/signature-requests/{requestId}", "", http.StatusNotFound, http.StatusNotFound, http.StatusNotFound},
 		{http.MethodPost, "/api/v1/signature-requests/{requestId}/sign", `{"password":"x"}`, http.StatusNotFound, http.StatusNotFound, http.StatusNotFound},
 		{http.MethodPost, "/api/v1/signature-requests/{requestId}/reject", `{"reason":"x","password":"x"}`, http.StatusNotFound, http.StatusNotFound, http.StatusNotFound},

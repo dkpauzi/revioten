@@ -432,12 +432,13 @@ const routeSlotCandidates = `-- name: RouteSlotCandidates :many
 
 SELECT s.slot_order, s.stage, s.print_title,
        p.key AS position_key, p.name AS position_name,
-       h.person_id, pe.name AS person_name
+       h.person_id, pe.name AS person_name, g.code AS group_code,
+       coalesce(h.project_group_id IS NULL OR h.project_group_id = (SELECT cu.project_group_id FROM customers cu WHERE cu.id = $1), true)::boolean AS own_group
 FROM route_slots s
 LEFT JOIN route_slot_positions sp ON sp.slot_id = s.id
 LEFT JOIN positions p ON p.id = sp.position_id
 LEFT JOIN position_holders h ON h.position_id = sp.position_id
-    AND (h.project_group_id IS NULL OR h.project_group_id = (SELECT cu.project_group_id FROM customers cu WHERE cu.id = $1))
+LEFT JOIN project_groups g ON g.id = h.project_group_id
 LEFT JOIN people pe ON pe.id = h.person_id
 WHERE s.route_id = $2
 ORDER BY s.slot_order, p.key, pe.name
@@ -456,12 +457,16 @@ type RouteSlotCandidatesRow struct {
 	PositionName *string
 	PersonID     *string
 	PersonName   *string
+	GroupCode    *string
+	OwnGroup     bool
 }
 
 // Fase 3 · Tanda tangan digital (D-198, D-203, D-204).
 // RouteSlotCandidates memberi setiap slot rute beserta pemegang jabatan yang
-// diizinkan slot itu untuk customer ini: jabatan tanpa Project Group, atau
-// Project Group customer. Slot tanpa pemegang tetap muncul dengan person_id NULL.
+// diizinkan slot itu. Untuk jabatan per Project Group, pemegang Project Group
+// mana pun ikut (own_group menandai Project Group customer); layanan hanya
+// memakai pemegang Project Group lain bila hak S-1-nya tidak dibatasi
+// (D-206). Slot tanpa pemegang tetap muncul dengan person_id NULL.
 func (q *Queries) RouteSlotCandidates(ctx context.Context, arg RouteSlotCandidatesParams) ([]RouteSlotCandidatesRow, error) {
 	rows, err := q.db.Query(ctx, routeSlotCandidates, arg.CustomerID, arg.RouteID)
 	if err != nil {
@@ -479,6 +484,8 @@ func (q *Queries) RouteSlotCandidates(ctx context.Context, arg RouteSlotCandidat
 			&i.PositionName,
 			&i.PersonID,
 			&i.PersonName,
+			&i.GroupCode,
+			&i.OwnGroup,
 		); err != nil {
 			return nil, err
 		}

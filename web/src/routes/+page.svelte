@@ -1,4 +1,5 @@
 <script lang="ts">
+	import AdminDashboard from '#lib/admin/AdminDashboard.svelte';
 	// Home (D-202, desain "Home v2"): sapaan, peringatan review 3 tahun, empat
 	// pekerjaan yang paling sering, pekerjaan yang menunggu orang ini, dan
 	// dokumen yang terakhir dibuka. Semua tautan menuju halaman yang memeriksa
@@ -57,7 +58,11 @@
 		}
 	}
 
+	// Akun admin mendapat dasbor kesehatan web, bukan Home kerja (D-205).
+	let isAdmin = $derived(session.current?.account.kind === 'admin');
+
 	onMount(async () => {
+		if (session.current?.account.kind === 'admin') return;
 		recent = readRecent();
 		const [sets, tasks] = await Promise.all([listReviewSets({}), getInbox()]);
 		review = sets.ok ? sets.data : null;
@@ -65,6 +70,9 @@
 	});
 </script>
 
+{#if isAdmin}
+	<AdminDashboard />
+{:else}
 <h1>{t(greeting as MessageKey, { name: firstName })}</h1>
 <p class="lead">{t('homeLead')}</p>
 
@@ -153,6 +161,7 @@
 <div class="health">
 	<HealthStatus />
 </div>
+{/if}
 
 <style>
 	.lead {

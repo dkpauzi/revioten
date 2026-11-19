@@ -89,6 +89,7 @@ export const helpId: HelpContent = {
 				'{rolePpapEngineer}: menyusun, mencetak, mencatat rilis, mengelola template dan nomor, dan memasukkan dokumen lama. {rolePpapEngineerSupervisor}: sama, ditambah memverifikasi perubahan dan menerbitkan form set serta tabel AP.',
 				'{roleProjectLeader}: menyusun, mencetak, dan memverifikasi untuk customer di Project Group sendiri; cakupannya terpilih otomatis. {roleManager}: menandatangani dan melihat laporan kinerja. Akun tanpa peran bisa melihat dan memberi catatan genba.',
 				'Admin menentukan isi setiap peran di {navRoles}, dan bisa menambah peran di sana.',
+				'{roleProjectLeader} bawaannya dibatasi ke Project Group sendiri. Untuk Project Leader yang membantu Project Group lain, pilih {scopeAll}: orang itu lalu juga bisa menandatangani dan memverifikasi untuk Project Group itu.',
 				'Kata sandi sementara hanya tampil satu kali. Bila hilang, atur ulang kata sandi akun itu.',
 				'Akun admin tidak memegang peran kerja. Pemegangnya memakai akun kerja terpisah untuk pekerjaan sehari-hari.',
 				'Akun tidak pernah dihapus, hanya dinonaktifkan.'
@@ -489,6 +490,25 @@ export const helpId: HelpContent = {
 			imageAlt: 'Halaman Email notifikasi dengan server email, daftar peristiwa, dan kotak keluar.'
 		},
 		{
+			id: 'admin-health',
+			title: 'Kesehatan web (admin)',
+			who: 'Admin',
+			intro: 'Home akun admin menampilkan kondisi aplikasi web dan di mana pekerjaan tertahan. Isi dokumen tidak tampil.',
+			steps: [
+				'Login dengan akun admin. Home menampilkan kartu: tanda tangan tertahan, error server, laporan masalah, email, akun, backup terakhir, dan rantai audit log.',
+				'Baca {adminTopSignatures}: lima tanda tangan digital yang paling lama tertahan, beserta orang yang ditunggu.',
+				'Buka {navGroupAdmin}, lalu {navAdminHealth} untuk semua tanda tangan tertahan, semua error server dengan request ID-nya, dan semua laporan masalah.',
+				'Untuk laporan masalah, pilih {adminStatus}, tulis {adminNote}, lalu tekan {adminSave}.',
+				'{adminProcessed} menghitung revisi yang terbit minggu laporan ini dan bulan ini, per pemicu.'
+			],
+			tips: [
+				'Error server menampilkan request ID yang sama dengan yang dilihat pengguna di layar.',
+				'Lama tertahan dihitung sejak tanda tangan sebelumnya, atau sejak dokumen dikirim bila slot pertama yang ditunggu.'
+			],
+			image: 'admin-health',
+			imageAlt: 'Home akun admin dengan kartu kesehatan dan tanda tangan yang paling lama tertahan.'
+		},
+		{
 			id: 'audit',
 			title: 'Audit log',
 			who: 'Admin',
@@ -511,7 +531,8 @@ export const helpId: HelpContent = {
 				'Lupa kata sandi, atau akun terkunci: minta admin menekan {accountResetPassword} untuk akun Anda.',
 				'Pesan merah muncul di bawah satu isian: betulkan isian itu dan simpan lagi. Belum ada yang tersimpan.',
 				'Pesan menyebut versi tidak bisa diubah: versinya sudah terbit. Tekan {versionNew} dan ubah draft barunya.',
-				'Halaman terlihat lama setelah pembaruan: muat ulang halaman di browser.'
+				'Halaman terlihat lama setelah pembaruan: muat ulang halaman di browser.',
+				'Hal lain: tekan {reportProblem} di bilah atas dan ceritakan masalahnya. Admin melihat halaman dan request ID terakhir.'
 			]
 		}
 	]

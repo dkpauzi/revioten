@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"strings"
@@ -77,5 +78,28 @@ func TestAPIErrorHidesDetails(t *testing.T) {
 	log := srv.log.String()
 	if !strings.Contains(log, "koneksi putus") || !strings.Contains(log, "uji-500") {
 		t.Errorf("log server harus memuat detail error dan request ID, dapat:\n%s", log)
+	}
+}
+
+// fakeHealth hanya mencatat error server yang dikirim ke dasbor admin.
+type fakeHealth struct {
+	HealthService
+	recorded []string
+}
+
+func (f *fakeHealth) RecordError(_ context.Context, requestID, method, path, _, message string) error {
+	f.recorded = append(f.recorded, requestID+" "+method+" "+path+" "+message)
+	return nil
+}
+
+// TestAPIErrorRecorded: error 500 juga dicatat untuk dasbor admin (D-205),
+// sedangkan penolakan biasa (403, 404, 422) tidak.
+func TestAPIErrorRecorded(t *testing.T) {
+	recorder := &fakeHealth{}
+	broken := &fakeCustomers{listErr: errors.New("koneksi putus")}
+	srv := newTestServer(t, nil, Deps{Customers: broken, Health: recorder})
+	srv.do(http.MethodGet, "/api/v1/customers", "", "X-Request-Id", "uji-500")
+	if len(recorder.recorded) != 1 || recorder.recorded[0] != "uji-500 GET /api/v1/customers koneksi putus" {
+		t.Errorf("error tercatat: %q", recorder.recorded)
 	}
 }

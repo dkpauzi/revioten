@@ -1529,6 +1529,48 @@ func (e PrintLogPurpose) Valid() bool {
 	}
 }
 
+// Defines values for ProblemReportStatus.
+const (
+	ProblemReportStatusChecking ProblemReportStatus = "checking"
+	ProblemReportStatusDone     ProblemReportStatus = "done"
+	ProblemReportStatusNew      ProblemReportStatus = "new"
+)
+
+// Valid indicates whether the value is a known member of the ProblemReportStatus enum.
+func (e ProblemReportStatus) Valid() bool {
+	switch e {
+	case ProblemReportStatusChecking:
+		return true
+	case ProblemReportStatusDone:
+		return true
+	case ProblemReportStatusNew:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ProblemReportChangeStatus.
+const (
+	ProblemReportChangeStatusChecking ProblemReportChangeStatus = "checking"
+	ProblemReportChangeStatusDone     ProblemReportChangeStatus = "done"
+	ProblemReportChangeStatusNew      ProblemReportChangeStatus = "new"
+)
+
+// Valid indicates whether the value is a known member of the ProblemReportChangeStatus enum.
+func (e ProblemReportChangeStatus) Valid() bool {
+	switch e {
+	case ProblemReportChangeStatusChecking:
+		return true
+	case ProblemReportChangeStatusDone:
+		return true
+	case ProblemReportChangeStatusNew:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ProcessTemplateVersionStatus.
 const (
 	ProcessTemplateVersionStatusDraft     ProcessTemplateVersionStatus = "draft"
@@ -1559,6 +1601,42 @@ func (e ProcessVersionSummaryStatus) Valid() bool {
 	case ProcessVersionSummaryStatusDraft:
 		return true
 	case ProcessVersionSummaryStatusPublished:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ProcessedCountCategory.
+const (
+	ProcessedCountCategoryAuditFinding   ProcessedCountCategory = "audit_finding"
+	ProcessedCountCategoryCustomerClaim  ProcessedCountCategory = "customer_claim"
+	ProcessedCountCategoryEcr            ProcessedCountCategory = "ecr"
+	ProcessedCountCategoryInitial        ProcessedCountCategory = "initial"
+	ProcessedCountCategoryMigrated       ProcessedCountCategory = "migrated"
+	ProcessedCountCategoryOther          ProcessedCountCategory = "other"
+	ProcessedCountCategoryPeriodicReview ProcessedCountCategory = "periodic_review"
+	ProcessedCountCategoryYokoten        ProcessedCountCategory = "yokoten"
+)
+
+// Valid indicates whether the value is a known member of the ProcessedCountCategory enum.
+func (e ProcessedCountCategory) Valid() bool {
+	switch e {
+	case ProcessedCountCategoryAuditFinding:
+		return true
+	case ProcessedCountCategoryCustomerClaim:
+		return true
+	case ProcessedCountCategoryEcr:
+		return true
+	case ProcessedCountCategoryInitial:
+		return true
+	case ProcessedCountCategoryMigrated:
+		return true
+	case ProcessedCountCategoryOther:
+		return true
+	case ProcessedCountCategoryPeriodicReview:
+		return true
+	case ProcessedCountCategoryYokoten:
 		return true
 	default:
 		return false
@@ -2196,6 +2274,30 @@ type ActionPriorityResult struct {
 // ActionPriorityResultPriority defines model for ActionPriorityResult.Priority.
 type ActionPriorityResultPriority string
 
+// AdminHealth defines model for AdminHealth.
+type AdminHealth struct {
+	AccountsDisabled  int                `json:"accounts_disabled"`
+	AccountsLocked    int                `json:"accounts_locked"`
+	AuditEntries      int64              `json:"audit_entries"`
+	AuditValid        bool               `json:"audit_valid"`
+	BackupAt          *time.Time         `json:"backup_at,omitempty"`
+	BackupConfigured  bool               `json:"backup_configured"`
+	BackupFile        *string            `json:"backup_file,omitempty"`
+	BackupFound       bool               `json:"backup_found"`
+	EmailFailed       int                `json:"email_failed"`
+	EmailPending      int                `json:"email_pending"`
+	Errors24h         int                `json:"errors_24h"`
+	Errors7d          int                `json:"errors_7d"`
+	FailedLogins24h   int                `json:"failed_logins_24h"`
+	LatestErrors      []ErrorReport      `json:"latest_errors"`
+	LatestProblems    []ProblemReport    `json:"latest_problems"`
+	Month             ProcessedPeriod    `json:"month"`
+	ProblemsOpen      int                `json:"problems_open"`
+	SignaturesWaiting int                `json:"signatures_waiting"`
+	TopSignatures     []WaitingSignature `json:"top_signatures"`
+	Week              ProcessedPeriod    `json:"week"`
+}
+
 // AffectedDocument defines model for AffectedDocument.
 type AffectedDocument struct {
 	DocumentType ChangeRef `json:"document_type"`
@@ -2612,6 +2714,11 @@ type CreatedAccount struct {
 
 	// TemporaryPassword Shown only once. Give it to the owner of the account.
 	TemporaryPassword string `json:"temporary_password"`
+}
+
+// CreatedId defines model for CreatedId.
+type CreatedId struct {
+	Id string `json:"id"`
 }
 
 // Credentials defines model for Credentials.
@@ -3169,6 +3276,22 @@ type ErrorDetail struct {
 
 // ErrorDetailCode defines model for ErrorDetail.Code.
 type ErrorDetailCode string
+
+// ErrorReport defines model for ErrorReport.
+type ErrorReport struct {
+	Id         string    `json:"id"`
+	Login      *string   `json:"login,omitempty"`
+	Message    string    `json:"message"`
+	Method     string    `json:"method"`
+	OccurredAt time.Time `json:"occurred_at"`
+	Path       string    `json:"path"`
+	RequestId  string    `json:"request_id"`
+}
+
+// ErrorReportList defines model for ErrorReportList.
+type ErrorReportList struct {
+	Items []ErrorReport `json:"items"`
+}
 
 // ExcelComparison defines model for ExcelComparison.
 type ExcelComparison struct {
@@ -3866,6 +3989,13 @@ type NewPositionHolder struct {
 	ProjectGroupId *string `json:"project_group_id,omitempty"`
 }
 
+// NewProblemReport defines model for NewProblemReport.
+type NewProblemReport struct {
+	Description   string  `json:"description"`
+	LastRequestId *string `json:"last_request_id,omitempty"`
+	Page          string  `json:"page"`
+}
+
 // NewProcess defines model for NewProcess.
 type NewProcess struct {
 	// Aliases Leave it out for no aliases. Each alias follows the rules of the name.
@@ -4550,6 +4680,38 @@ type PrintRequest struct {
 	Revision *int `json:"revision,omitempty"`
 }
 
+// ProblemReport defines model for ProblemReport.
+type ProblemReport struct {
+	AdminNote     *string             `json:"admin_note,omitempty"`
+	CreatedAt     time.Time           `json:"created_at"`
+	Description   string              `json:"description"`
+	HandledAt     *time.Time          `json:"handled_at,omitempty"`
+	HandledBy     *string             `json:"handled_by,omitempty"`
+	Id            string              `json:"id"`
+	LastRequestId *string             `json:"last_request_id,omitempty"`
+	Login         string              `json:"login"`
+	Page          string              `json:"page"`
+	ReportedBy    string              `json:"reported_by"`
+	Status        ProblemReportStatus `json:"status"`
+}
+
+// ProblemReportStatus defines model for ProblemReport.Status.
+type ProblemReportStatus string
+
+// ProblemReportChange defines model for ProblemReportChange.
+type ProblemReportChange struct {
+	Note   *string                   `json:"note,omitempty"`
+	Status ProblemReportChangeStatus `json:"status"`
+}
+
+// ProblemReportChangeStatus defines model for ProblemReportChange.Status.
+type ProblemReportChangeStatus string
+
+// ProblemReportList defines model for ProblemReportList.
+type ProblemReportList struct {
+	Items []ProblemReport `json:"items"`
+}
+
 // Process A manufacturing step, for example IQC (D-06, R-DOC-04). The ID never
 // changes; the name is only a display value. Other data refers to the
 // process by its ID.
@@ -4625,6 +4787,25 @@ type ProcessVersionSummary struct {
 
 // ProcessVersionSummaryStatus defines model for ProcessVersionSummary.Status.
 type ProcessVersionSummaryStatus string
+
+// ProcessedCount defines model for ProcessedCount.
+type ProcessedCount struct {
+	Category ProcessedCountCategory `json:"category"`
+	Count    int                    `json:"count"`
+}
+
+// ProcessedCountCategory defines model for ProcessedCount.Category.
+type ProcessedCountCategory string
+
+// ProcessedPeriod defines model for ProcessedPeriod.
+type ProcessedPeriod struct {
+	Counts []ProcessedCount   `json:"counts"`
+	From   openapi_types.Date `json:"from"`
+
+	// To The last day of the period.
+	To    openapi_types.Date `json:"to"`
+	Total int                `json:"total"`
+}
 
 // ProjectGroup defines model for ProjectGroup.
 type ProjectGroup struct {
@@ -5380,6 +5561,28 @@ type TriggerCount struct {
 	Name      string `json:"name"`
 }
 
+// WaitingSignature defines model for WaitingSignature.
+type WaitingSignature struct {
+	CustomerCode string    `json:"customer_code"`
+	DocumentId   string    `json:"document_id"`
+	Hours        float32   `json:"hours"`
+	Number       string    `json:"number"`
+	RequestId    string    `json:"request_id"`
+	Revision     int       `json:"revision"`
+	SentAt       time.Time `json:"sent_at"`
+	SentBy       string    `json:"sent_by"`
+	Signer       string    `json:"signer"`
+	Slot         string    `json:"slot"`
+
+	// WaitingSince The previous signature, or the time sent when the first slot waits.
+	WaitingSince time.Time `json:"waiting_since"`
+}
+
+// WaitingSignatureList defines model for WaitingSignatureList.
+type WaitingSignatureList struct {
+	Items []WaitingSignature `json:"items"`
+}
+
 // Yokoten defines model for Yokoten.
 type Yokoten struct {
 	CreatedAt     time.Time `json:"created_at"`
@@ -5806,6 +6009,9 @@ type SetAccountEmailJSONRequestBody = EmailAddress
 // SetAccountRolesJSONRequestBody defines body for SetAccountRoles for application/json ContentType.
 type SetAccountRolesJSONRequestBody = RolesUpdate
 
+// UpdateProblemReportJSONRequestBody defines body for UpdateProblemReport for application/json ContentType.
+type UpdateProblemReportJSONRequestBody = ProblemReportChange
+
 // CreateApprovalRouteJSONRequestBody defines body for CreateApprovalRoute for application/json ContentType.
 type CreateApprovalRouteJSONRequestBody = ApprovalRouteInput
 
@@ -6019,6 +6225,9 @@ type CreatePrintLayoutJSONRequestBody = PrintLayoutInput
 // UpdatePrintLayoutJSONRequestBody defines body for UpdatePrintLayout for application/json ContentType.
 type UpdatePrintLayoutJSONRequestBody = PrintLayoutInput
 
+// ReportProblemJSONRequestBody defines body for ReportProblem for application/json ContentType.
+type ReportProblemJSONRequestBody = NewProblemReport
+
 // AddTemplatePointJSONRequestBody defines body for AddTemplatePoint for application/json ContentType.
 type AddTemplatePointJSONRequestBody = NewTemplatePoint
 
@@ -6144,6 +6353,21 @@ type ServerInterface interface {
 	// SetAccountRoles Replace the roles of a work account (A-1)
 	// (PUT /api/v1/accounts/{accountId}/roles)
 	SetAccountRoles(w http.ResponseWriter, r *http.Request, accountId AccountId)
+	// ListErrorReports The last 200 server errors (A-3, D-205)
+	// (GET /api/v1/admin/error-reports)
+	ListErrorReports(w http.ResponseWriter, r *http.Request)
+	// GetAdminHealth The admin dashboard, the health of the web application (A-3, D-205)
+	// (GET /api/v1/admin/health)
+	GetAdminHealth(w http.ResponseWriter, r *http.Request)
+	// ListProblemReports The last 200 problem reports from users, open ones first (A-3, D-205)
+	// (GET /api/v1/admin/problem-reports)
+	ListProblemReports(w http.ResponseWriter, r *http.Request)
+	// UpdateProblemReport Change the status and note of a problem report (A-3)
+	// (PATCH /api/v1/admin/problem-reports/{reportId})
+	UpdateProblemReport(w http.ResponseWriter, r *http.Request, reportId string)
+	// ListWaitingSignatures Every digital signature that waits, the longest first (A-3, D-205)
+	// (GET /api/v1/admin/waiting-signatures)
+	ListWaitingSignatures(w http.ResponseWriter, r *http.Request)
 	// ListApprovalRoutes Approval routes with their slots in signing order, ordered by name (R-APR-08)
 	// (GET /api/v1/approval-routes)
 	ListApprovalRoutes(w http.ResponseWriter, r *http.Request)
@@ -6543,6 +6767,9 @@ type ServerInterface interface {
 	// UpdatePrintLayout Change the name and content of a print layout (A-2, M6.1)
 	// (PUT /api/v1/print-layouts/{layoutId})
 	UpdatePrintLayout(w http.ResponseWriter, r *http.Request, layoutId string)
+	// ReportProblem Report a problem with the page you are on (every account, D-205)
+	// (POST /api/v1/problem-reports)
+	ReportProblem(w http.ResponseWriter, r *http.Request)
 	// GetProcessTemplateVersion One process template version with its sub-processes and points (L-2)
 	// (GET /api/v1/process-template-versions/{processVersionId})
 	GetProcessTemplateVersion(w http.ResponseWriter, r *http.Request, processVersionId ProcessVersionId)
@@ -6925,6 +7152,88 @@ func (siw *ServerInterfaceWrapper) SetAccountRoles(w http.ResponseWriter, r *htt
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.SetAccountRoles(w, r, accountId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListErrorReports operation middleware
+func (siw *ServerInterfaceWrapper) ListErrorReports(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListErrorReports(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAdminHealth operation middleware
+func (siw *ServerInterfaceWrapper) GetAdminHealth(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAdminHealth(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListProblemReports operation middleware
+func (siw *ServerInterfaceWrapper) ListProblemReports(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListProblemReports(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateProblemReport operation middleware
+func (siw *ServerInterfaceWrapper) UpdateProblemReport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "reportId" -------------
+	var reportId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "reportId", r.PathValue("reportId"), &reportId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "reportId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateProblemReport(w, r, reportId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListWaitingSignatures operation middleware
+func (siw *ServerInterfaceWrapper) ListWaitingSignatures(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListWaitingSignatures(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -10620,6 +10929,20 @@ func (siw *ServerInterfaceWrapper) UpdatePrintLayout(w http.ResponseWriter, r *h
 	handler.ServeHTTP(w, r)
 }
 
+// ReportProblem operation middleware
+func (siw *ServerInterfaceWrapper) ReportProblem(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReportProblem(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetProcessTemplateVersion operation middleware
 func (siw *ServerInterfaceWrapper) GetProcessTemplateVersion(w http.ResponseWriter, r *http.Request) {
 
@@ -12256,6 +12579,12 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/signature-requests/{requestId}/sign", wrapper.SignSignatureRequest)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/signature-requests/{requestId}/reject", wrapper.RejectSignatureRequest)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/signature-requests/{requestId}/withdraw", wrapper.WithdrawSignatureRequest)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/admin/health", wrapper.GetAdminHealth)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/admin/waiting-signatures", wrapper.ListWaitingSignatures)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/admin/error-reports", wrapper.ListErrorReports)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/admin/problem-reports", wrapper.ListProblemReports)
+	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/api/v1/admin/problem-reports/{reportId}", wrapper.UpdateProblemReport)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/problem-reports", wrapper.ReportProblem)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/inbox", wrapper.GetInbox)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/metrics", wrapper.GetMetrics)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/release", wrapper.ReleaseDocument)
@@ -12720,6 +13049,192 @@ type SetAccountRolesdefaultJSONResponse struct {
 }
 
 func (response SetAccountRolesdefaultJSONResponse) VisitSetAccountRolesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListErrorReportsRequestObject struct {
+}
+
+type ListErrorReportsResponseObject interface {
+	VisitListErrorReportsResponse(w http.ResponseWriter) error
+}
+
+type ListErrorReports200JSONResponse ErrorReportList
+
+func (response ListErrorReports200JSONResponse) VisitListErrorReportsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListErrorReportsdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ListErrorReportsdefaultJSONResponse) VisitListErrorReportsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAdminHealthRequestObject struct {
+}
+
+type GetAdminHealthResponseObject interface {
+	VisitGetAdminHealthResponse(w http.ResponseWriter) error
+}
+
+type GetAdminHealth200JSONResponse AdminHealth
+
+func (response GetAdminHealth200JSONResponse) VisitGetAdminHealthResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAdminHealthdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response GetAdminHealthdefaultJSONResponse) VisitGetAdminHealthResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListProblemReportsRequestObject struct {
+}
+
+type ListProblemReportsResponseObject interface {
+	VisitListProblemReportsResponse(w http.ResponseWriter) error
+}
+
+type ListProblemReports200JSONResponse ProblemReportList
+
+func (response ListProblemReports200JSONResponse) VisitListProblemReportsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListProblemReportsdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ListProblemReportsdefaultJSONResponse) VisitListProblemReportsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateProblemReportRequestObject struct {
+	ReportId string `json:"reportId"`
+	Body     *UpdateProblemReportJSONRequestBody
+}
+
+type UpdateProblemReportResponseObject interface {
+	VisitUpdateProblemReportResponse(w http.ResponseWriter) error
+}
+
+type UpdateProblemReport204Response struct {
+}
+
+func (response UpdateProblemReport204Response) VisitUpdateProblemReportResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type UpdateProblemReportdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response UpdateProblemReportdefaultJSONResponse) VisitUpdateProblemReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListWaitingSignaturesRequestObject struct {
+}
+
+type ListWaitingSignaturesResponseObject interface {
+	VisitListWaitingSignaturesResponse(w http.ResponseWriter) error
+}
+
+type ListWaitingSignatures200JSONResponse WaitingSignatureList
+
+func (response ListWaitingSignatures200JSONResponse) VisitListWaitingSignaturesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListWaitingSignaturesdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ListWaitingSignaturesdefaultJSONResponse) VisitListWaitingSignaturesResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -18089,6 +18604,45 @@ func (response UpdatePrintLayoutdefaultJSONResponse) VisitUpdatePrintLayoutRespo
 	return err
 }
 
+type ReportProblemRequestObject struct {
+	Body *ReportProblemJSONRequestBody
+}
+
+type ReportProblemResponseObject interface {
+	VisitReportProblemResponse(w http.ResponseWriter) error
+}
+
+type ReportProblem201JSONResponse CreatedId
+
+func (response ReportProblem201JSONResponse) VisitReportProblemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ReportProblemdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ReportProblemdefaultJSONResponse) VisitReportProblemResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetProcessTemplateVersionRequestObject struct {
 	ProcessVersionId ProcessVersionId `json:"processVersionId"`
 }
@@ -20501,6 +21055,21 @@ type StrictServerInterface interface {
 	// SetAccountRoles Replace the roles of a work account (A-1)
 	// (PUT /api/v1/accounts/{accountId}/roles)
 	SetAccountRoles(ctx context.Context, request SetAccountRolesRequestObject) (SetAccountRolesResponseObject, error)
+	// ListErrorReports The last 200 server errors (A-3, D-205)
+	// (GET /api/v1/admin/error-reports)
+	ListErrorReports(ctx context.Context, request ListErrorReportsRequestObject) (ListErrorReportsResponseObject, error)
+	// GetAdminHealth The admin dashboard, the health of the web application (A-3, D-205)
+	// (GET /api/v1/admin/health)
+	GetAdminHealth(ctx context.Context, request GetAdminHealthRequestObject) (GetAdminHealthResponseObject, error)
+	// ListProblemReports The last 200 problem reports from users, open ones first (A-3, D-205)
+	// (GET /api/v1/admin/problem-reports)
+	ListProblemReports(ctx context.Context, request ListProblemReportsRequestObject) (ListProblemReportsResponseObject, error)
+	// UpdateProblemReport Change the status and note of a problem report (A-3)
+	// (PATCH /api/v1/admin/problem-reports/{reportId})
+	UpdateProblemReport(ctx context.Context, request UpdateProblemReportRequestObject) (UpdateProblemReportResponseObject, error)
+	// ListWaitingSignatures Every digital signature that waits, the longest first (A-3, D-205)
+	// (GET /api/v1/admin/waiting-signatures)
+	ListWaitingSignatures(ctx context.Context, request ListWaitingSignaturesRequestObject) (ListWaitingSignaturesResponseObject, error)
 	// ListApprovalRoutes Approval routes with their slots in signing order, ordered by name (R-APR-08)
 	// (GET /api/v1/approval-routes)
 	ListApprovalRoutes(ctx context.Context, request ListApprovalRoutesRequestObject) (ListApprovalRoutesResponseObject, error)
@@ -20900,6 +21469,9 @@ type StrictServerInterface interface {
 	// UpdatePrintLayout Change the name and content of a print layout (A-2, M6.1)
 	// (PUT /api/v1/print-layouts/{layoutId})
 	UpdatePrintLayout(ctx context.Context, request UpdatePrintLayoutRequestObject) (UpdatePrintLayoutResponseObject, error)
+	// ReportProblem Report a problem with the page you are on (every account, D-205)
+	// (POST /api/v1/problem-reports)
+	ReportProblem(ctx context.Context, request ReportProblemRequestObject) (ReportProblemResponseObject, error)
 	// GetProcessTemplateVersion One process template version with its sub-processes and points (L-2)
 	// (GET /api/v1/process-template-versions/{processVersionId})
 	GetProcessTemplateVersion(ctx context.Context, request GetProcessTemplateVersionRequestObject) (GetProcessTemplateVersionResponseObject, error)
@@ -21399,6 +21971,135 @@ func (sh *strictHandler) SetAccountRoles(w http.ResponseWriter, r *http.Request,
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(SetAccountRolesResponseObject); ok {
 		if err := validResponse.VisitSetAccountRolesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListErrorReports operation middleware
+func (sh *strictHandler) ListErrorReports(w http.ResponseWriter, r *http.Request) {
+	var request ListErrorReportsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListErrorReports(ctx, request.(ListErrorReportsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListErrorReports")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListErrorReportsResponseObject); ok {
+		if err := validResponse.VisitListErrorReportsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAdminHealth operation middleware
+func (sh *strictHandler) GetAdminHealth(w http.ResponseWriter, r *http.Request) {
+	var request GetAdminHealthRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAdminHealth(ctx, request.(GetAdminHealthRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAdminHealth")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAdminHealthResponseObject); ok {
+		if err := validResponse.VisitGetAdminHealthResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListProblemReports operation middleware
+func (sh *strictHandler) ListProblemReports(w http.ResponseWriter, r *http.Request) {
+	var request ListProblemReportsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListProblemReports(ctx, request.(ListProblemReportsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListProblemReports")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListProblemReportsResponseObject); ok {
+		if err := validResponse.VisitListProblemReportsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateProblemReport operation middleware
+func (sh *strictHandler) UpdateProblemReport(w http.ResponseWriter, r *http.Request, reportId string) {
+	var request UpdateProblemReportRequestObject
+
+	request.ReportId = reportId
+
+	var body UpdateProblemReportJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateProblemReport(ctx, request.(UpdateProblemReportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateProblemReport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateProblemReportResponseObject); ok {
+		if err := validResponse.VisitUpdateProblemReportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListWaitingSignatures operation middleware
+func (sh *strictHandler) ListWaitingSignatures(w http.ResponseWriter, r *http.Request) {
+	var request ListWaitingSignaturesRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListWaitingSignatures(ctx, request.(ListWaitingSignaturesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListWaitingSignatures")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListWaitingSignaturesResponseObject); ok {
+		if err := validResponse.VisitListWaitingSignaturesResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -25306,6 +26007,37 @@ func (sh *strictHandler) UpdatePrintLayout(w http.ResponseWriter, r *http.Reques
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UpdatePrintLayoutResponseObject); ok {
 		if err := validResponse.VisitUpdatePrintLayoutResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ReportProblem operation middleware
+func (sh *strictHandler) ReportProblem(w http.ResponseWriter, r *http.Request) {
+	var request ReportProblemRequestObject
+
+	var body ReportProblemJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReportProblem(ctx, request.(ReportProblemRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReportProblem")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReportProblemResponseObject); ok {
+		if err := validResponse.VisitReportProblemResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

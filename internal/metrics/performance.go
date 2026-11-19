@@ -46,6 +46,10 @@ const (
 // Categories adalah urutan kelompok pemicu di layar.
 var Categories = []string{CategoryECR, CategoryCustomerClaim, CategoryAuditFinding, CategoryYokoten, CategoryPeriodicReview, CategoryOther}
 
+// Category memberi kelompok laporan satu perubahan, untuk paket lain (dasbor
+// admin, D-205).
+func Category(reportKey, mechanism string) string { return category(reportKey, mechanism) }
+
 // category memberi kelompok laporan satu perubahan.
 func category(reportKey, mechanism string) string {
 	if mechanism == "yokoten" {

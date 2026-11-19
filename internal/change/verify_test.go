@@ -57,7 +57,9 @@ func TestVerifyChange(t *testing.T) {
 		t.Fatal(err)
 	}
 	stranger := doctest.NewActor(t, e.Pool, "v1.tanpa.jabatan", "work", doctest.All(access.RoleVerifier))
-	otherEngineer := doctest.NewActor(t, e.Pool, "pe.gr9", "work", doctest.All(access.RoleVerifier))
+	// Project Engineer GR9 yang dibatasi ke Project Group sendiri (D-71). Tanpa
+	// batas (D-206) ia boleh membantu GR1; itu diuji di internal/signature.
+	otherEngineer := doctest.NewActor(t, e.Pool, "pe.gr9", "work", access.RoleGrant{Role: access.RoleVerifier, Scope: access.ScopeOwnProjectGroup})
 	hold(t, e.Pool, otherEngineer, "project_engineer", otherGroup)
 	controller := doctest.NewActor(t, e.Pool, "apqp.controller", "work", doctest.All(access.RoleVerifier))
 	hold(t, e.Pool, controller, "apqp_ppap_controller", "")
@@ -71,12 +73,14 @@ func TestVerifyChange(t *testing.T) {
 		"tanpa catatan":   {leader, "  ", "note:required"},
 		"pemohon sendiri": {engineer, "OK", "verifier:not_allowed"},
 		"tanpa jabatan":   {stranger, "OK", "verifier:not_allowed"},
-		"group lain":      {otherEngineer, "OK", "verifier:not_allowed"},
 	} {
 		_, err := s.Verify(ctx, x.actor, c.ID, true, x.note)
 		if got := problemCodes(t, err); !slices.Contains(got, x.want) {
 			t.Errorf("%s: %v", name, got)
 		}
+	}
+	if _, err := s.Verify(ctx, otherEngineer, c.ID, true, "OK"); !errors.Is(err, access.ErrForbidden) {
+		t.Errorf("Project Engineer group lain yang dibatasi: %v", err)
 	}
 	if _, err := s.Verify(ctx, e.Author, c.ID, true, "OK"); !errors.Is(err, access.ErrForbidden) {
 		t.Errorf("penyusun tanpa V-1: %v", err)

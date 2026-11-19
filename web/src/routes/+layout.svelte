@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ReportProblem from '#lib/ReportProblem.svelte';
 	// Gaya global dan huruf yang dibundel dengan aplikasi (D-127).
 	import '@fontsource-variable/geist';
 	import '@fontsource-variable/geist-mono';
@@ -179,6 +180,7 @@
 				</span>
 				<a href="/account/password">{t('navAccount')}</a>
 				<a href="/help">{t('navHelp')}</a>
+				<ReportProblem />
 				<a href="/about">{t('navAbout')}</a>
 			</div>
 		</div>

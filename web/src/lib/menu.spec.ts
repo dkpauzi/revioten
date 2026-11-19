@@ -45,6 +45,7 @@ describe('buildMenu', () => {
 
 	it('menampilkan kelompok Admin sesuai hak admin yang dipegang', () => {
 		expect(hrefs(['A-1', 'A-3', 'A-4']).admin).toEqual([
+			'/admin/health',
 			'/admin/accounts',
 			'/admin/roles',
 			'/admin/service-accounts',

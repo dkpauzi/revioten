@@ -99,7 +99,7 @@ test('fase 3: kirim untuk tanda tangan digital, tanda tangan berurutan, lalu ril
 
 	// Prepared: diri sendiri. Checked: Project Leader. Slot Approved terisi otomatis.
 	await page.getByLabel(en.sigSlotChoose.replace('{slot}', 'Process. Eng')).selectOption({ label: `${people.engineer.name} · PPAP Engineer` });
-	await page.getByLabel(en.sigSlotChoose.replace('{slot}', 'Engineer')).selectOption({ label: `${people.leader.name} · Project Leader` });
+	await page.getByLabel(en.sigSlotChoose.replace('{slot}', 'Engineer')).selectOption({ label: `${people.leader.name} · Project Leader GR9` });
 	await page.getByLabel(en.sigNote).fill('Revisi awal');
 	await page.locator('#sig-password').fill(people.engineer.password);
 	await page.getByRole('button', { name: en.sigSend }).click();

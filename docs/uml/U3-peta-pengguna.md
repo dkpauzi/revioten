@@ -27,6 +27,8 @@ Semua akun kerja otomatis memegang hak peran Viewer (L-1 sampai L-3 dan G-1). Ak
 | NPI Manager, QA QC Manager, Advisor (slot GM), Factory Manager | Manager | Semua customer | D-70, D-198, D-199. Penanda tangan; boleh melihat laporan kinerja. Setiap jabatan dipegang satu orang (D-115). |
 | QA, QC, internal audit, DCC, tim WI, ECN & SAP Coordinator | Tanpa peran (Viewer) | Semua customer, dokumen rilis | D-41, D-70, D-199 |
 
+**Project Leader pembantu (D-206):** batas Project Group bisa dilepas per akun. Admin memberi peran Project Leader dengan cakupan semua customer, misalnya untuk Project Leader GR5 yang membantu GR1; orang itu lalu juga boleh menandatangani slot Prepared dan Checked serta memverifikasi perubahan Project Group lain.
+
 **Rangkap jabatan:** Project Leader GR3 juga APQP/PPAP Controller, jadi ia memegang PPAP Engineer Supervisor (semua customer) dan Project Leader (Project Group sendiri) sekaligus.
 
 **Peran baru** bisa ditambah admin di layar **Admin → Roles** (D-199), misalnya untuk staf DCC bila dokumen kontrol dipisah lagi dari PPAP Engineer.

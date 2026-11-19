@@ -52,10 +52,10 @@ GROUPS = [
         "signature_requests", "signature_slots", "signatures"]),
     ("U8-I-cetak-dan-migrasi", "Cetak, layout, dan migrasi dokumen lama", [
         "print_layouts", "customer_print_layouts", "print_logs", "document_baselines", "document_history_entries"]),
-    ("U8-J-integrasi-dan-notifikasi", "API integrasi dan email notifikasi", [
+    ("U8-J-integrasi-dan-notifikasi", "API integrasi, email notifikasi, dan dasbor admin", [
         "service_accounts", "service_account_customers", "service_tokens", "integration_requests",
         "change_proposals", "export_jobs", "notification_events", "notification_outbox",
-        "periodic_reviews", "periodic_review_notices"]),
+        "periodic_reviews", "periodic_review_notices", "error_reports", "problem_reports"]),
 ]
 
 SQL = """

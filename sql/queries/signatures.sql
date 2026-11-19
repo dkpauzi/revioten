@@ -2,16 +2,19 @@
 
 -- name: RouteSlotCandidates :many
 -- RouteSlotCandidates memberi setiap slot rute beserta pemegang jabatan yang
--- diizinkan slot itu untuk customer ini: jabatan tanpa Project Group, atau
--- Project Group customer. Slot tanpa pemegang tetap muncul dengan person_id NULL.
+-- diizinkan slot itu. Untuk jabatan per Project Group, pemegang Project Group
+-- mana pun ikut (own_group menandai Project Group customer); layanan hanya
+-- memakai pemegang Project Group lain bila hak S-1-nya tidak dibatasi
+-- (D-206). Slot tanpa pemegang tetap muncul dengan person_id NULL.
 SELECT s.slot_order, s.stage, s.print_title,
        p.key AS position_key, p.name AS position_name,
-       h.person_id, pe.name AS person_name
+       h.person_id, pe.name AS person_name, g.code AS group_code,
+       coalesce(h.project_group_id IS NULL OR h.project_group_id = (SELECT cu.project_group_id FROM customers cu WHERE cu.id = sqlc.arg(customer_id)), true)::boolean AS own_group
 FROM route_slots s
 LEFT JOIN route_slot_positions sp ON sp.slot_id = s.id
 LEFT JOIN positions p ON p.id = sp.position_id
 LEFT JOIN position_holders h ON h.position_id = sp.position_id
-    AND (h.project_group_id IS NULL OR h.project_group_id = (SELECT cu.project_group_id FROM customers cu WHERE cu.id = sqlc.arg(customer_id)))
+LEFT JOIN project_groups g ON g.id = h.project_group_id
 LEFT JOIN people pe ON pe.id = h.person_id
 WHERE s.route_id = sqlc.arg(route_id)
 ORDER BY s.slot_order, p.key, pe.name;

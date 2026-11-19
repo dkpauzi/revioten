@@ -135,6 +135,11 @@ import type {
 	PasswordChange,
 	RoleGrant,
 	RoleList,
+	AdminHealth,
+	WaitingSignatureList,
+	ErrorReportList,
+	ProblemReportList,
+	CreatedId,
 	SignaturePlan,
 	SignatureRequest,
 	SignatureRequestList,
@@ -1388,6 +1393,44 @@ export function withdrawSignatureRequest(requestId: string, fetchFn: typeof fetc
 	return call<SignatureRequest>(fetchFn, itemPath('signature-requests', requestId) + '/withdraw', { method: 'POST' });
 }
 
+// Fase 4: dasbor admin (D-205).
+
+// lastFailure menyimpan request ID error API terakhir, supaya laporan masalah
+// bisa menyertakannya tanpa pengguna mencarinya sendiri.
+export const lastFailure = { requestId: '' };
+
+// getAdminHealth memanggil GET /api/v1/admin/health (A-3).
+export function getAdminHealth(fetchFn: typeof fetch = fetch): Promise<ApiResult<AdminHealth>> {
+	return call<AdminHealth>(fetchFn, '/api/v1/admin/health', { method: 'GET' });
+}
+
+// listWaitingSignatures memanggil GET /api/v1/admin/waiting-signatures (A-3).
+export function listWaitingSignatures(fetchFn: typeof fetch = fetch): Promise<ApiResult<WaitingSignatureList>> {
+	return call<WaitingSignatureList>(fetchFn, '/api/v1/admin/waiting-signatures', { method: 'GET' });
+}
+
+// listErrorReports memanggil GET /api/v1/admin/error-reports (A-3).
+export function listErrorReports(fetchFn: typeof fetch = fetch): Promise<ApiResult<ErrorReportList>> {
+	return call<ErrorReportList>(fetchFn, '/api/v1/admin/error-reports', { method: 'GET' });
+}
+
+// listProblemReports memanggil GET /api/v1/admin/problem-reports (A-3).
+export function listProblemReports(fetchFn: typeof fetch = fetch): Promise<ApiResult<ProblemReportList>> {
+	return call<ProblemReportList>(fetchFn, '/api/v1/admin/problem-reports', { method: 'GET' });
+}
+
+// updateProblemReport memanggil PATCH /api/v1/admin/problem-reports/{id} (A-3).
+export function updateProblemReport(id: string, status: 'new' | 'checking' | 'done', note: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<void>> {
+	return call<void>(fetchFn, itemPath('admin/problem-reports', id), jsonRequest('PATCH', { status, note }));
+}
+
+// reportProblem memanggil POST /api/v1/problem-reports (setiap akun).
+export function reportProblem(page: string, description: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<CreatedId>> {
+	const body: { page: string; description: string; last_request_id?: string } = { page, description };
+	if (lastFailure.requestId) body.last_request_id = lastFailure.requestId;
+	return call<CreatedId>(fetchFn, '/api/v1/problem-reports', jsonRequest('POST', body));
+}
+
 // D-194: email notifikasi.
 
 // getOwnEmail memanggil GET /api/v1/account/email.
@@ -1560,6 +1603,9 @@ async function call<T>(
 	if (response.ok && body !== null) {
 		// Server dan klien memakai kontrak yang sama, jadi bentuknya dipercaya.
 		return { ok: true, data: body as T };
+	}
+	if (isApiError(body) && body.request_id) {
+		lastFailure.requestId = body.request_id;
 	}
 	return { ok: false, error: { status: response.status, body: isApiError(body) ? body : null } };
 }

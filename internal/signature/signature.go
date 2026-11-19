@@ -255,6 +255,13 @@ func (s *Service) plan(ctx context.Context, q *db.Queries, actor access.Actor, d
 	if err != nil {
 		return Plan{}, fmt.Errorf("membaca pemegang hak tanda tangan: %w", err)
 	}
+	// Orang dengan hak S-1 yang tidak dibatasi (peran bercakupan semua
+	// customer) boleh menandatangani slot per Project Group untuk Project
+	// Group lain juga, misalnya Project Leader GR5 yang membantu GR1 (D-206).
+	unrestricted, err := q.PeopleWithPermission(ctx, db.PeopleWithPermissionParams{Permission: string(access.SignDigitally)})
+	if err != nil {
+		return Plan{}, fmt.Errorf("membaca pemegang hak tanda tangan: %w", err)
+	}
 	rows, err := q.RouteSlotCandidates(ctx, db.RouteSlotCandidatesParams{RouteID: d.Route.ID, CustomerID: d.CustomerID})
 	if err != nil {
 		return Plan{}, fmt.Errorf("membaca slot rute: %w", err)
@@ -266,7 +273,13 @@ func (s *Service) plan(ctx context.Context, q *db.Queries, actor access.Actor, d
 		if r.PersonID == nil || !slices.Contains(signers, *r.PersonID) {
 			continue
 		}
+		if !r.OwnGroup && !slices.Contains(unrestricted, *r.PersonID) {
+			continue // pemegang jabatan Project Group lain yang dibatasi ke Project Group-nya
+		}
 		c := Candidate{PersonID: *r.PersonID, Name: deref(r.PersonName), PositionKey: deref(r.PositionKey), Position: deref(r.PositionName)}
+		if r.GroupCode != nil {
+			c.Position += " " + *r.GroupCode
+		}
 		slot := &p.Slots[len(p.Slots)-1]
 		switch r.Stage {
 		case StagePrepared:

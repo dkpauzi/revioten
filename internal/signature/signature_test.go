@@ -14,6 +14,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/access"
 	"github.com/dkpauzi/revioten/internal/audit"
 	"github.com/dkpauzi/revioten/internal/clock"
+	"github.com/dkpauzi/revioten/internal/db"
 	"github.com/dkpauzi/revioten/internal/db/dbtest"
 	"github.com/dkpauzi/revioten/internal/document"
 	"github.com/dkpauzi/revioten/internal/document/doctest"
@@ -344,5 +345,73 @@ func TestWetOnlyCustomer(t *testing.T) {
 	_, err := w.svc.Send(ctx, w.sender, w.cp.ID, signature.SendInput{Signers: map[int]string{1: w.sender.PersonID, 2: w.pl.PersonID}, Password: "benar"})
 	if codeOf(t, err) != "mode:not_allowed" {
 		t.Errorf("customer wajib basah: %v", err)
+	}
+}
+
+// D-206: Project Leader Project Group lain (GR5) yang membantu GR1 boleh
+// menandatangani dan memverifikasi bila perannya tidak dibatasi; bila
+// dibatasi ke Project Group sendiri, tidak.
+func TestHelperProjectLeader(t *testing.T) {
+	w := setup(t)
+	ctx := t.Context()
+	var gr5 string
+	if err := w.Pool.QueryRow(ctx, `INSERT INTO project_groups (code, name) VALUES ('GR5', 'Project Group 5') RETURNING id`).Scan(&gr5); err != nil {
+		t.Fatal(err)
+	}
+	limited := doctest.NewActor(t, w.Pool, "pl.gr5.terbatas", "work", access.RoleGrant{Role: access.RoleProjectLeader, Scope: access.ScopeOwnProjectGroup})
+	helper := doctest.NewActor(t, w.Pool, "pl.gr5.bantu", "work", doctest.All(access.RoleProjectLeader))
+	for _, a := range []access.Actor{limited, helper} {
+		if _, err := w.Pool.Exec(ctx, `INSERT INTO position_holders (position_id, per_project_group, person_id, project_group_id)
+			SELECT id, true, $1, $2 FROM positions WHERE key = 'project_engineer'`, a.PersonID, gr5); err != nil {
+			// Project Engineer GR5 hanya satu orang (D-115): yang kedua jadi Project Leader GR5.
+			if _, err := w.Pool.Exec(ctx, `INSERT INTO position_holders (position_id, per_project_group, person_id, project_group_id)
+				SELECT id, true, $1, $2 FROM positions WHERE key = 'project_leader'`, a.PersonID, gr5); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	p, err := w.svc.Plan(ctx, w.sender, w.cp.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked := names(p.Slots[1].Candidates)
+	has := func(list []string, n string) bool {
+		for _, x := range list {
+			if x == n {
+				return true
+			}
+		}
+		return false
+	}
+	if !has(checked, "Orang pl.gr5.bantu") || has(checked, "Orang pl.gr5.terbatas") {
+		t.Errorf("calon Checked: %v", checked)
+	}
+	for _, c := range p.Slots[1].Candidates {
+		if c.Name == "Orang pl.gr5.bantu" && c.Position != "Project Leader GR5" {
+			t.Errorf("label jabatan: %q", c.Position)
+		}
+	}
+	r, err := w.svc.Send(ctx, w.sender, w.cp.ID, signature.SendInput{Signers: map[int]string{1: w.sender.PersonID, 2: helper.PersonID}, Password: "benar"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := w.svc.Sign(ctx, helper, r.ID, "benar"); err != nil {
+		t.Errorf("Project Leader pembantu menandatangani: %v", err)
+	}
+	// Verifikasi perubahan mengikuti aturan yang sama.
+	for login, want := range map[string]bool{"pl.gr5.bantu": true, "pl.gr5.terbatas": false} {
+		person := helper.PersonID
+		if login == "pl.gr5.terbatas" {
+			person = limited.PersonID
+		}
+		var ok bool
+		if err := w.Pool.QueryRow(ctx, `SELECT EXISTS (
+			SELECT 1 FROM position_holders h JOIN positions p ON p.id = h.position_id WHERE h.person_id = $1)`, person).Scan(&ok); err != nil || !ok {
+			t.Fatalf("pemegang %s: %v", login, err)
+		}
+		got, err := w.Q.IsChangeVerifier(ctx, db.IsChangeVerifierParams{PersonID: person, CustomerID: w.CustomerAB})
+		if err != nil || got != want {
+			t.Errorf("verifikator %s: %v, ingin %v (%v)", login, got, want, err)
+		}
 	}
 }

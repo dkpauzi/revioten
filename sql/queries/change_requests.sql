@@ -106,14 +106,23 @@ WHERE id = sqlc.arg(id) AND status = 'submitted';
 -- name: IsChangeVerifier :one
 -- IsChangeVerifier melaporkan apakah orang itu boleh memverifikasi perubahan
 -- customer ini: Project Engineer atau Project Leader dari Project Group
--- customer, atau APQP/PPAP Controller (D-51, D-54).
+-- customer, atau APQP/PPAP Controller (D-51, D-54). Sejak D-206 Project
+-- Leader atau Project Engineer Project Group lain juga boleh bila hak V-1-nya
+-- tidak dibatasi (peran bercakupan semua customer), misalnya Project Leader
+-- GR5 yang membantu GR1.
 SELECT EXISTS (
     SELECT 1
     FROM position_holders h
     JOIN positions p ON p.id = h.position_id
     LEFT JOIN customers c ON c.project_group_id = h.project_group_id AND c.id = sqlc.arg(customer_id)
     WHERE h.person_id = sqlc.arg(person_id)
-      AND (p.key = 'apqp_ppap_controller' OR (p.key IN ('project_leader', 'project_engineer') AND c.id IS NOT NULL))
+      AND (p.key = 'apqp_ppap_controller'
+           OR (p.key IN ('project_leader', 'project_engineer')
+               AND (c.id IS NOT NULL OR EXISTS (
+                   SELECT 1 FROM accounts a
+                   JOIN account_roles ar ON ar.account_id = a.id AND ar.scope = 'all'
+                   JOIN role_permissions rp ON rp.role_id = ar.role_id AND rp.permission_code = 'V-1'
+                   WHERE a.person_id = h.person_id AND a.disabled_at IS NULL))))
 );
 
 -- M5.7: daftar periksa dampak (R-CHG-05).

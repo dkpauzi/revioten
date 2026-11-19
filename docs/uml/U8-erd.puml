@@ -1,4 +1,4 @@
-' U8 · ERD fisik (draft 0.16, 2026-11-20), dibangkitkan dari skema database sampai migrasi 00050
+' U8 · ERD fisik (draft 0.16, 2026-11-20), dibangkitkan dari skema database sampai migrasi 00051
 ' oleh docs/uml/tools/u8_dari_database.py. Jangan diedit tangan: ubah migrasinya, lalu jalankan skrip itu lagi.
 ' Menggambarkan tabel PostgreSQL 18 yang sudah dibangun (R-UML-03: diagram fisik mengikuti kode).
 ' Tim IT boleh memakai stack lain (R-UML-02); aturan yang wajib dipertahankan ada di brief dan U5.
@@ -1193,7 +1193,7 @@ skinparam ArrowColor #444444
 skinparam ClassBorderColor #1F4E79
 skinparam ClassBackgroundColor #FFFFFF
 
-title U8-J · API integrasi dan email notifikasi
+title U8-J · API integrasi, email notifikasi, dan dasbor admin
 
 entity "service_accounts" as service_accounts {
   * id : uuid <<PK>>
@@ -1318,6 +1318,32 @@ entity "periodic_review_notices" as periodic_review_notices {
   * sent_at : timestamptz
 }
 
+entity "error_reports" as error_reports {
+  * id : uuid <<PK>>
+  --
+  * occurred_at : timestamptz
+  * request_id : text
+  * method : text
+  * path : text
+  account_id : uuid <<FK>>
+  * message : text
+}
+
+entity "problem_reports" as problem_reports {
+  * id : uuid <<PK>>
+  --
+  * created_at : timestamptz
+  * person_id : uuid <<FK>>
+  * account_id : uuid <<FK>>
+  * page : text
+  * description : text
+  last_request_id : text
+  * status : text
+  handled_by_person_id : uuid <<FK>>
+  handled_at : timestamptz
+  admin_note : text
+}
+
 entity "accounts" as accounts #EEEEEE
 entity "changes" as changes #EEEEEE
 entity "customers" as customers #EEEEEE
@@ -1326,6 +1352,7 @@ entity "people" as people #EEEEEE
 
 changes ||--o{ change_proposals
 documents ||--o{ change_proposals
+accounts ||--o{ error_reports
 documents ||--o{ export_jobs
 service_accounts ||--o{ export_jobs
 service_accounts ||--o{ integration_requests
@@ -1334,6 +1361,8 @@ people ||--o{ notification_outbox
 accounts ||--o{ periodic_reviews
 customers ||--o{ periodic_reviews
 people ||--o{ periodic_reviews
+accounts ||--o{ problem_reports
+people ||--o{ problem_reports
 customers ||--o{ service_account_customers
 service_accounts ||--o{ service_account_customers
 people ||--o{ service_accounts
