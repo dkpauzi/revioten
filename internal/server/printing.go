@@ -197,3 +197,68 @@ func toAPILayout(l printout.PrintLayout) PrintLayout {
 		},
 	}
 }
+
+// GetPagePreview menjawab GET /api/v1/documents/{documentId}/page-preview (C3).
+func (a *apiServer) GetPagePreview(ctx context.Context, req GetPagePreviewRequestObject) (GetPagePreviewResponseObject, error) {
+	v, err := a.printing.Preview(ctx, actorFrom(ctx), req.DocumentId, req.Params.Revision)
+	if err != nil {
+		return nil, err
+	}
+	out := PagePreview{Title: v.Title, Number: v.Number, Revision: v.Revision, PaperWMm: float32(v.Plan.PaperW), PaperHMm: float32(v.Plan.PaperH),
+		FontSize: float32(v.FontSize), HeadMm: float32(v.Plan.HeadMM), GroupRowMm: float32(v.Plan.GroupRowMM), LabelRowMm: float32(v.Plan.LabelRowMM),
+		MarkMm: float32(v.Plan.MarkMM), FlowColumn: v.FlowColumn, FlowLeftMm: float32(v.FlowLeftMM),
+		ColumnsMm: make([]float32, 0, len(v.Plan.ColumnsMM)), Header: []struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		}{}, Columns: []struct {
+			Group string `json:"group"`
+			Label string `json:"label"`
+		}{}, Pages: make([]PreviewPage, 0, len(v.Pages))}
+	out.MarginsMm.Top, out.MarginsMm.Right, out.MarginsMm.Bottom, out.MarginsMm.Left = float32(v.MarginsMM.Top), float32(v.MarginsMM.Right), float32(v.MarginsMM.Bottom), float32(v.MarginsMM.Left)
+	for _, w := range v.Plan.ColumnsMM {
+		out.ColumnsMm = append(out.ColumnsMm, float32(w))
+	}
+	for _, p := range v.Header {
+		out.Header = append(out.Header, struct {
+			Label string `json:"label"`
+			Value string `json:"value"`
+		}{p.Label, p.Value})
+	}
+	for _, c := range v.Columns {
+		out.Columns = append(out.Columns, struct {
+			Group string `json:"group"`
+			Label string `json:"label"`
+		}{c.Group, c.Label})
+	}
+	for _, p := range v.Pages {
+		page := PreviewPage{FlowSvg: string(p.Flow)}
+		for _, r := range p.Rows {
+			row := struct {
+				Cells []struct {
+					Flow     bool    `json:"flow"`
+					HeightMm float32 `json:"height_mm"`
+					Merged   bool    `json:"merged"`
+					Rowspan  int     `json:"rowspan"`
+					Skip     bool    `json:"skip"`
+					Text     string  `json:"text"`
+				} `json:"cells"`
+				HeightMm float32 `json:"height_mm"`
+				Mark     string  `json:"mark"`
+				Section  string  `json:"section"`
+			}{HeightMm: float32(r.HeightMM), Mark: r.Mark, Section: r.Section}
+			for _, c := range r.Cells {
+				row.Cells = append(row.Cells, struct {
+					Flow     bool    `json:"flow"`
+					HeightMm float32 `json:"height_mm"`
+					Merged   bool    `json:"merged"`
+					Rowspan  int     `json:"rowspan"`
+					Skip     bool    `json:"skip"`
+					Text     string  `json:"text"`
+				}{c.Flow, float32(c.HeightMM), c.Merged, c.Rowspan, c.Skip, c.Text})
+			}
+			page.Rows = append(page.Rows, row)
+		}
+		out.Pages = append(out.Pages, page)
+	}
+	return GetPagePreview200JSONResponse(out), nil
+}

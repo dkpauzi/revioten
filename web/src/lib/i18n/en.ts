@@ -1260,8 +1260,6 @@ export const en = {
 	previewHint: 'Read only, page by page as it prints. The process flow, the step numbers, and the connectors at page breaks are drawn from the PFD; change the rows in the table.',
 	previewPage: 'Page {page} of {total}',
 	previewFlow: 'Process flow',
-	previewNoPfd: 'This set has no PFD yet, so every step is drawn as a process.',
-	previewNoLayout: 'There is no print layout for this document type.',
 	drawerClose: 'Close',
 	sheetCover: 'Cover',
 	coverTitle: 'Cover',

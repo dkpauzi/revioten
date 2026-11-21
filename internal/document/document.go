@@ -426,6 +426,13 @@ func (s *Service) Get(ctx context.Context, actor access.Actor, id string) (Docum
 }
 
 // load membaca dokumen tanpa memeriksa hak; dipakai untuk mencari customer-nya dulu.
+// Load membaca satu dokumen tanpa memeriksa hak. Hanya untuk pemanggil yang
+// sudah memeriksa hak atas dokumen lain di set yang sama, misalnya cetakan CP
+// yang membaca langkah PFD satu set (C3). Row-level security tetap berlaku.
+func (s *Service) Load(ctx context.Context, id string) (Document, error) {
+	return s.load(ctx, id)
+}
+
 func (s *Service) load(ctx context.Context, id string) (Document, error) {
 	if !db.IsUUID(id) {
 		return Document{}, problem.ErrNotFound

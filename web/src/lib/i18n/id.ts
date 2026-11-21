@@ -1259,8 +1259,6 @@ export const id: Messages = {
 	previewHint: 'Baca saja, per halaman seperti cetakannya. Alur proses, nomor langkah, dan konektor di batas halaman digambar dari PFD; ubah barisnya di tabel.',
 	previewPage: 'Halaman {page} dari {total}',
 	previewFlow: 'Alur proses',
-	previewNoPfd: 'Set ini belum punya PFD, jadi setiap langkah digambar sebagai proses.',
-	previewNoLayout: 'Belum ada layout cetak untuk jenis dokumen ini.',
 	drawerClose: 'Tutup',
 	sheetCover: 'Cover',
 	coverTitle: 'Cover',

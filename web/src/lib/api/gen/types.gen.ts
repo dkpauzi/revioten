@@ -303,6 +303,72 @@ export type AccountInfo = {
     created_at: string;
 };
 
+/**
+ * Page plan shared by the preview, the PDF, and the Excel file (C3). Sizes are in millimetres.
+ */
+export type PagePreview = {
+    title: string;
+    number: string;
+    revision: string;
+    paper_w_mm: number;
+    paper_h_mm: number;
+    margins_mm: {
+        top: number;
+        right: number;
+        bottom: number;
+        left: number;
+    };
+    font_size: number;
+    head_mm: number;
+    group_row_mm: number;
+    label_row_mm: number;
+    /**
+     * Width of the revision mark column; 0 when it does not print.
+     */
+    mark_mm: number;
+    columns_mm: Array<number>;
+    /**
+     * Index of the column where the process flow is drawn; -1 when the form has none.
+     */
+    flow_column: number;
+    flow_left_mm: number;
+    header: Array<{
+        label: string;
+        value: string;
+    }>;
+    columns: Array<{
+        label: string;
+        group: string;
+    }>;
+    pages: Array<PreviewPage>;
+};
+
+export type PreviewPage = {
+    rows: Array<{
+        height_mm: number;
+        /**
+         * Title of a section row (one PCB, D-155); empty for a content row.
+         */
+        section: string;
+        mark: string;
+        cells: Array<{
+            text: string;
+            rowspan: number;
+            /**
+             * Covered by a merged cell above it.
+             */
+            skip: boolean;
+            merged: boolean;
+            flow: boolean;
+            height_mm: number;
+        }>;
+    }>;
+    /**
+     * SVG of the process flow of this page (symbols, NG branches, connectors), in millimetres; empty without a flow column.
+     */
+    flow_svg: string;
+};
+
 export type PersonInfoList = {
     items: Array<PersonInfo>;
 };
@@ -9500,6 +9566,43 @@ export type PrintDocumentResponses = {
 };
 
 export type PrintDocumentResponse = PrintDocumentResponses[keyof PrintDocumentResponses];
+
+export type GetPagePreviewData = {
+    body?: never;
+    path: {
+        documentId: string;
+    };
+    query?: {
+        revision?: number;
+    };
+    url: '/api/v1/documents/{documentId}/page-preview';
+};
+
+export type GetPagePreviewErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type GetPagePreviewError = GetPagePreviewErrors[keyof GetPagePreviewErrors];
+
+export type GetPagePreviewResponses = {
+    /**
+     * The pages, the same as the PDF and the Excel file.
+     */
+    200: PagePreview;
+};
+
+export type GetPagePreviewResponse = GetPagePreviewResponses[keyof GetPagePreviewResponses];
 
 export type ListDocumentPrintsData = {
     body?: never;

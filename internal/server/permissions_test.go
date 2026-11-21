@@ -431,6 +431,8 @@ func TestPermissionsPerOperation(t *testing.T) {
 		// Tahap 6. Cetak draft lewat L-4; scan lewat E-7 (engineer memegangnya), lalu diunduh.
 		{http.MethodPost, "/api/v1/documents/{documentId}/print", `{"purpose":"draft","format":"xlsx"}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/documents/{documentId}/prints", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		// Pratinjau halaman (C3): rencana yang sama dengan PDF dan Excel; draft lewat L-4.
+		{http.MethodGet, "/api/v1/documents/{documentId}/page-preview", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodPost, "/api/v1/documents/{documentId}/scan", scanBody, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/documents/{documentId}/revisions/{revision}/scan", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		// Form Control Submission (D-207): baca L-4, isi E-7, bawaan customer E-11. Berkas uji.txt ditolak (422), jadi belum ada scan (404).

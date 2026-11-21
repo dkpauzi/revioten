@@ -3427,6 +3427,27 @@ paths:
                 type: string
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/documents/{documentId}/page-preview:
+    get:
+      operationId: getPagePreview
+      summary: The page plan of one revision as it prints, with the process flow drawn from the PFD (L-4 for a draft, L-1 for a released revision; C3, D-122)
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+        - name: revision
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+      responses:
+        '200':
+          description: The pages, the same as the PDF and the Excel file.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagePreview'
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/documents/{documentId}/prints:
     get:
       operationId: listDocumentPrints
@@ -5055,6 +5076,116 @@ components:
         created_at:
           type: string
           format: date-time
+    PagePreview:
+      type: object
+      description: Page plan shared by the preview, the PDF, and the Excel file (C3). Sizes are in millimetres.
+      required: [title, number, revision, paper_w_mm, paper_h_mm, margins_mm, font_size, head_mm, group_row_mm, label_row_mm, mark_mm, columns_mm, flow_column, flow_left_mm, header, columns, pages]
+      properties:
+        title:
+          type: string
+        number:
+          type: string
+        revision:
+          type: string
+        paper_w_mm:
+          type: number
+        paper_h_mm:
+          type: number
+        margins_mm:
+          type: object
+          required: [top, right, bottom, left]
+          properties:
+            top:
+              type: number
+            right:
+              type: number
+            bottom:
+              type: number
+            left:
+              type: number
+        font_size:
+          type: number
+        head_mm:
+          type: number
+        group_row_mm:
+          type: number
+        label_row_mm:
+          type: number
+        mark_mm:
+          type: number
+          description: Width of the revision mark column; 0 when it does not print.
+        columns_mm:
+          type: array
+          items:
+            type: number
+        flow_column:
+          type: integer
+          description: Index of the column where the process flow is drawn; -1 when the form has none.
+        flow_left_mm:
+          type: number
+        header:
+          type: array
+          items:
+            type: object
+            required: [label, value]
+            properties:
+              label:
+                type: string
+              value:
+                type: string
+        columns:
+          type: array
+          items:
+            type: object
+            required: [label, group]
+            properties:
+              label:
+                type: string
+              group:
+                type: string
+        pages:
+          type: array
+          items:
+            $ref: '#/components/schemas/PreviewPage'
+    PreviewPage:
+      type: object
+      required: [rows, flow_svg]
+      properties:
+        rows:
+          type: array
+          items:
+            type: object
+            required: [height_mm, section, mark, cells]
+            properties:
+              height_mm:
+                type: number
+              section:
+                type: string
+                description: Title of a section row (one PCB, D-155); empty for a content row.
+              mark:
+                type: string
+              cells:
+                type: array
+                items:
+                  type: object
+                  required: [text, rowspan, skip, merged, flow, height_mm]
+                  properties:
+                    text:
+                      type: string
+                    rowspan:
+                      type: integer
+                    skip:
+                      type: boolean
+                      description: Covered by a merged cell above it.
+                    merged:
+                      type: boolean
+                    flow:
+                      type: boolean
+                    height_mm:
+                      type: number
+        flow_svg:
+          type: string
+          description: SVG of the process flow of this page (symbols, NG branches, connectors), in millimetres; empty without a flow column.
     PersonInfoList:
       type: object
       required: [items]

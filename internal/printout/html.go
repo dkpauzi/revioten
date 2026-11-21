@@ -26,6 +26,7 @@ func QRPNG(url string) ([]byte, error) {
 var page = template.Must(template.New("page").Funcs(template.FuncMap{
 	"pct":  func(w, total float64) float64 { return w / total * 100 },
 	"mod4": func(i int) int { return i % 4 },
+	"mod3": func(i int) int { return i % 3 },
 	"b64":  func(b []byte) string { return base64.StdEncoding.EncodeToString(b) },
 	"short": func(s string) string {
 		if len(s) > 16 {
@@ -57,6 +58,18 @@ tr { break-inside: avoid; }
 .status { font-weight: bold; }
 .customer { margin-top: 4mm; font-weight: bold; text-align: center; }
 .approval { height: 22mm; }
+.sheet { position: relative; overflow: hidden; break-after: page; }
+.sheet:last-child { break-after: auto; }
+.sheet .headbox { overflow: hidden; }
+.sheet .tw { position: relative; }
+.sheet td { padding: 0; }
+.sheet td .c { overflow: hidden; padding: 1pt 2pt; }
+.sheet th { padding: 0; }
+.sheet th .h { overflow: hidden; padding: 1pt 2pt; display: flex; align-items: center; justify-content: center; }
+.sheet td.flowcell { border-top: none; border-bottom: none; }
+.sheet td.merged { font-weight: bold; }
+.flowbox { position: absolute; }
+.flowbox svg { display: block; }
 </style></head><body>
 {{if .Watermark}}<div class="wm">{{.Watermark}}</div>{{end}}
 <div class="foot"><span>{{.Number}} {{.RevisionLabel}} · <span class="status">{{.Status}}</span>{{if .ReleaseNote}} · {{.ReleaseNote}}{{end}}</span><span>SHA-256 {{short .ContentHash}}</span></div>
@@ -76,19 +89,27 @@ tr { break-inside: avoid; }
   <div class="customer">{{.CustomerName}}</div>
 </section>
 {{end}}
-<div class="top"><h1>{{.Title}}</h1><b>{{.Number}} {{.RevisionLabel}}</b></div>
-<table class="head"><tr>{{range $i, $p := .Header}}{{if and $i (eq (mod4 $i) 0)}}</tr><tr>{{end}}<td class="l">{{$p.Label}}</td><td>{{$p.Value}}</td>{{end}}</tr></table>
-{{if .Slots}}<table class="slots" style="margin-top:2mm"><tr>{{range .Slots}}<th>{{.Title}}</th>{{end}}</tr><tr>{{range .Slots}}<td class="sign">{{if $.Layout.Cover}}Refer approval sheet{{else}}{{.Signed}}{{end}}</td>{{end}}</tr><tr>{{range .Slots}}<td>{{.Name}}</td>{{end}}</tr></table>{{end}}
-<table style="margin-top:2mm">
-  <colgroup>{{if .Layout.RevisionMarks}}<col style="width:{{pct 0.35 .TotalWidth}}%">{{end}}{{range .Columns}}<col style="width:{{pct .Width $.TotalWidth}}%">{{end}}</colgroup>
+{{range $pi, $pg := .Pages}}<section class="sheet" style="height:{{$.Plan.ContentH}}mm">
+<div class="headbox" style="height:{{$.Plan.HeadMM}}mm">
+<div class="top"><h1>{{$.Title}}</h1><b>{{$.Number}} {{$.RevisionLabel}}</b></div>
+<table class="head"><tr>{{range $i, $p := $.Header}}{{if and $i (eq (mod3 $i) 0)}}</tr><tr>{{end}}<td class="l">{{$p.Label}}</td><td>{{$p.Value}}</td>{{end}}</tr></table>
+{{if $.Slots}}<table class="slots" style="margin-top:2mm"><tr>{{range $.Slots}}<th>{{.Title}}</th>{{end}}</tr><tr>{{range $.Slots}}<td class="sign">{{if $.Layout.Cover}}Refer approval sheet{{else}}{{.Signed}}{{end}}</td>{{end}}</tr><tr>{{range $.Slots}}<td>{{.Name}}</td>{{end}}</tr></table>{{end}}
+</div>
+<div class="tw">
+<table>
+  <colgroup>{{if $.Layout.RevisionMarks}}<col style="width:{{$.Plan.MarkMM}}mm">{{end}}{{range $.Plan.ColumnsMM}}<col style="width:{{.}}mm">{{end}}</colgroup>
   <thead>
-    {{if .Groups}}<tr>{{if .Layout.RevisionMarks}}<th></th>{{end}}{{range .Groups}}<th colspan="{{.Span}}">{{.Title}}</th>{{end}}</tr>{{end}}
-    <tr>{{if .Layout.RevisionMarks}}<th>Rev</th>{{end}}{{range .Columns}}<th>{{.Label}}</th>{{end}}</tr>
+    {{if $.Groups}}<tr>{{if $.Layout.RevisionMarks}}<th><div class="h" style="height:{{$.Plan.GroupRowMM}}mm"></div></th>{{end}}{{range $.Groups}}<th colspan="{{.Span}}"><div class="h" style="height:{{$.Plan.GroupRowMM}}mm">{{.Title}}</div></th>{{end}}</tr>{{end}}
+    <tr>{{if $.Layout.RevisionMarks}}<th><div class="h" style="height:{{$.Plan.LabelRowMM}}mm">Rev</div></th>{{end}}{{range $.Columns}}<th><div class="h" style="height:{{$.Plan.LabelRowMM}}mm">{{.Label}}</div></th>{{end}}</tr>
   </thead>
   <tbody>
-  {{range .Rows}}{{if .Cells}}<tr>{{if $.Layout.RevisionMarks}}<td class="mark">{{.Mark}}</td>{{end}}{{range .Cells}}<td>{{.}}</td>{{end}}</tr>{{else}}<tr class="section"><td colspan="{{$.ColumnCount}}">{{.Section}}</td></tr>{{end}}{{end}}
+  {{range $pg.Rows}}{{if .Section}}<tr class="section" style="height:{{.HeightMM}}mm"><td colspan="{{$.ColumnCount}}"><div class="c">{{.Section}}</div></td></tr>{{else}}<tr style="height:{{.HeightMM}}mm">{{if $.Layout.RevisionMarks}}<td class="mark"><div class="c">{{.Mark}}</div></td>{{end}}{{range .Cells}}{{if not .Skip}}<td{{if gt .Rowspan 1}} rowspan="{{.Rowspan}}"{{end}}{{if .Flow}} class="flowcell"{{else if .Merged}} class="merged"{{end}}><div class="c" style="max-height:{{.HeightMM}}mm">{{.Text}}</div></td>{{end}}{{end}}</tr>{{end}}{{end}}
   </tbody>
 </table>
+{{if $pg.Flow}}<div class="flowbox" style="left:{{$.FlowLeftMM}}mm;top:{{$.Plan.TheadMM}}mm">{{$pg.Flow}}</div>{{end}}
+</div>
+</section>
+{{end}}
 </body></html>`))
 
 // group adalah satu judul grup kolom dengan lebarnya.
@@ -102,6 +123,100 @@ type htmlView struct {
 	TotalWidth  float64
 	ColumnCount int
 	Groups      []group
+	Plan        planView
+	Pages       []htmlPage
+	FlowLeftMM  float64
+}
+
+// planView adalah rencana halaman ditambah tinggi area isi.
+type planView struct {
+	Plan
+	ContentH float64
+}
+
+// htmlCell adalah satu sel isi. Skip: tertutup sel gabungan di atasnya.
+type htmlCell = PageCell
+
+// PageCell adalah satu sel isi halaman. Skip: tertutup sel gabungan di atasnya.
+type PageCell struct {
+	Text     string
+	Rowspan  int
+	Skip     bool
+	Merged   bool
+	Flow     bool
+	HeightMM float64
+}
+
+type htmlRow = PageRow
+
+// PageRow adalah satu baris halaman.
+type PageRow struct {
+	Section  string
+	Mark     string
+	HeightMM float64
+	Cells    []htmlCell
+}
+
+type htmlPage = PageContent
+
+// PageContent adalah isi satu halaman dan SVG alurnya.
+type PageContent struct {
+	Rows []htmlRow
+	Flow template.HTML
+}
+
+// pagesOf menyusun isi setiap halaman: sel nomor langkah digabung per
+// langkah, sel proses per langkah dan proses (seperti CP Tokairika), kolom
+// alur dikosongkan karena digambar, dan SVG alur halaman itu.
+func pagesOf(sh Sheet, plan Plan) []htmlPage {
+	var pages []htmlPage
+	for _, pg := range plan.Pages {
+		page := htmlPage{}
+		tops := make([]float64, len(pg.Rows))
+		y := 0.0
+		for i, r := range pg.Rows {
+			tops[i] = y
+			y += plan.RowsMM[r]
+		}
+		same := func(i, j, col int) bool {
+			a, b := pg.Rows[i], pg.Rows[j]
+			if sh.Ops[a] == "" || sh.Ops[a] != sh.Ops[b] || sh.Rows[a].Cells == nil || sh.Rows[b].Cells == nil {
+				return false
+			}
+			return col == sh.OpColumn || sh.Processes[a] == sh.Processes[b]
+		}
+		for i, r := range pg.Rows {
+			row := sh.Rows[r]
+			hr := htmlRow{Section: row.Section, Mark: row.Mark, HeightMM: plan.RowsMM[r]}
+			if row.Cells == nil {
+				hr.Section = row.Section + " "
+			}
+			for c, text := range row.Cells {
+				cell := htmlCell{Text: text, Rowspan: 1, HeightMM: plan.RowsMM[r]}
+				if c == sh.FlowColumn {
+					cell.Flow, cell.Text = true, ""
+				}
+				if c == sh.OpColumn || c == sh.ProcessColumn {
+					cell.Merged = true
+					if i > 0 && same(i-1, i, c) {
+						cell.Skip = true
+					} else {
+						for j := i + 1; j < len(pg.Rows) && same(i, j, c); j++ {
+							cell.Rowspan++
+							cell.HeightMM += plan.RowsMM[pg.Rows[j]]
+						}
+					}
+				}
+				hr.Cells = append(hr.Cells, cell)
+			}
+			page.Rows = append(page.Rows, hr)
+		}
+		if sh.FlowColumn >= 0 {
+			page.Flow = template.HTML(FlowSVG(pg, tops, y, plan.ColumnsMM[sh.FlowColumn]))
+		}
+		pages = append(pages, page)
+	}
+	return pages
 }
 
 // HTML menulis model cetak sebagai halaman HTML siap cetak.
@@ -128,6 +243,13 @@ func HTML(sh Sheet) ([]byte, error) {
 	}
 	if v.TotalWidth == 0 {
 		v.TotalWidth = 1
+	}
+	plan := BuildPlan(sh)
+	v.Plan = planView{Plan: plan, ContentH: plan.PaperH - sh.Layout.MarginsMM.Top - sh.Layout.MarginsMM.Bottom}
+	v.Pages = pagesOf(sh, plan)
+	v.FlowLeftMM = plan.MarkMM
+	for i := 0; i < sh.FlowColumn && i < len(plan.ColumnsMM); i++ {
+		v.FlowLeftMM += plan.ColumnsMM[i]
 	}
 	var buf bytes.Buffer
 	if err := page.Execute(&buf, v); err != nil {

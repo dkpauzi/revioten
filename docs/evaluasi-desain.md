@@ -2362,7 +2362,20 @@ Salin blok ini untuk setiap temuan baru.
 - **Temuan:** Kolom Process Flow CP digambar dari langkah PFD, tetapi CP tidak selalu punya baris untuk setiap langkah PFD (misalnya penyimpanan tanpa kontrol). Belum ditentukan apakah langkah PFD tanpa baris CP tetap digambar (dengan baris kosong) atau dilewati. Juga: lebar kolom Process Flow di layout cetak bawaannya sempit (0,5), terlalu sempit untuk simbol dan cabang NG.
 - **Opsi:** (a) langkah tanpa baris CP dilewati, garis tetap menyambung; (b) pratinjau dan cetakan menambah baris kosong untuk langkah itu; (c) CP wajib punya baris untuk setiap langkah PFD (diperiksa di C4).
 - **Rekomendasi Claude Code (usulan):** (a) untuk C2; diputuskan bersama alur PFD → CP di C4.
-- **Asumsi sementara di kode (ASUMSI E-136):** (a). Simbol memakai langkah PFD dengan nomor yang sama; nomor yang tidak ada di PFD digambar sebagai proses. Pratinjau memberi kolom Process Flow lebar bawaan 1,3 bila layout tidak mengaturnya. AP belum tampil di pratinjau.
+- **Asumsi sementara di kode (ASUMSI E-136):** (a). Simbol memakai langkah PFD dengan nomor yang sama; nomor yang tidak ada di PFD digambar sebagai proses. Kolom Process Flow diberi lebar bawaan 1,3 di pratinjau, PDF, dan Excel bila layout tidak mengaturnya (C3). AP belum tampil.
+- **Menghambat milestone?** Tidak
+- **Status:** Terjawab dari contoh, menunggu C4
+- **Keputusan pemilik:** 22 November 2026, pemilik menunjuk contoh PFD dan CP Tokairika: setiap langkah PFD punya baris di CP, dan langkah tanpa kontrol ditulis "--". Pemeriksaan otomatis dibangun di C4.
+
+### E-137 · PFD mana yang dipakai cetakan CP revisi lama
+
+- **Tanggal dan milestone:** 22 November 2026, C3.
+- **Jenis:** Ambigu
+- **Rujukan:** D-122, R-DOC-09, R-REV-02.
+- **Temuan:** Kolom Process Flow CP digambar dari PFD satu set. Saat mencetak revisi CP lama (misalnya revisi 02 sesudah revisi 03 terbit), belum ditentukan PFD mana yang dipakai: isi PFD sekarang, atau revisi PFD yang berlaku saat revisi CP itu terbit.
+- **Opsi:** (a) isi PFD sekarang (draft bila ada); (b) revisi PFD terbit yang berlaku pada tanggal rilis revisi CP itu; (c) simbol alur ikut dibekukan di snapshot CP saat rilis.
+- **Rekomendasi Claude Code (usulan):** (c) untuk jangka panjang, karena revisi terbit tidak boleh berubah (R-REV-02); (a) sementara.
+- **Asumsi sementara di kode (ASUMSI E-137):** (a).
 - **Menghambat milestone?** Tidak
 - **Status:** Terbuka
 - **Keputusan pemilik:**

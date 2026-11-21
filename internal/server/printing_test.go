@@ -20,6 +20,11 @@ type fakePrinting struct {
 	err    error
 }
 
+func (f *fakePrinting) Preview(_ context.Context, _ access.Actor, id string, _ *int) (printout.PageView, error) {
+	f.got = called{method: "Preview", id: id}
+	return printout.PageView{Title: "CONTROL PLAN", FlowColumn: -1}, f.err
+}
+
 func (f *fakePrinting) Print(_ context.Context, _ access.Actor, id string, req printout.Request) (printout.File, error) {
 	f.got, f.gotReq = called{method: "Print", id: id}, req
 	return printout.File{Name: "SC-AB-001-00-draft.xlsx", ContentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", Body: []byte("PK")}, f.err

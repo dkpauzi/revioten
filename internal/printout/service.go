@@ -266,6 +266,10 @@ func (s *Service) input(ctx context.Context, d document.Document, snap document.
 		Snapshot: snap, Format: format, Layout: layout, CustomerName: customer.Name, RevisionLabel: label(revision),
 		ContentHash: hash, Watermark: "UNCONTROLLED COPY", Status: "DRAFT",
 	}
+	// Kolom Process Flow CP digambar dari langkah PFD satu set (D-122, C3).
+	if d.DocumentType.Key == "cp" {
+		in.Steps = s.pfdSteps(ctx, d)
+	}
 	if info.ReleaseDate.Valid {
 		in.ReleaseDate = info.ReleaseDate.Time.Format(time.DateOnly)
 	}
@@ -614,4 +618,107 @@ func (s *Service) digitalSlots(ctx context.Context, in *Input, requestID string,
 		in.Slots = append(in.Slots, slot)
 	}
 	return nil
+}
+
+// pfdSteps membaca langkah PFD satu set dengan CP itu: isi PFD yang sekarang
+// (draft bila ada). Tanpa PFD, peta kosong: setiap langkah digambar sebagai
+// proses. ASUMSI E-137: cetakan revisi CP lama juga memakai PFD sekarang.
+func (s *Service) pfdSteps(ctx context.Context, d document.Document) map[string]Step {
+	for _, m := range d.Set {
+		if m.DocumentType.Key != "pfd" {
+			continue
+		}
+		pfd, err := s.docs.Load(ctx, m.ID)
+		if err != nil {
+			return nil
+		}
+		snap, _, err := document.CurrentSnapshot(pfd)
+		if err != nil {
+			return nil
+		}
+		format, err := template.LoadFormatVersion(ctx, s.q, snap.FormatVersionID)
+		if err != nil {
+			return nil
+		}
+		symbol, ng := "", ""
+		for _, f := range format.Fields {
+			switch f.Key {
+			case "flow_symbol":
+				symbol = f.ID
+			case "ng_disposition":
+				ng = f.ID
+			}
+		}
+		return StepsOf(snap.Rows, symbol, ng)
+	}
+	return nil
+}
+
+// PageView adalah rencana halaman yang siap ditampilkan pratinjau (C3): isi
+// sel setiap halaman, sel gabungan, dan SVG alur, sama dengan PDF.
+type PageView struct {
+	Plan       Plan
+	Title      string
+	Number     string
+	Revision   string
+	Header     []Pair
+	Columns    []Column
+	Marks      bool
+	FlowColumn int
+	FlowLeftMM float64
+	FontSize   float64
+	MarginsMM  Margins
+	Pages      []htmlPage
+}
+
+// Preview menghitung rencana halaman satu revisi tanpa mencatat cetakan
+// (C3): pratinjau memakai rencana yang sama dengan PDF dan Excel. Draft
+// dibaca dengan hak L-4, revisi terbit dengan L-1.
+func (s *Service) Preview(ctx context.Context, actor access.Actor, id string, revision *int) (PageView, error) {
+	d, err := s.docs.Get(ctx, actor, id)
+	if err != nil {
+		return PageView{}, err
+	}
+	rev := d.Revision
+	if revision != nil {
+		rev = *revision
+	}
+	info, err := s.q.GetRevisionPrintInfo(ctx, db.GetRevisionPrintInfoParams{DocumentID: id, Revision: int16(rev)})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return PageView{}, problem.ErrNotFound
+	}
+	if err != nil {
+		return PageView{}, err
+	}
+	released := info.Status == "released"
+	need := access.ViewDrafts
+	if released {
+		need = access.ViewReleased
+	}
+	if err := s.authz.Authorize(ctx, actor, need, access.Resource{CustomerID: d.CustomerID}); err != nil {
+		return PageView{}, err
+	}
+	var snap document.Snapshot
+	hash := ""
+	if released {
+		if snap, err = document.ParseSnapshot(deref(info.Snapshot)); err != nil {
+			return PageView{}, fmt.Errorf("membaca snapshot: %w", err)
+		}
+		hash = deref(info.SnapshotSha256)
+	} else if snap, _, err = document.CurrentSnapshot(d); err != nil {
+		return PageView{}, err
+	}
+	in, err := s.input(ctx, d, snap, info, rev, hash, Request{Purpose: PurposeDraft})
+	if err != nil {
+		return PageView{}, err
+	}
+	sh := Build(in)
+	plan := BuildPlan(sh)
+	v := PageView{Plan: plan, Title: sh.Title, Number: sh.Number, Revision: sh.RevisionLabel, Header: sh.Header, Columns: sh.Columns,
+		Marks: sh.Layout.RevisionMarks, FlowColumn: sh.FlowColumn, FlowLeftMM: plan.MarkMM, FontSize: sh.Layout.FontSize,
+		MarginsMM: sh.Layout.MarginsMM, Pages: pagesOf(sh, plan)}
+	for i := 0; i < sh.FlowColumn && i < len(plan.ColumnsMM); i++ {
+		v.FlowLeftMM += plan.ColumnsMM[i]
+	}
+	return v, nil
 }

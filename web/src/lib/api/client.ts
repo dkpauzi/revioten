@@ -13,6 +13,7 @@ import type {
 	NewPositionHolder,
 	Position,
 	PositionHolder,
+	PagePreview,
 	PersonInfoList,
 	PositionList,
 	SystemSettings,
@@ -676,6 +677,13 @@ export function setDocumentHeader(id: string, header: Record<string, unknown>, h
 // addDocumentRow memanggil POST /api/v1/documents/{id}/rows (E-2).
 export function addDocumentRow(id: string, input: DocumentRowInput, fetchFn: typeof fetch = fetch): Promise<ApiResult<Document>> {
 	return call<Document>(fetchFn, itemPath('documents', id) + '/rows', jsonRequest('POST', input));
+}
+
+// getPagePreview memanggil GET /api/v1/documents/{id}/page-preview (C3): rencana
+// halaman yang sama dengan PDF dan Excel, dengan SVG alur dari server.
+export function getPagePreview(id: string, revision?: number, fetchFn: typeof fetch = fetch): Promise<ApiResult<PagePreview>> {
+	const query = revision === undefined ? '' : `?revision=${revision}`;
+	return call<PagePreview>(fetchFn, itemPath('documents', id) + '/page-preview' + query, { method: 'GET' });
 }
 
 // addDocumentRows memanggil POST /api/v1/documents/{id}/rows/batch (E-2, M4.4).

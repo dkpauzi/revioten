@@ -4370,6 +4370,42 @@ type OutboxEntry struct {
 // OutboxEntryStatus defines model for OutboxEntry.Status.
 type OutboxEntryStatus string
 
+// PagePreview Page plan shared by the preview, the PDF, and the Excel file (C3). Sizes are in millimetres.
+type PagePreview struct {
+	Columns []struct {
+		Group string `json:"group"`
+		Label string `json:"label"`
+	} `json:"columns"`
+	ColumnsMm []float32 `json:"columns_mm"`
+
+	// FlowColumn Index of the column where the process flow is drawn; -1 when the form has none.
+	FlowColumn int     `json:"flow_column"`
+	FlowLeftMm float32 `json:"flow_left_mm"`
+	FontSize   float32 `json:"font_size"`
+	GroupRowMm float32 `json:"group_row_mm"`
+	HeadMm     float32 `json:"head_mm"`
+	Header     []struct {
+		Label string `json:"label"`
+		Value string `json:"value"`
+	} `json:"header"`
+	LabelRowMm float32 `json:"label_row_mm"`
+	MarginsMm  struct {
+		Bottom float32 `json:"bottom"`
+		Left   float32 `json:"left"`
+		Right  float32 `json:"right"`
+		Top    float32 `json:"top"`
+	} `json:"margins_mm"`
+
+	// MarkMm Width of the revision mark column; 0 when it does not print.
+	MarkMm   float32       `json:"mark_mm"`
+	Number   string        `json:"number"`
+	Pages    []PreviewPage `json:"pages"`
+	PaperHMm float32       `json:"paper_h_mm"`
+	PaperWMm float32       `json:"paper_w_mm"`
+	Revision string        `json:"revision"`
+	Title    string        `json:"title"`
+}
+
 // PartNumber defines model for PartNumber.
 type PartNumber struct {
 	CreatedAt  time.Time `json:"created_at"`
@@ -4713,6 +4749,29 @@ type PositionList struct {
 type PositionRef struct {
 	Id   string `json:"id"`
 	Name string `json:"name"`
+}
+
+// PreviewPage defines model for PreviewPage.
+type PreviewPage struct {
+	// FlowSvg SVG of the process flow of this page (symbols, NG branches, connectors), in millimetres; empty without a flow column.
+	FlowSvg string `json:"flow_svg"`
+	Rows    []struct {
+		Cells []struct {
+			Flow     bool    `json:"flow"`
+			HeightMm float32 `json:"height_mm"`
+			Merged   bool    `json:"merged"`
+			Rowspan  int     `json:"rowspan"`
+
+			// Skip Covered by a merged cell above it.
+			Skip bool   `json:"skip"`
+			Text string `json:"text"`
+		} `json:"cells"`
+		HeightMm float32 `json:"height_mm"`
+		Mark     string  `json:"mark"`
+
+		// Section Title of a section row (one PCB, D-155); empty for a content row.
+		Section string `json:"section"`
+	} `json:"rows"`
 }
 
 // PrintLayout defines model for PrintLayout.
@@ -6085,6 +6144,11 @@ type CompareDocumentWithExcelMultipartBody struct {
 	Sheet *string             `json:"sheet,omitempty"`
 }
 
+// GetPagePreviewParams defines parameters for GetPagePreview.
+type GetPagePreviewParams struct {
+	Revision *int `form:"revision,omitempty" json:"revision,omitempty"`
+}
+
 // UploadSignedScanMultipartBody defines parameters for UploadSignedScan.
 type UploadSignedScanMultipartBody struct {
 	File *openapi_types.File `json:"file,omitempty"`
@@ -6762,6 +6826,9 @@ type ServerInterface interface {
 	// ReorderDocumentRows Save a new order of the rows, and number the operations when asked (E-2, M4.6)
 	// (PUT /api/v1/documents/{documentId}/order)
 	ReorderDocumentRows(w http.ResponseWriter, r *http.Request, documentId DocumentId)
+	// GetPagePreview The page plan of one revision as it prints, with the process flow drawn from the PFD (L-4 for a draft, L-1 for a released revision; C3, D-122)
+	// (GET /api/v1/documents/{documentId}/page-preview)
+	GetPagePreview(w http.ResponseWriter, r *http.Request, documentId DocumentId, params GetPagePreviewParams)
 	// GetPfmeaCpComparison The PFMEA and the CP of the document set side by side, per process (L-4, M4.9)
 	// (GET /api/v1/documents/{documentId}/pfmea-cp)
 	GetPfmeaCpComparison(w http.ResponseWriter, r *http.Request, documentId DocumentId)
@@ -9067,6 +9134,48 @@ func (siw *ServerInterfaceWrapper) ReorderDocumentRows(w http.ResponseWriter, r 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ReorderDocumentRows(w, r, documentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetPagePreview operation middleware
+func (siw *ServerInterfaceWrapper) GetPagePreview(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", r.PathValue("documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetPagePreviewParams
+
+	// ------------- Optional query parameter "revision" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "revision", r.URL.Query(), &params.Revision, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "revision"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "revision", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetPagePreview(w, r, documentId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -13053,6 +13162,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/metrics", wrapper.GetMetrics)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/release", wrapper.ReleaseDocument)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/print", wrapper.PrintDocument)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/documents/{documentId}/page-preview", wrapper.GetPagePreview)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/documents/{documentId}/prints", wrapper.ListDocumentPrints)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/scan", wrapper.UploadSignedScan)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/documents/{documentId}/revisions/{revision}/scan", wrapper.GetSignedScan)
@@ -16028,6 +16138,46 @@ type ReorderDocumentRowsdefaultJSONResponse struct {
 }
 
 func (response ReorderDocumentRowsdefaultJSONResponse) VisitReorderDocumentRowsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPagePreviewRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+	Params     GetPagePreviewParams
+}
+
+type GetPagePreviewResponseObject interface {
+	VisitGetPagePreviewResponse(w http.ResponseWriter) error
+}
+
+type GetPagePreview200JSONResponse PagePreview
+
+func (response GetPagePreview200JSONResponse) VisitGetPagePreviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPagePreviewdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response GetPagePreviewdefaultJSONResponse) VisitGetPagePreviewResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -22012,6 +22162,9 @@ type StrictServerInterface interface {
 	// ReorderDocumentRows Save a new order of the rows, and number the operations when asked (E-2, M4.6)
 	// (PUT /api/v1/documents/{documentId}/order)
 	ReorderDocumentRows(ctx context.Context, request ReorderDocumentRowsRequestObject) (ReorderDocumentRowsResponseObject, error)
+	// GetPagePreview The page plan of one revision as it prints, with the process flow drawn from the PFD (L-4 for a draft, L-1 for a released revision; C3, D-122)
+	// (GET /api/v1/documents/{documentId}/page-preview)
+	GetPagePreview(ctx context.Context, request GetPagePreviewRequestObject) (GetPagePreviewResponseObject, error)
 	// GetPfmeaCpComparison The PFMEA and the CP of the document set side by side, per process (L-4, M4.9)
 	// (GET /api/v1/documents/{documentId}/pfmea-cp)
 	GetPfmeaCpComparison(ctx context.Context, request GetPfmeaCpComparisonRequestObject) (GetPfmeaCpComparisonResponseObject, error)
@@ -24599,6 +24752,33 @@ func (sh *strictHandler) ReorderDocumentRows(w http.ResponseWriter, r *http.Requ
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ReorderDocumentRowsResponseObject); ok {
 		if err := validResponse.VisitReorderDocumentRowsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetPagePreview operation middleware
+func (sh *strictHandler) GetPagePreview(w http.ResponseWriter, r *http.Request, documentId DocumentId, params GetPagePreviewParams) {
+	var request GetPagePreviewRequestObject
+
+	request.DocumentId = documentId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetPagePreview(ctx, request.(GetPagePreviewRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetPagePreview")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetPagePreviewResponseObject); ok {
+		if err := validResponse.VisitGetPagePreviewResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

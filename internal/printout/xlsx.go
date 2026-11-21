@@ -294,13 +294,32 @@ func writeData(f *excelize.File, name string, sh Sheet, st styles) error {
 	}
 	_ = f.SetCellStyle(name, cell(1, row), cell(cols, row), st.head)
 	_ = f.SetRowHeight(name, row, rowHeight(labels, widths, sh.Layout.FontSize))
-	titleRows := fmt.Sprintf("$%d:$%d", first, row)
+	// Judul berulang di setiap halaman: kepala form dan judul kolom, seperti
+	// CP Tokairika (baris 2 sampai 16), supaya setiap halaman punya ruang yang sama.
+	_ = first
+	titleRows := fmt.Sprintf("$1:$%d", row)
+	headPt := 0.0
+	for r := 1; r <= row; r++ {
+		h, err := f.GetRowHeight(name, r)
+		if err != nil {
+			return err
+		}
+		headPt += h
+	}
+	// Rencana halaman yang sama dengan PDF dan pratinjau (C3).
+	plan := BuildPlan(sh)
+	x := xlsxLayout{plan: plan, rowPt: planRows(sh, plan, widths, headPt), offset: offset}
+	if sh.FlowColumn >= 0 {
+		x.flowPx = excelColPx(widths[sh.FlowColumn+offset])
+	}
 	row++
-	for _, r := range sh.Rows {
+	for ri, r := range sh.Rows {
+		x.excelRow = append(x.excelRow, row)
 		if r.Section != "" || r.Cells == nil {
 			_ = f.MergeCell(name, cell(1, row), cell(cols, row))
 			_ = f.SetCellValue(name, cell(1, row), r.Section)
 			_ = f.SetCellStyle(name, cell(1, row), cell(cols, row), st.section)
+			_ = f.SetRowHeight(name, row, x.rowPt[ri])
 			row++
 			continue
 		}
@@ -309,6 +328,10 @@ func writeData(f *excelize.File, name string, sh Sheet, st styles) error {
 			values = append(values, r.Mark)
 		}
 		values = append(values, r.Cells...)
+		// Kolom alur dikosongkan: alurnya digambar sebagai shape.
+		if sh.FlowColumn >= 0 {
+			values[sh.FlowColumn+offset] = ""
+		}
 		for i, v := range values {
 			_ = f.SetCellValue(name, cell(i+1, row), v)
 		}
@@ -316,8 +339,11 @@ func writeData(f *excelize.File, name string, sh Sheet, st styles) error {
 		if offset == 1 {
 			_ = f.SetCellStyle(name, cell(1, row), cell(1, row), st.mark)
 		}
-		_ = f.SetRowHeight(name, row, rowHeight(values, widths, sh.Layout.FontSize))
+		_ = f.SetRowHeight(name, row, x.rowPt[ri])
 		row++
+	}
+	if err := writeFlowXLSX(f, name, sh, x); err != nil {
+		return err
 	}
 	return pageSetup(f, name, sh, titleRows, cols, row-1)
 }

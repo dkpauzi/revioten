@@ -6,8 +6,8 @@
 	// atribut baris (D-122, D-123); kolom yang dihitung tidak diketik.
 	import { untrack } from 'svelte';
 	import { page } from '$app/state';
-	import { addDocumentRow, addDocumentRows, deleteDocumentRow, fillDocumentReferences, reorderDocumentRows, getDocument, getFormatVersion, listCustomerPrintLayouts, listPrintLayouts, listProcesses, setDocumentHeader, updateDocumentRow, type ApiFailure } from '#lib/api/client.ts';
-	import type { Document, DocumentRow, DocumentRowInput, FormatVersion, PrintLayoutContent, Process } from '#lib/api/gen/index.ts';
+	import { addDocumentRow, addDocumentRows, deleteDocumentRow, fillDocumentReferences, reorderDocumentRows, getDocument, getFormatVersion, getPagePreview, listProcesses, setDocumentHeader, updateDocumentRow, type ApiFailure } from '#lib/api/client.ts';
+	import type { Document, DocumentRow, DocumentRowInput, FormatVersion, PagePreview, Process } from '#lib/api/gen/index.ts';
 	import ComposePanel from '#lib/documents/ComposePanel.svelte';
 	import ComparePanel from '#lib/documents/ComparePanel.svelte';
 	import CopyPanel from '#lib/documents/CopyPanel.svelte';
@@ -26,7 +26,6 @@
 	import SheetTabs from '#lib/documents/SheetTabs.svelte';
 	import { drawerTitle, nextStep, type DrawerId } from '#lib/documents/frame.ts';
 	import PreviewSheet from '#lib/documents/PreviewSheet.svelte';
-	import { stepsOf, type Step } from '#lib/documents/preview.ts';
 	import Workbook from '#lib/documents/Workbook.svelte';
 	import ReviewBanner from '#lib/ReviewBanner.svelte';
 	import { rememberRecent } from '#lib/recent.ts';
@@ -53,81 +52,32 @@
 	let drawer = $state<DrawerId | null>(null);
 	// sheet: 'cover' untuk sheet Cover; kosong untuk lembar dokumen.
 	let sheet = $derived(page.url.searchParams.get('sheet') ?? '');
-	// Pratinjau lembar (C2): baca saja, per halaman seperti cetakan, dengan
-	// Process Flow dari PFD. previewing: tombol Preview ditekan; preview: bahan
-	// yang dimuat sekali saat pratinjau dibuka (layout cetak dan langkah PFD).
+	// Pratinjau lembar (C2, C3): baca saja, per halaman seperti cetakan. Rencana
+	// halamannya dari server, sama dengan PDF dan Excel. Dimuat ulang setiap
+	// kali tombol Preview ditekan, supaya baris terbaru ikut.
 	let previewing = $state(false);
-	let preview = $state<{ layout: PrintLayoutContent; steps: Map<string, Step>; noPfd: boolean } | null>(null);
+	let preview = $state<PagePreview | null>(null);
 	let previewError = $state('');
 
-	// pfdSteps membaca langkah PFD dari dokumen PFD dan formatnya (R-DOC-09).
-	function pfdSteps(pfd: Document, pfdFormat: FormatVersion): Map<string, Step> {
-		const symbol = pfdFormat.fields.find((f) => f.key === 'flow_symbol')?.id ?? '';
-		const ng = pfdFormat.fields.find((f) => f.key === 'ng_disposition')?.id ?? '';
-		return stepsOf(pfd.rows, symbol, ng);
-	}
-
-	// loadPreview memuat layout cetak customer (atau bawaan jenis dokumen) dan,
-	// untuk CP, langkah PFD satu set.
 	async function loadPreview() {
-		if (!doc || !format) return;
+		if (!doc) return;
 		previewError = '';
-		const current = doc;
-		const [layouts, chosen] = await Promise.all([listPrintLayouts(), listCustomerPrintLayouts(current.customer_id)]);
-		if (!layouts.ok) {
-			previewError = failureText(layouts.error);
+		preview = null;
+		const result = await getPagePreview(doc.id);
+		if (!result.ok) {
+			previewError = failureText(result.error);
 			return;
 		}
-		const chosenId = chosen.ok ? chosen.data.items.find((c) => c.document_type_id === current.document_type.id)?.layout_id : undefined;
-		const layout =
-			layouts.data.items.find((l) => l.id === chosenId) ??
-			layouts.data.items.find((l) => l.document_type_key === current.document_type.key && l.is_default) ??
-			layouts.data.items[0];
-		if (!layout) {
-			previewError = t('previewNoLayout');
-			return;
-		}
-		let steps = new Map<string, Step>();
-		let noPfd = false;
-		if (current.document_type.key === 'pfd') {
-			steps = pfdSteps(current, format);
-		} else if (current.document_type.key === 'cp') {
-			const member = current.set.find((m) => m.document_type.key === 'pfd');
-			const pfd = member ? await getDocument(member.id) : null;
-			const pfdFormat = pfd?.ok ? await getFormatVersion(pfd.data.format_version_id) : null;
-			if (pfd?.ok && pfdFormat?.ok) {
-				steps = pfdSteps(pfd.data, pfdFormat.data);
-			} else {
-				noPfd = true;
-			}
-		}
-		preview = { layout: layout.layout, steps, noPfd };
+		preview = result.data;
 	}
 
 	function togglePreview() {
 		reset();
 		previewing = !previewing;
-		if (previewing && !preview) {
+		if (previewing) {
 			loadPreview();
 		}
 	}
-
-	// previewHeader: kepala form pratinjau, sama dengan cetakan (M6).
-	let previewHeader = $derived.by(() => {
-		if (!doc || !format) return [];
-		const pairs = [
-			{ label: 'Customer', value: doc.customer_code },
-			{ label: 'Model Name', value: doc.models.map((m) => m.name).join(', ') }
-		];
-		if (doc.part_numbers.length > 0) pairs.push({ label: 'Part Number', value: doc.part_numbers.map((p) => p.number).join(', ') });
-		pairs.push({ label: 'Document No.', value: doc.number }, { label: 'Revision', value: String(doc.revision).padStart(2, '0') });
-		for (const f of format.fields.filter((x) => x.area === 'header' && !x.hidden)) {
-			const v = doc.header[f.id];
-			const text = f.kind === 'select' ? (f.options?.find((o) => o.key === v)?.label ?? String(v ?? '')) : String(v ?? '');
-			pairs.push({ label: f.label, value: text });
-		}
-		return pairs;
-	});
 
 	// compareRound naik setiap tautan diputus, supaya panel banding memuat ulang perbandingannya.
 	let compareRound = $state(0);
@@ -544,26 +494,15 @@
 			{#if doc.status === 'released'}<p class="hint">{t('documentNoDraft')}</p>{/if}
 		</section>
 	{:else if previewing}
-		<!-- Pratinjau lembar (C2): baca saja, per halaman seperti cetakan. -->
+		<!-- Pratinjau lembar (C2, C3): baca saja, per halaman, sama dengan PDF dan Excel. -->
 		<section aria-labelledby="preview-h">
 			<h2 id="preview-h">{t('sheetPreviewTitle')}</h2>
-			<SectionBar {doc} current={section} canEdit={false} onselect={(key) => (sectionKey = key)} onchanged={sectionChanged} />
 			{#if previewError}
 				<p class="error" role="alert">{previewError}</p>
 			{:else if !preview}
 				<p>{t('formatLoading')}</p>
 			{:else}
-				{#if preview.noPfd}<p class="hint">{t('previewNoPfd')}</p>{/if}
-				<PreviewSheet
-					number={doc.number}
-					revision={`Rev. ${String(doc.revision).padStart(2, '0')}`}
-					typeKey={doc.document_type.key}
-					header={previewHeader}
-					rows={shown?.rows ?? doc.rows}
-					{format}
-					layout={preview.layout}
-					steps={doc.document_type.key === 'pfd' ? pfdSteps(shown ?? doc, format) : preview.steps}
-				/>
+				<PreviewSheet plan={preview} />
 			{/if}
 		</section>
 	{:else}

@@ -208,6 +208,7 @@ type DocumentService interface {
 // PrintService adalah operasi cetak, scan, layout, dan verifikasi (Tahap 6).
 type PrintService interface {
 	Print(ctx context.Context, actor access.Actor, id string, req printout.Request) (printout.File, error)
+	Preview(ctx context.Context, actor access.Actor, id string, revision *int) (printout.PageView, error)
 	Logs(ctx context.Context, actor access.Actor, id string) ([]printout.Log, error)
 	UploadScan(ctx context.Context, actor access.Actor, id, fileName string, r io.Reader) (printout.Scan, error)
 	OpenScan(ctx context.Context, actor access.Actor, id string, revision int) (printout.Scan, *os.File, error)

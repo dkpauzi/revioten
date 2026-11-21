@@ -30,6 +30,9 @@ type Input struct {
 	History       []HistoryRow
 	QRPNG         []byte // gambar QR (M6.5); nil bila QR mati
 	VerifyURL     string
+	// Steps: langkah PFD satu set menurut nomor langkah, untuk kolom Process
+	// Flow CP (D-122, C3). Untuk PFD diisi Build dari barisnya sendiri.
+	Steps map[string]Step
 }
 
 // Slot adalah satu kotak tanda tangan dari rute approval (R-APR-08, R-APR-17).
@@ -87,6 +90,14 @@ type Sheet struct {
 	Header  []Pair
 	Columns []Column
 	Rows    []Row
+	// Ops: nomor langkah setiap baris Rows ("" untuk baris judul bagian).
+	Ops []string
+	// Processes: nama proses setiap baris Rows, untuk menggabung sel proses.
+	Processes []string
+	// FlowColumn: kolom tempat alur digambar (Process Flow di CP, Flow Symbol
+	// di PFD); -1 bila format tidak punya. OpColumn dan ProcessColumn: kolom
+	// nomor langkah dan proses yang digabung per langkah; -1 bila tidak ada.
+	FlowColumn, OpColumn, ProcessColumn int
 }
 
 // Build membentuk model cetak dari bahan cetakan.
@@ -120,8 +131,28 @@ func Build(in Input) Sheet {
 			fields = append(fields, f)
 		}
 	}
-	for _, f := range fields {
+	sh.FlowColumn, sh.OpColumn, sh.ProcessColumn = -1, -1, -1
+	symbolField, ngField := "", ""
+	for i, f := range fields {
 		sh.Columns = append(sh.Columns, Column{Label: f.Label, Group: f.Group, Width: in.Layout.Width(f.Key, f.ID, defaultWidth(f))})
+		switch {
+		case f.Kind == template.KindProcessFlow:
+			sh.FlowColumn = i
+		case s.DocumentType == "pfd" && f.Key == "flow_symbol":
+			sh.FlowColumn = i
+			symbolField = f.ID
+		case f.Kind == template.KindOperationNumber:
+			sh.OpColumn = i
+		case f.Kind == template.KindProcess:
+			sh.ProcessColumn = i
+		}
+		if s.DocumentType == "pfd" && f.Key == "ng_disposition" {
+			ngField = f.ID
+		}
+	}
+	// PFD menggambar alurnya sendiri dari barisnya (R-DOC-09).
+	if s.DocumentType == "pfd" && symbolField != "" {
+		sh.Steps = StepsOf(s.Rows, symbolField, ngField)
 	}
 
 	changed := marks(in)
@@ -134,7 +165,11 @@ func Build(in Input) Sheet {
 		if r.SectionID != current && len(s.Sections) > 0 {
 			current = r.SectionID
 			sh.Rows = append(sh.Rows, Row{Section: sections[r.SectionID]})
+			sh.Ops = append(sh.Ops, "")
+			sh.Processes = append(sh.Processes, "")
 		}
+		sh.Ops = append(sh.Ops, r.OperationNumber)
+		sh.Processes = append(sh.Processes, r.ProcessName)
 		row := Row{Mark: changed[r.ID], Cells: make([]string, 0, len(fields))}
 		for _, f := range fields {
 			row.Cells = append(row.Cells, cellText(in.Format, f, r.Content[f.ID], r.Content, r, s))
@@ -144,10 +179,27 @@ func Build(in Input) Sheet {
 	return sh
 }
 
-// defaultWidth memberi lebar bawaan menurut jenis kolom.
+// StepsOf membaca langkah PFD menurut nomor langkahnya (R-DOC-09): simbol dari
+// field Flow Symbol dan arah NG dari field NG Disposition.
+func StepsOf(rows []document.SnapshotRow, symbolField, ngField string) map[string]Step {
+	steps := map[string]Step{}
+	for _, r := range rows {
+		if r.OperationNumber == "" {
+			continue
+		}
+		steps[r.OperationNumber] = Step{Symbol: text(r.Content[symbolField]), NG: text(r.Content[ngField])}
+	}
+	return steps
+}
+
+// defaultWidth memberi lebar bawaan menurut jenis kolom. Kolom alur cukup
+// lebar untuk simbol dan cabang NG (C3).
 func defaultWidth(f template.Field) float64 {
+	if f.Kind == template.KindProcessFlow || f.Key == "flow_symbol" {
+		return 1.3
+	}
 	switch f.Kind {
-	case template.KindOperationNumber, template.KindRating, template.KindRPN, template.KindAP, template.KindSymbol, template.KindProcessFlow:
+	case template.KindOperationNumber, template.KindRating, template.KindRPN, template.KindAP, template.KindSymbol:
 		return 0.5
 	case template.KindProcess:
 		return 1.6

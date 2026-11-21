@@ -5,7 +5,7 @@
 // yang membuat akun penyusun.dokumen.e2e.
 import { expect, test, type Page } from '@playwright/test';
 import { en } from '../src/lib/i18n/en.ts';
-import { asMaster, ensureProjectGroup, tool } from './helpers.ts';
+import { asMaster, ensureProjectGroup, openTool, tool } from './helpers.ts';
 
 // Alur PFD SH-TR-020-02: nomor langkah, nama, simbol, dan arah NG.
 const flow: [string, string, string, string][] = [
@@ -103,6 +103,16 @@ test('C2: pratinjau CP per halaman, Process Flow dari PFD, dan konektor A, B di 
 		await expect(page.locator(`[data-testid="process-flow"] [data-step="${op}"]`)).toHaveCount(1);
 	}
 
+	// Excel memakai rencana yang sama (C3): berkasnya berisi gambar alur (drawing).
+	await openTool(page, en.printTitle);
+	const download = page.waitForEvent('download');
+	await page.getByRole('button', { name: en.printExcel, exact: true }).click();
+	const file = await download;
+	const stream = await file.createReadStream();
+	const chunks: Buffer[] = [];
+	for await (const chunk of stream) chunks.push(chunk as Buffer);
+	expect(Buffer.concat(chunks).includes('xl/drawings/drawing1.xml')).toBe(true);
+
 	// PFD set yang sama: isinya hanya alur proses, digambar di kolom Flow Symbol.
 	await page.getByRole('navigation', { name: en.documentSheets }).getByRole('link', { name: 'PFD', exact: true }).click();
 	await tool(page, en.previewOpen).click();
@@ -113,7 +123,7 @@ test('C2: pratinjau CP per halaman, Process Flow dari PFD, dan konektor A, B di 
 
 	// Baris baru di CP: pratinjau dihitung ulang sendiri, tanpa menggeser gambar.
 	await page.evaluate(async (id) => {
-		const rows = Array.from({ length: 30 }, () => ({ operation_number: '12', content: {} }));
+		const rows = Array.from({ length: 80 }, () => ({ operation_number: '12', content: {} }));
 		await fetch(`/api/v1/documents/${id}/rows/batch`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rows }) });
 	}, cpId);
 	await page.reload();
