@@ -11,14 +11,41 @@ Cara membangun web ini sendiri (dari sisi kode) ada di `docs/panduan/membangun-m
 
 Skenario ini juga bisa ditonton: browser terbuka sendiri, mengisi formulir dan memilih menu langkah demi langkah, dengan keterangan langkah di pita bawah layar.
 
-1. Pastikan Docker Desktop menyala, lalu jalankan `docker compose up -d`.
-2. Jalankan tur dari root repo:
-   ```bash
+Aplikasi yang dipakai: **Docker Desktop** (database) dan **PowerShell** (mengetik perintah). Browser untuk tur dibuka sendiri oleh tur, jadi Chrome atau Edge Anda tidak perlu dibuka. Server (`go run ./cmd/revioten`) juga tidak perlu dijalankan, karena tur menyalakan servernya sendiri.
+
+1. **Nyalakan Docker Desktop.** Tekan tombol Windows, ketik `Docker Desktop`, lalu buka. Tunggu sampai di pojok kiri bawah tertulis **Engine running**. Jendelanya boleh diperkecil, tetapi jangan ditutup.
+2. **Buka PowerShell.** Tekan tombol Windows, ketik `PowerShell`, lalu buka **Windows PowerShell** (atau **Terminal**). Terminal di VS Code atau di panel Terminal aplikasi Claude juga bisa.
+3. **Masuk ke folder proyek.** Ketik perintah ini lalu tekan Enter:
+   ```powershell
+   cd C:\E_Project\revioten-main
+   ```
+   Untuk memeriksa, ketik `ls`. Harus tampil antara lain `CLAUDE.md`, `web`, dan `compose.yaml`. Semua perintah berikutnya diketik di jendela ini, tanpa pindah folder lagi.
+4. **Periksa Node.js.** Ketik `node -v`. Harus tampil `v24...`. Bila muncul pesan "not recognized", Node belum aktif di jendela ini; tutup PowerShell, buka lagi, lalu ulangi dari langkah 3.
+5. **Nyalakan database:**
+   ```powershell
+   docker compose up -d
+   ```
+   Periksa dengan `docker compose ps`: kolom STATUS harus memuat `healthy`.
+6. **Jalankan tur:**
+   ```powershell
    npm --prefix web run tour
    ```
-3. Jendela browser muncul setelah kira-kira satu menit (aplikasi dibangun dulu). Jangan klik apa pun di jendela itu selama tur berjalan.
-4. Tur memakai database terpisah bernama `revioten_e2e` di port 8090, yang dibuat ulang dari kosong setiap kali. Database kerja Anda di port 8080 tidak disentuh.
-5. Rekaman videonya tersimpan di `web/test-results/` (file `video.webm`), bisa diputar ulang di browser.
+7. **Tunggu kira-kira satu menit.** Aplikasi dibangun dulu, lalu jendela browser (Chromium) muncul sendiri. Keterangan setiap langkah tampil di pita bawah layar. Jangan klik apa pun di jendela itu selama tur berjalan.
+8. **Selesai:** jendela browser tertutup sendiri, dan PowerShell menulis `1 passed`. Bila ada langkah yang gagal, PowerShell menulis `1 failed` beserta langkahnya; salin teks itu dan kirimkan ke Claude.
+9. **Menghentikan tur di tengah jalan:** klik jendela PowerShell, lalu tekan `Ctrl+C`.
+
+Tur memakai database terpisah bernama `revioten_e2e` di port 8090, yang dibuat ulang dari kosong setiap kali. Database kerja Anda di port 8080 tidak disentuh, jadi tur aman dijalankan kapan saja.
+
+Rekaman videonya tersimpan di folder `C:\E_Project\revioten-main\web\test-results\` (file `video.webm`). Buka folder itu di File Explorer, lalu seret file video ke jendela Chrome atau Edge untuk memutarnya.
+
+**Bila ada masalah:**
+
+| Pesan | Artinya | Yang dilakukan |
+|---|---|---|
+| `error during connect` atau `docker: not recognized` | Docker Desktop belum menyala | Ulangi langkah 1, tunggu **Engine running** |
+| `npm: not recognized` | Node belum aktif di jendela ini | Ulangi langkah 4 |
+| `Cannot find module` atau `playwright: not recognized` | Paket web belum terpasang | Jalankan sekali `npm --prefix web ci`, lalu `npm --prefix web exec -- playwright install chromium`, lalu ulangi langkah 6 |
+| `port 8090 is already in use` | Tur atau test E2E sebelumnya masih jalan | Tutup jendela PowerShell lama, atau tunggu sampai selesai |
 
 Kecepatan diatur lewat variabel `TOUR_SPEED` di PowerShell:
 
