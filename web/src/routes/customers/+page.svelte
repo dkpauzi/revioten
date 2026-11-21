@@ -1,7 +1,7 @@
 <script lang="ts">
 	// Halaman Customers (M0.5, diperluas di M1.4): Project Group, customer
 	// beserta alokasinya (D-54), status aktif (E-09), dan riwayat kode (E-11).
-	// Semua akun bisa melihat; mengubah hanya untuk pemegang A-2 (E-10).
+	// Semua akun bisa melihat; mengubah hanya untuk pemegang E-11 (E-10).
 	import { onMount } from 'svelte';
 	import {
 		changeCustomerCode,
@@ -24,8 +24,8 @@
 	let customers = $state<Customer[] | null>(null);
 	let groups = $state<ProjectGroup[]>([]);
 	let loadError = $state('');
-	// Menu dan tombol hanya untuk pemegang A-2; server tetap memeriksa setiap operasi.
-	let canEdit = $derived(can('A-2'));
+	// Menu dan tombol hanya untuk pemegang E-11; server tetap memeriksa setiap operasi.
+	let canEdit = $derived(can('E-11'));
 
 	// Isi formulir tambah customer. bind:value menghubungkan variabel ini dengan input.
 	let code = $state('');
@@ -192,7 +192,7 @@
 {:else}
 	<ProjectGroupsSection {groups} {canEdit} onsaved={load} />
 
-	<!-- Formulir hanya untuk pemegang hak A-2 (E-10); server tetap memeriksa setiap operasi. -->
+	<!-- Formulir hanya untuk pemegang hak E-11 (E-10); server tetap memeriksa setiap operasi. -->
 	{#if canEdit}
 		<section>
 			<h2>{t('customerAddTitle')}</h2>

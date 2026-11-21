@@ -27,7 +27,7 @@ func NewService(pool *pgxpool.Pool, authz access.Authorizer) *Service {
 }
 
 // Melihat master produk memakai hak L-2 (E-24, D-103), dan mengubahnya memakai
-// A-2 (E-10). Customer dikirim ke Authorize, supaya cakupan customer bisa
+// E-11 (E-10). Customer dikirim ke Authorize, supaya cakupan customer bisa
 // berlaku tanpa mengubah pemanggil (E-04).
 
 // ListModelGroups mengembalikan group model satu customer, urut menurut nama.

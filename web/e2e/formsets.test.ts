@@ -1,10 +1,10 @@
-// Test E2E form set langkah D (D-133, D-139): admin menyusun form set dan
-// tabel AP, penyetuju form (V-3) menerbitkannya, dan admin memilih form set
-// untuk setiap customer. Aturan "penyetuju bukan penyusun" dibuktikan test Go
+// Test E2E form set langkah D (D-133, D-139): PPAP Engineer menyusun form set
+// dan tabel AP (E-11, D-209), penyetuju form (V-3) menerbitkannya, dan PPAP
+// Engineer memilih form set untuk setiap customer. Aturan "penyetuju bukan penyusun" dibuktikan test Go
 // TestSeparationOfDuties.
 import { expect, test, type Page } from '@playwright/test';
 import { en } from '../src/lib/i18n/en.ts';
-import { createWorkAccount, ensureProjectGroup, logIn, logInFirstTime, logOut, openFromMenu } from './helpers.ts';
+import { createWorkAccount, ensureProjectGroup, logIn, logInAsMaster, logInFirstTime, logOut, openFromMenu } from './helpers.ts';
 
 // acceptNextDialog menyetujui kotak konfirmasi berikutnya.
 function acceptNextDialog(page: Page): void {
@@ -26,8 +26,12 @@ async function publishFormat(page: Page, name: string): Promise<void> {
 	expect(status, name).toBe(200);
 }
 
-test('admin menyusun, penyetuju form menerbitkan, lalu form set dipilih per customer', async ({ page }) => {
+test('PPAP Engineer menyusun, penyetuju form menerbitkan, lalu form set dipilih per customer', async ({ page }) => {
+	// Admin membuat akun penyetuju; master data dan form set diurus PPAP Engineer (D-209).
 	await logIn(page);
+	const temporary = await createWorkAccount(page, 'PPAP Supervisor E2E', 'ppap.supervisor.e2e', ['ppap_engineer_supervisor']);
+	await logOut(page);
+	await logInAsMaster(page);
 	await ensureProjectGroup(page, 'GR1');
 	await page.evaluate(async () => {
 		const groups = await (await fetch('/api/v1/project-groups')).json();
@@ -38,9 +42,8 @@ test('admin menyusun, penyetuju form menerbitkan, lalu form set dipilih per cust
 			body: JSON.stringify({ code: 'FS', name: 'Customer FS', project_group_id: group.id })
 		});
 	});
-	const temporary = await createWorkAccount(page, 'PPAP Supervisor E2E', 'ppap.supervisor.e2e', ['ppap_engineer_supervisor']);
 
-	// Ketiga format set AIAG 4th diterbitkan admin dulu; form set baru bisa
+	// Ketiga format set AIAG 4th diterbitkan PPAP Engineer dulu; form set baru bisa
 	// terbit setelah isinya tidak bisa berubah lagi.
 	for (const name of ['PFD', 'PFMEA AIAG 4th', 'CP']) {
 		await publishFormat(page, name);
@@ -50,7 +53,7 @@ test('admin menyusun, penyetuju form menerbitkan, lalu form set dipilih per cust
 	await expect(page.getByRole('heading', { name: en.formSetsTitle, level: 1 })).toBeVisible();
 	const oldSet = page.locator('section').filter({ has: page.getByRole('heading', { name: /^AIAG 4th set/ }) });
 	await expect(oldSet.getByRole('heading', { name: /^AIAG 4th set/ })).toContainText(en.formSetDefault);
-	// Admin menyusun, tetapi tidak menerbitkan form set (V-3).
+	// PPAP Engineer menyusun, tetapi tidak menerbitkan form set (V-3).
 	await expect(oldSet.getByRole('button', { name: en.versionPublish.replace('{version}', '1') })).toHaveCount(0);
 	await expect(oldSet.getByRole('button', { name: en.formSetSaveSheets })).toBeVisible();
 
@@ -81,9 +84,11 @@ test('admin menyusun, penyetuju form menerbitkan, lalu form set dipilih per cust
 	await expect(page.getByRole('alert').first()).toHaveText(en.formSetSheetsNotPublished);
 });
 
-test('admin mengubah tabel AP, dan hanya penyetuju form yang menerbitkannya', async ({ page }) => {
+test('PPAP Engineer mengubah tabel AP, dan hanya penyetuju form yang menerbitkannya', async ({ page }) => {
 	await logIn(page);
 	const temporary = await createWorkAccount(page, 'Penyetuju AP E2E', 'penyetuju.ap.e2e', ['ppap_engineer_supervisor']);
+	await logOut(page);
+	await logInAsMaster(page);
 	await openFromMenu(page, en.navGroupTemplates, en.navFormatTemplates);
 	await page.getByLabel(en.formatName, { exact: true }).fill('PFMEA AP ubah');
 	await page.getByLabel(en.formatDocumentType, { exact: true }).selectOption({ index: 2 });
@@ -99,7 +104,7 @@ test('admin mengubah tabel AP, dan hanya penyetuju form yang menerbitkannya', as
 	await page.getByRole('button', { name: en.apSave }).click();
 	await expect(page.getByRole('status')).toHaveText(en.apSaved);
 	await expect(page.getByRole('row', { name: /^9–10 1 H L L L$/ })).toBeVisible();
-	// Admin tidak mendapat tombol terbitkan untuk versi bermetode AP.
+	// PPAP Engineer tanpa V-3 tidak mendapat tombol terbitkan untuk versi bermetode AP.
 	await expect(page.getByRole('button', { name: en.versionPublish.replace('{version}', '1') })).toHaveCount(0);
 
 	await logOut(page);
@@ -115,8 +120,9 @@ test('admin mengubah tabel AP, dan hanya penyetuju form yang menerbitkannya', as
 	await expect(page.getByRole('status')).toHaveText(en.approvalRecorded);
 	await expect(page.getByText(en.approvalsPending)).toBeVisible();
 	await expect(page.locator('.approvals')).toContainText('PPAP Supervisor E2E');
-	// Penyetuju form tidak mengubah tabel AP.
-	await expect(page.getByRole('button', { name: en.apEdit })).toHaveCount(0);
+	// Supervisor juga memegang E-11 sejak D-209, jadi boleh mengubah tabel AP.
+	// Pemisahan tugas dijaga saat terbit: yang terakhir mengubah tidak menerbitkan (D-139).
+	await expect(page.getByRole('button', { name: en.apEdit })).toBeVisible();
 
 	// Penyetuju kedua menyetujui: sekarang versi itu terbit.
 	await logOut(page);

@@ -2,7 +2,7 @@
 	// Halaman jenis dokumen dan kode nomor (M1.6, UC-05, E-12): pengaturan nomor
 	// (kode pabrik, pola nomor, dan digit revisi, M2.1), jenis dokumen dengan
 	// awalannya, dan kode khusus. Semua akun bisa melihat; mengubah hanya untuk
-	// pemegang A-2. Server tetap memeriksa setiap operasi.
+	// pemegang E-11. Server tetap memeriksa setiap operasi.
 	import { onMount } from 'svelte';
 	import {
 		getNumberSettings,
@@ -24,7 +24,7 @@
 	let pattern = $state('');
 	let revisionDigits = $state(2);
 	let loadError = $state('');
-	let canEdit = $derived(can('A-2'));
+	let canEdit = $derived(can('E-11'));
 
 	// Formulir pengaturan nomor.
 	let newFactoryCode = $state('');

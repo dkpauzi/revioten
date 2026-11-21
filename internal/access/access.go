@@ -71,15 +71,17 @@ const (
 	ManageNumbers     Permission = "E-8"  // ubah status nomor, impor nomor lama
 	ControlledCopies  Permission = "E-9"  // salinan terkendali
 	MigrateDocuments  Permission = "E-10" // migrasikan dokumen lama
-	VerifyChanges     Permission = "V-1"  // verifikasi permintaan perubahan
-	CheckPFMEACP      Permission = "V-2"  // tanda dicek PFMEA dan CP
-	ApproveForms      Permission = "V-3"  // setujui (terbitkan) form set dan tabel AP (D-139)
-	SignDigitally     Permission = "S-1"  // tanda tangan digital pada slot rute (D-198, dipakai fase 3)
-	GenbaNotes        Permission = "G-1"  // catatan di tampilan genba (D-137, dipakai saat tampilan genba dibangun)
-	ManageUsers       Permission = "A-1"  // kelola pengguna dan hak akses
-	ManageMasterData  Permission = "A-2"  // kelola master data
-	ManageSettings    Permission = "A-3"  // kelola pengaturan sistem
-	ViewAuditLog      Permission = "A-4"  // lihat audit log
+	// ManageMasterData mengelola master data dan pengaturan dokumen. Sejak
+	// D-209 ini hak kerja PPAP Engineer, bukan lagi hak admin A-2.
+	ManageMasterData Permission = "E-11"
+	VerifyChanges    Permission = "V-1" // verifikasi permintaan perubahan
+	CheckPFMEACP     Permission = "V-2" // tanda dicek PFMEA dan CP
+	ApproveForms     Permission = "V-3" // setujui (terbitkan) form set dan tabel AP (D-139)
+	SignDigitally    Permission = "S-1" // tanda tangan digital pada slot rute (D-198, dipakai fase 3)
+	GenbaNotes       Permission = "G-1" // catatan di tampilan genba (D-137, dipakai saat tampilan genba dibangun)
+	ManageUsers      Permission = "A-1" // kelola pengguna dan hak akses
+	ManageSettings   Permission = "A-3" // kelola pengaturan sistem
+	ViewAuditLog     Permission = "A-4" // lihat audit log
 
 	// ManageOwnAccount bukan hak di katalog: setiap aktor boleh mengurus
 	// akunnya sendiri (lihat sesi, logout, ganti password). Tetap lewat

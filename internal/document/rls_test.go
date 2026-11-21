@@ -24,7 +24,7 @@ func TestCrossCustomerAccess(t *testing.T) {
 	if err := e.Pool.QueryRow(ctx, `INSERT INTO project_groups (code, name) VALUES ('GR2', 'Project Group 2') RETURNING id`).Scan(&group2); err != nil {
 		t.Fatal(err)
 	}
-	ef, err := customer.NewService(e.Pool, e.Checker).Create(ctx, e.Admin, customer.NewCustomer{Code: "EF", Name: "Customer EF", ProjectGroupID: group2})
+	ef, err := customer.NewService(e.Pool, e.Checker).Create(ctx, e.Master, customer.NewCustomer{Code: "EF", Name: "Customer EF", ProjectGroupID: group2})
 	if err != nil {
 		t.Fatal(err)
 	}

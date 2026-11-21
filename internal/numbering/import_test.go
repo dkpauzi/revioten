@@ -67,7 +67,7 @@ func TestImport(t *testing.T) {
 	control := newActor(t, f.pool, "dokumen.kontrol", access.AccountWork, access.RoleDocumentControl)
 	f.newCustomer(t, "NB")
 	// Customer ini dulu berkode KT, sekarang KU (E-11).
-	ku, err := f.customers.ChangeCode(ctx, f.admin, f.kt.ID, "KU")
+	ku, err := f.customers.ChangeCode(ctx, f.master, f.kt.ID, "KU")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -208,7 +208,7 @@ func TestImportRules(t *testing.T) {
 	ctx := t.Context()
 	control := newActor(t, f.pool, "dokumen.kontrol", access.AccountWork, access.RoleDocumentControl)
 	inactive := f.newCustomer(t, "IN")
-	if _, err := f.customers.Update(ctx, f.admin, inactive.ID, customer.CustomerUpdate{Name: "Customer IN", ProjectGroupID: f.group.ID, Active: new(false)}); err != nil {
+	if _, err := f.customers.Update(ctx, f.master, inactive.ID, customer.CustomerUpdate{Name: "Customer IN", ProjectGroupID: f.group.ID, Active: new(false)}); err != nil {
 		t.Fatal(err)
 	}
 

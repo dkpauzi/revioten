@@ -1,17 +1,18 @@
-// Test E2E M1.6: kriteria selesai "semuanya bisa diedit admin", lewat layar:
+// Test E2E M1.6: kriteria selesai "semuanya bisa diedit", lewat layar (sejak D-209 oleh PPAP Engineer):
 // kode pabrik, jenis dokumen dan awalannya, kode khusus, jenis perubahan,
 // sumber perubahan, dan kategori 4M (UC-05).
 import { expect, test, type Page } from '@playwright/test';
 import { en } from '../src/lib/i18n/en.ts';
-import { ensureProjectGroup, logIn, openFromMenu } from './helpers.ts';
+import { ensureProjectGroup, logInAsMaster, openFromMenu } from './helpers.ts';
 
 // exact: true, karena label seperti "Code" juga bagian dari "Factory code".
 function field(page: Page, label: string) {
 	return page.getByLabel(label, { exact: true });
 }
 
-test('admin mengubah kode pabrik, jenis dokumen, dan kode khusus', async ({ page }) => {
-	await logIn(page);
+test('PPAP Engineer mengubah kode pabrik, jenis dokumen, dan kode khusus', async ({ page }) => {
+	// Master data diurus PPAP Engineer (E-11, D-209).
+	await logInAsMaster(page);
 	await openFromMenu(page, en.navGroupMaster, en.navDocumentTypes);
 	await expect(page.getByRole('row', { name: /^PFD/ })).toContainText('SH');
 
@@ -56,8 +57,9 @@ test('admin mengubah kode pabrik, jenis dokumen, dan kode khusus', async ({ page
 	await expect(page.getByText(en.customerCodeReserved)).toBeVisible();
 });
 
-test('admin mengubah jenis perubahan, sumber perubahan, dan kategori 4M', async ({ page }) => {
-	await logIn(page);
+test('PPAP Engineer mengubah jenis perubahan, sumber perubahan, dan kategori 4M', async ({ page }) => {
+	// Master data diurus PPAP Engineer (E-11, D-209).
+	await logInAsMaster(page);
 	await openFromMenu(page, en.navGroupMaster, en.navChangeTypes);
 
 	// Jenis perubahan diganti nama.

@@ -2,7 +2,7 @@
 
 Cara membangun web ini sendiri (dari sisi kode) ada di `docs/panduan/membangun-manual.md`.
 
-- **Dibuat:** 8 November 2026, setelah M3.3. **Diperbarui:** 21 November 2026 (peran D-199, tanda tangan digital D-198, dasbor admin D-205, Form Control Submission D-207). Diperbarui lagi setiap milestone menambah layar.
+- **Dibuat:** 8 November 2026, setelah M3.3. **Diperbarui:** 21 November 2026 (peran D-199, tanda tangan digital D-198, dasbor admin D-205, Form Control Submission D-207, master data milik PPAP Engineer D-209). Diperbarui lagi setiap milestone menambah layar.
 - **Untuk siapa:** pemilik, untuk mencoba seluruh sistem dari database kosong secara berurutan.
 - **Isinya:** semua layar yang sudah dibangun. Langkah yang belum ada di sistem ditulis di bagian 13.
 - **Nama orang:** semua nama di sini contoh. Jangan memakai nama orang asli di data uji.
@@ -43,24 +43,25 @@ Urutannya mengikuti siapa yang boleh melakukan apa:
 
 ```
 [Admin]            1. Login admin (Home akun admin = Web health)
-                   2. Project group dan customer
-                   3. Model group, model, part number
-                   4. Akun kerja + peran (PPAP Engineer, Supervisor, Project Leader, Manager)
-                   5. Jabatan dan pemegangnya, rute default customer, Settings
-                   6. Jenis dokumen, format template (cek isi awal)
-                   7. Logout
-[PPAP Engineer]    8-12.  Login pertama, master proses, process template, versi
-                  13-14.  Nomor dokumen: daftarkan, Void/obsolete, impor
-                  15-21.  Form set, dokumen draft, rakit, cek PFMEA-CP, diagram
-                  22-23.  Cetak dan rilis dengan scan (tanda tangan basah)
-                  24-27.  Perubahan, verifikasi, revisi 1, rilis
-                  28-30.  Dokumen lama dan dasbor
-                  31-33.  Dokumen terbit, review 3 tahun, PPAP performance
-                  34-36.  Tanda tangan digital, Form Control Submission, Report a problem
+                   2. Akun kerja + peran (PPAP Engineer, Supervisor, Project Leader, Manager)
+                   3. Settings (pengaman: mode migrasi), lalu logout
+[PPAP Engineer]    4. Login pertama dan ganti password
+                   5. Project group dan customer
+                   6. Model group, model, part number
+                   7. Jabatan dan pemegangnya, rute default customer, Document settings
+                   8. Jenis dokumen, format template (cek isi awal, terbitkan)
+                 9-12.  Master proses, process template, versi
+                13-14.  Nomor dokumen: daftarkan, Void/obsolete, impor
+                15-21.  Form set, dokumen draft, rakit, cek PFMEA-CP, diagram
+                22-23.  Cetak dan rilis dengan scan (tanda tangan basah)
+                24-27.  Perubahan, verifikasi, revisi 1, rilis
+                28-30.  Dokumen lama dan dasbor
+                31-33.  Dokumen terbit, review 3 tahun, PPAP performance
+                34-36.  Tanda tangan digital, Form Control Submission, Report a problem
 [Admin]           37-40.  Web health, Roles, API integrasi, email, audit log
 ```
 
-Mengapa admin lebih dulu: data dasar (customer, model, akun, jabatan) hanya bisa dibuat akun admin (hak A-1 dan A-2). Akun kerja tidak bisa membuatnya, dan akun admin tidak bisa menyusun template atau mendaftarkan nomor (D-72: akun admin tidak pernah memegang peran kerja).
+Mengapa admin lebih dulu: akun hanya bisa dibuat akun admin (hak A-1). Sesudah itu admin selesai. Sejak D-209 master data (customer, model, jabatan, rute, format template, form set, pengaturan dokumen) dikerjakan PPAP Engineer lewat hak E-11. Admin hanya melihatnya, dan tetap memegang akun, peran, kesehatan web, audit log, email, service account, serta dua pengaman: mode migrasi dan aturan penyetujuan form.
 
 ## 1. Peran dan fungsinya
 
@@ -70,16 +71,16 @@ Sejak D-199 peran adalah matriks yang diatur admin di **Admin → Roles**: admin
 
 | Peran | Untuk siapa | Yang bisa dilakukan | Hak utama |
 |---|---|---|---|
-| PPAP Engineer | PPAP Engineer dan PPAP Staff | Menyusun dan mencetak dokumen, mengajukan perubahan, master proses dan process template, dokumen kontrol (rilis, status nomor, impor, salinan terkendali), migrasi, tanda dicek PFMEA–CP, tanda tangan digital, laporan kinerja | L-1 sampai L-5, E-1 sampai E-10, V-2, S-1, G-1 |
+| PPAP Engineer | PPAP Engineer dan PPAP Staff | Master data (customer, model, jabatan, rute, format template, form set, layout, pengaturan dokumen), menyusun dan mencetak dokumen, mengajukan perubahan, master proses dan process template, dokumen kontrol (rilis, status nomor, impor, salinan terkendali), migrasi, tanda dicek PFMEA–CP, tanda tangan digital, laporan kinerja | L-1 sampai L-5, E-1 sampai E-11, V-2, S-1, G-1 |
 | PPAP Engineer Supervisor | APQP/PPAP Controller | Semua hak PPAP Engineer, ditambah verifikasi perubahan dan penyetujuan form set serta tabel AP | + V-1, V-3 |
 | Project Leader | Project Leader (Supervisor) dan Project Engineer (Leader) | Menyusun dan mencetak, mengajukan dan memverifikasi perubahan, tanda tangan digital. Bawaannya hanya customer Project Group sendiri; bisa dibuat semua customer (D-206) | L-1 sampai L-4, E-1 sampai E-5, V-1, S-1, G-1 |
 | Manager | NPI Manager, QA QC Manager, GM | Tanda tangan digital, membaca draft, laporan kinerja | L-1 sampai L-5, S-1, G-1 |
 | Viewer | Internal audit, QA, QC, produksi | Melihat dokumen terbit. Tidak perlu dicentang, karena semua akun kerja sudah punya | L-1 sampai L-3, G-1 |
-| Admin | Akun admin terpisah | Akun, peran, master data, pengaturan, audit log, Web health | A-1 sampai A-4 |
+| Admin | Akun admin terpisah | Akun, peran, Web health, audit log, email, service account, pengaman (mode migrasi, aturan penyetujuan form). Master data hanya dilihat (D-209) | A-1, A-3, A-4 |
 
 **Cakupan peran.** Untuk setiap peran yang dicentang ada pilihan cakupan:
 - **All customers**: berlaku untuk semua customer. Untuk PPAP Engineer dan PPAP Staff, juga Project Leader yang membantu Project Group lain (D-206).
-- **Own project group**: hanya customer di Project Group tempat orang itu tercatat sebagai Project Leader atau Project Engineer (D-71). Bawaan untuk peran Project Leader. Cakupan ini baru berfungsi setelah orangnya dicatat sebagai pemegang jabatan (langkah 5).
+- **Own project group**: hanya customer di Project Group tempat orang itu tercatat sebagai Project Leader atau Project Engineer (D-71). Bawaan untuk peran Project Leader. Cakupan ini baru berfungsi setelah orangnya dicatat sebagai pemegang jabatan (langkah 7).
 
 **Aturan yang tidak bisa dimatikan admin (R-SEC-11).** Akun admin tidak pernah memegang peran kerja. Orang yang memegang akun admin juga punya akun kerja terpisah untuk pekerjaan sehari-hari. Akun tidak pernah dihapus, hanya dinonaktifkan.
 
@@ -117,36 +118,15 @@ Untuk uji coba pertama, `ppap.engineer` dan `ppap.staff` sudah cukup.
 
 Password minimal 8 karakter (D-132). Kalimat pendek yang mudah diingat tetap paling aman, misalnya `kopi pagi di pabrik`. Password yang sangat umum seperti `password1` ditolak. Password yang memuat nama login, nama orang, atau kata `revioten` ditolak.
 
-## 3. Admin: login dan data dasar
+## 3. Admin: login, akun, dan pengaman
 
 ### Langkah 1 · Login sebagai admin
 1. Di halaman **Log in**, isi **Login name** `admin.contoh` dan **Password**, lalu tekan **Log in**.
-2. Menu atas sekarang berisi: Home, Documents, Template library, Master data, dan Admin.
+2. Home akun admin adalah **Web health**. Menu atas berisi Home, Documents, Template library, Master data (hanya dilihat), dan Admin.
 3. Di HP atau tablet (layar di bawah 1024px), menu terlipat di tombol **Menu**.
 4. Tombol **EN | ID** di bilah atas mengganti bahasa layar.
 
-### Langkah 2 · Project group dan customer
-Menu **Master data → Customers**.
-
-1. Bagian **Project groups**: isi **Project group code** (1 sampai 10 huruf atau angka, misalnya `GR1`) dan **Project group name** (misalnya `Group 1`), lalu tekan **Add project group**. Project group harus ada sebelum customer.
-2. Bagian **Add a customer**:
-   - **Customer code**: dua huruf A sampai Z, misalnya `LM`. Kode ini masuk ke nomor dokumen, misalnya SH-LM-001. Kode `ZZ` dan `HSE` sudah dipakai sebagai kode khusus.
-   - **Customer name**: misalnya `Contoh Customer LM`.
-   - **Project group**: pilih `GR1`.
-   - Tekan **Save**.
-3. Kolom **Actions** di daftar customer:
-   - **Edit** untuk mengganti nama, project group, atau status aktif;
-   - **Change code** untuk mengganti kode customer. Kode lama tetap tercatat di **Previous codes**.
-
-### Langkah 3 · Model group, model, dan part number
-Menu **Master data → Models**.
-
-1. Pilih **Customer** `LM`.
-2. **Model groups**: isi **Model group name** (misalnya `Seri K`), lalu tekan **Add model group**. Group model boleh dilewati, karena model tanpa group tetap bisa dipakai.
-3. **Models**: isi **Model name** (misalnya `K-125`) dan pilih **Model group** `Seri K` atau **No group**, lalu tekan **Add model**. Buat juga satu model tanpa group, misalnya `K-200`, untuk mencoba prioritas varian nanti.
-4. **Part numbers**: tambahkan part number untuk model yang dipilih (boleh lebih dari satu).
-
-### Langkah 4 · Buat akun kerja
+### Langkah 2 · Buat akun kerja
 Menu **Admin → Accounts**, bagian **Create an account**.
 
 1. **Person**:
@@ -163,7 +143,51 @@ Menu **Admin → Accounts**, bagian **Create an account**.
 
 Di daftar **All accounts**, admin bisa mengubah peran (**Edit roles**, lalu **Save roles**), mereset password (**Reset password**), atau menonaktifkan akun (**Disable**). Akun tidak pernah dihapus.
 
-### Langkah 5 · Jabatan dan pemegangnya
+### Langkah 3 · Pengaman di Settings, lalu logout
+Menu **Admin → Settings**. Halaman ini hanya berisi dua pengaman (D-209):
+
+1. **Migration mode**: nyalakan selama dokumen lama dimasukkan (langkah 28), lalu tekan **Save settings**. Bawaannya mati.
+2. **Approval of form sets and AP tables**: bawaannya semua penyetuju form harus setuju. Biarkan.
+3. Tekan **Log out** di kanan atas. Layar kembali ke halaman login.
+
+Pengaturan dokumen (tanggal di slot, QR, nomor form) tidak ada di sini lagi, tetapi di **Master data → Document settings** milik PPAP Engineer (langkah 7).
+
+## 4. PPAP Engineer: master data dan template
+
+### Langkah 4 · Login pertama dan ganti password
+1. Login dengan `ppap.engineer` dan password sementara dari langkah 2.
+2. Sistem langsung membuka **Change password** dengan pesan bahwa password harus diganti.
+3. Isi tiga kotak:
+   - **Current password**: password sementara;
+   - **New password**: password baru Anda (aturannya di bagian 2);
+   - **Repeat the new password**: ketik ulang.
+4. Tekan **Change password**. Sesi lain milik akun ini otomatis berakhir.
+5. Menu **Change password** juga ada di bilah atas, untuk mengganti password kapan saja.
+
+Menu akun ini berbeda dari menu admin: tidak ada kelompok Admin, dan halaman master data bisa diubah (hak E-11, D-209).
+
+### Langkah 5 · Project group dan customer
+Menu **Master data → Customers**.
+
+1. Bagian **Project groups**: isi **Project group code** (1 sampai 10 huruf atau angka, misalnya `GR1`) dan **Project group name** (misalnya `Group 1`), lalu tekan **Add project group**. Project group harus ada sebelum customer.
+2. Bagian **Add a customer**:
+   - **Customer code**: dua huruf A sampai Z, misalnya `LM`. Kode ini masuk ke nomor dokumen, misalnya SH-LM-001. Kode `ZZ` dan `HSE` sudah dipakai sebagai kode khusus.
+   - **Customer name**: misalnya `Contoh Customer LM`.
+   - **Project group**: pilih `GR1`.
+   - Tekan **Save**.
+3. Kolom **Actions** di daftar customer:
+   - **Edit** untuk mengganti nama, project group, atau status aktif;
+   - **Change code** untuk mengganti kode customer. Kode lama tetap tercatat di **Previous codes**.
+
+### Langkah 6 · Model group, model, dan part number
+Menu **Master data → Models**.
+
+1. Pilih **Customer** `LM`.
+2. **Model groups**: isi **Model group name** (misalnya `Seri K`), lalu tekan **Add model group**. Group model boleh dilewati, karena model tanpa group tetap bisa dipakai.
+3. **Models**: isi **Model name** (misalnya `K-125`) dan pilih **Model group** `Seri K` atau **No group**, lalu tekan **Add model**. Buat juga satu model tanpa group, misalnya `K-200`, untuk mencoba prioritas varian nanti.
+4. **Part numbers**: tambahkan part number untuk model yang dipilih (boleh lebih dari satu).
+
+### Langkah 7 · Jabatan, rute, dan pengaturan dokumen
 Menu **Master data → Positions**.
 
 1. Jabatan sudah terisi dari bagan NPI: PPAP Engineer, PPAP Staff, Project Engineer, Project Leader, APQP/PPAP Controller, NPI Manager, QA QC Manager, Advisor, dan Factory Manager. Namanya bisa diganti lewat **Rename**, dan ID-nya tetap.
@@ -174,9 +198,9 @@ Menu **Master data → Positions**.
 3. Ini penting untuk akun bercakupan **Own project group**: tanpa catatan pemegang, akun itu tidak punya customer apa pun.
 4. Slot tanda tangan rute juga mengikuti jabatan: catat `ppap.engineer` sebagai PPAP Engineer, `apqp.controller` sebagai APQP/PPAP Controller, `pl.gr1` sebagai Project Leader GR1, `npi.manager` sebagai NPI Manager, dan `qa.manager` sebagai QA QC Manager.
 5. **Master data → Approval routes**: pilih rute default customer LM, misalnya **Up to QA QC Manager**. Dokumen yang dibuat sesudahnya memakai rute ini; tanpa rute, dokumen tidak bisa dikirim untuk tanda tangan.
-6. **Admin → Settings**: nyalakan **Migration mode** (untuk langkah 28) dan isi nomor form Form Control Submission (D-207).
+6. **Master data → Document settings**: isi nomor form Form Control Submission (D-207). Saklar tanggal di slot tanda tangan dan QR di cetakan juga ada di sini (D-209).
 
-### Langkah 6 · Periksa isi awal pengaturan dokumen
+### Langkah 8 · Periksa isi awal dan terbitkan format template
 Halaman berikut sudah terisi saat database dibuat. Cukup diperiksa, dan diubah bila berbeda dengan WI.
 
 | Menu | Isi awal | Kapan diubah |
@@ -185,27 +209,12 @@ Halaman berikut sudah terisi saat database dibuat. Cukup diperiksa, dan diubah b
 | Master data → Change types | Jenis perubahan (Content, Layout only, Administrative), sumber perubahan, kategori 4M | Bila ada sumber perubahan baru |
 | Master data → Approval routes | Rute 5 slot: Prepared, Checked, lalu tiga Approved (NPI Manager, QA / QC Mgr., General Mgr.) | Atur **Default route** per customer, atau rute khusus per jenis perubahan |
 | Template library → Format templates | Format PFD, PFMEA (misalnya PFMEA AIAG 4th), dan CP: kolom, field header, tabel skala, simbol, aturan sorot | Ganti label kolom mengikuti form yang dipakai, isi teks tabel skala S, O, D |
-| Admin → Settings | Saklar tanggal tanda tangan, QR, mode migrasi, aturan penyetujuan form, nomor form Form Control Submission | Sesuai kebiasaan cetak |
+| Master data → Document settings | Saklar tanggal tanda tangan, QR, nomor form Form Control Submission | Sesuai kebiasaan cetak |
 | Master data → Customers | Kolom **Signatures** (Digital allowed / Wet only) dan **Customer submission** (Required / Not required) | Sesuai kesepakatan dengan customer |
 
 Kolom nomor operasi, proses, dan Process Flow di format template tidak bisa diketik, karena isinya diambil dari baris dan dari PFD (D-122, D-123).
 
-### Langkah 7 · Logout admin
-Tekan **Log out** di kanan atas. Layar kembali ke halaman login.
-
-## 4. PPAP Engineer: login pertama dan process template
-
-### Langkah 8 · Login pertama dan ganti password
-1. Login dengan `ppap.engineer` dan password sementara dari langkah 4.
-2. Sistem langsung membuka **Change password** dengan pesan bahwa password harus diganti.
-3. Isi tiga kotak:
-   - **Current password**: password sementara;
-   - **New password**: password baru Anda (aturannya di bagian 2);
-   - **Repeat the new password**: ketik ulang.
-4. Tekan **Change password**. Sesi lain milik akun ini otomatis berakhir.
-5. Menu **Change password** juga ada di bilah atas, untuk mengganti password kapan saja.
-
-Menu akun ini berbeda dari menu admin: tidak ada kelompok Admin, dan halaman master data hanya bisa dilihat.
+Lalu terbitkan versi 1 format PFD, PFMEA AIAG 4th, dan CP: di **Template library → Format templates**, pilih formatnya, tekan **Publish version 1**, lalu OK. Form set baru bisa terbit sesudah ketiga formatnya terbit (langkah 15).
 
 ### Langkah 9 · Master proses
 Menu **Template library → Processes**.
@@ -274,7 +283,7 @@ Register bisa disaring dengan **Customer**, **Type**, **Status**, dan **Number c
 ## 6. Dokumen kontrol: status nomor dan impor
 
 ### Langkah 14 · Void, obsolete, dan impor
-Logout, lalu login dengan `ppap.staff` dan ganti password seperti langkah 8.
+Logout, lalu login dengan `ppap.staff` dan ganti password seperti langkah 4.
 
 1. **Documents → Numbers**: setiap baris register punya tombol **Void** dan **Make obsolete**. Isi alasan (wajib), lalu tekan **Confirm**.
 2. **Documents → Import legacy numbers**:

@@ -20,6 +20,19 @@ func (a *apiServer) ListPositions(ctx context.Context, _ ListPositionsRequestObj
 	return ListPositions200JSONResponse{Items: items}, nil
 }
 
+// ListPositionCandidates menjawab GET /api/v1/position-candidates (D-209).
+func (a *apiServer) ListPositionCandidates(ctx context.Context, _ ListPositionCandidatesRequestObject) (ListPositionCandidatesResponseObject, error) {
+	list, err := a.approval.ListCandidates(ctx, actorFrom(ctx))
+	if err != nil {
+		return nil, err
+	}
+	items := make([]PersonInfo, 0, len(list))
+	for _, c := range list {
+		items = append(items, PersonInfo{Id: c.PersonID, Name: c.Name})
+	}
+	return ListPositionCandidates200JSONResponse{Items: items}, nil
+}
+
 // UpdatePosition menjawab PUT /api/v1/positions/{positionId}.
 func (a *apiServer) UpdatePosition(ctx context.Context, req UpdatePositionRequestObject) (UpdatePositionResponseObject, error) {
 	renamed, err := a.approval.RenamePosition(ctx, actorFrom(ctx), req.PositionId, req.Body.Name)

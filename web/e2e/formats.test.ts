@@ -3,10 +3,11 @@
 // TestRenameKeepsData); kolom disembunyikan, tidak dihapus.
 import { expect, test } from '@playwright/test';
 import { en } from '../src/lib/i18n/en.ts';
-import { createWorkAccount, logIn, logInFirstTime, logOut, openFromMenu } from './helpers.ts';
+import { createWorkAccount, logIn, logInAsMaster, logInFirstTime, logOut, openFromMenu } from './helpers.ts';
 
-test('admin mengganti label kolom PFMEA, menyembunyikan kolom, dan mengisi kriteria skala', async ({ page }) => {
-	await logIn(page);
+test('PPAP Engineer mengganti label kolom PFMEA, menyembunyikan kolom, dan mengisi kriteria skala', async ({ page }) => {
+	// Format template diurus PPAP Engineer (E-11, D-209).
+	await logInAsMaster(page);
 	await openFromMenu(page, en.navGroupTemplates, en.navFormatTemplates);
 	await page.getByLabel(en.formatChoose).selectOption({ label: 'PFMEA AIAG 4th · PFMEA' });
 
@@ -37,9 +38,10 @@ test('admin mengganti label kolom PFMEA, menyembunyikan kolom, dan mengisi krite
 	);
 });
 
-test('Penyusun hanya melihat format template', async ({ page }) => {
+test('akun tanpa hak E-11 hanya melihat format template', async ({ page }) => {
+	// Manager tidak memegang E-11 (D-209), jadi hanya melihat.
 	await logIn(page);
-	const temporary = await createWorkAccount(page, 'Penyusun format', 'penyusun.format', ['ppap_engineer']);
+	const temporary = await createWorkAccount(page, 'Penyusun format', 'penyusun.format', ['manager']);
 	await logOut(page);
 	await logInFirstTime(page, 'penyusun.format', temporary, 'kolom punya ID yang tetap selamanya');
 
@@ -56,8 +58,8 @@ test('Penyusun hanya melihat format template', async ({ page }) => {
 	await expect(page.getByRole('button', { name: en.formatCreate })).toHaveCount(0);
 });
 
-test('admin menyalin format template CP lalu menambah kolom pilihan', async ({ page }) => {
-	await logIn(page);
+test('PPAP Engineer menyalin format template CP lalu menambah kolom pilihan', async ({ page }) => {
+	await logInAsMaster(page);
 	await openFromMenu(page, en.navGroupTemplates, en.navFormatTemplates);
 	await page.getByLabel(en.formatName, { exact: true }).fill('CP with phase');
 	await page.getByLabel(en.formatDocumentType, { exact: true }).selectOption({ label: 'CP' });
@@ -77,7 +79,7 @@ test('admin menyalin format template CP lalu menambah kolom pilihan', async ({ p
 
 test('format template dengan metode AP menampilkan tabel Action Priority dan kalkulatornya', async ({ page }) => {
 	// Form set langkah A (D-134): versi baru bermetode AP mendapat tabel handbook.
-	await logIn(page);
+	await logInAsMaster(page);
 	await openFromMenu(page, en.navGroupTemplates, en.navFormatTemplates);
 	await page.getByLabel(en.formatName, { exact: true }).fill('PFMEA AP E2E');
 	// Jenis dokumen kedua (PFMEA) dipilih menurut urutan, karena test lain boleh mengganti namanya.
@@ -113,7 +115,7 @@ test('format template dengan metode AP menampilkan tabel Action Priority dan kal
 
 test('form PFMEA AIAG-VDA 2019 dan Control Plan AIAG 2024 tersedia sejak awal', async ({ page }) => {
 	// Form set langkah B dan C (D-133, D-135): isi awal kedua form baru.
-	await logIn(page);
+	await logInAsMaster(page);
 	await openFromMenu(page, en.navGroupTemplates, en.navFormatTemplates);
 	const choose = page.getByLabel(en.formatChoose);
 	// Pilihan dicari menurut nama template, karena nama jenis dokumennya boleh diganti test lain.

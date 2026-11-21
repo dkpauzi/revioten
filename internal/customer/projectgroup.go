@@ -30,7 +30,7 @@ func (s *Service) ListProjectGroups(ctx context.Context, actor access.Actor) ([]
 	return list, nil
 }
 
-// CreateProjectGroup menambah Project Group (A-2, E-10).
+// CreateProjectGroup menambah Project Group (E-11, E-10).
 func (s *Service) CreateProjectGroup(ctx context.Context, actor access.Actor, in ProjectGroupInput) (ProjectGroup, error) {
 	if err := s.authz.Authorize(ctx, actor, access.ManageMasterData, access.Resource{}); err != nil {
 		return ProjectGroup{}, err
@@ -62,7 +62,7 @@ func (s *Service) CreateProjectGroup(ctx context.Context, actor access.Actor, in
 	return group, nil
 }
 
-// UpdateProjectGroup mengubah kode dan nama Project Group (A-2). Customer yang
+// UpdateProjectGroup mengubah kode dan nama Project Group (E-11). Customer yang
 // dialokasikan menunjuk ID-nya, jadi ikut memakai kode yang baru.
 func (s *Service) UpdateProjectGroup(ctx context.Context, actor access.Actor, id string, in ProjectGroupInput) (ProjectGroup, error) {
 	if err := s.authz.Authorize(ctx, actor, access.ManageMasterData, access.Resource{}); err != nil {

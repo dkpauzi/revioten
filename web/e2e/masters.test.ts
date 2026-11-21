@@ -3,7 +3,7 @@
 // model, dan part number.
 import { expect, test, type Page } from '@playwright/test';
 import { en } from '../src/lib/i18n/en.ts';
-import { logIn, openFromMenu } from './helpers.ts';
+import { logInAsMaster, openFromMenu } from './helpers.ts';
 
 // exact: true, karena label seperti "Model group" juga bagian dari "Model group name".
 function field(page: Page, label: string) {
@@ -11,7 +11,8 @@ function field(page: Page, label: string) {
 }
 
 test('master customer sampai part number tersambung dan tersimpan', async ({ page }) => {
-	await logIn(page);
+	// Master data diurus PPAP Engineer (E-11, D-209).
+	await logInAsMaster(page);
 	await openFromMenu(page, en.navGroupMaster, en.navCustomers);
 
 	// Project Group lalu customer yang dialokasikan ke group itu (D-54).

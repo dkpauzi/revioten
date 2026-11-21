@@ -344,7 +344,7 @@ func clean(in Entry, customerDefault bool) (db.SaveSubmissionParams, error) {
 	return p, nil
 }
 
-// SetCustomerDefault mengatur bawaan "perlu dikirim ke customer" (A-2).
+// SetCustomerDefault mengatur bawaan "perlu dikirim ke customer" (E-11).
 func (s *Service) SetCustomerDefault(ctx context.Context, actor access.Actor, customerID string, required bool) error {
 	if err := s.authz.Authorize(ctx, actor, access.ManageMasterData, access.Resource{CustomerID: customerID}); err != nil {
 		return err

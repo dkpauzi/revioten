@@ -2,7 +2,7 @@
 	// Halaman format template (M3.1, UC-20, R-TPL-01, R-TPL-02, R-TPL-11):
 	// field header dan kolom ber-ID tetap, metode risiko, tabel skala, simbol,
 	// dan aturan sorot. Semua akun bisa melihat (L-2); mengubah hanya untuk
-	// pemegang A-2. Server tetap memeriksa setiap operasi.
+	// pemegang E-11. Server tetap memeriksa setiap operasi.
 	//
 	// Sejak M3.4 (R-TPL-05) versi berjalan dari draft ke terbit. Versi terbit
 	// hanya bisa dibaca; perubahan berikutnya masuk ke versi baru.
@@ -62,13 +62,13 @@
 	let documentTypes = $state<DocumentType[]>([]);
 	let customers = $state<Customer[]>([]);
 	let loadError = $state('');
-	let canEdit = $derived(can('A-2'));
+	let canEdit = $derived(can('E-11'));
 
 	// Template yang dipilih dan versinya.
 	let selectedId = $state('');
 	let selected = $derived(templates?.find((ft) => ft.id === selectedId) ?? null);
 	let version = $state<FormatVersion | null>(null);
-	// Isi versi hanya bisa diubah oleh pemegang A-2, dan hanya selama versinya
+	// Isi versi hanya bisa diubah oleh pemegang E-11, dan hanya selama versinya
 	// draft (M3.4). Nama template bukan bagian dari versi, jadi tetap memakai canEdit.
 	let editable = $derived(canEdit && isDraft(version));
 	// Versi bermetode AP membawa tabel AP, jadi diterbitkan penyetuju form (V-3,
@@ -145,7 +145,7 @@
 		use(result.data);
 	}
 
-	// publish menerbitkan versi draft yang sedang dibuka (A-2). Daftar template
+	// publish menerbitkan versi draft yang sedang dibuka (E-11). Daftar template
 	// dimuat ulang supaya status versinya ikut berubah.
 	async function publish() {
 		reset();
@@ -162,7 +162,7 @@
 		saved(result.data, result.data.status === 'published' ? t('versionPublished', { version: String(result.data.version) }) : t('approvalRecorded'));
 	}
 
-	// newVersion membuat versi draft berikutnya, salinan versi terbit terakhir (A-2).
+	// newVersion membuat versi draft berikutnya, salinan versi terbit terakhir (E-11).
 	async function newVersion() {
 		reset();
 		if (selected === null || version === null) {
@@ -286,7 +286,7 @@
 		saved(result.data, t('formatSymbolsSaved'));
 	}
 
-	// saveApRules menyimpan tabel AP yang diubah (A-2, versi draft). Hasilnya
+	// saveApRules menyimpan tabel AP yang diubah (E-11, versi draft). Hasilnya
 	// true bila tersimpan, supaya tabel kembali ke tampilan baca.
 	async function saveApRules(rules: ApRule[]): Promise<boolean> {
 		reset();

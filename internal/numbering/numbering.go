@@ -2,7 +2,7 @@
 // UC-05, E-12): kode pabrik, jenis dokumen dengan hurufnya, dan kode khusus di
 // posisi kode customer. Awalan nomor adalah kode pabrik ditambah huruf jenis,
 // misalnya SH untuk PFD (R-NUM-01). Semua bagian ini master data yang diubah
-// Admin (A-2); perubahan hanya berlaku untuk nomor baru, karena nomor yang
+// PPAP Engineer (E-11); perubahan hanya berlaku untuk nomor baru, karena nomor yang
 // sudah terdaftar disimpan sebagai teks (R-NUM-02). Sejak Tahap 2 paket ini
 // juga memegang pola nomor, penghitung, dan register nomor (M2.1 sampai M2.5).
 package numbering
@@ -24,7 +24,7 @@ const (
 )
 
 // Settings adalah pengaturan nomor (E-12, D-89): kode pabrik, pola nomor,
-// bentuk nomor berjalan, dan jumlah digit revisi. Semuanya master data (A-2).
+// bentuk nomor berjalan, dan jumlah digit revisi. Semuanya master data (E-11).
 type Settings struct {
 	ID             string
 	FactoryCode    string

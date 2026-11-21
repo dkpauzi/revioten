@@ -191,7 +191,7 @@ func loadDocument(ctx context.Context, q *db.Queries, id string) (document.Docum
 	return d, nil
 }
 
-// SetMode mengatur cara tanda tangan satu customer (A-2).
+// SetMode mengatur cara tanda tangan satu customer (E-11).
 func (s *Service) SetMode(ctx context.Context, actor access.Actor, customerID, mode string) error {
 	if err := s.authz.Authorize(ctx, actor, access.ManageMasterData, access.Resource{CustomerID: customerID}); err != nil {
 		return err

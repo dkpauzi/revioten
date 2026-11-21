@@ -180,6 +180,8 @@ func TestNotifications(t *testing.T) {
 	}
 
 	// Gagal kirim dicoba lagi, lalu ditandai gagal sesudah percobaan habis.
+	// Email dibaca per penerima DCC: akun PPAP Engineer di data dasar (D-209)
+	// juga pemegang E-7, jadi ikut menerima email siap rilis.
 	if _, err := svc.SetEmail(ctx, e.Admin, dcc.AccountID, "dcc.uji@contoh.test"); err != nil {
 		t.Fatal(err)
 	}
@@ -196,7 +198,7 @@ func TestNotifications(t *testing.T) {
 		}
 	}
 	var status, reason string
-	if err := e.Pool.QueryRow(ctx, `SELECT status, reason FROM notification_outbox ORDER BY created_at DESC LIMIT 1`).Scan(&status, &reason); err != nil || status != "failed" || reason != "server menolak" {
+	if err := e.Pool.QueryRow(ctx, `SELECT status, reason FROM notification_outbox WHERE recipient_person_id = $1 ORDER BY created_at DESC LIMIT 1`, dcc.PersonID).Scan(&status, &reason); err != nil || status != "failed" || reason != "server menolak" {
 		t.Errorf("sesudah gagal berulang: %s %s %v", status, reason, err)
 	}
 
@@ -208,7 +210,7 @@ func TestNotifications(t *testing.T) {
 	if _, err := off.SendPending(ctx, 50); err != nil {
 		t.Fatal(err)
 	}
-	if err := e.Pool.QueryRow(ctx, `SELECT status, reason FROM notification_outbox ORDER BY created_at DESC LIMIT 1`).Scan(&status, &reason); err != nil || status != "skipped" || reason != "mail_not_configured" {
+	if err := e.Pool.QueryRow(ctx, `SELECT status, reason FROM notification_outbox WHERE recipient_person_id = $1 ORDER BY created_at DESC LIMIT 1`, dcc.PersonID).Scan(&status, &reason); err != nil || status != "skipped" || reason != "mail_not_configured" {
 		t.Errorf("tanpa pengirim: %s %s %v", status, reason, err)
 	}
 

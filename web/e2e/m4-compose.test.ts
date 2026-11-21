@@ -6,21 +6,24 @@
 // menerbitkan form set AIAG 4th; dokumen hanya memakai form set yang terbit.
 import { expect, test } from '@playwright/test';
 import { en } from '../src/lib/i18n/en.ts';
-import { createWorkAccount, ensureProjectGroup, logIn, logInFirstTime, logOut, openFromMenu } from './helpers.ts';
+import { asMaster, createWorkAccount, ensureProjectGroup, logIn, logInFirstTime, logOut, openFromMenu } from './helpers.ts';
 
 test('penyusun merakit CP, PFMEA, dan PFD dari process template IQC', async ({ page }) => {
 	// Test ini panjang (menyiapkan template, merakit dua kali), jadi batas waktunya dilonggarkan.
 	test.slow();
 	await logIn(page);
-	await ensureProjectGroup(page, 'GR1');
-	await page.evaluate(async () => {
-		const post = (path: string, body: object) =>
-			fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then((r) => r.json());
-		const groups = await (await fetch('/api/v1/project-groups')).json();
-		const group = groups.items.find((g: { code: string }) => g.code === 'GR1');
-		const customer = await post('/api/v1/customers', { code: 'KM', name: 'Customer KM', project_group_id: group.id });
-		await post('/api/v1/models', { customer_id: customer.id, name: 'M-45' });
-		await post('/api/v1/models', { customer_id: customer.id, name: 'M-46' });
+	// Master data dibuat PPAP Engineer (E-11, D-209).
+	await asMaster(page, async (m) => {
+		await ensureProjectGroup(m, 'GR1');
+		await m.evaluate(async () => {
+			const post = (path: string, body: object) =>
+				fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then((r) => r.json());
+			const groups = await (await fetch('/api/v1/project-groups')).json();
+			const group = groups.items.find((g: { code: string }) => g.code === 'GR1');
+			const customer = await post('/api/v1/customers', { code: 'KM', name: 'Customer KM', project_group_id: group.id });
+			await post('/api/v1/models', { customer_id: customer.id, name: 'M-45' });
+			await post('/api/v1/models', { customer_id: customer.id, name: 'M-46' });
+		});
 	});
 	const temporary = await createWorkAccount(page, 'Perakit dokumen', 'perakit.e2e', ['ppap_engineer']);
 	await logOut(page);

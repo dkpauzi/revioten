@@ -43,7 +43,7 @@ func TestPublishFormatVersion(t *testing.T) {
 	if _, err := f.s.PublishFormatVersion(ctx, f.author, draft.ID); !errors.Is(err, access.ErrForbidden) {
 		t.Errorf("Penyusun menerbitkan: %v", err)
 	}
-	v, err := f.s.PublishFormatVersion(ctx, f.admin, draft.ID)
+	v, err := f.s.PublishFormatVersion(ctx, f.master, draft.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -59,13 +59,13 @@ func TestPublishFormatVersion(t *testing.T) {
 	}
 
 	// Versi terbit tidak bisa diubah lewat layanan.
-	if _, err := f.s.AddField(ctx, f.admin, v.ID, NewField{Area: AreaRow, Kind: KindText, Label: "Note"}); !slices.Equal(problemCodes(t, err), []string{"status:not_allowed"}) {
+	if _, err := f.s.AddField(ctx, f.master, v.ID, NewField{Area: AreaRow, Kind: KindText, Label: "Note"}); !slices.Equal(problemCodes(t, err), []string{"status:not_allowed"}) {
 		t.Errorf("menambah kolom di versi terbit: %v", err)
 	}
-	if _, err := f.s.SetHighlights(ctx, f.admin, v.ID, HighlightSettings{RPNAbove: new(80)}); !slices.Equal(problemCodes(t, err), []string{"status:not_allowed"}) {
+	if _, err := f.s.SetHighlights(ctx, f.master, v.ID, HighlightSettings{RPNAbove: new(80)}); !slices.Equal(problemCodes(t, err), []string{"status:not_allowed"}) {
 		t.Errorf("mengubah aturan sorot di versi terbit: %v", err)
 	}
-	if _, err := f.s.PublishFormatVersion(ctx, f.admin, v.ID); !slices.Equal(problemCodes(t, err), []string{"status:not_allowed"}) {
+	if _, err := f.s.PublishFormatVersion(ctx, f.master, v.ID); !slices.Equal(problemCodes(t, err), []string{"status:not_allowed"}) {
 		t.Errorf("menerbitkan dua kali: %v", err)
 	}
 }
@@ -80,17 +80,17 @@ func TestNewFormatVersion(t *testing.T) {
 	v1 := f.version(t, "PFMEA AIAG 4th")
 
 	// Masih ada draft: versi baru ditolak.
-	if _, err := f.s.NewFormatVersion(ctx, f.admin, ft.ID); !slices.Equal(problemCodes(t, err), []string{"status:not_allowed"}) {
+	if _, err := f.s.NewFormatVersion(ctx, f.master, ft.ID); !slices.Equal(problemCodes(t, err), []string{"status:not_allowed"}) {
 		t.Errorf("versi baru saat masih ada draft: %v", err)
 	}
-	if _, err := f.s.PublishFormatVersion(ctx, f.admin, v1.ID); err != nil {
+	if _, err := f.s.PublishFormatVersion(ctx, f.master, v1.ID); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := f.s.NewFormatVersion(ctx, f.author, ft.ID); !errors.Is(err, access.ErrForbidden) {
 		t.Errorf("Penyusun membuat versi baru: %v", err)
 	}
 
-	v2, err := f.s.NewFormatVersion(ctx, f.admin, ft.ID)
+	v2, err := f.s.NewFormatVersion(ctx, f.master, ft.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -115,7 +115,7 @@ func TestNewFormatVersion(t *testing.T) {
 
 	// Mengubah versi 2 tidak mengubah versi 1 (kriteria selesai M3.4).
 	target := field(t, v2, "Potential Failure Mode")
-	if _, err := f.s.UpdateField(ctx, f.admin, v2.ID, target.ID, FieldUpdate{Label: "Failure Mode"}); err != nil {
+	if _, err := f.s.UpdateField(ctx, f.master, v2.ID, target.ID, FieldUpdate{Label: "Failure Mode"}); err != nil {
 		t.Fatal(err)
 	}
 	again, err := f.s.GetFormatVersion(ctx, f.author, v1.ID)
@@ -127,7 +127,7 @@ func TestNewFormatVersion(t *testing.T) {
 	}
 
 	// Hanya satu draft per template.
-	if _, err := f.s.NewFormatVersion(ctx, f.admin, ft.ID); !slices.Equal(problemCodes(t, err), []string{"status:not_allowed"}) {
+	if _, err := f.s.NewFormatVersion(ctx, f.master, ft.ID); !slices.Equal(problemCodes(t, err), []string{"status:not_allowed"}) {
 		t.Errorf("versi baru kedua: %v", err)
 	}
 	if got := f.template(t, "PFMEA AIAG 4th").Versions; len(got) != 2 || got[1].Version != 2 {
@@ -151,7 +151,7 @@ func expectCode(t *testing.T, exec func(sql string, args ...any) error, code, sq
 func TestPublishedFormatGuards(t *testing.T) {
 	app, owner := dbtest.NewPools(t)
 	f := fixture{s: NewService(app, access.NewChecker(app)), pool: app}
-	f.admin = newActor(t, app, "admin.uji", access.AccountAdmin, access.RoleAdmin)
+	f.master = newActor(t, app, "ppap.master", access.AccountWork, access.RolePPAPEngineer)
 	f.author = newActor(t, app, "penyusun.uji", access.AccountWork, access.RoleAuthor)
 	ctx := t.Context()
 	ft := f.template(t, "PFMEA AIAG 4th")
@@ -165,7 +165,7 @@ func TestPublishedFormatGuards(t *testing.T) {
 	if err := asOwner("UPDATE format_version_fields SET label = label WHERE version_id = $1", v1.ID); err != nil {
 		t.Fatalf("mengubah draft: %v", err)
 	}
-	if _, err := f.s.PublishFormatVersion(ctx, f.admin, v1.ID); err != nil {
+	if _, err := f.s.PublishFormatVersion(ctx, f.master, v1.ID); err != nil {
 		t.Fatal(err)
 	}
 
@@ -188,7 +188,7 @@ func TestPublishedFormatGuards(t *testing.T) {
 	expectCode(t, asOwner, publishedCode, "TRUNCATE format_rating_criteria")
 
 	// Status terbit selalu punya waktu terbit, dan sebaliknya.
-	v2, err := f.s.NewFormatVersion(ctx, f.admin, ft.ID)
+	v2, err := f.s.NewFormatVersion(ctx, f.master, ft.ID)
 	if err != nil {
 		t.Fatal(err)
 	}

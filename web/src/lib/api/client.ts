@@ -13,6 +13,7 @@ import type {
 	NewPositionHolder,
 	Position,
 	PositionHolder,
+	PersonInfoList,
 	PositionList,
 	SystemSettings,
 	SystemSettingsUpdate,
@@ -206,7 +207,7 @@ export function createCustomer(
 }
 
 // updateCustomer memanggil PUT /api/v1/customers/{id}: nama, Project Group,
-// dan status aktif (A-2).
+// dan status aktif (E-11).
 export function updateCustomer(
 	id: string,
 	input: CustomerUpdate,
@@ -230,7 +231,7 @@ export function listProjectGroups(fetchFn: typeof fetch = fetch): Promise<ApiRes
 	return call<ProjectGroupList>(fetchFn, '/api/v1/project-groups', { method: 'GET' });
 }
 
-// createProjectGroup memanggil POST /api/v1/project-groups (A-2).
+// createProjectGroup memanggil POST /api/v1/project-groups (E-11).
 export function createProjectGroup(
 	input: ProjectGroupInput,
 	fetchFn: typeof fetch = fetch
@@ -238,7 +239,7 @@ export function createProjectGroup(
 	return call<ProjectGroup>(fetchFn, '/api/v1/project-groups', jsonRequest('POST', input));
 }
 
-// updateProjectGroup memanggil PUT /api/v1/project-groups/{id} (A-2).
+// updateProjectGroup memanggil PUT /api/v1/project-groups/{id} (E-11).
 export function updateProjectGroup(
 	id: string,
 	input: ProjectGroupInput,
@@ -255,7 +256,7 @@ export function listModelGroups(
 	return call<ModelGroupList>(fetchFn, listPath('model-groups', customerId), { method: 'GET' });
 }
 
-// createModelGroup memanggil POST /api/v1/model-groups (A-2).
+// createModelGroup memanggil POST /api/v1/model-groups (E-11).
 export function createModelGroup(
 	input: NewModelGroup,
 	fetchFn: typeof fetch = fetch
@@ -263,7 +264,7 @@ export function createModelGroup(
 	return call<ModelGroup>(fetchFn, '/api/v1/model-groups', jsonRequest('POST', input));
 }
 
-// renameModelGroup memanggil PUT /api/v1/model-groups/{id} (A-2).
+// renameModelGroup memanggil PUT /api/v1/model-groups/{id} (E-11).
 export function renameModelGroup(
 	id: string,
 	name: string,
@@ -277,12 +278,12 @@ export function listModels(customerId: string, fetchFn: typeof fetch = fetch): P
 	return call<ModelList>(fetchFn, listPath('models', customerId), { method: 'GET' });
 }
 
-// createModel memanggil POST /api/v1/models (A-2).
+// createModel memanggil POST /api/v1/models (E-11).
 export function createModel(input: NewModel, fetchFn: typeof fetch = fetch): Promise<ApiResult<Model>> {
 	return call<Model>(fetchFn, '/api/v1/models', jsonRequest('POST', input));
 }
 
-// updateModel memanggil PUT /api/v1/models/{id} (A-2). Tanpa model_group_id
+// updateModel memanggil PUT /api/v1/models/{id} (E-11). Tanpa model_group_id
 // berarti model dikeluarkan dari group-nya.
 export function updateModel(
 	id: string,
@@ -300,7 +301,7 @@ export function listPartNumbers(
 	return call<PartNumberList>(fetchFn, listPath('part-numbers', customerId), { method: 'GET' });
 }
 
-// createPartNumber memanggil POST /api/v1/part-numbers (A-2).
+// createPartNumber memanggil POST /api/v1/part-numbers (E-11).
 export function createPartNumber(
 	input: NewPartNumber,
 	fetchFn: typeof fetch = fetch
@@ -308,7 +309,7 @@ export function createPartNumber(
 	return call<PartNumber>(fetchFn, '/api/v1/part-numbers', jsonRequest('POST', input));
 }
 
-// updatePartNumber memanggil PUT /api/v1/part-numbers/{id} (A-2).
+// updatePartNumber memanggil PUT /api/v1/part-numbers/{id} (E-11).
 export function updatePartNumber(
 	id: string,
 	input: PartNumberUpdate,
@@ -342,7 +343,7 @@ export function getNumberSettings(fetchFn: typeof fetch = fetch): Promise<ApiRes
 	return call<NumberSettings>(fetchFn, '/api/v1/number-settings', { method: 'GET' });
 }
 
-// updateNumberSettings memanggil PUT /api/v1/number-settings (A-2). pattern dan
+// updateNumberSettings memanggil PUT /api/v1/number-settings (E-11). pattern dan
 // revision_digits yang tidak dikirim berarti tetap (D-111).
 export function updateNumberSettings(
 	input: NumberSettingsUpdate,
@@ -447,7 +448,7 @@ export function listDocumentTypes(fetchFn: typeof fetch = fetch): Promise<ApiRes
 	return call<DocumentTypeList>(fetchFn, '/api/v1/document-types', { method: 'GET' });
 }
 
-// createDocumentType memanggil POST /api/v1/document-types (A-2).
+// createDocumentType memanggil POST /api/v1/document-types (E-11).
 export function createDocumentType(
 	input: DocumentTypeInput,
 	fetchFn: typeof fetch = fetch
@@ -455,7 +456,7 @@ export function createDocumentType(
 	return call<DocumentType>(fetchFn, '/api/v1/document-types', jsonRequest('POST', input));
 }
 
-// updateDocumentType memanggil PUT /api/v1/document-types/{id} (A-2).
+// updateDocumentType memanggil PUT /api/v1/document-types/{id} (E-11).
 export function updateDocumentType(
 	id: string,
 	input: DocumentTypeInput,
@@ -469,7 +470,7 @@ export function listSpecialCodes(fetchFn: typeof fetch = fetch): Promise<ApiResu
 	return call<SpecialCodeList>(fetchFn, '/api/v1/special-codes', { method: 'GET' });
 }
 
-// createSpecialCode memanggil POST /api/v1/special-codes (A-2).
+// createSpecialCode memanggil POST /api/v1/special-codes (E-11).
 export function createSpecialCode(
 	input: NewSpecialCode,
 	fetchFn: typeof fetch = fetch
@@ -477,7 +478,7 @@ export function createSpecialCode(
 	return call<SpecialCode>(fetchFn, '/api/v1/special-codes', jsonRequest('POST', input));
 }
 
-// updateSpecialCode memanggil PUT /api/v1/special-codes/{id} (A-2). Kodenya
+// updateSpecialCode memanggil PUT /api/v1/special-codes/{id} (E-11). Kodenya
 // tidak bisa diubah, hanya namanya.
 export function updateSpecialCode(
 	id: string,
@@ -492,7 +493,7 @@ export function listChangeTypes(fetchFn: typeof fetch = fetch): Promise<ApiResul
 	return call<ChangeTypeList>(fetchFn, '/api/v1/change-types', { method: 'GET' });
 }
 
-// updateChangeType memanggil PUT /api/v1/change-types/{id} (A-2).
+// updateChangeType memanggil PUT /api/v1/change-types/{id} (E-11).
 export function updateChangeType(
 	id: string,
 	name: string,
@@ -506,7 +507,7 @@ export function listChangeSources(fetchFn: typeof fetch = fetch): Promise<ApiRes
 	return call<ChangeSourceList>(fetchFn, '/api/v1/change-sources', { method: 'GET' });
 }
 
-// createChangeSource memanggil POST /api/v1/change-sources (A-2).
+// createChangeSource memanggil POST /api/v1/change-sources (E-11).
 export function createChangeSource(
 	name: string,
 	fetchFn: typeof fetch = fetch
@@ -514,7 +515,7 @@ export function createChangeSource(
 	return call<ChangeSource>(fetchFn, '/api/v1/change-sources', jsonRequest('POST', { name }));
 }
 
-// updateChangeSource memanggil PUT /api/v1/change-sources/{id} (A-2).
+// updateChangeSource memanggil PUT /api/v1/change-sources/{id} (E-11).
 export function updateChangeSource(
 	id: string,
 	input: ChangeSourceUpdate,
@@ -528,13 +529,19 @@ export function listFourMCategories(fetchFn: typeof fetch = fetch): Promise<ApiR
 	return call<FourMCategoryList>(fetchFn, '/api/v1/four-m-categories', { method: 'GET' });
 }
 
-// updateFourMCategory memanggil PUT /api/v1/four-m-categories/{id} (A-2).
+// updateFourMCategory memanggil PUT /api/v1/four-m-categories/{id} (E-11).
 export function updateFourMCategory(
 	id: string,
 	name: string,
 	fetchFn: typeof fetch = fetch
 ): Promise<ApiResult<FourMCategory>> {
 	return call<FourMCategory>(fetchFn, itemPath('four-m-categories', id), jsonRequest('PUT', { name }));
+}
+
+// listPositionCandidates memanggil GET /api/v1/position-candidates (E-11, D-209):
+// orang dengan akun kerja aktif, hanya ID dan nama.
+export function listPositionCandidates(fetchFn: typeof fetch = fetch): Promise<ApiResult<PersonInfoList>> {
+	return call<PersonInfoList>(fetchFn, '/api/v1/position-candidates', { method: 'GET' });
 }
 
 // listPositions memanggil GET /api/v1/positions (M1.8).
@@ -575,7 +582,7 @@ export function listFormatTemplates(fetchFn: typeof fetch = fetch): Promise<ApiR
 	return call<FormatTemplateList>(fetchFn, '/api/v1/format-templates', { method: 'GET' });
 }
 
-// createFormatTemplate memanggil POST /api/v1/format-templates (A-2).
+// createFormatTemplate memanggil POST /api/v1/format-templates (E-11).
 export function createFormatTemplate(
 	input: NewFormatTemplate,
 	fetchFn: typeof fetch = fetch
@@ -583,7 +590,7 @@ export function createFormatTemplate(
 	return call<FormatTemplate>(fetchFn, '/api/v1/format-templates', jsonRequest('POST', input));
 }
 
-// renameFormatTemplate memanggil PUT /api/v1/format-templates/{id} (A-2).
+// renameFormatTemplate memanggil PUT /api/v1/format-templates/{id} (E-11).
 export function renameFormatTemplate(
 	id: string,
 	name: string,
@@ -908,12 +915,12 @@ export function listPrintLayouts(fetchFn: typeof fetch = fetch): Promise<ApiResu
 	return call<PrintLayoutList>(fetchFn, '/api/v1/print-layouts', { method: 'GET' });
 }
 
-// createPrintLayout memanggil POST /api/v1/print-layouts (A-2, M6.1).
+// createPrintLayout memanggil POST /api/v1/print-layouts (E-11, M6.1).
 export function createPrintLayout(input: PrintLayoutInput, fetchFn: typeof fetch = fetch): Promise<ApiResult<PrintLayout>> {
 	return call<PrintLayout>(fetchFn, '/api/v1/print-layouts', jsonRequest('POST', input));
 }
 
-// updatePrintLayout memanggil PUT /api/v1/print-layouts/{id} (A-2, M6.1).
+// updatePrintLayout memanggil PUT /api/v1/print-layouts/{id} (E-11, M6.1).
 export function updatePrintLayout(id: string, input: PrintLayoutInput, fetchFn: typeof fetch = fetch): Promise<ApiResult<PrintLayout>> {
 	return call<PrintLayout>(fetchFn, itemPath('print-layouts', id), jsonRequest('PUT', input));
 }
@@ -923,7 +930,7 @@ export function listCustomerPrintLayouts(customerId: string, fetchFn: typeof fet
 	return call<CustomerPrintLayoutList>(fetchFn, itemPath('customers', customerId) + '/print-layouts', { method: 'GET' });
 }
 
-// setCustomerPrintLayout memanggil PUT /api/v1/customers/{id}/print-layouts/{typeId} (A-2, M6.1).
+// setCustomerPrintLayout memanggil PUT /api/v1/customers/{id}/print-layouts/{typeId} (E-11, M6.1).
 export function setCustomerPrintLayout(
 	customerId: string,
 	documentTypeId: string,
@@ -1019,17 +1026,17 @@ export function listFormSets(fetchFn: typeof fetch = fetch): Promise<ApiResult<F
 	return call<FormSetList>(fetchFn, '/api/v1/form-sets', { method: 'GET' });
 }
 
-// createFormSet memanggil POST /api/v1/form-sets (A-2).
+// createFormSet memanggil POST /api/v1/form-sets (E-11).
 export function createFormSet(input: NewFormSet, fetchFn: typeof fetch = fetch): Promise<ApiResult<FormSet>> {
 	return call<FormSet>(fetchFn, '/api/v1/form-sets', jsonRequest('POST', input));
 }
 
-// setFormSetSheets memanggil PUT /api/v1/form-set-versions/{id} (A-2, versi draft).
+// setFormSetSheets memanggil PUT /api/v1/form-set-versions/{id} (E-11, versi draft).
 export function setFormSetSheets(versionId: string, sheets: FormSetSheets, fetchFn: typeof fetch = fetch): Promise<ApiResult<FormSet>> {
 	return call<FormSet>(fetchFn, itemPath('form-set-versions', versionId), jsonRequest('PUT', sheets));
 }
 
-// createFormSetVersion memanggil POST /api/v1/form-sets/{id}/versions (A-2).
+// createFormSetVersion memanggil POST /api/v1/form-sets/{id}/versions (E-11).
 export function createFormSetVersion(formSetId: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<FormSet>> {
 	return call<FormSet>(fetchFn, itemPath('form-sets', formSetId) + '/versions', { method: 'POST' });
 }
@@ -1039,25 +1046,25 @@ export function publishFormSetVersion(versionId: string, fetchFn: typeof fetch =
 	return call<FormSet>(fetchFn, itemPath('form-set-versions', versionId) + '/publish', { method: 'POST' });
 }
 
-// setCustomerFormSet memanggil PUT /api/v1/customers/{id}/default-form-set (A-2).
+// setCustomerFormSet memanggil PUT /api/v1/customers/{id}/default-form-set (E-11).
 // formSetId kosong berarti customer memakai set bawaan.
 export function setCustomerFormSet(customerId: string, formSetId: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<void>> {
 	const body = formSetId === '' ? {} : { form_set_id: formSetId };
 	return call<void>(fetchFn, `${itemPath('customers', customerId)}/default-form-set`, jsonRequest('PUT', body));
 }
 
-// setFormatApRules memanggil PUT /api/v1/format-template-versions/{id}/ap-rules (A-2, versi draft).
+// setFormatApRules memanggil PUT /api/v1/format-template-versions/{id}/ap-rules (E-11, versi draft).
 export function setFormatApRules(versionId: string, items: ApRule[], fetchFn: typeof fetch = fetch): Promise<ApiResult<FormatVersion>> {
 	return call<FormatVersion>(fetchFn, itemPath('format-template-versions', versionId) + '/ap-rules', jsonRequest('PUT', { items }));
 }
 
-// publishFormatVersion memanggil POST .../format-template-versions/{id}/publish (A-2, M3.4).
+// publishFormatVersion memanggil POST .../format-template-versions/{id}/publish (E-11, M3.4).
 export function publishFormatVersion(versionId: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<FormatVersion>> {
 	const path = itemPath('format-template-versions', versionId) + '/publish';
 	return call<FormatVersion>(fetchFn, path, { method: 'POST' });
 }
 
-// createFormatVersion memanggil POST .../format-templates/{id}/versions (A-2, M3.4):
+// createFormatVersion memanggil POST .../format-templates/{id}/versions (E-11, M3.4):
 // versi draft berikutnya, salinan versi terbit terakhir.
 export function createFormatVersion(templateId: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<FormatVersion>> {
 	const path = itemPath('format-templates', templateId) + '/versions';
@@ -1068,7 +1075,7 @@ export function getFormatVersion(id: string, fetchFn: typeof fetch = fetch): Pro
 	return call<FormatVersion>(fetchFn, itemPath('format-template-versions', id), { method: 'GET' });
 }
 
-// updateFormatHighlights memanggil PUT /api/v1/format-template-versions/{id} (A-2).
+// updateFormatHighlights memanggil PUT /api/v1/format-template-versions/{id} (E-11).
 export function updateFormatHighlights(
 	id: string,
 	input: FormatHighlights,
@@ -1077,7 +1084,7 @@ export function updateFormatHighlights(
 	return call<FormatVersion>(fetchFn, itemPath('format-template-versions', id), jsonRequest('PUT', input));
 }
 
-// addFormatField memanggil POST /api/v1/format-template-versions/{id}/fields (A-2).
+// addFormatField memanggil POST /api/v1/format-template-versions/{id}/fields (E-11).
 export function addFormatField(
 	versionId: string,
 	input: NewFormatField,
@@ -1086,7 +1093,7 @@ export function addFormatField(
 	return call<FormatVersion>(fetchFn, itemPath('format-template-versions', versionId) + '/fields', jsonRequest('POST', input));
 }
 
-// updateFormatField memanggil PUT /api/v1/format-template-versions/{id}/fields/{fieldId} (A-2).
+// updateFormatField memanggil PUT /api/v1/format-template-versions/{id}/fields/{fieldId} (E-11).
 export function updateFormatField(
 	versionId: string,
 	fieldId: string,
@@ -1097,7 +1104,7 @@ export function updateFormatField(
 	return call<FormatVersion>(fetchFn, path, jsonRequest('PUT', input));
 }
 
-// setFormatRatingCriteria memanggil PUT /api/v1/format-template-versions/{id}/rating-criteria (A-2).
+// setFormatRatingCriteria memanggil PUT /api/v1/format-template-versions/{id}/rating-criteria (E-11).
 export function setFormatRatingCriteria(
 	versionId: string,
 	items: RatingCriterionInput[],
@@ -1107,7 +1114,7 @@ export function setFormatRatingCriteria(
 	return call<FormatVersion>(fetchFn, path, jsonRequest('PUT', { items }));
 }
 
-// saveFormatSymbols memanggil PUT /api/v1/format-template-versions/{id}/symbols (A-2).
+// saveFormatSymbols memanggil PUT /api/v1/format-template-versions/{id}/symbols (E-11).
 export function saveFormatSymbols(
 	versionId: string,
 	items: FormatSymbol[],
@@ -1236,7 +1243,7 @@ export function listApprovalRoutes(fetchFn: typeof fetch = fetch): Promise<ApiRe
 	return call<ApprovalRouteList>(fetchFn, '/api/v1/approval-routes', { method: 'GET' });
 }
 
-// createApprovalRoute memanggil POST /api/v1/approval-routes (A-2).
+// createApprovalRoute memanggil POST /api/v1/approval-routes (E-11).
 export function createApprovalRoute(
 	input: ApprovalRouteInput,
 	fetchFn: typeof fetch = fetch
@@ -1244,7 +1251,7 @@ export function createApprovalRoute(
 	return call<ApprovalRoute>(fetchFn, '/api/v1/approval-routes', jsonRequest('POST', input));
 }
 
-// updateApprovalRoute memanggil PUT /api/v1/approval-routes/{id} (A-2).
+// updateApprovalRoute memanggil PUT /api/v1/approval-routes/{id} (E-11).
 // Daftar slot menggantikan semua slot lama.
 export function updateApprovalRoute(
 	id: string,
@@ -1254,7 +1261,7 @@ export function updateApprovalRoute(
 	return call<ApprovalRoute>(fetchFn, itemPath('approval-routes', id), jsonRequest('PUT', input));
 }
 
-// setCustomerDefaultRoute memanggil PUT /api/v1/customers/{id}/default-route (A-2).
+// setCustomerDefaultRoute memanggil PUT /api/v1/customers/{id}/default-route (E-11).
 export function setCustomerDefaultRoute(
 	customerId: string,
 	routeId: string,
@@ -1265,7 +1272,7 @@ export function setCustomerDefaultRoute(
 }
 
 // setChangeTypeRoute memanggil PUT /api/v1/change-types/{id}/approval-route
-// (A-2). null berarti rute default setiap customer.
+// (E-11). null berarti rute default setiap customer.
 export function setChangeTypeRoute(
 	changeTypeId: string,
 	routeId: string | null,
@@ -1350,7 +1357,7 @@ export function setRoleActive(roleId: string, active: boolean, fetchFn: typeof f
 
 // Fase 3: tanda tangan digital (D-198, D-203, D-204).
 
-// setCustomerSignatureMode memanggil PUT /api/v1/customers/{id}/signature-mode (A-2).
+// setCustomerSignatureMode memanggil PUT /api/v1/customers/{id}/signature-mode (E-11).
 export function setCustomerSignatureMode(customerId: string, mode: 'digital' | 'wet_only', fetchFn: typeof fetch = fetch): Promise<ApiResult<Customer>> {
 	return call<Customer>(fetchFn, itemPath('customers', customerId) + '/signature-mode', jsonRequest('PUT', { mode }));
 }
@@ -1462,7 +1469,7 @@ export function submissionExportUrl(documentId: string, format: 'xlsx' | 'pdf'):
 	return `${itemPath('documents', documentId)}/submission-control/export?format=${format}`;
 }
 
-// setCustomerSubmissionRequired memanggil PUT /api/v1/customers/{id}/submission-required (A-2).
+// setCustomerSubmissionRequired memanggil PUT /api/v1/customers/{id}/submission-required (E-11).
 export function setCustomerSubmissionRequired(customerId: string, required: boolean, fetchFn: typeof fetch = fetch): Promise<ApiResult<Customer>> {
 	return call<Customer>(fetchFn, itemPath('customers', customerId) + '/submission-required', jsonRequest('PUT', { required }));
 }

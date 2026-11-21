@@ -29,7 +29,7 @@ func NewService(pool *pgxpool.Pool, authz access.Authorizer) *Service {
 }
 
 // Melihat memakai hak L-2 seperti master lain (E-24, D-103), dan mengubah
-// memakai A-2 (UC-05).
+// memakai E-11 (UC-05).
 
 // GetSettings mengembalikan pengaturan nomor.
 func (s *Service) GetSettings(ctx context.Context, actor access.Actor) (Settings, error) {
@@ -44,7 +44,7 @@ func (s *Service) GetSettings(ctx context.Context, actor access.Actor) (Settings
 }
 
 // UpdateSettings mengganti kode pabrik, pola nomor, dan jumlah digit revisi
-// (A-2). Pattern dan RevisionDigits nil berarti tetap (D-111). Perubahan hanya
+// (E-11). Pattern dan RevisionDigits nil berarti tetap (D-111). Perubahan hanya
 // berlaku untuk nomor baru; nomor yang sudah terdaftar tetap (R-NUM-02).
 func (s *Service) UpdateSettings(ctx context.Context, actor access.Actor, in SettingsInput) (Settings, error) {
 	if err := s.authz.Authorize(ctx, actor, access.ManageMasterData, access.Resource{}); err != nil {

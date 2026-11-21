@@ -14,7 +14,7 @@
 		onsave
 	}: {
 		rules: ApRule[];
-		editable?: boolean; // versi draft dan akun pemegang A-2
+		editable?: boolean; // versi draft dan akun pemegang E-11
 		onsave?: (rules: ApRule[]) => Promise<boolean>; // true bila tersimpan
 	} = $props();
 

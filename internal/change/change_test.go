@@ -45,18 +45,19 @@ func newActor(t *testing.T, pool *pgxpool.Pool, login, kind string, roles ...str
 	return access.Actor{Type: access.ActorHuman, AccountID: acc.ID, AccountKind: kind, Login: login, PersonID: person.ID}
 }
 
-// fixture: database baru dan akun admin (A-2).
+// fixture: database baru dan akun PPAP Engineer untuk master data (E-11, D-209).
 type fixture struct {
-	s     *Service
-	pool  *pgxpool.Pool
-	admin access.Actor
+	s      *Service
+	pool   *pgxpool.Pool
+	master access.Actor
 }
 
 func newFixture(t *testing.T) fixture {
 	t.Helper()
 	pool := dbtest.NewPool(t)
-	admin := newActor(t, pool, "admin.uji", access.AccountAdmin, access.RoleAdmin)
-	return fixture{s: NewService(pool, access.NewChecker(pool)), pool: pool, admin: admin}
+	// Master data diurus PPAP Engineer (E-11, D-209).
+	master := newActor(t, pool, "ppap.master", access.AccountWork, access.RolePPAPEngineer)
+	return fixture{s: NewService(pool, access.NewChecker(pool)), pool: pool, master: master}
 }
 
 // problemCodes mengambil "field:kode" dari penolakan input.
@@ -86,7 +87,7 @@ func second[T any](_ T, err error) error { return err }
 // sourceNames menulis sumber perubahan sebagai "nama/mekanisme/aktif".
 func sourceNames(t *testing.T, f fixture) []string {
 	t.Helper()
-	sources, err := f.s.ListChangeSources(t.Context(), f.admin)
+	sources, err := f.s.ListChangeSources(t.Context(), f.master)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -106,7 +107,7 @@ func sourceNames(t *testing.T, f fixture) []string {
 func TestDefaults(t *testing.T) {
 	f := newFixture(t)
 	ctx := t.Context()
-	types, err := f.s.ListChangeTypes(ctx, f.admin)
+	types, err := f.s.ListChangeTypes(ctx, f.master)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -126,7 +127,7 @@ func TestDefaults(t *testing.T) {
 		t.Errorf("sumber perubahan:\n%v\ningin:\n%v", got, want)
 	}
 
-	categories, err := f.s.ListFourMCategories(ctx, f.admin)
+	categories, err := f.s.ListFourMCategories(ctx, f.master)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -145,39 +146,39 @@ func TestDefaults(t *testing.T) {
 func TestEditChangeLists(t *testing.T) {
 	f := newFixture(t)
 	ctx := t.Context()
-	types, err := f.s.ListChangeTypes(ctx, f.admin)
+	types, err := f.s.ListChangeTypes(ctx, f.master)
 	if err != nil {
 		t.Fatal(err)
 	}
-	layout, err := f.s.RenameChangeType(ctx, f.admin, types[1].ID, " Layout ")
+	layout, err := f.s.RenameChangeType(ctx, f.master, types[1].ID, " Layout ")
 	if err != nil || layout.Name != "Layout" || layout.Key != KeyLayout {
 		t.Errorf("RenameChangeType: %+v, %v", layout, err)
 	}
-	categories, err := f.s.ListFourMCategories(ctx, f.admin)
+	categories, err := f.s.ListFourMCategories(ctx, f.master)
 	if err != nil {
 		t.Fatal(err)
 	}
-	man, err := f.s.RenameFourMCategory(ctx, f.admin, categories[0].ID, "Manpower")
+	man, err := f.s.RenameFourMCategory(ctx, f.master, categories[0].ID, "Manpower")
 	if err != nil || man.Name != "Manpower" || man.Key != "man" {
 		t.Errorf("RenameFourMCategory: %+v, %v", man, err)
 	}
 
-	source, err := f.s.CreateChangeSource(ctx, f.admin, "Internal improvement")
+	source, err := f.s.CreateChangeSource(ctx, f.master, "Internal improvement")
 	if err != nil || !source.Active || source.Mechanism != "" {
 		t.Fatalf("CreateChangeSource: %+v, %v", source, err)
 	}
 	inactive := false
-	off, err := f.s.UpdateChangeSource(ctx, f.admin, source.ID, ChangeSourceUpdate{Name: "Kaizen", Active: &inactive})
+	off, err := f.s.UpdateChangeSource(ctx, f.master, source.ID, ChangeSourceUpdate{Name: "Kaizen", Active: &inactive})
 	if err != nil || off.Name != "Kaizen" || off.Active {
 		t.Errorf("UpdateChangeSource: %+v, %v", off, err)
 	}
 	// Active yang tidak diisi berarti status tetap.
-	kept, err := f.s.UpdateChangeSource(ctx, f.admin, source.ID, ChangeSourceUpdate{Name: "Kaizen idea"})
+	kept, err := f.s.UpdateChangeSource(ctx, f.master, source.ID, ChangeSourceUpdate{Name: "Kaizen idea"})
 	if err != nil || kept.Active {
 		t.Errorf("ubah nama tanpa status: %+v, %v", kept, err)
 	}
 
-	sources, err := f.s.ListChangeSources(ctx, f.admin)
+	sources, err := f.s.ListChangeSources(ctx, f.master)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -187,7 +188,7 @@ func TestEditChangeLists(t *testing.T) {
 			yokoten = s
 		}
 	}
-	renamed, err := f.s.UpdateChangeSource(ctx, f.admin, yokoten.ID, ChangeSourceUpdate{Name: "Yokoten (horizontal deployment)"})
+	renamed, err := f.s.UpdateChangeSource(ctx, f.master, yokoten.ID, ChangeSourceUpdate{Name: "Yokoten (horizontal deployment)"})
 	if err != nil || renamed.Name != "Yokoten (horizontal deployment)" || renamed.Mechanism != MechanismYokoten {
 		t.Errorf("ganti nama sumber sistem: %+v, %v", renamed, err)
 	}
@@ -197,11 +198,11 @@ func TestEditChangeLists(t *testing.T) {
 		err  error
 		want []string
 	}{
-		{"sumber sistem dinonaktifkan", second(f.s.UpdateChangeSource(ctx, f.admin, yokoten.ID, ChangeSourceUpdate{Name: "Yokoten", Active: &inactive})), []string{"active:not_allowed"}},
-		{"nama sumber ganda", second(f.s.CreateChangeSource(ctx, f.admin, "customer CLAIM")), []string{"name:taken"}},
-		{"nama jenis perubahan ganda", second(f.s.RenameChangeType(ctx, f.admin, types[0].ID, "layout")), []string{"name:taken"}},
-		{"nama kategori kosong", second(f.s.RenameFourMCategory(ctx, f.admin, categories[1].ID, " ")), []string{"name:required"}},
-		{"nama sumber terlalu panjang", second(f.s.CreateChangeSource(ctx, f.admin, strings.Repeat("a", 201))), []string{"name:too_long"}},
+		{"sumber sistem dinonaktifkan", second(f.s.UpdateChangeSource(ctx, f.master, yokoten.ID, ChangeSourceUpdate{Name: "Yokoten", Active: &inactive})), []string{"active:not_allowed"}},
+		{"nama sumber ganda", second(f.s.CreateChangeSource(ctx, f.master, "customer CLAIM")), []string{"name:taken"}},
+		{"nama jenis perubahan ganda", second(f.s.RenameChangeType(ctx, f.master, types[0].ID, "layout")), []string{"name:taken"}},
+		{"nama kategori kosong", second(f.s.RenameFourMCategory(ctx, f.master, categories[1].ID, " ")), []string{"name:required"}},
+		{"nama sumber terlalu panjang", second(f.s.CreateChangeSource(ctx, f.master, strings.Repeat("a", 201))), []string{"name:too_long"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -211,9 +212,9 @@ func TestEditChangeLists(t *testing.T) {
 		})
 	}
 	for name, err := range map[string]error{
-		"RenameChangeType":    second(f.s.RenameChangeType(ctx, f.admin, "bukan-uuid", "X")),
-		"UpdateChangeSource":  second(f.s.UpdateChangeSource(ctx, f.admin, "01a180aa-a98b-7bf2-8e0d-b97a25ecc489", ChangeSourceUpdate{Name: "X"})),
-		"RenameFourMCategory": second(f.s.RenameFourMCategory(ctx, f.admin, "01a180aa-a98b-7bf2-8e0d-b97a25ecc489", "X")),
+		"RenameChangeType":    second(f.s.RenameChangeType(ctx, f.master, "bukan-uuid", "X")),
+		"UpdateChangeSource":  second(f.s.UpdateChangeSource(ctx, f.master, "01a180aa-a98b-7bf2-8e0d-b97a25ecc489", ChangeSourceUpdate{Name: "X"})),
+		"RenameFourMCategory": second(f.s.RenameFourMCategory(ctx, f.master, "01a180aa-a98b-7bf2-8e0d-b97a25ecc489", "X")),
 	} {
 		if !errors.Is(err, problem.ErrNotFound) {
 			t.Errorf("%s untuk ID yang tidak ada: %v, ingin problem.ErrNotFound", name, err)
@@ -272,38 +273,38 @@ func TestAudit(t *testing.T) {
 		}
 	}
 
-	types, err := f.s.ListChangeTypes(ctx, f.admin)
+	types, err := f.s.ListChangeTypes(ctx, f.master)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := f.s.RenameChangeType(ctx, f.admin, types[2].ID, "Administrative only"); err != nil {
+	if _, err := f.s.RenameChangeType(ctx, f.master, types[2].ID, "Administrative only"); err != nil {
 		t.Fatal(err)
 	}
 	check("jenis perubahan", audit.ActionChangeTypeUpdated, `{"name":"Administrative → Administrative only"}`)
-	source, err := f.s.CreateChangeSource(ctx, f.admin, "Kaizen")
+	source, err := f.s.CreateChangeSource(ctx, f.master, "Kaizen")
 	if err != nil {
 		t.Fatal(err)
 	}
 	check("sumber ditambah", audit.ActionChangeSourceCreated, `{"name":"Kaizen"}`)
 	inactive := false
-	if _, err := f.s.UpdateChangeSource(ctx, f.admin, source.ID, ChangeSourceUpdate{Name: "Kaizen", Active: &inactive}); err != nil {
+	if _, err := f.s.UpdateChangeSource(ctx, f.master, source.ID, ChangeSourceUpdate{Name: "Kaizen", Active: &inactive}); err != nil {
 		t.Fatal(err)
 	}
 	check("sumber dinonaktifkan", audit.ActionChangeSourceUpdated, `{"active":"true → false"}`)
-	categories, err := f.s.ListFourMCategories(ctx, f.admin)
+	categories, err := f.s.ListFourMCategories(ctx, f.master)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := f.s.RenameFourMCategory(ctx, f.admin, categories[3].ID, "Methods"); err != nil {
+	if _, err := f.s.RenameFourMCategory(ctx, f.master, categories[3].ID, "Methods"); err != nil {
 		t.Fatal(err)
 	}
 	check("kategori 4M", audit.ActionFourMCategoryUpdated, `{"name":"Method → Methods"}`)
 
 	before := last().Seq
-	if _, err := f.s.RenameFourMCategory(ctx, f.admin, categories[3].ID, "Methods"); err != nil {
+	if _, err := f.s.RenameFourMCategory(ctx, f.master, categories[3].ID, "Methods"); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := f.s.UpdateChangeSource(ctx, f.admin, source.ID, ChangeSourceUpdate{Name: "Kaizen"}); err != nil {
+	if _, err := f.s.UpdateChangeSource(ctx, f.master, source.ID, ChangeSourceUpdate{Name: "Kaizen"}); err != nil {
 		t.Fatal(err)
 	}
 	if after := last().Seq; after != before {
@@ -327,7 +328,7 @@ func TestSetApprovalRoute(t *testing.T) {
 			short = r.ID
 		}
 	}
-	types, err := f.s.ListChangeTypes(ctx, f.admin)
+	types, err := f.s.ListChangeTypes(ctx, f.master)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -337,7 +338,7 @@ func TestSetApprovalRoute(t *testing.T) {
 		}
 	}
 
-	layout, err := f.s.SetApprovalRoute(ctx, f.admin, types[1].ID, short)
+	layout, err := f.s.SetApprovalRoute(ctx, f.master, types[1].ID, short)
 	if err != nil || layout.ApprovalRouteID != short || layout.ApprovalRouteName != "Up to QA QC Manager" || layout.Key != KeyLayout {
 		t.Fatalf("SetApprovalRoute: %+v, %v", layout, err)
 	}
@@ -345,7 +346,7 @@ func TestSetApprovalRoute(t *testing.T) {
 	if r.Action != audit.ActionChangeTypeRouteChanged || r.Details != `{"approval_route":"- → Up to QA QC Manager"}` {
 		t.Errorf("entri audit: %s %s", r.Action, r.Details)
 	}
-	back, err := f.s.SetApprovalRoute(ctx, f.admin, types[1].ID, "")
+	back, err := f.s.SetApprovalRoute(ctx, f.master, types[1].ID, "")
 	if err != nil || back.ApprovalRouteID != "" {
 		t.Errorf("kembali ke rute default customer: %+v, %v", back, err)
 	}
@@ -353,7 +354,7 @@ func TestSetApprovalRoute(t *testing.T) {
 		t.Errorf("entri audit kembali ke default: %s", r.Details)
 	}
 
-	if got := problemCodes(t, second(f.s.SetApprovalRoute(ctx, f.admin, types[1].ID, "bukan-uuid"))); !slices.Equal(got, []string{"route_id:invalid_format"}) {
+	if got := problemCodes(t, second(f.s.SetApprovalRoute(ctx, f.master, types[1].ID, "bukan-uuid"))); !slices.Equal(got, []string{"route_id:invalid_format"}) {
 		t.Errorf("rute tidak ada: %v", got)
 	}
 	author := newActor(t, f.pool, "penyusun.uji", access.AccountWork, access.RoleAuthor)

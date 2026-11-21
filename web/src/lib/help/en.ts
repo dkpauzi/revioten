@@ -5,7 +5,7 @@ import type { HelpContent } from './content.ts';
 export const helpEn: HelpContent = {
 	title: 'User guide',
 	intro:
-		'This guide follows the order of real work: the admin prepares accounts and master data, the template maintainer builds the templates, and the author registers document numbers. Names in bold are the names you see on the screen.',
+		'This guide follows the order of real work: the admin prepares accounts, the PPAP Engineer prepares master data and templates, and then registers document numbers. Names in bold are the names you see on the screen.',
 	contentsTitle: 'Contents',
 	whoLabel: 'Who',
 	tipsTitle: 'Good to know',
@@ -48,9 +48,36 @@ export const helpEn: HelpContent = {
 			imageAlt: 'The home page with the menu groups in the top bar.'
 		},
 		{
+			id: 'accounts',
+			title: 'Accounts and roles',
+			who: 'Admin',
+			intro: 'Every person works with their own account. Roles decide what an account may do; every account can already view.',
+			steps: [
+				'Open {navGroupAdmin}, then {navAccounts}.',
+				'Choose {accountPersonNew} and fill in {accountPersonName}. For someone who already has an account, choose {accountPersonExisting} instead.',
+				'Choose {accountKindWork} for daily work. Choose {accountKindAdmin} only for admin tasks.',
+				'Fill in {accountLogin}, for example [[ppap.engineer]].',
+				'Tick the {accountRoles} of the person and choose the scope of each role: {scopeAll} or {scopeOwnProjectGroup}.',
+				'Press {accountCreate}.',
+				'The temporary password appears at the top of the page and in a pop-up, and is copied to the clipboard automatically. Paste it where you send it to the person, or press {accountCopyPassword}.',
+				'In the list of accounts, use {accountEditRoles}, {accountResetPassword}, or {accountDisable} for an existing account.'
+			],
+			image: 'accounts',
+			imageAlt: 'The Accounts page with the box of the temporary password above the form.',
+			tips: [
+				'{rolePpapEngineer}: composes, prints, records releases, manages master data, templates, and numbers, and enters legacy documents. {rolePpapEngineerSupervisor}: the same, and also verifies changes and publishes form sets and AP tables.',
+				'{roleProjectLeader}: composes, prints, and verifies for the customers of the own project group; the scope is chosen automatically. {roleManager}: signs and views the performance report. An account without a role can view and add genba notes.',
+				'The admin decides what each role holds under {navRoles}, and can add a role there.',
+				'A {roleProjectLeader} is limited to the own project group by default. For a Project Leader who helps another group, choose {scopeAll}: the person can then also sign and verify for that group.',
+				'The temporary password is shown only once. If it is lost, reset the password of the account.',
+				'An admin account holds no work role. The person who holds it uses a separate work account for daily work.',
+				'An account is never deleted, only disabled.'
+			]
+		},
+		{
 			id: 'customers',
 			title: 'Project groups, customers, and models',
-			who: 'Admin',
+			who: 'PPAP Engineer',
 			intro: 'Customers and models are used everywhere else, so they come first. A project group must exist before its customers.',
 			steps: [
 				'Open {navGroupMaster}, then {navCustomers}.',
@@ -69,36 +96,9 @@ export const helpEn: HelpContent = {
 			]
 		},
 		{
-			id: 'accounts',
-			title: 'Accounts and roles',
-			who: 'Admin',
-			intro: 'Every person works with their own account. Roles decide what an account may do; every account can already view.',
-			steps: [
-				'Open {navGroupAdmin}, then {navAccounts}.',
-				'Choose {accountPersonNew} and fill in {accountPersonName}. For someone who already has an account, choose {accountPersonExisting} instead.',
-				'Choose {accountKindWork} for daily work. Choose {accountKindAdmin} only for admin tasks.',
-				'Fill in {accountLogin}, for example [[ppap.engineer]].',
-				'Tick the {accountRoles} of the person and choose the scope of each role: {scopeAll} or {scopeOwnProjectGroup}.',
-				'Press {accountCreate}.',
-				'The temporary password appears at the top of the page and in a pop-up, and is copied to the clipboard automatically. Paste it where you send it to the person, or press {accountCopyPassword}.',
-				'In the list of accounts, use {accountEditRoles}, {accountResetPassword}, or {accountDisable} for an existing account.'
-			],
-			image: 'accounts',
-			imageAlt: 'The Accounts page with the box of the temporary password above the form.',
-			tips: [
-				'{rolePpapEngineer}: composes, prints, records releases, manages templates and numbers, and enters legacy documents. {rolePpapEngineerSupervisor}: the same, and also verifies changes and publishes form sets and AP tables.',
-				'{roleProjectLeader}: composes, prints, and verifies for the customers of the own project group; the scope is chosen automatically. {roleManager}: signs and views the performance report. An account without a role can view and add genba notes.',
-				'The admin decides what each role holds under {navRoles}, and can add a role there.',
-				'A {roleProjectLeader} is limited to the own project group by default. For a Project Leader who helps another group, choose {scopeAll}: the person can then also sign and verify for that group.',
-				'The temporary password is shown only once. If it is lost, reset the password of the account.',
-				'An admin account holds no work role. The person who holds it uses a separate work account for daily work.',
-				'An account is never deleted, only disabled.'
-			]
-		},
-		{
 			id: 'positions',
 			title: 'Positions and approval routes',
-			who: 'Admin',
+			who: 'PPAP Engineer',
 			intro: 'Positions follow the organization chart. Approval routes list who signs a printed document, in signing order.',
 			steps: [
 				'Open {navGroupMaster}, then {navPositions}.',
@@ -113,9 +113,25 @@ export const helpEn: HelpContent = {
 			]
 		},
 		{
+			id: 'document-settings',
+			title: 'Document settings',
+			who: 'PPAP Engineer; everyone can see them',
+			intro: 'Settings for documents and prints. The safeguards (migration mode and the rule for form approval) stay with the admin under {navGroupAdmin}, then {navSettings}.',
+			steps: [
+				'Open {navGroupMaster}, then {navDocumentSettings}.',
+				'Tick {settingsSignDates} when every signature slot needs its own date. By default only the release date is recorded.',
+				'Tick {settingsQr} to print a QR code that opens the verification page. By default it is off.',
+				'Fill in {settingsSubmissionFormNumber}, for example [[QR-ENG-24-K015 (Rev.01)]].',
+				'Press {settingsSave}.'
+			],
+			image: 'document-settings',
+			imageAlt: 'The Document settings page with the sign date switch, the QR switch, and the form number.',
+			tips: ['Every change is recorded in the audit log with the old and the new value.']
+		},
+		{
 			id: 'format-templates',
 			title: 'Format templates',
-			who: 'Admin',
+			who: 'PPAP Engineer',
 			intro: 'A format template sets the header fields and columns of a PFD, PFMEA, or Control Plan form. The system starts with the forms in use.',
 			steps: [
 				'Open {navGroupTemplates}, then {navFormatTemplates}, and choose one under {formatChoose}.',
@@ -174,7 +190,7 @@ export const helpEn: HelpContent = {
 		{
 			id: 'versions',
 			title: 'Publish a version and make a new one',
-			who: 'PPAP Engineer, and the admin for format templates',
+			who: 'PPAP Engineer',
 			intro: 'A new template is a draft. A draft can be changed freely. A published version can never be changed, so changes after that go into a new version.',
 			steps: [
 				'Open the template and look at the {versionChoose} row above its content.',
@@ -194,21 +210,21 @@ export const helpEn: HelpContent = {
 		{
 			id: 'form-sets',
 			title: 'Form sets',
-			who: 'Admin, and the PPAP Engineer Supervisor to publish',
+			who: 'PPAP Engineer, and the PPAP Engineer Supervisor to publish',
 			intro: 'A form set is one package of forms for PFD, PFMEA, and Control Plan. The system has two: the AIAG 4th set (RPN) and the AIAG-VDA set (Action Priority). Each customer uses one form set for its new documents.',
 			steps: [
 				'Open {navGroupTemplates}, then {navFormSets}.',
-				'Each form set shows its three sheets: {formSetSheetPfd}, {formSetSheetPfmea}, and {formSetSheetCp}. The admin changes the sheets of a draft version and presses {formSetSaveSheets}.',
+				'Each form set shows its three sheets: {formSetSheetPfd}, {formSetSheetPfmea}, and {formSetSheetCp}. The PPAP Engineer changes the sheets of a draft version and presses {formSetSaveSheets}.',
 				'Publish the format templates of the three sheets first, under {navFormatTemplates}.',
-				'The form approver opens the form set and presses [[Publish version 1]]. The person who prepared the draft cannot publish it. By default every form approver must approve; the list shows {approvalsDone} and {approvalsPending}. The admin can change this rule under {navSettings}.',
-				'Under {formSetCustomersTitle}, the admin chooses the form set of each customer. Without a choice the customer uses the default form set.',
+				'The form approver opens the form set and presses [[Publish version 1]]. The person who prepared the draft cannot publish it. By default every form approver must approve; the list shows {approvalsDone} and {approvalsPending}. The admin can change this rule under {navGroupAdmin}, then {navSettings}.',
+				'Under {formSetCustomersTitle}, the PPAP Engineer chooses the form set of each customer. Without a choice the customer uses the default form set.',
 				'To make a new package, use {formSetCreateTitle} at the bottom of the page.'
 			],
 			image: 'form-sets',
 			imageAlt: 'The Form sets page with the two form sets and the form set per customer.',
 			tips: [
 				'A PFMEA format with Action Priority is also published by the form approver, because its AP table decides the priority of actions.',
-				'The admin can change the AP table of a draft version: press {apEdit} on the format template, click a priority to change it, then press {apSave}.',
+				'The PPAP Engineer can change the AP table of a draft version: press {apEdit} on the format template, click a priority to change it, then press {apSave}.',
 				'Every {rolePpapEngineerSupervisor} can publish. To let more people approve, tick V-3 for their role under {navRoles}.'
 			]
 		},
@@ -317,14 +333,14 @@ export const helpEn: HelpContent = {
 		{
 			id: 'printing',
 			title: 'Print and release',
-			who: 'PPAP Engineer, Project Leader, Admin for layouts',
+			who: 'PPAP Engineer, Project Leader',
 			intro: 'Prints come from the same content as the screen, in Excel or PDF, A3 or A4 as the layout says. Approval is a wet signature on paper, or a digital signature (see Digital signature).',
 			steps: [
 				'Open the document. Under {printTitle}, choose the revision and the {printPurpose}, then press {printExcel} or {printPdf}.',
 				'For the paper approval, print {printPurpose_signature}. The release date is filled in, and the cover carries the approval slots of the route.',
 				'After every slot is signed, document control uploads the scan under {revisions} with {scanUploadButton}, then records the release. The release is refused without the scan.',
 				'Released revisions print as {printPurpose_reference} or {printPurpose_controlled}. Controlled copies are numbered, and every print shows in the {printLog}.',
-				'The admin changes paper, fonts, margins, and column widths under {navGroupTemplates}, then {navPrintLayouts}, and can give one customer another layout.'
+				'The PPAP Engineer changes paper, fonts, margins, and column widths under {navGroupTemplates}, then {navPrintLayouts}, and can give one customer another layout.'
 			],
 			tips: ['Drafts always print with UNCONTROLLED COPY.', 'Rows changed in the printed revision carry a triangle with the revision number.', 'PDF needs Chrome or Edge on the server computer; Excel always works.'],
 			image: 'printing',
@@ -343,7 +359,7 @@ export const helpEn: HelpContent = {
 				'When every slot is signed, another PPAP Engineer opens the document and records the release under {revisions}. No scan is needed.'
 			],
 			tips: [
-				'The admin decides per customer under {navGroupMaster}, then {navCustomers}: {signatureModeDigital} or {signatureModeWetOnly}. Wet-only customers keep the paper flow under {printTitle}.',
+				'The PPAP Engineer decides per customer under {navGroupMaster}, then {navCustomers}: {signatureModeDigital} or {signatureModeWetOnly}. Wet-only customers keep the paper flow under {printTitle}.',
 				'Every document, also one signed digitally, can still be printed for wet signature. The revision date on the print never becomes the print date.',
 				'Signatures cannot be changed or deleted, also not by the admin.'
 			],
@@ -353,7 +369,7 @@ export const helpEn: HelpContent = {
 		{
 			id: 'submission-control',
 			title: 'Form Control Submission',
-			who: 'PPAP Engineer fills it in; everyone with draft access reads it; the admin sets the defaults',
+			who: 'PPAP Engineer fills it in and sets the defaults; everyone with draft access reads it',
 			intro: 'Each document has its own control list: the PFD, the PFMEA, and the Control Plan each have one, with one row per revision. It replaces the paper Form Control Submission Document.',
 			steps: [
 				'Open a document and scroll to {subTitle}. The buttons at the top switch between the PFD, PFMEA, and Control Plan of the set.',
@@ -363,7 +379,7 @@ export const helpEn: HelpContent = {
 				'Press {subDownloadPdf} or {subDownloadExcel} to print the form of this document only.'
 			],
 			tips: [
-				'The admin sets per customer whether revisions need customer submission ({navGroupMaster}, then {navCustomers}, column {customerSubmission}), and the form number under {navSettings}.',
+				'The PPAP Engineer sets per customer whether revisions need customer submission ({navGroupMaster}, then {navCustomers}, column {customerSubmission}), and the form number under {navGroupMaster}, then {navDocumentSettings}.',
 				'Untick {subShowAll} to hide revisions that are not sent to the customer.'
 			],
 			image: 'submission-control',

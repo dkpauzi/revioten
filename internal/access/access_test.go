@@ -21,9 +21,9 @@ func TestMain(m *testing.M) {
 var allPermissions = []Permission{
 	ViewReleased, ViewRegister, ExportReleased, ViewDrafts, ViewPerformance,
 	RegisterNumbers, EditDrafts, ProposeChanges, WorkRevisions, PrintForSignature,
-	ManageTemplates, RecordRelease, ManageNumbers, ControlledCopies, MigrateDocuments,
+	ManageTemplates, RecordRelease, ManageNumbers, ControlledCopies, MigrateDocuments, ManageMasterData,
 	VerifyChanges, CheckPFMEACP, ApproveForms,
-	ManageUsers, ManageMasterData, ManageSettings, ViewAuditLog,
+	ManageUsers, ManageSettings, ViewAuditLog,
 }
 
 // u3Matrix adalah matriks U3-peta-pengguna bagian 3, ditulis ulang di test
@@ -40,13 +40,14 @@ var u3Matrix = map[string][]Permission{
 	RoleMigration:       {ViewReleased, ViewRegister, ExportReleased, ViewDrafts, MigrateDocuments},
 	// Viewer mendapat G-1 (D-199, migrasi 00049).
 	RoleViewer: {ViewReleased, ViewRegister, ExportReleased, GenbaNotes},
-	RoleAdmin:  {ViewReleased, ViewRegister, ExportReleased, ManageUsers, ManageMasterData, ManageSettings, ViewAuditLog},
-	// Peran D-199 (docs/rencana/matriks-peran-dan-hak.md bagian 4).
+	RoleAdmin:  {ViewReleased, ViewRegister, ExportReleased, ManageUsers, ManageSettings, ViewAuditLog},
+	// Peran D-199 (docs/rencana/matriks-peran-dan-hak.md bagian 4). E-11 (master
+	// data) pindah dari admin ke kedua peran PPAP sejak D-209 (migrasi 00053).
 	RolePPAPEngineer: {ViewReleased, ViewRegister, ExportReleased, ViewDrafts, ViewPerformance, RegisterNumbers, EditDrafts, ProposeChanges,
-		WorkRevisions, PrintForSignature, ManageTemplates, RecordRelease, ManageNumbers, ControlledCopies, MigrateDocuments, CheckPFMEACP,
+		WorkRevisions, PrintForSignature, ManageTemplates, RecordRelease, ManageNumbers, ControlledCopies, MigrateDocuments, ManageMasterData, CheckPFMEACP,
 		SignDigitally, GenbaNotes},
 	RolePPAPEngineerSupervisor: {ViewReleased, ViewRegister, ExportReleased, ViewDrafts, ViewPerformance, RegisterNumbers, EditDrafts, ProposeChanges,
-		WorkRevisions, PrintForSignature, ManageTemplates, RecordRelease, ManageNumbers, ControlledCopies, MigrateDocuments, VerifyChanges,
+		WorkRevisions, PrintForSignature, ManageTemplates, RecordRelease, ManageNumbers, ControlledCopies, MigrateDocuments, ManageMasterData, VerifyChanges,
 		CheckPFMEACP, ApproveForms, SignDigitally, GenbaNotes},
 	RoleProjectLeader: {ViewReleased, ViewRegister, ExportReleased, ViewDrafts, RegisterNumbers, EditDrafts, ProposeChanges, WorkRevisions,
 		PrintForSignature, VerifyChanges, SignDigitally, GenbaNotes},

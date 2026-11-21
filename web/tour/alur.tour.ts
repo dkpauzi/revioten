@@ -110,21 +110,63 @@ test('alur dari admin sampai dokumen terbit, revisi, tanda tangan digital, migra
 	const npi = { login: 'npi.manager', name: 'Contoh NPI Manager', password: 'setuju sesudah membaca' };
 	const qa = { login: 'qa.manager', name: 'Contoh QA QC Manager', password: 'kualitas nomor satu' };
 
-	// ---------- Bagian A: admin ----------
+	// ---------- Bagian A: admin (akun dan pengaman, D-209) ----------
 	await page.goto('/login');
 	await say(page, 'Langkah 1', 'Admin login. Akun admin dibuat sekali lewat perintah create-admin.');
 	await logInAs(page, admin.login, admin.password);
-	await expect(page.getByRole('button', { name: en.logout })).toBeVisible();
-	await say(page, 'Langkah 1', 'Menu atas: Home, Documents, Template library, Master data, dan Admin.');
+	await expect(page.getByRole('heading', { name: en.adminHomeTitle, level: 1 })).toBeVisible();
+	await say(page, 'Langkah 1', 'Home admin adalah Web health. Tugas admin: akun, peran, kesehatan web, dan pengaman. Master data dikerjakan PPAP Engineer (D-209).');
+
+	await openFromMenu(page, en.navGroupAdmin, en.navAccounts);
+	await say(page, 'Langkah 2', 'Admin > Accounts. Akun kerja untuk PPAP Engineer: orang baru, jenis Work account.');
+	const accountForm = page.locator('main form').first();
+	await accountForm.getByLabel(en.accountPersonNew).check();
+	await accountForm.getByLabel(en.accountPersonName).fill(engineer.name);
+	await accountForm.getByLabel(en.accountKindWork).check();
+	await accountForm.getByLabel(en.accountLogin).fill(engineer.login);
+	await say(page, 'Langkah 2', 'Peran menentukan hak (D-199): PPAP Engineer menyusun, mengurus master data dan template, mencatat rilis, dan migrasi. Isi setiap peran diatur di Admin > Roles.');
+	await accountForm.getByLabel(en.rolePpapEngineer, { exact: true }).check();
+	await accountForm.getByRole('button', { name: en.accountCreate }).click();
+	const notice = page.getByRole('status');
+	await expect(notice).toContainText(en.accountTemporaryPassword.replace('{login}', engineer.login));
+	const temporary = (await notice.locator('code').textContent()) ?? '';
+	await say(page, 'Langkah 2', 'Password sementara tampil SATU KALI. Berikan ke orangnya; ia wajib menggantinya.');
+	await say(page, 'Langkah 2', 'Dua akun lagi: PPAP Engineer kedua (mencatat rilis, juga petugas migrasi) dan PPAP Engineer Supervisor (verifikasi dan penyetujuan form set). Penyusun tidak boleh merilis atau memverifikasi pekerjaannya sendiri.');
+	const controlTemporary = await createAccount(page, control.name, control.login, [en.rolePpapEngineer]);
+	const verifierTemporary = await createAccount(page, verifier.name, verifier.login, [en.rolePpapEngineerSupervisor]);
+	await say(page, 'Langkah 2', 'Untuk tanda tangan digital: Project Leader GR1 (cakupannya Project Group sendiri) dan dua Manager penanda tangan.');
+	const leaderTemporary = await createAccount(page, leader.name, leader.login, [en.roleProjectLeader]);
+	const npiTemporary = await createAccount(page, npi.name, npi.login, [en.roleManager]);
+	const qaTemporary = await createAccount(page, qa.name, qa.login, [en.roleManager]);
+
+	await openFromMenu(page, en.navGroupAdmin, en.navSettings);
+	await say(page, 'Langkah 3', 'Admin > Settings hanya berisi pengaman: mode migrasi dan aturan penyetujuan form. Mode migrasi dinyalakan selama dokumen lama dimasukkan (bawaannya mati).');
+	await page.getByLabel(en.settingsMigration, { exact: true }).check();
+	await page.getByRole('button', { name: en.settingsSave }).click();
+	await expect(page.getByRole('status')).toHaveText(en.settingsSaved);
+	await say(page, 'Langkah 3', 'Admin logout. Master data, template, dan nomor bukan tugas akun admin.');
+	await logOut(page);
+
+	// ---------- Bagian B: PPAP Engineer, master data dan template ----------
+	await say(page, 'Langkah 4', 'PPAP Engineer login pertama kali dengan password sementara.');
+	await logInAs(page, engineer.login, temporary);
+	await expect(page).toHaveURL('/account/password');
+	await say(page, 'Langkah 4', 'Sistem langsung meminta ganti password (minimal 8 karakter).');
+	await page.getByLabel(en.passwordCurrent, { exact: true }).fill(temporary);
+	await page.getByLabel(en.passwordNew, { exact: true }).fill(engineer.password);
+	await page.getByLabel(en.passwordConfirm, { exact: true }).fill(engineer.password);
+	await page.getByRole('button', { name: en.passwordSave }).click();
+	await expect(page.getByRole('status')).toHaveText(en.passwordChanged);
+	await say(page, 'Langkah 4', 'Menu atas: Home, Documents, Template library, dan Master data.');
 
 	await openFromMenu(page, en.navGroupMaster, en.navCustomers);
-	await say(page, 'Langkah 2', 'Master data > Customers. Project group dibuat dulu, baru customer.');
+	await say(page, 'Langkah 5', 'Master data > Customers. Project group dibuat dulu, baru customer.');
 	await page.getByLabel(en.projectGroupCode, { exact: true }).fill('GR1');
 	await page.getByLabel(en.projectGroupName, { exact: true }).fill('Group 1');
 	await page.getByRole('button', { name: en.projectGroupAdd }).click();
 	await expect(page.getByText(en.projectGroupSaved.replace('{code}', 'GR1'))).toBeVisible();
 
-	await say(page, 'Langkah 2', 'Customer: kode dua huruf (masuk ke nomor dokumen), nama, dan project group.');
+	await say(page, 'Langkah 5', 'Customer: kode dua huruf (masuk ke nomor dokumen), nama, dan project group.');
 	await page.getByLabel(en.customerCode, { exact: true }).fill('LM');
 	await page.getByLabel(en.customerName, { exact: true }).fill('Contoh Customer LM');
 	await page.getByLabel(en.customerProjectGroup, { exact: true }).selectOption({ label: 'GR1 · Group 1' });
@@ -132,7 +174,7 @@ test('alur dari admin sampai dokumen terbit, revisi, tanda tangan digital, migra
 	await expect(page.getByRole('row', { name: /Contoh Customer LM/ })).toBeVisible();
 
 	await openFromMenu(page, en.navGroupMaster, en.navModels);
-	await say(page, 'Langkah 3', 'Master data > Models. Pilih customer, lalu buat group model dan model.');
+	await say(page, 'Langkah 6', 'Master data > Models. Pilih customer, lalu buat group model dan model.');
 	await page.getByLabel(en.modelsCustomer, { exact: true }).selectOption({ label: 'LM · Contoh Customer LM' });
 	await page.getByLabel(en.modelGroupName, { exact: true }).fill('Seri K');
 	await page.getByRole('button', { name: en.modelGroupAdd }).click();
@@ -141,36 +183,14 @@ test('alur dari admin sampai dokumen terbit, revisi, tanda tangan digital, migra
 	await page.getByLabel(en.modelGroup, { exact: true }).selectOption({ label: 'Seri K' });
 	await page.getByRole('button', { name: en.modelAdd, exact: true }).click();
 	await expect(page.getByRole('row', { name: 'K-125 Seri K' })).toBeVisible();
-	await say(page, 'Langkah 3', 'Model kedua, K-200, dibuat tanpa group untuk mencoba prioritas varian nanti.');
+	await say(page, 'Langkah 6', 'Model kedua, K-200, dibuat tanpa group untuk mencoba prioritas varian nanti.');
 	await page.getByLabel(en.modelName, { exact: true }).fill('K-200');
 	await page.getByLabel(en.modelGroup, { exact: true }).selectOption({ index: 0 });
 	await page.getByRole('button', { name: en.modelAdd, exact: true }).click();
-	await expect(page.getByRole('row', { name: `K-200 ${en.modelGroupNone}` })).toBeVisible();
-
-	await openFromMenu(page, en.navGroupAdmin, en.navAccounts);
-	await say(page, 'Langkah 4', 'Admin > Accounts. Akun kerja untuk PPAP Engineer: orang baru, jenis Work account.');
-	const accountForm = page.locator('form');
-	await accountForm.getByLabel(en.accountPersonNew).check();
-	await accountForm.getByLabel(en.accountPersonName).fill(engineer.name);
-	await accountForm.getByLabel(en.accountKindWork).check();
-	await accountForm.getByLabel(en.accountLogin).fill(engineer.login);
-	await say(page, 'Langkah 4', 'Peran menentukan hak (D-199): PPAP Engineer menyusun, mengelola template, mencatat rilis, dan migrasi. Isi setiap peran diatur di Admin > Roles.');
-	await accountForm.getByLabel(en.rolePpapEngineer, { exact: true }).check();
-	await accountForm.getByRole('button', { name: en.accountCreate }).click();
-	const notice = page.getByRole('status');
-	await expect(notice).toContainText(en.accountTemporaryPassword.replace('{login}', engineer.login));
-	const temporary = (await notice.locator('code').textContent()) ?? '';
-	await say(page, 'Langkah 4', 'Password sementara tampil SATU KALI. Berikan ke orangnya; ia wajib menggantinya.');
-	await say(page, 'Langkah 4', 'Dua akun lagi: PPAP Engineer kedua (mencatat rilis, juga petugas migrasi) dan PPAP Engineer Supervisor (verifikasi dan penyetujuan form set). Penyusun tidak boleh merilis atau memverifikasi pekerjaannya sendiri.');
-	const controlTemporary = await createAccount(page, control.name, control.login, [en.rolePpapEngineer]);
-	const verifierTemporary = await createAccount(page, verifier.name, verifier.login, [en.rolePpapEngineerSupervisor]);
-	await say(page, 'Langkah 4', 'Untuk tanda tangan digital: Project Leader GR1 (cakupannya Project Group sendiri) dan dua Manager penanda tangan.');
-	const leaderTemporary = await createAccount(page, leader.name, leader.login, [en.roleProjectLeader]);
-	const npiTemporary = await createAccount(page, npi.name, npi.login, [en.roleManager]);
-	const qaTemporary = await createAccount(page, qa.name, qa.login, [en.roleManager]);
+	await expect(page.getByRole('row', { name: 'K-200 ' + en.modelGroupNone })).toBeVisible();
 
 	await openFromMenu(page, en.navGroupMaster, en.navPositions);
-	await say(page, 'Langkah 5', 'Master data > Positions. Catat siapa memegang jabatan PPAP Engineer.');
+	await say(page, 'Langkah 7', 'Master data > Positions. Catat siapa memegang jabatan PPAP Engineer.');
 	await page.getByLabel(en.positionName, { exact: true }).selectOption({ label: 'PPAP Engineer' });
 	await page.getByLabel(en.holderPerson, { exact: true }).selectOption({ label: engineer.name });
 	await page.getByRole('button', { name: en.holderAdd }).click();
@@ -178,7 +198,7 @@ test('alur dari admin sampai dokumen terbit, revisi, tanda tangan digital, migra
 		page.getByText(en.holderAdded.replace('{name}', engineer.name).replace('{position}', 'PPAP Engineer'))
 	).toBeVisible();
 
-	await say(page, 'Langkah 5', 'Verifikator perubahan harus memegang jabatan: di sini APQP/PPAP Controller.');
+	await say(page, 'Langkah 7', 'Verifikator perubahan harus memegang jabatan: di sini APQP/PPAP Controller.');
 	await page.getByLabel(en.positionName, { exact: true }).selectOption({ label: 'APQP/PPAP Controller' });
 	await page.getByLabel(en.holderPerson, { exact: true }).selectOption({ label: verifier.name });
 	await page.getByRole('button', { name: en.holderAdd }).click();
@@ -186,7 +206,7 @@ test('alur dari admin sampai dokumen terbit, revisi, tanda tangan digital, migra
 		page.getByText(en.holderAdded.replace('{name}', verifier.name).replace('{position}', 'APQP/PPAP Controller'))
 	).toBeVisible();
 
-	await say(page, 'Langkah 5', 'Slot tanda tangan rute mengikuti jabatan: Project Leader GR1, NPI Manager, dan QA QC Manager.');
+	await say(page, 'Langkah 7', 'Slot tanda tangan rute mengikuti jabatan: Project Leader GR1, NPI Manager, dan QA QC Manager.');
 	for (const [position, person, group] of [
 		['Project Leader', leader.name, 'GR1 · Group 1'],
 		['NPI Manager', npi.name, ''],
@@ -200,40 +220,25 @@ test('alur dari admin sampai dokumen terbit, revisi, tanda tangan digital, migra
 	}
 
 	await openFromMenu(page, en.navGroupMaster, en.navApprovalRoutes);
-	await say(page, 'Langkah 5', 'Master data > Approval routes. Rute default customer LM; dokumen yang dibuat sesudahnya memakai rute ini.');
+	await say(page, 'Langkah 7', 'Master data > Approval routes. Rute default customer LM; dokumen yang dibuat sesudahnya memakai rute ini.');
 	await page.getByLabel(en.defaultRouteChoose.replace('{code}', 'LM'), { exact: true }).selectOption({ label: 'Up to QA QC Manager' });
 	await expect(page.getByRole('status')).toHaveText(en.defaultRouteSaved.replace('{code}', 'LM').replace('{route}', 'Up to QA QC Manager'));
 
-	await openFromMenu(page, en.navGroupAdmin, en.navSettings);
-	await say(page, 'Langkah 5', 'Admin > Settings. Mode migrasi dinyalakan selama dokumen lama dimasukkan (bawaannya mati). Nomor form Form Control Submission juga diisi di sini.');
-	await page.getByLabel(en.settingsMigration, { exact: true }).check();
+	await openFromMenu(page, en.navGroupMaster, en.navDocumentSettings);
+	await say(page, 'Langkah 7', 'Master data > Document settings: tanggal di slot tanda tangan, QR di cetakan, dan nomor form Form Control Submission.');
 	await page.getByLabel(en.settingsSubmissionFormNumber, { exact: true }).fill('QR-ENG-24-K015 (Rev.01)');
 	await page.getByRole('button', { name: en.settingsSave }).click();
 	await expect(page.getByRole('status')).toHaveText(en.settingsSaved);
 
 	await openFromMenu(page, en.navGroupTemplates, en.navFormatTemplates);
-	await say(page, 'Langkah 6', 'Format template sudah terisi sejak awal. Admin memeriksa labelnya, lalu menerbitkan versi 1.');
+	await say(page, 'Langkah 8', 'Format template sudah terisi sejak awal. PPAP Engineer memeriksa labelnya, lalu menerbitkan versi 1.');
 	for (const name of ['PFD · PFD', 'PFMEA AIAG 4th · PFMEA', 'CP · CP']) {
 		await page.getByLabel(en.formatChoose, { exact: true }).selectOption({ label: name });
 		page.once('dialog', (dialog) => dialog.accept());
 		await page.getByRole('button', { name: en.versionPublish.replace('{version}', '1') }).click();
 		await expect(page.getByRole('status')).toHaveText(en.versionPublished.replace('{version}', '1'));
 	}
-	await say(page, 'Langkah 6', 'Format PFD, PFMEA AIAG 4th, dan CP terbit. Form set baru bisa terbit sesudah formatnya terbit.');
-
-	await say(page, 'Langkah 7', 'Admin logout. Pekerjaan template dan nomor bukan tugas akun admin.');
-	await logOut(page);
-
-	// ---------- Bagian B: PPAP Engineer ----------
-	await say(page, 'Langkah 8', 'PPAP Engineer login pertama kali dengan password sementara.');
-	await logInAs(page, engineer.login, temporary);
-	await expect(page).toHaveURL('/account/password');
-	await say(page, 'Langkah 8', 'Sistem langsung meminta ganti password (minimal 8 karakter).');
-	await page.getByLabel(en.passwordCurrent, { exact: true }).fill(temporary);
-	await page.getByLabel(en.passwordNew, { exact: true }).fill(engineer.password);
-	await page.getByLabel(en.passwordConfirm, { exact: true }).fill(engineer.password);
-	await page.getByRole('button', { name: en.passwordSave }).click();
-	await expect(page.getByRole('status')).toHaveText(en.passwordChanged);
+	await say(page, 'Langkah 8', 'Format PFD, PFMEA AIAG 4th, dan CP terbit. Form set baru bisa terbit sesudah formatnya terbit.');
 
 	await openFromMenu(page, en.navGroupTemplates, en.navProcesses);
 	await say(page, 'Langkah 9', 'Template library > Processes. Master proses: nama dan alias (nama di dokumen lama).');

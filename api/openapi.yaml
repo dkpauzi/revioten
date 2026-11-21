@@ -585,7 +585,7 @@ paths:
   /api/v1/customers/{customerId}:
     put:
       operationId: updateCustomer
-      summary: Change the name, project group, and status of a customer (A-2)
+      summary: Change the name, project group, and status of a customer (E-11)
       description: |
         Customers are never deleted; set `active` to false instead (E-09).
         The code is changed with POST /api/v1/customers/{customerId}/code.
@@ -609,7 +609,7 @@ paths:
   /api/v1/customers/{customerId}/code:
     post:
       operationId: changeCustomerCode
-      summary: Give a customer a new code; the old code stays in its history (A-2, E-11)
+      summary: Give a customer a new code; the old code stays in its history (E-11, E-11)
       parameters:
         - $ref: '#/components/parameters/CustomerId'
       requestBody:
@@ -642,7 +642,7 @@ paths:
           $ref: '#/components/responses/Error'
     post:
       operationId: createProjectGroup
-      summary: Add a project group (A-2)
+      summary: Add a project group (E-11)
       requestBody:
         required: true
         content:
@@ -661,7 +661,7 @@ paths:
   /api/v1/project-groups/{projectGroupId}:
     put:
       operationId: updateProjectGroup
-      summary: Change the code and name of a project group (A-2)
+      summary: Change the code and name of a project group (E-11)
       parameters:
         - $ref: '#/components/parameters/ProjectGroupId'
       requestBody:
@@ -696,7 +696,7 @@ paths:
           $ref: '#/components/responses/Error'
     post:
       operationId: createModelGroup
-      summary: Add a model group to a customer (A-2)
+      summary: Add a model group to a customer (E-11)
       requestBody:
         required: true
         content:
@@ -715,7 +715,7 @@ paths:
   /api/v1/model-groups/{modelGroupId}:
     put:
       operationId: updateModelGroup
-      summary: Rename a model group (A-2)
+      summary: Rename a model group (E-11)
       parameters:
         - $ref: '#/components/parameters/ModelGroupId'
       requestBody:
@@ -750,7 +750,7 @@ paths:
           $ref: '#/components/responses/Error'
     post:
       operationId: createModel
-      summary: Add a model to a customer, in at most one model group (A-2, D-42)
+      summary: Add a model to a customer, in at most one model group (E-11, D-42)
       requestBody:
         required: true
         content:
@@ -769,7 +769,7 @@ paths:
   /api/v1/models/{modelId}:
     put:
       operationId: updateModel
-      summary: Rename a model or move it to another model group of the same customer (A-2)
+      summary: Rename a model or move it to another model group of the same customer (E-11)
       parameters:
         - $ref: '#/components/parameters/ModelId'
       requestBody:
@@ -804,7 +804,7 @@ paths:
           $ref: '#/components/responses/Error'
     post:
       operationId: createPartNumber
-      summary: Add a part number to a model (A-2)
+      summary: Add a part number to a model (E-11)
       requestBody:
         required: true
         content:
@@ -823,7 +823,7 @@ paths:
   /api/v1/part-numbers/{partNumberId}:
     put:
       operationId: updatePartNumber
-      summary: Change the number and name of a part number (A-2)
+      summary: Change the number and name of a part number (E-11)
       parameters:
         - $ref: '#/components/parameters/PartNumberId'
       requestBody:
@@ -922,7 +922,7 @@ paths:
           $ref: '#/components/responses/Error'
     put:
       operationId: updateNumberSettings
-      summary: Change the number settings. Issued numbers keep their text (A-2, R-NUM-02)
+      summary: Change the number settings. Issued numbers keep their text (E-11, R-NUM-02)
       requestBody:
         required: true
         content:
@@ -1153,7 +1153,7 @@ paths:
           $ref: '#/components/responses/Error'
     post:
       operationId: createDocumentType
-      summary: Add another document type from the WI, for example Work Instruction (A-2)
+      summary: Add another document type from the WI, for example Work Instruction (E-11)
       requestBody:
         required: true
         content:
@@ -1172,7 +1172,7 @@ paths:
   /api/v1/document-types/{documentTypeId}:
     put:
       operationId: updateDocumentType
-      summary: Change the name and letter of a document type (A-2)
+      summary: Change the name and letter of a document type (E-11)
       parameters:
         - $ref: '#/components/parameters/DocumentTypeId'
       requestBody:
@@ -1205,7 +1205,7 @@ paths:
           $ref: '#/components/responses/Error'
     post:
       operationId: createSpecialCode
-      summary: Add a special code. It cannot equal any customer code, now or before (A-2)
+      summary: Add a special code. It cannot equal any customer code, now or before (E-11)
       requestBody:
         required: true
         content:
@@ -1224,7 +1224,7 @@ paths:
   /api/v1/special-codes/{specialCodeId}:
     put:
       operationId: updateSpecialCode
-      summary: Rename a special code. The code itself never changes (A-2)
+      summary: Rename a special code. The code itself never changes (E-11)
       parameters:
         - $ref: '#/components/parameters/SpecialCodeId'
       requestBody:
@@ -1258,7 +1258,7 @@ paths:
   /api/v1/change-types/{changeTypeId}:
     put:
       operationId: updateChangeType
-      summary: Rename a change type (A-2)
+      summary: Rename a change type (E-11)
       parameters:
         - $ref: '#/components/parameters/ChangeTypeId'
       requestBody:
@@ -1291,7 +1291,7 @@ paths:
           $ref: '#/components/responses/Error'
     post:
       operationId: createChangeSource
-      summary: Add a change source (A-2)
+      summary: Add a change source (E-11)
       requestBody:
         required: true
         content:
@@ -1310,7 +1310,7 @@ paths:
   /api/v1/change-sources/{changeSourceId}:
     put:
       operationId: updateChangeSource
-      summary: Rename a change source, or switch it off or on (A-2)
+      summary: Rename a change source, or switch it off or on (E-11)
       parameters:
         - $ref: '#/components/parameters/ChangeSourceId'
       requestBody:
@@ -1344,7 +1344,7 @@ paths:
   /api/v1/four-m-categories/{fourMCategoryId}:
     put:
       operationId: updateFourMCategory
-      summary: Rename a 4M category (A-2)
+      summary: Rename a 4M category (E-11)
       parameters:
         - $ref: '#/components/parameters/FourMCategoryId'
       requestBody:
@@ -1375,10 +1375,23 @@ paths:
                 $ref: '#/components/schemas/PositionList'
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/position-candidates:
+    get:
+      operationId: listPositionCandidates
+      summary: People with an active work account who can be recorded as position holders. Names only (E-11, D-209)
+      responses:
+        '200':
+          description: The people.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonInfoList'
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/positions/{positionId}:
     put:
       operationId: updatePosition
-      summary: Rename a position. Its key and holders stay (A-1, D-58)
+      summary: Rename a position. Its key and holders stay (E-11, D-58, D-209)
       parameters:
         - $ref: '#/components/parameters/PositionId'
       requestBody:
@@ -1399,7 +1412,7 @@ paths:
   /api/v1/positions/{positionId}/holders:
     post:
       operationId: addPositionHolder
-      summary: Record a person as holder of a position (A-1). One Project Leader and one Project Engineer per project group (D-54)
+      summary: Record a person as holder of a position (E-11, D-209). One Project Leader and one Project Engineer per project group (D-54)
       parameters:
         - $ref: '#/components/parameters/PositionId'
       requestBody:
@@ -1420,7 +1433,7 @@ paths:
   /api/v1/positions/{positionId}/holders/{holderId}:
     delete:
       operationId: removePositionHolder
-      summary: Remove a holder from a position (A-1)
+      summary: Remove a holder from a position (E-11, D-209)
       parameters:
         - $ref: '#/components/parameters/PositionId'
         - $ref: '#/components/parameters/HolderId'
@@ -1444,7 +1457,7 @@ paths:
           $ref: '#/components/responses/Error'
     post:
       operationId: createApprovalRoute
-      summary: Add an approval route (A-2, UC-06)
+      summary: Add an approval route (E-11, UC-06)
       requestBody:
         required: true
         content:
@@ -1463,7 +1476,7 @@ paths:
   /api/v1/approval-routes/{approvalRouteId}:
     put:
       operationId: updateApprovalRoute
-      summary: Rename an approval route and replace its slots (A-2, R-APR-15)
+      summary: Rename an approval route and replace its slots (E-11, R-APR-15)
       parameters:
         - $ref: '#/components/parameters/ApprovalRouteId'
       requestBody:
@@ -1484,7 +1497,7 @@ paths:
   /api/v1/customers/{customerId}/default-route:
     put:
       operationId: setCustomerDefaultRoute
-      summary: Set the default approval route of a customer (A-2, D-47)
+      summary: Set the default approval route of a customer (E-11, D-47)
       parameters:
         - $ref: '#/components/parameters/CustomerId'
       requestBody:
@@ -1505,7 +1518,7 @@ paths:
   /api/v1/customers/{customerId}/signature-mode:
     put:
       operationId: setCustomerSignatureMode
-      summary: Allow digital signatures for a customer, or require wet signatures (A-2, D-198)
+      summary: Allow digital signatures for a customer, or require wet signatures (E-11, D-198)
       parameters:
         - $ref: '#/components/parameters/CustomerId'
       requestBody:
@@ -1526,7 +1539,7 @@ paths:
   /api/v1/customers/{customerId}/submission-required:
     put:
       operationId: setCustomerSubmissionRequired
-      summary: Whether revisions of this customer need customer submission by default (A-2, D-207)
+      summary: Whether revisions of this customer need customer submission by default (E-11, D-207)
       parameters:
         - $ref: '#/components/parameters/CustomerId'
       requestBody:
@@ -1547,7 +1560,7 @@ paths:
   /api/v1/change-types/{changeTypeId}/approval-route:
     put:
       operationId: setChangeTypeRoute
-      summary: Set the approval route of a change type, or use the customer default (A-2, R-TPL-10)
+      summary: Set the approval route of a change type, or use the customer default (E-11, R-TPL-10)
       parameters:
         - $ref: '#/components/parameters/ChangeTypeId'
       requestBody:
@@ -1580,7 +1593,7 @@ paths:
           $ref: '#/components/responses/Error'
     post:
       operationId: createFormatTemplate
-      summary: Add a format template with a draft version 1, empty or copied from another version (A-2, UC-20)
+      summary: Add a format template with a draft version 1, empty or copied from another version (E-11, UC-20)
       description: |
         A copy gets new field IDs that belong to the new template, with the
         same labels, order, options, risk method, highlight rule, rating
@@ -1603,7 +1616,7 @@ paths:
   /api/v1/format-templates/{formatTemplateId}:
     put:
       operationId: renameFormatTemplate
-      summary: Rename a format template (A-2)
+      summary: Rename a format template (E-11)
       parameters:
         - $ref: '#/components/parameters/FormatTemplateId'
       requestBody:
@@ -1624,7 +1637,7 @@ paths:
   /api/v1/format-templates/{formatTemplateId}/versions:
     post:
       operationId: createFormatVersion
-      summary: Make the next draft version of a format template from its last published version (A-2, R-TPL-05)
+      summary: Make the next draft version of a format template from its last published version (E-11, R-TPL-05)
       description: >-
         The new version copies the fields, rating criteria, symbols, and highlight rule of the last version, with the
         same field IDs. Refused with 409 while the template still has a draft version.
@@ -1642,7 +1655,7 @@ paths:
   /api/v1/format-template-versions/{formatVersionId}/ap-rules:
     put:
       operationId: setFormatApRules
-      summary: Replace the Action Priority table of a draft version (A-2, D-134)
+      summary: Replace the Action Priority table of a draft version (E-11, D-134)
       description: >-
         Only for a version with the AP risk method. The table must give exactly one priority for each of the 1,000
         combinations of severity, occurrence, and detection.
@@ -1696,7 +1709,7 @@ paths:
   /api/v1/format-template-versions/{formatVersionId}/publish:
     post:
       operationId: publishFormatVersion
-      summary: Publish a draft version of a format template (A-2, R-TPL-05)
+      summary: Publish a draft version of a format template (E-11, R-TPL-05)
       description: A published version cannot be changed. Changes go into a new version. Refused with 409 if it is already published.
       parameters:
         - $ref: '#/components/parameters/FormatVersionId'
@@ -1726,7 +1739,7 @@ paths:
           $ref: '#/components/responses/Error'
     put:
       operationId: updateFormatHighlights
-      summary: Change the highlight rule of a draft version, for example RPN above 100 or severity 8 (A-2, R-TPL-11)
+      summary: Change the highlight rule of a draft version, for example RPN above 100 or severity 8 (E-11, R-TPL-11)
       description: Highlights mark rows; they never block saving. 0 switches a rule off, and a field that is not sent stays as it is.
       parameters:
         - $ref: '#/components/parameters/FormatVersionId'
@@ -1748,7 +1761,7 @@ paths:
   /api/v1/format-template-versions/{formatVersionId}/fields:
     post:
       operationId: addFormatField
-      summary: Add a header field or a column at the end of its area in a draft version (A-2, R-TPL-02)
+      summary: Add a header field or a column at the end of its area in a draft version (E-11, R-TPL-02)
       parameters:
         - $ref: '#/components/parameters/FormatVersionId'
       requestBody:
@@ -1769,7 +1782,7 @@ paths:
   /api/v1/format-template-versions/{formatVersionId}/fields/{formatFieldId}:
     put:
       operationId: updateFormatField
-      summary: Change the label, required flag, hidden flag, position, or options of a field in a draft version (A-2, R-TPL-02)
+      summary: Change the label, required flag, hidden flag, position, or options of a field in a draft version (E-11, R-TPL-02)
       description: |
         The field ID, area, and kind never change, so row content that uses
         the ID stays valid. Fields are hidden, never deleted. A field that is
@@ -1796,7 +1809,7 @@ paths:
   /api/v1/format-template-versions/{formatVersionId}/rating-criteria:
     put:
       operationId: setFormatRatingCriteria
-      summary: Change the criteria text of rating values in a draft version (A-2, R-TPL-01)
+      summary: Change the criteria text of rating values in a draft version (E-11, R-TPL-01)
       parameters:
         - $ref: '#/components/parameters/FormatVersionId'
       requestBody:
@@ -1817,7 +1830,7 @@ paths:
   /api/v1/format-template-versions/{formatVersionId}/symbols:
     put:
       operationId: saveFormatSymbols
-      summary: Rename symbols and add new ones in a draft version (A-2, R-TPL-11)
+      summary: Rename symbols and add new ones in a draft version (E-11, R-TPL-11)
       description: Symbols cannot be removed, because rows may use their keys. Symbols without a key are new.
       parameters:
         - $ref: '#/components/parameters/FormatVersionId'
@@ -3514,7 +3527,7 @@ paths:
           $ref: '#/components/responses/Error'
     post:
       operationId: createPrintLayout
-      summary: Add a print layout (A-2, M6.1)
+      summary: Add a print layout (E-11, M6.1)
       requestBody:
         required: true
         content:
@@ -3533,7 +3546,7 @@ paths:
   /api/v1/print-layouts/{layoutId}:
     put:
       operationId: updatePrintLayout
-      summary: Change the name and content of a print layout (A-2, M6.1)
+      summary: Change the name and content of a print layout (E-11, M6.1)
       parameters:
         - name: layoutId
           in: path
@@ -3573,7 +3586,7 @@ paths:
   /api/v1/customers/{customerId}/print-layouts/{documentTypeId}:
     put:
       operationId: setCustomerPrintLayout
-      summary: Choose the layout of a customer for one document type; no layout_id means the default (A-2, M6.1)
+      summary: Choose the layout of a customer for one document type; no layout_id means the default (E-11, M6.1)
       parameters:
         - $ref: '#/components/parameters/CustomerId'
         - name: documentTypeId
@@ -3863,7 +3876,7 @@ paths:
           $ref: '#/components/responses/Error'
     post:
       operationId: createFormSet
-      summary: Add a form set with a draft version 1 (A-2, D-133)
+      summary: Add a form set with a draft version 1 (E-11, D-133)
       requestBody:
         required: true
         content:
@@ -3882,7 +3895,7 @@ paths:
   /api/v1/form-sets/{formSetId}/versions:
     post:
       operationId: createFormSetVersion
-      summary: Make the next draft version of a form set from its last published version (A-2)
+      summary: Make the next draft version of a form set from its last published version (E-11)
       parameters:
         - $ref: '#/components/parameters/FormSetId'
       responses:
@@ -3897,7 +3910,7 @@ paths:
   /api/v1/form-set-versions/{formSetVersionId}:
     put:
       operationId: setFormSetSheets
-      summary: Choose the format template versions of the sheets of a draft form set version (A-2)
+      summary: Choose the format template versions of the sheets of a draft form set version (E-11)
       parameters:
         - $ref: '#/components/parameters/FormSetVersionId'
       requestBody:
@@ -3936,7 +3949,7 @@ paths:
   /api/v1/customers/{customerId}/default-form-set:
     put:
       operationId: setCustomerFormSet
-      summary: Choose the form set for new documents of a customer (A-2, D-133)
+      summary: Choose the form set for new documents of a customer (E-11, D-133)
       description: Without form_set_id the customer uses the default form set of the system.
       parameters:
         - $ref: '#/components/parameters/CustomerId'
@@ -4692,7 +4705,7 @@ components:
           type: array
           description: |
             The rights of the caller, as codes from the user map (U3), for
-            example L-1 or A-2. Screens use them to show or hide actions; the
+            example L-1 or E-11. Screens use them to show or hide actions; the
             server still checks every operation.
           items:
             type: string
@@ -5042,6 +5055,14 @@ components:
         created_at:
           type: string
           format: date-time
+    PersonInfoList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PersonInfo'
     PersonInfo:
       type: object
       required: [id, name]

@@ -32,7 +32,7 @@ func NewService(pool *pgxpool.Pool, authz access.Authorizer) *Service {
 }
 
 // Melihat memakai hak L-2 seperti master lain (D-103). Format template diubah
-// lewat A-2 (UC-20, U3: kelola master data dan format template).
+// lewat E-11 (UC-20, U3: kelola master data dan format template).
 
 // ListFormatTemplates mengembalikan semua format template beserta ringkasan
 // versinya, menurut urutan jenis dokumen lalu nama.
@@ -307,7 +307,7 @@ func (s *Service) SetHighlights(ctx context.Context, actor access.Actor, version
 }
 
 // editVersion menjalankan satu perubahan pada versi draft di dalam
-// transaksi: hak A-2, versi dikunci, versi published ditolak, lalu entri
+// transaksi: hak E-11, versi dikunci, versi published ditolak, lalu entri
 // audit bila ada yang berubah (details tidak kosong).
 func (s *Service) editVersion(ctx context.Context, actor access.Actor, versionID, action string,
 	change func(q *db.Queries, v FormatVersion) (map[string]string, error)) (FormatVersion, error) {

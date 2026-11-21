@@ -31,20 +31,20 @@ func newNumberFixture(t *testing.T) numberFixture {
 	ctx := t.Context()
 	f.customers = customer.NewService(f.pool, access.NewChecker(f.pool))
 	var err error
-	f.group, err = f.customers.CreateProjectGroup(ctx, f.admin, customer.ProjectGroupInput{Code: "GR1", Name: "Project Group 1"})
+	f.group, err = f.customers.CreateProjectGroup(ctx, f.master, customer.ProjectGroupInput{Code: "GR1", Name: "Project Group 1"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	f.kt = f.newCustomer(t, "KT")
 	f.author = newActor(t, f.pool, "penyusun.uji", access.AccountWork, access.RoleAuthor)
-	types, err := f.s.ListDocumentTypes(ctx, f.admin)
+	types, err := f.s.ListDocumentTypes(ctx, f.master)
 	if err != nil {
 		t.Fatal(err)
 	}
 	for _, d := range types {
 		f.types[d.Key] = d
 	}
-	f.other, err = f.s.CreateDocumentType(ctx, f.admin, DocumentTypeInput{Name: "Work Instruction", Letter: "W"})
+	f.other, err = f.s.CreateDocumentType(ctx, f.master, DocumentTypeInput{Name: "Work Instruction", Letter: "W"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -54,7 +54,7 @@ func newNumberFixture(t *testing.T) numberFixture {
 // newCustomer menambah customer dengan kode itu di GR1.
 func (f numberFixture) newCustomer(t *testing.T, code string) customer.Customer {
 	t.Helper()
-	c, err := f.customers.Create(t.Context(), f.admin, customer.NewCustomer{Code: code, Name: "Customer " + code, ProjectGroupID: f.group.ID})
+	c, err := f.customers.Create(t.Context(), f.master, customer.NewCustomer{Code: code, Name: "Customer " + code, ProjectGroupID: f.group.ID})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -120,7 +120,7 @@ func TestRegisterRules(t *testing.T) {
 	f := newNumberFixture(t)
 	ctx := t.Context()
 	inactive := f.newCustomer(t, "IN")
-	if _, err := f.customers.Update(ctx, f.admin, inactive.ID, customer.CustomerUpdate{Name: "Customer IN", ProjectGroupID: f.group.ID, Active: new(false)}); err != nil {
+	if _, err := f.customers.Update(ctx, f.master, inactive.ID, customer.CustomerUpdate{Name: "Customer IN", ProjectGroupID: f.group.ID, Active: new(false)}); err != nil {
 		t.Fatal(err)
 	}
 	cp := f.types[KeyCP].ID
@@ -213,7 +213,9 @@ func TestRegisterConcurrent(t *testing.T) {
 			t.Fatalf("nomor ke-%d %q, ingin %q (ada nomor ganda atau lubang): %v", i+1, got, want, numbers)
 		}
 	}
-	v, err := audit.NewService(f.pool, access.NewChecker(f.pool)).Verify(ctx, f.admin)
+	// Audit log hanya dibaca akun admin (A-4, D-75).
+	admin := newActor(t, f.pool, "admin.uji", access.AccountAdmin, access.RoleAdmin)
+	v, err := audit.NewService(f.pool, access.NewChecker(f.pool)).Verify(ctx, admin)
 	if err != nil || !v.Valid {
 		t.Errorf("rantai audit setelah pendaftaran paralel: %+v, %v", v, err)
 	}
@@ -246,7 +248,7 @@ func TestRegisterDuringCodeChange(t *testing.T) {
 			errs <- err
 		})
 		wg.Go(func() {
-			_, err := f.customers.ChangeCode(ctx, f.admin, f.kt.ID, code)
+			_, err := f.customers.ChangeCode(ctx, f.master, f.kt.ID, code)
 			errs <- err
 		})
 		wg.Wait()
@@ -297,7 +299,7 @@ func TestRegisterAfterCodeChange(t *testing.T) {
 	f := newNumberFixture(t)
 	ctx := t.Context()
 	old := f.register(t, f.author, f.kt, "sebelum")
-	if _, err := f.customers.ChangeCode(ctx, f.admin, f.kt.ID, "KX"); err != nil {
+	if _, err := f.customers.ChangeCode(ctx, f.master, f.kt.ID, "KX"); err != nil {
 		t.Fatal(err)
 	}
 	if got := f.register(t, f.author, f.kt, "sesudah"); got != "SC-KX-001" {
@@ -314,11 +316,11 @@ func TestRegisterAfterCodeChange(t *testing.T) {
 func TestRegisterScope(t *testing.T) {
 	f := newNumberFixture(t)
 	ctx := t.Context()
-	gr2, err := f.customers.CreateProjectGroup(ctx, f.admin, customer.ProjectGroupInput{Code: "GR2", Name: "Project Group 2"})
+	gr2, err := f.customers.CreateProjectGroup(ctx, f.master, customer.ProjectGroupInput{Code: "GR2", Name: "Project Group 2"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	ko, err := f.customers.Create(ctx, f.admin, customer.NewCustomer{Code: "KO", Name: "Customer KO", ProjectGroupID: gr2.ID})
+	ko, err := f.customers.Create(ctx, f.master, customer.NewCustomer{Code: "KO", Name: "Customer KO", ProjectGroupID: gr2.ID})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -327,13 +329,13 @@ func TestRegisterScope(t *testing.T) {
 		t.Fatal(err)
 	}
 	approvals := approval.NewService(f.pool, access.NewChecker(f.pool))
-	positions, err := approvals.ListPositions(ctx, f.admin)
+	positions, err := approvals.ListPositions(ctx, f.master)
 	if err != nil {
 		t.Fatal(err)
 	}
 	for _, p := range positions {
 		if p.Key == approval.KeyProjectLeader {
-			if _, err := approvals.AddHolder(ctx, f.admin, p.ID, approval.NewHolder{PersonID: leader.PersonID, ProjectGroupID: f.group.ID}); err != nil {
+			if _, err := approvals.AddHolder(ctx, f.master, p.ID, approval.NewHolder{PersonID: leader.PersonID, ProjectGroupID: f.group.ID}); err != nil {
 				t.Fatal(err)
 			}
 		}
@@ -373,7 +375,7 @@ func TestPatternChange(t *testing.T) {
 	f.register(t, f.author, f.kt, "pola-lama")
 
 	pattern, digits := "{customer}/{prefix}/{seq}", 3
-	settings, err := f.s.UpdateSettings(ctx, f.admin, SettingsInput{FactoryCode: "S", Pattern: &pattern, RevisionDigits: &digits})
+	settings, err := f.s.UpdateSettings(ctx, f.master, SettingsInput{FactoryCode: "S", Pattern: &pattern, RevisionDigits: &digits})
 	if err != nil || settings.Pattern != pattern || settings.RevisionDigits != 3 || settings.SequenceFormat != SequenceFormatLetterBlock {
 		t.Fatalf("UpdateSettings %+v, %v", settings, err)
 	}
@@ -386,12 +388,12 @@ func TestPatternChange(t *testing.T) {
 	}
 
 	bad, tooMany := "{prefix}{customer}{seq}", 4
-	_, err = f.s.UpdateSettings(ctx, f.admin, SettingsInput{FactoryCode: "S", Pattern: &bad, RevisionDigits: &tooMany})
+	_, err = f.s.UpdateSettings(ctx, f.master, SettingsInput{FactoryCode: "S", Pattern: &bad, RevisionDigits: &tooMany})
 	if got := problemCodes(t, err); !slices.Equal(got, []string{"pattern:invalid_format", "revision_digits:invalid_format"}) {
 		t.Errorf("masalah %v", got)
 	}
 	// Tanpa Pattern dan RevisionDigits, keduanya tetap (D-111).
-	settings, err = f.s.UpdateSettings(ctx, f.admin, SettingsInput{FactoryCode: "T"})
+	settings, err = f.s.UpdateSettings(ctx, f.master, SettingsInput{FactoryCode: "T"})
 	if err != nil || settings.Pattern != pattern || settings.RevisionDigits != 3 || settings.FactoryCode != "T" {
 		t.Errorf("UpdateSettings tanpa pola: %+v, %v", settings, err)
 	}

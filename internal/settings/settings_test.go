@@ -40,13 +40,14 @@ func newActor(t *testing.T, pool *pgxpool.Pool, login, kind string, roles ...str
 }
 
 // TestSignDates: tanggal tanda tangan per slot bisa dimatikan dan saat ini
-// mati (D-52). Saklarnya satu pengaturan global yang diubah Admin lewat A-3
-// (R-APR-14, UC-07); semua akun bisa membacanya.
+// mati (D-52). Sejak D-209 saklar ini pengaturan dokumen yang diubah PPAP
+// Engineer (E-11), bukan admin; semua akun bisa membacanya.
 func TestSignDates(t *testing.T) {
 	pool := dbtest.NewPool(t)
 	ctx := t.Context()
 	s := NewService(pool, access.NewChecker(pool))
 	admin := newActor(t, pool, "admin.uji", access.AccountAdmin, access.RoleAdmin)
+	engineer := newActor(t, pool, "ppap.uji", access.AccountWork, access.RolePPAPEngineer)
 	worker := newActor(t, pool, "penyusun.uji", access.AccountWork, access.RoleAuthor)
 
 	got, err := s.Get(ctx, worker)
@@ -54,14 +55,16 @@ func TestSignDates(t *testing.T) {
 		t.Fatalf("isi awal: %+v, %v; ingin mati", got, err)
 	}
 	on := true
-	if _, err := s.Apply(ctx, worker, Update{SignDatesEnabled: &on}); !errors.Is(err, access.ErrForbidden) {
-		t.Errorf("akun kerja: %v, ingin ErrForbidden", err)
+	for _, actor := range []access.Actor{worker, admin} {
+		if _, err := s.Apply(ctx, actor, Update{SignDatesEnabled: &on}); !errors.Is(err, access.ErrForbidden) {
+			t.Errorf("%s: %v, ingin ErrForbidden", actor.Login, err)
+		}
 	}
 	// Tanpa saklar pun hak tetap diperiksa.
 	if _, err := s.Apply(ctx, worker, Update{}); !errors.Is(err, access.ErrForbidden) {
 		t.Errorf("akun kerja tanpa saklar: %v, ingin ErrForbidden", err)
 	}
-	got, err = s.Apply(ctx, admin, Update{SignDatesEnabled: &on})
+	got, err = s.Apply(ctx, engineer, Update{SignDatesEnabled: &on})
 	if err != nil || !got.SignDatesEnabled {
 		t.Fatalf("Apply: %+v, %v", got, err)
 	}
@@ -71,14 +74,58 @@ func TestSignDates(t *testing.T) {
 		t.Errorf("audit log: %+v, %v", rows, err)
 	}
 	// Simpan tanpa perubahan, atau tanpa saklar, tidak dicatat.
-	if _, err := s.Apply(ctx, admin, Update{SignDatesEnabled: &on}); err != nil {
+	if _, err := s.Apply(ctx, engineer, Update{SignDatesEnabled: &on}); err != nil {
 		t.Fatal(err)
 	}
-	if kept, err := s.Apply(ctx, admin, Update{}); err != nil || !kept.SignDatesEnabled {
+	if kept, err := s.Apply(ctx, engineer, Update{}); err != nil || !kept.SignDatesEnabled {
 		t.Errorf("tanpa saklar: %+v, %v; ingin tetap menyala", kept, err)
 	}
 	if rows, _ := db.New(pool).ListAuditChain(ctx); len(rows) != 1 {
 		t.Errorf("simpan tanpa perubahan menambah entri: %d", len(rows))
+	}
+}
+
+// TestSettingsSplit: pengaturan terbagi dua (D-209). Pengaturan dokumen (tanggal
+// di slot, QR, nomor form submission) milik PPAP Engineer (E-11); pengaman
+// (mode migrasi, aturan penyetujuan form) tetap milik admin (A-3). Permintaan
+// yang mencampur keduanya butuh kedua hak, jadi ditolak untuk siapa pun.
+func TestSettingsSplit(t *testing.T) {
+	pool := dbtest.NewPool(t)
+	ctx := t.Context()
+	s := NewService(pool, access.NewChecker(pool))
+	admin := newActor(t, pool, "admin.uji", access.AccountAdmin, access.RoleAdmin)
+	engineer := newActor(t, pool, "ppap.uji", access.AccountWork, access.RolePPAPEngineer)
+	on, number, anyMode := true, "QR-ENG-24-K015 (Rev.01)", ApprovalAny
+
+	for name, in := range map[string]Update{
+		"QR":         {QREnabled: &on},
+		"nomor form": {SubmissionFormNumber: &number},
+		"tanggal":    {SignDatesEnabled: &on},
+	} {
+		if _, err := s.Apply(ctx, admin, in); !errors.Is(err, access.ErrForbidden) {
+			t.Errorf("admin mengubah %s: %v, ingin ErrForbidden", name, err)
+		}
+	}
+	for name, in := range map[string]Update{
+		"mode migrasi":       {MigrationMode: &on},
+		"aturan penyetujuan": {FormApprovalMode: &anyMode},
+		"campuran":           {MigrationMode: &on, QREnabled: &on},
+	} {
+		if _, err := s.Apply(ctx, engineer, in); !errors.Is(err, access.ErrForbidden) {
+			t.Errorf("PPAP Engineer mengubah %s: %v, ingin ErrForbidden", name, err)
+		}
+	}
+	if _, err := s.Apply(ctx, admin, Update{MigrationMode: &on, QREnabled: &on}); !errors.Is(err, access.ErrForbidden) {
+		t.Errorf("admin mengubah campuran: %v, ingin ErrForbidden", err)
+	}
+
+	got, err := s.Apply(ctx, engineer, Update{QREnabled: &on, SubmissionFormNumber: &number})
+	if err != nil || !got.QREnabled || got.SubmissionFormNumber != number {
+		t.Fatalf("PPAP Engineer: %+v, %v", got, err)
+	}
+	got, err = s.Apply(ctx, admin, Update{MigrationMode: &on})
+	if err != nil || !got.MigrationMode || !got.QREnabled {
+		t.Fatalf("admin: %+v, %v", got, err)
 	}
 }
 

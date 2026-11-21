@@ -6,27 +6,30 @@
 // menerbitkan form set AIAG 4th; dokumen hanya memakai form set yang terbit.
 import { expect, test } from '@playwright/test';
 import { en } from '../src/lib/i18n/en.ts';
-import { createWorkAccount, ensureProjectGroup, logIn, logInFirstTime, logOut, openFromMenu } from './helpers.ts';
+import { asMaster, createWorkAccount, ensureProjectGroup, logIn, logInFirstTime, logOut, openFromMenu } from './helpers.ts';
 
 test('CP satu nomor dengan bagian per PCB: tambah bagian, rakit per bagian, dan cek per bagian', async ({ page }) => {
 	test.slow();
 	await logIn(page);
-	await ensureProjectGroup(page, 'GR1');
 	// Customer, model, dan tiga part number seperti sampul SC-KT-040-00.
-	await page.evaluate(async () => {
-		const post = (path: string, body: object) =>
-			fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then((r) => r.json());
-		const groups = await (await fetch('/api/v1/project-groups')).json();
-		const group = groups.items.find((g: { code: string }) => g.code === 'GR1');
-		const customer = await post('/api/v1/customers', { code: 'KT', name: 'PT. Indonesia Koito', project_group_id: group.id });
-		const model = await post('/api/v1/models', { customer_id: customer.id, name: '737D LED HL' });
-		for (const [number, name] of [
-			['10029-8A15D', 'Print Base Assy A'],
-			['10067-8A1A8', 'Heatsink Assy R'],
-			['10167-8A1A8', 'Heatsink Assy L']
-		]) {
-			await post('/api/v1/part-numbers', { model_id: model.id, number, name });
-		}
+	// Master data dibuat PPAP Engineer (E-11, D-209).
+	await asMaster(page, async (m) => {
+		await ensureProjectGroup(m, 'GR1');
+		await m.evaluate(async () => {
+			const post = (path: string, body: object) =>
+				fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then((r) => r.json());
+			const groups = await (await fetch('/api/v1/project-groups')).json();
+			const group = groups.items.find((g: { code: string }) => g.code === 'GR1');
+			const customer = await post('/api/v1/customers', { code: 'KT', name: 'PT. Indonesia Koito', project_group_id: group.id });
+			const model = await post('/api/v1/models', { customer_id: customer.id, name: '737D LED HL' });
+			for (const [number, name] of [
+				['10029-8A15D', 'Print Base Assy A'],
+				['10067-8A1A8', 'Heatsink Assy R'],
+				['10167-8A1A8', 'Heatsink Assy L']
+			]) {
+				await post('/api/v1/part-numbers', { model_id: model.id, number, name });
+			}
+		});
 	});
 	const temporary = await createWorkAccount(page, 'Penyusun KT', 'penyusun.kt.e2e', ['ppap_engineer']);
 	await logOut(page);

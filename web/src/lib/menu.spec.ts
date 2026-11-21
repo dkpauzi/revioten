@@ -25,7 +25,8 @@ describe('buildMenu', () => {
 				'/document-types',
 				'/change-types',
 				'/positions',
-				'/approval-routes'
+				'/approval-routes',
+				'/document-settings'
 			]
 		});
 	});

@@ -75,7 +75,7 @@ export type Session = {
     must_change_password: boolean;
     /**
      * The rights of the caller, as codes from the user map (U3), for
-     * example L-1 or A-2. Screens use them to show or hide actions; the
+     * example L-1 or E-11. Screens use them to show or hide actions; the
      * server still checks every operation.
      *
      */
@@ -301,6 +301,10 @@ export type AccountInfo = {
     locked_until?: string;
     disabled: boolean;
     created_at: string;
+};
+
+export type PersonInfoList = {
+    items: Array<PersonInfo>;
 };
 
 export type PersonInfo = {
@@ -5993,6 +5997,39 @@ export type ListPositionsResponses = {
 };
 
 export type ListPositionsResponse = ListPositionsResponses[keyof ListPositionsResponses];
+
+export type ListPositionCandidatesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/position-candidates';
+};
+
+export type ListPositionCandidatesErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ListPositionCandidatesError = ListPositionCandidatesErrors[keyof ListPositionCandidatesErrors];
+
+export type ListPositionCandidatesResponses = {
+    /**
+     * The people.
+     */
+    200: PersonInfoList;
+};
+
+export type ListPositionCandidatesResponse = ListPositionCandidatesResponses[keyof ListPositionCandidatesResponses];
 
 export type UpdatePositionData = {
     body: NameUpdate;

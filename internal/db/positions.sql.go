@@ -114,6 +114,42 @@ func (q *Queries) GetPositionHolder(ctx context.Context, id string) (GetPosition
 	return i, err
 }
 
+const listPositionCandidates = `-- name: ListPositionCandidates :many
+SELECT DISTINCT p.id, p.name
+FROM people p
+JOIN accounts a ON a.person_id = p.id
+WHERE a.kind = 'work' AND a.disabled_at IS NULL
+ORDER BY p.name, p.id
+`
+
+type ListPositionCandidatesRow struct {
+	ID   string
+	Name string
+}
+
+// ListPositionCandidates mengambil orang yang punya akun kerja aktif, untuk
+// dipilih sebagai pemegang jabatan (D-209). Hanya ID dan nama: daftar akun
+// lengkap tetap hak admin (A-1).
+func (q *Queries) ListPositionCandidates(ctx context.Context) ([]ListPositionCandidatesRow, error) {
+	rows, err := q.db.Query(ctx, listPositionCandidates)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListPositionCandidatesRow{}
+	for rows.Next() {
+		var i ListPositionCandidatesRow
+		if err := rows.Scan(&i.ID, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listPositionHolders = `-- name: ListPositionHolders :many
 SELECT h.id, h.position_id, h.person_id, pe.name AS person_name,
        h.project_group_id, g.code AS project_group_code, h.created_at

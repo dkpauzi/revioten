@@ -61,7 +61,59 @@ test('potret layar untuk halaman Help', async ({ page }) => {
 	await expect(page.getByRole('heading', { name: en.adminHomeTitle, level: 1 })).toBeVisible();
 	await shot(page, 'admin-health');
 
-	// Master data.
+	// Akun kerja: kotak kata sandi sementara ikut terpotret, isinya ditutup.
+	// Master data dikerjakan PPAP Engineer sesudah ini (D-209).
+	await openFromMenu(page, en.navGroupAdmin, en.navAccounts);
+	const form = page.locator('main form').first();
+	await form.getByLabel(en.accountPersonNew).check();
+	await form.getByLabel(en.accountPersonName).fill(engineer.name);
+	await form.getByLabel(en.accountKindWork).check();
+	await form.getByLabel(en.accountLogin).fill(engineer.login);
+	await form.getByLabel(en.rolePpapEngineerSupervisor, { exact: true }).check();
+	await form.getByRole('button', { name: en.accountCreate }).click();
+	const notice = page.getByRole('status');
+	await expect(notice).toContainText(en.accountTemporaryPassword.replace('{login}', engineer.login));
+	const temporary = (await notice.locator('code').textContent()) ?? '';
+	await shot(page, 'accounts');
+
+	// Akun lain untuk gambar berikutnya: dokumen kontrol, Project Leader GR1, dan
+	// dua Manager penanda tangan (D-198). ID orangnya dipakai PPAP Engineer.
+	const controlTemporary = await createWorkAccount(page, 'Contoh Dokumen Kontrol', control.login, ['ppap_engineer']);
+	const signers = await page.evaluate(async () => {
+		const out: Record<string, string> = {};
+		for (const [name, login, role] of [
+			['Contoh Project Leader GR1', 'pl.gr1', 'project_leader'],
+			['Contoh NPI Manager', 'npi.manager', 'manager'],
+			['Contoh QA QC Manager', 'qa.manager', 'manager']
+		]) {
+			const created = await fetch('/api/v1/accounts', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ person_name: name, kind: 'work', login, roles: [{ role, scope: 'all' }] })
+			}).then((r) => r.json());
+			out[login] = created.account.person.id;
+		}
+		return out;
+	});
+	// Pengaman tetap di admin: mode migrasi (D-209).
+	await page.evaluate(() =>
+		fetch('/api/v1/system-settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ migration_mode: true }) })
+	);
+	await openFromMenu(page, en.navGroupAdmin, en.navRoles);
+	await expect(page.getByRole('heading', { name: en.rolesTitle, level: 1 })).toBeVisible();
+	await expect(page.getByRole('row').nth(3)).toBeVisible();
+	await shot(page, 'roles');
+
+	// PPAP Engineer Supervisor login pertama kali, lalu mengurus master data (E-11, D-209).
+	await logOut(page);
+	await logInAs(page, engineer.login, temporary);
+	await expect(page).toHaveURL('/account/password');
+	await page.getByLabel(en.passwordCurrent, { exact: true }).fill(temporary);
+	await page.getByLabel(en.passwordNew, { exact: true }).fill(engineer.password);
+	await page.getByLabel(en.passwordConfirm, { exact: true }).fill(engineer.password);
+	await page.getByRole('button', { name: en.passwordSave }).click();
+	await expect(page.getByRole('status')).toHaveText(en.passwordChanged);
+
 	await openFromMenu(page, en.navGroupMaster, en.navCustomers);
 	await page.getByLabel(en.projectGroupCode, { exact: true }).fill('GR1');
 	await page.getByLabel(en.projectGroupName, { exact: true }).fill('Group 1');
@@ -89,20 +141,6 @@ test('potret layar untuk halaman Help', async ({ page }) => {
 	await page.getByRole('button', { name: en.modelAdd, exact: true }).click();
 	await expect(page.getByRole('row', { name: 'K-125 Seri K' })).toBeVisible();
 
-	// Akun kerja: kotak kata sandi sementara ikut terpotret, isinya ditutup.
-	await openFromMenu(page, en.navGroupAdmin, en.navAccounts);
-	const form = page.locator('form');
-	await form.getByLabel(en.accountPersonNew).check();
-	await form.getByLabel(en.accountPersonName).fill(engineer.name);
-	await form.getByLabel(en.accountKindWork).check();
-	await form.getByLabel(en.accountLogin).fill(engineer.login);
-	await form.getByLabel(en.rolePpapEngineerSupervisor, { exact: true }).check();
-	await form.getByRole('button', { name: en.accountCreate }).click();
-	const notice = page.getByRole('status');
-	await expect(notice).toContainText(en.accountTemporaryPassword.replace('{login}', engineer.login));
-	const temporary = (await notice.locator('code').textContent()) ?? '';
-	await shot(page, 'accounts');
-
 	await openFromMenu(page, en.navGroupMaster, en.navPositions);
 	await page.getByLabel(en.positionName, { exact: true }).selectOption({ label: 'PPAP Engineer' });
 	await page.getByLabel(en.holderPerson, { exact: true }).selectOption({ label: engineer.name });
@@ -110,9 +148,9 @@ test('potret layar untuk halaman Help', async ({ page }) => {
 	await expect(page.getByText(en.holderAdded.replace('{name}', engineer.name).replace('{position}', 'PPAP Engineer'))).toBeVisible();
 	await shot(page, 'positions');
 
-	// Untuk gambar tanda tangan digital (D-198): rute default LM, Project Leader
-	// GR1, dan dua Manager sebagai pemegang jabatan slot. Disiapkan lewat API.
-	await page.evaluate(async () => {
+	// Untuk gambar tanda tangan digital (D-198): rute default LM, dan Project
+	// Leader GR1 serta dua Manager sebagai pemegang jabatan slot. Lewat API.
+	await page.evaluate(async (signers) => {
 		const json = (path: string, method: string, body?: object) =>
 			fetch(path, { method, headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined }).then((r) => r.json());
 		const customers = await json('/api/v1/customers', 'GET');
@@ -123,19 +161,22 @@ test('potret layar untuk halaman Help', async ({ page }) => {
 		const groups = await json('/api/v1/project-groups', 'GET');
 		const gr1 = groups.items.find((g: { code: string }) => g.code === 'GR1');
 		const positions = await json('/api/v1/positions', 'GET');
-		for (const [name, login, role, key] of [
-			['Contoh Project Leader GR1', 'pl.gr1', 'project_leader', 'project_leader'],
-			['Contoh NPI Manager', 'npi.manager', 'manager', 'npi_manager'],
-			['Contoh QA QC Manager', 'qa.manager', 'manager', 'qa_qc_manager']
+		for (const [login, key] of [
+			['pl.gr1', 'project_leader'],
+			['npi.manager', 'npi_manager'],
+			['qa.manager', 'qa_qc_manager']
 		]) {
-			const created = await json('/api/v1/accounts', 'POST', { person_name: name, kind: 'work', login, roles: [{ role, scope: 'all' }] });
 			const position = positions.items.find((x: { key: string }) => x.key === key);
 			await json(`/api/v1/positions/${position.id}/holders`, 'POST', {
-				person_id: created.account.person.id,
+				person_id: signers[login],
 				project_group_id: position.per_project_group ? gr1.id : undefined
 			});
 		}
-	});
+	}, signers);
+
+	await openFromMenu(page, en.navGroupMaster, en.navDocumentSettings);
+	await expect(page.getByLabel(en.settingsSubmissionFormNumber)).toBeVisible();
+	await shot(page, 'document-settings');
 
 	await openFromMenu(page, en.navGroupTemplates, en.navFormatTemplates);
 	await page.getByLabel(en.formatChoose).selectOption({ index: 2 });
@@ -147,8 +188,7 @@ test('potret layar untuk halaman Help', async ({ page }) => {
 	await expect(page.getByRole('heading', { name: en.formSetCustomersTitle })).toBeVisible();
 	await shot(page, 'form-sets');
 
-	// Persiapan untuk gambar Tahap 4 sampai 8: format terbit, akun dokumen
-	// kontrol, dan mode migrasi. Disiapkan lewat API supaya singkat.
+	// Persiapan untuk gambar Tahap 4 sampai 8: format terbit.
 	await openFromMenu(page, en.navGroupTemplates, en.navFormatTemplates);
 	for (const name of ['PFD · PFD', 'PFMEA AIAG 4th · PFMEA', 'CP · CP']) {
 		await page.getByLabel(en.formatChoose, { exact: true }).selectOption({ label: name });
@@ -156,15 +196,11 @@ test('potret layar untuk halaman Help', async ({ page }) => {
 		await page.getByRole('button', { name: en.versionPublish.replace('{version}', '1') }).click();
 		await expect(page.getByRole('status')).toHaveText(en.versionPublished.replace('{version}', '1'));
 	}
-	const controlTemporary = await createWorkAccount(page, 'Contoh Dokumen Kontrol', control.login, ['ppap_engineer']);
-	await page.evaluate(() =>
-		fetch('/api/v1/system-settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ migration_mode: true }) })
-	);
-	await openFromMenu(page, en.navGroupAdmin, en.navRoles);
-	await expect(page.getByRole('heading', { name: en.rolesTitle, level: 1 })).toBeVisible();
-	await expect(page.getByRole('row').nth(3)).toBeVisible();
-	await shot(page, 'roles');
 
+	// Admin kembali untuk service account (butuh customer LM) dan email notifikasi.
+	await logOut(page);
+	await logInAs(page, admin.login, admin.password);
+	await expect(page.getByRole('heading', { name: en.adminHomeTitle, level: 1 })).toBeVisible();
 	// Service account API integrasi (Tahap 9), dengan satu token aktif.
 	await openFromMenu(page, en.navGroupAdmin, en.navServiceAccounts);
 	await page.getByLabel(en.serviceAccountName, { exact: true }).fill('Contoh MES');
@@ -193,15 +229,10 @@ test('potret layar untuk halaman Help', async ({ page }) => {
 	await expect(page.getByRole('status')).toHaveText(en.notifyTestQueued);
 	await shot(page, 'notifications');
 
-	// Pengelola template.
+	// PPAP Engineer Supervisor lagi untuk bagian template dan dokumen.
 	await logOut(page);
-	await logInAs(page, engineer.login, temporary);
-	await expect(page).toHaveURL('/account/password');
-	await page.getByLabel(en.passwordCurrent, { exact: true }).fill(temporary);
-	await page.getByLabel(en.passwordNew, { exact: true }).fill(engineer.password);
-	await page.getByLabel(en.passwordConfirm, { exact: true }).fill(engineer.password);
-	await page.getByRole('button', { name: en.passwordSave }).click();
-	await expect(page.getByRole('status')).toHaveText(en.passwordChanged);
+	await logInAs(page, engineer.login, engineer.password);
+	await expect(page.getByRole('button', { name: en.logout })).toBeVisible();
 	// Home akun kerja.
 	await page.goto('/');
 	await expect(page.getByRole('heading', { level: 1 })).toBeVisible();

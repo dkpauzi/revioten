@@ -1,7 +1,7 @@
 package printout
 
 // Layout sebagai data (M6.1, R-PRT-02). Developer menulis layout bawaan
-// (migrasi 00040); admin (A-2) bisa menambah layout, mengubah isinya, dan
+// (migrasi 00040); PPAP Engineer (E-11) bisa menambah layout, mengubah isinya, dan
 // memilih layout lain untuk satu customer, tanpa mengubah kode.
 
 import (
@@ -58,7 +58,7 @@ func (s *Service) Layouts(ctx context.Context, actor access.Actor) ([]PrintLayou
 	return out, nil
 }
 
-// CreateLayout menambah layout baru (A-2).
+// CreateLayout menambah layout baru (E-11).
 func (s *Service) CreateLayout(ctx context.Context, actor access.Actor, in LayoutInput) (PrintLayout, error) {
 	if err := s.authz.Authorize(ctx, actor, access.ManageMasterData, access.Resource{}); err != nil {
 		return PrintLayout{}, err
@@ -85,7 +85,7 @@ func (s *Service) CreateLayout(ctx context.Context, actor access.Actor, in Layou
 	return s.layout(ctx, id)
 }
 
-// UpdateLayout mengubah nama dan isi satu layout (A-2).
+// UpdateLayout mengubah nama dan isi satu layout (E-11).
 func (s *Service) UpdateLayout(ctx context.Context, actor access.Actor, id string, in LayoutInput) (PrintLayout, error) {
 	if err := s.authz.Authorize(ctx, actor, access.ManageMasterData, access.Resource{}); err != nil {
 		return PrintLayout{}, err
@@ -115,7 +115,7 @@ func (s *Service) UpdateLayout(ctx context.Context, actor access.Actor, id strin
 }
 
 // SetCustomerLayout memilih layout satu customer untuk satu jenis dokumen
-// (A-2). layoutID kosong kembali ke layout bawaan.
+// (E-11). layoutID kosong kembali ke layout bawaan.
 func (s *Service) SetCustomerLayout(ctx context.Context, actor access.Actor, customerID, documentTypeID, layoutID string) error {
 	if err := s.authz.Authorize(ctx, actor, access.ManageMasterData, access.Resource{}); err != nil {
 		return err

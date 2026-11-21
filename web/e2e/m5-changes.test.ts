@@ -5,7 +5,7 @@
 // menerbitkan form set AIAG 4th; dokumen hanya memakai form set yang terbit.
 import { expect, test, type Page } from '@playwright/test';
 import { en } from '../src/lib/i18n/en.ts';
-import { createWorkAccount, ensureProjectGroup, logIn, logInFirstTime, logOut, openFromMenu } from './helpers.ts';
+import { asMaster, createWorkAccount, ensureProjectGroup, logIn, logInFirstTime, logOut, openFromMenu } from './helpers.ts';
 
 // setupSet membuat customer CH dengan model C-1 dan satu set dokumen PFD,
 // PFMEA, dan CP. Dipanggil sebagai akun penyusun. Hasilnya nomor ketiganya.
@@ -29,14 +29,17 @@ async function setupSet(page: Page): Promise<Record<string, string>> {
 
 test('M5.1 dan M5.2: penyusun mengajukan perubahan dengan beberapa dokumen dan lampiran', async ({ page }) => {
 	await logIn(page);
-	await ensureProjectGroup(page, 'GR1');
-	await page.evaluate(async () => {
-		const post = (path: string, body: object) =>
-			fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then((r) => r.json());
-		const groups = await (await fetch('/api/v1/project-groups')).json();
-		const group = groups.items.find((g: { code: string }) => g.code === 'GR1');
-		const customer = await post('/api/v1/customers', { code: 'CH', name: 'Customer CH', project_group_id: group.id });
-		await post('/api/v1/models', { customer_id: customer.id, name: 'C-1' });
+	// Master data dibuat PPAP Engineer (E-11, D-209).
+	await asMaster(page, async (m) => {
+		await ensureProjectGroup(m, 'GR1');
+		await m.evaluate(async () => {
+			const post = (path: string, body: object) =>
+				fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then((r) => r.json());
+			const groups = await (await fetch('/api/v1/project-groups')).json();
+			const group = groups.items.find((g: { code: string }) => g.code === 'GR1');
+			const customer = await post('/api/v1/customers', { code: 'CH', name: 'Customer CH', project_group_id: group.id });
+			await post('/api/v1/models', { customer_id: customer.id, name: 'C-1' });
+		});
 	});
 	const temporary = await createWorkAccount(page, 'Pemohon perubahan', 'pemohon.e2e', ['ppap_engineer']);
 	await logOut(page);
@@ -102,17 +105,22 @@ test('M5.3: APQP/PPAP Controller menerima perubahan dengan catatan wajib', async
 	await logIn(page);
 	const temporary = await createWorkAccount(page, 'APQP PPAP Controller E2E', 'verifikator.e2e', ['ppap_engineer_supervisor']);
 	// Catat orangnya sebagai pemegang jabatan APQP/PPAP Controller (D-51, D-54).
-	await page.evaluate(async () => {
+	// Daftar akun dibaca admin; pemegang jabatan dicatat PPAP Engineer (D-209).
+	const personId = await page.evaluate(async () => {
 		const accounts = await (await fetch('/api/v1/accounts')).json();
-		const account = accounts.items.find((a: { login: string }) => a.login === 'verifikator.e2e');
-		const positions = await (await fetch('/api/v1/positions')).json();
-		const controller = positions.items.find((p: { key: string }) => p.key === 'apqp_ppap_controller');
-		await fetch(`/api/v1/positions/${controller.id}/holders`, {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ person_id: account.person.id })
-		});
+		return accounts.items.find((a: { login: string }) => a.login === 'verifikator.e2e').person.id as string;
 	});
+	await asMaster(page, (m) =>
+		m.evaluate(async (personId) => {
+			const positions = await (await fetch('/api/v1/positions')).json();
+			const controller = positions.items.find((p: { key: string }) => p.key === 'apqp_ppap_controller');
+			await fetch(`/api/v1/positions/${controller.id}/holders`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ person_id: personId })
+			});
+		}, personId)
+	);
 	await logOut(page);
 	await logInFirstTime(page, 'verifikator.e2e', temporary, 'verifikasi selalu dengan catatan');
 
@@ -326,13 +334,14 @@ test('M5.8: versi template baru dipropagasikan, dan isinya masuk ke draft saat p
 
 test('M5.9: perbaikan CHG-0001 disebarkan ke model C-2, dan statusnya terlihat per model', async ({ page }) => {
 	// Model kedua customer CH dengan satu set dokumen.
-	await logIn(page);
-	await page.evaluate(async () => {
-		const customers = await (await fetch('/api/v1/customers')).json();
-		const customer = customers.items.find((c: { code: string }) => c.code === 'CH');
-		await fetch('/api/v1/models', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customer_id: customer.id, name: 'C-2' }) });
-	});
-	await logOut(page);
+	await asMaster(page, (m) =>
+		m.evaluate(async () => {
+			const customers = await (await fetch('/api/v1/customers')).json();
+			const customer = customers.items.find((c: { code: string }) => c.code === 'CH');
+			await fetch('/api/v1/models', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customer_id: customer.id, name: 'C-2' }) });
+		})
+	);
+	await page.goto('/login');
 	await page.getByLabel(en.loginName, { exact: true }).fill('pemohon.e2e');
 	await page.getByLabel(en.loginPassword, { exact: true }).fill('perubahan selalu punya alasan');
 	await page.getByRole('button', { name: en.loginSubmit }).click();

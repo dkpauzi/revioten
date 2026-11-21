@@ -17,7 +17,7 @@ test('halaman Help menampilkan panduan, gambar, dan ikut berganti bahasa', async
 	for (const [n, chapter] of helpEn.chapters.entries()) {
 		await expect(page.getByRole('heading', { name: `${n + 1}. ${chapter.title}`, exact: true })).toBeVisible();
 	}
-	await page.getByRole('link', { name: helpEn.chapters[3].title, exact: true }).click(); // Accounts and roles
+	await page.getByRole('link', { name: helpEn.chapters[2].title, exact: true }).click(); // Accounts and roles (bab ke-3 sejak D-209)
 	await expect(page).toHaveURL('/help#accounts');
 	await expect(page.locator('#accounts')).toBeInViewport();
 

@@ -44,18 +44,19 @@ func newActor(t *testing.T, pool *pgxpool.Pool, login, kind string, roles ...str
 	return access.Actor{Type: access.ActorHuman, AccountID: acc.ID, AccountKind: kind, Login: login, PersonID: person.ID}
 }
 
-// fixture: database baru dan akun admin (A-2).
+// fixture: database baru dan akun PPAP Engineer untuk master data (E-11, D-209).
 type fixture struct {
-	s     *Service
-	pool  *pgxpool.Pool
-	admin access.Actor
+	s      *Service
+	pool   *pgxpool.Pool
+	master access.Actor
 }
 
 func newFixture(t *testing.T) fixture {
 	t.Helper()
 	pool := dbtest.NewPool(t)
-	admin := newActor(t, pool, "admin.uji", access.AccountAdmin, access.RoleAdmin)
-	return fixture{s: NewService(pool, access.NewChecker(pool)), pool: pool, admin: admin}
+	// Master data diurus PPAP Engineer (E-11, D-209).
+	master := newActor(t, pool, "ppap.master", access.AccountWork, access.RolePPAPEngineer)
+	return fixture{s: NewService(pool, access.NewChecker(pool)), pool: pool, master: master}
 }
 
 // problemCodes mengambil "field:kode" dari penolakan input.
@@ -85,7 +86,7 @@ func second[T any](_ T, err error) error { return err }
 // prefixes menulis jenis dokumen sebagai "nama=awalan", urut seperti daftar.
 func prefixes(t *testing.T, f fixture) []string {
 	t.Helper()
-	types, err := f.s.ListDocumentTypes(t.Context(), f.admin)
+	types, err := f.s.ListDocumentTypes(t.Context(), f.master)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -102,18 +103,18 @@ func prefixes(t *testing.T, f fixture) []string {
 func TestDefaults(t *testing.T) {
 	f := newFixture(t)
 	ctx := t.Context()
-	settings, err := f.s.GetSettings(ctx, f.admin)
+	settings, err := f.s.GetSettings(ctx, f.master)
 	if err != nil || settings.FactoryCode != "S" {
 		t.Errorf("pengaturan nomor: %+v, %v", settings, err)
 	}
 	if got := prefixes(t, f); !slices.Equal(got, []string{"PFD=SH", "PFMEA=SF", "CP=SC"}) {
 		t.Errorf("jenis dokumen: %v", got)
 	}
-	types, err := f.s.ListDocumentTypes(ctx, f.admin)
+	types, err := f.s.ListDocumentTypes(ctx, f.master)
 	if err != nil || types[0].Key != KeyPFD || types[1].Key != KeyPFMEA || types[2].Key != KeyCP {
 		t.Errorf("key jenis dokumen: %+v, %v", types, err)
 	}
-	codes, err := f.s.ListSpecialCodes(ctx, f.admin)
+	codes, err := f.s.ListSpecialCodes(ctx, f.master)
 	if err != nil || len(codes) != 2 || codes[0].Code != "HSE" || codes[1].Code != "ZZ" || codes[1].Name != "General/Common" {
 		t.Errorf("kode khusus: %+v, %v", codes, err)
 	}
@@ -125,7 +126,7 @@ func TestDefaults(t *testing.T) {
 func TestEditNumberParts(t *testing.T) {
 	f := newFixture(t)
 	ctx := t.Context()
-	settings, err := f.s.UpdateSettings(ctx, f.admin, SettingsInput{FactoryCode: " t "})
+	settings, err := f.s.UpdateSettings(ctx, f.master, SettingsInput{FactoryCode: " t "})
 	if err != nil || settings.FactoryCode != "T" {
 		t.Fatalf("UpdateSettings: %+v, %v", settings, err)
 	}
@@ -133,16 +134,16 @@ func TestEditNumberParts(t *testing.T) {
 		t.Errorf("awalan setelah kode pabrik diganti: %v", got)
 	}
 
-	types, err := f.s.ListDocumentTypes(ctx, f.admin)
+	types, err := f.s.ListDocumentTypes(ctx, f.master)
 	if err != nil {
 		t.Fatal(err)
 	}
 	pfd := types[0]
-	updated, err := f.s.UpdateDocumentType(ctx, f.admin, pfd.ID, DocumentTypeInput{Name: "Process Flow Diagram", Letter: "h"})
+	updated, err := f.s.UpdateDocumentType(ctx, f.master, pfd.ID, DocumentTypeInput{Name: "Process Flow Diagram", Letter: "h"})
 	if err != nil || updated.Name != "Process Flow Diagram" || updated.Prefix != "TH" || updated.Key != KeyPFD {
 		t.Errorf("UpdateDocumentType: %+v, %v", updated, err)
 	}
-	wi, err := f.s.CreateDocumentType(ctx, f.admin, DocumentTypeInput{Name: "Work Instruction", Letter: "w"})
+	wi, err := f.s.CreateDocumentType(ctx, f.master, DocumentTypeInput{Name: "Work Instruction", Letter: "w"})
 	if err != nil || wi.Prefix != "TW" || wi.Key != "" {
 		t.Errorf("CreateDocumentType: %+v, %v", wi, err)
 	}
@@ -155,12 +156,12 @@ func TestEditNumberParts(t *testing.T) {
 		err  error
 		want []string
 	}{
-		{"kode pabrik dua huruf", second(f.s.UpdateSettings(ctx, f.admin, SettingsInput{FactoryCode: "ST"})), []string{"factory_code:invalid_format"}},
-		{"kode pabrik kosong", second(f.s.UpdateSettings(ctx, f.admin, SettingsInput{FactoryCode: " "})), []string{"factory_code:required"}},
-		{"huruf dipakai jenis lain", second(f.s.CreateDocumentType(ctx, f.admin, DocumentTypeInput{Name: "Inspection Standard", Letter: "F"})), []string{"letter:taken"}},
-		{"nama dipakai jenis lain", second(f.s.UpdateDocumentType(ctx, f.admin, wi.ID, DocumentTypeInput{Name: "pfmea", Letter: "W"})), []string{"name:taken"}},
-		{"huruf bukan satu huruf", second(f.s.CreateDocumentType(ctx, f.admin, DocumentTypeInput{Name: "Inspection Standard", Letter: "IS"})), []string{"letter:invalid_format"}},
-		{"isian kosong", second(f.s.CreateDocumentType(ctx, f.admin, DocumentTypeInput{})), []string{"name:required", "letter:required"}},
+		{"kode pabrik dua huruf", second(f.s.UpdateSettings(ctx, f.master, SettingsInput{FactoryCode: "ST"})), []string{"factory_code:invalid_format"}},
+		{"kode pabrik kosong", second(f.s.UpdateSettings(ctx, f.master, SettingsInput{FactoryCode: " "})), []string{"factory_code:required"}},
+		{"huruf dipakai jenis lain", second(f.s.CreateDocumentType(ctx, f.master, DocumentTypeInput{Name: "Inspection Standard", Letter: "F"})), []string{"letter:taken"}},
+		{"nama dipakai jenis lain", second(f.s.UpdateDocumentType(ctx, f.master, wi.ID, DocumentTypeInput{Name: "pfmea", Letter: "W"})), []string{"name:taken"}},
+		{"huruf bukan satu huruf", second(f.s.CreateDocumentType(ctx, f.master, DocumentTypeInput{Name: "Inspection Standard", Letter: "IS"})), []string{"letter:invalid_format"}},
+		{"isian kosong", second(f.s.CreateDocumentType(ctx, f.master, DocumentTypeInput{})), []string{"name:required", "letter:required"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -169,7 +170,7 @@ func TestEditNumberParts(t *testing.T) {
 			}
 		})
 	}
-	if _, err := f.s.UpdateDocumentType(ctx, f.admin, "bukan-uuid", DocumentTypeInput{Name: "X", Letter: "X"}); !errors.Is(err, problem.ErrNotFound) {
+	if _, err := f.s.UpdateDocumentType(ctx, f.master, "bukan-uuid", DocumentTypeInput{Name: "X", Letter: "X"}); !errors.Is(err, problem.ErrNotFound) {
 		t.Errorf("jenis dokumen yang tidak ada: %v, ingin problem.ErrNotFound", err)
 	}
 }
@@ -180,23 +181,23 @@ func TestSpecialCodes(t *testing.T) {
 	f := newFixture(t)
 	ctx := t.Context()
 	customers := customer.NewService(f.pool, access.NewChecker(f.pool))
-	group, err := customers.CreateProjectGroup(ctx, f.admin, customer.ProjectGroupInput{Code: "GR1", Name: "Project Group 1"})
+	group, err := customers.CreateProjectGroup(ctx, f.master, customer.ProjectGroupInput{Code: "GR1", Name: "Project Group 1"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	ab, err := customers.Create(ctx, f.admin, customer.NewCustomer{Code: "AB", Name: "Customer A", ProjectGroupID: group.ID})
+	ab, err := customers.Create(ctx, f.master, customer.NewCustomer{Code: "AB", Name: "Customer A", ProjectGroupID: group.ID})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := customers.ChangeCode(ctx, f.admin, ab.ID, "AC"); err != nil {
+	if _, err := customers.ChangeCode(ctx, f.master, ab.ID, "AC"); err != nil {
 		t.Fatal(err)
 	}
 
-	qa, err := f.s.CreateSpecialCode(ctx, f.admin, NewSpecialCode{Code: " qa ", Name: "Quality general"})
+	qa, err := f.s.CreateSpecialCode(ctx, f.master, NewSpecialCode{Code: " qa ", Name: "Quality general"})
 	if err != nil || qa.Code != "QA" || qa.Name != "Quality general" {
 		t.Fatalf("CreateSpecialCode: %+v, %v", qa, err)
 	}
-	renamed, err := f.s.RenameSpecialCode(ctx, f.admin, qa.ID, "Quality Assurance")
+	renamed, err := f.s.RenameSpecialCode(ctx, f.master, qa.ID, "Quality Assurance")
 	if err != nil || renamed.Code != "QA" || renamed.Name != "Quality Assurance" {
 		t.Errorf("RenameSpecialCode: %+v, %v", renamed, err)
 	}
@@ -206,12 +207,12 @@ func TestSpecialCodes(t *testing.T) {
 		err  error
 		want []string
 	}{
-		{"kode ganda", second(f.s.CreateSpecialCode(ctx, f.admin, NewSpecialCode{Code: "zz", Name: "Lain"})), []string{"code:taken"}},
-		{"kode customer sekarang", second(f.s.CreateSpecialCode(ctx, f.admin, NewSpecialCode{Code: "AC", Name: "Lain"})), []string{"code:taken"}},
-		{"kode customer dulu", second(f.s.CreateSpecialCode(ctx, f.admin, NewSpecialCode{Code: "AB", Name: "Lain"})), []string{"code:taken"}},
-		{"bentuk salah", second(f.s.CreateSpecialCode(ctx, f.admin, NewSpecialCode{Code: "Q1", Name: "Lain"})), []string{"code:invalid_format"}},
-		{"empat huruf", second(f.s.CreateSpecialCode(ctx, f.admin, NewSpecialCode{Code: "ABCD", Name: "Lain"})), []string{"code:invalid_format"}},
-		{"nama kosong", second(f.s.RenameSpecialCode(ctx, f.admin, qa.ID, "")), []string{"name:required"}},
+		{"kode ganda", second(f.s.CreateSpecialCode(ctx, f.master, NewSpecialCode{Code: "zz", Name: "Lain"})), []string{"code:taken"}},
+		{"kode customer sekarang", second(f.s.CreateSpecialCode(ctx, f.master, NewSpecialCode{Code: "AC", Name: "Lain"})), []string{"code:taken"}},
+		{"kode customer dulu", second(f.s.CreateSpecialCode(ctx, f.master, NewSpecialCode{Code: "AB", Name: "Lain"})), []string{"code:taken"}},
+		{"bentuk salah", second(f.s.CreateSpecialCode(ctx, f.master, NewSpecialCode{Code: "Q1", Name: "Lain"})), []string{"code:invalid_format"}},
+		{"empat huruf", second(f.s.CreateSpecialCode(ctx, f.master, NewSpecialCode{Code: "ABCD", Name: "Lain"})), []string{"code:invalid_format"}},
+		{"nama kosong", second(f.s.RenameSpecialCode(ctx, f.master, qa.ID, "")), []string{"name:required"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -222,11 +223,11 @@ func TestSpecialCodes(t *testing.T) {
 	}
 
 	// Sebaliknya: customer tidak bisa memakai kode khusus, juga yang baru ditambah.
-	_, err = customers.Create(ctx, f.admin, customer.NewCustomer{Code: "qa", Name: "Customer Q", ProjectGroupID: group.ID})
+	_, err = customers.Create(ctx, f.master, customer.NewCustomer{Code: "qa", Name: "Customer Q", ProjectGroupID: group.ID})
 	if got := problemCodes(t, err); !slices.Equal(got, []string{"code:reserved"}) {
 		t.Errorf("customer dengan kode khusus: %v", got)
 	}
-	_, err = customers.ChangeCode(ctx, f.admin, ab.ID, "QA")
+	_, err = customers.ChangeCode(ctx, f.master, ab.ID, "QA")
 	if got := problemCodes(t, err); !slices.Equal(got, []string{"code:reserved"}) {
 		t.Errorf("ganti kode customer ke kode khusus: %v", got)
 	}
@@ -239,7 +240,7 @@ func TestCodePositionConcurrent(t *testing.T) {
 	f := newFixture(t)
 	ctx := t.Context()
 	customers := customer.NewService(f.pool, access.NewChecker(f.pool))
-	group, err := customers.CreateProjectGroup(ctx, f.admin, customer.ProjectGroupInput{Code: "GR1", Name: "Project Group 1"})
+	group, err := customers.CreateProjectGroup(ctx, f.master, customer.ProjectGroupInput{Code: "GR1", Name: "Project Group 1"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -251,10 +252,10 @@ func TestCodePositionConcurrent(t *testing.T) {
 	for i := range codes {
 		code := fmt.Sprintf("Q%c", 'A'+i)
 		wg.Go(func() {
-			_, specialErrs[i] = f.s.CreateSpecialCode(ctx, f.admin, NewSpecialCode{Code: code, Name: "Khusus " + code})
+			_, specialErrs[i] = f.s.CreateSpecialCode(ctx, f.master, NewSpecialCode{Code: code, Name: "Khusus " + code})
 		})
 		wg.Go(func() {
-			_, customerErrs[i] = customers.Create(ctx, f.admin, customer.NewCustomer{Code: code, Name: "Customer " + code, ProjectGroupID: group.ID})
+			_, customerErrs[i] = customers.Create(ctx, f.master, customer.NewCustomer{Code: code, Name: "Customer " + code, ProjectGroupID: group.ID})
 		})
 	}
 	wg.Wait()
@@ -275,7 +276,7 @@ func TestCodeRegistrationWaitsForLock(t *testing.T) {
 	f := newFixture(t)
 	ctx := t.Context()
 	customers := customer.NewService(f.pool, access.NewChecker(f.pool))
-	group, err := customers.CreateProjectGroup(ctx, f.admin, customer.ProjectGroupInput{Code: "GR1", Name: "Project Group 1"})
+	group, err := customers.CreateProjectGroup(ctx, f.master, customer.ProjectGroupInput{Code: "GR1", Name: "Project Group 1"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -291,11 +292,11 @@ func TestCodeRegistrationWaitsForLock(t *testing.T) {
 
 	done := make(chan error, 2)
 	go func() {
-		_, err := f.s.CreateSpecialCode(ctx, f.admin, NewSpecialCode{Code: "QY", Name: "Khusus QY"})
+		_, err := f.s.CreateSpecialCode(ctx, f.master, NewSpecialCode{Code: "QY", Name: "Khusus QY"})
 		done <- err
 	}()
 	go func() {
-		_, err := customers.Create(ctx, f.admin, customer.NewCustomer{Code: "QZ", Name: "Customer QZ", ProjectGroupID: group.ID})
+		_, err := customers.Create(ctx, f.master, customer.NewCustomer{Code: "QZ", Name: "Customer QZ", ProjectGroupID: group.ID})
 		done <- err
 	}()
 	select {
@@ -365,38 +366,38 @@ func TestAudit(t *testing.T) {
 		}
 	}
 
-	if _, err := f.s.UpdateSettings(ctx, f.admin, SettingsInput{FactoryCode: "T"}); err != nil {
+	if _, err := f.s.UpdateSettings(ctx, f.master, SettingsInput{FactoryCode: "T"}); err != nil {
 		t.Fatal(err)
 	}
 	check("kode pabrik", audit.ActionNumberSettingsUpdated, `{"factory_code":"S → T"}`)
-	types, err := f.s.ListDocumentTypes(ctx, f.admin)
+	types, err := f.s.ListDocumentTypes(ctx, f.master)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := f.s.UpdateDocumentType(ctx, f.admin, types[2].ID, DocumentTypeInput{Name: "Control Plan", Letter: "C"}); err != nil {
+	if _, err := f.s.UpdateDocumentType(ctx, f.master, types[2].ID, DocumentTypeInput{Name: "Control Plan", Letter: "C"}); err != nil {
 		t.Fatal(err)
 	}
 	check("jenis dokumen diubah", audit.ActionDocumentTypeUpdated, `{"name":"CP → Control Plan"}`)
-	if _, err := f.s.CreateDocumentType(ctx, f.admin, DocumentTypeInput{Name: "Work Instruction", Letter: "W"}); err != nil {
+	if _, err := f.s.CreateDocumentType(ctx, f.master, DocumentTypeInput{Name: "Work Instruction", Letter: "W"}); err != nil {
 		t.Fatal(err)
 	}
 	check("jenis dokumen ditambah", audit.ActionDocumentTypeCreated, `{"letter":"W","name":"Work Instruction"}`)
-	qa, err := f.s.CreateSpecialCode(ctx, f.admin, NewSpecialCode{Code: "QA", Name: "Quality"})
+	qa, err := f.s.CreateSpecialCode(ctx, f.master, NewSpecialCode{Code: "QA", Name: "Quality"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	check("kode khusus ditambah", audit.ActionSpecialCodeCreated, `{"code":"QA","name":"Quality"}`)
-	if _, err := f.s.RenameSpecialCode(ctx, f.admin, qa.ID, "Quality Assurance"); err != nil {
+	if _, err := f.s.RenameSpecialCode(ctx, f.master, qa.ID, "Quality Assurance"); err != nil {
 		t.Fatal(err)
 	}
 	check("kode khusus diganti nama", audit.ActionSpecialCodeUpdated, `{"name":"Quality → Quality Assurance"}`)
 
 	// Tanpa perubahan: tidak ada entri baru.
 	before := last().Seq
-	if _, err := f.s.UpdateSettings(ctx, f.admin, SettingsInput{FactoryCode: "T"}); err != nil {
+	if _, err := f.s.UpdateSettings(ctx, f.master, SettingsInput{FactoryCode: "T"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := f.s.RenameSpecialCode(ctx, f.admin, qa.ID, "Quality Assurance"); err != nil {
+	if _, err := f.s.RenameSpecialCode(ctx, f.master, qa.ID, "Quality Assurance"); err != nil {
 		t.Fatal(err)
 	}
 	if after := last().Seq; after != before {

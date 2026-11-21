@@ -45,7 +45,7 @@ func newActor(t *testing.T, pool *pgxpool.Pool, login, kind string, roles ...str
 type fixture struct {
 	s      *Service
 	pool   *pgxpool.Pool
-	admin  access.Actor
+	master access.Actor
 	ab, cd customer.Customer
 }
 
@@ -54,21 +54,22 @@ func newFixture(t *testing.T) fixture {
 	ctx := t.Context()
 	pool := dbtest.NewPool(t)
 	checker := access.NewChecker(pool)
-	admin := newActor(t, pool, "admin.uji", access.AccountAdmin, access.RoleAdmin)
+	// Master data diurus PPAP Engineer (E-11, D-209).
+	master := newActor(t, pool, "ppap.master", access.AccountWork, access.RolePPAPEngineer)
 	customers := customer.NewService(pool, checker)
-	group, err := customers.CreateProjectGroup(ctx, admin, customer.ProjectGroupInput{Code: "GR1", Name: "Project Group 1"})
+	group, err := customers.CreateProjectGroup(ctx, master, customer.ProjectGroupInput{Code: "GR1", Name: "Project Group 1"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	ab, err := customers.Create(ctx, admin, customer.NewCustomer{Code: "AB", Name: "Customer A", ProjectGroupID: group.ID})
+	ab, err := customers.Create(ctx, master, customer.NewCustomer{Code: "AB", Name: "Customer A", ProjectGroupID: group.ID})
 	if err != nil {
 		t.Fatal(err)
 	}
-	cd, err := customers.Create(ctx, admin, customer.NewCustomer{Code: "CD", Name: "Customer C", ProjectGroupID: group.ID})
+	cd, err := customers.Create(ctx, master, customer.NewCustomer{Code: "CD", Name: "Customer C", ProjectGroupID: group.ID})
 	if err != nil {
 		t.Fatal(err)
 	}
-	return fixture{s: NewService(pool, checker), pool: pool, admin: admin, ab: ab, cd: cd}
+	return fixture{s: NewService(pool, checker), pool: pool, master: master, ab: ab, cd: cd}
 }
 
 // problemCodes mengambil "field:kode" dari penolakan input.
@@ -109,25 +110,25 @@ func TestModelToCustomer(t *testing.T) {
 	f := newFixture(t)
 	ctx := t.Context()
 
-	group, err := f.s.CreateModelGroup(ctx, f.admin, NewModelGroup{CustomerID: f.ab.ID, Name: " Board Family "})
+	group, err := f.s.CreateModelGroup(ctx, f.master, NewModelGroup{CustomerID: f.ab.ID, Name: " Board Family "})
 	if err != nil {
 		t.Fatalf("CreateModelGroup: %v", err)
 	}
 	if group.Name != "Board Family" || group.CustomerID != f.ab.ID {
 		t.Errorf("group model: %+v", group)
 	}
-	inGroup, err := f.s.CreateModel(ctx, f.admin, NewModel{CustomerID: f.ab.ID, Name: "X100", ModelGroupID: group.ID})
+	inGroup, err := f.s.CreateModel(ctx, f.master, NewModel{CustomerID: f.ab.ID, Name: "X100", ModelGroupID: group.ID})
 	if err != nil {
 		t.Fatalf("CreateModel dengan group: %v", err)
 	}
-	alone, err := f.s.CreateModel(ctx, f.admin, NewModel{CustomerID: f.ab.ID, Name: "X200"})
+	alone, err := f.s.CreateModel(ctx, f.master, NewModel{CustomerID: f.ab.ID, Name: "X200"})
 	if err != nil {
 		t.Fatalf("CreateModel tanpa group: %v", err)
 	}
 	if inGroup.ModelGroupID != group.ID || inGroup.ModelGroupName != "Board Family" || alone.ModelGroupID != "" {
 		t.Errorf("model: %+v dan %+v", inGroup, alone)
 	}
-	part, err := f.s.CreatePartNumber(ctx, f.admin, NewPartNumber{ModelID: inGroup.ID, Number: " PN-0001 ", Name: "Main Board"})
+	part, err := f.s.CreatePartNumber(ctx, f.master, NewPartNumber{ModelID: inGroup.ID, Number: " PN-0001 ", Name: "Main Board"})
 	if err != nil {
 		t.Fatalf("CreatePartNumber: %v", err)
 	}
@@ -135,7 +136,7 @@ func TestModelToCustomer(t *testing.T) {
 		t.Errorf("part number: %+v", part)
 	}
 
-	models, err := f.s.ListModels(ctx, f.admin, f.ab.ID)
+	models, err := f.s.ListModels(ctx, f.master, f.ab.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -147,18 +148,18 @@ func TestModelToCustomer(t *testing.T) {
 		t.Errorf("ListModels AB: %v", names)
 	}
 	// Customer lain tidak melihat model AB.
-	if other, err := f.s.ListModels(ctx, f.admin, f.cd.ID); err != nil || len(other) != 0 {
+	if other, err := f.s.ListModels(ctx, f.master, f.cd.ID); err != nil || len(other) != 0 {
 		t.Errorf("ListModels CD: %+v, %v", other, err)
 	}
-	parts, err := f.s.ListPartNumbers(ctx, f.admin, f.ab.ID)
+	parts, err := f.s.ListPartNumbers(ctx, f.master, f.ab.ID)
 	if err != nil || len(parts) != 1 || parts[0].ID != part.ID {
 		t.Errorf("ListPartNumbers AB: %+v, %v", parts, err)
 	}
-	groups, err := f.s.ListModelGroups(ctx, f.admin, f.ab.ID)
+	groups, err := f.s.ListModelGroups(ctx, f.master, f.ab.ID)
 	if err != nil || len(groups) != 1 || groups[0].ID != group.ID {
 		t.Errorf("ListModelGroups AB: %+v, %v", groups, err)
 	}
-	if _, err := f.s.ListModels(ctx, f.admin, "01a180aa-a98b-7bf2-8e0d-b97a25ecc489"); !errors.Is(err, problem.ErrNotFound) {
+	if _, err := f.s.ListModels(ctx, f.master, "01a180aa-a98b-7bf2-8e0d-b97a25ecc489"); !errors.Is(err, problem.ErrNotFound) {
 		t.Errorf("customer yang tidak ada: %v, ingin problem.ErrNotFound", err)
 	}
 }
@@ -168,31 +169,31 @@ func TestModelToCustomer(t *testing.T) {
 func TestModelGroupBelongsToCustomer(t *testing.T) {
 	f := newFixture(t)
 	ctx := t.Context()
-	groupAB, err := f.s.CreateModelGroup(ctx, f.admin, NewModelGroup{CustomerID: f.ab.ID, Name: "Family"})
+	groupAB, err := f.s.CreateModelGroup(ctx, f.master, NewModelGroup{CustomerID: f.ab.ID, Name: "Family"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	// Nama group yang sama boleh dipakai customer lain.
-	groupCD, err := f.s.CreateModelGroup(ctx, f.admin, NewModelGroup{CustomerID: f.cd.ID, Name: "Family"})
+	groupCD, err := f.s.CreateModelGroup(ctx, f.master, NewModelGroup{CustomerID: f.cd.ID, Name: "Family"})
 	if err != nil {
 		t.Fatalf("nama group yang sama di customer lain: %v", err)
 	}
 
-	_, err = f.s.CreateModel(ctx, f.admin, NewModel{CustomerID: f.ab.ID, Name: "X100", ModelGroupID: groupCD.ID})
+	_, err = f.s.CreateModel(ctx, f.master, NewModel{CustomerID: f.ab.ID, Name: "X100", ModelGroupID: groupCD.ID})
 	if got := problemCodes(t, err); !slices.Equal(got, []string{"model_group_id:not_allowed"}) {
 		t.Errorf("group milik customer lain: %v", got)
 	}
-	model, err := f.s.CreateModel(ctx, f.admin, NewModel{CustomerID: f.ab.ID, Name: "X100"})
+	model, err := f.s.CreateModel(ctx, f.master, NewModel{CustomerID: f.ab.ID, Name: "X100"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = f.s.UpdateModel(ctx, f.admin, model.ID, ModelUpdate{Name: "X100", ModelGroupID: groupCD.ID})
+	_, err = f.s.UpdateModel(ctx, f.master, model.ID, ModelUpdate{Name: "X100", ModelGroupID: groupCD.ID})
 	if got := problemCodes(t, err); !slices.Equal(got, []string{"model_group_id:not_allowed"}) {
 		t.Errorf("pindah ke group milik customer lain: %v", got)
 	}
 
 	// Masuk group, lalu keluar lagi. Satu model paling banyak satu group.
-	moved, err := f.s.UpdateModel(ctx, f.admin, model.ID, ModelUpdate{Name: "X100A", ModelGroupID: groupAB.ID})
+	moved, err := f.s.UpdateModel(ctx, f.master, model.ID, ModelUpdate{Name: "X100A", ModelGroupID: groupAB.ID})
 	if err != nil || moved.ModelGroupID != groupAB.ID || moved.Name != "X100A" {
 		t.Fatalf("UpdateModel: %+v, %v", moved, err)
 	}
@@ -200,7 +201,7 @@ func TestModelGroupBelongsToCustomer(t *testing.T) {
 	if r.Action != audit.ActionModelUpdated || r.Details != `{"model_group":"- → Family","name":"X100 → X100A"}` {
 		t.Errorf("entri audit: %s %s", r.Action, r.Details)
 	}
-	out, err := f.s.UpdateModel(ctx, f.admin, model.ID, ModelUpdate{Name: "X100A"})
+	out, err := f.s.UpdateModel(ctx, f.master, model.ID, ModelUpdate{Name: "X100A"})
 	if err != nil || out.ModelGroupID != "" {
 		t.Errorf("keluar dari group: %+v, %v", out, err)
 	}
@@ -211,25 +212,25 @@ func TestModelGroupBelongsToCustomer(t *testing.T) {
 func TestNamesUnique(t *testing.T) {
 	f := newFixture(t)
 	ctx := t.Context()
-	if _, err := f.s.CreateModelGroup(ctx, f.admin, NewModelGroup{CustomerID: f.ab.ID, Name: "Family"}); err != nil {
+	if _, err := f.s.CreateModelGroup(ctx, f.master, NewModelGroup{CustomerID: f.ab.ID, Name: "Family"}); err != nil {
 		t.Fatal(err)
 	}
-	m1, err := f.s.CreateModel(ctx, f.admin, NewModel{CustomerID: f.ab.ID, Name: "X100"})
+	m1, err := f.s.CreateModel(ctx, f.master, NewModel{CustomerID: f.ab.ID, Name: "X100"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	m2, err := f.s.CreateModel(ctx, f.admin, NewModel{CustomerID: f.ab.ID, Name: "X200"})
+	m2, err := f.s.CreateModel(ctx, f.master, NewModel{CustomerID: f.ab.ID, Name: "X200"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := f.s.CreatePartNumber(ctx, f.admin, NewPartNumber{ModelID: m1.ID, Number: "PN-1"}); err != nil {
+	if _, err := f.s.CreatePartNumber(ctx, f.master, NewPartNumber{ModelID: m1.ID, Number: "PN-1"}); err != nil {
 		t.Fatal(err)
 	}
-	mCD, err := f.s.CreateModel(ctx, f.admin, NewModel{CustomerID: f.cd.ID, Name: "X100"})
+	mCD, err := f.s.CreateModel(ctx, f.master, NewModel{CustomerID: f.cd.ID, Name: "X100"})
 	if err != nil {
 		t.Fatalf("nama model yang sama di customer lain: %v", err)
 	}
-	if _, err := f.s.CreatePartNumber(ctx, f.admin, NewPartNumber{ModelID: mCD.ID, Number: "PN-1"}); err != nil {
+	if _, err := f.s.CreatePartNumber(ctx, f.master, NewPartNumber{ModelID: mCD.ID, Number: "PN-1"}); err != nil {
 		t.Fatalf("nomor part yang sama di customer lain: %v", err)
 	}
 
@@ -238,14 +239,14 @@ func TestNamesUnique(t *testing.T) {
 		err  error
 		want []string
 	}{
-		{"group ganda", second(f.s.CreateModelGroup(ctx, f.admin, NewModelGroup{CustomerID: f.ab.ID, Name: "Family"})), []string{"name:taken"}},
-		{"model ganda", second(f.s.CreateModel(ctx, f.admin, NewModel{CustomerID: f.ab.ID, Name: "X100"})), []string{"name:taken"}},
-		{"model diganti ke nama yang dipakai", second(f.s.UpdateModel(ctx, f.admin, m2.ID, ModelUpdate{Name: "X100"})), []string{"name:taken"}},
-		{"nomor part ganda di model lain", second(f.s.CreatePartNumber(ctx, f.admin, NewPartNumber{ModelID: m2.ID, Number: "PN-1"})), []string{"number:taken"}},
-		{"isian kosong", second(f.s.CreateModel(ctx, f.admin, NewModel{CustomerID: f.ab.ID})), []string{"name:required"}},
-		{"nomor part kosong", second(f.s.CreatePartNumber(ctx, f.admin, NewPartNumber{ModelID: m2.ID})), []string{"number:required"}},
-		{"customer tidak ada", second(f.s.CreateModelGroup(ctx, f.admin, NewModelGroup{CustomerID: "bukan-uuid", Name: "X"})), []string{"customer_id:invalid_format"}},
-		{"model tidak ada", second(f.s.CreatePartNumber(ctx, f.admin, NewPartNumber{ModelID: "bukan-uuid", Number: "X"})), []string{"model_id:invalid_format"}},
+		{"group ganda", second(f.s.CreateModelGroup(ctx, f.master, NewModelGroup{CustomerID: f.ab.ID, Name: "Family"})), []string{"name:taken"}},
+		{"model ganda", second(f.s.CreateModel(ctx, f.master, NewModel{CustomerID: f.ab.ID, Name: "X100"})), []string{"name:taken"}},
+		{"model diganti ke nama yang dipakai", second(f.s.UpdateModel(ctx, f.master, m2.ID, ModelUpdate{Name: "X100"})), []string{"name:taken"}},
+		{"nomor part ganda di model lain", second(f.s.CreatePartNumber(ctx, f.master, NewPartNumber{ModelID: m2.ID, Number: "PN-1"})), []string{"number:taken"}},
+		{"isian kosong", second(f.s.CreateModel(ctx, f.master, NewModel{CustomerID: f.ab.ID})), []string{"name:required"}},
+		{"nomor part kosong", second(f.s.CreatePartNumber(ctx, f.master, NewPartNumber{ModelID: m2.ID})), []string{"number:required"}},
+		{"customer tidak ada", second(f.s.CreateModelGroup(ctx, f.master, NewModelGroup{CustomerID: "bukan-uuid", Name: "X"})), []string{"customer_id:invalid_format"}},
+		{"model tidak ada", second(f.s.CreatePartNumber(ctx, f.master, NewPartNumber{ModelID: "bukan-uuid", Number: "X"})), []string{"model_id:invalid_format"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -264,12 +265,12 @@ func second[T any](_ T, err error) error { return err }
 func TestInactiveCustomer(t *testing.T) {
 	f := newFixture(t)
 	ctx := t.Context()
-	model, err := f.s.CreateModel(ctx, f.admin, NewModel{CustomerID: f.ab.ID, Name: "X100"})
+	model, err := f.s.CreateModel(ctx, f.master, NewModel{CustomerID: f.ab.ID, Name: "X100"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	customers := customer.NewService(f.pool, access.NewChecker(f.pool))
-	_, err = customers.Update(ctx, f.admin, f.ab.ID, customer.CustomerUpdate{Name: f.ab.Name, ProjectGroupID: f.ab.ProjectGroupID, Active: new(false)})
+	_, err = customers.Update(ctx, f.master, f.ab.ID, customer.CustomerUpdate{Name: f.ab.Name, ProjectGroupID: f.ab.ProjectGroupID, Active: new(false)})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -279,9 +280,9 @@ func TestInactiveCustomer(t *testing.T) {
 		err  error
 		want []string
 	}{
-		{"group", second(f.s.CreateModelGroup(ctx, f.admin, NewModelGroup{CustomerID: f.ab.ID, Name: "Family"})), []string{"customer_id:not_allowed"}},
-		{"model", second(f.s.CreateModel(ctx, f.admin, NewModel{CustomerID: f.ab.ID, Name: "X200"})), []string{"customer_id:not_allowed"}},
-		{"part number", second(f.s.CreatePartNumber(ctx, f.admin, NewPartNumber{ModelID: model.ID, Number: "PN-1"})), []string{"model_id:not_allowed"}},
+		{"group", second(f.s.CreateModelGroup(ctx, f.master, NewModelGroup{CustomerID: f.ab.ID, Name: "Family"})), []string{"customer_id:not_allowed"}},
+		{"model", second(f.s.CreateModel(ctx, f.master, NewModel{CustomerID: f.ab.ID, Name: "X200"})), []string{"customer_id:not_allowed"}},
+		{"part number", second(f.s.CreatePartNumber(ctx, f.master, NewPartNumber{ModelID: model.ID, Number: "PN-1"})), []string{"model_id:not_allowed"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -298,7 +299,7 @@ func TestPermissions(t *testing.T) {
 	f := newFixture(t)
 	ctx := t.Context()
 	author := newActor(t, f.pool, "penyusun.uji", access.AccountWork, access.RoleAuthor, access.RoleTemplateMaintainer)
-	model, err := f.s.CreateModel(ctx, f.admin, NewModel{CustomerID: f.ab.ID, Name: "X100"})
+	model, err := f.s.CreateModel(ctx, f.master, NewModel{CustomerID: f.ab.ID, Name: "X100"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -328,34 +329,34 @@ func TestPermissions(t *testing.T) {
 func TestAudit(t *testing.T) {
 	f := newFixture(t)
 	ctx := t.Context()
-	group, err := f.s.CreateModelGroup(ctx, f.admin, NewModelGroup{CustomerID: f.ab.ID, Name: "Family"})
+	group, err := f.s.CreateModelGroup(ctx, f.master, NewModelGroup{CustomerID: f.ab.ID, Name: "Family"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if r := lastAudit(t, f.pool); r.Action != audit.ActionModelGroupCreated || r.Details != `{"customer":"AB","name":"Family"}` {
 		t.Errorf("group dibuat: %s %s", r.Action, r.Details)
 	}
-	if _, err := f.s.RenameModelGroup(ctx, f.admin, group.ID, "Family B"); err != nil {
+	if _, err := f.s.RenameModelGroup(ctx, f.master, group.ID, "Family B"); err != nil {
 		t.Fatal(err)
 	}
 	if r := lastAudit(t, f.pool); r.Action != audit.ActionModelGroupUpdated || r.Details != `{"name":"Family → Family B"}` {
 		t.Errorf("group diganti nama: %s %s", r.Action, r.Details)
 	}
-	model, err := f.s.CreateModel(ctx, f.admin, NewModel{CustomerID: f.ab.ID, Name: "X100", ModelGroupID: group.ID})
+	model, err := f.s.CreateModel(ctx, f.master, NewModel{CustomerID: f.ab.ID, Name: "X100", ModelGroupID: group.ID})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if r := lastAudit(t, f.pool); r.Action != audit.ActionModelCreated || r.Details != `{"customer":"AB","model_group":"Family B","name":"X100"}` {
 		t.Errorf("model dibuat: %s %s", r.Action, r.Details)
 	}
-	part, err := f.s.CreatePartNumber(ctx, f.admin, NewPartNumber{ModelID: model.ID, Number: "PN-1"})
+	part, err := f.s.CreatePartNumber(ctx, f.master, NewPartNumber{ModelID: model.ID, Number: "PN-1"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if r := lastAudit(t, f.pool); r.Action != audit.ActionPartNumberCreated || r.Details != `{"model":"X100","number":"PN-1"}` {
 		t.Errorf("part number dibuat: %s %s", r.Action, r.Details)
 	}
-	updated, err := f.s.UpdatePartNumber(ctx, f.admin, part.ID, PartNumberUpdate{Number: "PN-1A", Name: "Main Board"})
+	updated, err := f.s.UpdatePartNumber(ctx, f.master, part.ID, PartNumberUpdate{Number: "PN-1A", Name: "Main Board"})
 	if err != nil || updated.Number != "PN-1A" || updated.Name != "Main Board" {
 		t.Fatalf("UpdatePartNumber: %+v, %v", updated, err)
 	}

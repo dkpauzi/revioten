@@ -63,7 +63,7 @@ type fixture struct {
 	pool     *pgxpool.Pool
 	q        *db.Queries
 	numbers  *numbering.Service
-	admin    access.Actor
+	master   access.Actor
 	author   access.Actor
 	viewer   access.Actor
 	custAB   string
@@ -83,19 +83,20 @@ func newFixture(t *testing.T) fixture {
 	pool := dbtest.NewPool(t)
 	checker := access.NewChecker(pool)
 	f := fixture{s: NewService(pool, checker), pool: pool, q: db.New(pool), numbers: numbering.NewService(pool, checker)}
-	f.admin = newActor(t, pool, "admin.uji", access.AccountAdmin, all(access.RoleAdmin))
+	// Master data dan format template diurus PPAP Engineer (E-11, D-209).
+	f.master = newActor(t, pool, "ppap.master", access.AccountWork, all(access.RolePPAPEngineer))
 	f.author = newActor(t, pool, "penyusun.uji", access.AccountWork, all(access.RoleAuthor))
 	f.viewer = newActor(t, pool, "viewer.uji", access.AccountWork)
 	approver := newActor(t, pool, "ppap.supervisor", access.AccountWork, all(access.RoleFormApprover))
 
 	// Customer lewat layanannya, supaya kode customer untuk penomoran ikut tercatat.
 	customers := customer.NewService(pool, checker)
-	group, err := customers.CreateProjectGroup(ctx, f.admin, customer.ProjectGroupInput{Code: "GR1", Name: "Project Group 1"})
+	group, err := customers.CreateProjectGroup(ctx, f.master, customer.ProjectGroupInput{Code: "GR1", Name: "Project Group 1"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	newCustomer := func(code string) string {
-		c, err := customers.Create(ctx, f.admin, customer.NewCustomer{Code: code, Name: "Customer " + code, ProjectGroupID: group.ID})
+		c, err := customers.Create(ctx, f.master, customer.NewCustomer{Code: code, Name: "Customer " + code, ProjectGroupID: group.ID})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -123,20 +124,20 @@ func newFixture(t *testing.T) fixture {
 
 	// Form set AIAG 4th diterbitkan: format oleh admin, set oleh penyetuju form.
 	templates := template.NewService(pool, checker)
-	sets, err := templates.ListFormSets(ctx, f.admin)
+	sets, err := templates.ListFormSets(ctx, f.master)
 	if err != nil {
 		t.Fatal(err)
 	}
 	v1 := sets.Sets[0].Versions[0]
 	for _, id := range []string{v1.PFD.FormatVersionID, v1.PFMEA.FormatVersionID, v1.CP.FormatVersionID} {
-		if _, err := templates.PublishFormatVersion(ctx, f.admin, id); err != nil {
+		if _, err := templates.PublishFormatVersion(ctx, f.master, id); err != nil {
 			t.Fatal(err)
 		}
 	}
 	if _, err := templates.PublishFormSetVersion(ctx, approver, v1.ID); err != nil {
 		t.Fatal(err)
 	}
-	if f.cpFormat, err = templates.GetFormatVersion(ctx, f.admin, v1.CP.FormatVersionID); err != nil {
+	if f.cpFormat, err = templates.GetFormatVersion(ctx, f.master, v1.CP.FormatVersionID); err != nil {
 		t.Fatal(err)
 	}
 	f.cpNumber = f.register(t, "cp")

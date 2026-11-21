@@ -3,7 +3,7 @@ package product
 // Model end of life (D-200). PPAP Engineer dan Project Leader menandai model
 // yang sudah tidak diproduksi, supaya set dokumennya keluar dari review
 // berkala. Haknya E-2 (buat dan edit draft) untuk customer model itu, karena
-// kedua peran itu yang memegangnya; master model lainnya tetap A-2.
+// kedua peran itu yang memegangnya; master model lainnya tetap E-11.
 
 import (
 	"context"

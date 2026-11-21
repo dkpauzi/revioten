@@ -97,7 +97,8 @@ func TestPermissionsPerOperation(t *testing.T) {
 	})
 
 	// Admin pertama, satu akun kerja tanpa peran (hanya hak dasar Viewer), dan
-	// satu akun kerja PPAP Engineer dengan peran Pengelola template (D-64).
+	// satu akun kerja PPAP Engineer Supervisor, yang juga mengurus master data
+	// (E-11, D-209).
 	if _, err := authSvc.CreateFirstAdmin(ctx, "Admin Uji", "admin.uji", "kuda terbang di atas sawah"); err != nil {
 		t.Fatal(err)
 	}
@@ -135,24 +136,24 @@ func TestPermissionsPerOperation(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Master data yang dirujuk operasi di bawah (M1.4).
-	group, err := customers.CreateProjectGroup(ctx, admin, customer.ProjectGroupInput{Code: "GR1", Name: "Project Group 1"})
+	// Master data yang dirujuk operasi di bawah (M1.4), dibuat PPAP Engineer (D-209).
+	group, err := customers.CreateProjectGroup(ctx, engineer, customer.ProjectGroupInput{Code: "GR1", Name: "Project Group 1"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	cust, err := customers.Create(ctx, admin, customer.NewCustomer{Code: "XY", Name: "Customer Uji", ProjectGroupID: group.ID})
+	cust, err := customers.Create(ctx, engineer, customer.NewCustomer{Code: "XY", Name: "Customer Uji", ProjectGroupID: group.ID})
 	if err != nil {
 		t.Fatal(err)
 	}
-	modelGroup, err := products.CreateModelGroup(ctx, admin, product.NewModelGroup{CustomerID: cust.ID, Name: "Family"})
+	modelGroup, err := products.CreateModelGroup(ctx, engineer, product.NewModelGroup{CustomerID: cust.ID, Name: "Family"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	model, err := products.CreateModel(ctx, admin, product.NewModel{CustomerID: cust.ID, Name: "X100"})
+	model, err := products.CreateModel(ctx, engineer, product.NewModel{CustomerID: cust.ID, Name: "X100"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	part, err := products.CreatePartNumber(ctx, admin, product.NewPartNumber{ModelID: model.ID, Number: "PN-1"})
+	part, err := products.CreatePartNumber(ctx, engineer, product.NewPartNumber{ModelID: model.ID, Number: "PN-1"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -202,7 +203,7 @@ func TestPermissionsPerOperation(t *testing.T) {
 			ppapEngineer = p
 		}
 	}
-	holder, err := approvals.AddHolder(ctx, admin, ppapEngineer.ID, approval.NewHolder{PersonID: admin.PersonID})
+	holder, err := approvals.AddHolder(ctx, engineer, ppapEngineer.ID, approval.NewHolder{PersonID: admin.PersonID})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -238,7 +239,7 @@ func TestPermissionsPerOperation(t *testing.T) {
 	vdaSet := formSets.Sets[1]
 	vdaV := vdaSet.Versions[0]
 	for _, id := range []string{vdaV.PFD.FormatVersionID, vdaV.CP.FormatVersionID} {
-		if _, err := templates.PublishFormatVersion(ctx, admin, id); err != nil {
+		if _, err := templates.PublishFormatVersion(ctx, engineer, id); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -248,7 +249,7 @@ func TestPermissionsPerOperation(t *testing.T) {
 	if _, err := templates.PublishFormSetVersion(ctx, engineer, vdaV.ID); err != nil {
 		t.Fatal(err)
 	}
-	if err := templates.SetCustomerFormSet(ctx, admin, cust.ID, vdaSet.ID); err != nil {
+	if err := templates.SetCustomerFormSet(ctx, engineer, cust.ID, vdaSet.ID); err != nil {
 		t.Fatal(err)
 	}
 	docNumbers, err := numbers.RegisterSet(ctx, engineer, numbering.NewSet{CustomerID: cust.ID, IdempotencyKey: "setup-dokumen"})
@@ -354,9 +355,9 @@ func TestPermissionsPerOperation(t *testing.T) {
 		{http.MethodGet, "/api/v1/session", "", http.StatusOK, http.StatusOK, http.StatusOK},
 		{http.MethodPut, "/api/v1/account/password", `{"current_password":"salah","new_password":"x"}`, http.StatusUnprocessableEntity, http.StatusUnprocessableEntity, http.StatusUnprocessableEntity},
 		{http.MethodGet, "/api/v1/customers", "", http.StatusOK, http.StatusOK, http.StatusOK},
-		{http.MethodPost, "/api/v1/customers", `{"code":"AB","name":"Customer Baru","project_group_id":"{projectGroupId}"}`, http.StatusForbidden, http.StatusForbidden, http.StatusCreated},
-		{http.MethodPut, "/api/v1/customers/{customerId}", `{"name":"Customer Ubah","project_group_id":"{projectGroupId}","active":true}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
-		{http.MethodPost, "/api/v1/customers/{customerId}/code", `{"code":"XZ"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodPost, "/api/v1/customers", `{"code":"AB","name":"Customer Baru","project_group_id":"{projectGroupId}"}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
+		{http.MethodPut, "/api/v1/customers/{customerId}", `{"name":"Customer Ubah","project_group_id":"{projectGroupId}","active":true}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		{http.MethodPost, "/api/v1/customers/{customerId}/code", `{"code":"XZ"}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		// Register nomor (Tahap 2): mendaftarkan lewat E-1 (Penyusun), melihat lewat L-2.
 		{http.MethodGet, "/api/v1/document-numbers/next?customer_id={customerId}&document_type_id={cpTypeId}", "", http.StatusOK, http.StatusOK, http.StatusOK},
 		{http.MethodPost, "/api/v1/document-numbers", `{"customer_id":"{customerId}","document_type_id":"{cpTypeId}"}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
@@ -368,17 +369,17 @@ func TestPermissionsPerOperation(t *testing.T) {
 		// Impor nomor lama juga lewat E-8 (UC-14); pratinjau, supaya register tidak berubah.
 		{http.MethodPost, "/api/v1/document-number-imports", `{"customer_id":"{customerId}","status":"released","text":"SC-XY-900","dry_run":true}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/project-groups", "", http.StatusOK, http.StatusOK, http.StatusOK},
-		{http.MethodPost, "/api/v1/project-groups", `{"code":"GR2","name":"Project Group 2"}`, http.StatusForbidden, http.StatusForbidden, http.StatusCreated},
-		{http.MethodPut, "/api/v1/project-groups/{projectGroupId}", `{"code":"GR1","name":"Satu"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodPost, "/api/v1/project-groups", `{"code":"GR2","name":"Project Group 2"}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
+		{http.MethodPut, "/api/v1/project-groups/{projectGroupId}", `{"code":"GR1","name":"Satu"}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/model-groups?customer_id={customerId}", "", http.StatusOK, http.StatusOK, http.StatusOK},
-		{http.MethodPost, "/api/v1/model-groups", `{"customer_id":"{customerId}","name":"Family 2"}`, http.StatusForbidden, http.StatusForbidden, http.StatusCreated},
-		{http.MethodPut, "/api/v1/model-groups/{modelGroupId}", `{"name":"Family B"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodPost, "/api/v1/model-groups", `{"customer_id":"{customerId}","name":"Family 2"}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
+		{http.MethodPut, "/api/v1/model-groups/{modelGroupId}", `{"name":"Family B"}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/models?customer_id={customerId}", "", http.StatusOK, http.StatusOK, http.StatusOK},
-		{http.MethodPost, "/api/v1/models", `{"customer_id":"{customerId}","name":"X200"}`, http.StatusForbidden, http.StatusForbidden, http.StatusCreated},
-		{http.MethodPut, "/api/v1/models/{modelId}", `{"name":"X100A","model_group_id":"{modelGroupId}"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodPost, "/api/v1/models", `{"customer_id":"{customerId}","name":"X200"}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
+		{http.MethodPut, "/api/v1/models/{modelId}", `{"name":"X100A","model_group_id":"{modelGroupId}"}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/part-numbers?customer_id={customerId}", "", http.StatusOK, http.StatusOK, http.StatusOK},
-		{http.MethodPost, "/api/v1/part-numbers", `{"model_id":"{modelId}","number":"PN-2"}`, http.StatusForbidden, http.StatusForbidden, http.StatusCreated},
-		{http.MethodPut, "/api/v1/part-numbers/{partNumberId}", `{"number":"PN-1A"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodPost, "/api/v1/part-numbers", `{"model_id":"{modelId}","number":"PN-2"}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
+		{http.MethodPut, "/api/v1/part-numbers/{partNumberId}", `{"number":"PN-1A"}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		// Master proses dikelola Pengelola template (E-6, D-64), bukan admin.
 		{http.MethodGet, "/api/v1/processes", "", http.StatusOK, http.StatusOK, http.StatusOK},
 		{http.MethodPost, "/api/v1/processes", `{"name":"SMT","aliases":["Surface Mount"]}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
@@ -400,25 +401,25 @@ func TestPermissionsPerOperation(t *testing.T) {
 		// ini, karena versi terbit menolak perubahan di baris-baris sebelumnya.
 		{http.MethodPost, "/api/v1/process-template-versions/{processVersionId}/publish", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodPost, "/api/v1/process-templates/{processTemplateId}/versions", "", http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
-		// Jenis dokumen dan perubahan diubah Admin (A-2, UC-05).
+		// Jenis dokumen dan perubahan diubah PPAP Engineer (E-11, UC-05, D-209).
 		{http.MethodGet, "/api/v1/number-settings", "", http.StatusOK, http.StatusOK, http.StatusOK},
-		{http.MethodPut, "/api/v1/number-settings", `{"factory_code":"T"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodPut, "/api/v1/number-settings", `{"factory_code":"T"}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/document-types", "", http.StatusOK, http.StatusOK, http.StatusOK},
-		{http.MethodPost, "/api/v1/document-types", `{"name":"Work Instruction","letter":"W"}`, http.StatusForbidden, http.StatusForbidden, http.StatusCreated},
-		{http.MethodPut, "/api/v1/document-types/{documentTypeId}", `{"name":"Process Flow Diagram","letter":"H"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodPost, "/api/v1/document-types", `{"name":"Work Instruction","letter":"W"}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
+		{http.MethodPut, "/api/v1/document-types/{documentTypeId}", `{"name":"Process Flow Diagram","letter":"H"}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/special-codes", "", http.StatusOK, http.StatusOK, http.StatusOK},
-		{http.MethodPost, "/api/v1/special-codes", `{"code":"QA","name":"Quality"}`, http.StatusForbidden, http.StatusForbidden, http.StatusCreated},
-		{http.MethodPut, "/api/v1/special-codes/{specialCodeId}", `{"name":"Health and Safety"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
-		// Format template (M3.1): semua akun melihat (L-2), admin mengubah (A-2, UC-20).
+		{http.MethodPost, "/api/v1/special-codes", `{"code":"QA","name":"Quality"}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
+		{http.MethodPut, "/api/v1/special-codes/{specialCodeId}", `{"name":"Health and Safety"}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		// Format template (M3.1): semua akun melihat (L-2), PPAP Engineer mengubah (E-11, UC-20, D-209).
 		{http.MethodGet, "/api/v1/format-templates", "", http.StatusOK, http.StatusOK, http.StatusOK},
-		{http.MethodPost, "/api/v1/format-templates", `{"name":"PFD copy","document_type_id":"{documentTypeId}","risk_method":"none"}`, http.StatusForbidden, http.StatusForbidden, http.StatusCreated},
-		{http.MethodPut, "/api/v1/format-templates/{formatTemplateId}", `{"name":"PFMEA AIAG 4th"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodPost, "/api/v1/format-templates", `{"name":"PFD copy","document_type_id":"{documentTypeId}","risk_method":"none"}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
+		{http.MethodPut, "/api/v1/format-templates/{formatTemplateId}", `{"name":"PFMEA AIAG 4th"}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/format-template-versions/{formatVersionId}", "", http.StatusOK, http.StatusOK, http.StatusOK},
-		{http.MethodPut, "/api/v1/format-template-versions/{formatVersionId}", `{"highlight_rpn_above":100}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
-		{http.MethodPost, "/api/v1/format-template-versions/{formatVersionId}/fields", `{"area":"row","kind":"text","label":"Note"}`, http.StatusForbidden, http.StatusForbidden, http.StatusCreated},
-		{http.MethodPut, "/api/v1/format-template-versions/{formatVersionId}/fields/{formatFieldId}", `{"label":"Process or Line"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
-		{http.MethodPut, "/api/v1/format-template-versions/{formatVersionId}/rating-criteria", `{"items":[{"scale":"severity","value":1,"criteria":""}]}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
-		{http.MethodPut, "/api/v1/format-template-versions/{formatVersionId}/symbols", `{"items":[{"key":"critical_process","name":"Critical Process"},{"key":"revision","name":"Revision"},{"key":"important_character","name":"Important Character"},{"key":"regulation","name":"Regulation"}]}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodPut, "/api/v1/format-template-versions/{formatVersionId}", `{"highlight_rpn_above":100}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		{http.MethodPost, "/api/v1/format-template-versions/{formatVersionId}/fields", `{"area":"row","kind":"text","label":"Note"}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
+		{http.MethodPut, "/api/v1/format-template-versions/{formatVersionId}/fields/{formatFieldId}", `{"label":"Process or Line"}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		{http.MethodPut, "/api/v1/format-template-versions/{formatVersionId}/rating-criteria", `{"items":[{"scale":"severity","value":1,"criteria":""}]}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		{http.MethodPut, "/api/v1/format-template-versions/{formatVersionId}/symbols", `{"items":[{"key":"critical_process","name":"Critical Process"},{"key":"revision","name":"Revision"},{"key":"important_character","name":"Important Character"},{"key":"regulation","name":"Regulation"}]}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		// Dokumen (M4.1): melihat draft lewat L-4, mengubah lewat E-2. Admin tidak memegang keduanya.
 		{http.MethodGet, "/api/v1/documents?customer_id={customerId}", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodPost, "/api/v1/documents", `{"document_number_id":"{freeNumberId}","model_ids":["{modelId}"]}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
@@ -432,20 +433,20 @@ func TestPermissionsPerOperation(t *testing.T) {
 		{http.MethodGet, "/api/v1/documents/{documentId}/prints", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodPost, "/api/v1/documents/{documentId}/scan", scanBody, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/documents/{documentId}/revisions/{revision}/scan", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
-		// Form Control Submission (D-207): baca L-4, isi E-7, bawaan customer A-2. Berkas uji.txt ditolak (422), jadi belum ada scan (404).
+		// Form Control Submission (D-207): baca L-4, isi E-7, bawaan customer E-11. Berkas uji.txt ditolak (422), jadi belum ada scan (404).
 		{http.MethodGet, "/api/v1/documents/{documentId}/submission-control", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/documents/{documentId}/submission-control/export?format=xlsx", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodPut, "/api/v1/documents/{documentId}/submission-control/{revision}", `{"remark":"Uji"}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodPost, "/api/v1/documents/{documentId}/submission-control/{revision}/scan", multipartBody, http.StatusForbidden, http.StatusUnprocessableEntity, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/documents/{documentId}/submission-control/{revision}/scan", "", http.StatusForbidden, http.StatusNotFound, http.StatusForbidden},
-		{http.MethodPut, "/api/v1/customers/{customerId}/submission-required", `{"required":true}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodPut, "/api/v1/customers/{customerId}/submission-required", `{"required":true}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/verify/{revisionId}", "", http.StatusOK, http.StatusOK, http.StatusOK},
-		// Layout (M6.1): semua akun kerja melihat (L-2); admin mengubah (A-2).
+		// Layout (M6.1): semua akun kerja melihat (L-2); PPAP Engineer mengubah (E-11, D-209).
 		{http.MethodGet, "/api/v1/print-layouts", "", http.StatusOK, http.StatusOK, http.StatusOK},
-		{http.MethodPost, "/api/v1/print-layouts", `{"name":"Layout uji","document_type_id":"{cpTypeId}","layout":{"paper":"A4"}}`, http.StatusForbidden, http.StatusForbidden, http.StatusCreated},
-		{http.MethodPut, "/api/v1/print-layouts/{layoutId}", `{"name":"Standard CP","layout":{"paper":"A3","font_size":7}}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodPost, "/api/v1/print-layouts", `{"name":"Layout uji","document_type_id":"{cpTypeId}","layout":{"paper":"A4"}}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
+		{http.MethodPut, "/api/v1/print-layouts/{layoutId}", `{"name":"Standard CP","layout":{"paper":"A3","font_size":7}}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/customers/{customerId}/print-layouts", "", http.StatusOK, http.StatusOK, http.StatusOK},
-		{http.MethodPut, "/api/v1/customers/{customerId}/print-layouts/{documentTypeId}", `{"layout_id":"{firstTypeLayoutId}"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodPut, "/api/v1/customers/{customerId}/print-layouts/{documentTypeId}", `{"layout_id":"{firstTypeLayoutId}"}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		// Perubahan surut SQAM (M5.10) lewat E-3: engineer mengajukannya untuk semua dokumen aktif customer uji.
 		{http.MethodPost, "/api/v1/sqam-changes", `{"customer_id":"{customerId}","change_type_id":"{contentTypeId}","reason":"Uji SQAM","sqam_reference":"SQAM rev 1","effective_date":"2026-12-01"}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
 		// Yokoten (M5.9). Daftar disaring per customer, jadi semua akun mendapat 200.
@@ -491,39 +492,41 @@ func TestPermissionsPerOperation(t *testing.T) {
 		{http.MethodPost, "/api/v1/documents/{documentId}/rows/batch", `{"rows":[{"content":{}}]}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
 		{http.MethodPut, "/api/v1/documents/{documentId}/rows/{rowId}", `{"content":{},"version":1}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodDelete, "/api/v1/documents/{documentId}/rows/{rowId}", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
-		// Form set (langkah D): melihat lewat L-2, menyusun lewat A-2, menerbitkan lewat V-3 (D-139).
+		// Form set (langkah D): melihat lewat L-2, menyusun lewat E-11, menerbitkan lewat V-3 (D-139).
 		// Engineer memegang V-3, tetapi format di dalam set masih draft, jadi jawabannya 409, bukan 403.
 		{http.MethodGet, "/api/v1/form-sets", "", http.StatusOK, http.StatusOK, http.StatusOK},
-		{http.MethodPost, "/api/v1/form-sets", `{"name":"Set uji izin","pfd_format_version_id":"{pfdSheetId}","pfmea_format_version_id":"{pfmeaSheetId}","cp_format_version_id":"{cpSheetId}"}`, http.StatusForbidden, http.StatusForbidden, http.StatusCreated},
-		{http.MethodPut, "/api/v1/form-set-versions/{formSetVersionId}", `{"pfd_format_version_id":"{pfdSheetId}","pfmea_format_version_id":"{pfmeaSheetId}","cp_format_version_id":"{cpSheetId}"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodPost, "/api/v1/form-sets", `{"name":"Set uji izin","pfd_format_version_id":"{pfdSheetId}","pfmea_format_version_id":"{pfmeaSheetId}","cp_format_version_id":"{cpSheetId}"}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
+		{http.MethodPut, "/api/v1/form-set-versions/{formSetVersionId}", `{"pfd_format_version_id":"{pfdSheetId}","pfmea_format_version_id":"{pfmeaSheetId}","cp_format_version_id":"{cpSheetId}"}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodPost, "/api/v1/form-set-versions/{formSetVersionId}/publish", "", http.StatusForbidden, http.StatusConflict, http.StatusForbidden},
-		{http.MethodPost, "/api/v1/form-sets/{formSetId}/versions", "", http.StatusForbidden, http.StatusForbidden, http.StatusConflict},
-		{http.MethodPut, "/api/v1/customers/{customerId}/default-form-set", `{"form_set_id":"{formSetId}"}`, http.StatusForbidden, http.StatusForbidden, http.StatusNoContent},
+		{http.MethodPost, "/api/v1/form-sets/{formSetId}/versions", "", http.StatusForbidden, http.StatusConflict, http.StatusForbidden},
+		{http.MethodPut, "/api/v1/customers/{customerId}/default-form-set", `{"form_set_id":"{formSetId}"}`, http.StatusForbidden, http.StatusNoContent, http.StatusForbidden},
 		// Tabel AP: versi PFMEA di sini memakai RPN, jadi admin mendapat 422; hitungan AP boleh semua akun tetapi ditolak 422 dengan alasan yang sama.
-		{http.MethodPut, "/api/v1/format-template-versions/{formatVersionId}/ap-rules", `{"items":[{"s_min":1,"s_max":10,"o_min":1,"o_max":10,"d_min":1,"d_max":10,"priority":"L"}]}`, http.StatusForbidden, http.StatusForbidden, http.StatusUnprocessableEntity},
+		{http.MethodPut, "/api/v1/format-template-versions/{formatVersionId}/ap-rules", `{"items":[{"s_min":1,"s_max":10,"o_min":1,"o_max":10,"d_min":1,"d_max":10,"priority":"L"}]}`, http.StatusForbidden, http.StatusUnprocessableEntity, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/format-template-versions/{formatVersionId}/action-priority?severity=8&occurrence=6&detection=4", "", http.StatusUnprocessableEntity, http.StatusUnprocessableEntity, http.StatusUnprocessableEntity},
-		// Menerbitkan dan membuat versi baru lewat A-2 (M3.4), sesudah semua perubahan versi itu.
-		{http.MethodPost, "/api/v1/format-template-versions/{formatVersionId}/publish", "", http.StatusForbidden, http.StatusForbidden, http.StatusOK},
-		{http.MethodPost, "/api/v1/format-templates/{formatTemplateId}/versions", "", http.StatusForbidden, http.StatusForbidden, http.StatusCreated},
+		// Menerbitkan dan membuat versi baru lewat E-11 (M3.4), sesudah semua perubahan versi itu.
+		{http.MethodPost, "/api/v1/format-template-versions/{formatVersionId}/publish", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		{http.MethodPost, "/api/v1/format-templates/{formatTemplateId}/versions", "", http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/change-types", "", http.StatusOK, http.StatusOK, http.StatusOK},
-		{http.MethodPut, "/api/v1/change-types/{changeTypeId}", `{"name":"Content change"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodPut, "/api/v1/change-types/{changeTypeId}", `{"name":"Content change"}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/change-sources", "", http.StatusOK, http.StatusOK, http.StatusOK},
-		{http.MethodPost, "/api/v1/change-sources", `{"name":"Kaizen"}`, http.StatusForbidden, http.StatusForbidden, http.StatusCreated},
-		{http.MethodPut, "/api/v1/change-sources/{changeSourceId}", `{"name":"Internal audit finding"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodPost, "/api/v1/change-sources", `{"name":"Kaizen"}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
+		{http.MethodPut, "/api/v1/change-sources/{changeSourceId}", `{"name":"Internal audit finding"}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/four-m-categories", "", http.StatusOK, http.StatusOK, http.StatusOK},
-		{http.MethodPut, "/api/v1/four-m-categories/{fourMCategoryId}", `{"name":"Manpower"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
-		// Jabatan lewat A-1 (UC-02), rute lewat A-2 (UC-06), pengaturan lewat A-3 (UC-07).
+		{http.MethodPut, "/api/v1/four-m-categories/{fourMCategoryId}", `{"name":"Manpower"}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		// Jabatan dan rute lewat E-11 (D-209); pengaturan dokumen (tanggal slot) lewat E-11, pengaman lewat A-3 (UC-07).
 		{http.MethodGet, "/api/v1/positions", "", http.StatusOK, http.StatusOK, http.StatusOK},
-		{http.MethodPut, "/api/v1/positions/{positionId}", `{"name":"PPAP Engineer Senior"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
-		{http.MethodPost, "/api/v1/positions/{positionId}/holders", `{"person_id":"{viewerPersonId}"}`, http.StatusForbidden, http.StatusForbidden, http.StatusCreated},
-		{http.MethodDelete, "/api/v1/positions/{positionId}/holders/{holderId}", "", http.StatusForbidden, http.StatusForbidden, http.StatusNoContent},
+		{http.MethodPut, "/api/v1/positions/{positionId}", `{"name":"PPAP Engineer Senior"}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		{http.MethodPost, "/api/v1/positions/{positionId}/holders", `{"person_id":"{viewerPersonId}"}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
+		{http.MethodDelete, "/api/v1/positions/{positionId}/holders/{holderId}", "", http.StatusForbidden, http.StatusNoContent, http.StatusForbidden},
+		// Daftar orang untuk pemegang jabatan, hanya nama (E-11, D-209).
+		{http.MethodGet, "/api/v1/position-candidates", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/approval-routes", "", http.StatusOK, http.StatusOK, http.StatusOK},
-		{http.MethodPost, "/api/v1/approval-routes", routeBody, http.StatusForbidden, http.StatusForbidden, http.StatusCreated},
-		{http.MethodPut, "/api/v1/approval-routes/{approvalRouteId}", strings.Replace(routeBody, "Route X", "Route Y", 1), http.StatusForbidden, http.StatusForbidden, http.StatusOK},
-		{http.MethodPut, "/api/v1/customers/{customerId}/default-route", `{"route_id":"{routeId}"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
-		{http.MethodPut, "/api/v1/change-types/{changeTypeId}/approval-route", `{"route_id":"{routeId}"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodPost, "/api/v1/approval-routes", routeBody, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
+		{http.MethodPut, "/api/v1/approval-routes/{approvalRouteId}", strings.Replace(routeBody, "Route X", "Route Y", 1), http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		{http.MethodPut, "/api/v1/customers/{customerId}/default-route", `{"route_id":"{routeId}"}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		{http.MethodPut, "/api/v1/change-types/{changeTypeId}/approval-route", `{"route_id":"{routeId}"}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/system-settings", "", http.StatusOK, http.StatusOK, http.StatusOK},
-		{http.MethodPut, "/api/v1/system-settings", `{"sign_dates_enabled":true}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodPut, "/api/v1/system-settings", `{"sign_dates_enabled":true}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/roles", "", http.StatusForbidden, http.StatusForbidden, http.StatusOK},
 		// Service account API integrasi (M9.1): hanya admin (A-1). ID palsu: 404 sesudah haknya lolos.
 		{http.MethodGet, "/api/v1/service-accounts", "", http.StatusForbidden, http.StatusForbidden, http.StatusOK},
@@ -574,7 +577,7 @@ func TestPermissionsPerOperation(t *testing.T) {
 		{http.MethodGet, "/api/v1/documents/{documentId}/changes", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		// Tanda tangan digital (D-198). Dokumen uji belum punya rute: kirim ditolak 422
 		// sesudah password benar. Permintaan palsu: 404 untuk semua.
-		{http.MethodPut, "/api/v1/customers/{customerId}/signature-mode", `{"mode":"digital"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodPut, "/api/v1/customers/{customerId}/signature-mode", `{"mode":"digital"}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/documents/{documentId}/signature-plan", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/documents/{documentId}/signature-requests", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodPost, "/api/v1/documents/{documentId}/signature-requests", `{"signers":[],"password":"perahu kertas di sungai jernih"}`, http.StatusForbidden, http.StatusUnprocessableEntity, http.StatusForbidden},

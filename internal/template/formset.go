@@ -14,7 +14,7 @@ package template
 //
 // Versi form set berjalan dari draft ke terbit seperti versi template (M3.4).
 // Bedanya ada di siapa yang menerbitkan (D-139):
-//   - admin (A-2) menyusun draft;
+//   - PPAP Engineer (E-11) menyusun draft;
 //   - pemegang hak V-3 (peran Penyetuju form, untuk saat ini PPAP Supervisor)
 //     menerbitkan;
 //   - penyetuju tidak boleh orang yang menyusun drafnya. Yang dibandingkan
@@ -151,7 +151,7 @@ func (s *Service) FormSetFor(ctx context.Context, actor access.Actor, customerID
 	return getFormSet(ctx, s.q, row.ID)
 }
 
-// SetCustomerFormSet memilih form set bawaan satu customer (A-2). formSetID
+// SetCustomerFormSet memilih form set bawaan satu customer (E-11). formSetID
 // kosong berarti kembali ke set bawaan sistem.
 func (s *Service) SetCustomerFormSet(ctx context.Context, actor access.Actor, customerID, formSetID string) error {
 	if err := s.authz.Authorize(ctx, actor, access.ManageMasterData, access.Resource{}); err != nil {
@@ -205,7 +205,7 @@ func (s *Service) SetCustomerFormSet(ctx context.Context, actor access.Actor, cu
 	return result(err, "menyimpan form set customer")
 }
 
-// CreateFormSet membuat form set baru dengan versi 1 berstatus draft (A-2).
+// CreateFormSet membuat form set baru dengan versi 1 berstatus draft (E-11).
 func (s *Service) CreateFormSet(ctx context.Context, actor access.Actor, in NewFormSet) (FormSet, error) {
 	if err := s.authz.Authorize(ctx, actor, access.ManageMasterData, access.Resource{}); err != nil {
 		return FormSet{}, err
@@ -243,7 +243,7 @@ func (s *Service) CreateFormSet(ctx context.Context, actor access.Actor, in NewF
 	return getFormSet(ctx, s.q, id)
 }
 
-// SetFormSetSheets mengganti versi format ketiga sheet satu versi draft (A-2).
+// SetFormSetSheets mengganti versi format ketiga sheet satu versi draft (E-11).
 func (s *Service) SetFormSetSheets(ctx context.Context, actor access.Actor, versionID string, sheets FormSetSheets) (FormSet, error) {
 	if err := s.authz.Authorize(ctx, actor, access.ManageMasterData, access.Resource{}); err != nil {
 		return FormSet{}, err
@@ -286,7 +286,7 @@ func (s *Service) SetFormSetSheets(ctx context.Context, actor access.Actor, vers
 	return getFormSet(ctx, s.q, setID)
 }
 
-// NewFormSetVersion membuat versi draft berikutnya dari versi terbit terakhir (A-2).
+// NewFormSetVersion membuat versi draft berikutnya dari versi terbit terakhir (E-11).
 func (s *Service) NewFormSetVersion(ctx context.Context, actor access.Actor, formSetID string) (FormSet, error) {
 	if err := s.authz.Authorize(ctx, actor, access.ManageMasterData, access.Resource{}); err != nil {
 		return FormSet{}, err

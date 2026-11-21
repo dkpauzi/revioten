@@ -5,7 +5,7 @@
 // TestPublishedProcessGuards.
 import { expect, test, type Page } from '@playwright/test';
 import { en } from '../src/lib/i18n/en.ts';
-import { createWorkAccount, logIn, logInFirstTime, logOut, openFromMenu } from './helpers.ts';
+import { createWorkAccount, logIn, logInAsMaster, logInFirstTime, logOut, openFromMenu } from './helpers.ts';
 
 // acceptNextDialog menyetujui kotak konfirmasi berikutnya dan mengembalikan teksnya.
 function acceptNextDialog(page: Page): Promise<string> {
@@ -89,7 +89,8 @@ test('process template: terbitkan versi 1, lalu ubah di versi 2 tanpa mengubah v
 });
 
 test('format template: versi terbit hanya bisa dibaca, dan versi 2 menyalin isinya', async ({ page }) => {
-	await logIn(page);
+	// Format template diurus PPAP Engineer (E-11, D-209).
+	await logInAsMaster(page);
 	await openFromMenu(page, en.navGroupTemplates, en.navFormatTemplates);
 
 	// Template baru khusus test ini, supaya template bawaan tetap draft untuk test lain.

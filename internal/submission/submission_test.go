@@ -120,18 +120,21 @@ func TestSubmissionControl(t *testing.T) {
 		t.Errorf("tidak perlu dikirim: %+v, %v", c.Rows, err)
 	}
 
-	// Bawaan customer: hanya admin (A-2); mengikuti bawaan menghapus pengecualian.
-	if err := svc.SetCustomerDefault(ctx, engineer, e.CustomerAB, false); !errors.Is(err, access.ErrForbidden) {
-		t.Errorf("akun kerja mengubah bawaan: %v", err)
+	// Bawaan customer: master data PPAP Engineer (E-11, D-209), bukan admin dan
+	// bukan akun tanpa E-11. Mengikuti bawaan menghapus pengecualian.
+	for _, actor := range []access.Actor{e.Admin, e.Author} {
+		if err := svc.SetCustomerDefault(ctx, actor, e.CustomerAB, false); !errors.Is(err, access.ErrForbidden) {
+			t.Errorf("%s mengubah bawaan: %v", actor.Login, err)
+		}
 	}
-	if err := svc.SetCustomerDefault(ctx, e.Admin, e.CustomerAB, false); err != nil {
+	if err := svc.SetCustomerDefault(ctx, e.Master, e.CustomerAB, false); err != nil {
 		t.Fatal(err)
 	}
 	c, _ = svc.Save(ctx, engineer, cp.ID, 0, submission.Entry{Required: new(false)})
 	if c.SubmissionRequired || c.Rows[0].Required || c.Rows[0].OverrideReason != "" {
 		t.Errorf("mengikuti bawaan customer: %+v", c)
 	}
-	_ = svc.SetCustomerDefault(ctx, e.Admin, e.CustomerAB, true)
+	_ = svc.SetCustomerDefault(ctx, e.Master, e.CustomerAB, true)
 	if _, err := svc.Save(ctx, engineer, cp.ID, 0, entry); err != nil {
 		t.Fatal(err)
 	}

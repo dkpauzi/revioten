@@ -1,6 +1,6 @@
 <script lang="ts">
 	// Halaman Form sets (form set langkah D, D-133, D-139). Semua akun melihat
-	// (L-2). Admin (A-2) menyusun form set dan memilih form set setiap
+	// (L-2). PPAP Engineer (E-11) menyusun form set dan memilih form set setiap
 	// customer; penyetuju form (V-3) menerbitkan versinya. Server tetap
 	// memeriksa setiap operasi, termasuk bahwa penyetuju bukan penyusunnya.
 	import { onMount } from 'svelte';
@@ -29,7 +29,7 @@
 	let list = $state<FormSetList | null>(null);
 	let templates = $state<FormatTemplate[]>([]);
 	let loadError = $state('');
-	let canEdit = $derived(can('A-2'));
+	let canEdit = $derived(can('E-11'));
 	let canApprove = $derived(can('V-3'));
 
 	// Versi yang sedang dibuka per form set (id form set ke id versi).

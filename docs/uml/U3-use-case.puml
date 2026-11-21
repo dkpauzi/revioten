@@ -76,18 +76,23 @@ rectangle "Sistem PFD, PFMEA, dan CP" {
 
 user --> UC01
 admin --> UC02
-admin --> UC03
+ppap --> UC03
 ppap --> UC04
-admin --> UC05
-admin --> UC06
+ppap --> UC05
+ppap --> UC06
 admin --> UC07
 admin --> UC08
 admin --> UC09
 
 note right of UC07
-  Saklar QR (D-62), tanggal tanda tangan
-  per slot (D-52), aturan tanggal berlaku
-  (D-59), mode migrasi (R-MIG-06)
+  Admin: mode migrasi (R-MIG-06) dan aturan
+  penyetujuan form (D-148). PPAP Engineer:
+  saklar QR (D-62), tanggal tanda tangan per
+  slot (D-52), nomor form submission (D-209)
+end note
+note right of UC03
+  Master data milik PPAP Engineer
+  (hak E-11, D-209)
 end note
 @enduml
 
@@ -100,7 +105,6 @@ actor "PPAP Engineer" as ppap
 actor "Pengguna internal" as user
 actor "Dokumen kontrol" as dokkon
 actor "Penjadwal" as timer
-actor "Admin" as admin
 
 rectangle "Sistem PFD, PFMEA, dan CP" {
   usecase "UC-10\nDaftarkan nomor dokumen" as UC10
@@ -126,8 +130,8 @@ user --> UC12
 dokkon --> UC13
 dokkon --> UC14
 timer --> UC15
-admin --> UC20
-admin --> UC24
+ppap --> UC20
+ppap --> UC24
 pen --> UC25
 UC25 --> ppap
 

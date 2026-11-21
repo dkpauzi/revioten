@@ -46,22 +46,23 @@ func newActor(t *testing.T, pool *pgxpool.Pool, login, kind string, roles ...str
 // fixture adalah Service dengan database baru, satu akun admin, dan satu
 // Project Group GR1 untuk customer yang dibuat test.
 type fixture struct {
-	s     *Service
-	pool  *pgxpool.Pool
-	admin access.Actor
-	group ProjectGroup
+	s      *Service
+	pool   *pgxpool.Pool
+	master access.Actor
+	group  ProjectGroup
 }
 
 func newFixture(t *testing.T) fixture {
 	t.Helper()
 	pool := dbtest.NewPool(t)
 	s := NewService(pool, access.NewChecker(pool))
-	admin := newActor(t, pool, "admin.uji", access.AccountAdmin, access.RoleAdmin)
-	group, err := s.CreateProjectGroup(t.Context(), admin, ProjectGroupInput{Code: "GR1", Name: "Project Group 1"})
+	// Master data diurus PPAP Engineer (E-11, D-209).
+	master := newActor(t, pool, "ppap.master", access.AccountWork, access.RolePPAPEngineer)
+	group, err := s.CreateProjectGroup(t.Context(), master, ProjectGroupInput{Code: "GR1", Name: "Project Group 1"})
 	if err != nil {
 		t.Fatalf("CreateProjectGroup: %v", err)
 	}
-	return fixture{s: s, pool: pool, admin: admin, group: group}
+	return fixture{s: s, pool: pool, master: master, group: group}
 }
 
 // problemCodes mengambil "field:kode" dari *problem.ValidationError atau *problem.ConflictError.
@@ -121,7 +122,7 @@ func TestPermissions(t *testing.T) {
 			t.Errorf("ListProjectGroups oleh %s: %v", actor.Login, err)
 		}
 	}
-	c, err := f.s.Create(ctx, f.admin, in)
+	c, err := f.s.Create(ctx, f.master, in)
 	if err != nil {
 		t.Fatalf("Create oleh admin: %v", err)
 	}
@@ -138,7 +139,7 @@ func TestPermissions(t *testing.T) {
 func TestListEmpty(t *testing.T) {
 	f := newFixture(t)
 
-	list, err := f.s.List(t.Context(), f.admin)
+	list, err := f.s.List(t.Context(), f.master)
 	if err != nil {
 		t.Fatalf("List: %v", err)
 	}
@@ -153,11 +154,11 @@ func TestCreateAndList(t *testing.T) {
 	ctx := t.Context()
 	before := time.Now()
 
-	created, err := f.s.Create(ctx, f.admin, NewCustomer{Code: " bb ", Name: " Customer B ", ProjectGroupID: f.group.ID})
+	created, err := f.s.Create(ctx, f.master, NewCustomer{Code: " bb ", Name: " Customer B ", ProjectGroupID: f.group.ID})
 	if err != nil {
 		t.Fatalf("Create BB: %v", err)
 	}
-	if _, err := f.s.Create(ctx, f.admin, NewCustomer{Code: "AA", Name: "Customer A", ProjectGroupID: f.group.ID}); err != nil {
+	if _, err := f.s.Create(ctx, f.master, NewCustomer{Code: "AA", Name: "Customer A", ProjectGroupID: f.group.ID}); err != nil {
 		t.Fatalf("Create AA: %v", err)
 	}
 
@@ -182,7 +183,7 @@ func TestCreateAndList(t *testing.T) {
 		t.Errorf("riwayat kode = %+v", created.Codes)
 	}
 
-	list, err := f.s.List(ctx, f.admin)
+	list, err := f.s.List(ctx, f.master)
 	if err != nil {
 		t.Fatalf("List: %v", err)
 	}
@@ -201,12 +202,12 @@ func TestCreateAndList(t *testing.T) {
 func TestCreateDuplicateCode(t *testing.T) {
 	f := newFixture(t)
 	ctx := t.Context()
-	if _, err := f.s.Create(ctx, f.admin, NewCustomer{Code: "AB", Name: "Customer Pertama", ProjectGroupID: f.group.ID}); err != nil {
+	if _, err := f.s.Create(ctx, f.master, NewCustomer{Code: "AB", Name: "Customer Pertama", ProjectGroupID: f.group.ID}); err != nil {
 		t.Fatalf("Create pertama: %v", err)
 	}
 
 	// Kode yang sama setelah dirapikan (" ab " menjadi AB) harus ditolak.
-	_, err := f.s.Create(ctx, f.admin, NewCustomer{Code: " ab ", Name: "Customer Kedua", ProjectGroupID: f.group.ID})
+	_, err := f.s.Create(ctx, f.master, NewCustomer{Code: " ab ", Name: "Customer Kedua", ProjectGroupID: f.group.ID})
 	if got := problemCodes(t, err); !slices.Equal(got, []string{"code:taken"}) {
 		t.Errorf("masalah = %v, ingin [code:taken]", got)
 	}
@@ -217,11 +218,11 @@ func TestCreateNeedsProjectGroup(t *testing.T) {
 	f := newFixture(t)
 	ctx := t.Context()
 
-	_, err := f.s.Create(ctx, f.admin, NewCustomer{Code: "AB", Name: "Customer"})
+	_, err := f.s.Create(ctx, f.master, NewCustomer{Code: "AB", Name: "Customer"})
 	if got := problemCodes(t, err); !slices.Equal(got, []string{"project_group_id:required"}) {
 		t.Errorf("tanpa Project Group: %v", got)
 	}
-	_, err = f.s.Create(ctx, f.admin, NewCustomer{Code: "AB", Name: "Customer", ProjectGroupID: "01a180aa-a98b-7bf2-8e0d-b97a25ecc489"})
+	_, err = f.s.Create(ctx, f.master, NewCustomer{Code: "AB", Name: "Customer", ProjectGroupID: "01a180aa-a98b-7bf2-8e0d-b97a25ecc489"})
 	if got := problemCodes(t, err); !slices.Equal(got, []string{"project_group_id:invalid_format"}) {
 		t.Errorf("Project Group yang tidak ada: %v", got)
 	}
@@ -231,13 +232,13 @@ func TestCreateInvalidIsNotStored(t *testing.T) {
 	f := newFixture(t)
 	ctx := t.Context()
 
-	_, err := f.s.Create(ctx, f.admin, NewCustomer{Code: "ZZ", Name: "General", ProjectGroupID: f.group.ID})
+	_, err := f.s.Create(ctx, f.master, NewCustomer{Code: "ZZ", Name: "General", ProjectGroupID: f.group.ID})
 	var invalid *problem.ValidationError
 	if !errors.As(err, &invalid) {
 		t.Fatalf("ingin *problem.ValidationError, dapat %v", err)
 	}
 
-	list, err := f.s.List(ctx, f.admin)
+	list, err := f.s.List(ctx, f.master)
 	if err != nil {
 		t.Fatalf("List: %v", err)
 	}
@@ -252,16 +253,16 @@ func TestCreateWritesAudit(t *testing.T) {
 	f := newFixture(t)
 	ctx := audit.WithRequest(t.Context(), audit.Request{ID: "UJI-CUST", IP: "192.0.2.40"})
 
-	c, err := f.s.Create(ctx, f.admin, NewCustomer{Code: " ab ", Name: "Example Customer", ProjectGroupID: f.group.ID})
+	c, err := f.s.Create(ctx, f.master, NewCustomer{Code: " ab ", Name: "Example Customer", ProjectGroupID: f.group.ID})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := f.s.Create(ctx, f.admin, NewCustomer{Code: "AB", Name: "Customer Ganda", ProjectGroupID: f.group.ID}); err == nil {
+	if _, err := f.s.Create(ctx, f.master, NewCustomer{Code: "AB", Name: "Customer Ganda", ProjectGroupID: f.group.ID}); err == nil {
 		t.Fatal("kode ganda diterima")
 	}
 
 	r := lastAudit(t, f.pool)
-	if r.Action != audit.ActionCustomerCreated || r.ActorType != "human" || *r.ActorAccountID != f.admin.AccountID ||
+	if r.Action != audit.ActionCustomerCreated || r.ActorType != "human" || *r.ActorAccountID != f.master.AccountID ||
 		*r.TargetType != audit.TargetCustomer || *r.TargetID != c.ID || *r.RequestID != "UJI-CUST" {
 		t.Errorf("entri audit: %+v", r)
 	}
@@ -275,18 +276,18 @@ func TestCreateWritesAudit(t *testing.T) {
 func TestUpdate(t *testing.T) {
 	f := newFixture(t)
 	ctx := t.Context()
-	gr2, err := f.s.CreateProjectGroup(ctx, f.admin, ProjectGroupInput{Code: "GR2", Name: "Project Group 2"})
+	gr2, err := f.s.CreateProjectGroup(ctx, f.master, ProjectGroupInput{Code: "GR2", Name: "Project Group 2"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	c, err := f.s.Create(ctx, f.admin, NewCustomer{Code: "AB", Name: "Customer Lama", ProjectGroupID: f.group.ID})
+	c, err := f.s.Create(ctx, f.master, NewCustomer{Code: "AB", Name: "Customer Lama", ProjectGroupID: f.group.ID})
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// new(false) (Go 1.26+) membuat pointer ke nilai false. Active nil berarti
 	// "tidak dikirim", dan statusnya tetap (E-34, D-111).
-	updated, err := f.s.Update(ctx, f.admin, c.ID, CustomerUpdate{Name: " Customer Baru ", ProjectGroupID: gr2.ID, Active: new(false)})
+	updated, err := f.s.Update(ctx, f.master, c.ID, CustomerUpdate{Name: " Customer Baru ", ProjectGroupID: gr2.ID, Active: new(false)})
 	if err != nil {
 		t.Fatalf("Update: %v", err)
 	}
@@ -301,7 +302,7 @@ func TestUpdate(t *testing.T) {
 
 	// Tanpa Active, customer yang nonaktif tetap nonaktif: klien yang lupa
 	// mengirim field ini tidak mengubah status tanpa sengaja (E-34, D-111).
-	kept, err := f.s.Update(ctx, f.admin, c.ID, CustomerUpdate{Name: "Customer Baru Lagi", ProjectGroupID: gr2.ID})
+	kept, err := f.s.Update(ctx, f.master, c.ID, CustomerUpdate{Name: "Customer Baru Lagi", ProjectGroupID: gr2.ID})
 	if err != nil {
 		t.Fatalf("Update tanpa Active: %v", err)
 	}
@@ -322,13 +323,13 @@ func TestUpdate(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := f.s.Update(ctx, f.admin, c.ID, tt.in)
+			_, err := f.s.Update(ctx, f.master, c.ID, tt.in)
 			if got := problemCodes(t, err); !slices.Equal(got, tt.want) {
 				t.Errorf("masalah %v, ingin %v", got, tt.want)
 			}
 		})
 	}
-	if _, err := f.s.Update(ctx, f.admin, "01a180aa-a98b-7bf2-8e0d-b97a25ecc489", CustomerUpdate{Name: "X", ProjectGroupID: gr2.ID}); !errors.Is(err, problem.ErrNotFound) {
+	if _, err := f.s.Update(ctx, f.master, "01a180aa-a98b-7bf2-8e0d-b97a25ecc489", CustomerUpdate{Name: "X", ProjectGroupID: gr2.ID}); !errors.Is(err, problem.ErrNotFound) {
 		t.Errorf("customer yang tidak ada: %v, ingin problem.ErrNotFound", err)
 	}
 }
@@ -339,16 +340,16 @@ func TestUpdate(t *testing.T) {
 func TestChangeCode(t *testing.T) {
 	f := newFixture(t)
 	ctx := t.Context()
-	ab, err := f.s.Create(ctx, f.admin, NewCustomer{Code: "AB", Name: "Customer A", ProjectGroupID: f.group.ID})
+	ab, err := f.s.Create(ctx, f.master, NewCustomer{Code: "AB", Name: "Customer A", ProjectGroupID: f.group.ID})
 	if err != nil {
 		t.Fatal(err)
 	}
-	ef, err := f.s.Create(ctx, f.admin, NewCustomer{Code: "EF", Name: "Customer E", ProjectGroupID: f.group.ID})
+	ef, err := f.s.Create(ctx, f.master, NewCustomer{Code: "EF", Name: "Customer E", ProjectGroupID: f.group.ID})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	changed, err := f.s.ChangeCode(ctx, f.admin, ab.ID, " cd ")
+	changed, err := f.s.ChangeCode(ctx, f.master, ab.ID, " cd ")
 	if err != nil {
 		t.Fatalf("ChangeCode: %v", err)
 	}
@@ -378,14 +379,14 @@ func TestChangeCode(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := f.s.ChangeCode(ctx, f.admin, ab.ID, tt.code)
+			_, err := f.s.ChangeCode(ctx, f.master, ab.ID, tt.code)
 			if got := problemCodes(t, err); !slices.Equal(got, tt.want) {
 				t.Errorf("masalah %v, ingin %v", got, tt.want)
 			}
 		})
 	}
 	// Customer EF tidak ikut berubah.
-	list, err := f.s.List(ctx, f.admin)
+	list, err := f.s.List(ctx, f.master)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -420,14 +421,14 @@ func TestProjectGroups(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := f.s.CreateProjectGroup(ctx, f.admin, tt.in)
+			_, err := f.s.CreateProjectGroup(ctx, f.master, tt.in)
 			if got := problemCodes(t, err); !slices.Equal(got, tt.want) {
 				t.Errorf("masalah %v, ingin %v", got, tt.want)
 			}
 		})
 	}
 
-	updated, err := f.s.UpdateProjectGroup(ctx, f.admin, f.group.ID, ProjectGroupInput{Code: "gr01", Name: "Project Group Satu"})
+	updated, err := f.s.UpdateProjectGroup(ctx, f.master, f.group.ID, ProjectGroupInput{Code: "gr01", Name: "Project Group Satu"})
 	if err != nil {
 		t.Fatalf("UpdateProjectGroup: %v", err)
 	}
@@ -438,11 +439,11 @@ func TestProjectGroups(t *testing.T) {
 	if r.Action != audit.ActionProjectGroupUpdated || r.Details != `{"code":"GR1 → GR01","name":"Project Group 1 → Project Group Satu"}` {
 		t.Errorf("entri audit: %s %s", r.Action, r.Details)
 	}
-	if _, err := f.s.UpdateProjectGroup(ctx, f.admin, "bukan-uuid", ProjectGroupInput{Code: "GR5", Name: "X"}); !errors.Is(err, problem.ErrNotFound) {
+	if _, err := f.s.UpdateProjectGroup(ctx, f.master, "bukan-uuid", ProjectGroupInput{Code: "GR5", Name: "X"}); !errors.Is(err, problem.ErrNotFound) {
 		t.Errorf("Project Group yang tidak ada: %v", err)
 	}
 
-	groups, err := f.s.ListProjectGroups(ctx, f.admin)
+	groups, err := f.s.ListProjectGroups(ctx, f.master)
 	if err != nil || len(groups) != 1 || groups[0].Code != "GR01" {
 		t.Errorf("ListProjectGroups: %+v, %v", groups, err)
 	}
@@ -469,7 +470,7 @@ func TestSetDefaultRoute(t *testing.T) {
 	f := newFixture(t)
 	ctx := t.Context()
 	routes := routeIDs(t, f.pool)
-	ab, err := f.s.Create(ctx, f.admin, NewCustomer{Code: "AB", Name: "Customer A", ProjectGroupID: f.group.ID})
+	ab, err := f.s.Create(ctx, f.master, NewCustomer{Code: "AB", Name: "Customer A", ProjectGroupID: f.group.ID})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -477,14 +478,14 @@ func TestSetDefaultRoute(t *testing.T) {
 		t.Errorf("customer baru sudah punya rute default: %+v (E-39, D-116: belum diatur)", ab)
 	}
 
-	set, err := f.s.SetDefaultRoute(ctx, f.admin, ab.ID, routes["Up to GM"])
+	set, err := f.s.SetDefaultRoute(ctx, f.master, ab.ID, routes["Up to GM"])
 	if err != nil || set.DefaultRouteID != routes["Up to GM"] || set.DefaultRouteName != "Up to GM" {
 		t.Fatalf("SetDefaultRoute: %+v, %v", set, err)
 	}
 	if r := lastAudit(t, f.pool); r.Action != audit.ActionCustomerRouteChanged || r.Details != `{"default_route":"- → Up to GM"}` {
 		t.Errorf("entri audit: %s %s", r.Action, r.Details)
 	}
-	if _, err := f.s.SetDefaultRoute(ctx, f.admin, ab.ID, routes["Up to QA QC Manager"]); err != nil {
+	if _, err := f.s.SetDefaultRoute(ctx, f.master, ab.ID, routes["Up to QA QC Manager"]); err != nil {
 		t.Fatal(err)
 	}
 	if r := lastAudit(t, f.pool); r.Details != `{"default_route":"Up to GM → Up to QA QC Manager"}` {
@@ -495,7 +496,7 @@ func TestSetDefaultRoute(t *testing.T) {
 	if err := db.New(f.pool).RenameApprovalRoute(ctx, db.RenameApprovalRouteParams{ID: routes["Up to QA QC Manager"], Name: "Short"}); err != nil {
 		t.Fatal(err)
 	}
-	list, err := f.s.List(ctx, f.admin)
+	list, err := f.s.List(ctx, f.master)
 	if err != nil || len(list) != 1 || list[0].DefaultRouteName != "Short" {
 		t.Errorf("daftar customer setelah rute diganti nama: %+v, %v", list, err)
 	}
@@ -505,8 +506,8 @@ func TestSetDefaultRoute(t *testing.T) {
 		err  error
 		want []string
 	}{
-		{"rute kosong", second(f.s.SetDefaultRoute(ctx, f.admin, ab.ID, "")), []string{"route_id:required"}},
-		{"rute tidak ada", second(f.s.SetDefaultRoute(ctx, f.admin, ab.ID, "01a180aa-a98b-7bf2-8e0d-b97a25ecc489")), []string{"route_id:invalid_format"}},
+		{"rute kosong", second(f.s.SetDefaultRoute(ctx, f.master, ab.ID, "")), []string{"route_id:required"}},
+		{"rute tidak ada", second(f.s.SetDefaultRoute(ctx, f.master, ab.ID, "01a180aa-a98b-7bf2-8e0d-b97a25ecc489")), []string{"route_id:invalid_format"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -515,7 +516,7 @@ func TestSetDefaultRoute(t *testing.T) {
 			}
 		})
 	}
-	if _, err := f.s.SetDefaultRoute(ctx, f.admin, "bukan-uuid", routes["Up to GM"]); !errors.Is(err, problem.ErrNotFound) {
+	if _, err := f.s.SetDefaultRoute(ctx, f.master, "bukan-uuid", routes["Up to GM"]); !errors.Is(err, problem.ErrNotFound) {
 		t.Errorf("customer yang tidak ada: %v, ingin problem.ErrNotFound", err)
 	}
 	worker := newActor(t, f.pool, "penyusun.uji", access.AccountWork, access.RoleAuthor)

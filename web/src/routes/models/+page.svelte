@@ -1,7 +1,7 @@
 <script lang="ts">
 	// Halaman model dan part number (M1.4, UC-03): pilih customer, lalu lihat
 	// group model, model, dan part number-nya. Semua akun bisa melihat; mengubah
-	// hanya untuk pemegang A-2 (E-10).
+	// hanya untuk pemegang E-11 (E-10).
 	import { onMount } from 'svelte';
 	import { listCustomers, listModelGroups, listModels, listPartNumbers } from '#lib/api/client.ts';
 	import type { Customer, Model, ModelGroup, PartNumber } from '#lib/api/gen/index.ts';
@@ -23,7 +23,7 @@
 
 	let selected = $derived(customers.find((c) => c.id === customerId));
 	// Customer nonaktif tidak mendapat master baru (E-09), jadi formulirnya tidak ditawarkan.
-	let canEdit = $derived(can('A-2') && (selected?.active ?? false));
+	let canEdit = $derived(can('E-11') && (selected?.active ?? false));
 
 	async function loadCustomers() {
 		const result = await listCustomers();

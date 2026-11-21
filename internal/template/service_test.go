@@ -41,12 +41,12 @@ func newActor(t *testing.T, pool *pgxpool.Pool, login, kind string, roles ...str
 	return access.Actor{Type: access.ActorHuman, AccountID: acc.ID, AccountKind: kind, Login: login, PersonID: person.ID}
 }
 
-// fixture: database baru, akun admin (A-2 mengelola format template, UC-20),
-// dan akun Penyusun yang hanya boleh melihat.
+// fixture: database baru, akun PPAP Engineer (E-11 mengelola format template,
+// UC-20, D-209), dan akun Penyusun yang hanya boleh melihat.
 type fixture struct {
 	s      *Service
 	pool   *pgxpool.Pool
-	admin  access.Actor
+	master access.Actor
 	author access.Actor
 }
 
@@ -55,7 +55,7 @@ func newFixture(t *testing.T) fixture {
 	pool := dbtest.NewPool(t)
 	return fixture{
 		s: NewService(pool, access.NewChecker(pool)), pool: pool,
-		admin:  newActor(t, pool, "admin.uji", access.AccountAdmin, access.RoleAdmin),
+		master: newActor(t, pool, "ppap.master", access.AccountWork, access.RolePPAPEngineer),
 		author: newActor(t, pool, "penyusun.uji", access.AccountWork, access.RoleAuthor),
 	}
 }
@@ -242,7 +242,7 @@ func TestRenameKeepsData(t *testing.T) {
 	}
 
 	// Ganti label: ID tetap, isi tetap sah.
-	v, err := f.s.UpdateField(ctx, f.admin, v.ID, mode.ID, FieldUpdate{Label: "Failure Mode"})
+	v, err := f.s.UpdateField(ctx, f.master, v.ID, mode.ID, FieldUpdate{Label: "Failure Mode"})
 	if err != nil {
 		t.Fatalf("ganti label: %v", err)
 	}
@@ -250,12 +250,12 @@ func TestRenameKeepsData(t *testing.T) {
 		t.Errorf("ID berubah setelah ganti label: %s menjadi %s", mode.ID, renamed.ID)
 	}
 	// Sembunyikan kolom: datanya tetap sah, tidak dihapus.
-	v, err = f.s.UpdateField(ctx, f.admin, v.ID, req.ID, FieldUpdate{Label: req.Label, Hidden: new(true)})
+	v, err = f.s.UpdateField(ctx, f.master, v.ID, req.ID, FieldUpdate{Label: req.Label, Hidden: new(true)})
 	if err != nil {
 		t.Fatalf("sembunyikan kolom: %v", err)
 	}
 	// Kolom wajib baru: isi lama tetap sah, tapi ditandai belum lengkap.
-	v, err = f.s.AddField(ctx, f.admin, v.ID, NewField{Area: AreaRow, Kind: KindText, Label: "Customer Requirement Ref", Required: true})
+	v, err = f.s.AddField(ctx, f.master, v.ID, NewField{Area: AreaRow, Kind: KindText, Label: "Customer Requirement Ref", Required: true})
 	if err != nil {
 		t.Fatalf("tambah kolom: %v", err)
 	}
@@ -265,7 +265,7 @@ func TestRenameKeepsData(t *testing.T) {
 		t.Errorf("isi lama setelah label diganti, kolom disembunyikan, dan kolom wajib ditambah: %+v", c)
 	}
 	// Perubahan tanpa hidden (D-111) tidak memunculkan kembali kolom itu.
-	v, err = f.s.UpdateField(ctx, f.admin, v.ID, req.ID, FieldUpdate{Label: "Requirements (old)"})
+	v, err = f.s.UpdateField(ctx, f.master, v.ID, req.ID, FieldUpdate{Label: "Requirements (old)"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -305,22 +305,22 @@ func TestFieldRules(t *testing.T) {
 	}
 	for _, tt := range adds {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := f.s.AddField(ctx, f.admin, tt.v.ID, tt.in)
+			_, err := f.s.AddField(ctx, f.master, tt.v.ID, tt.in)
 			if got := problemCodes(t, err); !slices.Equal(got, tt.want) {
 				t.Errorf("AddField = %v, ingin %v", got, tt.want)
 			}
 		})
 	}
-	if _, err := f.s.AddField(ctx, f.admin, pfmeaV.ID, NewField{Area: AreaRow, Kind: KindText, Label: "potential failure mode"}); !slices.Equal(problemCodes(t, err), []string{"label:taken"}) {
+	if _, err := f.s.AddField(ctx, f.master, pfmeaV.ID, NewField{Area: AreaRow, Kind: KindText, Label: "potential failure mode"}); !slices.Equal(problemCodes(t, err), []string{"label:taken"}) {
 		t.Errorf("label kembar (beda huruf besar kecil): %v", err)
 	}
 	// Template kosong boleh menambah kolom terisi otomatis, misalnya format CP
 	// customer yang dibuat dari nol.
-	empty, err := f.s.CreateFormatTemplate(ctx, f.admin, NewTemplate{Name: "CP kosong", DocumentTypeID: f.template(t, "CP").DocumentTypeID, RiskMethod: RiskNone})
+	empty, err := f.s.CreateFormatTemplate(ctx, f.master, NewTemplate{Name: "CP kosong", DocumentTypeID: f.template(t, "CP").DocumentTypeID, RiskMethod: RiskNone})
 	if err != nil {
 		t.Fatal(err)
 	}
-	ev, err := f.s.AddField(ctx, f.admin, empty.Versions[0].ID, NewField{Area: AreaRow, Kind: KindProcessFlow, Label: "Process Flow"})
+	ev, err := f.s.AddField(ctx, f.master, empty.Versions[0].ID, NewField{Area: AreaRow, Kind: KindProcessFlow, Label: "Process Flow"})
 	if err != nil || len(ev.Fields) != 1 || ev.Fields[0].Kind != KindProcessFlow {
 		t.Errorf("tambah Process Flow: %+v, %v", ev.Fields, err)
 	}
@@ -340,7 +340,7 @@ func TestFieldRules(t *testing.T) {
 	}
 	for _, tt := range updates {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := f.s.UpdateField(ctx, f.admin, tt.v.ID, tt.field.ID, tt.in)
+			_, err := f.s.UpdateField(ctx, f.master, tt.v.ID, tt.field.ID, tt.in)
 			if got := problemCodes(t, err); !slices.Equal(got, tt.want) {
 				t.Errorf("UpdateField = %v, ingin %v", got, tt.want)
 			}
@@ -350,7 +350,7 @@ func TestFieldRules(t *testing.T) {
 	// Pilihan baru mendapat key dari labelnya; label lama boleh diganti.
 	options := append(slices.Clone(flow.Options), Option{Label: "Inspection"})
 	options[0].Label = "Operation"
-	v, err := f.s.UpdateField(ctx, f.admin, pfd.ID, flow.ID, FieldUpdate{Label: "Flow Symbol", Options: options})
+	v, err := f.s.UpdateField(ctx, f.master, pfd.ID, flow.ID, FieldUpdate{Label: "Flow Symbol", Options: options})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -366,7 +366,7 @@ func TestMoveField(t *testing.T) {
 	f := newFixture(t)
 	v := f.version(t, "CP")
 	spec := field(t, v, "Product Specification / Tolerance")
-	v, err := f.s.UpdateField(t.Context(), f.admin, v.ID, spec.ID, FieldUpdate{Label: spec.Label, Position: new(2)})
+	v, err := f.s.UpdateField(t.Context(), f.master, v.ID, spec.ID, FieldUpdate{Label: spec.Label, Position: new(2)})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -375,7 +375,7 @@ func TestMoveField(t *testing.T) {
 	if got := labels(v, AreaRow)[:5]; !slices.Equal(got, want) {
 		t.Errorf("urutan setelah dipindah ke 2: %v", got)
 	}
-	v, err = f.s.UpdateField(t.Context(), f.admin, v.ID, spec.ID, FieldUpdate{Label: spec.Label, Position: new(16)})
+	v, err = f.s.UpdateField(t.Context(), f.master, v.ID, spec.ID, FieldUpdate{Label: spec.Label, Position: new(16)})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -396,18 +396,18 @@ func TestCreateTemplate(t *testing.T) {
 	f := newFixture(t)
 	ctx := t.Context()
 	customers := customer.NewService(f.pool, access.NewChecker(f.pool))
-	group, err := customers.CreateProjectGroup(ctx, f.admin, customer.ProjectGroupInput{Code: "GR1", Name: "Project Group 1"})
+	group, err := customers.CreateProjectGroup(ctx, f.master, customer.ProjectGroupInput{Code: "GR1", Name: "Project Group 1"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	kt, err := customers.Create(ctx, f.admin, customer.NewCustomer{Code: "KT", Name: "Customer KT", ProjectGroupID: group.ID})
+	kt, err := customers.Create(ctx, f.master, customer.NewCustomer{Code: "KT", Name: "Customer KT", ProjectGroupID: group.ID})
 	if err != nil {
 		t.Fatal(err)
 	}
 	pfmeaT := f.template(t, "PFMEA AIAG 4th")
 	cpT := f.template(t, "CP")
 
-	sqam, err := f.s.CreateFormatTemplate(ctx, f.admin, NewTemplate{
+	sqam, err := f.s.CreateFormatTemplate(ctx, f.master, NewTemplate{
 		Name: "PFMEA SQAM KT", DocumentTypeID: pfmeaT.DocumentTypeID, Methodology: MethodSQAM, CustomerID: kt.ID, RiskMethod: RiskAP,
 	})
 	if err != nil {
@@ -421,7 +421,7 @@ func TestCreateTemplate(t *testing.T) {
 		t.Errorf("versi baru: %d field, %d tabel skala, %d simbol, %v", len(v.Fields), len(v.Ratings), len(v.Symbols), err)
 	}
 
-	copied, err := f.s.CreateFormatTemplate(ctx, f.admin, NewTemplate{
+	copied, err := f.s.CreateFormatTemplate(ctx, f.master, NewTemplate{
 		Name: "PFMEA AIAG 4th copy", DocumentTypeID: pfmeaT.DocumentTypeID, Methodology: MethodAIAG4th, CopyFromVersionID: pfmeaT.Versions[0].ID,
 	})
 	if err != nil {
@@ -455,14 +455,14 @@ func TestCreateTemplate(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := f.s.CreateFormatTemplate(ctx, f.admin, tt.in)
+			_, err := f.s.CreateFormatTemplate(ctx, f.master, tt.in)
 			if got := problemCodes(t, err); !slices.Equal(got, tt.want) {
 				t.Errorf("CreateFormatTemplate = %v, ingin %v", got, tt.want)
 			}
 		})
 	}
 
-	renamed, err := f.s.RenameFormatTemplate(ctx, f.admin, copied.ID, "PFMEA customer KT")
+	renamed, err := f.s.RenameFormatTemplate(ctx, f.master, copied.ID, "PFMEA customer KT")
 	if err != nil || renamed.Name != "PFMEA customer KT" {
 		t.Errorf("ganti nama: %+v, %v", renamed, err)
 	}
@@ -475,7 +475,7 @@ func TestRatingsSymbolsAndHighlights(t *testing.T) {
 	ctx := t.Context()
 	v := f.version(t, "PFMEA AIAG 4th")
 
-	v, err := f.s.SetRatingCriteria(ctx, f.admin, v.ID, []Rating{
+	v, err := f.s.SetRatingCriteria(ctx, f.master, v.ID, []Rating{
 		{Scale: ScaleSeverity, Value: 10, Criteria: "Hazardous without warning (contoh)"},
 		{Scale: ScaleDetection, Value: 1, Criteria: "  Almost certain  "},
 	})
@@ -485,17 +485,17 @@ func TestRatingsSymbolsAndHighlights(t *testing.T) {
 	if v.Ratings[9].Criteria != "Hazardous without warning (contoh)" || v.Ratings[20].Criteria != "Almost certain" {
 		t.Errorf("kriteria: %+v dan %+v", v.Ratings[9], v.Ratings[20])
 	}
-	if _, err := f.s.SetRatingCriteria(ctx, f.admin, v.ID, []Rating{{Scale: "x", Value: 11}}); !slices.Equal(problemCodes(t, err), []string{"ratings:invalid_format"}) {
+	if _, err := f.s.SetRatingCriteria(ctx, f.master, v.ID, []Rating{{Scale: "x", Value: 11}}); !slices.Equal(problemCodes(t, err), []string{"ratings:invalid_format"}) {
 		t.Errorf("skala salah: %v", err)
 	}
 	cp := f.version(t, "CP")
-	if _, err := f.s.SetRatingCriteria(ctx, f.admin, cp.ID, []Rating{{Scale: ScaleSeverity, Value: 1, Criteria: "x"}}); !slices.Equal(problemCodes(t, err), []string{"ratings:not_allowed"}) {
+	if _, err := f.s.SetRatingCriteria(ctx, f.master, cp.ID, []Rating{{Scale: ScaleSeverity, Value: 1, Criteria: "x"}}); !slices.Equal(problemCodes(t, err), []string{"ratings:not_allowed"}) {
 		t.Errorf("tabel skala untuk CP tanpa metode risiko: %v", err)
 	}
 
 	symbols := append(slices.Clone(v.Symbols), Symbol{Name: "Safety"})
 	symbols[1].Name = "Revision Mark"
-	v, err = f.s.SaveSymbols(ctx, f.admin, v.ID, symbols)
+	v, err = f.s.SaveSymbols(ctx, f.master, v.ID, symbols)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -505,18 +505,18 @@ func TestRatingsSymbolsAndHighlights(t *testing.T) {
 	}
 	symbols = slices.Clone(v.Symbols)
 	symbols[4].Automatic = true
-	if v, err = f.s.SaveSymbols(ctx, f.admin, v.ID, symbols); err != nil || v.Symbols[4].Automatic {
+	if v, err = f.s.SaveSymbols(ctx, f.master, v.ID, symbols); err != nil || v.Symbols[4].Automatic {
 		t.Errorf("tanda otomatis dari isian diabaikan: %+v, %v", v.Symbols, err)
 	}
-	if _, err := f.s.SaveSymbols(ctx, f.admin, v.ID, v.Symbols[1:]); !slices.Equal(problemCodes(t, err), []string{"symbols:not_allowed"}) {
+	if _, err := f.s.SaveSymbols(ctx, f.master, v.ID, v.Symbols[1:]); !slices.Equal(problemCodes(t, err), []string{"symbols:not_allowed"}) {
 		t.Errorf("simbol dihapus: %v", err)
 	}
 
-	v, err = f.s.SetHighlights(ctx, f.admin, v.ID, HighlightSettings{RPNAbove: new(120), SeverityAtLeast: new(0)})
+	v, err = f.s.SetHighlights(ctx, f.master, v.ID, HighlightSettings{RPNAbove: new(120), SeverityAtLeast: new(0)})
 	if err != nil || v.HighlightRPNAbove != 120 || v.HighlightSeverityAtLeast != 0 {
 		t.Errorf("aturan sorot: %d, %d, %v", v.HighlightRPNAbove, v.HighlightSeverityAtLeast, err)
 	}
-	if _, err := f.s.SetHighlights(ctx, f.admin, cp.ID, HighlightSettings{RPNAbove: new(100)}); !slices.Equal(problemCodes(t, err), []string{"highlight_rpn_above:not_allowed"}) {
+	if _, err := f.s.SetHighlights(ctx, f.master, cp.ID, HighlightSettings{RPNAbove: new(100)}); !slices.Equal(problemCodes(t, err), []string{"highlight_rpn_above:not_allowed"}) {
 		t.Errorf("aturan sorot untuk CP: %v", err)
 	}
 }
@@ -538,7 +538,7 @@ func TestPermissionsAndAudit(t *testing.T) {
 		t.Errorf("versi tidak ada: %v", err)
 	}
 
-	if _, err := f.s.AddField(ctx, f.admin, v.ID, NewField{Area: AreaRow, Kind: KindText, Label: "Note"}); err != nil {
+	if _, err := f.s.AddField(ctx, f.master, v.ID, NewField{Area: AreaRow, Kind: KindText, Label: "Note"}); err != nil {
 		t.Fatal(err)
 	}
 	var action, details string

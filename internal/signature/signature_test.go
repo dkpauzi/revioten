@@ -333,13 +333,17 @@ func TestRejectAndWithdraw(t *testing.T) {
 func TestWetOnlyCustomer(t *testing.T) {
 	w := setup(t)
 	ctx := t.Context()
-	if err := w.svc.SetMode(ctx, w.sender, w.CustomerAB, signature.ModeWetOnly); !errors.Is(err, access.ErrForbidden) {
-		t.Errorf("akun kerja mengatur cara tanda tangan: %v", err)
+	if err := w.svc.SetMode(ctx, w.Author, w.CustomerAB, signature.ModeWetOnly); !errors.Is(err, access.ErrForbidden) {
+		t.Errorf("akun tanpa E-11 mengatur cara tanda tangan: %v", err)
 	}
-	if err := w.svc.SetMode(ctx, w.Admin, w.CustomerAB, "pena"); codeOf(t, err) != "mode:invalid_format" {
+	// Admin tidak lagi mengurus master data (D-209).
+	if err := w.svc.SetMode(ctx, w.Admin, w.CustomerAB, signature.ModeWetOnly); !errors.Is(err, access.ErrForbidden) {
+		t.Errorf("admin mengatur cara tanda tangan: %v", err)
+	}
+	if err := w.svc.SetMode(ctx, w.sender, w.CustomerAB, "pena"); codeOf(t, err) != "mode:invalid_format" {
 		t.Errorf("cara tidak dikenal: %v", err)
 	}
-	if err := w.svc.SetMode(ctx, w.Admin, w.CustomerAB, signature.ModeWetOnly); err != nil {
+	if err := w.svc.SetMode(ctx, w.sender, w.CustomerAB, signature.ModeWetOnly); err != nil {
 		t.Fatal(err)
 	}
 	_, err := w.svc.Send(ctx, w.sender, w.cp.ID, signature.SendInput{Signers: map[int]string{1: w.sender.PersonID, 2: w.pl.PersonID}, Password: "benar"})

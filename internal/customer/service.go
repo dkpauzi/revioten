@@ -74,7 +74,7 @@ func (s *Service) Get(ctx context.Context, actor access.Actor, id string) (Custo
 // *problem.ValidationError bila input salah, atau *problem.ConflictError bila
 // kodenya sudah dipakai.
 //
-// Mengelola master data adalah hak A-2, yang hanya dimiliki akun admin (E-10).
+// Mengelola master data adalah hak E-11, milik PPAP Engineer (D-209).
 func (s *Service) Create(ctx context.Context, actor access.Actor, in NewCustomer) (Customer, error) {
 	if err := s.authz.Authorize(ctx, actor, access.ManageMasterData, access.Resource{}); err != nil {
 		return Customer{}, err
@@ -135,7 +135,7 @@ func (s *Service) Create(ctx context.Context, actor access.Actor, in NewCustomer
 	return get(ctx, s.queries, id)
 }
 
-// Update mengubah nama, Project Group, dan status aktif customer (A-2).
+// Update mengubah nama, Project Group, dan status aktif customer (E-11).
 // Customer tidak pernah dihapus; menonaktifkan adalah penggantinya (E-09).
 // Hanya field yang berubah yang dicatat di audit log.
 func (s *Service) Update(ctx context.Context, actor access.Actor, id string, in CustomerUpdate) (Customer, error) {
@@ -195,7 +195,7 @@ func (s *Service) Update(ctx context.Context, actor access.Actor, id string, in 
 	return get(ctx, s.queries, id)
 }
 
-// ChangeCode mengganti kode customer (A-2, E-11). Kode lama tetap tercatat
+// ChangeCode mengganti kode customer (E-11). Kode lama tetap tercatat
 // beserta masa berlakunya, sehingga nomor dokumen lama yang memakai kode lama
 // tetap bisa dicocokkan dengan customer ini (R-NUM-02).
 // E-31 (D-109): satu kode hanya pernah dipakai satu customer, termasuk kode

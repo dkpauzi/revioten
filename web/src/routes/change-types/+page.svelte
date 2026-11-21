@@ -1,6 +1,6 @@
 <script lang="ts">
 	// Halaman jenis perubahan, sumber perubahan, dan kategori 4M (M1.6, UC-05).
-	// Semua akun bisa melihat; mengubah hanya untuk pemegang A-2. Server tetap
+	// Semua akun bisa melihat; mengubah hanya untuk pemegang E-11. Server tetap
 	// memeriksa setiap operasi.
 	import { onMount } from 'svelte';
 	import {
@@ -22,7 +22,7 @@
 	let sources = $state<ChangeSource[]>([]);
 	let categories = $state<FourMCategory[]>([]);
 	let loadError = $state('');
-	let canEdit = $derived(can('A-2'));
+	let canEdit = $derived(can('E-11'));
 
 	async function load() {
 		const [typeResult, sourceResult, categoryResult] = await Promise.all([

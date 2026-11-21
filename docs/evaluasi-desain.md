@@ -2328,6 +2328,19 @@ Salin blok ini untuk setiap temuan baru.
 - **Status:** Terbuka
 - **Keputusan pemilik:**
 
+### E-134 · Hak master data pindah dari admin ke akun kerja
+
+- **Tanggal dan milestone:** 21 November 2026, D-209.
+- **Jenis:** Kontradiksi
+- **Rujukan:** D-209, D-72, R-SEC-13, M1.4, M1.6, M1.8, D-143, D-148, R-MIG-06.
+- **Temuan:** Master data memakai hak admin A-2, padahal hak A- hanya boleh dipegang akun admin (D-72). Memberi PPAP Engineer hak A-2 melanggar D-72. Akibat kedua: PPAP Engineer Supervisor kini memegang E-11 dan V-3 di satu akun, jadi ia bisa menyusun dan menyetujui form set. Pemisahan tugas hanya dijaga aturan "yang terakhir mengubah tidak menerbitkan" (D-139). Akibat ketiga: format template tanpa AP boleh diterbitkan penyusunnya sendiri (D-143), sekarang oleh PPAP Engineer.
+- **Opsi:** (a) hak kerja baru E-11 menggantikan A-2, A-2 dihapus dari katalog; (b) A-2 tetap, tetapi trigger diubah supaya peran kerja boleh memegang A-2; (c) A-2 dipecah per halaman.
+- **Rekomendasi Claude Code (usulan):** (a). D-72 tetap utuh dan nama hak mengikuti levelnya (E = edit).
+- **Asumsi sementara di kode:** (a), migrasi 00053. Daftar orang untuk pemegang jabatan diambil dari endpoint baru `/api/v1/position-candidates` (hanya ID dan nama), karena daftar akun tetap hak admin (A-1).
+- **Menghambat milestone?** Tidak
+- **Status:** Diputuskan (opsi a, D-209)
+- **Keputusan pemilik:** 21 November 2026, "Semua data kerja"; mode migrasi dan aturan penyetujuan form "untuk saat ini tetap di admin".
+
 ## Usulan desain UI (UX-01 sampai UX-07): dampak ke M0 sampai M3 dan saran
 
 - **Sumber:** `docs/uml/usulan-desain-ui.md` (UML draft 0.12, 3 November 2026) dan kanvas desain UI "Desain UI Sistem PFD PFMEA CP" (18 artboard, baris v2 disarankan).

@@ -6,20 +6,23 @@
 // menerbitkan form set AIAG 4th; dokumen hanya memakai form set yang terbit.
 import { expect, test } from '@playwright/test';
 import { en } from '../src/lib/i18n/en.ts';
-import { createWorkAccount, ensureProjectGroup, logIn, logInFirstTime, logOut, openFromMenu } from './helpers.ts';
+import { asMaster, createWorkAccount, ensureProjectGroup, logIn, logInFirstTime, logOut, openFromMenu } from './helpers.ts';
 
 test('penyusun membuat dokumen CP, lalu baris dan header tersimpan', async ({ page }) => {
 	// Test ini mengikuti satu dokumen dari M4.1 sampai M4.6, jadi batas waktunya dilonggarkan.
 	test.slow();
 	await logIn(page);
-	await ensureProjectGroup(page, 'GR1');
-	await page.evaluate(async () => {
-		const post = (path: string, body: object) =>
-			fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then((r) => r.json());
-		const groups = await (await fetch('/api/v1/project-groups')).json();
-		const group = groups.items.find((g: { code: string }) => g.code === 'GR1');
-		const customer = await post('/api/v1/customers', { code: 'DC', name: 'Customer DC', project_group_id: group.id });
-		await post('/api/v1/models', { customer_id: customer.id, name: 'D-100' });
+	// Master data dibuat PPAP Engineer (E-11, D-209).
+	await asMaster(page, async (m) => {
+		await ensureProjectGroup(m, 'GR1');
+		await m.evaluate(async () => {
+			const post = (path: string, body: object) =>
+				fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then((r) => r.json());
+			const groups = await (await fetch('/api/v1/project-groups')).json();
+			const group = groups.items.find((g: { code: string }) => g.code === 'GR1');
+			const customer = await post('/api/v1/customers', { code: 'DC', name: 'Customer DC', project_group_id: group.id });
+			await post('/api/v1/models', { customer_id: customer.id, name: 'D-100' });
+		});
 	});
 	const temporary = await createWorkAccount(page, 'Penyusun dokumen', 'penyusun.dokumen.e2e', ['ppap_engineer']);
 	await logOut(page);

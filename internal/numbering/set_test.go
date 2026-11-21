@@ -85,7 +85,7 @@ func TestInitialRevision(t *testing.T) {
 	}
 
 	digits := 3
-	if _, err := f.s.UpdateSettings(ctx, f.admin, SettingsInput{FactoryCode: "S", RevisionDigits: &digits}); err != nil {
+	if _, err := f.s.UpdateSettings(ctx, f.master, SettingsInput{FactoryCode: "S", RevisionDigits: &digits}); err != nil {
 		t.Fatal(err)
 	}
 	list, _, err := f.s.ListNumbers(ctx, f.author, ListFilter{DocumentTypeID: f.types[KeyCP].ID})

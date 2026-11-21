@@ -29,7 +29,7 @@ func NewService(pool *pgxpool.Pool, authz access.Authorizer) *Service {
 
 // Melihat memakai hak L-2 seperti master lain (E-24, D-103). Jabatan dan
 // pemegangnya diubah lewat A-1 (UC-02: kelola pengguna, peran, dan jabatan),
-// dan rute lewat A-2 (UC-06).
+// dan rute lewat E-11 (UC-06).
 
 // ListPositions mengembalikan semua jabatan beserta pemegangnya, menurut
 // urutan bagan organisasi.
@@ -60,10 +60,28 @@ func (s *Service) ListPositions(ctx context.Context, actor access.Actor) ([]Posi
 	return list, nil
 }
 
+// ListCandidates mengembalikan orang yang punya akun kerja aktif, untuk
+// dipilih sebagai pemegang jabatan (E-11, D-209). Pemegang E-11 tidak memegang
+// A-1, jadi tidak bisa membaca daftar akun; daftar ini hanya berisi nama.
+func (s *Service) ListCandidates(ctx context.Context, actor access.Actor) ([]Candidate, error) {
+	if err := s.authz.Authorize(ctx, actor, access.ManageMasterData, access.Resource{}); err != nil {
+		return nil, err
+	}
+	rows, err := s.q.ListPositionCandidates(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("mengambil calon pemegang jabatan: %w", err)
+	}
+	list := make([]Candidate, 0, len(rows))
+	for _, r := range rows {
+		list = append(list, Candidate{PersonID: r.ID, Name: r.Name})
+	}
+	return list, nil
+}
+
 // RenamePosition mengganti nama jabatan, misalnya NPI Manager menjadi PE
 // Manager (D-55). Key-nya tetap, jadi slot rute dan pemegangnya tidak berubah.
 func (s *Service) RenamePosition(ctx context.Context, actor access.Actor, id, name string) (Position, error) {
-	if err := s.authz.Authorize(ctx, actor, access.ManageUsers, access.Resource{}); err != nil {
+	if err := s.authz.Authorize(ctx, actor, access.ManageMasterData, access.Resource{}); err != nil {
 		return Position{}, err
 	}
 	name, p := problem.Text("name", name, true, maxNameLength)
@@ -106,7 +124,7 @@ func (s *Service) RenamePosition(ctx context.Context, actor access.Actor, id, na
 // Leader dan Project Engineer, Project Group wajib diisi dan setiap group
 // hanya punya satu pemegang (D-54). Satu orang boleh merangkap jabatan (D-58).
 func (s *Service) AddHolder(ctx context.Context, actor access.Actor, positionID string, in NewHolder) (Holder, error) {
-	if err := s.authz.Authorize(ctx, actor, access.ManageUsers, access.Resource{}); err != nil {
+	if err := s.authz.Authorize(ctx, actor, access.ManageMasterData, access.Resource{}); err != nil {
 		return Holder{}, err
 	}
 	position, err := getPosition(ctx, s.q, positionID)
@@ -173,7 +191,7 @@ func (s *Service) AddHolder(ctx context.Context, actor access.Actor, positionID 
 
 // RemoveHolder melepas satu pemegang jabatan. Riwayatnya tetap ada di audit log.
 func (s *Service) RemoveHolder(ctx context.Context, actor access.Actor, positionID, holderID string) error {
-	if err := s.authz.Authorize(ctx, actor, access.ManageUsers, access.Resource{}); err != nil {
+	if err := s.authz.Authorize(ctx, actor, access.ManageMasterData, access.Resource{}); err != nil {
 		return err
 	}
 	if !db.IsUUID(positionID) || !db.IsUUID(holderID) {

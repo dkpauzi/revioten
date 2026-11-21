@@ -39,3 +39,13 @@ SELECT count(*) FROM position_holders WHERE position_id = $1;
 
 -- name: DeletePositionHolder :exec
 DELETE FROM position_holders WHERE id = $1;
+
+-- name: ListPositionCandidates :many
+-- ListPositionCandidates mengambil orang yang punya akun kerja aktif, untuk
+-- dipilih sebagai pemegang jabatan (D-209). Hanya ID dan nama: daftar akun
+-- lengkap tetap hak admin (A-1).
+SELECT DISTINCT p.id, p.name
+FROM people p
+JOIN accounts a ON a.person_id = p.id
+WHERE a.kind = 'work' AND a.disabled_at IS NULL
+ORDER BY p.name, p.id;

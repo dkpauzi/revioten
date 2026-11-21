@@ -29,7 +29,7 @@ func NewService(pool *pgxpool.Pool, authz access.Authorizer) *Service {
 }
 
 // Melihat memakai hak L-2 seperti master lain (E-24, D-103), dan mengubah
-// memakai A-2 (UC-05).
+// memakai E-11 (UC-05).
 
 // ListChangeTypes mengembalikan jenis perubahan menurut urutan tetapnya.
 func (s *Service) ListChangeTypes(ctx context.Context, actor access.Actor) ([]ChangeType, error) {

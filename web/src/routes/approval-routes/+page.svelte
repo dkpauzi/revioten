@@ -3,7 +3,7 @@
 	// Rute berisi slot berurutan (D-45 sampai D-49); setiap customer punya rute
 	// default (D-47), dan setiap jenis perubahan boleh punya rute sendiri
 	// (R-TPL-10, E-35, D-112). Semua akun bisa melihat; mengubah hanya untuk
-	// pemegang A-2.
+	// pemegang E-11.
 	import { onMount } from 'svelte';
 	import {
 		createApprovalRoute,
@@ -34,7 +34,7 @@
 	let customers = $state<Customer[]>([]);
 	let changeTypes = $state<ChangeType[]>([]);
 	let loadError = $state('');
-	let canEdit = $derived(can('A-2'));
+	let canEdit = $derived(can('E-11'));
 
 	// Rute yang sedang diubah ('new' untuk rute baru), atau null.
 	let editing = $state<string | null>(null);

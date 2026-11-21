@@ -138,7 +138,7 @@ func TestAPRulesInVersions(t *testing.T) {
 	if v := f.version(t, "PFMEA AIAG 4th"); len(v.APRules) != 0 {
 		t.Errorf("template RPN punya %d aturan AP", len(v.APRules))
 	}
-	created, err := f.s.CreateFormatTemplate(ctx, f.admin, NewTemplate{
+	created, err := f.s.CreateFormatTemplate(ctx, f.master, NewTemplate{
 		Name: "PFMEA AP uji", DocumentTypeID: pfmea.DocumentTypeID, Methodology: MethodAIAGVDA, RiskMethod: RiskAP,
 	})
 	if err != nil {
@@ -162,10 +162,10 @@ func TestAPRulesInVersions(t *testing.T) {
 	if _, err := f.s.SetAPRules(ctx, f.author, v.ID, changed); !errors.Is(err, access.ErrForbidden) {
 		t.Errorf("Penyusun mengubah tabel AP: %v", err)
 	}
-	if _, err := f.s.SetAPRules(ctx, f.admin, v.ID, changed[1:]); !slices.Equal(problemCodes(t, err), []string{"ap_rules:invalid_format"}) {
+	if _, err := f.s.SetAPRules(ctx, f.master, v.ID, changed[1:]); !slices.Equal(problemCodes(t, err), []string{"ap_rules:invalid_format"}) {
 		t.Errorf("tabel tidak lengkap: %v", err)
 	}
-	v, err = f.s.SetAPRules(ctx, f.admin, v.ID, changed)
+	v, err = f.s.SetAPRules(ctx, f.master, v.ID, changed)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -176,7 +176,7 @@ func TestAPRulesInVersions(t *testing.T) {
 		t.Errorf("entri audit: %s %s", action, details)
 	}
 	// Tabel RPN tidak punya tabel AP.
-	if _, err := f.s.SetAPRules(ctx, f.admin, f.version(t, "PFMEA AIAG 4th").ID, changed); !slices.Equal(problemCodes(t, err), []string{"ap_rules:not_allowed"}) {
+	if _, err := f.s.SetAPRules(ctx, f.master, f.version(t, "PFMEA AIAG 4th").ID, changed); !slices.Equal(problemCodes(t, err), []string{"ap_rules:not_allowed"}) {
 		t.Errorf("tabel AP di template RPN: %v", err)
 	}
 
@@ -193,10 +193,10 @@ func TestAPRulesInVersions(t *testing.T) {
 	if _, err := f.s.PublishFormatVersion(ctx, approver, v.ID); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := f.s.SetAPRules(ctx, f.admin, v.ID, DefaultAPRules()); !slices.Equal(problemCodes(t, err), []string{"status:not_allowed"}) {
+	if _, err := f.s.SetAPRules(ctx, f.master, v.ID, DefaultAPRules()); !slices.Equal(problemCodes(t, err), []string{"status:not_allowed"}) {
 		t.Errorf("mengubah tabel AP versi terbit: %v", err)
 	}
-	v2, err := f.s.NewFormatVersion(ctx, f.admin, created.ID)
+	v2, err := f.s.NewFormatVersion(ctx, f.master, created.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -204,7 +204,7 @@ func TestAPRulesInVersions(t *testing.T) {
 		t.Errorf("tabel AP versi 2 tidak sama dengan versi 1")
 	}
 	// Salinan template juga membawa tabelnya.
-	copied, err := f.s.CreateFormatTemplate(ctx, f.admin, NewTemplate{Name: "PFMEA AP salinan", DocumentTypeID: pfmea.DocumentTypeID, CopyFromVersionID: v.ID})
+	copied, err := f.s.CreateFormatTemplate(ctx, f.master, NewTemplate{Name: "PFMEA AP salinan", DocumentTypeID: pfmea.DocumentTypeID, CopyFromVersionID: v.ID})
 	if err != nil {
 		t.Fatal(err)
 	}

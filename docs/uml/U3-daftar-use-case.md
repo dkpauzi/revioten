@@ -43,10 +43,10 @@ Pengecek dan approver menandatangani cetakan di kertas, jadi tanda tangan itu ti
 |---|---|---|---|---|---|---|---|
 | UC-01 | Masuk dan keluar sistem | Pengguna internal | | Login lokal, sesi, semua halaman butuh login. | R-SEC-01 | M1.1 | MVP |
 | UC-02 | Kelola pengguna, peran, dan jabatan | Admin | | Akun, peran, dan jabatan yang dipegang, termasuk rangkap jabatan. Admin juga mengubah isi peran (hak akses), sesuai peta pengguna. | R-SEC-10, D-66, D-115 | M1.2, M1.8, M8.1 | MVP |
-| UC-03 | Kelola customer, Project Group, group model, model, dan part number | Admin | | Master data dengan kode customer, alokasi ke Project Group, dan satu group per model. | R-DOC-08, D-42, D-54 | M1.4 | MVP |
+| UC-03 | Kelola customer, Project Group, group model, model, dan part number | PPAP Engineer (D-209) | | Master data dengan kode customer, alokasi ke Project Group, dan satu group per model. | R-DOC-08, D-42, D-54 | M1.4 | MVP |
 | UC-04 | Kelola master proses | PPAP Engineer | | ID tetap, nama tampilan, dan alias. | R-DOC-04 | M1.5, D-64 | MVP |
-| UC-05 | Kelola jenis dokumen, jenis perubahan, dan sumber perubahan | Admin | | Awalan SH, SF, SC, kebijakan approval per jenis perubahan, dan pemicu PP, customer claim, ECR. | R-NUM-02, R-TPL-10, R-CHG-06 | M1.6 | MVP |
-| UC-06 | Kelola rute approval | Admin | | Slot berurutan, jabatan per slot, judul cetak, dan rute default per customer. | R-APR-08, R-APR-09, R-APR-17 | M1.8 | MVP |
+| UC-05 | Kelola jenis dokumen, jenis perubahan, dan sumber perubahan | PPAP Engineer (D-209) | | Awalan SH, SF, SC, kebijakan approval per jenis perubahan, dan pemicu PP, customer claim, ECR. | R-NUM-02, R-TPL-10, R-CHG-06 | M1.6 | MVP |
+| UC-06 | Kelola rute approval | PPAP Engineer (D-209) | | Slot berurutan, jabatan per slot, judul cetak, dan rute default per customer. | R-APR-08, R-APR-09, R-APR-17 | M1.8 | MVP |
 | UC-07 | Kelola pengaturan sistem | Admin | | Saklar QR, tanggal tanda tangan per slot, aturan tanggal berlaku, dan mode migrasi. | R-APR-14, R-APR-16, R-REV-08, R-MIG-06 | M1.8, M6.5, M7.5 | MVP |
 | UC-08 | Lihat audit log | Admin | | Menelusuri siapa melakukan apa dan kapan. Hanya lewat akun admin. Setiap entri tindakan admin menampilkan akun dan pemegangnya. | R-SEC-03, D-72, D-74, D-75 | M1.3 | MVP |
 | UC-09 | Kelola master dokumen terkait | Admin | | Nomor dan judul WI, SOP, QEP yang dirujuk CP. | R-DOC-11 | M4.1 | Usulan |
@@ -61,11 +61,11 @@ Pengecek dan approver menandatangani cetakan di kertas, jadi tanda tangan itu ti
 | UC-13 | Ubah status nomor | Dokumen kontrol | | Void atau Obsolete. Nomor tidak pernah dihapus atau dipakai ulang. | R-NUM-04 | M2.3 | Usulan |
 | UC-14 | Impor nomor lama | Dokumen kontrol | Admin | Nomor lama masuk apa adanya, beserta laporan lubang, ganda, dan set tidak sejajar. Usulan UX-06: kolom "No. (Before)" di register ikut tersimpan sebagai nomor lama yang bisa dicari, dan laporan juga menandai kode customer ganda serta satu nomor yang dipakai beberapa part. | R-NUM-06, UX-06 | M2.5 | Usulan |
 | UC-15 | Ingatkan nomor Reserved yang terlalu lama | Penjadwal | Penyusun | Pengingat untuk nomor yang dipesan tetapi tidak dipakai. | R-NUM-04 | M2.3 | Usulan |
-| UC-20 | Kelola format template | Admin | PPAP Engineer | Kolom ber-ID tetap, metode risiko, tabel skala, simbol, dan layout ekspor. | R-TPL-01, R-TPL-02, R-TPL-11 | M3.1 | MVP |
+| UC-20 | Kelola format template | PPAP Engineer (D-209) |  | Kolom ber-ID tetap, metode risiko, tabel skala, simbol, dan layout ekspor. | R-TPL-01, R-TPL-02, R-TPL-11 | M3.1 | MVP |
 | UC-21 | Kelola process template | PPAP Engineer | | Proses, sub-proses, dan poin di empat tingkat: umum, customer, group model, model. | R-TPL-03, D-39 | M3.2, M3.3, D-64 | MVP |
 | UC-22 | Terbitkan versi template | PPAP Engineer | | Versi draft menjadi terbit, dan tidak bisa diubah lagi. | R-TPL-05 | M3.4, D-64 | Usulan |
 | UC-23 | Propagasikan versi template | PPAP Engineer | | Pratinjau dampak, pilih cakupan, tangani konflik lokal. Hasilnya sebuah perubahan, bukan edit langsung. | R-TPL-06, R-TPL-08, R-TPL-09 | M5.8, D-64 | MVP |
-| UC-24 | Kelola master simbol karakteristik khusus | Admin | PPAP Engineer | Simbol internal (Critical Process sebagai default, Revision otomatis dari diff) dan simbol per customer (misalnya Important Character dan Regulation). Simbol baru berupa nama teks dan gambar yang diunggah. Berversi, tidak dihapus. | R-TPL-11, R-REV-09, UX-03 | M3.1 | Usulan |
+| UC-24 | Kelola master simbol karakteristik khusus | PPAP Engineer (D-209) |  | Simbol internal (Critical Process sebagai default, Revision otomatis dari diff) dan simbol per customer (misalnya Important Character dan Regulation). Simbol baru berupa nama teks dan gambar yang diunggah. Berversi, tidak dihapus. | R-TPL-11, R-REV-09, UX-03 | M3.1 | Usulan |
 | UC-25 | Usulkan poin ke cakupan lebih luas | Penyusun | PPAP Engineer | Saat menyusun, poin di satu proses diset untuk model ini saja, group model, customer, atau umum. Pilihan selain model ini saja menjadi usulan perubahan process template, yang diterima atau ditolak Pengelola template. Sampai diterima, poin berlaku sebagai perbedaan lokal di dokumen ini. | R-TPL-03, R-CMP-04, D-39, UX-01 | M3.3, M4.8 | Usulan |
 
 ## C. Dokumen dan perakitan

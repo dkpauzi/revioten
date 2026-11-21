@@ -83,10 +83,15 @@ type Update struct {
 	SubmissionFormNumber *string
 }
 
-// Apply mengubah pengaturan sistem (A-3). Hak diperiksa dulu, juga bila
-// tidak ada saklar yang dikirim.
+// Apply mengubah pengaturan. Hak diperiksa dulu, juga bila tidak ada saklar
+// yang dikirim. Sejak D-209 pengaturan terbagi dua:
+//   - pengaturan dokumen (tanggal di slot tanda tangan, QR di cetakan, nomor
+//     form submission) diubah pemegang E-11, yaitu PPAP Engineer;
+//   - pengaman (mode migrasi R-MIG-06, aturan penyetujuan form D-148) tetap
+//     diubah admin (A-3), supaya orang yang diawasi tidak mengatur
+//     pengawasnya sendiri.
 func (s *Service) Apply(ctx context.Context, actor access.Actor, in Update) (Settings, error) {
-	if err := s.authz.Authorize(ctx, actor, access.ManageSettings, access.Resource{}); err != nil {
+	if err := s.authorizeUpdate(ctx, actor, in); err != nil {
 		return Settings{}, err
 	}
 	if in.FormApprovalMode != nil && *in.FormApprovalMode != ApprovalAll && *in.FormApprovalMode != ApprovalAny {
@@ -173,4 +178,28 @@ func (s *Service) Apply(ctx context.Context, actor access.Actor, in Update) (Set
 		return Settings{}, fmt.Errorf("mengubah pengaturan sistem: %w", err)
 	}
 	return after, nil
+}
+
+// authorizeUpdate memeriksa hak untuk setiap kelompok saklar yang dikirim.
+// Permintaan tanpa saklar cukup memegang salah satu hak.
+func (s *Service) authorizeUpdate(ctx context.Context, actor access.Actor, in Update) error {
+	guard := in.MigrationMode != nil || in.FormApprovalMode != nil
+	document := in.SignDatesEnabled != nil || in.QREnabled != nil || in.SubmissionFormNumber != nil
+	if guard {
+		if err := s.authz.Authorize(ctx, actor, access.ManageSettings, access.Resource{}); err != nil {
+			return err
+		}
+	}
+	if document {
+		if err := s.authz.Authorize(ctx, actor, access.ManageMasterData, access.Resource{}); err != nil {
+			return err
+		}
+	}
+	if guard || document {
+		return nil
+	}
+	if err := s.authz.Authorize(ctx, actor, access.ManageSettings, access.Resource{}); err == nil {
+		return nil
+	}
+	return s.authz.Authorize(ctx, actor, access.ManageMasterData, access.Resource{})
 }

@@ -112,6 +112,7 @@ type ChangeMasterService interface {
 // (M1.8). *approval.Service memenuhinya; test memakai versi palsu.
 type ApprovalService interface {
 	ListPositions(ctx context.Context, actor access.Actor) ([]approval.Position, error)
+	ListCandidates(ctx context.Context, actor access.Actor) ([]approval.Candidate, error)
 	RenamePosition(ctx context.Context, actor access.Actor, id, name string) (approval.Position, error)
 	AddHolder(ctx context.Context, actor access.Actor, positionID string, in approval.NewHolder) (approval.Holder, error)
 	RemoveHolder(ctx context.Context, actor access.Actor, positionID, holderID string) error

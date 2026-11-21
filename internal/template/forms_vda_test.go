@@ -209,22 +209,22 @@ func TestAPFieldRules(t *testing.T) {
 	rpn := f.version(t, "PFMEA AIAG 4th")
 	vda := f.version(t, "PFMEA AIAG-VDA 2019")
 
-	if _, err := f.s.AddField(ctx, f.admin, rpn.ID, NewField{Area: AreaRow, Kind: KindAP, Label: "AP", RatingSet: 1}); !slices.Equal(problemCodes(t, err), []string{"kind:not_allowed"}) {
+	if _, err := f.s.AddField(ctx, f.master, rpn.ID, NewField{Area: AreaRow, Kind: KindAP, Label: "AP", RatingSet: 1}); !slices.Equal(problemCodes(t, err), []string{"kind:not_allowed"}) {
 		t.Errorf("kolom AP di template RPN: %v", err)
 	}
-	if _, err := f.s.AddField(ctx, f.admin, vda.ID, NewField{Area: AreaRow, Kind: KindAP, Label: "AP lagi", RatingSet: 1}); !slices.Equal(problemCodes(t, err), []string{"rating_set:taken"}) {
+	if _, err := f.s.AddField(ctx, f.master, vda.ID, NewField{Area: AreaRow, Kind: KindAP, Label: "AP lagi", RatingSet: 1}); !slices.Equal(problemCodes(t, err), []string{"rating_set:taken"}) {
 		t.Errorf("kolom AP kedua untuk set 1: %v", err)
 	}
-	if _, err := f.s.AddField(ctx, f.admin, vda.ID, NewField{Area: AreaRow, Kind: KindDocumentNumber, Label: "Doc no"}); !slices.Equal(problemCodes(t, err), []string{"kind:not_allowed"}) {
+	if _, err := f.s.AddField(ctx, f.master, vda.ID, NewField{Area: AreaRow, Kind: KindDocumentNumber, Label: "Doc no"}); !slices.Equal(problemCodes(t, err), []string{"kind:not_allowed"}) {
 		t.Errorf("nomor dokumen sebagai kolom: %v", err)
 	}
-	if _, err := f.s.AddField(ctx, f.admin, vda.ID, NewField{Area: AreaHeader, Kind: KindDocumentNumber, Label: "Doc no"}); !slices.Equal(problemCodes(t, err), []string{"kind:taken"}) {
+	if _, err := f.s.AddField(ctx, f.master, vda.ID, NewField{Area: AreaHeader, Kind: KindDocumentNumber, Label: "Doc no"}); !slices.Equal(problemCodes(t, err), []string{"kind:taken"}) {
 		t.Errorf("nomor dokumen kedua di header: %v", err)
 	}
 
 	// Salinan template dan versi baru membawa key dan grup.
 	ft := f.template(t, "PFMEA AIAG-VDA 2019")
-	copied, err := f.s.CreateFormatTemplate(ctx, f.admin, NewTemplate{Name: "PFMEA VDA salinan", DocumentTypeID: ft.DocumentTypeID, CopyFromVersionID: vda.ID})
+	copied, err := f.s.CreateFormatTemplate(ctx, f.master, NewTemplate{Name: "PFMEA VDA salinan", DocumentTypeID: ft.DocumentTypeID, CopyFromVersionID: vda.ID})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -239,7 +239,7 @@ func TestAPFieldRules(t *testing.T) {
 	if _, err := f.s.PublishFormatVersion(ctx, approver, vda.ID); err != nil {
 		t.Fatal(err)
 	}
-	v2, err := f.s.NewFormatVersion(ctx, f.admin, ft.ID)
+	v2, err := f.s.NewFormatVersion(ctx, f.master, ft.ID)
 	if err != nil {
 		t.Fatal(err)
 	}

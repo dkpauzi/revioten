@@ -170,7 +170,7 @@ func changedCombinations(old, updated []APRule) int {
 	return n
 }
 
-// SetAPRules mengganti tabel AP satu versi draft (A-2). Hanya untuk versi
+// SetAPRules mengganti tabel AP satu versi draft (E-11). Hanya untuk versi
 // dengan metode risiko AP. Siapa yang menyetujui perubahan ini saat versi
 // diterbitkan diatur D-139 dan dibangun bersama form set (langkah D).
 func (s *Service) SetAPRules(ctx context.Context, actor access.Actor, versionID string, rules []APRule) (FormatVersion, error) {

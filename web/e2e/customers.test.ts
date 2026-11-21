@@ -1,12 +1,13 @@
 // Test E2E M0.5: kriteria selesai "customer yang ditambah di layar tersimpan".
 import { expect, test } from '@playwright/test';
 import { en } from '../src/lib/i18n/en.ts';
-import { ensureProjectGroup, logIn } from './helpers.ts';
+import { ensureProjectGroup, logInAsMaster } from './helpers.ts';
 
 // Sejak M1.1 semua halaman butuh login, dan sejak M1.4 customer wajib punya
 // Project Group (D-54).
 test.beforeEach(async ({ page }) => {
-	await logIn(page);
+	// Master data diurus PPAP Engineer (E-11, D-209).
+	await logInAsMaster(page);
 	await ensureProjectGroup(page, 'GR1');
 });
 

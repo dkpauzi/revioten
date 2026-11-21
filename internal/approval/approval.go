@@ -64,6 +64,12 @@ type Holder struct {
 	CreatedAt        time.Time // selalu UTC
 }
 
+// Candidate adalah orang yang bisa dicatat sebagai pemegang jabatan.
+type Candidate struct {
+	PersonID string
+	Name     string
+}
+
 // NewHolder adalah isian pemegang jabatan baru.
 type NewHolder struct {
 	PersonID       string

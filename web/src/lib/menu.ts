@@ -52,7 +52,7 @@ const groups: { id: MenuGroup['id']; label: MessageKey; entries: Entry[] }[] = [
 		entries: [
 			{ href: '/format-templates', label: 'navFormatTemplates' },
 			{ href: '/process-templates', label: 'navProcessTemplates' },
-			// Form set (langkah D, D-133): semua akun melihat; admin mengubah, penyetuju form menerbitkan.
+			// Form set (langkah D, D-133): semua akun melihat; PPAP Engineer menyusun (E-11, D-209), penyetuju form menerbitkan (V-3).
 			{ href: '/form-sets', label: 'navFormSets' },
 			{ href: '/processes', label: 'navProcesses' },
 			{ href: '/referenced-documents', label: 'navReferencedDocuments' },
@@ -68,7 +68,9 @@ const groups: { id: MenuGroup['id']; label: MessageKey; entries: Entry[] }[] = [
 			{ href: '/document-types', label: 'navDocumentTypes' },
 			{ href: '/change-types', label: 'navChangeTypes' },
 			{ href: '/positions', label: 'navPositions' },
-			{ href: '/approval-routes', label: 'navApprovalRoutes' }
+			{ href: '/approval-routes', label: 'navApprovalRoutes' },
+			// Pengaturan dokumen (D-209): tanggal di slot, QR, nomor form submission.
+			{ href: '/document-settings', label: 'navDocumentSettings' }
 		]
 	},
 	{
@@ -84,7 +86,7 @@ const groups: { id: MenuGroup['id']; label: MessageKey; entries: Entry[] }[] = [
 			{ href: '/admin/service-accounts', label: 'navServiceAccounts', permission: 'A-1' },
 			// Audit log hanya lewat akun admin (A-4, D-75).
 			{ href: '/admin/audit', label: 'navAuditLog', permission: 'A-4' },
-			// Pengaturan sistem untuk pemegang A-3 (UC-07).
+			// Pengaman sistem untuk pemegang A-3 (UC-07): mode migrasi dan aturan penyetujuan form.
 			{ href: '/admin/settings', label: 'navSettings', permission: 'A-3' },
 			// Email notifikasi (D-194).
 			{ href: '/admin/notifications', label: 'navNotifications', permission: 'A-3' }

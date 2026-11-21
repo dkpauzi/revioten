@@ -52,11 +52,11 @@ func newPerson(t *testing.T, pool *pgxpool.Pool, name string) string {
 	return person.ID
 }
 
-// fixture: database baru, akun admin, dan Project Group GR1 serta GR3.
+// fixture: database baru, akun PPAP Engineer (master data, D-209), dan Project Group GR1 serta GR3.
 type fixture struct {
 	s        *Service
 	pool     *pgxpool.Pool
-	admin    access.Actor
+	master   access.Actor
 	gr1, gr3 customer.ProjectGroup
 }
 
@@ -65,23 +65,24 @@ func newFixture(t *testing.T) fixture {
 	ctx := t.Context()
 	pool := dbtest.NewPool(t)
 	checker := access.NewChecker(pool)
-	admin := newActor(t, pool, "admin.uji", access.AccountAdmin, access.RoleAdmin)
+	// Master data diurus PPAP Engineer (E-11, D-209).
+	master := newActor(t, pool, "ppap.master", access.AccountWork, access.RolePPAPEngineer)
 	customers := customer.NewService(pool, checker)
-	gr1, err := customers.CreateProjectGroup(ctx, admin, customer.ProjectGroupInput{Code: "GR1", Name: "Project Group 1"})
+	gr1, err := customers.CreateProjectGroup(ctx, master, customer.ProjectGroupInput{Code: "GR1", Name: "Project Group 1"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	gr3, err := customers.CreateProjectGroup(ctx, admin, customer.ProjectGroupInput{Code: "GR3", Name: "Project Group 3"})
+	gr3, err := customers.CreateProjectGroup(ctx, master, customer.ProjectGroupInput{Code: "GR3", Name: "Project Group 3"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	return fixture{s: NewService(pool, checker), pool: pool, admin: admin, gr1: gr1, gr3: gr3}
+	return fixture{s: NewService(pool, checker), pool: pool, master: master, gr1: gr1, gr3: gr3}
 }
 
 // position mencari jabatan menurut key-nya.
 func (f fixture) position(t *testing.T, key string) Position {
 	t.Helper()
-	list, err := f.s.ListPositions(t.Context(), f.admin)
+	list, err := f.s.ListPositions(t.Context(), f.master)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -97,7 +98,7 @@ func (f fixture) position(t *testing.T, key string) Position {
 // route mencari rute menurut namanya.
 func (f fixture) route(t *testing.T, name string) Route {
 	t.Helper()
-	list, err := f.s.ListRoutes(t.Context(), f.admin)
+	list, err := f.s.ListRoutes(t.Context(), f.master)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -175,7 +176,7 @@ func lastAudit(t *testing.T, pool *pgxpool.Pool) db.AuditLog {
 // Advisor (D-56), dengan judul cetak dari cover TR-020 (D-76).
 func TestDefaults(t *testing.T) {
 	f := newFixture(t)
-	positions, err := f.s.ListPositions(t.Context(), f.admin)
+	positions, err := f.s.ListPositions(t.Context(), f.master)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -227,20 +228,20 @@ func TestHolders(t *testing.T) {
 	npi := f.position(t, KeyNPIManager)
 	personA, personB := newPerson(t, f.pool, "Pemegang Contoh A"), newPerson(t, f.pool, "Pemegang Contoh B")
 
-	h, err := f.s.AddHolder(ctx, f.admin, leader.ID, NewHolder{PersonID: personA, ProjectGroupID: f.gr3.ID})
+	h, err := f.s.AddHolder(ctx, f.master, leader.ID, NewHolder{PersonID: personA, ProjectGroupID: f.gr3.ID})
 	if err != nil || h.PersonName != "Pemegang Contoh A" || h.ProjectGroupCode != "GR3" {
 		t.Fatalf("AddHolder Project Leader GR3: %+v, %v", h, err)
 	}
-	if _, err := f.s.AddHolder(ctx, f.admin, controller.ID, NewHolder{PersonID: personA}); err != nil {
+	if _, err := f.s.AddHolder(ctx, f.master, controller.ID, NewHolder{PersonID: personA}); err != nil {
 		t.Errorf("rangkap APQP/PPAP Controller: %v", err)
 	}
-	if _, err := f.s.AddHolder(ctx, f.admin, leader.ID, NewHolder{PersonID: personB, ProjectGroupID: f.gr1.ID}); err != nil {
+	if _, err := f.s.AddHolder(ctx, f.master, leader.ID, NewHolder{PersonID: personB, ProjectGroupID: f.gr1.ID}); err != nil {
 		t.Errorf("Project Leader GR1: %v", err)
 	}
 	// PPAP Engineer boleh lebih dari satu orang.
 	engineer := f.position(t, KeyPPAPEngineer)
 	for _, person := range []string{personA, personB} {
-		if _, err := f.s.AddHolder(ctx, f.admin, engineer.ID, NewHolder{PersonID: person}); err != nil {
+		if _, err := f.s.AddHolder(ctx, f.master, engineer.ID, NewHolder{PersonID: person}); err != nil {
 			t.Errorf("PPAP Engineer: %v", err)
 		}
 	}
@@ -250,14 +251,14 @@ func TestHolders(t *testing.T) {
 		err  error
 		want []string
 	}{
-		{"group sudah punya Project Leader", second(f.s.AddHolder(ctx, f.admin, leader.ID, NewHolder{PersonID: personB, ProjectGroupID: f.gr3.ID})), []string{"project_group_id:taken"}},
-		{"Project Leader tanpa group", second(f.s.AddHolder(ctx, f.admin, leader.ID, NewHolder{PersonID: personB})), []string{"project_group_id:required"}},
-		{"NPI Manager dengan group", second(f.s.AddHolder(ctx, f.admin, npi.ID, NewHolder{PersonID: personB, ProjectGroupID: f.gr1.ID})), []string{"project_group_id:not_allowed"}},
-		{"orang yang sama dua kali", second(f.s.AddHolder(ctx, f.admin, engineer.ID, NewHolder{PersonID: personA})), []string{"person_id:taken"}},
-		{"APQP/PPAP Controller kedua", second(f.s.AddHolder(ctx, f.admin, controller.ID, NewHolder{PersonID: personB})), []string{"position_id:taken"}},
-		{"orang tidak ada", second(f.s.AddHolder(ctx, f.admin, npi.ID, NewHolder{PersonID: "01a180aa-a98b-7bf2-8e0d-b97a25ecc489"})), []string{"person_id:invalid_format"}},
-		{"orang kosong", second(f.s.AddHolder(ctx, f.admin, npi.ID, NewHolder{})), []string{"person_id:required"}},
-		{"group tidak ada", second(f.s.AddHolder(ctx, f.admin, leader.ID, NewHolder{PersonID: personB, ProjectGroupID: "bukan-uuid"})), []string{"project_group_id:invalid_format"}},
+		{"group sudah punya Project Leader", second(f.s.AddHolder(ctx, f.master, leader.ID, NewHolder{PersonID: personB, ProjectGroupID: f.gr3.ID})), []string{"project_group_id:taken"}},
+		{"Project Leader tanpa group", second(f.s.AddHolder(ctx, f.master, leader.ID, NewHolder{PersonID: personB})), []string{"project_group_id:required"}},
+		{"NPI Manager dengan group", second(f.s.AddHolder(ctx, f.master, npi.ID, NewHolder{PersonID: personB, ProjectGroupID: f.gr1.ID})), []string{"project_group_id:not_allowed"}},
+		{"orang yang sama dua kali", second(f.s.AddHolder(ctx, f.master, engineer.ID, NewHolder{PersonID: personA})), []string{"person_id:taken"}},
+		{"APQP/PPAP Controller kedua", second(f.s.AddHolder(ctx, f.master, controller.ID, NewHolder{PersonID: personB})), []string{"position_id:taken"}},
+		{"orang tidak ada", second(f.s.AddHolder(ctx, f.master, npi.ID, NewHolder{PersonID: "01a180aa-a98b-7bf2-8e0d-b97a25ecc489"})), []string{"person_id:invalid_format"}},
+		{"orang kosong", second(f.s.AddHolder(ctx, f.master, npi.ID, NewHolder{})), []string{"person_id:required"}},
+		{"group tidak ada", second(f.s.AddHolder(ctx, f.master, leader.ID, NewHolder{PersonID: personB, ProjectGroupID: "bukan-uuid"})), []string{"project_group_id:invalid_format"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -268,10 +269,10 @@ func TestHolders(t *testing.T) {
 	}
 
 	// Pemegang dilepas, lalu group itu bisa mendapat Project Leader baru.
-	if err := f.s.RemoveHolder(ctx, f.admin, leader.ID, h.ID); err != nil {
+	if err := f.s.RemoveHolder(ctx, f.master, leader.ID, h.ID); err != nil {
 		t.Fatalf("RemoveHolder: %v", err)
 	}
-	if _, err := f.s.AddHolder(ctx, f.admin, leader.ID, NewHolder{PersonID: personB, ProjectGroupID: f.gr3.ID}); err != nil {
+	if _, err := f.s.AddHolder(ctx, f.master, leader.ID, NewHolder{PersonID: personB, ProjectGroupID: f.gr3.ID}); err != nil {
 		t.Errorf("Project Leader baru untuk GR3: %v", err)
 	}
 	var got []string
@@ -281,7 +282,7 @@ func TestHolders(t *testing.T) {
 	if !slices.Equal(got, []string{"GR1=Pemegang Contoh B", "GR3=Pemegang Contoh B"}) {
 		t.Errorf("pemegang Project Leader: %v", got)
 	}
-	if err := f.s.RemoveHolder(ctx, f.admin, npi.ID, h.ID); !errors.Is(err, problem.ErrNotFound) {
+	if err := f.s.RemoveHolder(ctx, f.master, npi.ID, h.ID); !errors.Is(err, problem.ErrNotFound) {
 		t.Errorf("lepas pemegang yang sudah dilepas: %v, ingin problem.ErrNotFound", err)
 	}
 }
@@ -291,7 +292,7 @@ func TestHolders(t *testing.T) {
 func TestRenamePositionKeepsRoutes(t *testing.T) {
 	f := newFixture(t)
 	npi := f.position(t, KeyNPIManager)
-	renamed, err := f.s.RenamePosition(t.Context(), f.admin, npi.ID, "PE Manager")
+	renamed, err := f.s.RenamePosition(t.Context(), f.master, npi.ID, "PE Manager")
 	if err != nil || renamed.Name != "PE Manager" || renamed.Key != KeyNPIManager {
 		t.Fatalf("RenamePosition: %+v, %v", renamed, err)
 	}
@@ -299,7 +300,7 @@ func TestRenamePositionKeepsRoutes(t *testing.T) {
 	if slots[2] != "approved/NPI Manager/PE Manager" {
 		t.Errorf("slot NPI: %s (judul cetak tetap, nama jabatan berubah)", slots[2])
 	}
-	if got := problemCodes(t, second(f.s.RenamePosition(t.Context(), f.admin, npi.ID, "advisor"))); !slices.Equal(got, []string{"name:taken"}) {
+	if got := problemCodes(t, second(f.s.RenamePosition(t.Context(), f.master, npi.ID, "advisor"))); !slices.Equal(got, []string{"name:taken"}) {
 		t.Errorf("nama jabatan ganda: %v", got)
 	}
 }
@@ -314,7 +315,7 @@ func TestEditRoutes(t *testing.T) {
 	factory := f.position(t, KeyFactoryManager)
 	in := inputOf(toGM)
 	in.Slots[4].PositionIDs = []string{factory.ID}
-	updated, err := f.s.UpdateRoute(ctx, f.admin, toGM.ID, in)
+	updated, err := f.s.UpdateRoute(ctx, f.master, toGM.ID, in)
 	if err != nil {
 		t.Fatalf("UpdateRoute: %v", err)
 	}
@@ -326,7 +327,7 @@ func TestEditRoutes(t *testing.T) {
 	short := inputOf(f.route(t, "Up to QA QC Manager"))
 	short.Name = " Short route "
 	short.Slots[1].PrintTitle = "Checker"
-	created, err := f.s.CreateRoute(ctx, f.admin, short)
+	created, err := f.s.CreateRoute(ctx, f.master, short)
 	if err != nil || created.Name != "Short route" || slotText(created)[1] != "checked/Checker/Project Engineer,Project Leader" {
 		t.Fatalf("CreateRoute: %+v, %v", created, err)
 	}
@@ -357,23 +358,24 @@ func TestEditRoutes(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := problemCodes(t, second(f.s.CreateRoute(ctx, f.admin, tt.in))); !slices.Equal(got, tt.want) {
+			if got := problemCodes(t, second(f.s.CreateRoute(ctx, f.master, tt.in))); !slices.Equal(got, tt.want) {
 				t.Errorf("masalah %v, ingin %v", got, tt.want)
 			}
 		})
 	}
 	dup := inputOf(toGM)
 	dup.Name = "up to qa qc manager"
-	if got := problemCodes(t, second(f.s.UpdateRoute(ctx, f.admin, toGM.ID, dup))); !slices.Equal(got, []string{"name:taken"}) {
+	if got := problemCodes(t, second(f.s.UpdateRoute(ctx, f.master, toGM.ID, dup))); !slices.Equal(got, []string{"name:taken"}) {
 		t.Errorf("nama rute ganda: %v", got)
 	}
-	if _, err := f.s.UpdateRoute(ctx, f.admin, "01a180aa-a98b-7bf2-8e0d-b97a25ecc489", base); !errors.Is(err, problem.ErrNotFound) {
+	if _, err := f.s.UpdateRoute(ctx, f.master, "01a180aa-a98b-7bf2-8e0d-b97a25ecc489", base); !errors.Is(err, problem.ErrNotFound) {
 		t.Errorf("rute yang tidak ada: %v, ingin problem.ErrNotFound", err)
 	}
 }
 
-// TestPermissions: jabatan dan pemegangnya diubah lewat hak A-1 (UC-02), rute
-// lewat A-2 (UC-06). Semua akun bisa melihat (E-24, D-103).
+// TestPermissions: jabatan, pemegangnya, dan rute adalah master data PPAP
+// Engineer (E-11, D-209). Admin dan akun tanpa E-11 ditolak. Semua akun bisa
+// melihat (E-24, D-103).
 func TestPermissions(t *testing.T) {
 	f := newFixture(t)
 	ctx := t.Context()
@@ -388,16 +390,41 @@ func TestPermissions(t *testing.T) {
 	}
 	person := newPerson(t, f.pool, "Pemegang Contoh")
 
-	for name, err := range map[string]error{
-		"RenamePosition": second(f.s.RenamePosition(ctx, author, positions[0].ID, "X")),
-		"AddHolder":      second(f.s.AddHolder(ctx, author, positions[0].ID, NewHolder{PersonID: person})),
-		"RemoveHolder":   f.s.RemoveHolder(ctx, author, positions[0].ID, "01a180aa-a98b-7bf2-8e0d-b97a25ecc489"),
-		"CreateRoute":    second(f.s.CreateRoute(ctx, author, inputOf(routes[0]))),
-		"UpdateRoute":    second(f.s.UpdateRoute(ctx, author, routes[0].ID, inputOf(routes[0]))),
-	} {
-		if !errors.Is(err, access.ErrForbidden) {
-			t.Errorf("%s oleh akun kerja: %v, ingin ErrForbidden", name, err)
+	admin := newActor(t, f.pool, "admin.uji", access.AccountAdmin, access.RoleAdmin)
+	for _, actor := range []access.Actor{author, admin} {
+		for name, err := range map[string]error{
+			"RenamePosition": second(f.s.RenamePosition(ctx, actor, positions[0].ID, "X")),
+			"AddHolder":      second(f.s.AddHolder(ctx, actor, positions[0].ID, NewHolder{PersonID: person})),
+			"RemoveHolder":   f.s.RemoveHolder(ctx, actor, positions[0].ID, "01a180aa-a98b-7bf2-8e0d-b97a25ecc489"),
+			"CreateRoute":    second(f.s.CreateRoute(ctx, actor, inputOf(routes[0]))),
+			"UpdateRoute":    second(f.s.UpdateRoute(ctx, actor, routes[0].ID, inputOf(routes[0]))),
+			"ListCandidates": second(f.s.ListCandidates(ctx, actor)),
+		} {
+			if !errors.Is(err, access.ErrForbidden) {
+				t.Errorf("%s oleh %s: %v, ingin ErrForbidden", name, actor.Login, err)
+			}
 		}
+	}
+}
+
+// TestCandidates: PPAP Engineer memilih pemegang jabatan dari orang yang punya
+// akun kerja aktif, tanpa membaca daftar akun (D-209). Orang yang hanya punya
+// akun admin tidak ikut.
+func TestCandidates(t *testing.T) {
+	f := newFixture(t)
+	ctx := t.Context()
+	newActor(t, f.pool, "admin.uji", access.AccountAdmin, access.RoleAdmin)
+	newActor(t, f.pool, "penyusun.uji", access.AccountWork, access.RoleAuthor)
+	list, err := f.s.ListCandidates(ctx, f.master)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var names []string
+	for _, c := range list {
+		names = append(names, c.Name)
+	}
+	if want := []string{"Orang penyusun.uji", "Orang ppap.master"}; !slices.Equal(names, want) {
+		t.Errorf("calon %v, ingin %v", names, want)
 	}
 }
 
@@ -413,25 +440,25 @@ func TestAudit(t *testing.T) {
 	}
 
 	advisor := f.position(t, KeyAdvisor)
-	if _, err := f.s.RenamePosition(ctx, f.admin, advisor.ID, "Senior Advisor"); err != nil {
+	if _, err := f.s.RenamePosition(ctx, f.master, advisor.ID, "Senior Advisor"); err != nil {
 		t.Fatal(err)
 	}
 	check("ganti nama jabatan", audit.ActionPositionUpdated, `{"name":"Advisor → Senior Advisor"}`)
 	leader := f.position(t, KeyProjectLeader)
 	person := newPerson(t, f.pool, "Pemegang Contoh")
-	h, err := f.s.AddHolder(ctx, f.admin, leader.ID, NewHolder{PersonID: person, ProjectGroupID: f.gr1.ID})
+	h, err := f.s.AddHolder(ctx, f.master, leader.ID, NewHolder{PersonID: person, ProjectGroupID: f.gr1.ID})
 	if err != nil {
 		t.Fatal(err)
 	}
 	check("pemegang ditambah", audit.ActionPositionHolderAdded, `{"person":"Pemegang Contoh","project_group":"GR1"}`)
-	if err := f.s.RemoveHolder(ctx, f.admin, leader.ID, h.ID); err != nil {
+	if err := f.s.RemoveHolder(ctx, f.master, leader.ID, h.ID); err != nil {
 		t.Fatal(err)
 	}
 	check("pemegang dilepas", audit.ActionPositionHolderRemoved, `{"person":"Pemegang Contoh","project_group":"GR1"}`)
 
 	short := inputOf(f.route(t, "Up to QA QC Manager"))
 	short.Name = "Short"
-	created, err := f.s.CreateRoute(ctx, f.admin, short)
+	created, err := f.s.CreateRoute(ctx, f.master, short)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -442,7 +469,7 @@ func TestAudit(t *testing.T) {
 	}
 	renamed := inputOf(created)
 	renamed.Name = "Short route"
-	if _, err := f.s.UpdateRoute(ctx, f.admin, created.ID, renamed); err != nil {
+	if _, err := f.s.UpdateRoute(ctx, f.master, created.ID, renamed); err != nil {
 		t.Fatal(err)
 	}
 	check("rute diganti nama", audit.ActionApprovalRouteUpdated, `{"name":"Short → Short route"}`)
@@ -460,7 +487,7 @@ func TestSingleHolderConcurrent(t *testing.T) {
 	errs := make(chan error, len(people))
 	for _, person := range people {
 		go func() {
-			_, err := f.s.AddHolder(ctx, f.admin, npi.ID, NewHolder{PersonID: person})
+			_, err := f.s.AddHolder(ctx, f.master, npi.ID, NewHolder{PersonID: person})
 			errs <- err
 		}()
 	}

@@ -8,7 +8,7 @@ import type { Session } from './api/gen/index.ts';
 export const session = $state<{ current: Session | null }>({ current: null });
 
 // can melaporkan apakah pengguna yang login punya hak dengan kode tertentu,
-// misalnya can('A-2'). Dipakai untuk menampilkan atau menyembunyikan menu dan
+// misalnya can('E-11'). Dipakai untuk menampilkan atau menyembunyikan menu dan
 // tombol. Server tetap memeriksa setiap operasi (M1.2), jadi menyembunyikan
 // tombol bukan pengaman, hanya supaya layar tidak menawarkan aksi yang pasti ditolak.
 export function can(permission: string): boolean {

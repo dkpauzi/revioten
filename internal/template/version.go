@@ -8,7 +8,7 @@ package template
 //	                                    |
 //	                                    +--versi baru-->  versi 2 draft (salinan versi 1)
 //
-// Aturannya sama untuk format template (hak A-2) dan process template (hak
+// Aturannya sama untuk format template (hak E-11) dan process template (hak
 // E-6, D-64):
 //   - hanya versi draft yang bisa diterbitkan;
 //   - versi baru hanya dibuat bila versi terakhir sudah terbit, jadi satu
@@ -53,13 +53,14 @@ func utcTime(t *time.Time) *time.Time {
 	return &utc
 }
 
-// PublishFormatVersion menerbitkan satu versi draft format template (A-2).
+// PublishFormatVersion menerbitkan satu versi draft format template (E-11).
 // D-143 (keputusan E-87): penyusun draft boleh menerbitkannya sendiri.
 // Sesudah itu versi tersebut tidak bisa diubah.
 //
 // Versi bermetode AP membawa tabel AP, jadi diterbitkan pemegang V-3 dan
 // bukan oleh orang yang terakhir mengubahnya (D-139). Versi lain tetap
-// diterbitkan admin, termasuk oleh penyusunnya sendiri (D-143).
+// diterbitkan pemegang E-11 (PPAP Engineer, D-209), termasuk oleh penyusunnya
+// sendiri (D-143).
 func (s *Service) PublishFormatVersion(ctx context.Context, actor access.Actor, versionID string) (FormatVersion, error) {
 	// Hak yang dibutuhkan bergantung pada metode risiko versi itu. Versi yang
 	// tidak ada diperlakukan seperti versi biasa, supaya jawabannya sama.
@@ -120,7 +121,7 @@ func (s *Service) PublishFormatVersion(ctx context.Context, actor access.Actor, 
 }
 
 // NewFormatVersion membuat versi draft berikutnya dari versi terbit terakhir
-// (A-2). Ditolak bila template itu masih punya versi draft.
+// (E-11). Ditolak bila template itu masih punya versi draft.
 func (s *Service) NewFormatVersion(ctx context.Context, actor access.Actor, templateID string) (FormatVersion, error) {
 	if err := s.authz.Authorize(ctx, actor, access.ManageMasterData, access.Resource{}); err != nil {
 		return FormatVersion{}, err

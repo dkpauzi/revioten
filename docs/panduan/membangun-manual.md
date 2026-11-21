@@ -1,7 +1,7 @@
 # Panduan membangun Revioten secara manual
 
 - **Untuk siapa:** pemilik proyek, yang ingin bisa membangun ulang sistem ini sendiri tanpa AI (D-12).
-- **Dibuat:** 21 November 2026, sesudah D-207 (migrasi 00052).
+- **Dibuat:** 21 November 2026, sesudah D-207 (migrasi 00052). Diperbarui untuk D-209 (migrasi 00053).
 - **Cara memakai:** baca bagian 1 sampai 4 sekali sampai paham. Sesudah itu, setiap kali membuat fitur, ikuti bagian 5 langkah demi langkah dan centang daftar di bagian 8. Bagian 6 menjelaskan mekanisme yang dipakai di banyak tempat; bacalah saat bertemu mekanismenya. Bagian 7 adalah urutan membangun dari nol, dengan catatan milestone sebagai bahan rinci.
 
 Dokumen lain yang terkait:
@@ -519,6 +519,7 @@ Sebelum `git add -A`, lihat dulu `git status` dan pastikan `.env` tidak ikut.
 - **Peran** adalah kumpulan hak yang disimpan sebagai data (tabel `roles` dan `role_permissions`), jadi admin bisa mengubah isinya di Admin → Roles tanpa mengubah kode.
 - **Cakupan:** pemberian peran punya cakupan `group` (hanya customer di Project Group sendiri, D-71) atau `all` (D-206). `Authorize` memeriksa cakupan ini dengan `resource.CustomerID`.
 - **Akun admin dan akun kerja dipisah** (D-72): akun admin hanya memegang hak A-, akun kerja tidak pernah memegang hak admin. Pemisahan ini juga dikunci trigger di database.
+- **Contoh memindahkan hak (D-209):** master data semula memakai hak admin A-2. Karena hak A- tidak boleh dipegang akun kerja, hak itu diganti hak kerja baru E-11 di migrasi 00053, lalu konstanta `access.ManageMasterData` di Go diganti nilainya. Semua `Authorize(..., access.ManageMasterData, ...)` langsung mengikuti tanpa diubah satu per satu. Itulah gunanya satu titik pemeriksaan izin. Bila satu halaman perlu dibagi dua hak (seperti Settings: pengaman untuk admin, pengaturan dokumen untuk PPAP Engineer), hak diperiksa per kelompok isian (`authorizeUpdate` di `internal/settings`).
 - **Aturan yang tidak bisa dimatikan** (R-SEC-11) dicek di layanan, bukan lewat peran: misalnya pemohon tidak memverifikasi perubahannya sendiri, dan penyusun draft tidak mencatat rilisnya.
 
 ### 6.3 Audit log append-only dengan hash chain (M1.3, R-SEC-03)
@@ -602,7 +603,7 @@ Setiap baris punya catatan rinci di `docs/catatan/`. Kerjakan berurutan; setiap 
 | 7 · Migrasi | Dokumen lama dan dasbor bukti nilai | M7 |
 | 8 · Penguatan | Isi peran, RLS, antivirus, deploy Docker | M8 |
 | 9 · Integrasi | API integrasi dan service account | M9 |
-| Sesudahnya | Dua bahasa dan responsif; Help; ECR dan email; dokumen terbit, review 3 tahun, kinerja; matriks peran; tanda tangan digital; dasbor admin; Form Control Submission | D-128, D-141, D-193 sampai D-207 |
+| Sesudahnya | Dua bahasa dan responsif; Help; ECR dan email; dokumen terbit, review 3 tahun, kinerja; matriks peran; tanda tangan digital; dasbor admin; Form Control Submission; master data milik PPAP Engineer | D-128, D-141, D-193 sampai D-209 |
 
 Saran untuk berlatih: jangan menyalin seluruh proyek. Bangun ulang **satu irisan tipis** dulu (M0.5: tabel customer → query → layanan → API → layar → test). Bila irisan itu bisa ditulis tanpa melihat, lanjut ke M1.1 sampai M1.3, karena login, izin, dan audit dipakai semua fitur lain.
 

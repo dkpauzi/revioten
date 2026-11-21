@@ -106,10 +106,10 @@ func TestCustomerDefaultFormSet(t *testing.T) {
 	if err := f.s.SetCustomerFormSet(ctx, f.author, f.customer, vda.ID); !errors.Is(err, access.ErrForbidden) {
 		t.Errorf("Penyusun memilih form set customer: %v", err)
 	}
-	if err := f.s.SetCustomerFormSet(ctx, f.admin, f.customer, "01a180aa-a98b-7bf2-8e0d-b97a25ecc489"); !slices.Equal(problemCodes(t, err), []string{"form_set_id:invalid_format"}) {
+	if err := f.s.SetCustomerFormSet(ctx, f.master, f.customer, "01a180aa-a98b-7bf2-8e0d-b97a25ecc489"); !slices.Equal(problemCodes(t, err), []string{"form_set_id:invalid_format"}) {
 		t.Errorf("form set tidak ada: %v", err)
 	}
-	if err := f.s.SetCustomerFormSet(ctx, f.admin, f.customer, vda.ID); err != nil {
+	if err := f.s.SetCustomerFormSet(ctx, f.master, f.customer, vda.ID); err != nil {
 		t.Fatal(err)
 	}
 	if action, details := lastAudit(t, f.fixture); action != "customer.default_form_set_changed" || details != `{"form_set":"- → AIAG-VDA set"}` {
@@ -119,7 +119,7 @@ func TestCustomerDefaultFormSet(t *testing.T) {
 		t.Errorf("form set customer: %s, %v", fs.Key, err)
 	}
 	// Kosong berarti kembali ke set bawaan.
-	if err := f.s.SetCustomerFormSet(ctx, f.admin, f.customer, ""); err != nil {
+	if err := f.s.SetCustomerFormSet(ctx, f.master, f.customer, ""); err != nil {
 		t.Fatal(err)
 	}
 	if fs, _ := f.s.FormSetFor(ctx, f.author, f.customer); fs.Key != "aiag_4th" {
@@ -137,7 +137,7 @@ func TestFormSetVersions(t *testing.T) {
 	notAllowed := []string{"status:not_allowed"}
 
 	// Hanya pemegang V-3 yang menerbitkan; admin dan Penyusun tidak.
-	for _, actor := range []access.Actor{f.admin, f.author} {
+	for _, actor := range []access.Actor{f.master, f.author} {
 		if _, err := f.s.PublishFormSetVersion(ctx, actor, v1.ID); !errors.Is(err, access.ErrForbidden) {
 			t.Errorf("%s menerbitkan form set: %v", actor.Login, err)
 		}
@@ -147,7 +147,7 @@ func TestFormSetVersions(t *testing.T) {
 		t.Errorf("menerbitkan form set berisi format draft: %v", err)
 	}
 	for _, id := range []string{v1.PFD.FormatVersionID, v1.PFMEA.FormatVersionID, v1.CP.FormatVersionID} {
-		if _, err := f.s.PublishFormatVersion(ctx, f.admin, id); err != nil {
+		if _, err := f.s.PublishFormatVersion(ctx, f.master, id); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -165,7 +165,7 @@ func TestFormSetVersions(t *testing.T) {
 		t.Errorf("menerbitkan dua kali: %v", err)
 	}
 	sheets := FormSetSheets{PFD: v1.PFD.FormatVersionID, PFMEA: v1.PFMEA.FormatVersionID, CP: v1.CP.FormatVersionID}
-	if _, err := f.s.SetFormSetSheets(ctx, f.admin, v1.ID, sheets); !slices.Equal(problemCodes(t, err), notAllowed) {
+	if _, err := f.s.SetFormSetSheets(ctx, f.master, v1.ID, sheets); !slices.Equal(problemCodes(t, err), notAllowed) {
 		t.Errorf("mengubah versi form set yang sudah terbit: %v", err)
 	}
 
@@ -173,7 +173,7 @@ func TestFormSetVersions(t *testing.T) {
 	if _, err := f.s.NewFormSetVersion(ctx, f.author, old.ID); !errors.Is(err, access.ErrForbidden) {
 		t.Errorf("Penyusun membuat versi form set: %v", err)
 	}
-	fs, err = f.s.NewFormSetVersion(ctx, f.admin, old.ID)
+	fs, err = f.s.NewFormSetVersion(ctx, f.master, old.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -181,12 +181,12 @@ func TestFormSetVersions(t *testing.T) {
 	if v2.Version != 2 || v2.Status != StatusDraft || !slices.Equal(sheetNames(v2), sheetNames(v1)) {
 		t.Fatalf("versi 2: %+v", v2)
 	}
-	if _, err := f.s.NewFormSetVersion(ctx, f.admin, old.ID); !slices.Equal(problemCodes(t, err), notAllowed) {
+	if _, err := f.s.NewFormSetVersion(ctx, f.master, old.ID); !slices.Equal(problemCodes(t, err), notAllowed) {
 		t.Errorf("versi baru saat masih ada draft: %v", err)
 	}
 	cp2024 := f.version(t, "Control Plan AIAG 2024")
 	sheets.CP = cp2024.ID
-	fs, err = f.s.SetFormSetSheets(ctx, f.admin, v2.ID, sheets)
+	fs, err = f.s.SetFormSetSheets(ctx, f.master, v2.ID, sheets)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -198,7 +198,7 @@ func TestFormSetVersions(t *testing.T) {
 	}
 	// Sheet harus berisi format dengan jenis dokumen yang cocok.
 	wrong := FormSetSheets{PFD: v1.PFMEA.FormatVersionID, PFMEA: v1.PFMEA.FormatVersionID, CP: v1.CP.FormatVersionID}
-	if _, err := f.s.SetFormSetSheets(ctx, f.admin, v2.ID, wrong); !slices.Equal(problemCodes(t, err), []string{"pfd_format_version_id:not_allowed"}) {
+	if _, err := f.s.SetFormSetSheets(ctx, f.master, v2.ID, wrong); !slices.Equal(problemCodes(t, err), []string{"pfd_format_version_id:not_allowed"}) {
 		t.Errorf("format PFMEA di sheet PFD: %v", err)
 	}
 }
@@ -212,49 +212,42 @@ func TestCreateFormSet(t *testing.T) {
 	if _, err := f.s.CreateFormSet(ctx, f.author, in); !errors.Is(err, access.ErrForbidden) {
 		t.Errorf("Penyusun membuat form set: %v", err)
 	}
-	fs, err := f.s.CreateFormSet(ctx, f.admin, in)
+	fs, err := f.s.CreateFormSet(ctx, f.master, in)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if fs.Name != "Customer AB set" || fs.Key != "customer_ab_set" || fs.Default || len(fs.Versions) != 1 || fs.Versions[0].Status != StatusDraft {
 		t.Errorf("form set baru: %+v", fs)
 	}
-	if _, err := f.s.CreateFormSet(ctx, f.admin, in); !slices.Equal(problemCodes(t, err), []string{"name:taken"}) {
+	if _, err := f.s.CreateFormSet(ctx, f.master, in); !slices.Equal(problemCodes(t, err), []string{"name:taken"}) {
 		t.Errorf("nama kembar: %v", err)
 	}
 	in.Name = ""
 	in.Sheets.CP = ""
-	if _, err := f.s.CreateFormSet(ctx, f.admin, in); !slices.Equal(problemCodes(t, err), []string{"name:required", "cp_format_version_id:required"}) {
+	if _, err := f.s.CreateFormSet(ctx, f.master, in); !slices.Equal(problemCodes(t, err), []string{"name:required", "cp_format_version_id:required"}) {
 		t.Errorf("isian kosong: %v", err)
 	}
 }
 
 // TestSeparationOfDuties: penyusun draft tidak menerbitkan form set atau
-// tabel AP yang ia susun sendiri, walaupun memegang hak V-3 (D-139).
+// tabel AP yang ia susun sendiri, walaupun memegang hak V-3 (D-139). Sejak
+// D-209 PPAP Engineer Supervisor memegang E-11 (menyusun) dan V-3 (menerbitkan)
+// di satu akun, jadi aturan ini yang menjaga.
 func TestSeparationOfDuties(t *testing.T) {
 	f := newFormSetFixture(t)
 	ctx := t.Context()
-	// Satu orang dengan akun admin dan akun kerja Penyetuju form (seperti PPAP Staff, D-72).
-	q := db.New(f.pool)
-	work, err := q.CreateAccount(ctx, db.CreateAccountParams{PersonID: f.admin.PersonID, Kind: access.AccountWork, Login: "admin.kerja", PasswordHash: "x"})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := q.AddAccountRole(ctx, db.AddAccountRoleParams{AccountID: work.ID, RoleID: access.RoleFormApprover, Scope: access.ScopeAll}); err != nil {
-		t.Fatal(err)
-	}
-	same := access.Actor{Type: access.ActorHuman, AccountID: work.ID, AccountKind: access.AccountWork, Login: "admin.kerja", PersonID: f.admin.PersonID}
+	same := newActor(t, f.pool, "ppap.supervisor.uji", access.AccountWork, access.RolePPAPEngineerSupervisor)
 
-	// Tabel AP: admin mengubah, lalu orang yang sama tidak boleh menerbitkan.
+	// Tabel AP: Supervisor mengubah, lalu orang yang sama tidak boleh menerbitkan.
 	vda := f.version(t, "PFMEA AIAG-VDA 2019")
 	changed := DefaultAPRules()
 	changed[0].Priority = "M"
-	if _, err := f.s.SetAPRules(ctx, f.admin, vda.ID, changed); err != nil {
+	if _, err := f.s.SetAPRules(ctx, same, vda.ID, changed); err != nil {
 		t.Fatal(err)
 	}
-	// Admin (A-2) tidak lagi menerbitkan versi bermetode AP: itu hak V-3.
-	if _, err := f.s.PublishFormatVersion(ctx, f.admin, vda.ID); !errors.Is(err, access.ErrForbidden) {
-		t.Errorf("admin menerbitkan versi AP: %v", err)
+	// PPAP Engineer tanpa V-3 tidak menerbitkan versi bermetode AP.
+	if _, err := f.s.PublishFormatVersion(ctx, f.master, vda.ID); !errors.Is(err, access.ErrForbidden) {
+		t.Errorf("PPAP Engineer menerbitkan versi AP: %v", err)
 	}
 	if _, err := f.s.PublishFormatVersion(ctx, same, vda.ID); !slices.Equal(problemCodes(t, err), []string{"approver:not_allowed"}) {
 		t.Errorf("penyusun menerbitkan tabel AP sendiri: %v", err)
@@ -263,14 +256,14 @@ func TestSeparationOfDuties(t *testing.T) {
 		t.Errorf("Penyetuju form menerbitkan versi AP: %v", err)
 	}
 
-	// Form set: admin membuat versi, orang yang sama tidak boleh menerbitkannya.
+	// Form set: Supervisor membuat versi, orang yang sama tidak boleh menerbitkannya.
 	v1 := f.set(t, "aiag_4th").Versions[0]
 	for _, id := range []string{v1.PFD.FormatVersionID, v1.PFMEA.FormatVersionID, v1.CP.FormatVersionID} {
-		if _, err := f.s.PublishFormatVersion(ctx, f.admin, id); err != nil {
+		if _, err := f.s.PublishFormatVersion(ctx, f.master, id); err != nil {
 			t.Fatal(err)
 		}
 	}
-	fs, err := f.s.CreateFormSet(ctx, f.admin, NewFormSet{Name: "Set uji", Sheets: FormSetSheets{PFD: v1.PFD.FormatVersionID, PFMEA: v1.PFMEA.FormatVersionID, CP: v1.CP.FormatVersionID}})
+	fs, err := f.s.CreateFormSet(ctx, same, NewFormSet{Name: "Set uji", Sheets: FormSetSheets{PFD: v1.PFD.FormatVersionID, PFMEA: v1.PFMEA.FormatVersionID, CP: v1.CP.FormatVersionID}})
 	if err != nil {
 		t.Fatal(err)
 	}

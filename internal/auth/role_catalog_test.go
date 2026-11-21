@@ -45,12 +45,12 @@ func TestRoleMatrixSeed(t *testing.T) {
 		return out
 	}
 	want := map[string]string{
-		"ppap_engineer":            "L-1 L-2 L-3 L-4 L-5 E-1 E-2 E-3 E-4 E-5 E-6 E-7 E-8 E-9 E-10 V-2 S-1 G-1 ",
-		"ppap_engineer_supervisor": "L-1 L-2 L-3 L-4 L-5 E-1 E-2 E-3 E-4 E-5 E-6 E-7 E-8 E-9 E-10 V-1 V-2 V-3 S-1 G-1 ",
+		"ppap_engineer":            "L-1 L-2 L-3 L-4 L-5 E-1 E-2 E-3 E-4 E-5 E-6 E-7 E-8 E-9 E-10 E-11 V-2 S-1 G-1 ",
+		"ppap_engineer_supervisor": "L-1 L-2 L-3 L-4 L-5 E-1 E-2 E-3 E-4 E-5 E-6 E-7 E-8 E-9 E-10 E-11 V-1 V-2 V-3 S-1 G-1 ",
 		"project_leader":           "L-1 L-2 L-3 L-4 E-1 E-2 E-3 E-4 E-5 V-1 S-1 G-1 ",
 		"manager":                  "L-1 L-2 L-3 L-4 L-5 S-1 G-1 ",
 		"viewer":                   "L-1 L-2 L-3 G-1 ",
-		"admin":                    "L-1 L-2 L-3 A-1 A-2 A-3 A-4 ",
+		"admin":                    "L-1 L-2 L-3 A-1 A-3 A-4 ",
 	}
 	for id, w := range want {
 		if got := codes(id); got != w {

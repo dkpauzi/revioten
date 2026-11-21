@@ -1,6 +1,6 @@
 <script lang="ts">
 	// Bagian Project Group di halaman Customers (M1.4, D-54): daftar untuk semua
-	// akun, tambah dan ubah hanya untuk pemegang A-2 (E-10).
+	// akun, tambah dan ubah hanya untuk pemegang E-11 (E-10).
 	import { createProjectGroup, updateProjectGroup } from '../api/client.ts';
 	import type { ProjectGroup } from '../api/gen/index.ts';
 	import { failureText, problemText } from '../errors.ts';

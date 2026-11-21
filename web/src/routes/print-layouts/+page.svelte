@@ -1,5 +1,5 @@
 <script lang="ts">
-	// Layout cetak (M6.1, R-PRT-02): layout adalah data. Admin (A-2) mengubah
+	// Layout cetak (M6.1, R-PRT-02): layout adalah data. PPAP Engineer (E-11) mengubah
 	// kertas, arah, huruf, margin, cover, tanda revisi, dan lebar kolom per key
 	// field, menambah layout, dan memilih layout lain untuk satu customer.
 	import { onMount } from 'svelte';
@@ -29,7 +29,7 @@
 	let newType = $state('');
 	let message = $state('');
 	let failure = $state('');
-	let canEdit = $derived(can('A-2'));
+	let canEdit = $derived(can('E-11'));
 
 	onMount(async () => {
 		const [l, ty, c] = await Promise.all([listPrintLayouts(), listDocumentTypes(), listCustomers()]);

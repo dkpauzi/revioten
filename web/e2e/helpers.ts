@@ -1,7 +1,7 @@
 // Langkah bersama untuk test E2E.
-import { expect, type Page } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { en } from '../src/lib/i18n/en.ts';
-import { admin } from './account.mjs';
+import { admin, master } from './account.mjs';
 
 // logIn membuka halaman login dan masuk sebagai admin uji. Bila password
 // diberikan, password itu yang dipakai (misalnya setelah password diganti).
@@ -103,4 +103,41 @@ export async function logInFirstTime(
 	await page.getByLabel(en.passwordConfirm, { exact: true }).fill(newPassword);
 	await page.getByRole('button', { name: en.passwordSave }).click();
 	await expect(page.getByRole('status')).toHaveText(en.passwordChanged);
+}
+
+// logInAsMaster masuk sebagai akun PPAP Engineer bersama, pengurus master data
+// sejak D-209. Akun dibuat admin pada pemakaian pertama di satu putaran test
+// (database E2E selalu baru), lalu password sementaranya langsung diganti.
+export async function logInAsMaster(page: Page): Promise<void> {
+	await page.goto('/login');
+	await page.getByLabel(en.loginName).fill(master.login);
+	await page.getByLabel(en.loginPassword).fill(master.password);
+	await page.getByRole('button', { name: en.loginSubmit }).click();
+	const done = page.getByRole('button', { name: en.logout });
+	await expect(done.or(page.getByRole('alert'))).toBeVisible();
+	if (await done.isVisible()) {
+		return;
+	}
+	await logIn(page);
+	const temporary = await createWorkAccount(page, master.name, master.login, ['ppap_engineer']);
+	await logOut(page);
+	await logInFirstTime(page, master.login, temporary, master.password);
+	await page.goto('/');
+	await expect(done).toBeVisible();
+}
+
+// asMaster menjalankan langkah master data sebagai PPAP Engineer (D-209) di
+// jendela browser terpisah, lalu menutupnya. Sesi di page (misalnya admin)
+// tidak berubah, jadi test bisa lanjut seperti sebelumnya.
+export async function asMaster<T>(page: Page, steps: (master: Page) => Promise<T>): Promise<T> {
+	const browser = page.context().browser();
+	if (!browser) throw new Error('browser tidak tersedia');
+	const context = await browser.newContext({ baseURL: test.info().project.use.baseURL });
+	try {
+		const master = await context.newPage();
+		await logInAsMaster(master);
+		return await steps(master);
+	} finally {
+		await context.close();
+	}
 }

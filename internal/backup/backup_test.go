@@ -212,19 +212,27 @@ func TestBackupAndRestore(t *testing.T) {
 	ctx := t.Context()
 	source := owner.Config().ConnConfig.Database
 
-	// Isi database: admin pertama dan satu customer, masing-masing dengan entri audit.
+	// Isi database: admin pertama, akun PPAP Engineer yang dibuat admin, lalu
+	// Project Group dan customer dari PPAP Engineer (D-209). Setiap langkah
+	// menulis satu entri audit.
 	checker := access.NewChecker(app)
 	authSvc := auth.NewService(app, checker)
 	admin, err := authSvc.CreateFirstAdmin(ctx, "Admin Uji", "admin.uji", "kuda terbang di atas sawah")
 	if err != nil {
 		t.Fatal(err)
 	}
-	customers := customer.NewService(app, checker)
-	group, err := customers.CreateProjectGroup(ctx, admin, customer.ProjectGroupInput{Code: "GR1", Name: "Project Group 1"})
+	acc, _, err := authSvc.CreateAccount(ctx, admin, auth.NewAccount{PersonName: "PPAP Uji", Kind: access.AccountWork, Login: "ppap.uji",
+		Roles: []access.RoleGrant{{Role: access.RolePPAPEngineer, Scope: access.ScopeAll}}})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := customers.Create(ctx, admin, customer.NewCustomer{Code: "AB", Name: "Customer Contoh", ProjectGroupID: group.ID}); err != nil {
+	engineer := access.Actor{Type: access.ActorHuman, AccountID: acc.ID, AccountKind: access.AccountWork, Login: acc.Login, PersonID: acc.PersonID}
+	customers := customer.NewService(app, checker)
+	group, err := customers.CreateProjectGroup(ctx, engineer, customer.ProjectGroupInput{Code: "GR1", Name: "Project Group 1"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := customers.Create(ctx, engineer, customer.NewCustomer{Code: "AB", Name: "Customer Contoh", ProjectGroupID: group.ID}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -232,7 +240,7 @@ func TestBackupAndRestore(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ReadInfo: %v", err)
 	}
-	if info.Database != source || info.AuditLastSeq != 3 || info.AuditLastHash == "" || info.SchemaVersion < 9 {
+	if info.Database != source || info.AuditLastSeq != 4 || info.AuditLastHash == "" || info.SchemaVersion < 9 {
 		t.Errorf("info %+v", info)
 	}
 	dir := t.TempDir()
@@ -253,7 +261,7 @@ func TestBackupAndRestore(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Restore: %v", err)
 	}
-	if !result.Chain.Valid || result.Chain.LastSeq != 3 || !result.TipMatches {
+	if !result.Chain.Valid || result.Chain.LastSeq != 4 || !result.TipMatches {
 		t.Errorf("hasil restore %+v", result)
 	}
 

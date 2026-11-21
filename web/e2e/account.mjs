@@ -6,3 +6,12 @@ export const admin = {
 	login: 'admin.e2e',
 	password: 'kuda terbang di atas sawah'
 };
+
+// Akun PPAP Engineer untuk master data (D-209): customer, model, jenis dokumen,
+// jabatan, rute, format template, dan form set. Dibuat admin saat pertama kali
+// dipakai (lihat logInAsMaster di helpers.ts).
+export const master = {
+	name: 'PPAP Engineer E2E',
+	login: 'ppap.e2e',
+	password: 'perahu layar di danau biru'
+};

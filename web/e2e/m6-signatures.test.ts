@@ -8,7 +8,7 @@
 // pemegang jabatan per Project Group tidak bentrok dengan test lain.
 import { expect, test, type Page } from '@playwright/test';
 import { en } from '../src/lib/i18n/en.ts';
-import { createWorkAccount, ensureProjectGroup, logIn, logInFirstTime, logOut, openFromMenu } from './helpers.ts';
+import { asMaster, createWorkAccount, ensureProjectGroup, logIn, logInFirstTime, logOut, openFromMenu } from './helpers.ts';
 
 const people = {
 	engineer: { name: 'Engineer TTD', login: 'eng.ttd.e2e', password: 'tanda tangan digital satu' },
@@ -19,9 +19,26 @@ const people = {
 };
 
 // setupMasterData: customer SG di GR9 dengan rute default, dan pemegang
-// jabatan untuk setiap slot rute "Up to QA QC Manager". Dipanggil sebagai admin.
+// jabatan untuk setiap slot rute "Up to QA QC Manager". Dipanggil sebagai
+// admin, yang membaca ID orang dari daftar akun (A-1); master datanya diisi
+// PPAP Engineer (E-11, D-209).
 async function setupMasterData(page: Page): Promise<void> {
-	await page.evaluate(async (names) => {
+	const logins = [people.engineer.login, people.leader.login, people.npi.login, people.qa.login];
+	const ids = await page.evaluate(async (logins) => {
+		const accounts = await (await fetch('/api/v1/accounts')).json();
+		const out: Record<string, string> = {};
+		for (const login of logins) out[login] = accounts.items.find((a: { login: string }) => a.login === login).person.id;
+		return out;
+	}, logins);
+	await asMaster(page, async (m) => {
+		await ensureProjectGroup(m, 'GR9');
+		await m.evaluate(setupAsMaster, { ids, engineer: people.engineer.login, leader: people.leader.login, npi: people.npi.login, qa: people.qa.login });
+	});
+}
+
+// setupAsMaster berjalan di browser sebagai PPAP Engineer.
+async function setupAsMaster(names: { ids: Record<string, string>; engineer: string; leader: string; npi: string; qa: string }): Promise<void> {
+	{
 		const json = (path: string, method: string, body?: object) =>
 			fetch(path, { method, headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined }).then((r) =>
 				r.status === 204 ? null : r.json()
@@ -34,8 +51,7 @@ async function setupMasterData(page: Page): Promise<void> {
 		const route = routes.items.find((r: { name: string }) => r.name === 'Up to QA QC Manager');
 		await json(`/api/v1/customers/${customer.id}/default-route`, 'PUT', { route_id: route.id });
 
-		const accounts = await json('/api/v1/accounts', 'GET');
-		const person = (login: string) => accounts.items.find((a: { login: string }) => a.login === login).person.id;
+		const person = (login: string) => names.ids[login];
 		const positions = await json('/api/v1/positions', 'GET');
 		const position = (key: string) => positions.items.find((p: { key: string }) => p.key === key);
 		const hold = async (key: string, login: string, perGroup: boolean) => {
@@ -50,7 +66,7 @@ async function setupMasterData(page: Page): Promise<void> {
 		await hold('project_leader', names.leader, true);
 		await hold('npi_manager', names.npi, false);
 		await hold('qa_qc_manager', names.qa, false);
-	}, { engineer: people.engineer.login, leader: people.leader.login, npi: people.npi.login, qa: people.qa.login });
+	}
 }
 
 // signNext membuka Documents → Signatures sebagai akun yang ditunggu, lalu menandatangani.
@@ -67,7 +83,6 @@ async function signNext(page: Page, who: { login: string; password: string }, te
 
 test('fase 3: kirim untuk tanda tangan digital, tanda tangan berurutan, lalu rilis tanpa scan', async ({ page }) => {
 	await logIn(page);
-	await ensureProjectGroup(page, 'GR9');
 	const temporary: Record<string, string> = {};
 	temporary.engineer = await createWorkAccount(page, people.engineer.name, people.engineer.login, ['ppap_engineer']);
 	temporary.leader = await createWorkAccount(page, people.leader.name, people.leader.login, ['project_leader']);

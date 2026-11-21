@@ -5,11 +5,16 @@
 // K-125 memakai variannya dan model lain tetap memakai poin umum.
 import { expect, test, type Page } from '@playwright/test';
 import { en } from '../src/lib/i18n/en.ts';
-import { createWorkAccount, ensureProjectGroup, logIn, logInFirstTime, logOut, openFromMenu } from './helpers.ts';
+import { asMaster, createWorkAccount, ensureProjectGroup, logIn, logInFirstTime, logOut, openFromMenu } from './helpers.ts';
 
 // setupModels membuat customer LM dengan group model "Group Laser", model
-// K-125 di group itu, dan model K-200 tanpa group, lewat API sebagai admin (A-2).
+// K-125 di group itu, dan model K-200 tanpa group, lewat API sebagai PPAP
+// Engineer (E-11, D-209) di jendela terpisah.
 async function setupModels(page: Page): Promise<void> {
+	await asMaster(page, setupModelsAsMaster);
+}
+
+async function setupModelsAsMaster(page: Page): Promise<void> {
 	await ensureProjectGroup(page, 'GRL');
 	await page.evaluate(async () => {
 		const post = (path: string, body: object) =>

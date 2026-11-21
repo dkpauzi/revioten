@@ -762,6 +762,11 @@ func (f *fakeApproval) ListPositions(context.Context, access.Actor) ([]approval.
 	return f.positions, f.err
 }
 
+func (f *fakeApproval) ListCandidates(context.Context, access.Actor) ([]approval.Candidate, error) {
+	f.got = called{method: "ListCandidates"}
+	return []approval.Candidate{{PersonID: "orang-1", Name: "Contoh Orang"}}, f.err
+}
+
 func (f *fakeApproval) RenamePosition(_ context.Context, _ access.Actor, id, name string) (approval.Position, error) {
 	f.got = called{method: "RenamePosition", id: id, input: name}
 	return f.position, f.err

@@ -1,13 +1,13 @@
-// Test E2E M1.8: kriteria selesai "admin bisa mengatur rute default customer
-// tanpa mengubah kode", lewat layar. Juga: slot GM dipindah ke Factory Manager
+// Test E2E M1.8: kriteria selesai "rute default customer bisa diatur tanpa
+// mengubah kode", lewat layar. Sejak D-209 yang mengatur PPAP Engineer, bukan admin. Juga: slot GM dipindah ke Factory Manager
 // lewat master data (R-APR-15), pemegang Project Leader per Project Group
 // (D-54), satu pemegang NPI Manager (D-115), dan saklar tanggal tanda tangan (D-52).
 import { expect, test, type Page } from '@playwright/test';
 import { en } from '../src/lib/i18n/en.ts';
-import { createWorkAccount, ensureProjectGroup, logIn, openFromMenu } from './helpers.ts';
+import { createWorkAccount, ensureProjectGroup, logIn, logInAsMaster, logOut, openFromMenu } from './helpers.ts';
 
 // ensureCustomer memastikan customer dengan kode itu ada di GR1, lewat API
-// dari browser yang sudah login sebagai admin.
+// dari browser yang sudah login sebagai PPAP Engineer (E-11, D-209).
 async function ensureCustomer(page: Page, code: string): Promise<void> {
 	await ensureProjectGroup(page, 'GR1');
 	await page.evaluate(async (code) => {
@@ -25,8 +25,8 @@ async function ensureCustomer(page: Page, code: string): Promise<void> {
 	}, code);
 }
 
-test('admin mengatur rute default customer lewat layar', async ({ page }) => {
-	await logIn(page);
+test('PPAP Engineer mengatur rute default customer lewat layar', async ({ page }) => {
+	await logInAsMaster(page);
 	await ensureCustomer(page, 'RT');
 	await openFromMenu(page, en.navGroupMaster, en.navApprovalRoutes);
 
@@ -50,7 +50,7 @@ test('admin mengatur rute default customer lewat layar', async ({ page }) => {
 });
 
 test('slot GM dipindah dari Advisor ke Factory Manager lewat master data', async ({ page }) => {
-	await logIn(page);
+	await logInAsMaster(page);
 	await openFromMenu(page, en.navGroupMaster, en.navApprovalRoutes);
 	const section = page.locator('section', { has: page.getByRole('heading', { name: 'Up to GM', exact: true }) });
 	await section.getByRole('button', { name: en.routeEdit }).click();
@@ -72,9 +72,12 @@ test('slot GM dipindah dari Advisor ke Factory Manager lewat master data', async
 });
 
 test('Project Leader dipegang satu orang per Project Group', async ({ page }) => {
+	// Akun dibuat admin; pemegang jabatan dicatat PPAP Engineer (D-209).
 	await logIn(page);
-	await ensureProjectGroup(page, 'GR1');
 	await createWorkAccount(page, 'Project Leader E2E', 'pl.e2e', ['ppap_engineer']);
+	await logOut(page);
+	await logInAsMaster(page);
+	await ensureProjectGroup(page, 'GR1');
 	await openFromMenu(page, en.navGroupMaster, en.navPositions);
 
 	await page.getByLabel(en.positionName, { exact: true }).selectOption({ label: 'Project Leader' });
@@ -88,7 +91,7 @@ test('Project Leader dipegang satu orang per Project Group', async ({ page }) =>
 
 	// Group yang sama tidak bisa mendapat Project Leader kedua (D-54).
 	await page.getByLabel(en.positionName, { exact: true }).selectOption({ label: 'Project Leader' });
-	await page.getByLabel(en.holderPerson, { exact: true }).selectOption({ label: 'Admin E2E' });
+	await page.getByLabel(en.holderPerson, { exact: true }).selectOption({ label: 'PPAP Engineer E2E' });
 	await page.getByLabel(en.holderGroup, { exact: true }).selectOption({ index: 1 });
 	await page.getByRole('button', { name: en.holderAdd }).click();
 	await expect(page.getByText(en.holderGroupTaken)).toBeVisible();
@@ -99,6 +102,8 @@ test('NPI Manager dipegang satu orang', async ({ page }) => {
 	// karena satu slot mencetak satu nama (E-38, D-115).
 	await logIn(page);
 	await createWorkAccount(page, 'NPI Manager E2E', 'npi.e2e', []);
+	await logOut(page);
+	await logInAsMaster(page);
 	await openFromMenu(page, en.navGroupMaster, en.navPositions);
 	await expect(page.getByRole('row', { name: /^NPI Manager / })).toContainText(en.positionSingleHolder);
 
@@ -110,14 +115,15 @@ test('NPI Manager dipegang satu orang', async ({ page }) => {
 	).toBeVisible();
 
 	await page.getByLabel(en.positionName, { exact: true }).selectOption({ label: 'NPI Manager' });
-	await page.getByLabel(en.holderPerson, { exact: true }).selectOption({ label: 'Admin E2E' });
+	await page.getByLabel(en.holderPerson, { exact: true }).selectOption({ label: 'PPAP Engineer E2E' });
 	await page.getByRole('button', { name: en.holderAdd }).click();
 	await expect(page.getByText(en.holderPositionTaken)).toBeVisible();
 });
 
-test('tanggal tanda tangan per slot mati, dan bisa dinyalakan admin', async ({ page }) => {
-	await logIn(page);
-	await openFromMenu(page, en.navGroupAdmin, en.navSettings);
+test('tanggal tanda tangan per slot mati, dan bisa dinyalakan PPAP Engineer di Document settings', async ({ page }) => {
+	// Sejak D-209 saklar ini pengaturan dokumen (E-11); admin hanya memegang pengaman.
+	await logInAsMaster(page);
+	await openFromMenu(page, en.navGroupMaster, en.navDocumentSettings);
 	const signDates = page.getByLabel(en.settingsSignDates);
 	await expect(signDates).not.toBeChecked();
 

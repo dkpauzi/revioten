@@ -1,6 +1,6 @@
 // Package change berisi master untuk perubahan dokumen (M1.6, UC-05): jenis
 // perubahan (R-TPL-10), sumber perubahan (R-CHG-06), dan kategori 4M
-// (R-CHG-01). Semuanya diubah Admin (A-2) dan tidak pernah dihapus. Entitas
+// (R-CHG-01). Semuanya diubah PPAP Engineer (hak E-11, D-209) dan tidak pernah dihapus. Entitas
 // perubahan sendiri menyusul di Tahap 5. Kebijakan approval per jenis
 // perubahan (rute yang dipakai) diatur lewat paket approval (M1.8, E-35, D-112).
 package change

@@ -1,6 +1,6 @@
 # U3 · Peta pengguna dan hak akses
 
-- Paket UML: draft 0.19, 20 November 2026 (draft 0.9: 3 November 2026). Sumber: brief desain v1.37. Draft 0.19 mengganti peran dan matriks hak dengan matriks D-199 (fase 2, migrasi 00049): peran PPAP Engineer, PPAP Engineer Supervisor, Project Leader, dan Manager, hak baru S-1 dan G-1, serta peran yang bisa ditambah admin. Draft 0.16 menambah layar Roles (M8.1), row-level security (D-182), service account (Tahap 9), email notifikasi (D-194), dan bagian 8 tentang siapa yang butuh akun. Isi matriks hak tidak berubah. Draft 0.8 menambah keputusan D-103, D-104, D-115, D-118, dan D-120 tanpa mengubah isi matriks hak. Draft 0.9 hanya memetakan use case usulan UC-24, UC-25, dan UC-39 ke hak yang sudah ada (A-2, E-2, E-6), tanpa hak baru dan tanpa mengubah isi peran.
+- Paket UML: draft 0.23, 21 November 2026. Draft 0.23 memindahkan master data dari admin (A-2) ke PPAP Engineer (E-11, D-209, migrasi 00053). Draft 0.19, 20 November 2026 (draft 0.9: 3 November 2026). Sumber: brief desain v1.37. Draft 0.19 mengganti peran dan matriks hak dengan matriks D-199 (fase 2, migrasi 00049): peran PPAP Engineer, PPAP Engineer Supervisor, Project Leader, dan Manager, hak baru S-1 dan G-1, serta peran yang bisa ditambah admin. Draft 0.16 menambah layar Roles (M8.1), row-level security (D-182), service account (Tahap 9), email notifikasi (D-194), dan bagian 8 tentang siapa yang butuh akun. Isi matriks hak tidak berubah. Draft 0.8 menambah keputusan D-103, D-104, D-115, D-118, dan D-120 tanpa mengubah isi matriks hak. Draft 0.9 hanya memetakan use case usulan UC-24, UC-25, dan UC-39 ke hak yang sudah ada (A-2, E-2, E-6), tanpa hak baru dan tanpa mengubah isi peran.
 - Status: **baseline hak akses, disetujui pemilik pada 27 Oktober 2026** (D-66, R-SEC-10). Admin mengubah hak akses mulai dari baseline ini, dan setiap perubahannya tercatat di audit log. Hal yang masih bertanda usulan di dalam peta ini tetap usulan.
 - Diagram: `U3-peta-pengguna.puml`, diekspor ke `export/U3-H-peta-pengguna.png` dan `.svg`.
 - Nama jabatan mengikuti bagan organisasi NPI (D-54). Nama orang tidak dicantumkan.
@@ -31,6 +31,8 @@ Semua akun kerja otomatis memegang hak peran Viewer (L-1 sampai L-3 dan G-1). Ak
 
 **Rangkap jabatan:** Project Leader GR3 juga APQP/PPAP Controller, jadi ia memegang PPAP Engineer Supervisor (semua customer) dan Project Leader (Project Group sendiri) sekaligus.
 
+**Admin dan master data (D-209):** admin mengurus akun, peran, kesehatan web, audit log, email, service account, dan dua pengaman (mode migrasi, aturan penyetujuan form). Master data, format template, form set, layout cetak, dan pengaturan dokumen dikerjakan PPAP Engineer lewat hak E-11. PPAP Staff memegang peran PPAP Engineer.
+
 **Peran baru** bisa ditambah admin di layar **Admin → Roles** (D-199), misalnya untuk staf DCC bila dokumen kontrol dipisah lagi dari PPAP Engineer.
 
 ## 3. Matriks hak akses per peran (isi awal D-199, migrasi 00049)
@@ -54,6 +56,7 @@ Semua akun kerja otomatis memegang hak peran Viewer (L-1 sampai L-3 dan G-1). Ak
 | **E-8** | Ubah status nomor dan impor nomor lama | UC-13, UC-14 | ✓ | ✓ | — | — | — | — |
 | **E-9** | Cetak salinan terkendali | UC-53, UC-55 | ✓ | ✓ | — | — | — | — |
 | **E-10** | Migrasikan dokumen lama | UC-60 sampai UC-63 | ✓ | ✓ | — | — | — | — |
+| **E-11** | Kelola master data (customer, Project Group, model, jenis dokumen dan perubahan, jabatan dan pemegangnya, rute approval), format template, form set, layout cetak, dan pengaturan dokumen (D-209, menggantikan A-2) | UC-03, UC-05, UC-06, UC-09, UC-20, UC-24 | ✓ | ✓ | — | — | — | — |
 | **V-1** | Verifikasi permintaan perubahan | UC-41 | — | ✓ | ✓ (PG) | — | — | — |
 | **V-2** | Beri tanda dicek di perbandingan PFMEA dan CP | UC-36 | ✓ | ✓ | — | — | — | — |
 | **V-3** | Setujui (terbitkan) form set dan versi format bermetode AP | Form set (D-139) | — | ✓ | — | — | — | — |
@@ -61,10 +64,10 @@ Semua akun kerja otomatis memegang hak peran Viewer (L-1 sampai L-3 dan G-1). Ak
 | **G-1** | Beri catatan di tampilan genba (D-137, dipakai saat tampilan genba dibangun) | — | ✓ | ✓ | ✓ | ✓ | ✓ | — |
 | **A-1** | Kelola pengguna, peran dan isinya, service account, dan alamat email orang lain | UC-02, UC-70, UC-80 | — | — | — | — | — | ✓ |
 | **A-2** | Kelola master data, jenis dokumen dan perubahan, rute approval, dokumen terkait, dan format template | UC-03, UC-05, UC-06, UC-09, UC-20, UC-24 | — | — | — | — | — | ✓ |
-| **A-3** | Kelola pengaturan sistem, termasuk mode migrasi dan email notifikasi | UC-07, UC-71 | — | — | — | — | — | ✓ |
+| **A-3** | Kelola pengaturan sistem: pengaman (mode migrasi, aturan penyetujuan form), email notifikasi, dan kesehatan web | UC-07, UC-71 | — | — | — | — | — | ✓ |
 | **A-4** | Lihat audit log | UC-08 | — | — | — | — | — | ✓ |
 
-Hak di matriks ini adalah isi awal. Admin menambah atau mengurangi hak sebuah peran di layar **Admin → Roles**, menambah peran baru (nama Inggris dan Indonesia, boleh menyalin hak peran lain), mengganti nama peran, dan menonaktifkan peran yang tidak dipegang akun mana pun (D-199). Peran tidak pernah dihapus. Yang terkunci di layar, kode, dan database: isi peran Admin dan Viewer, hak admin (A-1 sampai A-4) di peran kerja, dan hak dasar L-1 sampai L-3. Peran lama sebelum D-199 (Penyusun, Pengelola template, Pemeriksa PFMEA–CP, Verifikator, Penyetuju form, Dokumen kontrol, Petugas migrasi) nonaktif; pemegangnya dipindah oleh migrasi 00049.
+Hak di matriks ini adalah isi awal. Admin menambah atau mengurangi hak sebuah peran di layar **Admin → Roles**, menambah peran baru (nama Inggris dan Indonesia, boleh menyalin hak peran lain), mengganti nama peran, dan menonaktifkan peran yang tidak dipegang akun mana pun (D-199). Peran tidak pernah dihapus. Yang terkunci di layar, kode, dan database: isi peran Admin dan Viewer, hak admin (A-1, A-3, A-4) di peran kerja, dan hak dasar L-1 sampai L-3. Peran lama sebelum D-199 (Penyusun, Pengelola template, Pemeriksa PFMEA–CP, Verifikator, Penyetuju form, Dokumen kontrol, Petugas migrasi) nonaktif; pemegangnya dipindah oleh migrasi 00049.
 
 ## 4. Aturan yang tidak bisa diubah admin (R-SEC-11)
 

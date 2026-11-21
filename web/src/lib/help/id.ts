@@ -5,7 +5,7 @@ import type { HelpContent } from './content.ts';
 export const helpId: HelpContent = {
 	title: 'Panduan pengguna',
 	intro:
-		'Panduan ini mengikuti urutan kerja yang sebenarnya: admin menyiapkan akun dan master data, pengelola template menyusun template, dan penyusun mendaftarkan nomor dokumen. Nama yang dicetak tebal adalah nama yang Anda lihat di layar.',
+		'Panduan ini mengikuti urutan kerja yang sebenarnya: admin menyiapkan akun, PPAP Engineer menyiapkan master data dan template, lalu mendaftarkan nomor dokumen. Nama yang dicetak tebal adalah nama yang Anda lihat di layar.',
 	contentsTitle: 'Daftar isi',
 	whoLabel: 'Siapa',
 	tipsTitle: 'Perlu diketahui',
@@ -48,27 +48,6 @@ export const helpId: HelpContent = {
 			imageAlt: 'Halaman beranda dengan kelompok menu di bilah atas.'
 		},
 		{
-			id: 'customers',
-			title: 'Project group, customer, dan model',
-			who: 'Admin',
-			intro: 'Customer dan model dipakai di semua bagian lain, jadi dibuat lebih dulu. Project group harus ada sebelum customernya.',
-			steps: [
-				'Buka {navGroupMaster}, lalu {navCustomers}.',
-				'Di bagian {projectGroupsTitle}, isi {projectGroupCode} (misalnya [[GR1]]) dan {projectGroupName}, lalu tekan {projectGroupAdd}.',
-				'Di bagian {customerAddTitle}, isi {customerCode} dengan dua huruf, isi {customerName}, pilih {customerProjectGroup}, lalu tekan {customerSave}.',
-				'Buka {navGroupMaster}, lalu {navModels}, dan pilih {modelsCustomer}.',
-				'Isi {modelGroupName} dan tekan {modelGroupAdd}. Group model boleh tidak dibuat.',
-				'Isi {modelName}, pilih {modelGroup} atau biarkan tanpa group, lalu tekan {modelAdd}.',
-				'Untuk menambah part number, pilih modelnya, isi {partNumber}, lalu tekan {partNumberAdd}.'
-			],
-			image: 'customers',
-			imageAlt: 'Halaman Customers dengan project group dan daftar customer.',
-			tips: [
-				'Kode customer menjadi bagian dari setiap nomor dokumen, misalnya SC-AB-001.',
-				'Customer tidak pernah dihapus. Pakai {customerEdit} untuk menonaktifkannya, atau {customerChangeCode} untuk mengganti kodenya; kode lama tetap tercatat.'
-			]
-		},
-		{
 			id: 'accounts',
 			title: 'Akun dan peran',
 			who: 'Admin',
@@ -96,9 +75,30 @@ export const helpId: HelpContent = {
 			]
 		},
 		{
+			id: 'customers',
+			title: 'Project group, customer, dan model',
+			who: 'PPAP Engineer',
+			intro: 'Customer dan model dipakai di semua bagian lain, jadi dibuat lebih dulu. Project group harus ada sebelum customernya.',
+			steps: [
+				'Buka {navGroupMaster}, lalu {navCustomers}.',
+				'Di bagian {projectGroupsTitle}, isi {projectGroupCode} (misalnya [[GR1]]) dan {projectGroupName}, lalu tekan {projectGroupAdd}.',
+				'Di bagian {customerAddTitle}, isi {customerCode} dengan dua huruf, isi {customerName}, pilih {customerProjectGroup}, lalu tekan {customerSave}.',
+				'Buka {navGroupMaster}, lalu {navModels}, dan pilih {modelsCustomer}.',
+				'Isi {modelGroupName} dan tekan {modelGroupAdd}. Group model boleh tidak dibuat.',
+				'Isi {modelName}, pilih {modelGroup} atau biarkan tanpa group, lalu tekan {modelAdd}.',
+				'Untuk menambah part number, pilih modelnya, isi {partNumber}, lalu tekan {partNumberAdd}.'
+			],
+			image: 'customers',
+			imageAlt: 'Halaman Customers dengan project group dan daftar customer.',
+			tips: [
+				'Kode customer menjadi bagian dari setiap nomor dokumen, misalnya SC-AB-001.',
+				'Customer tidak pernah dihapus. Pakai {customerEdit} untuk menonaktifkannya, atau {customerChangeCode} untuk mengganti kodenya; kode lama tetap tercatat.'
+			]
+		},
+		{
 			id: 'positions',
 			title: 'Jabatan dan rute approval',
-			who: 'Admin',
+			who: 'PPAP Engineer',
 			intro: 'Jabatan mengikuti bagan organisasi. Rute approval berisi siapa yang menandatangani dokumen cetak, sesuai urutan tanda tangan.',
 			steps: [
 				'Buka {navGroupMaster}, lalu {navPositions}.',
@@ -113,9 +113,25 @@ export const helpId: HelpContent = {
 			]
 		},
 		{
+			id: 'document-settings',
+			title: 'Pengaturan dokumen',
+			who: 'PPAP Engineer; semua akun bisa melihat',
+			intro: 'Pengaturan untuk dokumen dan cetakan. Pengaman (mode migrasi dan aturan penyetujuan form) tetap di admin, di {navGroupAdmin}, lalu {navSettings}.',
+			steps: [
+				'Buka {navGroupMaster}, lalu {navDocumentSettings}.',
+				'Centang {settingsSignDates} bila setiap slot tanda tangan butuh tanggalnya sendiri. Bawaannya hanya tanggal rilis yang dicatat.',
+				'Centang {settingsQr} untuk mencetak QR yang membuka halaman verifikasi. Bawaannya mati.',
+				'Isi {settingsSubmissionFormNumber}, misalnya [[QR-ENG-24-K015 (Rev.01)]].',
+				'Tekan {settingsSave}.'
+			],
+			image: 'document-settings',
+			imageAlt: 'Halaman Pengaturan dokumen dengan saklar tanggal tanda tangan, saklar QR, dan nomor form.',
+			tips: ['Setiap perubahan tercatat di audit log beserta nilai lama dan barunya.']
+		},
+		{
 			id: 'format-templates',
 			title: 'Format template',
-			who: 'Admin',
+			who: 'PPAP Engineer',
 			intro: 'Format template mengatur field header dan kolom form PFD, PFMEA, atau Control Plan. Sistem dimulai dengan form yang dipakai sekarang.',
 			steps: [
 				'Buka {navGroupTemplates}, lalu {navFormatTemplates}, dan pilih satu di {formatChoose}.',
@@ -174,7 +190,7 @@ export const helpId: HelpContent = {
 		{
 			id: 'versions',
 			title: 'Menerbitkan versi dan membuat versi baru',
-			who: 'PPAP Engineer, dan admin untuk format template',
+			who: 'PPAP Engineer',
 			intro: 'Template baru berstatus draft. Draft bebas diubah. Versi yang sudah terbit tidak bisa diubah lagi, jadi perubahan sesudahnya masuk ke versi baru.',
 			steps: [
 				'Buka templatenya dan lihat baris {versionChoose} di atas isinya.',
@@ -194,21 +210,21 @@ export const helpId: HelpContent = {
 		{
 			id: 'form-sets',
 			title: 'Form set',
-			who: 'Admin, dan PPAP Engineer Supervisor untuk menerbitkan',
+			who: 'PPAP Engineer, dan PPAP Engineer Supervisor untuk menerbitkan',
 			intro: 'Form set adalah satu paket form untuk PFD, PFMEA, dan Control Plan. Sistem punya dua: set AIAG 4th (RPN) dan set AIAG-VDA (Action Priority). Setiap customer memakai satu form set untuk dokumen barunya.',
 			steps: [
 				'Buka {navGroupTemplates}, lalu {navFormSets}.',
-				'Setiap form set menampilkan tiga sheet-nya: {formSetSheetPfd}, {formSetSheetPfmea}, dan {formSetSheetCp}. Admin mengganti sheet versi draft dan menekan {formSetSaveSheets}.',
+				'Setiap form set menampilkan tiga sheet-nya: {formSetSheetPfd}, {formSetSheetPfmea}, dan {formSetSheetCp}. PPAP Engineer mengganti sheet versi draft dan menekan {formSetSaveSheets}.',
 				'Terbitkan dulu format template ketiga sheet itu, di {navFormatTemplates}.',
-				'Penyetuju form membuka form set itu dan menekan [[Terbitkan versi 1]]. Orang yang menyusun draft tidak boleh menerbitkannya. Bawaannya semua penyetuju form harus setuju; daftarnya menampilkan {approvalsDone} dan {approvalsPending}. Admin bisa mengubah aturan ini di {navSettings}.',
-				'Di bagian {formSetCustomersTitle}, admin memilih form set setiap customer. Tanpa pilihan, customer memakai form set bawaan.',
+				'Penyetuju form membuka form set itu dan menekan [[Terbitkan versi 1]]. Orang yang menyusun draft tidak boleh menerbitkannya. Bawaannya semua penyetuju form harus setuju; daftarnya menampilkan {approvalsDone} dan {approvalsPending}. Admin bisa mengubah aturan ini di {navGroupAdmin}, lalu {navSettings}.',
+				'Di bagian {formSetCustomersTitle}, PPAP Engineer memilih form set setiap customer. Tanpa pilihan, customer memakai form set bawaan.',
 				'Untuk membuat paket baru, pakai {formSetCreateTitle} di bagian bawah halaman.'
 			],
 			image: 'form-sets',
 			imageAlt: 'Halaman Form set dengan dua form set dan form set per customer.',
 			tips: [
 				'Format PFMEA dengan Action Priority juga diterbitkan penyetuju form, karena tabel AP-nya menentukan prioritas tindakan.',
-				'Admin bisa mengubah tabel AP versi draft: tekan {apEdit} di format template, klik satu prioritas untuk mengubahnya, lalu tekan {apSave}.',
+				'PPAP Engineer bisa mengubah tabel AP versi draft: tekan {apEdit} di format template, klik satu prioritas untuk mengubahnya, lalu tekan {apSave}.',
 				'Setiap {rolePpapEngineerSupervisor} bisa menerbitkan. Supaya penyetujunya bertambah, centang V-3 untuk perannya di {navRoles}.'
 			]
 		},
@@ -317,14 +333,14 @@ export const helpId: HelpContent = {
 		{
 			id: 'printing',
 			title: 'Cetak dan rilis',
-			who: 'PPAP Engineer, Project Leader, Admin untuk layout',
+			who: 'PPAP Engineer, Project Leader',
 			intro: 'Cetakan berasal dari isi yang sama dengan layar, dalam Excel atau PDF, A3 atau A4 sesuai layout. Approval berupa tanda tangan basah di kertas, atau tanda tangan digital (lihat Tanda tangan digital).',
 			steps: [
 				'Buka dokumen. Di {printTitle}, pilih revisi dan {printPurpose}, lalu tekan {printExcel} atau {printPdf}.',
 				'Untuk approval di kertas, cetak {printPurpose_signature}. Tanggal rilis terisi, dan cover memuat slot approval dari rute.',
 				'Setelah semua slot ditandatangani, dokumen kontrol mengunggah scan di {revisions} dengan {scanUploadButton}, lalu mencatat rilis. Rilis ditolak tanpa scan.',
 				'Revisi terbit dicetak sebagai {printPurpose_reference} atau {printPurpose_controlled}. Salinan terkendali bernomor, dan setiap cetakan tampil di {printLog}.',
-				'Admin mengubah kertas, huruf, margin, dan lebar kolom di {navGroupTemplates}, lalu {navPrintLayouts}, dan bisa memberi satu customer layout lain.'
+				'PPAP Engineer mengubah kertas, huruf, margin, dan lebar kolom di {navGroupTemplates}, lalu {navPrintLayouts}, dan bisa memberi satu customer layout lain.'
 			],
 			tips: ['Draft selalu dicetak dengan UNCONTROLLED COPY.', 'Baris yang berubah di revisi yang dicetak diberi segitiga dengan nomor revisi.', 'PDF butuh Chrome atau Edge di komputer server; Excel selalu bisa.'],
 			image: 'printing',
@@ -343,7 +359,7 @@ export const helpId: HelpContent = {
 				'Bila semua slot sudah ditandatangani, PPAP Engineer lain membuka dokumen dan mencatat rilis di {revisions}. Scan tidak perlu.'
 			],
 			tips: [
-				'Admin menentukan per customer di {navGroupMaster}, lalu {navCustomers}: {signatureModeDigital} atau {signatureModeWetOnly}. Customer wajib basah tetap memakai alur kertas di {printTitle}.',
+				'PPAP Engineer menentukan per customer di {navGroupMaster}, lalu {navCustomers}: {signatureModeDigital} atau {signatureModeWetOnly}. Customer wajib basah tetap memakai alur kertas di {printTitle}.',
 				'Setiap dokumen, juga yang sudah ditandatangani digital, tetap bisa dicetak untuk tanda tangan basah. Tanggal revisi di cetakan tidak pernah menjadi tanggal cetak.',
 				'Tanda tangan tidak bisa diubah atau dihapus, juga oleh admin.'
 			],
@@ -353,7 +369,7 @@ export const helpId: HelpContent = {
 		{
 			id: 'submission-control',
 			title: 'Form Control Submission',
-			who: 'PPAP Engineer mengisi; semua yang boleh melihat draft membaca; admin mengatur bawaannya',
+			who: 'PPAP Engineer mengisi dan mengatur bawaannya; semua yang boleh melihat draft membaca',
 			intro: 'Setiap dokumen punya daftar kontrolnya sendiri: PFD, PFMEA, dan Control Plan masing-masing satu, dengan satu baris per revisi. Daftar ini menggantikan Form Control Submission Document di kertas.',
 			steps: [
 				'Buka dokumen dan gulir ke {subTitle}. Tombol di atas berpindah antara PFD, PFMEA, dan Control Plan satu set.',
@@ -363,7 +379,7 @@ export const helpId: HelpContent = {
 				'Tekan {subDownloadPdf} atau {subDownloadExcel} untuk mencetak form dokumen ini saja.'
 			],
 			tips: [
-				'Admin menentukan per customer apakah revisi perlu dikirim ({navGroupMaster}, lalu {navCustomers}, kolom {customerSubmission}), dan nomor form di {navSettings}.',
+				'PPAP Engineer menentukan per customer apakah revisi perlu dikirim ({navGroupMaster}, lalu {navCustomers}, kolom {customerSubmission}), dan nomor form di {navGroupMaster}, lalu {navDocumentSettings}.',
 				'Hilangkan centang {subShowAll} untuk menyembunyikan revisi yang tidak dikirim ke customer.'
 			],
 			image: 'submission-control',

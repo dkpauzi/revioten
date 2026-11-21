@@ -4,11 +4,15 @@
 // dan impor bersamaan (M2.5) oleh TestImportConcurrent.
 import { expect, test, type Page } from '@playwright/test';
 import { en } from '../src/lib/i18n/en.ts';
-import { createWorkAccount, ensureProjectGroup, logIn, logInFirstTime, logOut, openFromMenu } from './helpers.ts';
+import { asMaster, createWorkAccount, ensureProjectGroup, logIn, logInAsMaster, logInFirstTime, logOut, openFromMenu } from './helpers.ts';
 
-// ensureCustomer memastikan customer dengan kode itu ada di GR1, lewat API dari
-// browser yang sudah login sebagai admin.
+// ensureCustomer memastikan customer dengan kode itu ada di GR1, lewat API
+// sebagai PPAP Engineer (E-11, D-209) di jendela terpisah.
 async function ensureCustomer(page: Page, code: string): Promise<void> {
+	await asMaster(page, (m) => ensureCustomerAsMaster(m, code));
+}
+
+async function ensureCustomerAsMaster(page: Page, code: string): Promise<void> {
 	await ensureProjectGroup(page, 'GR1');
 	await page.evaluate(async (code) => {
 		const customers = await (await fetch('/api/v1/customers')).json();
@@ -63,8 +67,9 @@ test('Viewer tidak mendapat formulir pendaftaran', async ({ page }) => {
 	await expect(page.getByRole('button', { name: en.numberRegister, exact: true })).toHaveCount(0);
 });
 
-test('admin mengubah pola nomor di master data', async ({ page }) => {
-	await logIn(page);
+test('PPAP Engineer mengubah pola nomor di master data', async ({ page }) => {
+	// Pola nomor adalah master data PPAP Engineer (E-11, D-209).
+	await logInAsMaster(page);
 	await openFromMenu(page, en.navGroupMaster, en.navDocumentTypes);
 	const pattern = page.getByLabel(en.numberPattern, { exact: true });
 	await expect(pattern).toHaveValue('{prefix}-{customer}-{seq}');

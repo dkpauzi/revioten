@@ -27,6 +27,7 @@ type Env struct {
 	Numbers *numbering.Service
 
 	Admin  access.Actor
+	Master access.Actor // PPAP Engineer: master data dan format template (E-11, D-209)
 	Author access.Actor // Penyusun untuk semua customer
 	Viewer access.Actor // akun kerja tanpa peran
 
@@ -78,18 +79,19 @@ func Setup(t *testing.T) Env {
 		CustomerCode: map[string]string{},
 	}
 	e.Admin = NewActor(t, pool, "admin.uji", access.AccountAdmin, All(access.RoleAdmin))
+	e.Master = NewActor(t, pool, "ppap.master", access.AccountWork, All(access.RolePPAPEngineer))
 	e.Author = NewActor(t, pool, "penyusun.uji", access.AccountWork, All(access.RoleAuthor))
 	e.Viewer = NewActor(t, pool, "viewer.uji", access.AccountWork)
 	approver := NewActor(t, pool, "ppap.supervisor", access.AccountWork, All(access.RoleFormApprover))
 
 	customers := customer.NewService(pool, checker)
-	group, err := customers.CreateProjectGroup(ctx, e.Admin, customer.ProjectGroupInput{Code: "GR1", Name: "Project Group 1"})
+	group, err := customers.CreateProjectGroup(ctx, e.Master, customer.ProjectGroupInput{Code: "GR1", Name: "Project Group 1"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	e.GroupID = group.ID
 	newCustomer := func(code string) string {
-		c, err := customers.Create(ctx, e.Admin, customer.NewCustomer{Code: code, Name: "Customer " + code, ProjectGroupID: group.ID})
+		c, err := customers.Create(ctx, e.Master, customer.NewCustomer{Code: code, Name: "Customer " + code, ProjectGroupID: group.ID})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -119,7 +121,7 @@ func Setup(t *testing.T) Env {
 	}
 	v1 := sets.Sets[0].Versions[0]
 	for _, id := range []string{v1.PFD.FormatVersionID, v1.PFMEA.FormatVersionID, v1.CP.FormatVersionID} {
-		if _, err := templates.PublishFormatVersion(ctx, e.Admin, id); err != nil {
+		if _, err := templates.PublishFormatVersion(ctx, e.Master, id); err != nil {
 			t.Fatal(err)
 		}
 	}

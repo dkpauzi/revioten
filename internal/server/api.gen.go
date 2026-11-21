@@ -4581,6 +4581,11 @@ type PersonInfo struct {
 	Name string `json:"name"`
 }
 
+// PersonInfoList defines model for PersonInfoList.
+type PersonInfoList struct {
+	Items []PersonInfo `json:"items"`
+}
+
 // PfmeaCpCheck defines model for PfmeaCpCheck.
 type PfmeaCpCheck struct {
 	CheckedAt time.Time `json:"checked_at"`
@@ -5425,7 +5430,7 @@ type Session struct {
 	MustChangePassword bool `json:"must_change_password"`
 
 	// Permissions The rights of the caller, as codes from the user map (U3), for
-	// example L-1 or A-2. Screens use them to show or hide actions; the
+	// example L-1 or E-11. Screens use them to show or hide actions; the
 	// server still checks every operation.
 	Permissions []string `json:"permissions"`
 	Person      Person   `json:"person"`
@@ -6589,10 +6594,10 @@ type ServerInterface interface {
 	// ListApprovalRoutes Approval routes with their slots in signing order, ordered by name (R-APR-08)
 	// (GET /api/v1/approval-routes)
 	ListApprovalRoutes(w http.ResponseWriter, r *http.Request)
-	// CreateApprovalRoute Add an approval route (A-2, UC-06)
+	// CreateApprovalRoute Add an approval route (E-11, UC-06)
 	// (POST /api/v1/approval-routes)
 	CreateApprovalRoute(w http.ResponseWriter, r *http.Request)
-	// UpdateApprovalRoute Rename an approval route and replace its slots (A-2, R-APR-15)
+	// UpdateApprovalRoute Rename an approval route and replace its slots (E-11, R-APR-15)
 	// (PUT /api/v1/approval-routes/{approvalRouteId})
 	UpdateApprovalRoute(w http.ResponseWriter, r *http.Request, approvalRouteId ApprovalRouteId)
 	// ListAuditLog Audit log entries, newest first (A-4, admin account only)
@@ -6604,19 +6609,19 @@ type ServerInterface interface {
 	// ListChangeSources Change sources, active and inactive, ordered by name (R-CHG-06)
 	// (GET /api/v1/change-sources)
 	ListChangeSources(w http.ResponseWriter, r *http.Request)
-	// CreateChangeSource Add a change source (A-2)
+	// CreateChangeSource Add a change source (E-11)
 	// (POST /api/v1/change-sources)
 	CreateChangeSource(w http.ResponseWriter, r *http.Request)
-	// UpdateChangeSource Rename a change source, or switch it off or on (A-2)
+	// UpdateChangeSource Rename a change source, or switch it off or on (E-11)
 	// (PUT /api/v1/change-sources/{changeSourceId})
 	UpdateChangeSource(w http.ResponseWriter, r *http.Request, changeSourceId ChangeSourceId)
 	// ListChangeTypes The change types content, layout only, and administrative (R-TPL-10)
 	// (GET /api/v1/change-types)
 	ListChangeTypes(w http.ResponseWriter, r *http.Request)
-	// UpdateChangeType Rename a change type (A-2)
+	// UpdateChangeType Rename a change type (E-11)
 	// (PUT /api/v1/change-types/{changeTypeId})
 	UpdateChangeType(w http.ResponseWriter, r *http.Request, changeTypeId ChangeTypeId)
-	// SetChangeTypeRoute Set the approval route of a change type, or use the customer default (A-2, R-TPL-10)
+	// SetChangeTypeRoute Set the approval route of a change type, or use the customer default (E-11, R-TPL-10)
 	// (PUT /api/v1/change-types/{changeTypeId}/approval-route)
 	SetChangeTypeRoute(w http.ResponseWriter, r *http.Request, changeTypeId ChangeTypeId)
 	// ListChanges The changes of one customer, newest first (L-4, M5.1)
@@ -6655,28 +6660,28 @@ type ServerInterface interface {
 	// CreateCustomer Add a customer
 	// (POST /api/v1/customers)
 	CreateCustomer(w http.ResponseWriter, r *http.Request)
-	// UpdateCustomer Change the name, project group, and status of a customer (A-2)
+	// UpdateCustomer Change the name, project group, and status of a customer (E-11)
 	// (PUT /api/v1/customers/{customerId})
 	UpdateCustomer(w http.ResponseWriter, r *http.Request, customerId CustomerId)
-	// ChangeCustomerCode Give a customer a new code; the old code stays in its history (A-2, E-11)
+	// ChangeCustomerCode Give a customer a new code; the old code stays in its history (E-11, E-11)
 	// (POST /api/v1/customers/{customerId}/code)
 	ChangeCustomerCode(w http.ResponseWriter, r *http.Request, customerId CustomerId)
-	// SetCustomerFormSet Choose the form set for new documents of a customer (A-2, D-133)
+	// SetCustomerFormSet Choose the form set for new documents of a customer (E-11, D-133)
 	// (PUT /api/v1/customers/{customerId}/default-form-set)
 	SetCustomerFormSet(w http.ResponseWriter, r *http.Request, customerId CustomerId)
-	// SetCustomerDefaultRoute Set the default approval route of a customer (A-2, D-47)
+	// SetCustomerDefaultRoute Set the default approval route of a customer (E-11, D-47)
 	// (PUT /api/v1/customers/{customerId}/default-route)
 	SetCustomerDefaultRoute(w http.ResponseWriter, r *http.Request, customerId CustomerId)
 	// ListCustomerPrintLayouts The layout a customer uses per document type; missing means the default (L-2, M6.1)
 	// (GET /api/v1/customers/{customerId}/print-layouts)
 	ListCustomerPrintLayouts(w http.ResponseWriter, r *http.Request, customerId CustomerId)
-	// SetCustomerPrintLayout Choose the layout of a customer for one document type; no layout_id means the default (A-2, M6.1)
+	// SetCustomerPrintLayout Choose the layout of a customer for one document type; no layout_id means the default (E-11, M6.1)
 	// (PUT /api/v1/customers/{customerId}/print-layouts/{documentTypeId})
 	SetCustomerPrintLayout(w http.ResponseWriter, r *http.Request, customerId CustomerId, documentTypeId string)
-	// SetCustomerSignatureMode Allow digital signatures for a customer, or require wet signatures (A-2, D-198)
+	// SetCustomerSignatureMode Allow digital signatures for a customer, or require wet signatures (E-11, D-198)
 	// (PUT /api/v1/customers/{customerId}/signature-mode)
 	SetCustomerSignatureMode(w http.ResponseWriter, r *http.Request, customerId CustomerId)
-	// SetCustomerSubmissionRequired Whether revisions of this customer need customer submission by default (A-2, D-207)
+	// SetCustomerSubmissionRequired Whether revisions of this customer need customer submission by default (E-11, D-207)
 	// (PUT /api/v1/customers/{customerId}/submission-required)
 	SetCustomerSubmissionRequired(w http.ResponseWriter, r *http.Request, customerId CustomerId)
 	// ImportDocumentNumbers Import legacy numbers of one customer, with a report (E-8, UC-14, R-NUM-06)
@@ -6703,10 +6708,10 @@ type ServerInterface interface {
 	// ListDocumentTypes Document types with their number prefix (R-NUM-01, E-12)
 	// (GET /api/v1/document-types)
 	ListDocumentTypes(w http.ResponseWriter, r *http.Request)
-	// CreateDocumentType Add another document type from the WI, for example Work Instruction (A-2)
+	// CreateDocumentType Add another document type from the WI, for example Work Instruction (E-11)
 	// (POST /api/v1/document-types)
 	CreateDocumentType(w http.ResponseWriter, r *http.Request)
-	// UpdateDocumentType Change the name and letter of a document type (A-2)
+	// UpdateDocumentType Change the name and letter of a document type (E-11)
 	// (PUT /api/v1/document-types/{documentTypeId})
 	UpdateDocumentType(w http.ResponseWriter, r *http.Request, documentTypeId DocumentTypeId)
 	// ListDocuments Documents of one customer (L-4, M4.1)
@@ -6841,7 +6846,7 @@ type ServerInterface interface {
 	// SetDocumentTemplateMode Follow, pin, or detach one process template for a document (E-2, M5.8, R-TPL-08)
 	// (PUT /api/v1/documents/{documentId}/templates/{processTemplateId})
 	SetDocumentTemplateMode(w http.ResponseWriter, r *http.Request, documentId DocumentId, processTemplateId ProcessTemplateId)
-	// SetFormSetSheets Choose the format template versions of the sheets of a draft form set version (A-2)
+	// SetFormSetSheets Choose the format template versions of the sheets of a draft form set version (E-11)
 	// (PUT /api/v1/form-set-versions/{formSetVersionId})
 	SetFormSetSheets(w http.ResponseWriter, r *http.Request, formSetVersionId FormSetVersionId)
 	// PublishFormSetVersion Approve and publish a draft form set version (V-3, D-139)
@@ -6850,55 +6855,55 @@ type ServerInterface interface {
 	// ListFormSets Form sets with their versions, and the form set of each customer (L-2, D-133)
 	// (GET /api/v1/form-sets)
 	ListFormSets(w http.ResponseWriter, r *http.Request)
-	// CreateFormSet Add a form set with a draft version 1 (A-2, D-133)
+	// CreateFormSet Add a form set with a draft version 1 (E-11, D-133)
 	// (POST /api/v1/form-sets)
 	CreateFormSet(w http.ResponseWriter, r *http.Request)
-	// CreateFormSetVersion Make the next draft version of a form set from its last published version (A-2)
+	// CreateFormSetVersion Make the next draft version of a form set from its last published version (E-11)
 	// (POST /api/v1/form-sets/{formSetId}/versions)
 	CreateFormSetVersion(w http.ResponseWriter, r *http.Request, formSetId FormSetId)
 	// GetFormatVersion One format template version with its fields, rating criteria, and symbols (L-2)
 	// (GET /api/v1/format-template-versions/{formatVersionId})
 	GetFormatVersion(w http.ResponseWriter, r *http.Request, formatVersionId FormatVersionId)
-	// UpdateFormatHighlights Change the highlight rule of a draft version, for example RPN above 100 or severity 8 (A-2, R-TPL-11)
+	// UpdateFormatHighlights Change the highlight rule of a draft version, for example RPN above 100 or severity 8 (E-11, R-TPL-11)
 	// (PUT /api/v1/format-template-versions/{formatVersionId})
 	UpdateFormatHighlights(w http.ResponseWriter, r *http.Request, formatVersionId FormatVersionId)
 	// GetActionPriority The Action Priority of one severity, occurrence, and detection, from the AP table of the version (L-2, D-134)
 	// (GET /api/v1/format-template-versions/{formatVersionId}/action-priority)
 	GetActionPriority(w http.ResponseWriter, r *http.Request, formatVersionId FormatVersionId, params GetActionPriorityParams)
-	// SetFormatApRules Replace the Action Priority table of a draft version (A-2, D-134)
+	// SetFormatApRules Replace the Action Priority table of a draft version (E-11, D-134)
 	// (PUT /api/v1/format-template-versions/{formatVersionId}/ap-rules)
 	SetFormatApRules(w http.ResponseWriter, r *http.Request, formatVersionId FormatVersionId)
-	// AddFormatField Add a header field or a column at the end of its area in a draft version (A-2, R-TPL-02)
+	// AddFormatField Add a header field or a column at the end of its area in a draft version (E-11, R-TPL-02)
 	// (POST /api/v1/format-template-versions/{formatVersionId}/fields)
 	AddFormatField(w http.ResponseWriter, r *http.Request, formatVersionId FormatVersionId)
-	// UpdateFormatField Change the label, required flag, hidden flag, position, or options of a field in a draft version (A-2, R-TPL-02)
+	// UpdateFormatField Change the label, required flag, hidden flag, position, or options of a field in a draft version (E-11, R-TPL-02)
 	// (PUT /api/v1/format-template-versions/{formatVersionId}/fields/{formatFieldId})
 	UpdateFormatField(w http.ResponseWriter, r *http.Request, formatVersionId FormatVersionId, formatFieldId FormatFieldId)
-	// PublishFormatVersion Publish a draft version of a format template (A-2, R-TPL-05)
+	// PublishFormatVersion Publish a draft version of a format template (E-11, R-TPL-05)
 	// (POST /api/v1/format-template-versions/{formatVersionId}/publish)
 	PublishFormatVersion(w http.ResponseWriter, r *http.Request, formatVersionId FormatVersionId)
-	// SetFormatRatingCriteria Change the criteria text of rating values in a draft version (A-2, R-TPL-01)
+	// SetFormatRatingCriteria Change the criteria text of rating values in a draft version (E-11, R-TPL-01)
 	// (PUT /api/v1/format-template-versions/{formatVersionId}/rating-criteria)
 	SetFormatRatingCriteria(w http.ResponseWriter, r *http.Request, formatVersionId FormatVersionId)
-	// SaveFormatSymbols Rename symbols and add new ones in a draft version (A-2, R-TPL-11)
+	// SaveFormatSymbols Rename symbols and add new ones in a draft version (E-11, R-TPL-11)
 	// (PUT /api/v1/format-template-versions/{formatVersionId}/symbols)
 	SaveFormatSymbols(w http.ResponseWriter, r *http.Request, formatVersionId FormatVersionId)
 	// ListFormatTemplates Format templates with a summary of their versions (L-2, UC-20, R-TPL-01)
 	// (GET /api/v1/format-templates)
 	ListFormatTemplates(w http.ResponseWriter, r *http.Request)
-	// CreateFormatTemplate Add a format template with a draft version 1, empty or copied from another version (A-2, UC-20)
+	// CreateFormatTemplate Add a format template with a draft version 1, empty or copied from another version (E-11, UC-20)
 	// (POST /api/v1/format-templates)
 	CreateFormatTemplate(w http.ResponseWriter, r *http.Request)
-	// RenameFormatTemplate Rename a format template (A-2)
+	// RenameFormatTemplate Rename a format template (E-11)
 	// (PUT /api/v1/format-templates/{formatTemplateId})
 	RenameFormatTemplate(w http.ResponseWriter, r *http.Request, formatTemplateId FormatTemplateId)
-	// CreateFormatVersion Make the next draft version of a format template from its last published version (A-2, R-TPL-05)
+	// CreateFormatVersion Make the next draft version of a format template from its last published version (E-11, R-TPL-05)
 	// (POST /api/v1/format-templates/{formatTemplateId}/versions)
 	CreateFormatVersion(w http.ResponseWriter, r *http.Request, formatTemplateId FormatTemplateId)
 	// ListFourMCategories The 4M categories Man, Machine, Material, and Method
 	// (GET /api/v1/four-m-categories)
 	ListFourMCategories(w http.ResponseWriter, r *http.Request)
-	// UpdateFourMCategory Rename a 4M category (A-2)
+	// UpdateFourMCategory Rename a 4M category (E-11)
 	// (PUT /api/v1/four-m-categories/{fourMCategoryId})
 	UpdateFourMCategory(w http.ResponseWriter, r *http.Request, fourMCategoryId FourMCategoryId)
 	// GetInbox The work waiting for the signed-in person (D-202)
@@ -6916,19 +6921,19 @@ type ServerInterface interface {
 	// ListModelGroups The model groups of one customer, ordered by name
 	// (GET /api/v1/model-groups)
 	ListModelGroups(w http.ResponseWriter, r *http.Request, params ListModelGroupsParams)
-	// CreateModelGroup Add a model group to a customer (A-2)
+	// CreateModelGroup Add a model group to a customer (E-11)
 	// (POST /api/v1/model-groups)
 	CreateModelGroup(w http.ResponseWriter, r *http.Request)
-	// UpdateModelGroup Rename a model group (A-2)
+	// UpdateModelGroup Rename a model group (E-11)
 	// (PUT /api/v1/model-groups/{modelGroupId})
 	UpdateModelGroup(w http.ResponseWriter, r *http.Request, modelGroupId ModelGroupId)
 	// ListModels The models of one customer, ordered by name
 	// (GET /api/v1/models)
 	ListModels(w http.ResponseWriter, r *http.Request, params ListModelsParams)
-	// CreateModel Add a model to a customer, in at most one model group (A-2, D-42)
+	// CreateModel Add a model to a customer, in at most one model group (E-11, D-42)
 	// (POST /api/v1/models)
 	CreateModel(w http.ResponseWriter, r *http.Request)
-	// UpdateModel Rename a model or move it to another model group of the same customer (A-2)
+	// UpdateModel Rename a model or move it to another model group of the same customer (E-11)
 	// (PUT /api/v1/models/{modelId})
 	UpdateModel(w http.ResponseWriter, r *http.Request, modelId ModelId)
 	// SetModelEol Mark a model end of life, or clear the mark (E-2, D-200)
@@ -6946,16 +6951,16 @@ type ServerInterface interface {
 	// GetNumberSettings Number settings - factory code, number pattern, running number format, and revision digits (D-89)
 	// (GET /api/v1/number-settings)
 	GetNumberSettings(w http.ResponseWriter, r *http.Request)
-	// UpdateNumberSettings Change the number settings. Issued numbers keep their text (A-2, R-NUM-02)
+	// UpdateNumberSettings Change the number settings. Issued numbers keep their text (E-11, R-NUM-02)
 	// (PUT /api/v1/number-settings)
 	UpdateNumberSettings(w http.ResponseWriter, r *http.Request)
 	// ListPartNumbers The part numbers of one customer, ordered by model and number
 	// (GET /api/v1/part-numbers)
 	ListPartNumbers(w http.ResponseWriter, r *http.Request, params ListPartNumbersParams)
-	// CreatePartNumber Add a part number to a model (A-2)
+	// CreatePartNumber Add a part number to a model (E-11)
 	// (POST /api/v1/part-numbers)
 	CreatePartNumber(w http.ResponseWriter, r *http.Request)
-	// UpdatePartNumber Change the number and name of a part number (A-2)
+	// UpdatePartNumber Change the number and name of a part number (E-11)
 	// (PUT /api/v1/part-numbers/{partNumberId})
 	UpdatePartNumber(w http.ResponseWriter, r *http.Request, partNumberId PartNumberId)
 	// GetPerformance The performance report of PPAP Engineers (L-5, D-197)
@@ -6982,25 +6987,28 @@ type ServerInterface interface {
 	// ListPermissions The permission catalog in the order of the user map (A-1, M8.1)
 	// (GET /api/v1/permissions)
 	ListPermissions(w http.ResponseWriter, r *http.Request)
+	// ListPositionCandidates People with an active work account who can be recorded as position holders. Names only (E-11, D-209)
+	// (GET /api/v1/position-candidates)
+	ListPositionCandidates(w http.ResponseWriter, r *http.Request)
 	// ListPositions Positions of the NPI organization chart with their holders (D-54, D-58)
 	// (GET /api/v1/positions)
 	ListPositions(w http.ResponseWriter, r *http.Request)
-	// UpdatePosition Rename a position. Its key and holders stay (A-1, D-58)
+	// UpdatePosition Rename a position. Its key and holders stay (E-11, D-58, D-209)
 	// (PUT /api/v1/positions/{positionId})
 	UpdatePosition(w http.ResponseWriter, r *http.Request, positionId PositionId)
-	// AddPositionHolder Record a person as holder of a position (A-1). One Project Leader and one Project Engineer per project group (D-54)
+	// AddPositionHolder Record a person as holder of a position (E-11, D-209). One Project Leader and one Project Engineer per project group (D-54)
 	// (POST /api/v1/positions/{positionId}/holders)
 	AddPositionHolder(w http.ResponseWriter, r *http.Request, positionId PositionId)
-	// RemovePositionHolder Remove a holder from a position (A-1)
+	// RemovePositionHolder Remove a holder from a position (E-11, D-209)
 	// (DELETE /api/v1/positions/{positionId}/holders/{holderId})
 	RemovePositionHolder(w http.ResponseWriter, r *http.Request, positionId PositionId, holderId HolderId)
 	// ListPrintLayouts Print layouts, layout as data (L-2, M6.1, R-PRT-02)
 	// (GET /api/v1/print-layouts)
 	ListPrintLayouts(w http.ResponseWriter, r *http.Request)
-	// CreatePrintLayout Add a print layout (A-2, M6.1)
+	// CreatePrintLayout Add a print layout (E-11, M6.1)
 	// (POST /api/v1/print-layouts)
 	CreatePrintLayout(w http.ResponseWriter, r *http.Request)
-	// UpdatePrintLayout Change the name and content of a print layout (A-2, M6.1)
+	// UpdatePrintLayout Change the name and content of a print layout (E-11, M6.1)
 	// (PUT /api/v1/print-layouts/{layoutId})
 	UpdatePrintLayout(w http.ResponseWriter, r *http.Request, layoutId string)
 	// ReportProblem Report a problem with the page you are on (every account, D-205)
@@ -7063,10 +7071,10 @@ type ServerInterface interface {
 	// ListProjectGroups All project groups, ordered by code
 	// (GET /api/v1/project-groups)
 	ListProjectGroups(w http.ResponseWriter, r *http.Request)
-	// CreateProjectGroup Add a project group (A-2)
+	// CreateProjectGroup Add a project group (E-11)
 	// (POST /api/v1/project-groups)
 	CreateProjectGroup(w http.ResponseWriter, r *http.Request)
-	// UpdateProjectGroup Change the code and name of a project group (A-2)
+	// UpdateProjectGroup Change the code and name of a project group (E-11)
 	// (PUT /api/v1/project-groups/{projectGroupId})
 	UpdateProjectGroup(w http.ResponseWriter, r *http.Request, projectGroupId ProjectGroupId)
 	// ListReferencedDocuments The master list of referenced documents with their process links (L-2, D-130, D-156)
@@ -7150,10 +7158,10 @@ type ServerInterface interface {
 	// ListSpecialCodes Special codes used in place of a customer code, ordered by code (E-12)
 	// (GET /api/v1/special-codes)
 	ListSpecialCodes(w http.ResponseWriter, r *http.Request)
-	// CreateSpecialCode Add a special code. It cannot equal any customer code, now or before (A-2)
+	// CreateSpecialCode Add a special code. It cannot equal any customer code, now or before (E-11)
 	// (POST /api/v1/special-codes)
 	CreateSpecialCode(w http.ResponseWriter, r *http.Request)
-	// UpdateSpecialCode Rename a special code. The code itself never changes (A-2)
+	// UpdateSpecialCode Rename a special code. The code itself never changes (E-11)
 	// (PUT /api/v1/special-codes/{specialCodeId})
 	UpdateSpecialCode(w http.ResponseWriter, r *http.Request, specialCodeId SpecialCodeId)
 	// SubmitSQAMChange Submit a retroactive SQAM change for every active document of a customer (E-3, M5.10)
@@ -11209,6 +11217,20 @@ func (siw *ServerInterfaceWrapper) ListPermissions(w http.ResponseWriter, r *htt
 	handler.ServeHTTP(w, r)
 }
 
+// ListPositionCandidates operation middleware
+func (siw *ServerInterfaceWrapper) ListPositionCandidates(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListPositionCandidates(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListPositions operation middleware
 func (siw *ServerInterfaceWrapper) ListPositions(w http.ResponseWriter, r *http.Request) {
 
@@ -12931,6 +12953,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/four-m-categories", wrapper.ListFourMCategories)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/four-m-categories/{fourMCategoryId}", wrapper.UpdateFourMCategory)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/positions", wrapper.ListPositions)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/position-candidates", wrapper.ListPositionCandidates)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/positions/{positionId}", wrapper.UpdatePosition)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/positions/{positionId}/holders", wrapper.AddPositionHolder)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/positions/{positionId}/holders/{holderId}", wrapper.RemovePositionHolder)
@@ -19045,6 +19068,44 @@ func (response ListPermissionsdefaultJSONResponse) VisitListPermissionsResponse(
 	return err
 }
 
+type ListPositionCandidatesRequestObject struct {
+}
+
+type ListPositionCandidatesResponseObject interface {
+	VisitListPositionCandidatesResponse(w http.ResponseWriter) error
+}
+
+type ListPositionCandidates200JSONResponse PersonInfoList
+
+func (response ListPositionCandidates200JSONResponse) VisitListPositionCandidatesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListPositionCandidatesdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ListPositionCandidatesdefaultJSONResponse) VisitListPositionCandidatesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListPositionsRequestObject struct {
 }
 
@@ -21783,10 +21844,10 @@ type StrictServerInterface interface {
 	// ListApprovalRoutes Approval routes with their slots in signing order, ordered by name (R-APR-08)
 	// (GET /api/v1/approval-routes)
 	ListApprovalRoutes(ctx context.Context, request ListApprovalRoutesRequestObject) (ListApprovalRoutesResponseObject, error)
-	// CreateApprovalRoute Add an approval route (A-2, UC-06)
+	// CreateApprovalRoute Add an approval route (E-11, UC-06)
 	// (POST /api/v1/approval-routes)
 	CreateApprovalRoute(ctx context.Context, request CreateApprovalRouteRequestObject) (CreateApprovalRouteResponseObject, error)
-	// UpdateApprovalRoute Rename an approval route and replace its slots (A-2, R-APR-15)
+	// UpdateApprovalRoute Rename an approval route and replace its slots (E-11, R-APR-15)
 	// (PUT /api/v1/approval-routes/{approvalRouteId})
 	UpdateApprovalRoute(ctx context.Context, request UpdateApprovalRouteRequestObject) (UpdateApprovalRouteResponseObject, error)
 	// ListAuditLog Audit log entries, newest first (A-4, admin account only)
@@ -21798,19 +21859,19 @@ type StrictServerInterface interface {
 	// ListChangeSources Change sources, active and inactive, ordered by name (R-CHG-06)
 	// (GET /api/v1/change-sources)
 	ListChangeSources(ctx context.Context, request ListChangeSourcesRequestObject) (ListChangeSourcesResponseObject, error)
-	// CreateChangeSource Add a change source (A-2)
+	// CreateChangeSource Add a change source (E-11)
 	// (POST /api/v1/change-sources)
 	CreateChangeSource(ctx context.Context, request CreateChangeSourceRequestObject) (CreateChangeSourceResponseObject, error)
-	// UpdateChangeSource Rename a change source, or switch it off or on (A-2)
+	// UpdateChangeSource Rename a change source, or switch it off or on (E-11)
 	// (PUT /api/v1/change-sources/{changeSourceId})
 	UpdateChangeSource(ctx context.Context, request UpdateChangeSourceRequestObject) (UpdateChangeSourceResponseObject, error)
 	// ListChangeTypes The change types content, layout only, and administrative (R-TPL-10)
 	// (GET /api/v1/change-types)
 	ListChangeTypes(ctx context.Context, request ListChangeTypesRequestObject) (ListChangeTypesResponseObject, error)
-	// UpdateChangeType Rename a change type (A-2)
+	// UpdateChangeType Rename a change type (E-11)
 	// (PUT /api/v1/change-types/{changeTypeId})
 	UpdateChangeType(ctx context.Context, request UpdateChangeTypeRequestObject) (UpdateChangeTypeResponseObject, error)
-	// SetChangeTypeRoute Set the approval route of a change type, or use the customer default (A-2, R-TPL-10)
+	// SetChangeTypeRoute Set the approval route of a change type, or use the customer default (E-11, R-TPL-10)
 	// (PUT /api/v1/change-types/{changeTypeId}/approval-route)
 	SetChangeTypeRoute(ctx context.Context, request SetChangeTypeRouteRequestObject) (SetChangeTypeRouteResponseObject, error)
 	// ListChanges The changes of one customer, newest first (L-4, M5.1)
@@ -21849,28 +21910,28 @@ type StrictServerInterface interface {
 	// CreateCustomer Add a customer
 	// (POST /api/v1/customers)
 	CreateCustomer(ctx context.Context, request CreateCustomerRequestObject) (CreateCustomerResponseObject, error)
-	// UpdateCustomer Change the name, project group, and status of a customer (A-2)
+	// UpdateCustomer Change the name, project group, and status of a customer (E-11)
 	// (PUT /api/v1/customers/{customerId})
 	UpdateCustomer(ctx context.Context, request UpdateCustomerRequestObject) (UpdateCustomerResponseObject, error)
-	// ChangeCustomerCode Give a customer a new code; the old code stays in its history (A-2, E-11)
+	// ChangeCustomerCode Give a customer a new code; the old code stays in its history (E-11, E-11)
 	// (POST /api/v1/customers/{customerId}/code)
 	ChangeCustomerCode(ctx context.Context, request ChangeCustomerCodeRequestObject) (ChangeCustomerCodeResponseObject, error)
-	// SetCustomerFormSet Choose the form set for new documents of a customer (A-2, D-133)
+	// SetCustomerFormSet Choose the form set for new documents of a customer (E-11, D-133)
 	// (PUT /api/v1/customers/{customerId}/default-form-set)
 	SetCustomerFormSet(ctx context.Context, request SetCustomerFormSetRequestObject) (SetCustomerFormSetResponseObject, error)
-	// SetCustomerDefaultRoute Set the default approval route of a customer (A-2, D-47)
+	// SetCustomerDefaultRoute Set the default approval route of a customer (E-11, D-47)
 	// (PUT /api/v1/customers/{customerId}/default-route)
 	SetCustomerDefaultRoute(ctx context.Context, request SetCustomerDefaultRouteRequestObject) (SetCustomerDefaultRouteResponseObject, error)
 	// ListCustomerPrintLayouts The layout a customer uses per document type; missing means the default (L-2, M6.1)
 	// (GET /api/v1/customers/{customerId}/print-layouts)
 	ListCustomerPrintLayouts(ctx context.Context, request ListCustomerPrintLayoutsRequestObject) (ListCustomerPrintLayoutsResponseObject, error)
-	// SetCustomerPrintLayout Choose the layout of a customer for one document type; no layout_id means the default (A-2, M6.1)
+	// SetCustomerPrintLayout Choose the layout of a customer for one document type; no layout_id means the default (E-11, M6.1)
 	// (PUT /api/v1/customers/{customerId}/print-layouts/{documentTypeId})
 	SetCustomerPrintLayout(ctx context.Context, request SetCustomerPrintLayoutRequestObject) (SetCustomerPrintLayoutResponseObject, error)
-	// SetCustomerSignatureMode Allow digital signatures for a customer, or require wet signatures (A-2, D-198)
+	// SetCustomerSignatureMode Allow digital signatures for a customer, or require wet signatures (E-11, D-198)
 	// (PUT /api/v1/customers/{customerId}/signature-mode)
 	SetCustomerSignatureMode(ctx context.Context, request SetCustomerSignatureModeRequestObject) (SetCustomerSignatureModeResponseObject, error)
-	// SetCustomerSubmissionRequired Whether revisions of this customer need customer submission by default (A-2, D-207)
+	// SetCustomerSubmissionRequired Whether revisions of this customer need customer submission by default (E-11, D-207)
 	// (PUT /api/v1/customers/{customerId}/submission-required)
 	SetCustomerSubmissionRequired(ctx context.Context, request SetCustomerSubmissionRequiredRequestObject) (SetCustomerSubmissionRequiredResponseObject, error)
 	// ImportDocumentNumbers Import legacy numbers of one customer, with a report (E-8, UC-14, R-NUM-06)
@@ -21897,10 +21958,10 @@ type StrictServerInterface interface {
 	// ListDocumentTypes Document types with their number prefix (R-NUM-01, E-12)
 	// (GET /api/v1/document-types)
 	ListDocumentTypes(ctx context.Context, request ListDocumentTypesRequestObject) (ListDocumentTypesResponseObject, error)
-	// CreateDocumentType Add another document type from the WI, for example Work Instruction (A-2)
+	// CreateDocumentType Add another document type from the WI, for example Work Instruction (E-11)
 	// (POST /api/v1/document-types)
 	CreateDocumentType(ctx context.Context, request CreateDocumentTypeRequestObject) (CreateDocumentTypeResponseObject, error)
-	// UpdateDocumentType Change the name and letter of a document type (A-2)
+	// UpdateDocumentType Change the name and letter of a document type (E-11)
 	// (PUT /api/v1/document-types/{documentTypeId})
 	UpdateDocumentType(ctx context.Context, request UpdateDocumentTypeRequestObject) (UpdateDocumentTypeResponseObject, error)
 	// ListDocuments Documents of one customer (L-4, M4.1)
@@ -22035,7 +22096,7 @@ type StrictServerInterface interface {
 	// SetDocumentTemplateMode Follow, pin, or detach one process template for a document (E-2, M5.8, R-TPL-08)
 	// (PUT /api/v1/documents/{documentId}/templates/{processTemplateId})
 	SetDocumentTemplateMode(ctx context.Context, request SetDocumentTemplateModeRequestObject) (SetDocumentTemplateModeResponseObject, error)
-	// SetFormSetSheets Choose the format template versions of the sheets of a draft form set version (A-2)
+	// SetFormSetSheets Choose the format template versions of the sheets of a draft form set version (E-11)
 	// (PUT /api/v1/form-set-versions/{formSetVersionId})
 	SetFormSetSheets(ctx context.Context, request SetFormSetSheetsRequestObject) (SetFormSetSheetsResponseObject, error)
 	// PublishFormSetVersion Approve and publish a draft form set version (V-3, D-139)
@@ -22044,55 +22105,55 @@ type StrictServerInterface interface {
 	// ListFormSets Form sets with their versions, and the form set of each customer (L-2, D-133)
 	// (GET /api/v1/form-sets)
 	ListFormSets(ctx context.Context, request ListFormSetsRequestObject) (ListFormSetsResponseObject, error)
-	// CreateFormSet Add a form set with a draft version 1 (A-2, D-133)
+	// CreateFormSet Add a form set with a draft version 1 (E-11, D-133)
 	// (POST /api/v1/form-sets)
 	CreateFormSet(ctx context.Context, request CreateFormSetRequestObject) (CreateFormSetResponseObject, error)
-	// CreateFormSetVersion Make the next draft version of a form set from its last published version (A-2)
+	// CreateFormSetVersion Make the next draft version of a form set from its last published version (E-11)
 	// (POST /api/v1/form-sets/{formSetId}/versions)
 	CreateFormSetVersion(ctx context.Context, request CreateFormSetVersionRequestObject) (CreateFormSetVersionResponseObject, error)
 	// GetFormatVersion One format template version with its fields, rating criteria, and symbols (L-2)
 	// (GET /api/v1/format-template-versions/{formatVersionId})
 	GetFormatVersion(ctx context.Context, request GetFormatVersionRequestObject) (GetFormatVersionResponseObject, error)
-	// UpdateFormatHighlights Change the highlight rule of a draft version, for example RPN above 100 or severity 8 (A-2, R-TPL-11)
+	// UpdateFormatHighlights Change the highlight rule of a draft version, for example RPN above 100 or severity 8 (E-11, R-TPL-11)
 	// (PUT /api/v1/format-template-versions/{formatVersionId})
 	UpdateFormatHighlights(ctx context.Context, request UpdateFormatHighlightsRequestObject) (UpdateFormatHighlightsResponseObject, error)
 	// GetActionPriority The Action Priority of one severity, occurrence, and detection, from the AP table of the version (L-2, D-134)
 	// (GET /api/v1/format-template-versions/{formatVersionId}/action-priority)
 	GetActionPriority(ctx context.Context, request GetActionPriorityRequestObject) (GetActionPriorityResponseObject, error)
-	// SetFormatApRules Replace the Action Priority table of a draft version (A-2, D-134)
+	// SetFormatApRules Replace the Action Priority table of a draft version (E-11, D-134)
 	// (PUT /api/v1/format-template-versions/{formatVersionId}/ap-rules)
 	SetFormatApRules(ctx context.Context, request SetFormatApRulesRequestObject) (SetFormatApRulesResponseObject, error)
-	// AddFormatField Add a header field or a column at the end of its area in a draft version (A-2, R-TPL-02)
+	// AddFormatField Add a header field or a column at the end of its area in a draft version (E-11, R-TPL-02)
 	// (POST /api/v1/format-template-versions/{formatVersionId}/fields)
 	AddFormatField(ctx context.Context, request AddFormatFieldRequestObject) (AddFormatFieldResponseObject, error)
-	// UpdateFormatField Change the label, required flag, hidden flag, position, or options of a field in a draft version (A-2, R-TPL-02)
+	// UpdateFormatField Change the label, required flag, hidden flag, position, or options of a field in a draft version (E-11, R-TPL-02)
 	// (PUT /api/v1/format-template-versions/{formatVersionId}/fields/{formatFieldId})
 	UpdateFormatField(ctx context.Context, request UpdateFormatFieldRequestObject) (UpdateFormatFieldResponseObject, error)
-	// PublishFormatVersion Publish a draft version of a format template (A-2, R-TPL-05)
+	// PublishFormatVersion Publish a draft version of a format template (E-11, R-TPL-05)
 	// (POST /api/v1/format-template-versions/{formatVersionId}/publish)
 	PublishFormatVersion(ctx context.Context, request PublishFormatVersionRequestObject) (PublishFormatVersionResponseObject, error)
-	// SetFormatRatingCriteria Change the criteria text of rating values in a draft version (A-2, R-TPL-01)
+	// SetFormatRatingCriteria Change the criteria text of rating values in a draft version (E-11, R-TPL-01)
 	// (PUT /api/v1/format-template-versions/{formatVersionId}/rating-criteria)
 	SetFormatRatingCriteria(ctx context.Context, request SetFormatRatingCriteriaRequestObject) (SetFormatRatingCriteriaResponseObject, error)
-	// SaveFormatSymbols Rename symbols and add new ones in a draft version (A-2, R-TPL-11)
+	// SaveFormatSymbols Rename symbols and add new ones in a draft version (E-11, R-TPL-11)
 	// (PUT /api/v1/format-template-versions/{formatVersionId}/symbols)
 	SaveFormatSymbols(ctx context.Context, request SaveFormatSymbolsRequestObject) (SaveFormatSymbolsResponseObject, error)
 	// ListFormatTemplates Format templates with a summary of their versions (L-2, UC-20, R-TPL-01)
 	// (GET /api/v1/format-templates)
 	ListFormatTemplates(ctx context.Context, request ListFormatTemplatesRequestObject) (ListFormatTemplatesResponseObject, error)
-	// CreateFormatTemplate Add a format template with a draft version 1, empty or copied from another version (A-2, UC-20)
+	// CreateFormatTemplate Add a format template with a draft version 1, empty or copied from another version (E-11, UC-20)
 	// (POST /api/v1/format-templates)
 	CreateFormatTemplate(ctx context.Context, request CreateFormatTemplateRequestObject) (CreateFormatTemplateResponseObject, error)
-	// RenameFormatTemplate Rename a format template (A-2)
+	// RenameFormatTemplate Rename a format template (E-11)
 	// (PUT /api/v1/format-templates/{formatTemplateId})
 	RenameFormatTemplate(ctx context.Context, request RenameFormatTemplateRequestObject) (RenameFormatTemplateResponseObject, error)
-	// CreateFormatVersion Make the next draft version of a format template from its last published version (A-2, R-TPL-05)
+	// CreateFormatVersion Make the next draft version of a format template from its last published version (E-11, R-TPL-05)
 	// (POST /api/v1/format-templates/{formatTemplateId}/versions)
 	CreateFormatVersion(ctx context.Context, request CreateFormatVersionRequestObject) (CreateFormatVersionResponseObject, error)
 	// ListFourMCategories The 4M categories Man, Machine, Material, and Method
 	// (GET /api/v1/four-m-categories)
 	ListFourMCategories(ctx context.Context, request ListFourMCategoriesRequestObject) (ListFourMCategoriesResponseObject, error)
-	// UpdateFourMCategory Rename a 4M category (A-2)
+	// UpdateFourMCategory Rename a 4M category (E-11)
 	// (PUT /api/v1/four-m-categories/{fourMCategoryId})
 	UpdateFourMCategory(ctx context.Context, request UpdateFourMCategoryRequestObject) (UpdateFourMCategoryResponseObject, error)
 	// GetInbox The work waiting for the signed-in person (D-202)
@@ -22110,19 +22171,19 @@ type StrictServerInterface interface {
 	// ListModelGroups The model groups of one customer, ordered by name
 	// (GET /api/v1/model-groups)
 	ListModelGroups(ctx context.Context, request ListModelGroupsRequestObject) (ListModelGroupsResponseObject, error)
-	// CreateModelGroup Add a model group to a customer (A-2)
+	// CreateModelGroup Add a model group to a customer (E-11)
 	// (POST /api/v1/model-groups)
 	CreateModelGroup(ctx context.Context, request CreateModelGroupRequestObject) (CreateModelGroupResponseObject, error)
-	// UpdateModelGroup Rename a model group (A-2)
+	// UpdateModelGroup Rename a model group (E-11)
 	// (PUT /api/v1/model-groups/{modelGroupId})
 	UpdateModelGroup(ctx context.Context, request UpdateModelGroupRequestObject) (UpdateModelGroupResponseObject, error)
 	// ListModels The models of one customer, ordered by name
 	// (GET /api/v1/models)
 	ListModels(ctx context.Context, request ListModelsRequestObject) (ListModelsResponseObject, error)
-	// CreateModel Add a model to a customer, in at most one model group (A-2, D-42)
+	// CreateModel Add a model to a customer, in at most one model group (E-11, D-42)
 	// (POST /api/v1/models)
 	CreateModel(ctx context.Context, request CreateModelRequestObject) (CreateModelResponseObject, error)
-	// UpdateModel Rename a model or move it to another model group of the same customer (A-2)
+	// UpdateModel Rename a model or move it to another model group of the same customer (E-11)
 	// (PUT /api/v1/models/{modelId})
 	UpdateModel(ctx context.Context, request UpdateModelRequestObject) (UpdateModelResponseObject, error)
 	// SetModelEol Mark a model end of life, or clear the mark (E-2, D-200)
@@ -22140,16 +22201,16 @@ type StrictServerInterface interface {
 	// GetNumberSettings Number settings - factory code, number pattern, running number format, and revision digits (D-89)
 	// (GET /api/v1/number-settings)
 	GetNumberSettings(ctx context.Context, request GetNumberSettingsRequestObject) (GetNumberSettingsResponseObject, error)
-	// UpdateNumberSettings Change the number settings. Issued numbers keep their text (A-2, R-NUM-02)
+	// UpdateNumberSettings Change the number settings. Issued numbers keep their text (E-11, R-NUM-02)
 	// (PUT /api/v1/number-settings)
 	UpdateNumberSettings(ctx context.Context, request UpdateNumberSettingsRequestObject) (UpdateNumberSettingsResponseObject, error)
 	// ListPartNumbers The part numbers of one customer, ordered by model and number
 	// (GET /api/v1/part-numbers)
 	ListPartNumbers(ctx context.Context, request ListPartNumbersRequestObject) (ListPartNumbersResponseObject, error)
-	// CreatePartNumber Add a part number to a model (A-2)
+	// CreatePartNumber Add a part number to a model (E-11)
 	// (POST /api/v1/part-numbers)
 	CreatePartNumber(ctx context.Context, request CreatePartNumberRequestObject) (CreatePartNumberResponseObject, error)
-	// UpdatePartNumber Change the number and name of a part number (A-2)
+	// UpdatePartNumber Change the number and name of a part number (E-11)
 	// (PUT /api/v1/part-numbers/{partNumberId})
 	UpdatePartNumber(ctx context.Context, request UpdatePartNumberRequestObject) (UpdatePartNumberResponseObject, error)
 	// GetPerformance The performance report of PPAP Engineers (L-5, D-197)
@@ -22176,25 +22237,28 @@ type StrictServerInterface interface {
 	// ListPermissions The permission catalog in the order of the user map (A-1, M8.1)
 	// (GET /api/v1/permissions)
 	ListPermissions(ctx context.Context, request ListPermissionsRequestObject) (ListPermissionsResponseObject, error)
+	// ListPositionCandidates People with an active work account who can be recorded as position holders. Names only (E-11, D-209)
+	// (GET /api/v1/position-candidates)
+	ListPositionCandidates(ctx context.Context, request ListPositionCandidatesRequestObject) (ListPositionCandidatesResponseObject, error)
 	// ListPositions Positions of the NPI organization chart with their holders (D-54, D-58)
 	// (GET /api/v1/positions)
 	ListPositions(ctx context.Context, request ListPositionsRequestObject) (ListPositionsResponseObject, error)
-	// UpdatePosition Rename a position. Its key and holders stay (A-1, D-58)
+	// UpdatePosition Rename a position. Its key and holders stay (E-11, D-58, D-209)
 	// (PUT /api/v1/positions/{positionId})
 	UpdatePosition(ctx context.Context, request UpdatePositionRequestObject) (UpdatePositionResponseObject, error)
-	// AddPositionHolder Record a person as holder of a position (A-1). One Project Leader and one Project Engineer per project group (D-54)
+	// AddPositionHolder Record a person as holder of a position (E-11, D-209). One Project Leader and one Project Engineer per project group (D-54)
 	// (POST /api/v1/positions/{positionId}/holders)
 	AddPositionHolder(ctx context.Context, request AddPositionHolderRequestObject) (AddPositionHolderResponseObject, error)
-	// RemovePositionHolder Remove a holder from a position (A-1)
+	// RemovePositionHolder Remove a holder from a position (E-11, D-209)
 	// (DELETE /api/v1/positions/{positionId}/holders/{holderId})
 	RemovePositionHolder(ctx context.Context, request RemovePositionHolderRequestObject) (RemovePositionHolderResponseObject, error)
 	// ListPrintLayouts Print layouts, layout as data (L-2, M6.1, R-PRT-02)
 	// (GET /api/v1/print-layouts)
 	ListPrintLayouts(ctx context.Context, request ListPrintLayoutsRequestObject) (ListPrintLayoutsResponseObject, error)
-	// CreatePrintLayout Add a print layout (A-2, M6.1)
+	// CreatePrintLayout Add a print layout (E-11, M6.1)
 	// (POST /api/v1/print-layouts)
 	CreatePrintLayout(ctx context.Context, request CreatePrintLayoutRequestObject) (CreatePrintLayoutResponseObject, error)
-	// UpdatePrintLayout Change the name and content of a print layout (A-2, M6.1)
+	// UpdatePrintLayout Change the name and content of a print layout (E-11, M6.1)
 	// (PUT /api/v1/print-layouts/{layoutId})
 	UpdatePrintLayout(ctx context.Context, request UpdatePrintLayoutRequestObject) (UpdatePrintLayoutResponseObject, error)
 	// ReportProblem Report a problem with the page you are on (every account, D-205)
@@ -22257,10 +22321,10 @@ type StrictServerInterface interface {
 	// ListProjectGroups All project groups, ordered by code
 	// (GET /api/v1/project-groups)
 	ListProjectGroups(ctx context.Context, request ListProjectGroupsRequestObject) (ListProjectGroupsResponseObject, error)
-	// CreateProjectGroup Add a project group (A-2)
+	// CreateProjectGroup Add a project group (E-11)
 	// (POST /api/v1/project-groups)
 	CreateProjectGroup(ctx context.Context, request CreateProjectGroupRequestObject) (CreateProjectGroupResponseObject, error)
-	// UpdateProjectGroup Change the code and name of a project group (A-2)
+	// UpdateProjectGroup Change the code and name of a project group (E-11)
 	// (PUT /api/v1/project-groups/{projectGroupId})
 	UpdateProjectGroup(ctx context.Context, request UpdateProjectGroupRequestObject) (UpdateProjectGroupResponseObject, error)
 	// ListReferencedDocuments The master list of referenced documents with their process links (L-2, D-130, D-156)
@@ -22344,10 +22408,10 @@ type StrictServerInterface interface {
 	// ListSpecialCodes Special codes used in place of a customer code, ordered by code (E-12)
 	// (GET /api/v1/special-codes)
 	ListSpecialCodes(ctx context.Context, request ListSpecialCodesRequestObject) (ListSpecialCodesResponseObject, error)
-	// CreateSpecialCode Add a special code. It cannot equal any customer code, now or before (A-2)
+	// CreateSpecialCode Add a special code. It cannot equal any customer code, now or before (E-11)
 	// (POST /api/v1/special-codes)
 	CreateSpecialCode(ctx context.Context, request CreateSpecialCodeRequestObject) (CreateSpecialCodeResponseObject, error)
-	// UpdateSpecialCode Rename a special code. The code itself never changes (A-2)
+	// UpdateSpecialCode Rename a special code. The code itself never changes (E-11)
 	// (PUT /api/v1/special-codes/{specialCodeId})
 	UpdateSpecialCode(ctx context.Context, request UpdateSpecialCodeRequestObject) (UpdateSpecialCodeResponseObject, error)
 	// SubmitSQAMChange Submit a retroactive SQAM change for every active document of a customer (E-3, M5.10)
@@ -26711,6 +26775,30 @@ func (sh *strictHandler) ListPermissions(w http.ResponseWriter, r *http.Request)
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ListPermissionsResponseObject); ok {
 		if err := validResponse.VisitListPermissionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListPositionCandidates operation middleware
+func (sh *strictHandler) ListPositionCandidates(w http.ResponseWriter, r *http.Request) {
+	var request ListPositionCandidatesRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListPositionCandidates(ctx, request.(ListPositionCandidatesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListPositionCandidates")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListPositionCandidatesResponseObject); ok {
+		if err := validResponse.VisitListPositionCandidatesResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

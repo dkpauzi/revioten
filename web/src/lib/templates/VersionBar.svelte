@@ -1,7 +1,7 @@
 <script lang="ts">
 	// Baris versi satu template (M3.4, R-TPL-05): memilih versi, menerbitkan
 	// versi draft, dan membuat versi baru. Dipakai halaman format template
-	// (A-2) dan process template (E-6); halaman itulah yang memanggil API.
+	// (E-11) dan process template (E-6); halaman itulah yang memanggil API.
 	import { formatDateTime } from '#lib/format.ts';
 	import { t } from '#lib/i18n/index.ts';
 	import { canStartNewVersion, isDraft, versionOptionText, type VersionInfo } from '#lib/versions.ts';

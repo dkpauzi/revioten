@@ -149,14 +149,14 @@ func TestPrintService(t *testing.T) {
 	if _, err := s.CreateLayout(ctx, e.Author, printout.LayoutInput{Name: "AB CP A4", DocumentTypeID: cpType, Layout: json.RawMessage(`{"paper":"A4"}`)}); !errors.Is(err, access.ErrForbidden) {
 		t.Errorf("penyusun membuat layout: %v", err)
 	}
-	if _, err := s.CreateLayout(ctx, e.Admin, printout.LayoutInput{Name: "Bad", DocumentTypeID: cpType, Layout: json.RawMessage(`{"paper":"A5"}`)}); code(t, err) != "paper:invalid_format" {
+	if _, err := s.CreateLayout(ctx, e.Master, printout.LayoutInput{Name: "Bad", DocumentTypeID: cpType, Layout: json.RawMessage(`{"paper":"A5"}`)}); code(t, err) != "paper:invalid_format" {
 		t.Errorf("layout A5: %v", err)
 	}
-	a4, err := s.CreateLayout(ctx, e.Admin, printout.LayoutInput{Name: "AB CP A4", DocumentTypeID: cpType, Layout: json.RawMessage(`{"paper":"A4","orientation":"landscape","font_size":7,"margins_mm":{"top":8,"right":8,"bottom":8,"left":8}}`)})
+	a4, err := s.CreateLayout(ctx, e.Master, printout.LayoutInput{Name: "AB CP A4", DocumentTypeID: cpType, Layout: json.RawMessage(`{"paper":"A4","orientation":"landscape","font_size":7,"margins_mm":{"top":8,"right":8,"bottom":8,"left":8}}`)})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := s.SetCustomerLayout(ctx, e.Admin, e.CustomerAB, cpType, a4.ID); err != nil {
+	if err := s.SetCustomerLayout(ctx, e.Master, e.CustomerAB, cpType, a4.ID); err != nil {
 		t.Fatal(err)
 	}
 	f, err = s.Print(ctx, e.Author, cp.ID, printout.Request{Purpose: printout.PurposeReference, Format: "xlsx"})

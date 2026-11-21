@@ -6,14 +6,13 @@
 	import { onMount } from 'svelte';
 	import {
 		addPositionHolder,
-		listAccounts,
+		listPositionCandidates,
 		listPositions,
 		listProjectGroups,
 		removePositionHolder,
 		updatePosition
 	} from '#lib/api/client.ts';
 	import type { PersonInfo, Position, PositionHolder, ProjectGroup } from '#lib/api/gen/index.ts';
-	import { peopleOf } from '#lib/accounts.ts';
 	import { failureText, problemText } from '#lib/errors.ts';
 	import { t } from '#lib/i18n/index.ts';
 	import { can } from '#lib/session.svelte.ts';
@@ -23,7 +22,8 @@
 	let groups = $state<ProjectGroup[]>([]);
 	let people = $state<PersonInfo[]>([]);
 	let loadError = $state('');
-	let canEdit = $derived(can('A-1'));
+	// Jabatan dan pemegangnya master data PPAP Engineer (E-11, D-209).
+	let canEdit = $derived(can('E-11'));
 
 	// Ganti nama satu jabatan.
 	let editingId = $state<string | null>(null);
@@ -48,14 +48,14 @@
 			loadError = failureText(groupResult.error);
 			return;
 		}
-		// Daftar orang diambil dari daftar akun, yang hanya terbuka untuk A-1.
+		// Daftar orang (hanya nama) untuk memilih pemegang jabatan (D-209).
 		if (canEdit) {
-			const accountResult = await listAccounts();
-			if (!accountResult.ok) {
-				loadError = failureText(accountResult.error);
+			const candidateResult = await listPositionCandidates();
+			if (!candidateResult.ok) {
+				loadError = failureText(candidateResult.error);
 				return;
 			}
-			people = peopleOf(accountResult.data.items);
+			people = candidateResult.data.items;
 		}
 		positions = positionResult.data.items;
 		groups = groupResult.data.items;
