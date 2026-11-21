@@ -1,8 +1,10 @@
 # Skenario alur web: dari nol sampai dokumen draft
 
-- **Dibuat:** 8 November 2026, setelah M3.3. Akan diperbarui setiap milestone menambah layar.
+Cara membangun web ini sendiri (dari sisi kode) ada di `docs/panduan/membangun-manual.md`.
+
+- **Dibuat:** 8 November 2026, setelah M3.3. **Diperbarui:** 21 November 2026 (peran D-199, tanda tangan digital D-198, dasbor admin D-205, Form Control Submission D-207). Diperbarui lagi setiap milestone menambah layar.
 - **Untuk siapa:** pemilik, untuk mencoba seluruh sistem dari database kosong secara berurutan.
-- **Isinya:** hanya layar yang sudah dibangun (M0.1 sampai M3.4). Langkah yang belum ada di sistem ditulis di bagian 9.
+- **Isinya:** semua layar yang sudah dibangun. Langkah yang belum ada di sistem ditulis di bagian 13.
 - **Nama orang:** semua nama di sini contoh. Jangan memakai nama orang asli di data uji.
 
 ## Versi otomatis (tur)
@@ -40,21 +42,22 @@ Tur ini memakai Playwright, alat yang sama dengan test E2E di `web/e2e/`. Skripn
 Urutannya mengikuti siapa yang boleh melakukan apa:
 
 ```
-[Admin]            1. Login admin
+[Admin]            1. Login admin (Home akun admin = Web health)
                    2. Project group dan customer
                    3. Model group, model, part number
-                   4. Akun kerja + peran
-                   5. Jabatan dan pemegangnya
-                   6. Rute approval, jenis dokumen, format template (cek isi awal)
+                   4. Akun kerja + peran (PPAP Engineer, Supervisor, Project Leader, Manager)
+                   5. Jabatan dan pemegangnya, rute default customer, Settings
+                   6. Jenis dokumen, format template (cek isi awal)
                    7. Logout
-[PPAP Engineer]    8. Login pertama -> ganti password
-                   9. Master proses (Processes)
-                  10. Process template: sub-proses, poin, cakupan, varian
-                  11. Pratinjau poin untuk satu model
-                  12. Terbitkan versi template, lalu buat versi baru
-                  13. Daftarkan nomor dokumen (sebagai set)
-[PPAP Staff]      14. Void / obsolete nomor, impor nomor lama
-[Admin]           15. Audit log: periksa rantai
+[PPAP Engineer]    8-12.  Login pertama, master proses, process template, versi
+                  13-14.  Nomor dokumen: daftarkan, Void/obsolete, impor
+                  15-21.  Form set, dokumen draft, rakit, cek PFMEA-CP, diagram
+                  22-23.  Cetak dan rilis dengan scan (tanda tangan basah)
+                  24-27.  Perubahan, verifikasi, revisi 1, rilis
+                  28-30.  Dokumen lama dan dasbor
+                  31-33.  Dokumen terbit, review 3 tahun, PPAP performance
+                  34-36.  Tanda tangan digital, Form Control Submission, Report a problem
+[Admin]           37-40.  Web health, Roles, API integrasi, email, audit log
 ```
 
 Mengapa admin lebih dulu: data dasar (customer, model, akun, jabatan) hanya bisa dibuat akun admin (hak A-1 dan A-2). Akun kerja tidak bisa membuatnya, dan akun admin tidak bisa menyusun template atau mendaftarkan nomor (D-72: akun admin tidak pernah memegang peran kerja).
@@ -63,20 +66,20 @@ Mengapa admin lebih dulu: data dasar (customer, model, akun, jabatan) hanya bisa
 
 Setiap akun yang login otomatis bisa **melihat** dokumen rilis, register nomor, dan master data (hak L-1 sampai L-3). Peran menambah hak di atas itu. Satu akun boleh punya beberapa peran.
 
-| Peran (layar) | Peran (glosarium) | Fungsinya sekarang | Fungsinya nanti (belum dibangun) | Hak |
-|---|---|---|---|---|
-| Author | Penyusun | Mendaftarkan nomor PFD, PFMEA, dan CP, satu-satu atau sebagai set | Membuat dan mengedit draft dokumen, mengajukan perubahan, mencetak untuk tanda tangan | E-1 sampai E-5 |
-| Template maintainer | Pengelola template | Mengelola master proses dan process template: sub-proses, poin, cakupan, varian | Menerbitkan versi template dan memutuskan usulan cakupan poin | E-6 |
-| PFMEA–CP checker | Pemeriksa PFMEA–CP | Belum ada layar | Memberi tanda dicek di perbandingan PFMEA dan CP | V-2 |
-| Verifier | Verifikator | Belum ada layar | Menerima atau menolak permintaan perubahan | V-1 |
-| Document control | Dokumen kontrol | Void dan Make obsolete nomor, impor nomor lama | Mencatat rilis dan salinan terkendali | E-7 sampai E-9 |
-| Migration | Petugas migrasi | Belum ada layar | Memindahkan dokumen lama ke sistem | E-10 |
-| Viewer | Viewer | Melihat saja. Tidak perlu dicentang, karena semua akun sudah punya | — | L-1 sampai L-3 |
-| Admin | Admin | Akun, master data, format template, pengaturan, audit log | Sama | A-1 sampai A-4 |
+Sejak D-199 peran adalah matriks yang diatur admin di **Admin → Roles**: admin bisa menambah peran, mengganti nama, menonaktifkan, dan mencentang hak setiap peran. Isi awalnya:
+
+| Peran | Untuk siapa | Yang bisa dilakukan | Hak utama |
+|---|---|---|---|
+| PPAP Engineer | PPAP Engineer dan PPAP Staff | Menyusun dan mencetak dokumen, mengajukan perubahan, master proses dan process template, dokumen kontrol (rilis, status nomor, impor, salinan terkendali), migrasi, tanda dicek PFMEA–CP, tanda tangan digital, laporan kinerja | L-1 sampai L-5, E-1 sampai E-10, V-2, S-1, G-1 |
+| PPAP Engineer Supervisor | APQP/PPAP Controller | Semua hak PPAP Engineer, ditambah verifikasi perubahan dan penyetujuan form set serta tabel AP | + V-1, V-3 |
+| Project Leader | Project Leader (Supervisor) dan Project Engineer (Leader) | Menyusun dan mencetak, mengajukan dan memverifikasi perubahan, tanda tangan digital. Bawaannya hanya customer Project Group sendiri; bisa dibuat semua customer (D-206) | L-1 sampai L-4, E-1 sampai E-5, V-1, S-1, G-1 |
+| Manager | NPI Manager, QA QC Manager, GM | Tanda tangan digital, membaca draft, laporan kinerja | L-1 sampai L-5, S-1, G-1 |
+| Viewer | Internal audit, QA, QC, produksi | Melihat dokumen terbit. Tidak perlu dicentang, karena semua akun kerja sudah punya | L-1 sampai L-3, G-1 |
+| Admin | Akun admin terpisah | Akun, peran, master data, pengaturan, audit log, Web health | A-1 sampai A-4 |
 
 **Cakupan peran.** Untuk setiap peran yang dicentang ada pilihan cakupan:
-- **All customers**: berlaku untuk semua customer. Untuk PPAP Engineer dan PPAP Staff.
-- **Own project group**: hanya customer di Project Group tempat orang itu tercatat sebagai Project Leader atau Project Engineer (D-71). Cakupan ini baru berfungsi setelah orangnya dicatat sebagai pemegang jabatan (langkah 5).
+- **All customers**: berlaku untuk semua customer. Untuk PPAP Engineer dan PPAP Staff, juga Project Leader yang membantu Project Group lain (D-206).
+- **Own project group**: hanya customer di Project Group tempat orang itu tercatat sebagai Project Leader atau Project Engineer (D-71). Bawaan untuk peran Project Leader. Cakupan ini baru berfungsi setelah orangnya dicatat sebagai pemegang jabatan (langkah 5).
 
 **Aturan yang tidak bisa dimatikan admin (R-SEC-11).** Akun admin tidak pernah memegang peran kerja. Orang yang memegang akun admin juga punya akun kerja terpisah untuk pekerjaan sehari-hari. Akun tidak pernah dihapus, hanya dinonaktifkan.
 
@@ -89,8 +92,9 @@ Setiap akun yang login otomatis bisa **melihat** dokumen rilis, register nomor, 
 | `ppap.staff` | Work account | PPAP Engineer | All customers |
 | `pl.gr1` (Project Leader GR1) | Work account | Project Leader | Own project group |
 | `pe.gr1` (Project Engineer GR1) | Work account | Project Leader | Own project group |
-| `ppap.controller` (APQP/PPAP Controller) | Work account | Verifier | All customers |
-| `npi.manager` | Work account | Tanpa peran (otomatis Viewer) | — |
+| `apqp.controller` (APQP/PPAP Controller) | Work account | PPAP Engineer Supervisor | All customers |
+| `npi.manager` | Work account | Manager | All customers |
+| `qa.manager` | Work account | Manager | All customers |
 
 Untuk uji coba pertama, `ppap.engineer` dan `ppap.staff` sudah cukup.
 
@@ -155,7 +159,7 @@ Menu **Admin → Accounts**, bagian **Create an account**.
 4. **Roles**: centang peran sesuai tabel di bagian 1, lalu pilih cakupan setiap peran, yaitu **All customers** atau **Own project group**.
 5. Tekan **Create account**.
 6. Layar bergulir ke kotak **Temporary password for ppap.engineer** di bagian atas, dan pop-up di pojok kanan atas menampilkan pesan yang sama. Kata sandi sementara ini **otomatis disalin ke clipboard**, jadi cukup tempel dengan Ctrl+V di tempat Anda mencatatnya. Bila penyalinan ditolak browser, tekan **Copy password**. Kata sandi ini tampil satu kali saja dan wajib diganti orangnya saat login pertama.
-7. Ulangi untuk `ppap.staff`.
+7. Ulangi untuk akun lain di tabel bagian 1. Untuk tanda tangan digital (langkah 34) dibutuhkan `pl.gr1` (Project Leader), `npi.manager` dan `qa.manager` (Manager).
 
 Di daftar **All accounts**, admin bisa mengubah peran (**Edit roles**, lalu **Save roles**), mereset password (**Reset password**), atau menonaktifkan akun (**Disable**). Akun tidak pernah dihapus.
 
@@ -168,6 +172,9 @@ Menu **Master data → Positions**.
    - untuk Project Leader dan Project Engineer, pilih juga **Project group**, karena keduanya dipegang satu orang per project group;
    - tekan **Add holder**.
 3. Ini penting untuk akun bercakupan **Own project group**: tanpa catatan pemegang, akun itu tidak punya customer apa pun.
+4. Slot tanda tangan rute juga mengikuti jabatan: catat `ppap.engineer` sebagai PPAP Engineer, `apqp.controller` sebagai APQP/PPAP Controller, `pl.gr1` sebagai Project Leader GR1, `npi.manager` sebagai NPI Manager, dan `qa.manager` sebagai QA QC Manager.
+5. **Master data → Approval routes**: pilih rute default customer LM, misalnya **Up to QA QC Manager**. Dokumen yang dibuat sesudahnya memakai rute ini; tanpa rute, dokumen tidak bisa dikirim untuk tanda tangan.
+6. **Admin → Settings**: nyalakan **Migration mode** (untuk langkah 28) dan isi nomor form Form Control Submission (D-207).
 
 ### Langkah 6 · Periksa isi awal pengaturan dokumen
 Halaman berikut sudah terisi saat database dibuat. Cukup diperiksa, dan diubah bila berbeda dengan WI.
@@ -178,7 +185,8 @@ Halaman berikut sudah terisi saat database dibuat. Cukup diperiksa, dan diubah b
 | Master data → Change types | Jenis perubahan (Content, Layout only, Administrative), sumber perubahan, kategori 4M | Bila ada sumber perubahan baru |
 | Master data → Approval routes | Rute 5 slot: Prepared, Checked, lalu tiga Approved (NPI Manager, QA / QC Mgr., General Mgr.) | Atur **Default route** per customer, atau rute khusus per jenis perubahan |
 | Template library → Format templates | Format PFD, PFMEA (misalnya PFMEA AIAG 4th), dan CP: kolom, field header, tabel skala, simbol, aturan sorot | Ganti label kolom mengikuti form yang dipakai, isi teks tabel skala S, O, D |
-| Admin → Settings | Saklar tanggal tanda tangan di setiap slot | Sesuai kebiasaan cetak |
+| Admin → Settings | Saklar tanggal tanda tangan, QR, mode migrasi, aturan penyetujuan form, nomor form Form Control Submission | Sesuai kebiasaan cetak |
+| Master data → Customers | Kolom **Signatures** (Digital allowed / Wet only) dan **Customer submission** (Required / Not required) | Sesuai kesepakatan dengan customer |
 
 Kolom nomor operasi, proses, dan Process Flow di format template tidak bisa diketik, karena isinya diambil dari baris dan dari PFD (D-122, D-123).
 
@@ -252,7 +260,7 @@ Satu template paling banyak punya satu draft, jadi **New version** baru muncul l
 ## 5. Penyusun: daftarkan nomor dokumen
 
 ### Langkah 13 · Register nomor
-Akun `ppap.engineer` juga memegang peran Author. Buka menu **Documents → Numbers**.
+Akun `ppap.engineer` memegang peran PPAP Engineer. Buka menu **Documents → Numbers**.
 
 1. Di **Register a number**, pilih **Customer** `LM`.
 2. **Register as a set: PFD, PFMEA, and CP with one number** sudah dicentang. Biarkan tercentang supaya ketiga dokumen mendapat nomor berjalan yang sama, misalnya SH-LM-001, SF-LM-001, dan SC-LM-001.
@@ -368,18 +376,29 @@ Buka **Documents → Periodic review**. Set PFD, PFMEA, dan CP yang 36 bulan tid
 ### Langkah 33 · Laporan kinerja
 Login sebagai `ppap.engineer`. Buka **Documents → PPAP performance**. Pilih **Week**, **Month**, atau **Year** (minggu laporan Jumat sampai Kamis), lalu **Download weekly report** untuk Excel: jumlah permintaan perubahan per pemicu (termasuk Customer claim dan Audit finding), yokoten, dan waktu dari diterima sampai rilis, dari mulai edit sampai siap cetak, dan dari cetak sampai ditandatangani, total dan per orang.
 
+## 10b. Tanda tangan digital, Form Control Submission, dan laporan masalah (D-198, D-207, D-205)
+
+### Langkah 34 · Kirim untuk tanda tangan digital
+Login sebagai `ppap.engineer`. Buka draft SF-LM-002, bagian **Digital signature**. Pilih **Process. Eng** (diri sendiri, atau Project Leader tingkat Leader) dan **Engineer** (Project Leader GR1); NPI Manager dan QA QC Manager terisi otomatis. Ketik password, lalu **Send for digital signature**. Isi draft dibekukan dengan SHA-256, tanggal revisi menjadi tanggal hari ini (D-204), dan draft terkunci.
+
+### Langkah 35 · Tanda tangan berurutan, lalu rilis tanpa scan
+Login berturut-turut sebagai `pl.gr1`, `npi.manager`, dan `qa.manager`. Masing-masing membuka **Documents → Signatures**, **Open and sign**, membaca dokumen, mengetik password, lalu **Sign**. Urutannya tidak bisa dilompati; **Reject** butuh alasan dan membuka draft lagi. Sesudah lengkap, login sebagai `dok.kontrol`, buka SF-LM-002, bagian **Revisions**, lalu **Record release of revision 0**, tanpa scan.
+
+### Langkah 36 · Form Control Submission dan Report a problem
+Masih sebagai `dok.kontrol`, gulir ke **Submission control**. Satu daftar per dokumen; tanggal mulai, selesai, dan tanda tangan terisi sendiri. Tekan **Edit** pada revisi 0, isi **Date sent to the customer**, **What was sent**, **Customer result**, **Result date**, dan **Remark**, lalu **Save**. **Download PDF** atau **Download Excel** mencetak form dokumen itu saja. Tekan **Report a problem** di bilah atas untuk mencoba laporan masalah ke admin.
+
 ## 11. Admin: periksa peran dan jejak (Tahap 8)
 
-### Langkah 34 · Roles
-Login sebagai `admin.contoh`. Buka **Admin → Roles**. Setiap kolom satu peran, setiap baris satu hak. Kotak yang abu-abu terkunci: peran Admin dan Viewer, hak admin, dan hak dasar.
+### Langkah 37 · Web health dan Roles
+Login sebagai `admin.contoh`. Home akun admin adalah **Web health**: tanda tangan tertahan, error server, laporan masalah (laporan dari langkah 36 tampil di sini), dokumen yang diproses, email, akun, backup terakhir, dan rantai audit log. Rinciannya di **Admin → Web health**. Lalu buka **Admin → Roles**: setiap kolom satu peran, setiap baris satu hak. Kotak yang abu-abu terkunci: peran Admin dan Viewer, hak admin, dan hak dasar. **Add a role** menambah peran baru.
 
-### Langkah 35 · Aplikasi lain (API integrasi, Tahap 9)
+### Langkah 38 · Aplikasi lain (API integrasi, Tahap 9)
 Buka **Admin → Service accounts**. Di **Add a service account**, isi nama aplikasi, tim pemilik, kontak, dan tujuan; centang scope **Read the list of released documents** dan **Read released revisions with their rows**, centang customer LM, lalu **Add the service account**. Tekan **Issue a token**: token tampil SATU KALI dan disalin ke clipboard. Aplikasi lain memanggil `GET /integration/v1/documents` dengan header `Authorization: Bearer <token>` dan hanya melihat dokumen terbit customer LM.
 
-### Langkah 36 · Email notifikasi (D-194)
+### Langkah 39 · Email notifikasi (D-194)
 Tekan **Change password** di bilah atas, isi **Email for notifications**, lalu **Save the email address**. Admin juga bisa mengisi alamat orang lain di **Admin → Accounts** dengan tombol **Email**. Buka **Admin → Notifications**: server email (diatur IT), saklar per peristiwa, tombol **Send me a test email**, dan kotak keluar. Sebelum IT mengatur Microsoft 365, email hanya tercatat dengan status **Not sent**.
 
-### Langkah 37 · Audit log
+### Langkah 40 · Audit log
 Buka **Admin → Audit log**.
 
 1. Setiap langkah di atas tercatat: siapa, kapan, apa, dan akun mana (termasuk orang pemegangnya).
@@ -395,7 +414,9 @@ Buka **Admin → Audit log**.
 | Akun admin lupa password atau terkunci | — | `go run ./cmd/revioten reset-admin-password -login admin.contoh` |
 | Salah 10 kali saat login | Akun dikunci 15 menit | Tunggu 15 menit |
 | Halaman kosong atau galat setelah update kode | Server lama masih berjalan | Ctrl+C di jendela server, lalu `go run ./cmd/revioten` lagi |
-| Make document menolak: form set belum terbit | Form set customer belum diterbitkan Form approver | Langkah 15 |
+| Make document menolak: form set belum terbit | Form set customer belum diterbitkan PPAP Engineer Supervisor | Langkah 15 |
+| Bagian Digital signature tidak menawarkan orang | Pemegang jabatan slot belum dicatat, atau orangnya belum punya peran dengan hak S-1 | Langkah 5 |
+| Dokumen tidak bisa diubah | Draft sedang atau sudah ditandatangani digital | Tarik kembali (Withdraw) atau catat rilisnya |
 | Tombol Compose tidak menampilkan proses | Process template belum punya versi terbit | Langkah 12 |
 | Tab Check tidak ada | Dokumen bukan bagian set yang punya PFMEA dan CP | Daftarkan nomor sebagai set (langkah 16) |
 
@@ -403,17 +424,7 @@ Buka **Admin → Audit log**.
 
 | Milestone | Langkah yang akan muncul |
 |---|---|
-| Belum diputuskan | Konfirmasi slot saat rilis (R-APR-10) dan pembekuan rute saat cetak (R-APR-11) |
+| Belum diputuskan | Konfirmasi slot saat rilis basah (R-APR-10) dan pembekuan rute saat cetak basah (R-APR-11); untuk tanda tangan digital keduanya sudah ada |
+| Langkah L form set | Tampilan genba per proses dengan catatan (D-137); hak G-1 sudah ada |
 | Tahap 10 | Portal customer (latihan) |
 | M9.6 | Webhook (opsional, belum dibangun) |
-
-
-## Tanda tangan digital (fase 3, D-198)
-
-Belum masuk tur otomatis; test E2E `web/e2e/m6-signatures.test.ts` menjalankan alur ini.
-
-1. Admin: **Master data → Customers**, kolom **Signatures** customer itu **Digital allowed**. Pastikan customer punya rute default (**Approval routes**).
-2. Admin: **Admin → Accounts**, buat akun Project Leader (peran Project Leader), NPI Manager dan QA QC Manager (peran Manager). Di **Master data → Positions**, catat mereka sebagai pemegang jabatan Project Leader (Project Group customer), NPI Manager, dan QA QC Manager. Catat juga PPAP Engineer sebagai pemegang jabatan PPAP Engineer.
-3. PPAP Engineer: buka dokumen draft, bagian **Digital signature**. Pilih **Process. Eng** (diri sendiri atau Project Leader tingkat Leader) dan **Engineer** (Project Leader), ketik password, tekan **Send for digital signature**. Draft terkunci.
-4. Project Leader, NPI Manager, lalu QA QC Manager: **Documents → Signatures**, **Open and sign**, ketik password, **Sign**. Urutannya tidak bisa dilompati.
-5. PPAP Engineer lain: buka dokumen, bagian **Revisions**, **Record release of revision 0**, tanpa scan. Cetakannya menulis "Signed digitally" dengan tanggalnya.

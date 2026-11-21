@@ -7,6 +7,7 @@
 	import type { Document, SubmissionControl, SubmissionEntry, SubmissionRow } from '#lib/api/gen/index.ts';
 	import { failureText, problemText } from '#lib/errors.ts';
 	import { t, type MessageKey } from '#lib/i18n/index.ts';
+	import { language } from '#lib/i18n/language.svelte.ts';
 	import { can } from '#lib/session.svelte.ts';
 
 	let { doc }: { doc: Document } = $props();
@@ -120,7 +121,16 @@
 	function day(iso: string | undefined): string {
 		if (!iso) return '';
 		const [y, m, d] = iso.split('-').map(Number);
-		return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+		const locale = language.current === 'id' ? 'id-ID' : 'en-GB';
+		return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+	}
+
+	// reasonText menerjemahkan alasan bawaan dari server; nomor perubahan dan
+	// nama pemicu tampil apa adanya.
+	function reasonText(reason: string): string {
+		if (reason === 'First release') return t('subReasonFirst');
+		if (reason === 'Legacy document') return t('subReasonLegacy');
+		return reason;
 	}
 
 	type Step = { label: MessageKey; state: 'done' | 'now' | 'next' };
@@ -188,7 +198,7 @@
 										{r.revision}
 										<span class="badge" data-status={r.status}>{t(r.status === 'released' ? 'subReleased' : 'subInProgress')}</span>
 									</td>
-									<td>{r.reason}</td>
+									<td>{reasonText(r.reason)}</td>
 									<td>{day(r.started_on)}</td>
 									<td>
 										{#if r.finished_on}{day(r.finished_on)}<small>{t('subDaysTaken', { days: String(r.days) })}</small>{:else}<small>{t('subDays', { days: String(r.days) })}</small>{/if}

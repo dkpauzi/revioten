@@ -346,7 +346,9 @@ export const helpId: HelpContent = {
 				'Admin menentukan per customer di {navGroupMaster}, lalu {navCustomers}: {signatureModeDigital} atau {signatureModeWetOnly}. Customer wajib basah tetap memakai alur kertas di {printTitle}.',
 				'Setiap dokumen, juga yang sudah ditandatangani digital, tetap bisa dicetak untuk tanda tangan basah. Tanggal revisi di cetakan tidak pernah menjadi tanggal cetak.',
 				'Tanda tangan tidak bisa diubah atau dihapus, juga oleh admin.'
-			]
+			],
+			image: 'signatures',
+			imageAlt: 'Bagian Digital signature sebuah draft dengan penanda tangan yang dipilih untuk setiap slot.'
 		},
 		{
 			id: 'submission-control',
@@ -363,7 +365,9 @@ export const helpId: HelpContent = {
 			tips: [
 				'Admin menentukan per customer apakah revisi perlu dikirim ({navGroupMaster}, lalu {navCustomers}, kolom {customerSubmission}), dan nomor form di {navSettings}.',
 				'Hilangkan centang {subShowAll} untuk menyembunyikan revisi yang tidak dikirim ke customer.'
-			]
+			],
+			image: 'submission-control',
+			imageAlt: 'Bagian Submission control sebuah dokumen dengan satu baris per revisi dan tombol cetak.'
 		},
 		{
 			id: 'migration',
@@ -414,7 +418,7 @@ export const helpId: HelpContent = {
 		},
 		{
 			id: 'periodic-review',
-			title: 'Review berkala setiap 3 tahun',
+			title: 'Review 3 tahun',
 			who: 'PPAP Engineer mencatat, verifikator mengonfirmasi; semua orang melihat peringatannya',
 			intro: 'Set PFD, PFMEA, dan Control Plan yang 3 tahun tidak direvisi harus direview. Peringatannya muncul di {navHome}, di dasbor, di halaman dokumen, di {navPeriodicReviews}, dan sebagai email ke penyusun customer itu: kuning 90 hari sebelum jatuh tempo, merah sesudahnya.',
 			steps: [
@@ -429,7 +433,7 @@ export const helpId: HelpContent = {
 		},
 		{
 			id: 'performance',
-			title: 'Laporan kinerja',
+			title: 'Kinerja PPAP',
 			who: 'PPAP Engineer, supervisor, dan manager',
 			intro: 'Angka mingguan, bulanan, atau tahunan pekerjaan PPAP, dihitung dari perubahan, cetakan, scan bertanda tangan, dan rilis yang tercatat. Satu minggu dari Jumat sampai Kamis, jadi laporan hari Jumat memuat minggu yang baru selesai.',
 			steps: [

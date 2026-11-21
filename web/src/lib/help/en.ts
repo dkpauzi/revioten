@@ -346,7 +346,9 @@ export const helpEn: HelpContent = {
 				'The admin decides per customer under {navGroupMaster}, then {navCustomers}: {signatureModeDigital} or {signatureModeWetOnly}. Wet-only customers keep the paper flow under {printTitle}.',
 				'Every document, also one signed digitally, can still be printed for wet signature. The revision date on the print never becomes the print date.',
 				'Signatures cannot be changed or deleted, also not by the admin.'
-			]
+			],
+			image: 'signatures',
+			imageAlt: 'The Digital signature section of a draft with the people chosen for each slot.'
 		},
 		{
 			id: 'submission-control',
@@ -363,7 +365,9 @@ export const helpEn: HelpContent = {
 			tips: [
 				'The admin sets per customer whether revisions need customer submission ({navGroupMaster}, then {navCustomers}, column {customerSubmission}), and the form number under {navSettings}.',
 				'Untick {subShowAll} to hide revisions that are not sent to the customer.'
-			]
+			],
+			image: 'submission-control',
+			imageAlt: 'The Submission control section of a document with one row per revision and the print buttons.'
 		},
 		{
 			id: 'migration',
@@ -414,7 +418,7 @@ export const helpEn: HelpContent = {
 		},
 		{
 			id: 'periodic-review',
-			title: 'Periodic review every 3 years',
+			title: '3-year review',
 			who: 'PPAP Engineer records, a verifier confirms; everyone sees the warnings',
 			intro: 'A PFD, PFMEA, and Control Plan set with no revision for 3 years must be reviewed. The warning appears on {navHome}, on the dashboard, on the document page, in {navPeriodicReviews}, and as an email to the authors of the customer: yellow 90 days before the due date, red after it.',
 			steps: [
@@ -429,7 +433,7 @@ export const helpEn: HelpContent = {
 		},
 		{
 			id: 'performance',
-			title: 'Performance report',
+			title: 'PPAP performance',
 			who: 'PPAP Engineer, supervisor, and manager',
 			intro: 'The weekly, monthly, or yearly numbers of the PPAP work, counted from the recorded changes, prints, signed scans, and releases. A week runs from Friday to Thursday, so the Friday report covers the week that just ended.',
 			steps: [
@@ -440,7 +444,7 @@ export const helpEn: HelpContent = {
 			],
 			tips: ['No targets are set: the report only collects how long each stage takes.', 'Press {revisionReady} in the Revisions section of a draft when it is complete, so {performanceStageWaiting} can be measured.'],
 			image: 'performance',
-			imageAlt: 'The Performance report for one week with the change counts and the time per stage.'
+			imageAlt: 'The PPAP performance report for one week with the change counts and the time per stage.'
 		},
 		{
 			id: 'roles',

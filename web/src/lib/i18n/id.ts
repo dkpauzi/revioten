@@ -1904,6 +1904,8 @@ export const id: Messages = {
 	subNo: 'No',
 	subRevision: 'Revisi',
 	subReason: 'Alasan',
+	subReasonFirst: 'Rilis pertama',
+	subReasonLegacy: 'Dokumen lama',
 	subStart: 'Tanggal mulai',
 	subFinish: 'Tanggal selesai',
 	subTopSign: 'Tanda tangan top management',

@@ -110,6 +110,33 @@ test('potret layar untuk halaman Help', async ({ page }) => {
 	await expect(page.getByText(en.holderAdded.replace('{name}', engineer.name).replace('{position}', 'PPAP Engineer'))).toBeVisible();
 	await shot(page, 'positions');
 
+	// Untuk gambar tanda tangan digital (D-198): rute default LM, Project Leader
+	// GR1, dan dua Manager sebagai pemegang jabatan slot. Disiapkan lewat API.
+	await page.evaluate(async () => {
+		const json = (path: string, method: string, body?: object) =>
+			fetch(path, { method, headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined }).then((r) => r.json());
+		const customers = await json('/api/v1/customers', 'GET');
+		const lm = customers.items.find((c: { code: string }) => c.code === 'LM');
+		const routes = await json('/api/v1/approval-routes', 'GET');
+		const route = routes.items.find((r: { name: string }) => r.name === 'Up to QA QC Manager');
+		await json(`/api/v1/customers/${lm.id}/default-route`, 'PUT', { route_id: route.id });
+		const groups = await json('/api/v1/project-groups', 'GET');
+		const gr1 = groups.items.find((g: { code: string }) => g.code === 'GR1');
+		const positions = await json('/api/v1/positions', 'GET');
+		for (const [name, login, role, key] of [
+			['Contoh Project Leader GR1', 'pl.gr1', 'project_leader', 'project_leader'],
+			['Contoh NPI Manager', 'npi.manager', 'manager', 'npi_manager'],
+			['Contoh QA QC Manager', 'qa.manager', 'manager', 'qa_qc_manager']
+		]) {
+			const created = await json('/api/v1/accounts', 'POST', { person_name: name, kind: 'work', login, roles: [{ role, scope: 'all' }] });
+			const position = positions.items.find((x: { key: string }) => x.key === key);
+			await json(`/api/v1/positions/${position.id}/holders`, 'POST', {
+				person_id: created.account.person.id,
+				project_group_id: position.per_project_group ? gr1.id : undefined
+			});
+		}
+	});
+
 	await openFromMenu(page, en.navGroupTemplates, en.navFormatTemplates);
 	await page.getByLabel(en.formatChoose).selectOption({ index: 2 });
 	const columns = page.getByRole('heading', { name: en.formatColumns });
@@ -248,6 +275,9 @@ test('potret layar untuk halaman Help', async ({ page }) => {
 	await expect(page.locator('.workbook .tabulator-row')).toHaveCount(1);
 	await shot(page, 'documents', page.getByRole('heading', { name: en.documentRowsTitle, exact: true }));
 	await shot(page, 'printing', page.getByRole('heading', { name: en.printTitle, exact: true }));
+	// Bagian Digital signature dengan calon penanda tangan setiap slot (D-198, D-203).
+	await page.getByLabel(en.sigSlotChoose.replace('{slot}', 'Engineer'), { exact: true }).selectOption({ label: 'Contoh Project Leader GR1 · Project Leader GR1' });
+	await shot(page, 'signatures', page.getByRole('heading', { name: en.sigTitle, level: 2 }));
 	const cpUrl = page.url();
 
 	// Dokumen kontrol mencatat rilis, supaya perubahan bisa diajukan.
@@ -262,6 +292,8 @@ test('potret layar untuk halaman Help', async ({ page }) => {
 	await page.getByRole('button', { name: en.revisionRelease.replace('{revision}', '0') }).click();
 	await expect(page.getByText(en.documentNoDraft)).toBeVisible();
 	await shot(page, 'document-control', page.getByRole('heading', { name: en.revisions, exact: true }));
+	// Form Control Submission dokumen yang baru terbit (D-207).
+	await shot(page, 'submission-control', page.getByRole('heading', { name: en.subTitle, level: 2 }));
 
 	// Penyusun mengajukan perubahan, lalu memasukkan dokumen lama.
 	await logOut(page);

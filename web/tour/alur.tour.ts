@@ -99,12 +99,16 @@ async function uploadScan(page: Page, file: string): Promise<void> {
 	await expect(revisions.getByRole('status')).toHaveText(en.scanUploaded.replace('{file}', file));
 }
 
-test('alur dari admin sampai dokumen terbit, revisi, migrasi, dasbor, dan API integrasi', async ({ page, playwright }) => {
+test('alur dari admin sampai dokumen terbit, revisi, tanda tangan digital, migrasi, dasbor, dan API integrasi', async ({ page, playwright }) => {
 	// Tur ini panjang; batas waktunya mengikuti kecepatan tur.
 	test.setTimeout(15 * 60 * 1000);
 	const engineer = { login: 'ppap.engineer', name: 'Contoh PPAP Engineer', password: 'kopi pagi di pabrik' };
 	const control = { login: 'dok.kontrol', name: 'Contoh Dokumen Kontrol', password: 'rilis selalu dengan scan' };
 	const verifier = { login: 'apqp.controller', name: 'Contoh APQP Controller', password: 'verifikasi dengan catatan' };
+	// Penanda tangan digital (D-198): Project Leader GR1 dan dua Manager.
+	const leader = { login: 'pl.gr1', name: 'Contoh Project Leader GR1', password: 'cek dulu baru tanda tangan' };
+	const npi = { login: 'npi.manager', name: 'Contoh NPI Manager', password: 'setuju sesudah membaca' };
+	const qa = { login: 'qa.manager', name: 'Contoh QA QC Manager', password: 'kualitas nomor satu' };
 
 	// ---------- Bagian A: admin ----------
 	await page.goto('/login');
@@ -160,6 +164,10 @@ test('alur dari admin sampai dokumen terbit, revisi, migrasi, dasbor, dan API in
 	await say(page, 'Langkah 4', 'Dua akun lagi: PPAP Engineer kedua (mencatat rilis, juga petugas migrasi) dan PPAP Engineer Supervisor (verifikasi dan penyetujuan form set). Penyusun tidak boleh merilis atau memverifikasi pekerjaannya sendiri.');
 	const controlTemporary = await createAccount(page, control.name, control.login, [en.rolePpapEngineer]);
 	const verifierTemporary = await createAccount(page, verifier.name, verifier.login, [en.rolePpapEngineerSupervisor]);
+	await say(page, 'Langkah 4', 'Untuk tanda tangan digital: Project Leader GR1 (cakupannya Project Group sendiri) dan dua Manager penanda tangan.');
+	const leaderTemporary = await createAccount(page, leader.name, leader.login, [en.roleProjectLeader]);
+	const npiTemporary = await createAccount(page, npi.name, npi.login, [en.roleManager]);
+	const qaTemporary = await createAccount(page, qa.name, qa.login, [en.roleManager]);
 
 	await openFromMenu(page, en.navGroupMaster, en.navPositions);
 	await say(page, 'Langkah 5', 'Master data > Positions. Catat siapa memegang jabatan PPAP Engineer.');
@@ -178,9 +186,28 @@ test('alur dari admin sampai dokumen terbit, revisi, migrasi, dasbor, dan API in
 		page.getByText(en.holderAdded.replace('{name}', verifier.name).replace('{position}', 'APQP/PPAP Controller'))
 	).toBeVisible();
 
+	await say(page, 'Langkah 5', 'Slot tanda tangan rute mengikuti jabatan: Project Leader GR1, NPI Manager, dan QA QC Manager.');
+	for (const [position, person, group] of [
+		['Project Leader', leader.name, 'GR1 · Group 1'],
+		['NPI Manager', npi.name, ''],
+		['QA QC Manager', qa.name, '']
+	]) {
+		await page.getByLabel(en.positionName, { exact: true }).selectOption({ label: position });
+		await page.getByLabel(en.holderPerson, { exact: true }).selectOption({ label: person });
+		if (group) await page.getByLabel(en.holderGroup, { exact: true }).selectOption({ label: group });
+		await page.getByRole('button', { name: en.holderAdd }).click();
+		await expect(page.getByText(en.holderAdded.replace('{name}', person).replace('{position}', position))).toBeVisible();
+	}
+
+	await openFromMenu(page, en.navGroupMaster, en.navApprovalRoutes);
+	await say(page, 'Langkah 5', 'Master data > Approval routes. Rute default customer LM; dokumen yang dibuat sesudahnya memakai rute ini.');
+	await page.getByLabel(en.defaultRouteChoose.replace('{code}', 'LM'), { exact: true }).selectOption({ label: 'Up to QA QC Manager' });
+	await expect(page.getByRole('status')).toHaveText(en.defaultRouteSaved.replace('{code}', 'LM').replace('{route}', 'Up to QA QC Manager'));
+
 	await openFromMenu(page, en.navGroupAdmin, en.navSettings);
-	await say(page, 'Langkah 5', 'Admin > Settings. Mode migrasi dinyalakan selama dokumen lama dimasukkan (bawaannya mati).');
+	await say(page, 'Langkah 5', 'Admin > Settings. Mode migrasi dinyalakan selama dokumen lama dimasukkan (bawaannya mati). Nomor form Form Control Submission juga diisi di sini.');
 	await page.getByLabel(en.settingsMigration, { exact: true }).check();
+	await page.getByLabel(en.settingsSubmissionFormNumber, { exact: true }).fill('QR-ENG-24-K015 (Rev.01)');
 	await page.getByRole('button', { name: en.settingsSave }).click();
 	await expect(page.getByRole('status')).toHaveText(en.settingsSaved);
 
@@ -511,16 +538,76 @@ test('alur dari admin sampai dokumen terbit, revisi, migrasi, dasbor, dan API in
 	await expect(page.getByRole('heading', { name: en.performanceReceived, exact: true })).toBeVisible();
 	await say(page, 'Langkah 33', 'Documents > PPAP performance. PPAP Engineer, supervisor, dan manager melihat angka per minggu (Jumat sampai Kamis), bulan, dan tahun, lalu mengunduhnya sebagai Excel.');
 
+	// ---------- Bagian F3: tanda tangan digital, Form Control Submission, laporan masalah ----------
+	await openDocument(page, 'SF-LM-002');
+	const signing = page.locator('section', { has: page.getByRole('heading', { name: en.sigTitle, level: 2 }) });
+	await signing.getByRole('heading', { name: en.sigSendTitle }).scrollIntoViewIfNeeded();
+	await say(page, 'Langkah 34', 'PFMEA SF-LM-002 dikirim untuk tanda tangan digital. Process. Eng: PPAP Engineer sendiri; Engineer: Project Leader GR1. NPI dan QA QC Manager terisi otomatis.');
+	await page.getByLabel(en.sigSlotChoose.replace('{slot}', 'Process. Eng'), { exact: true }).selectOption({ label: `${engineer.name} · PPAP Engineer` });
+	await page.getByLabel(en.sigSlotChoose.replace('{slot}', 'Engineer'), { exact: true }).selectOption({ label: `${leader.name} · Project Leader GR1` });
+	await page.locator('#sig-password').fill(engineer.password);
+	await say(page, 'Langkah 34', 'Password diketik ulang. Isi draft dibekukan dengan SHA-256, dan tanggal revisi menjadi tanggal hari ini.');
+	await signing.getByRole('button', { name: en.sigSend }).click();
+	await expect(page.getByText(en.sigLockedWaiting)).toBeVisible();
+	await say(page, 'Langkah 34', 'Draft terkunci. Penanda tangan berikutnya mendapat email dan tugas di Home.');
+
+	for (const [who, temporary, slot] of [
+		[leader, leaderTemporary, 'Engineer'],
+		[npi, npiTemporary, 'NPI Manager'],
+		[qa, qaTemporary, 'QA / QC Mgr.']
+	] as const) {
+		await logOut(page);
+		await firstLogin(page, who.login, temporary, who.password);
+		await openFromMenu(page, en.navGroupDocuments, en.navSignatures);
+		await page.getByRole('link', { name: en.sigOpenSign }).first().click();
+		await expect(page.getByRole('heading', { name: en.signAs.replace('{slot}', slot) })).toBeVisible();
+		await say(page, 'Langkah 35', `${who.name} membuka Documents > Signatures, membaca, mengetik password, lalu menandatangani slot ${slot}. Urutannya tidak bisa dilompati.`);
+		await page.locator('#sign-password').fill(who.password);
+		await page.getByRole('button', { name: en.signButton, exact: true }).click();
+		await expect(page.getByRole('status').first()).toHaveText(en.signDone.replace('{slot}', slot));
+	}
+
+	await switchTo(page, control.login, control.password);
+	await openDocument(page, 'SF-LM-002');
+	await expect(page.getByText(en.revisionSignedDigitally)).toBeVisible();
+	await say(page, 'Langkah 35', 'Semua slot sudah ditandatangani. PPAP Engineer lain mencatat rilis tanpa scan.');
+	page.once('dialog', (dialog) => dialog.accept());
+	await page.getByRole('button', { name: en.revisionRelease.replace('{revision}', '0') }).click();
+	await expect(page.getByText(en.documentNoDraft)).toBeVisible();
+
+	const submissionPanel = page.locator('section', { has: page.getByRole('heading', { name: en.subTitle, level: 2 }) });
+	await submissionPanel.getByRole('heading', { name: en.subTitle, level: 2 }).scrollIntoViewIfNeeded();
+	await say(page, 'Langkah 36', 'Bagian Submission control: satu daftar per dokumen. Tanggal mulai, selesai, dan tanda tangan terisi sendiri.');
+	await submissionPanel.getByRole('button', { name: en.subEditFor.replace('{revision}', '0') }).click();
+	await submissionPanel.getByLabel(en.subSubmittedOn, { exact: true }).fill('2026-11-20');
+	await submissionPanel.getByLabel(en.subPackage, { exact: true }).fill('Customer cover + PFMEA');
+	await submissionPanel.getByLabel(en.subResultLabel, { exact: true }).selectOption('approved');
+	await submissionPanel.getByLabel(en.subResultOn, { exact: true }).fill('2026-11-21');
+	await submissionPanel.getByLabel(en.subRemarkLabel, { exact: true }).fill('Contoh: disetujui customer untuk MP');
+	await say(page, 'Langkah 36', 'Yang diketik hanya pengiriman ke customer, hasilnya, dan catatan. Bukti persetujuan customer boleh diunggah.');
+	await submissionPanel.getByRole('button', { name: en.subSave }).click();
+	await expect(page.getByText(en.subSaved.replace('{revision}', '0'))).toBeVisible();
+	await say(page, 'Langkah 36', 'Download PDF atau Excel mencetak Form Control Submission dokumen ini saja, dengan nomor form dari Settings.');
+
+	await page.getByRole('button', { name: en.reportProblem }).click();
+	const report = page.getByRole('dialog', { name: en.reportProblemTitle });
+	await report.getByLabel(en.reportProblemText).fill('Contoh laporan: kolom Package terlalu sempit di layar HP');
+	await say(page, 'Langkah 36', 'Report a problem di bilah atas: setiap pengguna bisa melapor. Alamat halaman ikut terkirim ke admin.');
+	await report.getByRole('button', { name: en.reportProblemSend }).click();
+	await expect(report).toBeHidden();
+
 	// ---------- Bagian G: admin memeriksa peran dan jejak (Tahap 8) ----------
 	await logOut(page);
-	await say(page, 'Langkah 34', 'Admin login lagi untuk memeriksa isi peran dan audit log.');
+	await say(page, 'Langkah 37', 'Admin login lagi untuk memeriksa isi peran dan audit log.');
 	await logInAs(page, admin.login, admin.password);
-	await expect(page.getByRole('button', { name: en.logout })).toBeVisible();
+	await expect(page.getByRole('heading', { name: en.adminHomeTitle, level: 1 })).toBeVisible();
+	await expect(page.getByText('Contoh laporan: kolom Package terlalu sempit di layar HP')).toBeVisible();
+	await say(page, 'Langkah 37', 'Home akun admin adalah Web health: tanda tangan tertahan, error server, laporan masalah, dokumen yang diproses, email, akun, backup, dan audit log. Isi dokumen tidak tampil.');
 	await openFromMenu(page, en.navGroupAdmin, en.navRoles);
 	await expect(page.getByRole('heading', { name: en.rolesTitle, level: 1 })).toBeVisible();
-	await say(page, 'Langkah 34', 'Admin > Roles. Admin mengatur hak setiap peran kerja; hak admin dan hak dasar terkunci.');
+	await say(page, 'Langkah 37', 'Admin > Roles. Admin mengatur hak setiap peran kerja; hak admin dan hak dasar terkunci.');
 	await openFromMenu(page, en.navGroupAdmin, en.navServiceAccounts);
-	await say(page, 'Langkah 35', 'Admin > Service accounts. Aplikasi lain (misalnya MES) mendapat token dengan scope dan customer terbatas.');
+	await say(page, 'Langkah 38', 'Admin > Service accounts. Aplikasi lain (misalnya MES) mendapat token dengan scope dan customer terbatas.');
 	await page.getByLabel(en.serviceAccountName, { exact: true }).fill('Contoh MES');
 	await page.getByLabel(en.serviceAccountTeam, { exact: true }).fill('Tim MES');
 	await page.getByLabel(en.serviceAccountContact, { exact: true }).fill('mes@contoh.test');
@@ -533,24 +620,24 @@ test('alur dari admin sampai dokumen terbit, revisi, migrasi, dasbor, dan API in
 	const mes = page.locator('section', { has: page.getByRole('heading', { name: 'Contoh MES', level: 2 }) });
 	await mes.getByRole('button', { name: en.serviceTokenIssue }).click();
 	const token = (await page.locator('.issued code').textContent()) ?? '';
-	await say(page, 'Langkah 35', 'Token tampil SATU KALI dan disalin ke clipboard. Server hanya menyimpan hash-nya.');
+	await say(page, 'Langkah 38', 'Token tampil SATU KALI dan disalin ke clipboard. Server hanya menyimpan hash-nya.');
 	const app = await playwright.request.newContext({ baseURL: new URL(page.url()).origin, extraHTTPHeaders: { Authorization: `Bearer ${token}` } });
 	const docs = await (await app.get('/integration/v1/documents')).json();
 	await app.dispose();
 	expect(docs.items.length).toBeGreaterThan(0);
-	await say(page, 'Langkah 35', `Aplikasi itu membaca ${docs.items.length} dokumen terbit customer LM lewat /integration/v1. Draft tidak pernah ikut.`);
+	await say(page, 'Langkah 38', `Aplikasi itu membaca ${docs.items.length} dokumen terbit customer LM lewat /integration/v1. Draft tidak pernah ikut.`);
 
 	await page.goto('/account/password');
-	await say(page, 'Langkah 36', 'Setiap orang mengisi alamat email sendiri untuk notifikasi (atau diisi admin di Accounts).');
+	await say(page, 'Langkah 39', 'Setiap orang mengisi alamat email sendiri untuk notifikasi (atau diisi admin di Accounts).');
 	await page.getByLabel(en.accountEmail, { exact: true }).fill('admin@contoh.test');
 	await page.getByRole('button', { name: en.accountEmailSave }).click();
 	await expect(page.getByRole('status')).toHaveText(en.accountEmailSaved);
 	await openFromMenu(page, en.navGroupAdmin, en.navNotifications);
-	await say(page, 'Langkah 36', 'Admin > Notifications. Email dikirim saat ada yang menunggu seseorang. Server email (Microsoft 365) diatur IT; sebelum itu email hanya tercatat.');
-	await say(page, 'Langkah 36', 'Kotak keluar menunjukkan setiap email: perubahan untuk diverifikasi, keputusan untuk pemohon, scan siap rilis, dan lainnya.');
+	await say(page, 'Langkah 39', 'Admin > Notifications. Email dikirim saat ada yang menunggu seseorang. Server email (Microsoft 365) diatur IT; sebelum itu email hanya tercatat.');
+	await say(page, 'Langkah 39', 'Kotak keluar menunjukkan setiap email: perubahan untuk diverifikasi, keputusan untuk pemohon, scan siap rilis, dan lainnya.');
 
 	await openFromMenu(page, en.navGroupAdmin, en.navAuditLog);
-	await say(page, 'Langkah 37', 'Semua langkah tadi tercatat: siapa, kapan, dan apa. Catatan ini tidak bisa diubah.');
+	await say(page, 'Langkah 40', 'Semua langkah tadi tercatat: siapa, kapan, dan apa. Catatan ini tidak bisa diubah.');
 	await page.getByRole('button', { name: en.auditVerify }).click();
 	await expect(page.getByRole('status')).toContainText(en.auditChainValid.split('{entries}')[0]);
 	await say(page, 'Selesai', 'Rantai audit utuh. Alur dari master data sampai rilis, revisi, migrasi, dasbor, dan API integrasi selesai.');

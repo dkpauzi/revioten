@@ -1906,6 +1906,8 @@ export const en = {
 	subNo: 'No',
 	subRevision: 'Revision',
 	subReason: 'Reason',
+	subReasonFirst: 'First release',
+	subReasonLegacy: 'Legacy document',
 	subStart: 'Date of start',
 	subFinish: 'Date of finish',
 	subTopSign: 'Top management sign',
