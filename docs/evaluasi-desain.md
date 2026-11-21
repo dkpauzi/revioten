@@ -2390,7 +2390,8 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (b) bila Compare with template dan propagasi perlu bekerja di kedua langkah; (a) sementara.
 - **Asumsi sementara di kode (ASUMSI E-138):** (a). Baris PFD tanpa nomor langkah dilewati saat menyusun langkah.
 - **Menghambat milestone?** Tidak
-- **Status:** Terbuka
+- **Status:** Diputuskan (D-213)
+- **Keputusan pemilik:** 22 November 2026: setiap langkah PFD memakai proses terdaftar sendiri; Visual inspection sesudah SMT dan sesudah Router adalah dua pendaftaran berbeda, dan nama yang sama berasal dari alias (D-213, opsi c).
 
 ### E-139 · Poin PFD di process template sesudah D-211
 
@@ -2402,7 +2403,8 @@ Salin blok ini untuk setiap temuan baru.
 - **Rekomendasi Claude Code (usulan):** (b), supaya PFD hanya punya satu sumber, yaitu ketikan penyusun.
 - **Asumsi sementara di kode:** (a). Tidak ada kode yang diubah.
 - **Menghambat milestone?** Tidak
-- **Status:** Terbuka
+- **Status:** Diputuskan (D-214)
+- **Keputusan pemilik:** 22 November 2026, "139 Ok": rekomendasi (b) diterima (D-214).
 
 ## Usulan desain UI (UX-01 sampai UX-07): dampak ke M0 sampai M3 dan saran
 
