@@ -6,7 +6,7 @@
 // menerbitkan form set AIAG 4th; dokumen hanya memakai form set yang terbit.
 import { expect, test } from '@playwright/test';
 import { en } from '../src/lib/i18n/en.ts';
-import { asMaster, createWorkAccount, ensureProjectGroup, logIn, logInFirstTime, logOut, openFromMenu } from './helpers.ts';
+import { asMaster, createWorkAccount, ensureProjectGroup, logIn, logInFirstTime, logOut, openFromMenu, tool } from './helpers.ts';
 
 test('CP satu nomor dengan bagian per PCB: tambah bagian, rakit per bagian, dan cek per bagian', async ({ page }) => {
 	test.slow();
@@ -98,7 +98,7 @@ test('CP satu nomor dengan bagian per PCB: tambah bagian, rakit per bagian, dan 
 
 	// Rakit di bagian Heatsink: baris masuk ke Heatsink saja.
 	const rows = page.locator('.workbook .tabulator-row');
-	await page.getByRole('button', { name: en.composeOpen }).click();
+	await tool(page, en.composeOpen).click();
 	await page.getByLabel(en.composeProcess).selectOption({ label: `ICT KT · ${en.composeVersion.replace('{version}', '1')}` });
 	await page.getByRole('checkbox', { name: en.composeAll.replace('{name}', 'ICT') }).check();
 	await page.getByRole('button', { name: en.composeApply }).click();
@@ -107,7 +107,7 @@ test('CP satu nomor dengan bagian per PCB: tambah bagian, rakit per bagian, dan 
 	await tabs.getByRole('button', { name: /PCB A/ }).click();
 	await expect(rows).toHaveCount(0);
 	// Satu baris ketik sendiri di PCB A.
-	await page.getByRole('button', { name: en.documentRowAdd }).click();
+	await tool(page, en.documentRowAdd).click();
 	await expect(rows).toHaveCount(1);
 	await tabs.getByRole('button', { name: /Heatsink/ }).click();
 	await expect(rows).toHaveCount(1);

@@ -256,7 +256,8 @@ export const helpId: HelpContent = {
 				'Daftarkan dulu nomornya di {navNumbers}. Dokumen butuh nomor berstatus {numberStatusReserved}.',
 				'Buka {navGroupDocuments}, lalu {navDocuments}, dan pilih {documentCustomer}.',
 				'Di bagian {documentCreateTitle}, pilih {documentNumber}, centang {documentModels} yang dicakup dokumen, lalu tekan {documentCreate}. Nomornya menjadi In use.',
-				'Buka dokumen itu dari daftar. Isi field header dan tekan {documentHeaderSave}.',
+				'Buka dokumen itu dari daftar. Dokumen tampil sebagai workbook: kotak {nextStepTitle} menunjukkan satu hal yang perlu dikerjakan berikutnya, kelompok toolbar ({wbGroupRows}, {wbGroupTemplate}, {wbGroupReview}, {wbGroupOutput}) membuka panelnya di samping lembar, dan tab di bawah berpindah antara {sheetCover}, PFD, PFMEA, Control Plan, dan {checkTab}.',
+				'Isi field header dan tekan {documentHeaderSave}.',
 				'Tekan {documentRowAdd} untuk menambah baris kosong di akhir sheet.',
 'Bila satu model punya beberapa PCB dengan alur proses sendiri dalam satu nomor dokumen (misalnya PCB A, Heatsink Assy R/L, dan Base Assy R/L), tekan {sectionSplit}, beri PCB pertama nama dan part number-nya, lalu {sectionAdd} untuk PCB berikutnya. PFD, PFMEA, dan CP satu set mendapat bagian yang sama. Pilih bagian lewat tabnya di atas tabel: tabel, {documentRowAdd}, {composeOpen}, {orderOpen}, tab {checkTab}, dan diagram lalu berlaku untuk bagian itu saja, dan nomor operasi mulai lagi dari 10 di setiap bagian. Baris yang sudah ada masuk ke bagian pertama. Hanya bagian kosong yang bisa dihapus.',
 'Untuk membawa baris dari file Excel, tekan {pasteOpen}. Salin sel di Excel, tempel di kotaknya, lalu tekan {pastePreview}. Centang {pasteHasHeader} bila baris judul ikut disalin; kolom lalu dicocokkan menurut judulnya. Di atas setiap kolom Anda memilih ke mana kolom itu masuk. Sel yang tidak cocok dengan kolomnya, misalnya severity yang bukan angka, ditandai dan dikosongkan; barisnya tetap ditambahkan. Belum ada yang disimpan sampai Anda menekan tombol Impor.',
@@ -336,7 +337,7 @@ export const helpId: HelpContent = {
 			who: 'PPAP Engineer, Project Leader',
 			intro: 'Cetakan berasal dari isi yang sama dengan layar, dalam Excel atau PDF, A3 atau A4 sesuai layout. Approval berupa tanda tangan basah di kertas, atau tanda tangan digital (lihat Tanda tangan digital).',
 			steps: [
-				'Buka dokumen. Di {printTitle}, pilih revisi dan {printPurpose}, lalu tekan {printExcel} atau {printPdf}.',
+				'Buka dokumen dan tekan {printTitle} di toolbar. Pilih revisi dan {printPurpose}, lalu tekan {printExcel} atau {printPdf}.',
 				'Untuk approval di kertas, cetak {printPurpose_signature}. Tanggal rilis terisi, dan cover memuat slot approval dari rute.',
 				'Setelah semua slot ditandatangani, dokumen kontrol mengunggah scan di {revisions} dengan {scanUploadButton}, lalu mencatat rilis. Rilis ditolak tanpa scan.',
 				'Revisi terbit dicetak sebagai {printPurpose_reference} atau {printPurpose_controlled}. Salinan terkendali bernomor, dan setiap cetakan tampil di {printLog}.',
@@ -352,7 +353,7 @@ export const helpId: HelpContent = {
 			who: 'PPAP Engineer dan Project Leader mengirim; orang di rute menandatangani; PPAP Engineer lain mencatat rilis',
 			intro: 'Penanda tangan rute approval menandatangani di sistem, bukan di kertas (D-198). Isi dibekukan saat dikirim, tanda tangan berurutan menurut rute, dan tanggal revisinya adalah tanggal dikirim.',
 			steps: [
-				'Buka draft. Di {sigTitle}, pilih penanda tangan setiap slot: {sigPreparedHint} Untuk slot Engineer, {sigCheckedHint} Slot yang dipegang satu orang sudah terisi.',
+				'Buka draft dan tekan {sigTitle} di toolbar. Pilih penanda tangan setiap slot: {sigPreparedHint} Untuk slot Engineer, {sigCheckedHint} Slot yang dipegang satu orang sudah terisi.',
 				'Ketik password Anda lalu tekan {sigSend}. Draft terkunci dan penanda tangan pertama mendapat email dan tugas di Home.',
 				'Setiap penanda tangan membuka {navGroupDocuments}, lalu {navSignatures}, menekan {sigOpenSign}, membaca dokumennya, mengetik password, lalu menekan {signButton}. {signReject} butuh alasan dan membuka draft lagi.',
 				'Pengirim bisa menekan {sigWithdraw} selama tanda tangan belum lengkap.',
@@ -372,7 +373,7 @@ export const helpId: HelpContent = {
 			who: 'PPAP Engineer mengisi dan mengatur bawaannya; semua yang boleh melihat draft membaca',
 			intro: 'Setiap dokumen punya daftar kontrolnya sendiri: PFD, PFMEA, dan Control Plan masing-masing satu, dengan satu baris per revisi. Daftar ini menggantikan Form Control Submission Document di kertas.',
 			steps: [
-				'Buka dokumen dan gulir ke {subTitle}. Tombol di atas berpindah antara PFD, PFMEA, dan Control Plan satu set.',
+				'Buka dokumen dan tekan {subTitle} di toolbar. Tombol di atas berpindah antara PFD, PFMEA, dan Control Plan satu set.',
 				'{subReason}, {subStart}, {subFinish}, dan {subTopSign} diisi sistem dari perubahan, rilis, dan tanda tangan.',
 				'Tekan {subEdit} pada satu revisi. Isi {subSubmittedOn}, {subPackage}, {subResultLabel}, {subResultOn}, dan {subRemarkLabel}, lalu tekan {subSave}. Unggah bukti persetujuan customer di {subScan} bila ada.',
 				'Hilangkan centang {subNeedsSubmission} untuk revisi yang tidak dikirim ke customer, dan tulis alasannya.',
@@ -393,7 +394,7 @@ export const helpId: HelpContent = {
 			steps: [
 				'Admin menyalakan {settingsMigration} di {navGroupAdmin}, lalu {navSettings}.',
 				'Buka {navDocuments}, pilih customer, lalu isi {migrateTitle}: nomor asli, model, {migrateRevision}, {migrateEffectiveDate}, dan nama di hardcopy. Tekan {migrateSubmit}.',
-				'Buka dokumennya. Ketik atau rakit isinya sampai sama dengan hardcopy. Di {historyTitle}, tekan {historyAdd} untuk setiap baris tabel riwayat lama, lalu {historySave}.',
+				'Buka dokumennya. Ketik atau rakit isinya sampai sama dengan hardcopy. Tekan {migrationTitle} di toolbar; di {historyTitle}, tekan {historyAdd} untuk setiap baris tabel riwayat lama, lalu {historySave}.',
 				'Untuk memeriksa ketikan, unggah berkas lama di {excelCompareTitle} dan tekan {excelCompareButton}. Berkas hanya dibandingkan, tidak pernah diimpor.',
 				'Di {linkTitle}, tekan {linkFind}, centang pasangan yang benar, lalu tekan {linkConfirm}. Baris yang tertaut menerima pembaruan template berikutnya.',
 				'Petugas migrasi lain membuka dokumen itu, membandingkannya dengan hardcopy bertanda tangan, mengisi {migrationEffort}, lalu menekan {migrationVerify}. Statusnya menjadi {documentStatusReleasedMigrated}.'

@@ -1,8 +1,9 @@
 <script lang="ts">
-	// Halaman satu dokumen (M4.1, M4.2): header, dan baris di workbook mirip
-	// Excel (D-145) dengan tab sheet untuk dokumen satu set. Kolom terisi
-	// otomatis (nomor operasi, proses) diambil dari atribut baris (D-122,
-	// D-123); kolom yang dihitung tidak diketik.
+	// Halaman satu dokumen (M4.1, M4.2) sebagai workbook (D-145, C1): kepala
+	// dengan satu langkah berikutnya, toolbar berkelompok yang membuka panel di
+	// laci samping, lembar dokumen, dan tab sheet di bawah (Cover, PFD, PFMEA,
+	// CP, Check). Kolom terisi otomatis (nomor operasi, proses) diambil dari
+	// atribut baris (D-122, D-123); kolom yang dihitung tidak diketik.
 	import { untrack } from 'svelte';
 	import { page } from '$app/state';
 	import { addDocumentRow, addDocumentRows, deleteDocumentRow, fillDocumentReferences, reorderDocumentRows, getDocument, getFormatVersion, listProcesses, setDocumentHeader, updateDocumentRow, type ApiFailure } from '#lib/api/client.ts';
@@ -21,12 +22,15 @@
 	import ExcelComparePanel from '#lib/documents/ExcelComparePanel.svelte';
 	import LinkPanel from '#lib/documents/LinkPanel.svelte';
 	import SectionBar from '#lib/documents/SectionBar.svelte';
+	import Drawer from '#lib/documents/Drawer.svelte';
+	import SheetTabs from '#lib/documents/SheetTabs.svelte';
+	import { drawerTitle, nextStep, type DrawerId } from '#lib/documents/frame.ts';
 	import Workbook from '#lib/documents/Workbook.svelte';
 	import ReviewBanner from '#lib/ReviewBanner.svelte';
 	import { rememberRecent } from '#lib/recent.ts';
 	import { cleanContent, rowsOfSection, typedFields } from '#lib/documents.ts';
 	import { failureText, problemText } from '#lib/errors.ts';
-	import { t } from '#lib/i18n/index.ts';
+	import { t, type MessageKey } from '#lib/i18n/index.ts';
 	import { can } from '#lib/session.svelte.ts';
 
 	let doc = $state<Document | null>(null);
@@ -42,16 +46,11 @@
 
 	let typedHeader = $derived(format ? typedFields(format.fields, 'header') : []);
 
-	// pasting: panel Tempel dari Excel sedang dibuka (M4.4).
-	let pasting = $state(false);
-	// composing: panel perakitan dari process template sedang dibuka (M4.5).
-	let composing = $state(false);
-	// ordering: panel urutan dan nomor operasi sedang dibuka (M4.6).
-	let ordering = $state(false);
-	// copying: panel salin dari model lain sedang dibuka (M4.7).
-	let copying = $state(false);
-	// comparing: tampilan banding dengan template sedang dibuka (M4.8).
-	let comparing = $state(false);
+	// drawer: panel yang sedang terbuka di laci samping (C1), misalnya
+	// perakitan (M4.5), urutan (M4.6), cetak, atau revisi. Satu per satu.
+	let drawer = $state<DrawerId | null>(null);
+	// sheet: 'cover' untuk sheet Cover; kosong untuk lembar dokumen.
+	let sheet = $derived(page.url.searchParams.get('sheet') ?? '');
 	// compareRound naik setiap tautan diputus, supaya panel banding memuat ulang perbandingannya.
 	let compareRound = $state(0);
 	// showDiagram: diagram PFD sedang ditampilkan (M4.10). Hanya untuk dokumen PFD.
@@ -87,11 +86,7 @@
 		untrack(() => {
 			reset();
 			doc = null;
-			pasting = false;
-			composing = false;
-			ordering = false;
-			copying = false;
-			comparing = false;
+			drawer = null;
 			load(id);
 		});
 	});
@@ -222,7 +217,7 @@
 			return false;
 		}
 		use(result.data);
-		pasting = false;
+		drawer = null;
 		message = t('pasteDone', { rows: String(rows.length) });
 		return true;
 	}
@@ -231,7 +226,7 @@
 	function composed(d: Document, process: string) {
 		reset();
 		use(d);
-		composing = false;
+		drawer = null;
 		message = t('composeDone', { process });
 	}
 
@@ -239,7 +234,7 @@
 	function copied(d: Document, source: string) {
 		reset();
 		use(d);
-		copying = false;
+		drawer = null;
 		message = t('copyDone', { number: source });
 	}
 
@@ -250,6 +245,29 @@
 		use(d);
 		compareRound++;
 		message = t('compareDetachDone', { position: String(position) });
+	}
+
+	// Langkah berikutnya di kepala workbook (D-145): satu aksi utama menurut status.
+	let step = $derived(
+		doc
+			? nextStep({
+					status: doc.status === 'released' ? 'released' : 'draft',
+					rows: doc.rows.length,
+					hasRoute: Boolean(doc.route),
+					signing: doc.signing,
+					migrated: doc.origin === 'migrated',
+					verified: doc.baseline?.verified_at !== undefined,
+					canEdit,
+					canPropose: can('E-3'),
+					canRecord: can('E-7')
+				})
+			: null
+	);
+
+	// toggle membuka laci itu, atau menutupnya bila sedang terbuka.
+	function toggle(id: DrawerId) {
+		reset();
+		drawer = drawer === id ? null : id;
 	}
 
 	// Tombol isi dokumen terkait hanya untuk form yang punya kolom Relevant Document (D-130).
@@ -281,7 +299,7 @@
 			return false;
 		}
 		use(result.data);
-		ordering = false;
+		drawer = null;
 		message = t('orderSaved');
 		return true;
 	}
@@ -311,103 +329,173 @@
 {:else if !doc || !format}
 	<p>{t('formatLoading')}</p>
 {:else}
-	<p><a href="/documents">{t('documentBack')}</a></p>
-	<h1 class="mono">{doc.number}</h1>
+	{@const linkable = canEdit && doc.rows.some((r) => r.process_id && !r.template_point_id)}
+	{@const isPfd = doc.document_type.key === 'pfd'}
+	<p class="back"><a href="/documents">{t('documentBack')}</a></p>
+	<!-- Kepala workbook (D-145): nomor, model, form set, status, dan satu langkah berikutnya. -->
+	<header class="wb-head">
+		<div>
+			<h1 class="mono">{doc.number}</h1>
+			<p class="wb-sub">
+				<span>{doc.models.map((m) => m.name).join(', ')} · {doc.document_type.name}</span>
+				<span class="badge form-set">{doc.form_set_name}</span>
+				<span class="badge" data-status={doc.status}>
+					{t(doc.status !== 'released' ? 'versionStatusDraft' : doc.released_migrated ? 'documentStatusReleasedMigrated' : 'documentStatusReleased')}
+				</span>
+				<span>{t(doc.status === 'draft' ? 'documentDraftRevision' : 'documentReleasedRevision')} {doc.revision}</span>
+			</p>
+		</div>
+		{#if step}
+			<section class="next" aria-labelledby="next-h">
+				<h2 id="next-h">{t('nextStepTitle')}</h2>
+				<p>{t(step.text)}</p>
+				{#if step.open}
+					{@const target = step.open}
+					<button type="button" class="primary" onclick={() => toggle(target)}>{t(drawerTitle[target])}</button>
+				{:else if step.href}
+					<a class="button primary" href={step.href}>{t('nextChangeOpen')}</a>
+				{/if}
+			</section>
+		{/if}
+	</header>
 	<ReviewBanner documentId={doc.id} />
-	<dl class="facts">
-		<dt>{t('numberColumnType')}</dt>
-		<dd>{doc.document_type.name}</dd>
-		<dt>{t('documentCustomer')}</dt>
-		<dd>{doc.customer_code}</dd>
-		<dt>{t('documentModels')}</dt>
-		<dd>{doc.models.map((m) => m.name).join(', ')}</dd>
-		{#if doc.part_numbers.length > 0}
-			<dt>{t('documentPartNumbers')}</dt>
-			<dd>{doc.part_numbers.map((p) => p.number).join(', ')}</dd>
-		{/if}
-		<dt>{t('documentFormSet')}</dt>
-		<dd>{doc.form_set_name}</dd>
-		<dt>{t('documentRoute')}</dt>
-		<dd>{doc.route?.name ?? t('documentNoRoute')}{doc.route_reason ? ` · ${doc.route_reason}` : ''}</dd>
-		<dt>{t('numberColumnStatus')}</dt>
-		<dd>
-			<span class="badge" data-status={doc.status}>
-				{t(doc.status !== 'released' ? 'versionStatusDraft' : doc.released_migrated ? 'documentStatusReleasedMigrated' : 'documentStatusReleased')}
-			</span>
-		</dd>
-		<dt>{t(doc.status === 'draft' ? 'documentDraftRevision' : 'documentReleasedRevision')}</dt>
-		<dd>{doc.revision}</dd>
-		{#if doc.status === 'draft' && doc.released_revision !== undefined}
-			<dt>{t('documentReleasedRevision')}</dt>
-			<dd>{doc.released_revision}</dd>
-		{/if}
-	</dl>
-	{#if doc.status === 'released'}
-		<p class="hint">{t('documentNoDraft')}</p>
-	{/if}
 
-	<MigrationPanel {doc} onchanged={(d) => (doc = d)} />
-	<SignaturePanel {doc} onchanged={() => doc && load(doc.id)} />
-	<RevisionsPanel {doc} onreleased={(d) => (doc = d)} />
-	<PrintPanel {doc} />
-	<SubmissionPanel {doc} />
-	<TemplateLinksPanel {doc} />
-	<!-- Penautan (M7.4): hanya bila ada baris berproses yang belum tertaut. -->
-	{#if canEdit && doc.rows.some((r) => r.process_id && !r.template_point_id)}
-		<LinkPanel {doc} onlinked={(d) => (doc = d)} />
-	{/if}
-	<!-- Pembanding Excel (M7.3) untuk dokumen migrasi. -->
-	{#if doc.origin === 'migrated'}
-		<ExcelComparePanel {doc} />
-	{/if}
+	<!-- Tombol toolbar yang membuka laci: teks pendek seperti pita Excel; nama lengkapnya
+	     (judul panel) menjadi nama untuk pembaca layar dan tooltip. Nama lengkap ditulis sebagai
+	     teks tersembunyi, bukan aria-label, supaya tidak tertukar dengan label field di panel. -->
+	{#snippet drawerButton(id: DrawerId, short: MessageKey)}
+		<button type="button" title={t(drawerTitle[id])} aria-pressed={drawer === id} onclick={() => toggle(id)}><span aria-hidden="true">{t(short)}</span><span class="visually-hidden">{t(drawerTitle[id])}</span></button>
+	{/snippet}
+	<!-- Toolbar berkelompok (D-145): setiap tombol membuka panel di laci samping atau langsung bekerja. -->
+	<div class="wb-toolbar" role="toolbar" aria-label={t('wbToolbar')}>
+		{#if canEdit && sheet !== 'cover'}
+			<div class="wb-group" role="group" aria-labelledby="wb-rows">
+				<div class="wb-buttons">
+					<button type="button" onclick={addRow}>{t('documentRowAdd')}</button>
+					{@render drawerButton('paste', 'wbShortPaste')}
+					{@render drawerButton('order', 'wbShortOrder')}
+					{#if hasRelevant && doc.rows.length > 0}<button type="button" title={t('refFill')} onclick={fillReferences}><span aria-hidden="true">{t('wbShortFill')}</span><span class="visually-hidden">{t('refFill')}</span></button>{/if}
+				</div>
+				<span class="wb-label" id="wb-rows">{t('wbGroupRows')}</span>
+			</div>
+		{/if}
+		{#if canEdit || hasLinkedRows}
+			<div class="wb-group" role="group" aria-labelledby="wb-template">
+				<div class="wb-buttons">
+					{#if canEdit}{@render drawerButton('compose', 'wbShortCompose')}{/if}
+					<!-- Menyalin hanya untuk dokumen yang masih kosong (R-CMP-05). -->
+					{#if canEdit && doc.rows.length === 0}{@render drawerButton('copy', 'wbShortCopy')}{/if}
+					{#if hasLinkedRows}
+						{@render drawerButton('compare', 'wbShortCompare')}
+						{@render drawerButton('templates', 'wbShortTemplates')}
+					{/if}
+				</div>
+				<span class="wb-label" id="wb-template">{t('wbGroupTemplate')}</span>
+			</div>
+		{/if}
+		<div class="wb-group" role="group" aria-labelledby="wb-review">
+			<div class="wb-buttons">
+				{#if isPfd && sheet !== 'cover'}
+					<button type="button" aria-pressed={showDiagram} title={showDiagram ? t('diagramClose') : t('diagramOpen')} onclick={() => (showDiagram = !showDiagram)}><span aria-hidden="true">{t('wbShortDiagram')}</span><span class="visually-hidden">{showDiagram ? t('diagramClose') : t('diagramOpen')}</span></button>
+				{/if}
+				{@render drawerButton('revisions', 'wbShortRevisions')}
+			</div>
+			<span class="wb-label" id="wb-review">{t('wbGroupReview')}</span>
+		</div>
+		<div class="wb-group" role="group" aria-labelledby="wb-output">
+			<div class="wb-buttons">
+				{@render drawerButton('print', 'wbShortPrint')}
+				{#if doc.status === 'draft' || doc.signing}
+					{@render drawerButton('signature', 'wbShortSign')}
+				{/if}
+				{@render drawerButton('submission', 'wbShortSubmission')}
+			</div>
+			<span class="wb-label" id="wb-output">{t('wbGroupOutput')}</span>
+		</div>
+		{#if doc.origin === 'migrated' || linkable}
+			<div class="wb-group" role="group" aria-labelledby="wb-legacy">
+				<div class="wb-buttons">
+					{#if doc.baseline}{@render drawerButton('migration', 'wbShortBaseline')}{/if}
+					{#if doc.origin === 'migrated'}{@render drawerButton('excel', 'wbShortExcel')}{/if}
+					<!-- Penautan (M7.4): hanya bila ada baris berproses yang belum tertaut. -->
+					{#if linkable}{@render drawerButton('link', 'wbShortLink')}{/if}
+				</div>
+				<span class="wb-label" id="wb-legacy">{t('wbGroupLegacy')}</span>
+			</div>
+		{/if}
+	</div>
 
 	{#if message}<p role="status">{message}</p>{/if}
 	{#if failure}<p class="error" role="alert">{failure}</p>{/if}
 
-	{#if typedHeader.length > 0}
-		<section>
-			<h2>{t('formatHeaderFields')}</h2>
-			<form class="grid" onsubmit={saveHeader} novalidate>
-				{#each typedHeader as f (f.id)}
-					<div class="field">
-						<label for="header-{f.id}">{f.label}</label>
-						{#if f.kind === 'select'}
-							<select id="header-{f.id}" bind:value={header[f.id]} disabled={!canEdit}>
-								<option value=""></option>
-								{#each f.options ?? [] as o (o.key)}<option value={o.key}>{o.label}</option>{/each}
-							</select>
-						{:else}
-							<input id="header-{f.id}" type={f.kind === 'date' ? 'date' : 'text'} bind:value={header[f.id]} disabled={!canEdit} />
-						{/if}
-						{#if fieldErrors[f.id]}<p class="error">{fieldErrors[f.id]}</p>{/if}
-					</div>
-				{/each}
-				{#if canEdit}<button type="submit">{t('documentHeaderSave')}</button>{/if}
-			</form>
+	<!-- Lembar dan laci berdampingan (C1). -->
+	<div class="wb-body">
+	<div class="wb-main">
+	{#if sheet === 'cover'}
+		<!-- Sheet Cover (C1): data yang sama untuk setiap sheet satu set. Bentuk sampul form menyusul di C4. -->
+		<section aria-labelledby="cover-h">
+			<h2 id="cover-h">{t('coverTitle')}</h2>
+			<p class="hint">{t('coverIntro')}</p>
+			<dl class="facts">
+				<dt>{t('numberColumnType')}</dt>
+				<dd>{doc.document_type.name}</dd>
+				<dt>{t('documentCustomer')}</dt>
+				<dd>{doc.customer_code}</dd>
+				<dt>{t('documentModels')}</dt>
+				<dd>{doc.models.map((m) => m.name).join(', ')}</dd>
+				{#if doc.part_numbers.length > 0}
+					<dt>{t('documentPartNumbers')}</dt>
+					<dd>{doc.part_numbers.map((p) => p.number).join(', ')}</dd>
+				{/if}
+				<dt>{t('documentFormSet')}</dt>
+				<dd>{doc.form_set_name}</dd>
+				<dt>{t('documentRoute')}</dt>
+				<dd>{doc.route?.name ?? t('documentNoRoute')}{doc.route_reason ? ` · ${doc.route_reason}` : ''}</dd>
+				<dt>{t(doc.status === 'draft' ? 'documentDraftRevision' : 'documentReleasedRevision')}</dt>
+				<dd>{doc.revision}</dd>
+				{#if doc.status === 'draft' && doc.released_revision !== undefined}
+					<dt>{t('documentReleasedRevision')}</dt>
+					<dd>{doc.released_revision}</dd>
+				{/if}
+			</dl>
+			{#if doc.status === 'released'}<p class="hint">{t('documentNoDraft')}</p>{/if}
 		</section>
-	{/if}
+	{:else}
+		{#if doc.status === 'released'}
+			<p class="hint">{t('documentNoDraft')}</p>
+		{/if}
+		{#if typedHeader.length > 0}
+			<section>
+				<h2>{t('formatHeaderFields')}</h2>
+				<form class="grid" onsubmit={saveHeader} novalidate>
+					{#each typedHeader as f (f.id)}
+						<div class="field">
+							<label for="header-{f.id}">{f.label}</label>
+							{#if f.kind === 'select'}
+								<select id="header-{f.id}" bind:value={header[f.id]} disabled={!canEdit}>
+									<option value=""></option>
+									{#each f.options ?? [] as o (o.key)}<option value={o.key}>{o.label}</option>{/each}
+								</select>
+							{:else}
+								<input id="header-{f.id}" type={f.kind === 'date' ? 'date' : 'text'} bind:value={header[f.id]} disabled={!canEdit} />
+							{/if}
+							{#if fieldErrors[f.id]}<p class="error">{fieldErrors[f.id]}</p>{/if}
+						</div>
+					{/each}
+					{#if canEdit}<button type="submit">{t('documentHeaderSave')}</button>{/if}
+				</form>
+			</section>
+		{/if}
 
-	<section>
-		<!-- Tab sheet workbook (D-145): dokumen satu set PFD, PFMEA, dan CP, lalu tab Check (M4.9). -->
-		<nav class="sheets" aria-label={t('documentSheets')}>
-			{#each doc.set as m (m.id)}
-				<a href="/documents/view?id={m.id}" data-sveltekit-noscroll aria-current={m.id === doc.id ? 'page' : undefined}>{m.document_type.name}</a>
-			{/each}
-			<!-- Tab Check (M4.9): hanya untuk set yang punya PFMEA dan CP. -->
-			{#if doc.set.some((m) => m.document_type.key === 'pfmea') && doc.set.some((m) => m.document_type.key === 'cp')}
-				<a href="/documents/check?id={doc.id}">{t('checkTab')}</a>
-			{/if}
-		</nav>
-		<h2>{t('documentRowsTitle')}</h2>
-		<SectionBar {doc} current={section} {canEdit} onselect={(key) => (sectionKey = key)} onchanged={sectionChanged} />
-		{#if section}<h3 class="section-title">{section.name}{section.part_numbers.length > 0 ? ` · ${section.part_numbers.map((p) => p.number).join(', ')}` : ''}</h3>{/if}
-		{#if canEdit}<p class="hint">{t('documentGridHint')}</p>{/if}
-		{#key doc.id + sectionId}
-			<Workbook doc={shown ?? doc} {format} {processes} {canEdit} onsave={saveCell} ondelete={removeRow} />
-		{/key}
-		{#if doc.document_type.key === 'pfd'}
-			<p><button type="button" aria-expanded={showDiagram} onclick={() => (showDiagram = !showDiagram)}>{showDiagram ? t('diagramClose') : t('diagramOpen')}</button></p>
-			{#if showDiagram}
+		<section>
+			<h2>{t('documentRowsTitle')}</h2>
+			<SectionBar {doc} current={section} {canEdit} onselect={(key) => (sectionKey = key)} onchanged={sectionChanged} />
+			{#if section}<h3 class="section-title">{section.name}{section.part_numbers.length > 0 ? ` · ${section.part_numbers.map((p) => p.number).join(', ')}` : ''}</h3>{/if}
+			{#if canEdit}<p class="hint">{t('documentGridHint')}</p>{/if}
+			{#key doc.id + sectionId}
+				<Workbook doc={shown ?? doc} {format} {processes} {canEdit} onsave={saveCell} ondelete={removeRow} />
+			{/key}
+			{#if isPfd && showDiagram}
 				<h3>{t('diagramTitle')}</h3>
 				<p class="hint">{t('diagramHint')}</p>
 				<!-- Dimuat hanya saat dibuka: Svelte Flow dan ELK cukup besar (M4.10). -->
@@ -417,58 +505,52 @@
 					<diagram.default rows={shown?.rows ?? doc.rows} {format} />
 				{/await}
 			{/if}
-		{/if}
-		{#if hasLinkedRows && !comparing}
-			<p><button type="button" onclick={() => (comparing = true)}>{t('compareOpen')}</button></p>
-		{/if}
-		{#if canEdit}
-			<p class="row-actions">
-				<button type="button" onclick={addRow}>{t('documentRowAdd')}</button>
-				{#if !pasting}<button type="button" onclick={() => (pasting = true)}>{t('pasteOpen')}</button>{/if}
-				{#if !composing}<button type="button" onclick={() => (composing = true)}>{t('composeOpen')}</button>{/if}
-				{#if !ordering}<button type="button" onclick={() => (ordering = true)}>{t('orderOpen')}</button>{/if}
-				{#if hasRelevant && doc.rows.length > 0}<button type="button" onclick={fillReferences}>{t('refFill')}</button>{/if}
-				<!-- Menyalin hanya untuk dokumen yang masih kosong (R-CMP-05). -->
-				{#if !copying && doc.rows.length === 0}<button type="button" onclick={() => (copying = true)}>{t('copyOpen')}</button>{/if}
-			</p>
-		{/if}
-	</section>
-
-	{#if canEdit && composing}
-		<section>
-			{#key doc.id + sectionId}
-				<ComposePanel {doc} sectionKey={section?.key ?? ''} oncomposed={composed} oncancel={() => (composing = false)} />
-			{/key}
 		</section>
 	{/if}
 
-	{#if comparing}
-		<section>
-			{#key compareRound}
-				<ComparePanel {doc} candetach={canEdit} ondetached={detached} oncancel={() => (comparing = false)} />
-			{/key}
-		</section>
+	</div>
+	{#if drawer}
+		{@const open = drawer}
+		<Drawer title={t(drawerTitle[open])} onclose={() => (drawer = null)}>
+			{#if open === 'compose' && canEdit}
+				{#key doc.id + sectionId}
+					<ComposePanel {doc} sectionKey={section?.key ?? ''} oncomposed={composed} oncancel={() => (drawer = null)} />
+				{/key}
+			{:else if open === 'compare'}
+				{#key compareRound}
+					<ComparePanel {doc} candetach={canEdit} ondetached={detached} oncancel={() => (drawer = null)} />
+				{/key}
+			{:else if open === 'copy' && canEdit}
+				<CopyPanel {doc} oncopied={copied} oncancel={() => (drawer = null)} />
+			{:else if open === 'order' && canEdit}
+				{#key sectionId}
+					<OrderPanel doc={shown ?? doc} onsave={saveOrder} oncancel={() => (drawer = null)} />
+				{/key}
+			{:else if open === 'paste' && canEdit}
+				<PastePanel {format} {processes} onimport={pasteRows} oncancel={() => (drawer = null)} />
+			{:else if open === 'templates'}
+				<TemplateLinksPanel {doc} />
+			{:else if open === 'revisions'}
+				<RevisionsPanel {doc} onreleased={(d) => (doc = d)} />
+			{:else if open === 'print'}
+				<PrintPanel {doc} />
+			{:else if open === 'signature'}
+				<SignaturePanel {doc} onchanged={() => doc && load(doc.id)} />
+			{:else if open === 'submission'}
+				<SubmissionPanel {doc} />
+			{:else if open === 'migration'}
+				<MigrationPanel {doc} onchanged={(d) => (doc = d)} />
+			{:else if open === 'excel'}
+				<ExcelComparePanel {doc} />
+			{:else if open === 'link'}
+				<LinkPanel {doc} onlinked={(d) => (doc = d)} />
+			{/if}
+		</Drawer>
 	{/if}
+	</div>
 
-	{#if canEdit && copying}
-		<section>
-			<CopyPanel {doc} oncopied={copied} oncancel={() => (copying = false)} />
-		</section>
-	{/if}
-
-	{#if canEdit && ordering}
-		<section>
-			{#key sectionId}
-				<OrderPanel doc={shown ?? doc} onsave={saveOrder} oncancel={() => (ordering = false)} />
-			{/key}
-		</section>
-	{/if}
-
-	{#if canEdit && pasting}
-		<section>
-			<PastePanel {format} {processes} onimport={pasteRows} oncancel={() => (pasting = false)} />
-		</section>
-	{/if}{/if}
+	<SheetTabs set={doc.set} documentId={doc.id} current={sheet === 'cover' ? 'cover' : doc.id} />
+{/if}
 
 <style>
 	.facts {
@@ -501,33 +583,135 @@
 		margin-top: var(--label-space);
 	}
 
-	.row-actions {
+
+	.back {
+		margin: 0 0 8px;
+	}
+
+	/* Workbook memakai lebar layar penuh, seperti Excel. */
+	:global(main.page:has(.wb-toolbar)) {
+		max-width: none;
+	}
+
+	.wb-body {
 		display: flex;
-		gap: 8px;
+		align-items: flex-start;
+		gap: 20px;
+	}
+
+	.wb-main {
+		flex: 1 1 0;
+		min-width: 0;
+	}
+
+	@media (max-width: 1023px) {
+		.wb-body {
+			flex-wrap: wrap;
+		}
+
+		.wb-main {
+			flex-basis: 100%;
+		}
+	}
+
+	.wb-head {
+		display: flex;
 		flex-wrap: wrap;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 16px;
+		margin-bottom: 16px;
 	}
 
-	.sheets {
+	.wb-head h1 {
+		margin: 0 0 6px;
+	}
+
+	.wb-sub {
 		display: flex;
-		gap: 4px;
-		margin-bottom: 1rem;
-		border-bottom: 1px solid var(--border);
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 8px 12px;
+		margin: 0;
+		color: var(--text-3);
 	}
 
-	.sheets a {
-		padding: 8px 16px;
-		border: 1px solid transparent;
-		border-bottom: none;
-		border-radius: var(--radius) var(--radius) 0 0;
-		color: var(--text-2);
-	}
-
-	.sheets a[aria-current='page'] {
-		background: var(--surface);
-		border-color: var(--border);
+	.form-set {
+		background: var(--accent-weak);
 		color: var(--accent-ink);
-		font-weight: 600;
-		margin-bottom: -1px;
+	}
+
+	/* Kotak langkah berikutnya: satu aksi utama (D-145). */
+	.next {
+		max-width: 420px;
+		padding: 14px 18px;
+		border: 1px solid var(--accent-ring);
+		border-radius: var(--radius-lg);
+		background: var(--accent-weak);
+	}
+
+	.next h2 {
+		margin: 0 0 4px;
+		font-size: 0.95rem;
+	}
+
+	.next p {
+		margin: 0 0 10px;
+	}
+
+	/* Toolbar berkelompok seperti pita Excel: tombol di atas, nama kelompok di bawah. */
+	.wb-toolbar {
+		display: flex;
+		flex-wrap: nowrap;
+		overflow-x: auto;
+		gap: 0;
+		margin: 0 0 20px;
+		padding: 8px 4px;
+		background: var(--surface);
+		border: 1px solid var(--border);
+		border-radius: var(--radius-lg);
+	}
+
+	.wb-group {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 4px;
+		padding: 0 12px;
+	}
+
+	.wb-group + .wb-group {
+		border-left: 1px solid var(--border);
+	}
+
+	.wb-buttons {
+		display: flex;
+		flex-wrap: nowrap;
+		gap: 2px;
+	}
+
+	.wb-buttons button {
+		white-space: nowrap;
+	}
+
+	.wb-buttons button {
+		border: none;
+		background: none;
+		box-shadow: none;
+		color: var(--ink);
+		font-weight: 500;
+		padding: 6px 10px;
+	}
+
+	.wb-buttons button:hover,
+	.wb-buttons button[aria-pressed='true'] {
+		background: var(--accent-weak);
+		color: var(--accent-ink);
+	}
+
+	.wb-label {
+		font-size: 0.8rem;
+		color: var(--muted);
 	}
 
 	.mono {

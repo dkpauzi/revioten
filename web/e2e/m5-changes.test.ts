@@ -5,7 +5,7 @@
 // menerbitkan form set AIAG 4th; dokumen hanya memakai form set yang terbit.
 import { expect, test, type Page } from '@playwright/test';
 import { en } from '../src/lib/i18n/en.ts';
-import { asMaster, createWorkAccount, ensureProjectGroup, logIn, logInFirstTime, logOut, openFromMenu } from './helpers.ts';
+import { asMaster, createWorkAccount, ensureProjectGroup, logIn, logInFirstTime, logOut, openFromMenu, openTool } from './helpers.ts';
 
 // setupSet membuat customer CH dengan model C-1 dan satu set dokumen PFD,
 // PFMEA, dan CP. Dipanggil sebagai akun penyusun. Hasilnya nomor ketiganya.
@@ -152,7 +152,7 @@ test('M5.5: dokumen kontrol mencatat rilis, dan revisi terbit tidak bisa diubah'
 	await page.getByLabel(en.documentCustomer, { exact: true }).selectOption({ label: 'CH · Customer CH' });
 	await page.getByRole('row', { name: /CHG-0001/ }).getByRole('link', { name: 'CHG-0001' }).click();
 	await page.getByRole('row', { name: / CP / }).getByRole('link').click();
-	await expect(page.getByRole('heading', { name: en.revisions, exact: true })).toBeVisible();
+	await openTool(page, en.revisions);
 
 	// Sejak M6.7 rilis butuh scan bertanda tangan.
 	await expect(page.getByRole('button', { name: en.revisionRelease.replace('{revision}', '0') })).toBeDisabled();
@@ -230,6 +230,7 @@ test('M5.4 dan M5.6: perubahan kedua membuka revisi 1, lalu revisi 0 dibandingka
 	await page.goto(`/documents/view?id=${cpId}`);
 	// M5.4: draft revisi 1 terbuka, revisi 0 tetap berlaku.
 	// Baris revisi di bagian Revisions (tabel Submission control juga menyebut CHG-0002).
+	await openTool(page, en.revisions);
 	const revisionsSection = page.locator('section').filter({ has: page.getByRole('heading', { name: en.revisions, level: 2 }) });
 	await expect(revisionsSection.getByRole('row', { name: /CHG-0002/ })).toBeVisible();
 	await page.getByLabel(en.diffFrom, { exact: true }).selectOption('0');

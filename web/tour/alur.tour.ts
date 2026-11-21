@@ -9,7 +9,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { en } from '../src/lib/i18n/en.ts';
 import { admin } from '../e2e/account.mjs';
-import { logOut, openFromMenu } from '../e2e/helpers.ts';
+import { logOut, openFromMenu, openTool, tool } from '../e2e/helpers.ts';
 
 // Lama keterangan langkah ditahan di layar sebelum tur lanjut.
 const pause = { slow: 6000, normal: 3500, fast: 0 }[process.env.TOUR_SPEED ?? 'normal'] ?? 3500;
@@ -25,9 +25,10 @@ async function say(page: Page, step: string, text: string): Promise<void> {
 				bar = document.createElement('div');
 				bar.id = 'tour-caption';
 				bar.style.cssText =
-					'position:fixed;left:0;right:0;bottom:0;z-index:9999;padding:14px 24px;' +
-					'background:#111827;color:#ffffff;font:500 17px/1.4 system-ui,sans-serif;' +
-					'pointer-events:none;box-shadow:0 -4px 16px rgba(0,0,0,.25)';
+					'position:fixed;left:50%;top:12px;transform:translateX(-50%);z-index:2147483647;' +
+					'width:min(1100px,calc(100vw - 32px));padding:16px 24px;border-radius:12px;' +
+					'background:rgba(17,24,39,.96);color:#ffffff;font:500 19px/1.45 system-ui,sans-serif;' +
+					'white-space:normal;overflow-wrap:anywhere;pointer-events:none;box-shadow:0 8px 28px rgba(0,0,0,.35)';
 				document.body.appendChild(bar);
 			}
 			bar.textContent = '';
@@ -93,6 +94,7 @@ async function openDocument(page: Page, number: string): Promise<void> {
 
 // uploadScan mengunggah scan bertanda tangan contoh di bagian Revisions.
 async function uploadScan(page: Page, file: string): Promise<void> {
+	await openTool(page, en.revisions);
 	const revisions = page.locator('section', { has: page.getByRole('heading', { name: en.revisions, exact: true }) });
 	await revisions.getByLabel(en.scanUpload).setInputFiles({ name: file, mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 contoh scan') });
 	await revisions.getByRole('button', { name: en.scanUploadButton }).click();
@@ -100,8 +102,8 @@ async function uploadScan(page: Page, file: string): Promise<void> {
 }
 
 test('alur dari admin sampai dokumen terbit, revisi, tanda tangan digital, migrasi, dasbor, dan API integrasi', async ({ page, playwright }) => {
-	// Tur ini panjang; batas waktunya mengikuti kecepatan tur.
-	test.setTimeout(15 * 60 * 1000);
+	// Tur ini panjang; batas waktunya mengikuti kecepatan tur (normal lebih dari 15 menit).
+	test.setTimeout(({ slow: 90, normal: 60, fast: 15 }[process.env.TOUR_SPEED ?? 'normal'] ?? 60) * 60 * 1000);
 	const engineer = { login: 'ppap.engineer', name: 'Contoh PPAP Engineer', password: 'kopi pagi di pabrik' };
 	const control = { login: 'dok.kontrol', name: 'Contoh Dokumen Kontrol', password: 'rilis selalu dengan scan' };
 	const verifier = { login: 'apqp.controller', name: 'Contoh APQP Controller', password: 'verifikasi dengan catatan' };
@@ -369,7 +371,7 @@ test('alur dari admin sampai dokumen terbit, revisi, tanda tangan digital, migra
 	await page.getByRole('link', { name: 'SC-LM-002' }).click();
 	await expect(page.getByRole('heading', { name: 'SC-LM-002', level: 1 })).toBeVisible();
 	await say(page, 'Langkah 18', 'Workbook dokumen: tab PFD, PFMEA, CP, dan Check. Baris dirakit dari process template.');
-	await page.getByRole('button', { name: en.composeOpen }).click();
+	await tool(page, en.composeOpen).click();
 	await page.getByLabel(en.composeProcess).selectOption({ label: `Laser marking · ${en.composeVersion.replace('{version}', '1')}` });
 	await page.getByRole('checkbox', { name: en.composeAll.replace('{name}', 'Marking') }).check();
 	await say(page, 'Langkah 18', 'Kiri: poin template yang dicentang. Kanan: baris yang akan didapat PFD, PFMEA, dan CP.');
@@ -387,7 +389,7 @@ test('alur dari admin sampai dokumen terbit, revisi, tanda tangan digital, migra
 	await page.keyboard.type('Laser type dan daya');
 	await page.getByRole('heading', { name: en.documentRowsTitle, exact: true }).click();
 	await expect(page.getByRole('status')).toHaveText(en.documentRowSaved);
-	await page.getByRole('button', { name: en.compareOpen }).click();
+	await tool(page, en.compareOpen).click();
 	await expect(page.locator('.compare tbody tr').first()).toContainText(en.compareDifferent);
 	await say(page, 'Langkah 19', 'Compare with template: baris ini berbeda dari template, kolom per kolom.');
 
@@ -399,14 +401,14 @@ test('alur dari admin sampai dokumen terbit, revisi, tanda tangan digital, migra
 	await say(page, 'Langkah 20', 'Tanda menyimpan siapa dan kapan. Bila barisnya berubah lagi, tanda meminta dicek ulang.');
 
 	await page.getByRole('link', { name: 'PFD', exact: true }).click();
-	await page.getByRole('button', { name: en.diagramOpen }).click();
+	await tool(page, en.diagramOpen).click();
 	await expect(page.getByTestId('pfd-diagram').locator('.svelte-flow__node')).toHaveCount(1);
 	await say(page, 'Langkah 21', 'Diagram PFD digambar otomatis dari baris PFD, menurut urutannya.');
 	// ---------- Bagian D: cetak dan rilis (Tahap 6) ----------
 	await page.getByRole('link', { name: 'CP', exact: true }).click();
 	await expect(page.getByRole('heading', { name: 'SC-LM-002', level: 1 })).toBeVisible();
+	await openTool(page, en.printTitle);
 	const print = page.locator('section', { has: page.getByRole('heading', { name: en.printTitle, exact: true }) });
-	await print.getByRole('heading', { name: en.printTitle, exact: true }).scrollIntoViewIfNeeded();
 	await say(page, 'Langkah 22', 'Bagian Print. Draft dicetak ke Excel atau PDF dan selalu bertanda UNCONTROLLED COPY.');
 	let download = page.waitForEvent('download');
 	await print.getByRole('button', { name: en.printExcel, exact: true }).click();
@@ -418,7 +420,7 @@ test('alur dari admin sampai dokumen terbit, revisi, tanda tangan digital, migra
 	await say(page, 'Langkah 23', 'Dokumen kontrol login pertama kali. Ia mencatat rilis; penyusun tidak bisa merilis draftnya sendiri.');
 	await firstLogin(page, control.login, controlTemporary, control.password);
 	await openDocument(page, 'SC-LM-002');
-	await page.getByRole('heading', { name: en.revisions, exact: true }).scrollIntoViewIfNeeded();
+	await openTool(page, en.revisions);
 	await say(page, 'Langkah 23', 'Sesudah kertasnya ditandatangani, scan diunggah. Tanpa scan, rilis ditolak.');
 	await uploadScan(page, 'SC-LM-002-00-signed.pdf');
 	page.once('dialog', (dialog) => dialog.accept());
@@ -463,18 +465,19 @@ test('alur dari admin sampai dokumen terbit, revisi, tanda tangan digital, migra
 	await page.keyboard.type('Laser type, daya, dan fokus');
 	await page.getByRole('heading', { name: en.documentRowsTitle, exact: true }).click();
 	await expect(page.getByText(en.documentRowSaved).first()).toBeVisible();
+	await openTool(page, en.revisions);
 	await page.getByRole('heading', { name: en.diffTitle }).scrollIntoViewIfNeeded();
 	await say(page, 'Langkah 26', 'Compare revisions menunjukkan beda revisi 0 dan draft, baris demi baris dan sel demi sel.');
 
 	await switchTo(page, control.login, control.password);
 	await openDocument(page, 'SC-LM-002');
-	await page.getByRole('heading', { name: en.revisions, exact: true }).scrollIntoViewIfNeeded();
+	await openTool(page, en.revisions);
 	await say(page, 'Langkah 27', 'Dokumen kontrol mengunggah scan revisi 1 dan mencatat rilisnya.');
 	await uploadScan(page, 'SC-LM-002-01-signed.pdf');
 	page.once('dialog', (dialog) => dialog.accept());
 	await page.getByRole('button', { name: en.revisionRelease.replace('{revision}', '1') }).click();
 	await expect(page.getByText(en.documentNoDraft)).toBeVisible();
-	await print.getByRole('heading', { name: en.printTitle, exact: true }).scrollIntoViewIfNeeded();
+	await openTool(page, en.printTitle);
 	await print.getByLabel(en.printPurpose, { exact: true }).selectOption('reference');
 	download = page.waitForEvent('download');
 	await print.getByRole('button', { name: en.printExcel, exact: true }).click();
@@ -503,6 +506,7 @@ test('alur dari admin sampai dokumen terbit, revisi, tanda tangan digital, migra
 	await legacy.getByRole('button', { name: en.migrateSubmit }).click();
 	await expect(page.getByRole('status')).toHaveText(en.migrateDone.replace('{number}', 'SC-LM-003').replace('{revision}', '4'));
 	await page.getByRole('link', { name: 'SC-LM-003' }).click();
+	await openTool(page, en.migrationTitle);
 	const baseline = page.locator('section', { has: page.getByRole('heading', { name: en.migrationTitle, exact: true }) });
 	await baseline.getByRole('button', { name: en.historyAdd }).click();
 	await baseline.getByLabel(`${en.historyRevision} 1`).fill('-00');
@@ -515,6 +519,7 @@ test('alur dari admin sampai dokumen terbit, revisi, tanda tangan digital, migra
 
 	await switchTo(page, control.login, control.password);
 	await openDocument(page, 'SC-LM-003');
+	await openTool(page, en.migrationTitle);
 	await baseline.getByLabel(en.migrationEffort, { exact: true }).fill('25');
 	await say(page, 'Langkah 29', 'Petugas migrasi lain mencocokkan layar dengan hardcopy dan mengisi menit kerjanya.');
 	page.once('dialog', (dialog) => dialog.accept());
@@ -545,6 +550,7 @@ test('alur dari admin sampai dokumen terbit, revisi, tanda tangan digital, migra
 
 	// ---------- Bagian F3: tanda tangan digital, Form Control Submission, laporan masalah ----------
 	await openDocument(page, 'SF-LM-002');
+	await openTool(page, en.sigTitle);
 	const signing = page.locator('section', { has: page.getByRole('heading', { name: en.sigTitle, level: 2 }) });
 	await signing.getByRole('heading', { name: en.sigSendTitle }).scrollIntoViewIfNeeded();
 	await say(page, 'Langkah 34', 'PFMEA SF-LM-002 dikirim untuk tanda tangan digital. Process. Eng: PPAP Engineer sendiri; Engineer: Project Leader GR1. NPI dan QA QC Manager terisi otomatis.');
@@ -574,12 +580,14 @@ test('alur dari admin sampai dokumen terbit, revisi, tanda tangan digital, migra
 
 	await switchTo(page, control.login, control.password);
 	await openDocument(page, 'SF-LM-002');
+	await openTool(page, en.revisions);
 	await expect(page.getByText(en.revisionSignedDigitally)).toBeVisible();
 	await say(page, 'Langkah 35', 'Semua slot sudah ditandatangani. PPAP Engineer lain mencatat rilis tanpa scan.');
 	page.once('dialog', (dialog) => dialog.accept());
 	await page.getByRole('button', { name: en.revisionRelease.replace('{revision}', '0') }).click();
 	await expect(page.getByText(en.documentNoDraft)).toBeVisible();
 
+	await openTool(page, en.subTitle);
 	const submissionPanel = page.locator('section', { has: page.getByRole('heading', { name: en.subTitle, level: 2 }) });
 	await submissionPanel.getByRole('heading', { name: en.subTitle, level: 2 }).scrollIntoViewIfNeeded();
 	await say(page, 'Langkah 36', 'Bagian Submission control: satu daftar per dokumen. Tanggal mulai, selesai, dan tanda tangan terisi sendiri.');

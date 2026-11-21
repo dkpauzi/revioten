@@ -26,9 +26,9 @@ Aplikasi yang dipakai: **Docker Desktop** (database) dan **PowerShell** (mengeti
    docker compose up -d
    ```
    Periksa dengan `docker compose ps`: kolom STATUS harus memuat `healthy`.
-6. **Jalankan tur:**
+6. **Jalankan tur.** Di PowerShell ketik `npm.cmd`, bukan `npm` (lihat tabel masalah di bawah):
    ```powershell
-   npm --prefix web run tour
+   npm.cmd --prefix web run tour
    ```
 7. **Tunggu kira-kira satu menit.** Aplikasi dibangun dulu, lalu jendela browser (Chromium) muncul sendiri. Keterangan setiap langkah tampil di pita bawah layar. Jangan klik apa pun di jendela itu selama tur berjalan.
 8. **Selesai:** jendela browser tertutup sendiri, dan PowerShell menulis `1 passed`. Bila ada langkah yang gagal, PowerShell menulis `1 failed` beserta langkahnya; salin teks itu dan kirimkan ke Claude.
@@ -43,6 +43,7 @@ Rekaman videonya tersimpan di folder `C:\E_Project\revioten-main\web\test-result
 | Pesan | Artinya | Yang dilakukan |
 |---|---|---|
 | `error during connect` atau `docker: not recognized` | Docker Desktop belum menyala | Ulangi langkah 1, tunggu **Engine running** |
+| `npm.ps1 cannot be loaded because running scripts is disabled` | PowerShell memblokir skrip `npm.ps1` | Ketik `npm.cmd` sebagai ganti `npm`. Pengaturan Windows tidak perlu diubah |
 | `npm: not recognized` | Node belum aktif di jendela ini | Ulangi langkah 4 |
 | `Cannot find module` atau `playwright: not recognized` | Paket web belum terpasang | Jalankan sekali `npm --prefix web ci`, lalu `npm --prefix web exec -- playwright install chromium`, lalu ulangi langkah 6 |
 | `port 8090 is already in use` | Tur atau test E2E sebelumnya masih jalan | Tutup jendela PowerShell lama, atau tunggu sampai selesai |
@@ -51,9 +52,9 @@ Kecepatan diatur lewat variabel `TOUR_SPEED` di PowerShell:
 
 | Perintah | Hasil |
 |---|---|
-| `$env:TOUR_SPEED="slow"; npm --prefix web run tour` | Pelan, tiap keterangan ditahan 6 detik |
-| `npm --prefix web run tour` | Normal, kira-kira 3 menit |
-| `$env:TOUR_SPEED="fast"; npm --prefix web run tour` | Tanpa jeda, untuk memeriksa bahwa tur masih jalan |
+| `$env:TOUR_SPEED="slow"; npm.cmd --prefix web run tour` | Pelan, tiap keterangan ditahan 6 detik |
+| `npm.cmd --prefix web run tour` | Normal, kira-kira 20 menit |
+| `$env:TOUR_SPEED="fast"; npm.cmd --prefix web run tour` | Tanpa jeda, untuk memeriksa bahwa tur masih jalan |
 
 Setelah memakai `TOUR_SPEED`, kembalikan dengan `Remove-Item Env:TOUR_SPEED`.
 
@@ -371,10 +372,10 @@ Buka tab **PFD**, lalu tekan **Show the diagram**. Satu kotak per baris menurut 
 Sebelum bagian ini, admin membuat dua akun lagi di **Admin → Accounts**: `dok.kontrol` (PPAP Engineer, yang kini juga mengerjakan dokumen kontrol) dan `apqp.controller` (PPAP Engineer Supervisor). Di **Master data → Positions**, catat pemegang `apqp.controller` sebagai **APQP/PPAP Controller**. Di **Admin → Settings**, centang **Migration mode**. Hak migrasi (E-10) sudah termasuk di peran PPAP Engineer.
 
 ### Langkah 22 · Cetak draft
-Di dokumen SC-LM-002, bagian **Print**, tekan **Excel**. Berkas `SC-LM-002-00-draft.xlsx` terunduh dengan tanda UNCONTROLLED COPY, dan cetakan itu tercatat di **Print log**.
+Di dokumen SC-LM-002, tekan **Print** di toolbar, lalu **Excel**. Berkas `SC-LM-002-00-draft.xlsx` terunduh dengan tanda UNCONTROLLED COPY, dan cetakan itu tercatat di **Print log**.
 
 ### Langkah 23 · Catat rilis
-Login sebagai `dok.kontrol`. Buka dokumen SC-LM-002, bagian **Revisions**. Pilih scan bertanda tangan, tekan **Upload the scan**, lalu **Record release of revision 0**. Tanpa scan, tombol rilis mati. Penyusun tidak bisa merilis draftnya sendiri.
+Login sebagai `dok.kontrol`. Buka dokumen SC-LM-002, tekan **Revisions** di toolbar. Pilih scan bertanda tangan, tekan **Upload the scan**, lalu **Record release of revision 0**. Tanpa scan, tombol rilis mati. Penyusun tidak bisa merilis draftnya sendiri.
 
 ## 9. Perubahan dan revisi (Tahap 5)
 
@@ -415,7 +416,7 @@ Login sebagai `ppap.engineer`. Buka **Documents → PPAP performance**. Pilih **
 ## 10b. Tanda tangan digital, Form Control Submission, dan laporan masalah (D-198, D-207, D-205)
 
 ### Langkah 34 · Kirim untuk tanda tangan digital
-Login sebagai `ppap.engineer`. Buka draft SF-LM-002, bagian **Digital signature**. Pilih **Process. Eng** (diri sendiri, atau Project Leader tingkat Leader) dan **Engineer** (Project Leader GR1); NPI Manager dan QA QC Manager terisi otomatis. Ketik password, lalu **Send for digital signature**. Isi draft dibekukan dengan SHA-256, tanggal revisi menjadi tanggal hari ini (D-204), dan draft terkunci.
+Login sebagai `ppap.engineer`. Buka draft SF-LM-002, tekan **Signature** di toolbar. Pilih **Process. Eng** (diri sendiri, atau Project Leader tingkat Leader) dan **Engineer** (Project Leader GR1); NPI Manager dan QA QC Manager terisi otomatis. Ketik password, lalu **Send for digital signature**. Isi draft dibekukan dengan SHA-256, tanggal revisi menjadi tanggal hari ini (D-204), dan draft terkunci.
 
 ### Langkah 35 · Tanda tangan berurutan, lalu rilis tanpa scan
 Login berturut-turut sebagai `pl.gr1`, `npi.manager`, dan `qa.manager`. Masing-masing membuka **Documents → Signatures**, **Open and sign**, membaca dokumen, mengetik password, lalu **Sign**. Urutannya tidak bisa dilompati; **Reject** butuh alasan dan membuka draft lagi. Sesudah lengkap, login sebagai `dok.kontrol`, buka SF-LM-002, bagian **Revisions**, lalu **Record release of revision 0**, tanpa scan.

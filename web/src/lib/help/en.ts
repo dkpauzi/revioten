@@ -256,7 +256,8 @@ export const helpEn: HelpContent = {
 				'Register the number first under {navNumbers}. A document needs a number with the status {numberStatusReserved}.',
 				'Open {navGroupDocuments}, then {navDocuments}, and choose the {documentCustomer}.',
 				'Under {documentCreateTitle}, choose the {documentNumber}, tick the {documentModels} the document covers, and press {documentCreate}. The number becomes In use.',
-				'Open the document from the list. Fill in the header fields and press {documentHeaderSave}.',
+				'Open the document from the list. It opens as a workbook: the {nextStepTitle} box shows the one thing to do next, the toolbar groups ({wbGroupRows}, {wbGroupTemplate}, {wbGroupReview}, {wbGroupOutput}) open their panel beside the sheet, and the tabs at the bottom switch between {sheetCover}, PFD, PFMEA, Control Plan, and {checkTab}.',
+				'Fill in the header fields and press {documentHeaderSave}.',
 				'Press {documentRowAdd} to add an empty row at the end of the sheet.',
 'When one model has several PCBs, each with its own process flow, under one document number (for example PCB A, Heatsink Assy R/L, and Base Assy R/L), press {sectionSplit} and give the first PCB a name and its part numbers, then {sectionAdd} for the next ones. The PFD, PFMEA, and CP of the set get the same sections. Choose a section with its tab above the table: the table, {documentRowAdd}, {composeOpen}, {orderOpen}, the {checkTab} tab, and the diagram then work for that section only, and operation numbers start again at 10 in each section. The rows that were already there go into the first section. Only an empty section can be removed.',
 'To bring rows from an Excel file, press {pasteOpen}. Copy the cells in Excel, paste them in the box, and press {pastePreview}. Tick {pasteHasHeader} when you copied the title row too; the columns are then matched by title. Above each column you choose where it goes. A cell that does not fit its column, such as a severity that is not a number, is marked and left empty; the row is still added. Nothing is saved until you press the Import button.',
@@ -336,7 +337,7 @@ export const helpEn: HelpContent = {
 			who: 'PPAP Engineer, Project Leader',
 			intro: 'Prints come from the same content as the screen, in Excel or PDF, A3 or A4 as the layout says. Approval is a wet signature on paper, or a digital signature (see Digital signature).',
 			steps: [
-				'Open the document. Under {printTitle}, choose the revision and the {printPurpose}, then press {printExcel} or {printPdf}.',
+				'Open the document and press {printTitle} in the toolbar. Choose the revision and the {printPurpose}, then press {printExcel} or {printPdf}.',
 				'For the paper approval, print {printPurpose_signature}. The release date is filled in, and the cover carries the approval slots of the route.',
 				'After every slot is signed, document control uploads the scan under {revisions} with {scanUploadButton}, then records the release. The release is refused without the scan.',
 				'Released revisions print as {printPurpose_reference} or {printPurpose_controlled}. Controlled copies are numbered, and every print shows in the {printLog}.',
@@ -352,7 +353,7 @@ export const helpEn: HelpContent = {
 			who: 'PPAP Engineer and Project Leader send; the people of the route sign; another PPAP Engineer records the release',
 			intro: 'Signers of the approval route sign in the system instead of on paper (D-198). The content is frozen when it is sent, signing goes in route order, and the revision date is the date it was sent.',
 			steps: [
-				'Open the draft. Under {sigTitle}, choose who signs each slot: {sigPreparedHint} For the Engineer slot, {sigCheckedHint} Slots held by one person are filled in already.',
+				'Open the draft and press {sigTitle} in the toolbar. Choose who signs each slot: {sigPreparedHint} For the Engineer slot, {sigCheckedHint} Slots held by one person are filled in already.',
 				'Type your password and press {sigSend}. The draft is locked and the first signer gets an email and a task on Home.',
 				'Each signer opens {navGroupDocuments}, then {navSignatures}, presses {sigOpenSign}, reads the document, types the password, and presses {signButton}. {signReject} needs a reason and opens the draft again.',
 				'The sender can press {sigWithdraw} while signatures are still missing.',
@@ -372,7 +373,7 @@ export const helpEn: HelpContent = {
 			who: 'PPAP Engineer fills it in and sets the defaults; everyone with draft access reads it',
 			intro: 'Each document has its own control list: the PFD, the PFMEA, and the Control Plan each have one, with one row per revision. It replaces the paper Form Control Submission Document.',
 			steps: [
-				'Open a document and scroll to {subTitle}. The buttons at the top switch between the PFD, PFMEA, and Control Plan of the set.',
+				'Open a document and press {subTitle} in the toolbar. The buttons at the top switch between the PFD, PFMEA, and Control Plan of the set.',
 				'{subReason}, {subStart}, {subFinish}, and {subTopSign} are filled by the system from the change, the release, and the signatures.',
 				'Press {subEdit} on a revision. Fill in {subSubmittedOn}, {subPackage}, {subResultLabel}, {subResultOn}, and {subRemarkLabel}, then press {subSave}. Upload the customer approval under {subScan} if you have it.',
 				'Untick {subNeedsSubmission} for a revision that is not sent to the customer, and write why.',
@@ -393,7 +394,7 @@ export const helpEn: HelpContent = {
 			steps: [
 				'The admin switches on {settingsMigration} under {navGroupAdmin}, then {navSettings}.',
 				'Open {navDocuments}, choose the customer, and fill in {migrateTitle}: the original number, the models, {migrateRevision}, {migrateEffectiveDate}, and the names on the hard copy. Press {migrateSubmit}.',
-				'Open the document. Type or compose the content until it equals the hard copy. Under {historyTitle}, press {historyAdd} for each line of the old history table, then {historySave}.',
+				'Open the document. Type or compose the content until it equals the hard copy. Press {migrationTitle} in the toolbar; under {historyTitle}, press {historyAdd} for each line of the old history table, then {historySave}.',
 				'To check your typing, upload the old file under {excelCompareTitle} and press {excelCompareButton}. The file is only compared, never imported.',
 				'Under {linkTitle}, press {linkFind}, tick the pairs that are right, and press {linkConfirm}. Linked rows receive later template updates.',
 				'Another migration officer opens the document, compares it with the signed hard copy, fills in {migrationEffort}, and presses {migrationVerify}. The status becomes {documentStatusReleasedMigrated}.'

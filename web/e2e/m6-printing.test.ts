@@ -3,6 +3,7 @@
 // dan punya draft revisi 1.
 import { expect, test, type Page } from '@playwright/test';
 import { en } from '../src/lib/i18n/en.ts';
+import { openTool } from './helpers.ts';
 
 async function logInAs(page: Page, login: string, password: string) {
 	await page.goto('/login');
@@ -32,7 +33,7 @@ test('M6: penyusun mencetak draft Excel dan PDF, dan setiap cetakan tercatat', a
 	await logInAs(page, 'pemohon.e2e', 'perubahan selalu punya alasan');
 	const cp = await cpOfCH(page);
 	await page.goto(`/documents/view?id=${cp.id}`);
-	await expect(page.getByRole('heading', { name: en.printTitle, exact: true })).toBeVisible();
+	await openTool(page, en.printTitle);
 
 	let download = page.waitForEvent('download');
 	await page.getByRole('button', { name: en.printExcel, exact: true }).click();
@@ -57,6 +58,7 @@ test('M6: dokumen kontrol mencetak salinan terkendali bernomor, dan halaman veri
 	await logInAs(page, 'dcc.e2e', 'rilis selalu dibekukan');
 	const cp = await cpOfCH(page);
 	await page.goto(`/documents/view?id=${cp.id}`);
+	await openTool(page, en.printTitle);
 	await page.locator('#print-revision').selectOption('0');
 	await page.getByLabel(en.printPurpose, { exact: true }).selectOption('controlled');
 	for (const n of [1, 2]) {

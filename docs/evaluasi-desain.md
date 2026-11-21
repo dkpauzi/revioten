@@ -2341,6 +2341,19 @@ Salin blok ini untuk setiap temuan baru.
 - **Status:** Diputuskan (opsi a, D-209)
 - **Keputusan pemilik:** 21 November 2026, "Semua data kerja"; mode migrasi dan aturan penyetujuan form "untuk saat ini tetap di admin".
 
+### E-135 · Workbook D-145 baru terbangun sebagian
+
+- **Tanggal dan milestone:** 21 November 2026, C1.
+- **Jenis:** Celah
+- **Rujukan:** D-145, D-210, M4.2, papan MultiPartWorkbook, PfmeaVda, ControlPlan2024.
+- **Temuan:** D-145 tercatat "dibangun mulai M4.2", tetapi halaman dokumen hanya berupa tabel polos dengan panel bertumpuk. Tab sheet, toolbar berkelompok, langkah berikutnya, lembar seperti form, panel baris terpilih, dan sheet Cover tidak ada. Selisih ini baru terlihat saat pemilik menguji manual.
+- **Opsi:** (a) bangun dalam lima milestone C1 sampai C5 sebelum tur ditulis ulang; (b) tur dulu, workbook belakangan.
+- **Rekomendasi Claude Code (usulan):** (a).
+- **Asumsi sementara di kode:** tidak ada.
+- **Menghambat milestone?** Tidak
+- **Status:** Diputuskan (opsi a, D-210)
+- **Keputusan pemilik:** 21 November 2026, "mulai dari C".
+
 ## Usulan desain UI (UX-01 sampai UX-07): dampak ke M0 sampai M3 dan saran
 
 - **Sumber:** `docs/uml/usulan-desain-ui.md` (UML draft 0.12, 3 November 2026) dan kanvas desain UI "Desain UI Sistem PFD PFMEA CP" (18 artboard, baris v2 disarankan).

@@ -531,7 +531,8 @@ kbd {
 
 /* Setiap bagian langsung di bawah halaman tampil sebagai kartu putih. Tabel
    yang lebih lebar dari layar bergulir di dalam kartunya, bukan di halaman. */
-.page > section {
+.page > section,
+.wb-main > section {
 	background: var(--surface);
 	border: 1px solid var(--border);
 	border-radius: var(--radius-lg);
@@ -540,7 +541,8 @@ kbd {
 	overflow-x: auto;
 }
 
-.page > section table {
+.page > section table,
+.wb-main > section table {
 	margin-bottom: 0.5rem;
 }
 
@@ -580,7 +582,8 @@ kbd {
 		padding: 20px 16px 40px;
 	}
 
-	.page > section {
+	.page > section,
+	.wb-main > section {
 		padding: 16px;
 	}
 

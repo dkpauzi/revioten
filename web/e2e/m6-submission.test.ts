@@ -3,7 +3,7 @@
 // m6-signatures.test.ts (berjalan lebih dulu karena urutan nama file).
 import { expect, test } from '@playwright/test';
 import { en } from '../src/lib/i18n/en.ts';
-import { logOut } from './helpers.ts';
+import { logOut, openTool } from './helpers.ts';
 
 test('D-207: PPAP Engineer mengisi pengiriman ke customer di form kontrol Control Plan', async ({ page }) => {
 	await page.goto('/login');
@@ -19,6 +19,7 @@ test('D-207: PPAP Engineer mengisi pengiriman ke customer di form kontrol Contro
 		return docs.items.find((d: { document_type: { key: string } }) => d.document_type.key === 'cp').id as string;
 	});
 	await page.goto(`/documents/view?id=${cpID}`);
+	await openTool(page, en.subTitle);
 	const panel = page.locator('section').filter({ has: page.getByRole('heading', { name: en.subTitle, level: 2 }) });
 	await expect(panel).toBeVisible();
 

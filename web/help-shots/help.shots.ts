@@ -10,7 +10,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { en } from '../src/lib/i18n/en.ts';
 import { admin } from '../e2e/account.mjs';
-import { createWorkAccount, logInFirstTime, logOut, openFromMenu } from '../e2e/helpers.ts';
+import { createWorkAccount, logInFirstTime, logOut, openFromMenu, openTool, tool } from '../e2e/helpers.ts';
 
 const languages = ['en', 'id'] as const;
 
@@ -298,15 +298,18 @@ test('potret layar untuk halaman Help', async ({ page }) => {
 	await expect(page.getByRole('status')).toHaveText(en.documentCreated.replace('{number}', 'SH-LM-001'));
 	await page.getByRole('link', { name: 'SH-LM-001' }).click();
 	await expect(page.getByRole('heading', { name: 'SH-LM-001', level: 1 })).toBeVisible();
-	await page.getByRole('button', { name: en.composeOpen }).click();
+	await tool(page, en.composeOpen).click();
 	await page.getByLabel(en.composeProcess).selectOption({ label: `Laser marking · ${en.composeVersion.replace('{version}', '1')}` });
 	await page.getByRole('checkbox', { name: en.composeAll.replace('{name}', 'Marking') }).check();
 	await page.getByRole('button', { name: en.composeApply }).click();
 	await expect(page.getByRole('status')).toHaveText(en.composeDone.replace('{process}', 'Laser marking'));
 	await expect(page.locator('.workbook .tabulator-row')).toHaveCount(1);
-	await shot(page, 'documents', page.getByRole('heading', { name: en.documentRowsTitle, exact: true }));
+	// Workbook (D-145, C1): kepala, langkah berikutnya, toolbar, lembar, dan tab sheet.
+	await shot(page, 'documents');
+	await openTool(page, en.printTitle);
 	await shot(page, 'printing', page.getByRole('heading', { name: en.printTitle, exact: true }));
 	// Bagian Digital signature dengan calon penanda tangan setiap slot (D-198, D-203).
+	await openTool(page, en.sigTitle);
 	await page.getByLabel(en.sigSlotChoose.replace('{slot}', 'Engineer'), { exact: true }).selectOption({ label: 'Contoh Project Leader GR1 · Project Leader GR1' });
 	await shot(page, 'signatures', page.getByRole('heading', { name: en.sigTitle, level: 2 }));
 	const cpUrl = page.url();
@@ -315,6 +318,7 @@ test('potret layar untuk halaman Help', async ({ page }) => {
 	await logOut(page);
 	await logInFirstTime(page, control.login, controlTemporary, control.password);
 	await page.goto(cpUrl);
+	await openTool(page, en.revisions);
 	const revisions = page.locator('section', { has: page.getByRole('heading', { name: en.revisions, exact: true }) });
 	await revisions.getByLabel(en.scanUpload).setInputFiles({ name: 'SH-LM-001-00-signed.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 contoh scan') });
 	await revisions.getByRole('button', { name: en.scanUploadButton }).click();
@@ -324,6 +328,7 @@ test('potret layar untuk halaman Help', async ({ page }) => {
 	await expect(page.getByText(en.documentNoDraft)).toBeVisible();
 	await shot(page, 'document-control', page.getByRole('heading', { name: en.revisions, exact: true }));
 	// Form Control Submission dokumen yang baru terbit (D-207).
+	await openTool(page, en.subTitle);
 	await shot(page, 'submission-control', page.getByRole('heading', { name: en.subTitle, level: 2 }));
 
 	// Penyusun mengajukan perubahan, lalu memasukkan dokumen lama.
@@ -353,6 +358,7 @@ test('potret layar untuk halaman Help', async ({ page }) => {
 	await legacy.getByRole('button', { name: en.migrateSubmit }).click();
 	await expect(page.getByRole('status')).toHaveText(en.migrateDone.replace('{number}', 'SC-LM-001').replace('{revision}', '4'));
 	await page.getByRole('link', { name: 'SC-LM-001' }).click();
+	await openTool(page, en.migrationTitle);
 	const baseline = page.locator('section', { has: page.getByRole('heading', { name: en.migrationTitle, exact: true }) });
 	await baseline.getByRole('button', { name: en.historyAdd }).click();
 	await baseline.getByLabel(`${en.historyRevision} 1`).fill('-00');

@@ -141,3 +141,23 @@ export async function asMaster<T>(page: Page, steps: (master: Page) => Promise<T
 		await context.close();
 	}
 }
+
+// tool adalah tombol di toolbar workbook dokumen (D-145, C1).
+export function tool(page: Page, name: string) {
+	return page.getByRole('toolbar', { name: en.wbToolbar }).getByRole('button', { name, exact: true });
+}
+
+// openTool membuka panel di laci samping lewat toolbar workbook. Bila laci itu
+// sudah terbuka, tidak ada yang berubah.
+export async function openTool(page: Page, name: string): Promise<void> {
+	const button = tool(page, name);
+	if ((await button.getAttribute('aria-pressed')) !== 'true') {
+		await button.click();
+	}
+	await expect(drawerOf(page, name)).toBeVisible();
+}
+
+// drawerOf adalah laci workbook yang judulnya name.
+export function drawerOf(page: Page, name: string) {
+	return page.locator('aside.drawer').filter({ has: page.locator('.drawer-title', { hasText: new RegExp(`^${name}$`) }) });
+}

@@ -6,7 +6,7 @@
 // menerbitkan form set AIAG 4th; dokumen hanya memakai form set yang terbit.
 import { expect, test } from '@playwright/test';
 import { en } from '../src/lib/i18n/en.ts';
-import { asMaster, createWorkAccount, ensureProjectGroup, logIn, logInFirstTime, logOut, openFromMenu } from './helpers.ts';
+import { asMaster, createWorkAccount, drawerOf, ensureProjectGroup, logIn, logInFirstTime, logOut, openFromMenu, tool } from './helpers.ts';
 
 test('penyusun membuat dokumen CP, lalu baris dan header tersimpan', async ({ page }) => {
 	// Test ini mengikuti satu dokumen dari M4.1 sampai M4.6, jadi batas waktunya dilonggarkan.
@@ -75,7 +75,7 @@ test('penyusun membuat dokumen CP, lalu baris dan header tersimpan', async ({ pa
 	};
 
 	for (let i = 0; i < 3; i++) {
-		await page.getByRole('button', { name: en.documentRowAdd }).click();
+		await tool(page, en.documentRowAdd).click();
 		await expect(rows).toHaveCount(i + 1);
 	}
 	const product = await fieldOf('Product Characteristics');
@@ -166,7 +166,7 @@ test('penyusun membuat dokumen CP, lalu baris dan header tersimpan', async ({ pa
 	// M4.4 (R-MIG-02): blok sel dari Excel ditempel, dipratinjau, lalu diimpor.
 	// Baris judul memetakan kolom; proses yang tidak dikenal ditandai, tetapi
 	// barisnya tetap masuk.
-	await page.getByRole('button', { name: en.pasteOpen }).click();
+	await tool(page, en.pasteOpen).click();
 	// Judul kolom nomor operasi dan proses dibaca dari tabel, seperti orang
 	// menyalin baris judul form.
 	const titleOf = async (field: string) => ((await grid.locator(`.tabulator-col[tabulator-field="${field}"] .tabulator-col-title`).first().textContent()) ?? '').trim();
@@ -195,7 +195,7 @@ test('penyusun membuat dokumen CP, lalu baris dan header tersimpan', async ({ pa
 	// M4.6 (R-CMP-01): urutan langkah proses diubah dan tersimpan. Empat baris
 	// tadi adalah empat langkah: Dokumen Reflow, tanpa proses, Dokumen Reflow,
 	// tanpa proses. Nomor operasinya diketik atau ditempel, jadi tidak diubah.
-	await page.getByRole('button', { name: en.orderOpen }).click();
+	await tool(page, en.orderOpen).click();
 	const steps = page.locator('.steps li');
 	await expect(steps).toHaveCount(4);
 	// Langkah ketiga naik dan bergabung dengan langkah pertama (proses yang sama).
@@ -210,9 +210,9 @@ test('penyusun membuat dokumen CP, lalu baris dan header tersimpan', async ({ pa
 	await expect(cell(2, '_operation')).toHaveText('20');
 
 	// Baris baru tanpa nomor: diseret ke tempat kedua, lalu mendapat nomor otomatis.
-	await page.getByRole('button', { name: en.documentRowAdd }).click();
+	await tool(page, en.documentRowAdd).click();
 	await expect(rows).toHaveCount(5);
-	await page.getByRole('button', { name: en.orderOpen }).click();
+	await tool(page, en.orderOpen).click();
 	await expect(steps).toHaveCount(4);
 	await steps.nth(3).dragTo(steps.nth(1));
 	await expect(steps.nth(1).getByTestId('order-number')).toHaveText(en.orderNumber.replace('{number}', '20'));
@@ -223,4 +223,52 @@ test('penyusun membuat dokumen CP, lalu baris dan header tersimpan', async ({ pa
 	await expect(cell(2, '_operation')).toHaveText('20');
 	await expect(cell(2, product)).toHaveText('');
 	await expect(cell(3, method)).toHaveText('AOI 100%');
+});
+
+test('C1 (D-145): kepala workbook, toolbar berkelompok, laci panel, dan tab sheet di bawah', async ({ page }) => {
+	await page.goto('/login');
+	await page.getByLabel(en.loginName).fill('penyusun.dokumen.e2e');
+	await page.getByLabel(en.loginPassword).fill('dokumen draft disimpan per baris');
+	await page.getByRole('button', { name: en.loginSubmit }).click();
+	await expect(page.getByRole('button', { name: en.logout })).toBeVisible();
+	await openFromMenu(page, en.navGroupDocuments, en.navDocuments);
+	await page.getByLabel(en.documentCustomer, { exact: true }).selectOption({ label: 'DC · Customer DC' });
+	await page.getByRole('link', { name: /^SC-DC-/ }).first().click();
+	await expect(page.getByRole('heading', { level: 1 })).toContainText('SC-DC-');
+
+	// Kepala: form set dan satu langkah berikutnya. Customer DC belum punya rute, jadi langkahnya mencetak.
+	await expect(page.getByText('AIAG 4th set')).toBeVisible();
+	const next = page.getByRole('region', { name: en.nextStepTitle });
+	await expect(next).toContainText(en.nextPrint);
+
+	// Toolbar berkelompok: satu kelompok per jenis pekerjaan.
+	const toolbar = page.getByRole('toolbar', { name: en.wbToolbar });
+	for (const group of [en.wbGroupRows, en.wbGroupTemplate, en.wbGroupReview, en.wbGroupOutput]) {
+		await expect(toolbar.getByRole('group', { name: group })).toBeVisible();
+	}
+
+	// Panel dibuka di laci samping, satu per satu, dan bisa ditutup.
+	await toolbar.getByRole('button', { name: en.revisions, exact: true }).click();
+	const drawer = drawerOf(page, en.revisions);
+	await expect(drawer.getByRole('heading', { name: en.revisions, level: 2 })).toBeVisible();
+	await toolbar.getByRole('button', { name: en.printTitle, exact: true }).click();
+	await expect(drawerOf(page, en.printTitle)).toBeVisible();
+	await expect(drawer).toBeHidden();
+	await page.getByRole('button', { name: en.drawerClose }).click();
+	await expect(drawerOf(page, en.printTitle)).toBeHidden();
+
+	// Tombol langkah berikutnya membuka laci yang sama.
+	await next.getByRole('button', { name: en.printTitle }).click();
+	await expect(drawerOf(page, en.printTitle)).toBeVisible();
+	await page.getByRole('button', { name: en.drawerClose }).click();
+
+	// Tab sheet di bawah: Cover lalu kembali ke CP.
+	const sheets = page.getByRole('navigation', { name: en.documentSheets });
+	await sheets.getByRole('link', { name: en.sheetCover }).click();
+	await expect(page).toHaveURL(/sheet=cover/);
+	await expect(page.getByRole('heading', { name: en.coverTitle, level: 2 })).toBeVisible();
+	await expect(page.getByRole('main')).toContainText('D-100');
+	await sheets.getByRole('link', { name: 'CP', exact: true }).click();
+	await expect(page).not.toHaveURL(/sheet=cover/);
+	await expect(page.getByRole('heading', { name: en.documentRowsTitle, exact: true })).toBeVisible();
 });

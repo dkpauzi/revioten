@@ -16,6 +16,7 @@
 	import { formatDateTime } from '#lib/format.ts';
 	import { t } from '#lib/i18n/index.ts';
 	import { can } from '#lib/session.svelte.ts';
+	import SheetTabs from '#lib/documents/SheetTabs.svelte';
 
 	let comparison = $state<PfmeaCpComparison | null>(null);
 	let formats = $state<{ pfmea: FormatVersion; cp: FormatVersion } | null>(null);
@@ -99,13 +100,8 @@
 	<h1>{t('checkTitle')}</h1>
 	<p class="hint">{t(released ? 'releasedCheckHint' : 'checkHint')}</p>
 
-	<!-- Tab sheet workbook (D-145): PFD, PFMEA, CP, lalu Check. -->
-	<nav class="sheets" aria-label={t('documentSheets')}>
-		{#each comparison.cp.set as m (m.id)}
-			<a href="{viewPath}?id={m.id}" data-sveltekit-noscroll>{m.document_type.name}</a>
-		{/each}
-		<a href="/documents/check?id={currentId}{released ? '&released=1' : ''}" aria-current="page">{t('checkTab')}</a>
-	</nav>
+	<!-- Tab sheet workbook di bawah layar (D-145, C1): Cover, PFD, PFMEA, CP, lalu Check. -->
+	<SheetTabs set={comparison.cp.set} documentId={currentId} current="check" {viewPath} {released} />
 
 	<p class="pair">
 		<span>{t('checkPfmea', { number: comparison.pfmea.number, revision: String(comparison.pfmea.revision) })}</span>
@@ -184,28 +180,6 @@
 {/if}
 
 <style>
-	.sheets {
-		display: flex;
-		gap: 4px;
-		margin-bottom: 1rem;
-		border-bottom: 1px solid var(--border);
-	}
-
-	.sheets a {
-		padding: 8px 16px;
-		border: 1px solid transparent;
-		border-bottom: none;
-		border-radius: var(--radius) var(--radius) 0 0;
-		color: var(--text-2);
-	}
-
-	.sheets a[aria-current='page'] {
-		background: var(--surface);
-		border-color: var(--border);
-		color: var(--accent-ink);
-		font-weight: 600;
-		margin-bottom: -1px;
-	}
 
 	.pair {
 		display: flex;

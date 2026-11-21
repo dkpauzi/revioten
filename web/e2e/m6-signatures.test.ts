@@ -8,7 +8,7 @@
 // pemegang jabatan per Project Group tidak bentrok dengan test lain.
 import { expect, test, type Page } from '@playwright/test';
 import { en } from '../src/lib/i18n/en.ts';
-import { asMaster, createWorkAccount, ensureProjectGroup, logIn, logInFirstTime, logOut, openFromMenu } from './helpers.ts';
+import { asMaster, createWorkAccount, ensureProjectGroup, logIn, logInFirstTime, logOut, openFromMenu, openTool } from './helpers.ts';
 
 const people = {
 	engineer: { name: 'Engineer TTD', login: 'eng.ttd.e2e', password: 'tanda tangan digital satu' },
@@ -110,6 +110,7 @@ test('fase 3: kirim untuk tanda tangan digital, tanda tangan berurutan, lalu ril
 		return cp;
 	});
 	await page.goto(`/documents/view?id=${cpID}`);
+	await openTool(page, en.sigTitle);
 	await expect(page.getByRole('heading', { name: en.sigSendTitle })).toBeVisible();
 
 	// Prepared: diri sendiri. Checked: Project Leader. Slot Approved terisi otomatis.
@@ -131,7 +132,11 @@ test('fase 3: kirim untuk tanda tangan digital, tanda tangan berurutan, lalu ril
 	await openFromMenu(page, en.navGroupDocuments, en.navSignatures);
 	await page.getByRole('button', { name: en.signaturesTabRelease.replace('{count}', '1') }).click();
 	await page.getByRole('link', { name: en.signaturesOpenDocument }).first().click();
-	await expect(page.getByText(en.sigLockedCompleted)).toBeVisible();
+	// Langkah berikutnya di kepala workbook (C1): catat rilis, membuka laci Revisions.
+	const next = page.getByRole('region', { name: en.nextStepTitle });
+	await expect(next).toContainText(en.nextRecord);
+	await next.getByRole('button', { name: en.revisions }).click();
+	await openTool(page, en.revisions);
 	await expect(page.getByText(en.revisionSignedDigitally)).toBeVisible();
 	page.once('dialog', (dialog) => dialog.accept());
 	await page.getByRole('button', { name: en.revisionRelease.replace('{revision}', '0') }).click();

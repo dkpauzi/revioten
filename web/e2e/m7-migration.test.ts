@@ -3,7 +3,7 @@
 // Berjalan sesudah m5-changes.test.ts: customer CH dan model C-1 sudah ada.
 import { expect, test } from '@playwright/test';
 import { en } from '../src/lib/i18n/en.ts';
-import { createWorkAccount, logIn, logInFirstTime, logOut, openFromMenu } from './helpers.ts';
+import { createWorkAccount, logIn, logInFirstTime, logOut, openFromMenu, openTool } from './helpers.ts';
 
 test('M7: dokumen lama masuk di revisi 4, diverifikasi orang lain, dan tampil di dasbor', async ({ page }) => {
 	// Admin menyalakan mode migrasi dan membuat dua petugas migrasi.
@@ -50,6 +50,7 @@ test('M7: dokumen lama masuk di revisi 4, diverifikasi orang lain, dan tampil di
 
 	// Halaman dokumen: riwayat teks, pembanding Excel, dan scan hardcopy.
 	await page.getByRole('link', { name: number.number }).click();
+	await openTool(page, en.migrationTitle);
 	const baseline = page.locator('section', { has: page.getByRole('heading', { name: en.migrationTitle, exact: true }) });
 	await expect(baseline).toContainText('Budi Santoso');
 	await baseline.getByRole('button', { name: en.historyAdd }).click();
@@ -59,15 +60,18 @@ test('M7: dokumen lama masuk di revisi 4, diverifikasi orang lain, dan tampil di
 	await baseline.getByRole('button', { name: en.historySave }).click();
 	await expect(baseline.getByRole('status')).toHaveText(en.historySaved);
 
+	await openTool(page, en.excelCompareTitle);
 	const compare = page.locator('section', { has: page.getByRole('heading', { name: en.excelCompareTitle }) });
 	await compare.getByLabel(en.excelCompareFile).setInputFiles({ name: 'old.xlsx', mimeType: 'application/octet-stream', buffer: Buffer.from('bukan excel') });
 	await compare.getByRole('button', { name: en.excelCompareButton }).click();
 	await expect(compare.getByRole('alert')).toBeVisible();
 
 	// Scan hardcopy tidak diunggah: untuk baseline migrasi scan opsional (D-186).
+	await openTool(page, en.revisions);
 	const revisions = page.locator('section', { has: page.getByRole('heading', { name: en.revisions, exact: true }) });
 	// Baseline tidak punya tombol rilis biasa, dan pemasuk tidak bisa memverifikasi sendiri.
 	await expect(revisions.getByRole('button', { name: en.revisionRelease.replace('{revision}', '4') })).toHaveCount(0);
+	await openTool(page, en.migrationTitle);
 	page.once('dialog', (dialog) => dialog.accept());
 	await baseline.getByRole('button', { name: en.migrationVerify }).click();
 	await expect(baseline.getByRole('alert')).toHaveText(en.migrationVerifierNotAllowed);
@@ -77,11 +81,12 @@ test('M7: dokumen lama masuk di revisi 4, diverifikasi orang lain, dan tampil di
 	// Petugas kedua mencocokkan dengan hardcopy dan mencatat menit usahanya.
 	await logInFirstTime(page, 'migrasi2.e2e', second, 'hardcopy selalu jadi acuan');
 	await page.goto(url);
+	await openTool(page, en.migrationTitle);
 	await baseline.getByLabel(en.migrationEffort, { exact: true }).fill('30');
 	page.once('dialog', (dialog) => dialog.accept());
 	await baseline.getByRole('button', { name: en.migrationVerify }).click();
 	await expect(baseline.getByRole('status')).toHaveText(en.migrationVerified.replace('{number}', number.number));
-	await expect(page.locator('dl.facts .badge').first()).toHaveText(en.documentStatusReleasedMigrated);
+	await expect(page.locator('.wb-sub .badge[data-status]')).toHaveText(en.documentStatusReleasedMigrated);
 	await expect(baseline).toContainText('-00');
 
 	// Dasbor menghitung dokumen migrasi dan menitnya.

@@ -6,7 +6,7 @@
 // menerbitkan form set AIAG 4th; dokumen hanya memakai form set yang terbit.
 import { expect, test } from '@playwright/test';
 import { en } from '../src/lib/i18n/en.ts';
-import { asMaster, createWorkAccount, ensureProjectGroup, logIn, logInFirstTime, logOut, openFromMenu } from './helpers.ts';
+import { asMaster, createWorkAccount, ensureProjectGroup, logIn, logInFirstTime, logOut, openFromMenu, tool } from './helpers.ts';
 
 test('penyusun merakit CP, PFMEA, dan PFD dari process template IQC', async ({ page }) => {
 	// Test ini panjang (menyiapkan template, merakit dua kali), jadi batas waktunya dilonggarkan.
@@ -119,7 +119,7 @@ test('penyusun merakit CP, PFMEA, dan PFD dari process template IQC', async ({ p
 	await page.getByRole('link', { name: setup.cpNumber }).click();
 	await expect(page.getByRole('heading', { name: setup.cpNumber, level: 1 })).toBeVisible();
 
-	await page.getByRole('button', { name: en.composeOpen }).click();
+	await tool(page, en.composeOpen).click();
 	await page.getByLabel(en.composeProcess).selectOption({ label: `Incoming QC · ${en.composeVersion.replace('{version}', '1')}` });
 	const all = (name: string) => page.getByRole('checkbox', { name: en.composeAll.replace('{name}', name) });
 	await all('IQC General').check();
@@ -166,7 +166,7 @@ test('penyusun merakit CP, PFMEA, dan PFD dari process template IQC', async ({ p
 	// Kembali ke CP: keadaan poin tersimpan. Mencoret satu poin lagi menghapus barisnya.
 	await page.getByRole('link', { name: 'CP', exact: true }).click();
 	await expect(rows).toHaveCount(3);
-	await page.getByRole('button', { name: en.composeOpen }).click();
+	await tool(page, en.composeOpen).click();
 	await page.getByLabel(en.composeProcess).selectOption({ label: `Incoming QC · ${en.composeVersion.replace('{version}', '1')}` });
 	await expect(page.getByRole('checkbox', { name: 'CP Check HIC' })).not.toBeChecked();
 	await expect(page.getByLabel(en.composeReason.replace('{text}', 'Check HIC'))).toHaveValue('No HIC for this part');
@@ -199,7 +199,7 @@ test('penyusun merakit CP, PFMEA, dan PFD dari process template IQC', async ({ p
 	await page.getByLabel(en.documentCustomer, { exact: true }).selectOption({ label: 'KM · Customer KM' });
 	await page.getByRole('link', { name: copyNumber }).click();
 	await expect(page.getByRole('heading', { name: copyNumber, level: 1 })).toBeVisible();
-	await page.getByRole('button', { name: en.copyOpen }).click();
+	await tool(page, en.copyOpen).click();
 	await page
 		.getByLabel(en.copySource)
 		.selectOption({ label: en.copyOption.replace('{number}', setup.cpNumber).replace('{models}', 'M-45').replace('{rows}', '2') });
@@ -208,7 +208,7 @@ test('penyusun merakit CP, PFMEA, dan PFD dari process template IQC', async ({ p
 	await expect(rows).toHaveCount(2);
 	await expect(cell(0, product)).toHaveText('Part number');
 	// Sesudah berisi, tombol salin hilang.
-	await expect(page.getByRole('button', { name: en.copyOpen })).toHaveCount(0);
+	await expect(tool(page, en.copyOpen)).toHaveCount(0);
 
 	// Salinan diubah; dokumen M-45 tetap.
 	await cell(0, product).click();
@@ -230,7 +230,7 @@ test('penyusun merakit CP, PFMEA, dan PFD dari process template IQC', async ({ p
 	await page.getByLabel(en.documentCustomer, { exact: true }).selectOption({ label: 'KM · Customer KM' });
 	await page.getByRole('link', { name: copyNumber }).click();
 	await expect(page.getByRole('heading', { name: copyNumber, level: 1 })).toBeVisible();
-	await page.getByRole('button', { name: en.compareOpen }).click();
+	await tool(page, en.compareOpen).click();
 	await expect(page.getByTestId('compare-summary')).toHaveText(en.compareSummary.replace('{rows}', '2').replace('{different}', '1'));
 	const firstRow = page.locator('.compare tbody tr').first();
 	await expect(firstRow).toContainText(en.compareDifferent);
@@ -279,11 +279,11 @@ test('penyusun merakit CP, PFMEA, dan PFD dari process template IQC', async ({ p
 	// berubah saat baris ditambah.
 	await page.getByRole('link', { name: 'PFD', exact: true }).click();
 	await expect(rows).toHaveCount(1);
-	await page.getByRole('button', { name: en.diagramOpen }).click();
+	await tool(page, en.diagramOpen).click();
 	const diagram = page.getByTestId('pfd-diagram');
 	await expect(diagram.locator('.svelte-flow__node')).toHaveCount(1);
 	await expect(diagram.locator('.svelte-flow__node').first()).toContainText('Incoming QC');
-	await page.getByRole('button', { name: en.documentRowAdd }).click();
+	await tool(page, en.documentRowAdd).click();
 	await expect(rows).toHaveCount(2);
 	await expect(diagram.locator('.svelte-flow__node')).toHaveCount(2);
 	await expect(diagram.locator('.svelte-flow__edge')).toHaveCount(1);
