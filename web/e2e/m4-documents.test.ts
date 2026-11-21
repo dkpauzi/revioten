@@ -173,7 +173,7 @@ test('penyusun membuat dokumen CP, lalu baris dan header tersimpan', async ({ pa
 	const pasted = [`Method\t${await titleOf('_process')}\tProduct Characteristics\t${await titleOf('_operation')}`, 'X-ray\tDokumen Reflow\t"Void\nunder BGA"\t30', 'Pull test\tBukan Proses\tWire bond\t40'].join('\r\n');
 	await page.getByLabel(en.pasteText).fill(pasted);
 	await page.getByLabel(en.pasteHasHeader).check();
-	await page.getByRole('button', { name: en.pastePreview }).click();
+	await page.getByRole('button', { name: en.pastePreview, exact: true }).click();
 	const summary = page.getByTestId('paste-summary');
 	await expect(summary).toHaveText(en.pasteSummary.replace('{rows}', '2').replace('{flags}', '1'));
 	await expect(page.locator('.preview td.flag')).toContainText(en.pasteReasonProcess);

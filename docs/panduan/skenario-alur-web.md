@@ -367,6 +367,8 @@ Cara lain mengisi baris:
 ### Langkah 21 · Diagram PFD
 Buka tab **PFD**, lalu tekan **Show the diagram**. Satu kotak per baris menurut urutan, bentuknya mengikuti **Flow Symbol**, dan **NG Disposition** digambar di samping langkahnya. Diagram hanya untuk dilihat; ubah barisnya di tabel.
 
+Lalu buka CP dan tekan **Preview** di toolbar. CP tampil per halaman seperti cetakannya. Kolom Process Flow digambar dari PFD: simbol dan nomor langkah, NG ke SCRAP atau NCP, dan konektor A, B, C di batas halaman. Tambah satu baris, buka Preview lagi: simbol dan konektor sudah bergeser sendiri.
+
 ## 8. Cetak dan rilis (Tahap 6)
 
 Sebelum bagian ini, admin membuat dua akun lagi di **Admin → Accounts**: `dok.kontrol` (PPAP Engineer, yang kini juga mengerjakan dokumen kontrol) dan `apqp.controller` (PPAP Engineer Supervisor). Di **Master data → Positions**, catat pemegang `apqp.controller` sebagai **APQP/PPAP Controller**. Di **Admin → Settings**, centang **Migration mode**. Hak migrasi (E-10) sudah termasuk di peran PPAP Engineer.

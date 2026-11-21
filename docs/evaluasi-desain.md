@@ -2354,6 +2354,19 @@ Salin blok ini untuk setiap temuan baru.
 - **Status:** Diputuskan (opsi a, D-210)
 - **Keputusan pemilik:** 21 November 2026, "mulai dari C".
 
+### E-136 · Langkah PFD dan baris CP di kolom Process Flow
+
+- **Tanggal dan milestone:** 21 November 2026, C2.
+- **Jenis:** Ambigu
+- **Rujukan:** D-122, R-DOC-09, G11, D-211.
+- **Temuan:** Kolom Process Flow CP digambar dari langkah PFD, tetapi CP tidak selalu punya baris untuk setiap langkah PFD (misalnya penyimpanan tanpa kontrol). Belum ditentukan apakah langkah PFD tanpa baris CP tetap digambar (dengan baris kosong) atau dilewati. Juga: lebar kolom Process Flow di layout cetak bawaannya sempit (0,5), terlalu sempit untuk simbol dan cabang NG.
+- **Opsi:** (a) langkah tanpa baris CP dilewati, garis tetap menyambung; (b) pratinjau dan cetakan menambah baris kosong untuk langkah itu; (c) CP wajib punya baris untuk setiap langkah PFD (diperiksa di C4).
+- **Rekomendasi Claude Code (usulan):** (a) untuk C2; diputuskan bersama alur PFD → CP di C4.
+- **Asumsi sementara di kode (ASUMSI E-136):** (a). Simbol memakai langkah PFD dengan nomor yang sama; nomor yang tidak ada di PFD digambar sebagai proses. Pratinjau memberi kolom Process Flow lebar bawaan 1,3 bila layout tidak mengaturnya. AP belum tampil di pratinjau.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+- **Keputusan pemilik:**
+
 ## Usulan desain UI (UX-01 sampai UX-07): dampak ke M0 sampai M3 dan saran
 
 - **Sumber:** `docs/uml/usulan-desain-ui.md` (UML draft 0.12, 3 November 2026) dan kanvas desain UI "Desain UI Sistem PFD PFMEA CP" (18 artboard, baris v2 disarankan).

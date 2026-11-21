@@ -60,3 +60,22 @@
 - API dan aturan bisnis baris (JSONB, penguncian optimistik, RLS, audit log).
 - Format template dan form set; hanya cara menampilkannya yang berubah.
 - Tab Check (M4.9) tetap halaman sendiri, dibuka dari tab sheet.
+
+## 5. Revisi rencana sesudah penjelasan pemilik (21 November 2026, sesudah C1)
+
+Akar masalah menurut pemilik:
+
+1. **Kolom Process Flow di Control Plan.** Di CP Tokairika (SC-TR-020-04) alurnya digambar dengan shape Excel: kotak proses, belah ketupat inspeksi, cabang NG ke SCRAP/NCP, nomor langkah (5.1, 5.7.1), dan lingkaran konektor A, B, C di batas halaman. Setiap baris ditambah atau dihapus, semua shape sesudahnya harus digeser manual, sering sampai halaman-halaman berikutnya. Ini target utama (sudah tercatat sebagai D-122 dan G11, tetapi belum dibangun: kolom itu masih kosong di cetakan).
+2. **Template untuk proses yang mirip.** Proses seperti Part Receiving tidak bergantung model, jadi PFMEA dan CP dirakit dari template. PFD tidak memakai template: PFD dibuat per dokumen, dan langkah PFD menjadi dasar proses di PFMEA dan CP.
+3. **Workbook bukan keharusan.** Yang diutamakan adalah melihat dokumen yang sedang dirancang dalam bentuk lembar seperti cetakannya, untuk memastikan tampilannya sudah benar.
+
+Rencana C2 sampai C5 diganti menjadi:
+
+| Milestone | Isi |
+|---|---|
+| **C2 · Pratinjau lembar dengan Process Flow otomatis** | Tombol **Preview** di toolbar. PFD, PFMEA, dan CP tampil per halaman kertas (ukuran dan arah dari layout cetak): kepala form diulang di setiap halaman, judul grup kolom, sel proses digabung. Kolom Process Flow CP digambar dari langkah PFD: simbol dan nomor langkah, garis alur, cabang NG ke SCRAP/NCP, dan konektor A, B, C di setiap batas halaman, dihitung ulang setiap kali baris berubah. Baca saja; isi tetap diubah di tabel. |
+| **C3 · Cetakan sama dengan pratinjau** | PDF dibuat dari halaman pratinjau yang sama, jadi konektornya sama. Excel: kolom Process Flow sebagai shape (dievaluasi dulu dengan excelize). |
+| **C4 · Alur PFD → PFMEA dan CP** | PFD dibuat dulu untuk dokumen baru atau dokumen migrasi. Setiap langkah PFD dicocokkan dengan template prosesnya, lalu baris PFMEA dan CP dirakit per langkah. |
+| **C5 · Sheet Cover, lalu tur** | Cover seperti sampul form; tur ditulis ulang dengan data TR-020. |
+
+Perubahan atas D-210: Tabulator tetap dipakai untuk mengubah isi. Lembar form dibuat sebagai pratinjau baca saja, bukan pengganti tabel.

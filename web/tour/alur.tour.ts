@@ -407,6 +407,11 @@ test('alur dari admin sampai dokumen terbit, revisi, tanda tangan digital, migra
 	// ---------- Bagian D: cetak dan rilis (Tahap 6) ----------
 	await page.getByRole('link', { name: 'CP', exact: true }).click();
 	await expect(page.getByRole('heading', { name: 'SC-LM-002', level: 1 })).toBeVisible();
+	// Pratinjau CP (C2, D-122): per halaman seperti cetakan, Process Flow dari PFD.
+	await tool(page, en.previewOpen).click();
+	await expect(page.getByRole('group', { name: /^Page 1 of \d+$/ })).toBeVisible();
+	await say(page, 'Langkah 21', 'Preview: CP tampil per halaman seperti cetakannya. Kolom Process Flow digambar dari PFD, dengan konektor A, B, C di batas halaman yang ikut bergeser bila baris berubah.');
+	await tool(page, en.previewOpen).click();
 	await openTool(page, en.printTitle);
 	const print = page.locator('section', { has: page.getByRole('heading', { name: en.printTitle, exact: true }) });
 	await say(page, 'Langkah 22', 'Bagian Print. Draft dicetak ke Excel atau PDF dan selalu bertanda UNCONTROLLED COPY.');
