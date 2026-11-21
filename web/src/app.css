@@ -415,6 +415,24 @@ kbd {
 	background: currentColor;
 }
 
+/* Form Control Submission (D-207): hasil customer dan langkah revisi. */
+.badge[data-result='approved'],
+.badge[data-step='done'] {
+	background: var(--success-weak);
+	color: var(--success);
+}
+
+.badge[data-result='waiting'],
+.badge[data-step='now'] {
+	background: var(--warning-weak);
+	color: var(--warning);
+}
+
+.badge[data-result='rejected'] {
+	background: var(--danger-weak);
+	color: var(--danger);
+}
+
 /* Laporan masalah (D-205): baru kuning, diperiksa biru, selesai hijau. */
 .badge[data-problem='new'] {
 	background: var(--warning-weak);

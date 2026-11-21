@@ -26,6 +26,10 @@ export type Customer = {
      */
     signature_mode?: 'digital' | 'wet_only';
     /**
+     * Revisions of this customer's documents need customer submission by default (D-207).
+     */
+    submission_required?: boolean;
+    /**
      * Customers are never deleted; inactive customers get no new models (E-09).
      */
     active: boolean;
@@ -1690,6 +1694,63 @@ export type AdminHealth = {
     audit_entries: number;
 };
 
+export type SubmissionRequiredChoice = {
+    required: boolean;
+};
+
+export type SubmissionRow = {
+    revision: number;
+    status: 'draft' | 'released';
+    signing?: 'waiting' | 'completed';
+    migrated: boolean;
+    reason: string;
+    started_on: string;
+    finished_on?: string;
+    /**
+     * Calendar days from start to finish, or to today while in progress.
+     */
+    days: number;
+    top_sign_on?: string;
+    top_sign_by?: 'digital' | 'scan';
+    required: boolean;
+    required_default: boolean;
+    override_reason?: string;
+    submitted_on?: string;
+    package?: string;
+    result?: 'waiting' | 'approved' | 'rejected';
+    result_on?: string;
+    scan_name?: string;
+    remark?: string;
+    updated_by?: string;
+    updated_at?: string;
+};
+
+export type SubmissionControl = {
+    document_id: string;
+    number: string;
+    document_type: string;
+    document_type_name: string;
+    customer_code: string;
+    customer_name: string;
+    models: string;
+    submission_required: boolean;
+    form_number: string;
+    rows: Array<SubmissionRow>;
+};
+
+export type SubmissionEntry = {
+    /**
+     * Leave it out to follow the customer setting.
+     */
+    required?: boolean;
+    override_reason?: string;
+    submitted_on?: string;
+    package?: string;
+    result?: 'waiting' | 'approved' | 'rejected';
+    result_on?: string;
+    remark?: string;
+};
+
 export type InboxTask = {
     kind: 'verify' | 'release' | 'review' | 'confirm_review' | 'yokoten' | 'sign';
     title: string;
@@ -3190,6 +3251,10 @@ export type SystemSettings = {
      * How many form approvers must approve a form set or an AP table before it is published (D-139). all is the default.
      */
     form_approval_mode: 'all' | 'any';
+    /**
+     * The form number printed on the Form Control Submission (D-207); empty prints none.
+     */
+    submission_form_number?: string;
 };
 
 export type SystemSettingsUpdate = {
@@ -3209,6 +3274,10 @@ export type SystemSettingsUpdate = {
      * Leave it out to keep the current value.
      */
     form_approval_mode?: 'all' | 'any';
+    /**
+     * Leave it out to keep the current value.
+     */
+    submission_form_number?: string;
 };
 
 export type CustomerList = {
@@ -6202,6 +6271,41 @@ export type SetCustomerSignatureModeResponses = {
 
 export type SetCustomerSignatureModeResponse = SetCustomerSignatureModeResponses[keyof SetCustomerSignatureModeResponses];
 
+export type SetCustomerSubmissionRequiredData = {
+    body: SubmissionRequiredChoice;
+    path: {
+        customerId: string;
+    };
+    query?: never;
+    url: '/api/v1/customers/{customerId}/submission-required';
+};
+
+export type SetCustomerSubmissionRequiredErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type SetCustomerSubmissionRequiredError = SetCustomerSubmissionRequiredErrors[keyof SetCustomerSubmissionRequiredErrors];
+
+export type SetCustomerSubmissionRequiredResponses = {
+    /**
+     * The customer.
+     */
+    200: Customer;
+};
+
+export type SetCustomerSubmissionRequiredResponse = SetCustomerSubmissionRequiredResponses[keyof SetCustomerSubmissionRequiredResponses];
+
 export type SetChangeTypeRouteData = {
     body: ChangeTypeRouteChoice;
     path: {
@@ -9039,6 +9143,188 @@ export type ReportProblemResponses = {
 };
 
 export type ReportProblemResponse = ReportProblemResponses[keyof ReportProblemResponses];
+
+export type GetSubmissionControlData = {
+    body?: never;
+    path: {
+        documentId: string;
+    };
+    query?: never;
+    url: '/api/v1/documents/{documentId}/submission-control';
+};
+
+export type GetSubmissionControlErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type GetSubmissionControlError = GetSubmissionControlErrors[keyof GetSubmissionControlErrors];
+
+export type GetSubmissionControlResponses = {
+    /**
+     * The form.
+     */
+    200: SubmissionControl;
+};
+
+export type GetSubmissionControlResponse = GetSubmissionControlResponses[keyof GetSubmissionControlResponses];
+
+export type ExportSubmissionControlData = {
+    body?: never;
+    path: {
+        documentId: string;
+    };
+    query: {
+        format: 'xlsx' | 'pdf';
+    };
+    url: '/api/v1/documents/{documentId}/submission-control/export';
+};
+
+export type ExportSubmissionControlErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ExportSubmissionControlError = ExportSubmissionControlErrors[keyof ExportSubmissionControlErrors];
+
+export type ExportSubmissionControlResponses = {
+    /**
+     * The printed form.
+     */
+    200: Blob | File;
+};
+
+export type ExportSubmissionControlResponse = ExportSubmissionControlResponses[keyof ExportSubmissionControlResponses];
+
+export type SaveSubmissionEntryData = {
+    body: SubmissionEntry;
+    path: {
+        documentId: string;
+        revision: number;
+    };
+    query?: never;
+    url: '/api/v1/documents/{documentId}/submission-control/{revision}';
+};
+
+export type SaveSubmissionEntryErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type SaveSubmissionEntryError = SaveSubmissionEntryErrors[keyof SaveSubmissionEntryErrors];
+
+export type SaveSubmissionEntryResponses = {
+    /**
+     * The form after saving.
+     */
+    200: SubmissionControl;
+};
+
+export type SaveSubmissionEntryResponse = SaveSubmissionEntryResponses[keyof SaveSubmissionEntryResponses];
+
+export type GetSubmissionScanData = {
+    body?: never;
+    path: {
+        documentId: string;
+        revision: number;
+    };
+    query?: never;
+    url: '/api/v1/documents/{documentId}/submission-control/{revision}/scan';
+};
+
+export type GetSubmissionScanErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type GetSubmissionScanError = GetSubmissionScanErrors[keyof GetSubmissionScanErrors];
+
+export type GetSubmissionScanResponses = {
+    /**
+     * The scan.
+     */
+    200: Blob | File;
+};
+
+export type GetSubmissionScanResponse = GetSubmissionScanResponses[keyof GetSubmissionScanResponses];
+
+export type UploadSubmissionScanData = {
+    body: {
+        file?: Blob | File;
+    };
+    path: {
+        documentId: string;
+        revision: number;
+    };
+    query?: never;
+    url: '/api/v1/documents/{documentId}/submission-control/{revision}/scan';
+};
+
+export type UploadSubmissionScanErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type UploadSubmissionScanError = UploadSubmissionScanErrors[keyof UploadSubmissionScanErrors];
+
+export type UploadSubmissionScanResponses = {
+    /**
+     * The form after the upload.
+     */
+    200: SubmissionControl;
+};
+
+export type UploadSubmissionScanResponse = UploadSubmissionScanResponses[keyof UploadSubmissionScanResponses];
 
 export type GetInboxData = {
     body?: never;

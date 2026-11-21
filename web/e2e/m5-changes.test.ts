@@ -221,9 +221,11 @@ test('M5.4 dan M5.6: perubahan kedua membuka revisi 1, lalu revisi 0 dibandingka
 	);
 	await page.goto(`/documents/view?id=${cpId}`);
 	// M5.4: draft revisi 1 terbuka, revisi 0 tetap berlaku.
-	await expect(page.getByRole('row', { name: /CHG-0002/ })).toBeVisible();
-	await page.getByLabel(en.diffFrom).selectOption('0');
-	await page.getByLabel(en.diffTo).selectOption('draft');
+	// Baris revisi di bagian Revisions (tabel Submission control juga menyebut CHG-0002).
+	const revisionsSection = page.locator('section').filter({ has: page.getByRole('heading', { name: en.revisions, level: 2 }) });
+	await expect(revisionsSection.getByRole('row', { name: /CHG-0002/ })).toBeVisible();
+	await page.getByLabel(en.diffFrom, { exact: true }).selectOption('0');
+	await page.getByLabel(en.diffTo, { exact: true }).selectOption('draft');
 	await page.getByRole('button', { name: en.diffCompare }).click();
 	await expect(page.locator('table.diff [data-diff="added"]')).toHaveCount(1);
 });

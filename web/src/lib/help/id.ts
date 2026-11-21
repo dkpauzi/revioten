@@ -349,6 +349,23 @@ export const helpId: HelpContent = {
 			]
 		},
 		{
+			id: 'submission-control',
+			title: 'Form Control Submission',
+			who: 'PPAP Engineer mengisi; semua yang boleh melihat draft membaca; admin mengatur bawaannya',
+			intro: 'Setiap dokumen punya daftar kontrolnya sendiri: PFD, PFMEA, dan Control Plan masing-masing satu, dengan satu baris per revisi. Daftar ini menggantikan Form Control Submission Document di kertas.',
+			steps: [
+				'Buka dokumen dan gulir ke {subTitle}. Tombol di atas berpindah antara PFD, PFMEA, dan Control Plan satu set.',
+				'{subReason}, {subStart}, {subFinish}, dan {subTopSign} diisi sistem dari perubahan, rilis, dan tanda tangan.',
+				'Tekan {subEdit} pada satu revisi. Isi {subSubmittedOn}, {subPackage}, {subResultLabel}, {subResultOn}, dan {subRemarkLabel}, lalu tekan {subSave}. Unggah bukti persetujuan customer di {subScan} bila ada.',
+				'Hilangkan centang {subNeedsSubmission} untuk revisi yang tidak dikirim ke customer, dan tulis alasannya.',
+				'Tekan {subDownloadPdf} atau {subDownloadExcel} untuk mencetak form dokumen ini saja.'
+			],
+			tips: [
+				'Admin menentukan per customer apakah revisi perlu dikirim ({navGroupMaster}, lalu {navCustomers}, kolom {customerSubmission}), dan nomor form di {navSettings}.',
+				'Hilangkan centang {subShowAll} untuk menyembunyikan revisi yang tidak dikirim ke customer.'
+			]
+		},
+		{
 			id: 'migration',
 			title: 'Dokumen lama',
 			who: 'PPAP Engineer, Admin untuk saklarnya',

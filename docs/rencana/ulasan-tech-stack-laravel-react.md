@@ -1,7 +1,7 @@
 # Ulasan · Pindah ke Laravel dan React?
 
 - **Dibuat:** 21 November 2026, dari pertanyaan pemilik: IT memakai Laravel (dengan Spatie untuk peran dan hak) untuk backend dan React untuk frontend.
-- **Status:** ulasan untuk keputusan pemilik. Tidak ada kode yang diubah.
+- **Status:** **diputuskan 21 November 2026 (D-208): opsi A.** Demo tetap Go dan SvelteKit; peta komponen masuk ke `docs/presentasi/dokumen-untuk-it.md` bagian 10.
 - **Menyentuh keputusan:** brief bagian 7 (stack, [DECIDED]), D-33 (IT membangun versinya sendiri dari UML), D-36 dan D-37 (kode ini demo dan latihan), D-12 (pemilik ingin bisa membangun ulang sendiri).
 
 ## 1. Ringkasan

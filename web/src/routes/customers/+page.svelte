@@ -9,6 +9,7 @@
 		listCustomers,
 		listProjectGroups,
 		setCustomerSignatureMode,
+		setCustomerSubmissionRequired,
 		updateCustomer
 	} from '#lib/api/client.ts';
 	import type { ApiFailure } from '#lib/api/client.ts';
@@ -46,6 +47,19 @@
 	let rowErrors = $state<Record<string, string>>({});
 	let rowMessage = $state('');
 	let rowFailure = $state('');
+
+	// Bawaan "perlu dikirim ke customer" (D-207).
+	async function setSubmission(customer: Customer, required: boolean) {
+		rowMessage = '';
+		rowFailure = '';
+		const result = await setCustomerSubmissionRequired(customer.id, required);
+		if (!result.ok) {
+			rowFailure = failureText(result.error);
+			return;
+		}
+		customers = (customers ?? []).map((c) => (c.id === customer.id ? result.data : c));
+		rowMessage = t('customerSubmissionSaved', { code: customer.code, value: t(required ? 'submissionRequired' : 'submissionNotRequired') });
+	}
 
 	// Cara tanda tangan customer (D-198): digital boleh, atau wajib basah.
 	async function setMode(customer: Customer, mode: 'digital' | 'wet_only') {
@@ -262,6 +276,7 @@
 							<th>{t('customerProjectGroup')}</th>
 							<th>{t('customerStatus')}</th>
 							<th>{t('customerSignatureMode')}</th>
+							<th>{t('customerSubmission')}</th>
 							<th>{t('customerPreviousCodes')}</th>
 							<th>{t('customerCreated')}</th>
 							{#if canEdit}
@@ -325,6 +340,20 @@
 										</select>
 									{:else}
 										{t(customer.signature_mode === 'wet_only' ? 'signatureModeWetOnly' : 'signatureModeDigital')}
+									{/if}
+								</td>
+								<td>
+									{#if canEdit}
+										<select
+											aria-label={t('customerSubmissionFor', { code: customer.code })}
+											value={customer.submission_required === false ? 'no' : 'yes'}
+											onchange={(event) => setSubmission(customer, event.currentTarget.value === 'yes')}
+										>
+											<option value="yes">{t('submissionRequired')}</option>
+											<option value="no">{t('submissionNotRequired')}</option>
+										</select>
+									{:else}
+										{t(customer.submission_required === false ? 'submissionNotRequired' : 'submissionRequired')}
 									{/if}
 								</td>
 								<td>{previousCodes(customer)}</td>

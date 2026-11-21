@@ -1,4 +1,4 @@
-' U8 · ERD fisik (draft 0.16, 2026-11-20), dibangkitkan dari skema database sampai migrasi 00051
+' U8 · ERD fisik (draft 0.16, 2026-11-21), dibangkitkan dari skema database sampai migrasi 00052
 ' oleh docs/uml/tools/u8_dari_database.py. Jangan diedit tangan: ubah migrasinya, lalu jalankan skrip itu lagi.
 ' Menggambarkan tabel PostgreSQL 18 yang sudah dibangun (R-UML-03: diagram fisik mengikuti kode).
 ' Tim IT boleh memakai stack lain (R-UML-02); aturan yang wajib dipertahankan ada di brief dan U5.
@@ -43,6 +43,7 @@ entity "customers" as customers {
   default_route_id : uuid <<FK>>
   default_form_set_id : uuid <<FK>>
   * signature_mode : text
+  * submission_required : boolean
 }
 
 entity "customer_codes" as customer_codes {
@@ -224,6 +225,7 @@ entity "system_settings" as system_settings {
   * migration_mode : boolean
   * review_period_months : smallint
   * review_warning_days : smallint
+  * submission_form_number : text
 }
 
 accounts ||--o{ account_roles
@@ -1029,6 +1031,25 @@ entity "signatures" as signatures {
   source_ip : text
 }
 
+entity "document_submissions" as document_submissions <<RLS>> {
+  * revision_id : uuid <<FK>> <<PK>>
+  --
+  * document_id : uuid <<FK>>
+  required_override : boolean
+  override_reason : text
+  submitted_on : date
+  package : text
+  result : text
+  result_on : date
+  result_scan_name : text
+  result_scan_type : text
+  result_scan_size : bigint
+  result_scan_sha256 : text
+  remark : text
+  * updated_by_person_id : uuid <<FK>>
+  * updated_at : timestamptz
+}
+
 entity "accounts" as accounts #EEEEEE
 entity "approval_routes" as approval_routes #EEEEEE
 entity "change_sources" as change_sources #EEEEEE
@@ -1063,6 +1084,9 @@ accounts ||--o{ document_revisions
 documents ||--o{ document_revisions
 people ||--o{ document_revisions
 signature_requests ||--o{ document_revisions
+document_revisions ||--o{ document_submissions
+documents ||--o{ document_submissions
+people ||--o{ document_submissions
 accounts ||--o{ signature_requests
 approval_routes ||--o{ signature_requests
 customers ||--o{ signature_requests

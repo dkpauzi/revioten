@@ -10,6 +10,8 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
+	"unicode/utf8"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -33,6 +35,9 @@ type Settings struct {
 	QREnabled bool
 	// MigrationMode membuka fitur migrasi dokumen lama (R-MIG-06); bawaannya mati.
 	MigrationMode bool
+	// SubmissionFormNumber adalah nomor form yang dicetak di Form Control
+	// Submission (D-207); kosong berarti tidak dicetak.
+	SubmissionFormNumber string
 }
 
 // Aturan persetujuan form (D-139). Nilainya sama dengan di internal/template.
@@ -64,7 +69,8 @@ func (s *Service) Get(ctx context.Context, actor access.Actor) (Settings, error)
 	if err != nil {
 		return Settings{}, fmt.Errorf("membaca pengaturan sistem: %w", err)
 	}
-	return Settings{SignDatesEnabled: row.SignDatesEnabled, FormApprovalMode: row.FormApprovalMode, QREnabled: row.QrEnabled, MigrationMode: row.MigrationMode}, nil
+	return Settings{SignDatesEnabled: row.SignDatesEnabled, FormApprovalMode: row.FormApprovalMode, QREnabled: row.QrEnabled, MigrationMode: row.MigrationMode,
+		SubmissionFormNumber: row.SubmissionFormNumber}, nil
 }
 
 // Update adalah perubahan pengaturan. Saklar yang nil tetap seperti sebelumnya.
@@ -73,6 +79,8 @@ type Update struct {
 	FormApprovalMode *string
 	QREnabled        *bool
 	MigrationMode    *bool
+	// SubmissionFormNumber diganti bila tidak nil; spasi di tepi dibuang.
+	SubmissionFormNumber *string
 }
 
 // Apply mengubah pengaturan sistem (A-3). Hak diperiksa dulu, juga bila
@@ -86,6 +94,15 @@ func (s *Service) Apply(ctx context.Context, actor access.Actor, in Update) (Set
 			Field: "form_approval_mode", Code: problem.InvalidFormat, Message: "Choose all approvers or any one approver.",
 		}}}
 	}
+	if in.SubmissionFormNumber != nil {
+		trimmed := strings.TrimSpace(*in.SubmissionFormNumber)
+		if utf8.RuneCountInString(trimmed) > 100 {
+			return Settings{}, &problem.ValidationError{Problems: []problem.Problem{{
+				Field: "submission_form_number", Code: problem.TooLong, Message: "The form number can be at most 100 characters.",
+			}}}
+		}
+		in.SubmissionFormNumber = &trimmed
+	}
 	var after Settings
 	err := db.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
 		q := s.q.WithTx(tx)
@@ -93,7 +110,11 @@ func (s *Service) Apply(ctx context.Context, actor access.Actor, in Update) (Set
 		if err != nil {
 			return err
 		}
-		after = Settings{SignDatesEnabled: before.SignDatesEnabled, FormApprovalMode: before.FormApprovalMode, QREnabled: before.QrEnabled, MigrationMode: before.MigrationMode}
+		after = Settings{SignDatesEnabled: before.SignDatesEnabled, FormApprovalMode: before.FormApprovalMode, QREnabled: before.QrEnabled, MigrationMode: before.MigrationMode,
+			SubmissionFormNumber: before.SubmissionFormNumber}
+		if in.SubmissionFormNumber != nil {
+			after.SubmissionFormNumber = *in.SubmissionFormNumber
+		}
 		if in.MigrationMode != nil {
 			after.MigrationMode = *in.MigrationMode
 		}
@@ -130,6 +151,12 @@ func (s *Service) Apply(ctx context.Context, actor access.Actor, in Update) (Set
 				return err
 			}
 			details["form_approval_mode"] = audit.Change(before.FormApprovalMode, after.FormApprovalMode)
+		}
+		if after.SubmissionFormNumber != before.SubmissionFormNumber {
+			if err := q.SetSubmissionFormNumber(ctx, after.SubmissionFormNumber); err != nil {
+				return err
+			}
+			details["submission_form_number"] = audit.Change(before.SubmissionFormNumber, after.SubmissionFormNumber)
 		}
 		if len(details) == 0 {
 			return nil // tidak ada yang berubah, jadi tidak dicatat

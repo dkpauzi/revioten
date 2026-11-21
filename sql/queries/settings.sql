@@ -1,8 +1,8 @@
 -- name: GetSystemSettings :one
-SELECT id, sign_dates_enabled, form_approval_mode, qr_enabled, migration_mode FROM system_settings;
+SELECT id, sign_dates_enabled, form_approval_mode, qr_enabled, migration_mode, submission_form_number FROM system_settings;
 
 -- name: LockSystemSettings :one
-SELECT id, sign_dates_enabled, form_approval_mode, qr_enabled, migration_mode FROM system_settings FOR NO KEY UPDATE;
+SELECT id, sign_dates_enabled, form_approval_mode, qr_enabled, migration_mode, submission_form_number FROM system_settings FOR NO KEY UPDATE;
 
 -- name: SetSignDates :exec
 UPDATE system_settings SET sign_dates_enabled = $1;

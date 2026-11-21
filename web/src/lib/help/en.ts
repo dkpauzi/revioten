@@ -349,6 +349,23 @@ export const helpEn: HelpContent = {
 			]
 		},
 		{
+			id: 'submission-control',
+			title: 'Form Control Submission',
+			who: 'PPAP Engineer fills it in; everyone with draft access reads it; the admin sets the defaults',
+			intro: 'Each document has its own control list: the PFD, the PFMEA, and the Control Plan each have one, with one row per revision. It replaces the paper Form Control Submission Document.',
+			steps: [
+				'Open a document and scroll to {subTitle}. The buttons at the top switch between the PFD, PFMEA, and Control Plan of the set.',
+				'{subReason}, {subStart}, {subFinish}, and {subTopSign} are filled by the system from the change, the release, and the signatures.',
+				'Press {subEdit} on a revision. Fill in {subSubmittedOn}, {subPackage}, {subResultLabel}, {subResultOn}, and {subRemarkLabel}, then press {subSave}. Upload the customer approval under {subScan} if you have it.',
+				'Untick {subNeedsSubmission} for a revision that is not sent to the customer, and write why.',
+				'Press {subDownloadPdf} or {subDownloadExcel} to print the form of this document only.'
+			],
+			tips: [
+				'The admin sets per customer whether revisions need customer submission ({navGroupMaster}, then {navCustomers}, column {customerSubmission}), and the form number under {navSettings}.',
+				'Untick {subShowAll} to hide revisions that are not sent to the customer.'
+			]
+		},
+		{
 			id: 'migration',
 			title: 'Legacy documents',
 			who: 'PPAP Engineer, Admin for the switch',

@@ -2066,6 +2066,102 @@ func (e SignatureSlotStage) Valid() bool {
 	}
 }
 
+// Defines values for SubmissionEntryResult.
+const (
+	SubmissionEntryResultApproved SubmissionEntryResult = "approved"
+	SubmissionEntryResultRejected SubmissionEntryResult = "rejected"
+	SubmissionEntryResultWaiting  SubmissionEntryResult = "waiting"
+)
+
+// Valid indicates whether the value is a known member of the SubmissionEntryResult enum.
+func (e SubmissionEntryResult) Valid() bool {
+	switch e {
+	case SubmissionEntryResultApproved:
+		return true
+	case SubmissionEntryResultRejected:
+		return true
+	case SubmissionEntryResultWaiting:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SubmissionRowResult.
+const (
+	SubmissionRowResultApproved SubmissionRowResult = "approved"
+	SubmissionRowResultRejected SubmissionRowResult = "rejected"
+	SubmissionRowResultWaiting  SubmissionRowResult = "waiting"
+)
+
+// Valid indicates whether the value is a known member of the SubmissionRowResult enum.
+func (e SubmissionRowResult) Valid() bool {
+	switch e {
+	case SubmissionRowResultApproved:
+		return true
+	case SubmissionRowResultRejected:
+		return true
+	case SubmissionRowResultWaiting:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SubmissionRowSigning.
+const (
+	SubmissionRowSigningCompleted SubmissionRowSigning = "completed"
+	SubmissionRowSigningWaiting   SubmissionRowSigning = "waiting"
+)
+
+// Valid indicates whether the value is a known member of the SubmissionRowSigning enum.
+func (e SubmissionRowSigning) Valid() bool {
+	switch e {
+	case SubmissionRowSigningCompleted:
+		return true
+	case SubmissionRowSigningWaiting:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SubmissionRowStatus.
+const (
+	SubmissionRowStatusDraft    SubmissionRowStatus = "draft"
+	SubmissionRowStatusReleased SubmissionRowStatus = "released"
+)
+
+// Valid indicates whether the value is a known member of the SubmissionRowStatus enum.
+func (e SubmissionRowStatus) Valid() bool {
+	switch e {
+	case SubmissionRowStatusDraft:
+		return true
+	case SubmissionRowStatusReleased:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SubmissionRowTopSignBy.
+const (
+	SubmissionRowTopSignByDigital SubmissionRowTopSignBy = "digital"
+	SubmissionRowTopSignByScan    SubmissionRowTopSignBy = "scan"
+)
+
+// Valid indicates whether the value is a known member of the SubmissionRowTopSignBy enum.
+func (e SubmissionRowTopSignBy) Valid() bool {
+	switch e {
+	case SubmissionRowTopSignByDigital:
+		return true
+	case SubmissionRowTopSignByScan:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SystemSettingsFormApprovalMode.
 const (
 	SystemSettingsFormApprovalModeAll SystemSettingsFormApprovalMode = "all"
@@ -2180,6 +2276,24 @@ func (e ListDocumentNumbersParamsStatus) Valid() bool {
 	case ListDocumentNumbersParamsStatusSkipped:
 		return true
 	case ListDocumentNumbersParamsStatusVoid:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ExportSubmissionControlParamsFormat.
+const (
+	ExportSubmissionControlParamsFormatPdf  ExportSubmissionControlParamsFormat = "pdf"
+	ExportSubmissionControlParamsFormatXlsx ExportSubmissionControlParamsFormat = "xlsx"
+)
+
+// Valid indicates whether the value is a known member of the ExportSubmissionControlParamsFormat enum.
+func (e ExportSubmissionControlParamsFormat) Valid() bool {
+	switch e {
+	case ExportSubmissionControlParamsFormatPdf:
+		return true
+	case ExportSubmissionControlParamsFormatXlsx:
 		return true
 	default:
 		return false
@@ -2755,6 +2869,9 @@ type Customer struct {
 
 	// SignatureMode digital allows digital signatures; wet_only requires wet signatures (D-198).
 	SignatureMode *CustomerSignatureMode `json:"signature_mode,omitempty"`
+
+	// SubmissionRequired Revisions of this customer's documents need customer submission by default (D-207).
+	SubmissionRequired *bool `json:"submission_required,omitempty"`
 }
 
 // CustomerSignatureMode digital allows digital signatures; wet_only requires wet signatures (D-198).
@@ -5462,6 +5579,79 @@ type StatusReason struct {
 	Reason *string `json:"reason,omitempty"`
 }
 
+// SubmissionControl defines model for SubmissionControl.
+type SubmissionControl struct {
+	CustomerCode       string          `json:"customer_code"`
+	CustomerName       string          `json:"customer_name"`
+	DocumentId         string          `json:"document_id"`
+	DocumentType       string          `json:"document_type"`
+	DocumentTypeName   string          `json:"document_type_name"`
+	FormNumber         string          `json:"form_number"`
+	Models             string          `json:"models"`
+	Number             string          `json:"number"`
+	Rows               []SubmissionRow `json:"rows"`
+	SubmissionRequired bool            `json:"submission_required"`
+}
+
+// SubmissionEntry defines model for SubmissionEntry.
+type SubmissionEntry struct {
+	OverrideReason *string `json:"override_reason,omitempty"`
+	Package        *string `json:"package,omitempty"`
+	Remark         *string `json:"remark,omitempty"`
+
+	// Required Leave it out to follow the customer setting.
+	Required    *bool                  `json:"required,omitempty"`
+	Result      *SubmissionEntryResult `json:"result,omitempty"`
+	ResultOn    *openapi_types.Date    `json:"result_on,omitempty"`
+	SubmittedOn *openapi_types.Date    `json:"submitted_on,omitempty"`
+}
+
+// SubmissionEntryResult defines model for SubmissionEntry.Result.
+type SubmissionEntryResult string
+
+// SubmissionRequiredChoice defines model for SubmissionRequiredChoice.
+type SubmissionRequiredChoice struct {
+	Required bool `json:"required"`
+}
+
+// SubmissionRow defines model for SubmissionRow.
+type SubmissionRow struct {
+	// Days Calendar days from start to finish, or to today while in progress.
+	Days            int                     `json:"days"`
+	FinishedOn      *openapi_types.Date     `json:"finished_on,omitempty"`
+	Migrated        bool                    `json:"migrated"`
+	OverrideReason  *string                 `json:"override_reason,omitempty"`
+	Package         *string                 `json:"package,omitempty"`
+	Reason          string                  `json:"reason"`
+	Remark          *string                 `json:"remark,omitempty"`
+	Required        bool                    `json:"required"`
+	RequiredDefault bool                    `json:"required_default"`
+	Result          *SubmissionRowResult    `json:"result,omitempty"`
+	ResultOn        *openapi_types.Date     `json:"result_on,omitempty"`
+	Revision        int                     `json:"revision"`
+	ScanName        *string                 `json:"scan_name,omitempty"`
+	Signing         *SubmissionRowSigning   `json:"signing,omitempty"`
+	StartedOn       openapi_types.Date      `json:"started_on"`
+	Status          SubmissionRowStatus     `json:"status"`
+	SubmittedOn     *openapi_types.Date     `json:"submitted_on,omitempty"`
+	TopSignBy       *SubmissionRowTopSignBy `json:"top_sign_by,omitempty"`
+	TopSignOn       *openapi_types.Date     `json:"top_sign_on,omitempty"`
+	UpdatedAt       *time.Time              `json:"updated_at,omitempty"`
+	UpdatedBy       *string                 `json:"updated_by,omitempty"`
+}
+
+// SubmissionRowResult defines model for SubmissionRow.Result.
+type SubmissionRowResult string
+
+// SubmissionRowSigning defines model for SubmissionRow.Signing.
+type SubmissionRowSigning string
+
+// SubmissionRowStatus defines model for SubmissionRow.Status.
+type SubmissionRowStatus string
+
+// SubmissionRowTopSignBy defines model for SubmissionRow.TopSignBy.
+type SubmissionRowTopSignBy string
+
 // Subprocess defines model for Subprocess.
 type Subprocess struct {
 	Hidden bool `json:"hidden"`
@@ -5495,6 +5685,9 @@ type SystemSettings struct {
 
 	// SignDatesEnabled When false, signature slots have no sign date and the field is hidden (D-52).
 	SignDatesEnabled bool `json:"sign_dates_enabled"`
+
+	// SubmissionFormNumber The form number printed on the Form Control Submission (D-207); empty prints none.
+	SubmissionFormNumber *string `json:"submission_form_number,omitempty"`
 }
 
 // SystemSettingsFormApprovalMode How many form approvers must approve a form set or an AP table before it is published (D-139). all is the default.
@@ -5513,6 +5706,9 @@ type SystemSettingsUpdate struct {
 
 	// SignDatesEnabled Leave it out to keep the current value.
 	SignDatesEnabled *bool `json:"sign_dates_enabled,omitempty"`
+
+	// SubmissionFormNumber Leave it out to keep the current value.
+	SubmissionFormNumber *string `json:"submission_form_number,omitempty"`
 }
 
 // SystemSettingsUpdateFormApprovalMode Leave it out to keep the current value.
@@ -5889,6 +6085,19 @@ type UploadSignedScanMultipartBody struct {
 	File *openapi_types.File `json:"file,omitempty"`
 }
 
+// ExportSubmissionControlParams defines parameters for ExportSubmissionControl.
+type ExportSubmissionControlParams struct {
+	Format ExportSubmissionControlParamsFormat `form:"format" json:"format"`
+}
+
+// ExportSubmissionControlParamsFormat defines parameters for ExportSubmissionControl.
+type ExportSubmissionControlParamsFormat string
+
+// UploadSubmissionScanMultipartBody defines parameters for UploadSubmissionScan.
+type UploadSubmissionScanMultipartBody struct {
+	File *openapi_types.File `json:"file,omitempty"`
+}
+
 // GetActionPriorityParams defines parameters for GetActionPriority.
 type GetActionPriorityParams struct {
 	Severity   int `form:"severity" json:"severity"`
@@ -6066,6 +6275,9 @@ type SetCustomerPrintLayoutJSONRequestBody = CustomerPrintLayoutInput
 // SetCustomerSignatureModeJSONRequestBody defines body for SetCustomerSignatureMode for application/json ContentType.
 type SetCustomerSignatureModeJSONRequestBody = SignatureModeChoice
 
+// SetCustomerSubmissionRequiredJSONRequestBody defines body for SetCustomerSubmissionRequired for application/json ContentType.
+type SetCustomerSubmissionRequiredJSONRequestBody = SubmissionRequiredChoice
+
 // ImportDocumentNumbersJSONRequestBody defines body for ImportDocumentNumbers for application/json ContentType.
 type ImportDocumentNumbersJSONRequestBody = NumberImportRequest
 
@@ -6143,6 +6355,12 @@ type UpdateDocumentSectionJSONRequestBody = DocumentSectionUpdate
 
 // SendForSignatureJSONRequestBody defines body for SendForSignature for application/json ContentType.
 type SendForSignatureJSONRequestBody = SignatureSend
+
+// SaveSubmissionEntryJSONRequestBody defines body for SaveSubmissionEntry for application/json ContentType.
+type SaveSubmissionEntryJSONRequestBody = SubmissionEntry
+
+// UploadSubmissionScanMultipartRequestBody defines body for UploadSubmissionScan for multipart/form-data ContentType.
+type UploadSubmissionScanMultipartRequestBody UploadSubmissionScanMultipartBody
 
 // SetDocumentTemplateModeJSONRequestBody defines body for SetDocumentTemplateMode for application/json ContentType.
 type SetDocumentTemplateModeJSONRequestBody = DocumentTemplateModeInput
@@ -6458,6 +6676,9 @@ type ServerInterface interface {
 	// SetCustomerSignatureMode Allow digital signatures for a customer, or require wet signatures (A-2, D-198)
 	// (PUT /api/v1/customers/{customerId}/signature-mode)
 	SetCustomerSignatureMode(w http.ResponseWriter, r *http.Request, customerId CustomerId)
+	// SetCustomerSubmissionRequired Whether revisions of this customer need customer submission by default (A-2, D-207)
+	// (PUT /api/v1/customers/{customerId}/submission-required)
+	SetCustomerSubmissionRequired(w http.ResponseWriter, r *http.Request, customerId CustomerId)
 	// ImportDocumentNumbers Import legacy numbers of one customer, with a report (E-8, UC-14, R-NUM-06)
 	// (POST /api/v1/document-number-imports)
 	ImportDocumentNumbers(w http.ResponseWriter, r *http.Request)
@@ -6599,6 +6820,21 @@ type ServerInterface interface {
 	// SendForSignature Send the open draft for digital signature (E-5, D-198, D-203, D-204)
 	// (POST /api/v1/documents/{documentId}/signature-requests)
 	SendForSignature(w http.ResponseWriter, r *http.Request, documentId DocumentId)
+	// GetSubmissionControl The Form Control Submission of one document, one row per revision (L-4, D-207)
+	// (GET /api/v1/documents/{documentId}/submission-control)
+	GetSubmissionControl(w http.ResponseWriter, r *http.Request, documentId DocumentId)
+	// ExportSubmissionControl Print the Form Control Submission of one document as Excel or PDF (L-4, D-207)
+	// (GET /api/v1/documents/{documentId}/submission-control/export)
+	ExportSubmissionControl(w http.ResponseWriter, r *http.Request, documentId DocumentId, params ExportSubmissionControlParams)
+	// SaveSubmissionEntry Save the typed columns of one revision (E-7, D-207)
+	// (PUT /api/v1/documents/{documentId}/submission-control/{revision})
+	SaveSubmissionEntry(w http.ResponseWriter, r *http.Request, documentId DocumentId, revision int)
+	// GetSubmissionScan Download the customer approval of one revision (L-4)
+	// (GET /api/v1/documents/{documentId}/submission-control/{revision}/scan)
+	GetSubmissionScan(w http.ResponseWriter, r *http.Request, documentId DocumentId, revision int)
+	// UploadSubmissionScan Upload the customer approval of one revision (E-7, optional, D-207)
+	// (POST /api/v1/documents/{documentId}/submission-control/{revision}/scan)
+	UploadSubmissionScan(w http.ResponseWriter, r *http.Request, documentId DocumentId, revision int)
 	// ListDocumentTemplates The process templates the rows of a document use, with the link mode (L-4, M5.8)
 	// (GET /api/v1/documents/{documentId}/templates)
 	ListDocumentTemplates(w http.ResponseWriter, r *http.Request, documentId DocumentId)
@@ -7969,6 +8205,32 @@ func (siw *ServerInterfaceWrapper) SetCustomerSignatureMode(w http.ResponseWrite
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.SetCustomerSignatureMode(w, r, customerId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetCustomerSubmissionRequired operation middleware
+func (siw *ServerInterfaceWrapper) SetCustomerSubmissionRequired(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "customerId" -------------
+	var customerId CustomerId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "customerId", r.PathValue("customerId"), &customerId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customerId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetCustomerSubmissionRequired(w, r, customerId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -9397,6 +9659,179 @@ func (siw *ServerInterfaceWrapper) SendForSignature(w http.ResponseWriter, r *ht
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.SendForSignature(w, r, documentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetSubmissionControl operation middleware
+func (siw *ServerInterfaceWrapper) GetSubmissionControl(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", r.PathValue("documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetSubmissionControl(w, r, documentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ExportSubmissionControl operation middleware
+func (siw *ServerInterfaceWrapper) ExportSubmissionControl(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", r.PathValue("documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ExportSubmissionControlParams
+
+	// ------------- Required query parameter "format" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "format", r.URL.Query(), &params.Format, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "format"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "format", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ExportSubmissionControl(w, r, documentId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SaveSubmissionEntry operation middleware
+func (siw *ServerInterfaceWrapper) SaveSubmissionEntry(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", r.PathValue("documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "revision" -------------
+	var revision int
+
+	err = runtime.BindStyledParameterWithOptions("simple", "revision", r.PathValue("revision"), &revision, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "revision", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SaveSubmissionEntry(w, r, documentId, revision)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetSubmissionScan operation middleware
+func (siw *ServerInterfaceWrapper) GetSubmissionScan(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", r.PathValue("documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "revision" -------------
+	var revision int
+
+	err = runtime.BindStyledParameterWithOptions("simple", "revision", r.PathValue("revision"), &revision, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "revision", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetSubmissionScan(w, r, documentId, revision)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UploadSubmissionScan operation middleware
+func (siw *ServerInterfaceWrapper) UploadSubmissionScan(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", r.PathValue("documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "revision" -------------
+	var revision int
+
+	err = runtime.BindStyledParameterWithOptions("simple", "revision", r.PathValue("revision"), &revision, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "revision", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UploadSubmissionScan(w, r, documentId, revision)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -12504,6 +12939,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/approval-routes/{approvalRouteId}", wrapper.UpdateApprovalRoute)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/customers/{customerId}/default-route", wrapper.SetCustomerDefaultRoute)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/customers/{customerId}/signature-mode", wrapper.SetCustomerSignatureMode)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/customers/{customerId}/submission-required", wrapper.SetCustomerSubmissionRequired)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/change-types/{changeTypeId}/approval-route", wrapper.SetChangeTypeRoute)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/format-templates", wrapper.ListFormatTemplates)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/format-templates", wrapper.CreateFormatTemplate)
@@ -12585,6 +13021,11 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/admin/problem-reports", wrapper.ListProblemReports)
 	m.HandleFunc(http.MethodPatch+" "+options.BaseURL+"/api/v1/admin/problem-reports/{reportId}", wrapper.UpdateProblemReport)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/problem-reports", wrapper.ReportProblem)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/documents/{documentId}/submission-control", wrapper.GetSubmissionControl)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/documents/{documentId}/submission-control/export", wrapper.ExportSubmissionControl)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/documents/{documentId}/submission-control/{revision}", wrapper.SaveSubmissionEntry)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/documents/{documentId}/submission-control/{revision}/scan", wrapper.GetSubmissionScan)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/submission-control/{revision}/scan", wrapper.UploadSubmissionScan)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/inbox", wrapper.GetInbox)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/metrics", wrapper.GetMetrics)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/release", wrapper.ReleaseDocument)
@@ -14468,6 +14909,46 @@ type SetCustomerSignatureModedefaultJSONResponse struct {
 }
 
 func (response SetCustomerSignatureModedefaultJSONResponse) VisitSetCustomerSignatureModeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetCustomerSubmissionRequiredRequestObject struct {
+	CustomerId CustomerId `json:"customerId"`
+	Body       *SetCustomerSubmissionRequiredJSONRequestBody
+}
+
+type SetCustomerSubmissionRequiredResponseObject interface {
+	VisitSetCustomerSubmissionRequiredResponse(w http.ResponseWriter) error
+}
+
+type SetCustomerSubmissionRequired200JSONResponse Customer
+
+func (response SetCustomerSubmissionRequired200JSONResponse) VisitSetCustomerSubmissionRequiredResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetCustomerSubmissionRequireddefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response SetCustomerSubmissionRequireddefaultJSONResponse) VisitSetCustomerSubmissionRequiredResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -16387,6 +16868,235 @@ type SendForSignaturedefaultJSONResponse struct {
 }
 
 func (response SendForSignaturedefaultJSONResponse) VisitSendForSignatureResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetSubmissionControlRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+}
+
+type GetSubmissionControlResponseObject interface {
+	VisitGetSubmissionControlResponse(w http.ResponseWriter) error
+}
+
+type GetSubmissionControl200JSONResponse SubmissionControl
+
+func (response GetSubmissionControl200JSONResponse) VisitGetSubmissionControlResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetSubmissionControldefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response GetSubmissionControldefaultJSONResponse) VisitGetSubmissionControlResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ExportSubmissionControlRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+	Params     ExportSubmissionControlParams
+}
+
+type ExportSubmissionControlResponseObject interface {
+	VisitExportSubmissionControlResponse(w http.ResponseWriter) error
+}
+
+type ExportSubmissionControl200ResponseHeaders struct {
+	ContentDisposition *string
+}
+
+type ExportSubmissionControl200ApplicationoctetStreamResponse struct {
+	Body          io.Reader
+	Headers       ExportSubmissionControl200ResponseHeaders
+	ContentLength int64
+}
+
+func (response ExportSubmissionControl200ApplicationoctetStreamResponse) VisitExportSubmissionControlResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "application/octet-stream")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	if response.Headers.ContentDisposition != nil {
+		w.Header().Set("Content-Disposition", fmt.Sprint(*response.Headers.ContentDisposition))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type ExportSubmissionControldefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ExportSubmissionControldefaultJSONResponse) VisitExportSubmissionControlResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SaveSubmissionEntryRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+	Revision   int        `json:"revision"`
+	Body       *SaveSubmissionEntryJSONRequestBody
+}
+
+type SaveSubmissionEntryResponseObject interface {
+	VisitSaveSubmissionEntryResponse(w http.ResponseWriter) error
+}
+
+type SaveSubmissionEntry200JSONResponse SubmissionControl
+
+func (response SaveSubmissionEntry200JSONResponse) VisitSaveSubmissionEntryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SaveSubmissionEntrydefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response SaveSubmissionEntrydefaultJSONResponse) VisitSaveSubmissionEntryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetSubmissionScanRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+	Revision   int        `json:"revision"`
+}
+
+type GetSubmissionScanResponseObject interface {
+	VisitGetSubmissionScanResponse(w http.ResponseWriter) error
+}
+
+type GetSubmissionScan200ResponseHeaders struct {
+	ContentDisposition *string
+}
+
+type GetSubmissionScan200ApplicationoctetStreamResponse struct {
+	Body          io.Reader
+	Headers       GetSubmissionScan200ResponseHeaders
+	ContentLength int64
+}
+
+func (response GetSubmissionScan200ApplicationoctetStreamResponse) VisitGetSubmissionScanResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "application/octet-stream")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	if response.Headers.ContentDisposition != nil {
+		w.Header().Set("Content-Disposition", fmt.Sprint(*response.Headers.ContentDisposition))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type GetSubmissionScandefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response GetSubmissionScandefaultJSONResponse) VisitGetSubmissionScanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UploadSubmissionScanRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+	Revision   int        `json:"revision"`
+	Body       *multipart.Reader
+}
+
+type UploadSubmissionScanResponseObject interface {
+	VisitUploadSubmissionScanResponse(w http.ResponseWriter) error
+}
+
+type UploadSubmissionScan200JSONResponse SubmissionControl
+
+func (response UploadSubmissionScan200JSONResponse) VisitUploadSubmissionScanResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UploadSubmissionScandefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response UploadSubmissionScandefaultJSONResponse) VisitUploadSubmissionScanResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -21160,6 +21870,9 @@ type StrictServerInterface interface {
 	// SetCustomerSignatureMode Allow digital signatures for a customer, or require wet signatures (A-2, D-198)
 	// (PUT /api/v1/customers/{customerId}/signature-mode)
 	SetCustomerSignatureMode(ctx context.Context, request SetCustomerSignatureModeRequestObject) (SetCustomerSignatureModeResponseObject, error)
+	// SetCustomerSubmissionRequired Whether revisions of this customer need customer submission by default (A-2, D-207)
+	// (PUT /api/v1/customers/{customerId}/submission-required)
+	SetCustomerSubmissionRequired(ctx context.Context, request SetCustomerSubmissionRequiredRequestObject) (SetCustomerSubmissionRequiredResponseObject, error)
 	// ImportDocumentNumbers Import legacy numbers of one customer, with a report (E-8, UC-14, R-NUM-06)
 	// (POST /api/v1/document-number-imports)
 	ImportDocumentNumbers(ctx context.Context, request ImportDocumentNumbersRequestObject) (ImportDocumentNumbersResponseObject, error)
@@ -21301,6 +22014,21 @@ type StrictServerInterface interface {
 	// SendForSignature Send the open draft for digital signature (E-5, D-198, D-203, D-204)
 	// (POST /api/v1/documents/{documentId}/signature-requests)
 	SendForSignature(ctx context.Context, request SendForSignatureRequestObject) (SendForSignatureResponseObject, error)
+	// GetSubmissionControl The Form Control Submission of one document, one row per revision (L-4, D-207)
+	// (GET /api/v1/documents/{documentId}/submission-control)
+	GetSubmissionControl(ctx context.Context, request GetSubmissionControlRequestObject) (GetSubmissionControlResponseObject, error)
+	// ExportSubmissionControl Print the Form Control Submission of one document as Excel or PDF (L-4, D-207)
+	// (GET /api/v1/documents/{documentId}/submission-control/export)
+	ExportSubmissionControl(ctx context.Context, request ExportSubmissionControlRequestObject) (ExportSubmissionControlResponseObject, error)
+	// SaveSubmissionEntry Save the typed columns of one revision (E-7, D-207)
+	// (PUT /api/v1/documents/{documentId}/submission-control/{revision})
+	SaveSubmissionEntry(ctx context.Context, request SaveSubmissionEntryRequestObject) (SaveSubmissionEntryResponseObject, error)
+	// GetSubmissionScan Download the customer approval of one revision (L-4)
+	// (GET /api/v1/documents/{documentId}/submission-control/{revision}/scan)
+	GetSubmissionScan(ctx context.Context, request GetSubmissionScanRequestObject) (GetSubmissionScanResponseObject, error)
+	// UploadSubmissionScan Upload the customer approval of one revision (E-7, optional, D-207)
+	// (POST /api/v1/documents/{documentId}/submission-control/{revision}/scan)
+	UploadSubmissionScan(ctx context.Context, request UploadSubmissionScanRequestObject) (UploadSubmissionScanResponseObject, error)
 	// ListDocumentTemplates The process templates the rows of a document use, with the link mode (L-4, M5.8)
 	// (GET /api/v1/documents/{documentId}/templates)
 	ListDocumentTemplates(ctx context.Context, request ListDocumentTemplatesRequestObject) (ListDocumentTemplatesResponseObject, error)
@@ -22999,6 +23727,39 @@ func (sh *strictHandler) SetCustomerSignatureMode(w http.ResponseWriter, r *http
 	}
 }
 
+// SetCustomerSubmissionRequired operation middleware
+func (sh *strictHandler) SetCustomerSubmissionRequired(w http.ResponseWriter, r *http.Request, customerId CustomerId) {
+	var request SetCustomerSubmissionRequiredRequestObject
+
+	request.CustomerId = customerId
+
+	var body SetCustomerSubmissionRequiredJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetCustomerSubmissionRequired(ctx, request.(SetCustomerSubmissionRequiredRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetCustomerSubmissionRequired")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetCustomerSubmissionRequiredResponseObject); ok {
+		if err := validResponse.VisitSetCustomerSubmissionRequiredResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ImportDocumentNumbers operation middleware
 func (sh *strictHandler) ImportDocumentNumbers(w http.ResponseWriter, r *http.Request) {
 	var request ImportDocumentNumbersRequestObject
@@ -24396,6 +25157,154 @@ func (sh *strictHandler) SendForSignature(w http.ResponseWriter, r *http.Request
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(SendForSignatureResponseObject); ok {
 		if err := validResponse.VisitSendForSignatureResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetSubmissionControl operation middleware
+func (sh *strictHandler) GetSubmissionControl(w http.ResponseWriter, r *http.Request, documentId DocumentId) {
+	var request GetSubmissionControlRequestObject
+
+	request.DocumentId = documentId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetSubmissionControl(ctx, request.(GetSubmissionControlRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetSubmissionControl")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetSubmissionControlResponseObject); ok {
+		if err := validResponse.VisitGetSubmissionControlResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ExportSubmissionControl operation middleware
+func (sh *strictHandler) ExportSubmissionControl(w http.ResponseWriter, r *http.Request, documentId DocumentId, params ExportSubmissionControlParams) {
+	var request ExportSubmissionControlRequestObject
+
+	request.DocumentId = documentId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ExportSubmissionControl(ctx, request.(ExportSubmissionControlRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ExportSubmissionControl")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ExportSubmissionControlResponseObject); ok {
+		if err := validResponse.VisitExportSubmissionControlResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SaveSubmissionEntry operation middleware
+func (sh *strictHandler) SaveSubmissionEntry(w http.ResponseWriter, r *http.Request, documentId DocumentId, revision int) {
+	var request SaveSubmissionEntryRequestObject
+
+	request.DocumentId = documentId
+	request.Revision = revision
+
+	var body SaveSubmissionEntryJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SaveSubmissionEntry(ctx, request.(SaveSubmissionEntryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SaveSubmissionEntry")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SaveSubmissionEntryResponseObject); ok {
+		if err := validResponse.VisitSaveSubmissionEntryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetSubmissionScan operation middleware
+func (sh *strictHandler) GetSubmissionScan(w http.ResponseWriter, r *http.Request, documentId DocumentId, revision int) {
+	var request GetSubmissionScanRequestObject
+
+	request.DocumentId = documentId
+	request.Revision = revision
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetSubmissionScan(ctx, request.(GetSubmissionScanRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetSubmissionScan")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetSubmissionScanResponseObject); ok {
+		if err := validResponse.VisitGetSubmissionScanResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UploadSubmissionScan operation middleware
+func (sh *strictHandler) UploadSubmissionScan(w http.ResponseWriter, r *http.Request, documentId DocumentId, revision int) {
+	var request UploadSubmissionScanRequestObject
+
+	request.DocumentId = documentId
+	request.Revision = revision
+
+	if reader, err := r.MultipartReader(); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode multipart body: %w", err))
+		return
+	} else {
+		request.Body = reader
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UploadSubmissionScan(ctx, request.(UploadSubmissionScanRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UploadSubmissionScan")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UploadSubmissionScanResponseObject); ok {
+		if err := validResponse.VisitUploadSubmissionScanResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

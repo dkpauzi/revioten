@@ -32,6 +32,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/settings"
 	"github.com/dkpauzi/revioten/internal/signature"
 	"github.com/dkpauzi/revioten/internal/storage"
+	"github.com/dkpauzi/revioten/internal/submission"
 	"github.com/dkpauzi/revioten/internal/template"
 )
 
@@ -92,6 +93,7 @@ func TestPermissionsPerOperation(t *testing.T) {
 		Inbox:           inbox.NewService(pool, checker),
 		Signatures:      signature.NewService(pool, checker, authSvc),
 		Health:          health.NewService(pool, checker, ""),
+		Submissions:     submission.NewService(pool, checker, attachmentStore, "missing-browser"),
 	})
 
 	// Admin pertama, satu akun kerja tanpa peran (hanya hak dasar Viewer), dan
@@ -430,6 +432,13 @@ func TestPermissionsPerOperation(t *testing.T) {
 		{http.MethodGet, "/api/v1/documents/{documentId}/prints", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodPost, "/api/v1/documents/{documentId}/scan", scanBody, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/documents/{documentId}/revisions/{revision}/scan", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		// Form Control Submission (D-207): baca L-4, isi E-7, bawaan customer A-2. Berkas uji.txt ditolak (422), jadi belum ada scan (404).
+		{http.MethodGet, "/api/v1/documents/{documentId}/submission-control", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		{http.MethodGet, "/api/v1/documents/{documentId}/submission-control/export?format=xlsx", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		{http.MethodPut, "/api/v1/documents/{documentId}/submission-control/{revision}", `{"remark":"Uji"}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		{http.MethodPost, "/api/v1/documents/{documentId}/submission-control/{revision}/scan", multipartBody, http.StatusForbidden, http.StatusUnprocessableEntity, http.StatusForbidden},
+		{http.MethodGet, "/api/v1/documents/{documentId}/submission-control/{revision}/scan", "", http.StatusForbidden, http.StatusNotFound, http.StatusForbidden},
+		{http.MethodPut, "/api/v1/customers/{customerId}/submission-required", `{"required":true}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
 		{http.MethodGet, "/api/v1/verify/{revisionId}", "", http.StatusOK, http.StatusOK, http.StatusOK},
 		// Layout (M6.1): semua akun kerja melihat (L-2); admin mengubah (A-2).
 		{http.MethodGet, "/api/v1/print-layouts", "", http.StatusOK, http.StatusOK, http.StatusOK},

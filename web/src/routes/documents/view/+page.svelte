@@ -14,6 +14,7 @@
 	import PastePanel from '#lib/documents/PastePanel.svelte';
 	import RevisionsPanel from '#lib/documents/RevisionsPanel.svelte';
 	import SignaturePanel from '#lib/documents/SignaturePanel.svelte';
+	import SubmissionPanel from '#lib/documents/SubmissionPanel.svelte';
 	import PrintPanel from '#lib/documents/PrintPanel.svelte';
 	import TemplateLinksPanel from '#lib/documents/TemplateLinksPanel.svelte';
 	import MigrationPanel from '#lib/documents/MigrationPanel.svelte';
@@ -349,6 +350,7 @@
 	<SignaturePanel {doc} onchanged={() => doc && load(doc.id)} />
 	<RevisionsPanel {doc} onreleased={(d) => (doc = d)} />
 	<PrintPanel {doc} />
+	<SubmissionPanel {doc} />
 	<TemplateLinksPanel {doc} />
 	<!-- Penautan (M7.4): hanya bila ada baris berproses yang belum tertaut. -->
 	{#if canEdit && doc.rows.some((r) => r.process_id && !r.template_point_id)}

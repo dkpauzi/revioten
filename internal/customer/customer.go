@@ -21,6 +21,9 @@ type Customer struct {
 	DefaultRouteName string
 	// SignatureMode: digital atau wet_only (D-198).
 	SignatureMode string
+	// SubmissionRequired: revisi dokumen customer ini bawaannya perlu dikirim
+	// ke customer (D-207).
+	SubmissionRequired bool
 	// Active false berarti customer dinonaktifkan. Customer tidak pernah dihapus (E-09).
 	Active    bool
 	CreatedAt time.Time // selalu UTC

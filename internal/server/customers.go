@@ -106,9 +106,13 @@ func toAPICustomer(c customer.Customer) Customer {
 	if c.DefaultRouteID != "" {
 		out.DefaultRoute = &ApprovalRouteRef{Id: c.DefaultRouteID, Name: c.DefaultRouteName}
 	}
+	// Cara tanda tangan dan bawaan submission dibaca dari baris customer yang
+	// sama di database; data tanpa keduanya (test dengan layanan palsu) dibiarkan kosong.
 	if c.SignatureMode != "" {
 		mode := CustomerSignatureMode(c.SignatureMode)
 		out.SignatureMode = &mode
+		required := c.SubmissionRequired
+		out.SubmissionRequired = &required
 	}
 	for _, p := range c.Codes {
 		out.Codes = append(out.Codes, CustomerCode{Code: p.Code, ValidFrom: p.ValidFrom, ValidUntil: p.ValidUntil})

@@ -144,15 +144,16 @@ type ChangeType struct {
 }
 
 type Customer struct {
-	ID               string
-	Code             string
-	Name             string
-	CreatedAt        time.Time
-	ProjectGroupID   *string
-	Active           bool
-	DefaultRouteID   *string
-	DefaultFormSetID *string
-	SignatureMode    string
+	ID                 string
+	Code               string
+	Name               string
+	CreatedAt          time.Time
+	ProjectGroupID     *string
+	Active             bool
+	DefaultRouteID     *string
+	DefaultFormSetID   *string
+	SignatureMode      string
+	SubmissionRequired bool
 }
 
 type CustomerCode struct {
@@ -303,6 +304,24 @@ type DocumentSection struct {
 type DocumentSectionPartNumber struct {
 	SectionKey   string
 	PartNumberID string
+}
+
+type DocumentSubmission struct {
+	RevisionID        string
+	DocumentID        string
+	RequiredOverride  *bool
+	OverrideReason    *string
+	SubmittedOn       pgtype.Date
+	Package           *string
+	Result            *string
+	ResultOn          pgtype.Date
+	ResultScanName    *string
+	ResultScanType    *string
+	ResultScanSize    *int64
+	ResultScanSha256  *string
+	Remark            *string
+	UpdatedByPersonID string
+	UpdatedAt         time.Time
 }
 
 type DocumentTemplateMode struct {
@@ -859,13 +878,14 @@ type Subprocess struct {
 }
 
 type SystemSetting struct {
-	ID                 string
-	SignDatesEnabled   bool
-	FormApprovalMode   string
-	QrEnabled          bool
-	MigrationMode      bool
-	ReviewPeriodMonths int16
-	ReviewWarningDays  int16
+	ID                   string
+	SignDatesEnabled     bool
+	FormApprovalMode     string
+	QrEnabled            bool
+	MigrationMode        bool
+	ReviewPeriodMonths   int16
+	ReviewWarningDays    int16
+	SubmissionFormNumber string
 }
 
 type TemplatePoint struct {

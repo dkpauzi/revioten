@@ -22,6 +22,8 @@
 	let qrEnabled = $state(false);
 	// Saklar mode migrasi (R-MIG-06); bawaannya mati.
 	let migrationMode = $state(false);
+	// Nomor form Form Control Submission (D-207); kosong berarti tidak dicetak.
+	let formNumber = $state('');
 
 	async function load() {
 		const result = await getSystemSettings();
@@ -33,6 +35,7 @@
 		approvalMode = result.data.form_approval_mode;
 		qrEnabled = result.data.qr_enabled;
 		migrationMode = result.data.migration_mode;
+		formNumber = result.data.submission_form_number ?? '';
 		loaded = true;
 	}
 
@@ -40,7 +43,13 @@
 		event.preventDefault();
 		message = '';
 		failure = '';
-		const result = await updateSystemSettings({ sign_dates_enabled: signDates, form_approval_mode: approvalMode, qr_enabled: qrEnabled, migration_mode: migrationMode });
+		const result = await updateSystemSettings({
+			sign_dates_enabled: signDates,
+			form_approval_mode: approvalMode,
+			qr_enabled: qrEnabled,
+			migration_mode: migrationMode,
+			submission_form_number: formNumber
+		});
 		if (!result.ok) {
 			failure = failureText(result.error);
 			return;
@@ -49,6 +58,7 @@
 		approvalMode = result.data.form_approval_mode;
 		qrEnabled = result.data.qr_enabled;
 		migrationMode = result.data.migration_mode;
+		formNumber = result.data.submission_form_number ?? '';
 		message = t('settingsSaved');
 	}
 
@@ -82,6 +92,11 @@
 			{t('settingsMigration')}
 		</label>
 		<p id="migration-hint"><small>{t('settingsMigrationHint')}</small></p>
+		<div class="field">
+			<label for="form-number">{t('settingsSubmissionFormNumber')}</label>
+			<input id="form-number" bind:value={formNumber} maxlength="100" disabled={!canEdit} aria-describedby="form-number-hint" autocomplete="off" />
+			<p id="form-number-hint"><small>{t('settingsSubmissionFormNumberHint')}</small></p>
+		</div>
 		<fieldset>
 			<legend>{t('settingsFormApproval')}</legend>
 			<label><input type="radio" bind:group={approvalMode} value="all" disabled={!canEdit} /> {t('settingsFormApprovalAll')}</label>

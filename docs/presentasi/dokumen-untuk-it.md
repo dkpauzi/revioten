@@ -126,3 +126,36 @@ Yang berbeda untuk versi IT: server dan sertifikat perusahaan, nama host, alamat
 - API integrasi `/integration/v1` dan token (Tahap 9) dan portal customer (Tahap 10): latihan sesudah MVP, belum dibangun.
 - Konfirmasi slot saat rilis (R-APR-10) dan pembekuan rute saat cetak (R-APR-11): masih usulan.
 - Diagram U4, U6, U7, U9, U12, U13, dan U14 di paket UML belum dibuat.
+
+## 10. Membangun dengan Laravel dan React (D-208)
+
+Tim IT memakai Laravel (dengan spatie/laravel-permission) dan React. Demo tetap ditulis dengan Go dan SvelteKit, tetapi spesifikasi, UML, dan kontrak `api/openapi.yaml` tidak bergantung pada bahasa. Bagian ini memetakan setiap bagian demo ke padanannya di Laravel dan React, beserta risiko yang perlu diperhatikan. Pertanyaan pertama untuk IT: **database apa yang dipakai?** Banyak penjaga demo bergantung pada PostgreSQL.
+
+### 10.1 Peta komponen
+
+| Bagian di demo | Padanan di Laravel / React | Catatan penting |
+|---|---|---|
+| Go `net/http` + kontrak OpenAPI | Route, Controller, Form Request; kontrak tetap `api/openapi.yaml` | Kontrak OpenAPI bisa dipakai IT apa adanya |
+| sqlc + pgx (SQL ditulis tangan) | Eloquent untuk data biasa; Query Builder atau SQL mentah untuk penomoran, laporan, dan RLS | Penomoran (R-NUM-03) wajib `DB::transaction` + `lockForUpdate()` pada baris penghitung, bukan auto-increment |
+| goose (migrasi) | Laravel migrations | Trigger, RLS, dan hash chain ditulis dengan `DB::statement` (SQL mentah); Schema Builder tidak punya padanannya |
+| Peran dan hak (D-66, D-199) | **spatie/laravel-permission**: `permissions` = katalog L-, E-, V-, S-, G-, A-; `roles` = PPAP Engineer, Supervisor, Project Leader, Manager, Viewer, Admin | Cakupan Project Group (D-71, D-206) tidak ada di Spatie bawaan: pakai fitur **teams** Spatie atau Policy sendiri yang memeriksa jabatan di Project Group. Aturan R-SEC-11 (pemohon bukan verifikator, satu orang satu slot) tetap di Policy/Service, bukan di Spatie |
+| Audit log append-only + hash chain (R-SEC-03) | Tabel sendiri + trigger PostgreSQL | **spatie/laravel-activitylog** tidak append-only dan tidak punya hash chain; boleh dipakai untuk tampilan, tetapi penjaganya tetap trigger di database |
+| Row-level security (M8.1) | Middleware yang menjalankan `SET LOCAL app.account_id` per request, kebijakan RLS tetap di PostgreSQL | Hanya bisa bila IT memakai **PostgreSQL**. Dengan MySQL: tidak ada RLS dan tidak ada partial unique index; semua penyaringan pindah ke Global Scope Eloquent |
+| River (job queue) | Laravel Queue dengan driver `database` | Tanpa Redis, sama dengan aturan demo |
+| argon2id | `Hash::make` dengan driver `argon2id` (`config/hashing.php`) | Butuh PHP dengan dukungan Argon2 |
+| excelize (Excel) | maatwebsite/laravel-excel (PhpSpreadsheet) | |
+| PDF lewat Chrome/Edge | spatie/browsershot (Chrome headless) | Sama-sama butuh Chrome di server |
+| Email Microsoft 365 (D-194) | Laravel Mail, transport Microsoft Graph atau SMTP | Pola kotak keluar (outbox) tetap disarankan |
+| Sesi dan login | Laravel session + Sanctum (SPA) | Cookie sesi + CSRF, sama dengan demo |
+| API integrasi + token (Tahap 9) | Sanctum personal access token, atau Passport bila butuh OAuth | |
+| SvelteKit SPA | React + Vite (React Router), atau Inertia.js bila IT memakainya | Pilihan IT; kontrak API sama |
+| Tabulator, diagram PFD | Tabulator (ada pembungkus React), **React Flow** (xyflow, aslinya untuk React) | elkjs tetap sama |
+| Teks dua bahasa | react-i18next dengan katalog `en` dan `id` yang sama | Katalog `en.ts` dan `id.ts` bisa dipindah hampir apa adanya |
+| Tipe dari OpenAPI | @hey-api/openapi-ts, sama | |
+
+### 10.2 Risiko yang perlu diperhatikan
+
+1. **Database.** Banyak penjaga demo hidup di PostgreSQL: trigger penolak, RLS, partial unique index, advisory lock. Bila IT memakai MySQL, semua itu perlu dirancang ulang di aplikasi. Pertanyaan pertama ke IT: database apa yang dipakai?
+2. **Penjaga di database vs di kode.** Di Laravel, mudah sekali menulis `Model::update()` yang melewati aturan. Aturan "revisi terbit tidak bisa diubah", "tanda tangan tidak bisa diubah", dan "audit log tidak bisa diubah" sebaiknya tetap dijaga trigger.
+3. **Spatie dan cakupan.** Spatie menjawab "punya hak apa", bukan "untuk customer mana". Cakupan Project Group dan Project Leader pembantu (D-206) harus dirancang sendiri.
+4. **Kunci aplikasi (APP_KEY).** Bila "masalah key" yang Anda maksud adalah `APP_KEY` Laravel: kunci ini mengenkripsi cookie dan data terenkripsi. Bila hilang atau diganti tanpa prosedur, sesi dan data terenkripsi tidak bisa dibuka. Simpan seperti `BACKUP_PASSPHRASE`, dan gunakan `APP_PREVIOUS_KEYS` saat rotasi. (Belum dipastikan bahwa ini masalah yang dimaksud.)

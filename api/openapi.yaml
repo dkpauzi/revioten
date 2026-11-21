@@ -1523,6 +1523,27 @@ paths:
                 $ref: '#/components/schemas/Customer'
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/customers/{customerId}/submission-required:
+    put:
+      operationId: setCustomerSubmissionRequired
+      summary: Whether revisions of this customer need customer submission by default (A-2, D-207)
+      parameters:
+        - $ref: '#/components/parameters/CustomerId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmissionRequiredChoice'
+      responses:
+        '200':
+          description: The customer.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/change-types/{changeTypeId}/approval-route:
     put:
       operationId: setChangeTypeRoute
@@ -3192,6 +3213,127 @@ paths:
                 $ref: '#/components/schemas/CreatedId'
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/documents/{documentId}/submission-control:
+    get:
+      operationId: getSubmissionControl
+      summary: The Form Control Submission of one document, one row per revision (L-4, D-207)
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      responses:
+        '200':
+          description: The form.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmissionControl'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/documents/{documentId}/submission-control/export:
+    get:
+      operationId: exportSubmissionControl
+      summary: Print the Form Control Submission of one document as Excel or PDF (L-4, D-207)
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+        - name: format
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [xlsx, pdf]
+      responses:
+        '200':
+          description: The printed form.
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/documents/{documentId}/submission-control/{revision}:
+    put:
+      operationId: saveSubmissionEntry
+      summary: Save the typed columns of one revision (E-7, D-207)
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+        - name: revision
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubmissionEntry'
+      responses:
+        '200':
+          description: The form after saving.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmissionControl'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/documents/{documentId}/submission-control/{revision}/scan:
+    post:
+      operationId: uploadSubmissionScan
+      summary: Upload the customer approval of one revision (E-7, optional, D-207)
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+        - name: revision
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: The form after the upload.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmissionControl'
+        default:
+          $ref: '#/components/responses/Error'
+    get:
+      operationId: getSubmissionScan
+      summary: Download the customer approval of one revision (L-4)
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+        - name: revision
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: The scan.
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/inbox:
     get:
       operationId: getInbox
@@ -4485,6 +4627,9 @@ components:
           type: string
           enum: [digital, wet_only]
           description: digital allows digital signatures; wet_only requires wet signatures (D-198).
+        submission_required:
+          type: boolean
+          description: Revisions of this customer's documents need customer submission by default (D-207).
         active:
           type: boolean
           description: Customers are never deleted; inactive customers get no new models (E-09).
@@ -6978,6 +7123,119 @@ components:
         audit_entries:
           type: integer
           format: int64
+    SubmissionRequiredChoice:
+      type: object
+      required: [required]
+      properties:
+        required:
+          type: boolean
+    SubmissionRow:
+      type: object
+      required: [revision, status, migrated, reason, started_on, days, required, required_default]
+      properties:
+        revision:
+          type: integer
+        status:
+          type: string
+          enum: [draft, released]
+        signing:
+          type: string
+          enum: [waiting, completed]
+        migrated:
+          type: boolean
+        reason:
+          type: string
+        started_on:
+          type: string
+          format: date
+        finished_on:
+          type: string
+          format: date
+        days:
+          type: integer
+          description: Calendar days from start to finish, or to today while in progress.
+        top_sign_on:
+          type: string
+          format: date
+        top_sign_by:
+          type: string
+          enum: [digital, scan]
+        required:
+          type: boolean
+        required_default:
+          type: boolean
+        override_reason:
+          type: string
+        submitted_on:
+          type: string
+          format: date
+        package:
+          type: string
+        result:
+          type: string
+          enum: [waiting, approved, rejected]
+        result_on:
+          type: string
+          format: date
+        scan_name:
+          type: string
+        remark:
+          type: string
+        updated_by:
+          type: string
+        updated_at:
+          type: string
+          format: date-time
+    SubmissionControl:
+      type: object
+      required: [document_id, number, document_type, document_type_name, customer_code, customer_name, models, submission_required, form_number, rows]
+      properties:
+        document_id:
+          type: string
+        number:
+          type: string
+        document_type:
+          type: string
+        document_type_name:
+          type: string
+        customer_code:
+          type: string
+        customer_name:
+          type: string
+        models:
+          type: string
+        submission_required:
+          type: boolean
+        form_number:
+          type: string
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/SubmissionRow'
+    SubmissionEntry:
+      type: object
+      properties:
+        required:
+          type: boolean
+          description: Leave it out to follow the customer setting.
+        override_reason:
+          type: string
+          maxLength: 500
+        submitted_on:
+          type: string
+          format: date
+        package:
+          type: string
+          maxLength: 500
+        result:
+          type: string
+          enum: [waiting, approved, rejected]
+        result_on:
+          type: string
+          format: date
+        remark:
+          type: string
+          maxLength: 1000
     InboxTask:
       type: object
       required: [kind, title, link, days]
@@ -9135,6 +9393,9 @@ components:
           type: string
           enum: [all, any]
           description: How many form approvers must approve a form set or an AP table before it is published (D-139). all is the default.
+        submission_form_number:
+          type: string
+          description: The form number printed on the Form Control Submission (D-207); empty prints none.
     SystemSettingsUpdate:
       type: object
       properties:
@@ -9150,6 +9411,10 @@ components:
         form_approval_mode:
           type: string
           enum: [all, any]
+          description: Leave it out to keep the current value.
+        submission_form_number:
+          type: string
+          maxLength: 100
           description: Leave it out to keep the current value.
     CustomerList:
       type: object

@@ -48,6 +48,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/settings"
 	"github.com/dkpauzi/revioten/internal/signature"
 	"github.com/dkpauzi/revioten/internal/storage"
+	"github.com/dkpauzi/revioten/internal/submission"
 	"github.com/dkpauzi/revioten/internal/template"
 	"github.com/dkpauzi/revioten/web"
 )
@@ -164,6 +165,7 @@ func runServer(args []string) error {
 			Inbox:            inbox.NewService(pool, checker),
 			Signatures:       signature.NewService(pool, checker, authSvc),
 			Health:           health.NewService(pool, checker, cfg.BackupDir),
+			Submissions:      submission.NewService(pool, checker, attachments, cfg.PDFBrowser),
 		}),
 		// Batas waktu membaca header permintaan. Tanpa batas ini, klien yang
 		// sangat lambat bisa menahan koneksi selamanya (pengaman dasar, G9).

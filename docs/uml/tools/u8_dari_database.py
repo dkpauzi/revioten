@@ -49,7 +49,7 @@ GROUPS = [
     ("U8-H-perubahan-revisi-yokoten", "Perubahan, revisi, rilis, yokoten, dan tanda tangan digital", [
         "changes", "change_documents", "change_attachments", "change_impacts", "document_revisions",
         "yokotens", "yokoten_targets", "yokoten_target_documents",
-        "signature_requests", "signature_slots", "signatures"]),
+        "signature_requests", "signature_slots", "signatures", "document_submissions"]),
     ("U8-I-cetak-dan-migrasi", "Cetak, layout, dan migrasi dokumen lama", [
         "print_layouts", "customer_print_layouts", "print_logs", "document_baselines", "document_history_entries"]),
     ("U8-J-integrasi-dan-notifikasi", "API integrasi, email notifikasi, dan dasbor admin", [

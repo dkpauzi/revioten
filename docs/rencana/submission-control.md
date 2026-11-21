@@ -1,7 +1,7 @@
 # Rancangan · Form Control Submission per dokumen
 
 - **Dibuat:** 21 November 2026, dari permintaan pemilik dan desain `Desain-Submission-Control.zip` (artboard "05 SubmissionControl per dokumen").
-- **Status:** **usulan, menunggu persetujuan pemilik.** Belum ada kode.
+- **Status:** **disetujui 21 November 2026 (D-207)** dengan semua usulan: nomor form diatur admin di Settings, kolom yang diketik diisi pemegang E-7, scan persetujuan customer opsional.
 
 ## 1. Permintaan pemilik
 

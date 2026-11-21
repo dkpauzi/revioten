@@ -52,6 +52,10 @@ const (
 	ActionSignatureRejected  = "signature.rejected"
 	ActionSignatureWithdrawn = "signature.withdrawn"
 	ActionSignatureModeSet   = "customer.signature_mode_changed"
+	// D-207: Form Control Submission.
+	ActionSubmissionChanged        = "document.submission_changed"
+	ActionSubmissionScanUploaded   = "document.submission_scan_uploaded"
+	ActionSubmissionDefaultChanged = "customer.submission_default_changed"
 	// Tahap 9: API integrasi.
 	ActionServiceAccountCreated  = "service_account.created"
 	ActionServiceAccountDisabled = "service_account.disabled"

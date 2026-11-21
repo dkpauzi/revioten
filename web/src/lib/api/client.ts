@@ -135,6 +135,8 @@ import type {
 	PasswordChange,
 	RoleGrant,
 	RoleList,
+	SubmissionControl,
+	SubmissionEntry,
 	AdminHealth,
 	WaitingSignatureList,
 	ErrorReportList,
@@ -1429,6 +1431,40 @@ export function reportProblem(page: string, description: string, fetchFn: typeof
 	const body: { page: string; description: string; last_request_id?: string } = { page, description };
 	if (lastFailure.requestId) body.last_request_id = lastFailure.requestId;
 	return call<CreatedId>(fetchFn, '/api/v1/problem-reports', jsonRequest('POST', body));
+}
+
+// D-207: Form Control Submission per dokumen.
+
+// getSubmissionControl memanggil GET /api/v1/documents/{id}/submission-control (L-4).
+export function getSubmissionControl(documentId: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<SubmissionControl>> {
+	return call<SubmissionControl>(fetchFn, itemPath('documents', documentId) + '/submission-control', { method: 'GET' });
+}
+
+// saveSubmissionEntry memanggil PUT /api/v1/documents/{id}/submission-control/{revision} (E-7).
+export function saveSubmissionEntry(documentId: string, revision: number, entry: SubmissionEntry, fetchFn: typeof fetch = fetch): Promise<ApiResult<SubmissionControl>> {
+	return call<SubmissionControl>(fetchFn, `${itemPath('documents', documentId)}/submission-control/${revision}`, jsonRequest('PUT', entry));
+}
+
+// uploadSubmissionScan memanggil POST /api/v1/documents/{id}/submission-control/{revision}/scan (E-7).
+export function uploadSubmissionScan(documentId: string, revision: number, file: File, fetchFn: typeof fetch = fetch): Promise<ApiResult<SubmissionControl>> {
+	const form = new FormData();
+	form.append('file', file);
+	return call<SubmissionControl>(fetchFn, `${itemPath('documents', documentId)}/submission-control/${revision}/scan`, { method: 'POST', body: form });
+}
+
+// submissionScanUrl adalah alamat unduhan bukti persetujuan customer satu revisi.
+export function submissionScanUrl(documentId: string, revision: number): string {
+	return `${itemPath('documents', documentId)}/submission-control/${revision}/scan`;
+}
+
+// submissionExportUrl adalah alamat unduhan form (xlsx atau pdf).
+export function submissionExportUrl(documentId: string, format: 'xlsx' | 'pdf'): string {
+	return `${itemPath('documents', documentId)}/submission-control/export?format=${format}`;
+}
+
+// setCustomerSubmissionRequired memanggil PUT /api/v1/customers/{id}/submission-required (A-2).
+export function setCustomerSubmissionRequired(customerId: string, required: boolean, fetchFn: typeof fetch = fetch): Promise<ApiResult<Customer>> {
+	return call<Customer>(fetchFn, itemPath('customers', customerId) + '/submission-required', jsonRequest('PUT', { required }));
 }
 
 // D-194: email notifikasi.

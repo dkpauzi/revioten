@@ -21,15 +21,16 @@ func (q *Queries) GetMigrationMode(ctx context.Context) (bool, error) {
 }
 
 const getSystemSettings = `-- name: GetSystemSettings :one
-SELECT id, sign_dates_enabled, form_approval_mode, qr_enabled, migration_mode FROM system_settings
+SELECT id, sign_dates_enabled, form_approval_mode, qr_enabled, migration_mode, submission_form_number FROM system_settings
 `
 
 type GetSystemSettingsRow struct {
-	ID               string
-	SignDatesEnabled bool
-	FormApprovalMode string
-	QrEnabled        bool
-	MigrationMode    bool
+	ID                   string
+	SignDatesEnabled     bool
+	FormApprovalMode     string
+	QrEnabled            bool
+	MigrationMode        bool
+	SubmissionFormNumber string
 }
 
 func (q *Queries) GetSystemSettings(ctx context.Context) (GetSystemSettingsRow, error) {
@@ -41,20 +42,22 @@ func (q *Queries) GetSystemSettings(ctx context.Context) (GetSystemSettingsRow, 
 		&i.FormApprovalMode,
 		&i.QrEnabled,
 		&i.MigrationMode,
+		&i.SubmissionFormNumber,
 	)
 	return i, err
 }
 
 const lockSystemSettings = `-- name: LockSystemSettings :one
-SELECT id, sign_dates_enabled, form_approval_mode, qr_enabled, migration_mode FROM system_settings FOR NO KEY UPDATE
+SELECT id, sign_dates_enabled, form_approval_mode, qr_enabled, migration_mode, submission_form_number FROM system_settings FOR NO KEY UPDATE
 `
 
 type LockSystemSettingsRow struct {
-	ID               string
-	SignDatesEnabled bool
-	FormApprovalMode string
-	QrEnabled        bool
-	MigrationMode    bool
+	ID                   string
+	SignDatesEnabled     bool
+	FormApprovalMode     string
+	QrEnabled            bool
+	MigrationMode        bool
+	SubmissionFormNumber string
 }
 
 func (q *Queries) LockSystemSettings(ctx context.Context) (LockSystemSettingsRow, error) {
@@ -66,6 +69,7 @@ func (q *Queries) LockSystemSettings(ctx context.Context) (LockSystemSettingsRow
 		&i.FormApprovalMode,
 		&i.QrEnabled,
 		&i.MigrationMode,
+		&i.SubmissionFormNumber,
 	)
 	return i, err
 }

@@ -1117,6 +1117,17 @@ class SignatureSlot <<tambah saja>> {
   print_title
   person (dipilih saat dikirim, D-203)
 }
+class DocumentSubmission <<D-207>> {
+  required_override + alasan
+  submitted_on, package
+  result : waiting, approved, rejected
+  result_on, scan bukti (opsional)
+  remark
+  --
+  dihitung: reason, date of start,
+  date of finish, top management sign
+}
+DocumentSubmission "0..1" -- "1" Revision : satu per revisi >
 class Signature <<tambah saja>> {
   signed_at
   content_sha256
