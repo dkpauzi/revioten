@@ -96,7 +96,7 @@ func TestDocumentEndpoints(t *testing.T) {
 
 	// C4: langkah PFD dan rakit per langkah.
 	rec = srv.do(http.MethodGet, "/api/v1/documents/d-1/pfd-composition", "")
-	wantSteps := `{"pfd_id":"","documents":[],"extra":[],"steps":[{"section_key":"","operation":"10","process_id":"","process_name":"IQC","symbol":"","ng":"",` +
+	wantSteps := `{"pfd_id":"","documents":[],"extra":[],"repeated":[],"steps":[{"section_key":"","operation":"10","process_id":"","process_name":"IQC","symbol":"","ng":"",` +
 		`"template_version_id":"","template_version":0,"targets":[{"document_id":"cp","document_type_key":"cp","points":2,"state":"to_add"}]}]}`
 	if rec.Code != http.StatusOK || !sameJSON(t, rec.Body.String(), wantSteps) {
 		t.Errorf("langkah PFD: status %d: %s", rec.Code, rec.Body.String())

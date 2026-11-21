@@ -45,6 +45,16 @@ type PFDComposition struct {
 	Documents []TypeRef        // PFMEA dan CP di set, dengan ID dokumennya di TypeRef.ID
 	Steps     []PFDStepPlan    // menurut urutan PFD; tidak pernah nil
 	Extra     []StepOutsidePFD // baris PFMEA atau CP yang langkahnya tidak ada di PFD; tidak pernah nil
+	// Repeated: proses yang dipakai di lebih dari satu nomor langkah satu PFD
+	// (D-213). Setiap langkah seharusnya memakai proses terdaftarnya sendiri.
+	Repeated []RepeatedProcess // tidak pernah nil
+}
+
+// RepeatedProcess adalah satu proses yang muncul di beberapa nomor langkah.
+type RepeatedProcess struct {
+	SectionKey  string
+	ProcessName string
+	Operations  []string // menurut urutan PFD
 }
 
 // PFDStepPlan adalah satu langkah PFD beserta template dan keadaannya.
@@ -174,7 +184,7 @@ func hasStep(d Document, s FlowStep) bool {
 
 // view menyusun tampilan perakitan dari bahan yang sudah dibaca.
 func (p pfdPlan) view(d Document) PFDComposition {
-	out := PFDComposition{PFDID: pfdOf(d), Documents: []TypeRef{}, Steps: []PFDStepPlan{}, Extra: []StepOutsidePFD{}}
+	out := PFDComposition{PFDID: pfdOf(d), Documents: []TypeRef{}, Steps: []PFDStepPlan{}, Extra: []StepOutsidePFD{}, Repeated: repeatedProcesses(p.steps)}
 	for _, t := range p.targets {
 		out.Documents = append(out.Documents, TypeRef{ID: t.ID, Key: t.DocumentType.Key, Name: t.DocumentType.Name})
 	}
@@ -451,4 +461,27 @@ func orderByPFD(ctx context.Context, q *db.Queries, documentID string, steps []F
 		}
 	}
 	return nil
+}
+
+// repeatedProcesses mencari proses yang dipakai di lebih dari satu nomor
+// langkah dalam satu bagian PFD (D-213). Baris tanpa proses dilewati.
+func repeatedProcesses(steps []FlowStep) []RepeatedProcess {
+	out := []RepeatedProcess{}
+	index := map[string]int{} // bagian dan proses menjadi posisi di out
+	for _, s := range steps {
+		if s.ProcessID == "" {
+			continue
+		}
+		k := s.SectionKey + "|" + s.ProcessID
+		i, ok := index[k]
+		if !ok {
+			index[k] = len(out)
+			out = append(out, RepeatedProcess{SectionKey: s.SectionKey, ProcessName: s.ProcessName, Operations: []string{s.Operation}})
+			continue
+		}
+		if !slices.Contains(out[i].Operations, s.Operation) {
+			out[i].Operations = append(out[i].Operations, s.Operation)
+		}
+	}
+	return slices.DeleteFunc(out, func(r RepeatedProcess) bool { return len(r.Operations) < 2 })
 }

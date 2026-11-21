@@ -43,7 +43,7 @@
 	import PointTable from '#lib/processTemplates/PointTable.svelte';
 	import ScopePicker from '#lib/processTemplates/ScopePicker.svelte';
 	import SubprocessTable from '#lib/processTemplates/SubprocessTable.svelte';
-	import { pointColumns, pointTypes, pointsOf, scopeLevels, scopeText, templateOf, type PointColumn, type ScopeLevel } from '#lib/processTemplates.ts';
+	import { newPointTypes, pointColumns, pointTypes, pointsOf, scopeLevels, scopeText, templateOf, type PointColumn, type ScopeLevel } from '#lib/processTemplates.ts';
 	import { can } from '#lib/session.svelte.ts';
 	import VersionBar from '#lib/templates/VersionBar.svelte';
 	import PropagationPanel from '#lib/templates/PropagationPanel.svelte';
@@ -407,7 +407,7 @@
 							<label for="new-point-type">{t('pointDocumentType')}</label>
 							<select id="new-point-type" bind:value={newPoint.documentTypeId}>
 								<option value="">{t('pointDocumentTypeChoose')}</option>
-								{#each types as d (d.id)}
+								{#each newPointTypes(types) as d (d.id)}
 									<option value={d.id}>{d.name}</option>
 								{/each}
 							</select>

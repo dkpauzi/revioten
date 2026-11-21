@@ -321,6 +321,10 @@ export type ComposeFromPfdInput = {
 
 export type PfdComposition = {
     /**
+     * Processes used at more than one step number of one PFD (D-213); each step should use its own registered process.
+     */
+    repeated: Array<PfdRepeatedProcess>;
+    /**
      * The PFD of the set; empty when the set has none.
      */
     pfd_id: string;
@@ -330,6 +334,12 @@ export type PfdComposition = {
     documents: Array<PfdTargetDocument>;
     steps: Array<PfdStep>;
     extra: Array<PfdStepOutside>;
+};
+
+export type PfdRepeatedProcess = {
+    section_key: string;
+    process_name: string;
+    operations: Array<string>;
 };
 
 export type PfdTargetDocument = {

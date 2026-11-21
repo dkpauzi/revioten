@@ -449,7 +449,10 @@ func (a *apiServer) GetPfdComposition(ctx context.Context, req GetPfdComposition
 	if err != nil {
 		return nil, err
 	}
-	out := PfdComposition{PfdId: c.PFDID, Documents: []PfdTargetDocument{}, Steps: []PfdStep{}, Extra: []PfdStepOutside{}}
+	out := PfdComposition{PfdId: c.PFDID, Documents: []PfdTargetDocument{}, Steps: []PfdStep{}, Extra: []PfdStepOutside{}, Repeated: []PfdRepeatedProcess{}}
+	for _, r := range c.Repeated {
+		out.Repeated = append(out.Repeated, PfdRepeatedProcess{SectionKey: r.SectionKey, ProcessName: r.ProcessName, Operations: r.Operations})
+	}
 	for _, d := range c.Documents {
 		out.Documents = append(out.Documents, PfdTargetDocument{Id: d.ID, DocumentTypeKey: d.Key, DocumentTypeName: d.Name})
 	}

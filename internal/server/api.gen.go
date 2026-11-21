@@ -4658,8 +4658,18 @@ type PfdComposition struct {
 	Extra     []PfdStepOutside    `json:"extra"`
 
 	// PfdId The PFD of the set; empty when the set has none.
-	PfdId string    `json:"pfd_id"`
-	Steps []PfdStep `json:"steps"`
+	PfdId string `json:"pfd_id"`
+
+	// Repeated Processes used at more than one step number of one PFD (D-213); each step should use its own registered process.
+	Repeated []PfdRepeatedProcess `json:"repeated"`
+	Steps    []PfdStep            `json:"steps"`
+}
+
+// PfdRepeatedProcess defines model for PfdRepeatedProcess.
+type PfdRepeatedProcess struct {
+	Operations  []string `json:"operations"`
+	ProcessName string   `json:"process_name"`
+	SectionKey  string   `json:"section_key"`
 }
 
 // PfdStep defines model for PfdStep.

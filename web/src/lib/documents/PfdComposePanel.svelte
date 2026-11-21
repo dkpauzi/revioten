@@ -133,7 +133,7 @@
 				{#each checks as w, i (i)}
 					<li>
 						{#if hasSections && w.sectionKey}<strong>{sections[w.sectionKey] ?? w.sectionKey}</strong> · {/if}
-						{t(w.kind === 'missing' ? 'pfdMissing' : 'pfdExtra', { operation: w.operation, process: w.process, document: typeName[w.documentType] ?? w.documentType })}
+						{t(w.kind === 'missing' ? 'pfdMissing' : w.kind === 'repeated' ? 'pfdRepeated' : 'pfdExtra', { operation: w.operation, process: w.process, document: typeName[w.documentType] ?? w.documentType })}
 					</li>
 				{/each}
 			</ul>

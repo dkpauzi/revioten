@@ -187,9 +187,21 @@ func (s *ProcessService) AddPoint(ctx context.Context, actor access.Actor, versi
 		if !found {
 			subProblem = &problem.Problem{Field: "subprocess_id", Code: problem.InvalidFormat, Message: "Choose a sub-process of this version."}
 		}
-		typeProblem, err := checkDocumentType(ctx, q, in.DocumentTypeID, "Only PFD, PFMEA, and CP have process template points.")
+		typeProblem, err := checkDocumentType(ctx, q, in.DocumentTypeID, "Only PFMEA and CP have process template points.")
 		if err != nil {
 			return nil, err
+		}
+		// PFD diisi per dokumen tanpa template (D-211, D-214): poin baru tidak
+		// boleh berjenis PFD. Poin PFD lama tetap bisa dibaca.
+		if typeProblem == nil {
+			dt, err := q.GetDocumentType(ctx, in.DocumentTypeID)
+			if err != nil {
+				return nil, err
+			}
+			if derefText(dt.Key) == "pfd" {
+				typeProblem = &problem.Problem{Field: "document_type_id", Code: problem.NotAllowed,
+					Message: "The PFD is filled in per document, so process templates have points for the PFMEA and the CP only."}
+			}
 		}
 		count := countPoints(sub, in.DocumentTypeID)
 		if found && typeProblem == nil && count >= maxPointsPerList {

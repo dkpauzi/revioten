@@ -50,7 +50,7 @@ test('varian model K-125 menang atas poin umum, model lain tetap umum', async ({
 	await page.getByRole('button', { name: en.subprocessShowPointsOf.replace('{name}', 'Laser') }).click();
 
 	// Poin baru biasanya umum (cakupan bawaan General).
-	// Jenis dokumen pertama (PFD) dipilih menurut urutan, karena test lain boleh
+	// Jenis dokumen pertama yang boleh punya poin (PFMEA, D-214) dipilih menurut urutan, karena test lain boleh
 	// mengganti namanya (types.test.ts).
 	await page.getByLabel(en.pointDocumentType).selectOption({ index: 1 });
 	await page.getByLabel(en.pointText, { exact: true }).fill('Laser type sesuai spesifikasi');

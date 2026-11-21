@@ -5142,8 +5142,13 @@ components:
             $ref: '#/components/schemas/PfdStepKey'
     PfdComposition:
       type: object
-      required: [pfd_id, documents, steps, extra]
+      required: [pfd_id, documents, steps, extra, repeated]
       properties:
+        repeated:
+          type: array
+          description: Processes used at more than one step number of one PFD (D-213); each step should use its own registered process.
+          items:
+            $ref: '#/components/schemas/PfdRepeatedProcess'
         pfd_id:
           type: string
           description: The PFD of the set; empty when the set has none.
@@ -5160,6 +5165,18 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PfdStepOutside'
+    PfdRepeatedProcess:
+      type: object
+      required: [section_key, process_name, operations]
+      properties:
+        section_key:
+          type: string
+        process_name:
+          type: string
+        operations:
+          type: array
+          items:
+            type: string
     PfdTargetDocument:
       type: object
       required: [id, document_type_key, document_type_name]

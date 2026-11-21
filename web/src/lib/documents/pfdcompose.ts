@@ -26,7 +26,7 @@ export function chosenSteps(view: PfdComposition, chosen: Record<string, boolean
 
 // Warning adalah satu hasil pemeriksaan PFD dengan PFMEA atau CP.
 export type Warning = {
-	kind: 'missing' | 'extra';
+	kind: 'missing' | 'extra' | 'repeated';
 	operation: string;
 	process: string;
 	documentType: string; // pfmea atau cp
@@ -43,6 +43,10 @@ export function warnings(view: PfdComposition): Warning[] {
 				out.push({ kind: 'missing', operation: s.operation, process: s.process_name, documentType: t.document_type_key, sectionKey: s.section_key });
 			}
 		}
+	}
+	// D-213: satu proses di beberapa nomor langkah; operation berisi semua nomornya.
+	for (const r of view.repeated ?? []) {
+		out.push({ kind: 'repeated', operation: r.operations.join(', '), process: r.process_name, documentType: 'pfd', sectionKey: r.section_key });
 	}
 	for (const e of view.extra) {
 		out.push({ kind: 'extra', operation: e.operation, process: e.process_name, documentType: e.document_type_key, sectionKey: e.section_key });

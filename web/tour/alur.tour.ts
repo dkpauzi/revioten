@@ -263,7 +263,7 @@ test('alur dari admin sampai dokumen terbit, revisi, tanda tangan digital, migra
 	await page.getByLabel(en.pointText, { exact: true }).fill('Laser type sesuai spesifikasi');
 	await page.getByRole('button', { name: en.pointAdd }).click();
 	await expect(page.getByRole('status')).toHaveText(en.pointAdded);
-	await say(page, 'Langkah 10', 'Poin PFMEA dan CP untuk sub-proses yang sama, supaya satu perakitan mengisi ketiga dokumen.');
+	await say(page, 'Langkah 10', 'Poin PFMEA dan CP untuk sub-proses yang sama. PFD tidak punya poin template: PFD diisi per dokumen.');
 	for (const [type, text] of [
 		['PFMEA', 'Salah laser type'],
 		['CP', 'Cek laser type']
@@ -370,13 +370,27 @@ test('alur dari admin sampai dokumen terbit, revisi, tanda tangan digital, migra
 
 	await page.getByRole('link', { name: 'SC-LM-002' }).click();
 	await expect(page.getByRole('heading', { name: 'SC-LM-002', level: 1 })).toBeVisible();
-	await say(page, 'Langkah 18', 'Workbook dokumen: tab PFD, PFMEA, CP, dan Check. Baris dirakit dari process template.');
-	await tool(page, en.composeOpen).click();
-	await page.getByLabel(en.composeProcess).selectOption({ label: `Laser marking · ${en.composeVersion.replace('{version}', '1')}` });
-	await page.getByRole('checkbox', { name: en.composeAll.replace('{name}', 'Marking') }).check();
-	await say(page, 'Langkah 18', 'Kiri: poin template yang dicentang. Kanan: baris yang akan didapat PFD, PFMEA, dan CP.');
-	await page.getByRole('button', { name: en.composeApply }).click();
-	await expect(page.getByRole('status')).toHaveText(en.composeDone.replace('{process}', 'Laser marking'));
+	await say(page, 'Langkah 18', 'Workbook dokumen: tab PFD, PFMEA, CP, dan Check. PFD diisi lebih dulu; PFMEA dan CP dirakit dari langkah PFD.');
+	await expect(page.getByRole('region', { name: en.nextStepTitle })).toContainText(en.nextPfdFirst);
+	// Langkah PFD diketik per dokumen (D-211): 10 Laser marking, simbol proses.
+	await page.evaluate(async () => {
+		const docs = (await (await fetch('/api/v1/documents?customer_id=' + (await (await fetch('/api/v1/customers')).json()).items.find((c: { code: string }) => c.code === 'LM').id)).json()).items as { id: string; number: string }[];
+		const pfd = await (await fetch(`/api/v1/documents/${docs.find((d) => d.number === 'SH-LM-002')!.id}`)).json();
+		const fields = (await (await fetch(`/api/v1/format-template-versions/${pfd.format_version_id}`)).json()).fields as { id: string; key?: string }[];
+		const processes = (await (await fetch('/api/v1/processes')).json()).items as { id: string; name: string }[];
+		await fetch(`/api/v1/documents/${pfd.id}/rows`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ operation_number: '10', process_id: processes.find((p) => p.name === 'Laser marking')!.id, content: { [fields.find((f) => f.key === 'flow_symbol')!.id]: 'process' } })
+		});
+	});
+	await say(page, 'Langkah 18', 'PFD SH-LM-002 berisi satu langkah: 10 Laser marking. Tidak ada template untuk PFD.');
+	await page.reload();
+	await expect(page.getByRole('region', { name: en.nextStepTitle })).toContainText(en.nextComposePfd);
+	await openTool(page, en.pfdComposeOpen);
+	await say(page, 'Langkah 18', 'Rakit dari PFD: setiap langkah PFD dengan process template prosesnya, dan baris yang akan didapat PFMEA dan CP.');
+	await page.getByRole('button', { name: en.pfdApply }).click();
+	await expect(page.getByRole('status')).toHaveText(en.pfdDone.replace('{count}', '1'));
 	const grid = page.locator('.workbook');
 	const rows = grid.locator('.tabulator-row');
 	await expect(rows).toHaveCount(1);

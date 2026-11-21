@@ -1259,6 +1259,7 @@ export const en = {
 	pfdCheckTitle: 'Check against the PFD',
 	pfdCheckOk: 'Every PFD step is in the PFMEA and the Control Plan, and they have no other steps.',
 	pfdMissing: 'Step {operation} {process} is not yet in the {document}.',
+	pfdRepeated: 'Process {process} is used at steps {operation} of the PFD. Each step uses its own registered process; register a separate process for each step.',
 	pfdExtra: 'Step {operation} {process} of the {document} is not in the PFD.',
 	wbToolbar: 'Document tools',
 	wbGroupRows: 'Rows',

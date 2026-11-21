@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { DocumentType, FormatVersion, ProcessTemplate, Subprocess, TemplatePoint } from './api/gen/index.ts';
 import { en } from './i18n/en.ts';
-import { contentInput, pointColumns, pointSummary, pointTypes, pointsOf, scopeText, templateOf, variantLevels, versionText } from './processTemplates.ts';
+import { contentInput, newPointTypes, pointColumns, pointSummary, pointTypes, pointsOf, scopeText, templateOf, variantLevels, versionText } from './processTemplates.ts';
 
 const types: DocumentType[] = [
 	{ id: 'd-pfd', key: 'pfd', name: 'PFD', letter: 'H', prefix: 'SH' },
@@ -53,6 +53,8 @@ describe('process template di layar', () => {
 
 	it('hanya PFD, PFMEA, dan CP yang punya poin', () => {
 		expect(pointTypes(types).map((d) => d.name)).toEqual(['PFD', 'PFMEA', 'CP']);
+		// Poin baru hanya untuk PFMEA dan CP (D-214).
+		expect(newPointTypes(types).map((d) => d.name)).toEqual(['PFMEA', 'CP']);
 	});
 
 	it('memilah poin per jenis dokumen dan meringkas jumlahnya', () => {

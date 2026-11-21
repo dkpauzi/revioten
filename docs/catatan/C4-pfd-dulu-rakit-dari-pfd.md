@@ -68,6 +68,20 @@ Alur menurut pemilik:
 | `npm --prefix web run test:e2e` | 71 lulus; `m4-pfd.test.ts` memeriksa alur PFD → CP dan PFMEA di layar |
 | Help-shots | Lulus; gambar diperbarui |
 
+## Lanjutan 22 November 2026: D-213 dan D-214
+
+Pemilik memutuskan E-138 dan E-139, lalu meminta keduanya dibangun ("ya bangun sekarang").
+
+| Keputusan | Yang dibuat |
+|---|---|
+| D-214 (E-139) | `AddPoint` menolak poin baru berjenis PFD (`document_type_id:not_allowed`). Layar Process templates hanya menawarkan PFMEA dan CP (`newPointTypes`), dan poin PFD lama tetap tampil. Compose from process templates melewati poin PFD lama, jadi PFD tidak lagi terisi dari template. Help bab Process templates dan Documents disesuaikan. |
+| D-213 (E-138) | `PFDComposition.Repeated` mencatat proses yang dipakai di lebih dari satu nomor langkah dalam satu bagian PFD. Panel **From PFD** menampilkannya sebagai peringatan: daftarkan proses terpisah untuk setiap langkah. Bila tetap terjadi, baris langkah kedua tidak ditautkan (ASUMSI E-138 tetap). |
+| Tur | Langkah 18 mengikuti alur baru: kotak Next step "isi PFD dulu", satu langkah PFD (10 Laser marking) diisi, lalu **From PFD** di CP. Langkah 10 tidak lagi membuat poin PFD. |
+| Test | Go semua lulus, Vitest 180, E2E 71, tur (`fast`) dan Help-shots lulus |
+| Reset database | Panduan `docs/panduan/reset-database.md`. Database `revioten` di komputer pemilik dikosongkan atas permintaannya. Sebelumnya dibuat backup `data/backup-sebelum-reset.dump` (88 tabel) dan lampiran dipindah ke `data/attachments-sebelum-reset`. Migrasi sudah membuat ulang 88 tabel; akun admin perlu dibuat lagi oleh pemilik. |
+
+Mengembalikan isi ke revisi lama (seperti `git revert`) tidak dibangun. Menurut pemilik, fitur itu melanggar aturan revisi: revisi terbit tidak berubah, dan setiap perubahan lewat permintaan perubahan.
+
 ## Latihan tulis tangan
 
 PFD berisi langkah 1 Part Receiving, 2 IQC, dan 3 Storage. CP sudah punya dua baris IQC (langkah 2) dan satu baris langkah 9. Hanya Part Receiving yang punya template, dengan dua poin CP. Tulis urutan baris CP sesudah semua langkah dirakit, dan tandai baris mana yang baru, mana yang berisi "--", dan mana yang muncul di pemeriksaan.

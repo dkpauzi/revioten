@@ -47,15 +47,15 @@ test('PPAP Engineer menyimpan contoh IQC dengan lima sub-proses beserta poinnya'
 	await page.getByRole('button', { name: en.subprocessAdd }).click();
 	await expect(page.getByText(en.subprocessNameTaken)).toBeVisible();
 
-	// Poin IQC MSD untuk PFD, PFMEA, dan CP.
+	// Poin IQC MSD untuk PFMEA dan CP. PFD tidak punya poin template (D-214).
 	await page.getByRole('button', { name: en.subprocessShowPointsOf.replace('{name}', 'IQC MSD') }).click();
 	await expect(page.getByRole('heading', { name: en.pointsTitle.replace('{name}', 'IQC MSD') })).toBeVisible();
 	const points = [
-		['PFD', 'Incoming inspection of MSD'],
 		['PFMEA', 'Floor life exceeded before use'],
 		['PFMEA', 'Damaged moisture barrier bag'],
 		['CP', 'Check MSL label and humidity indicator card']
 	];
+	await expect(page.getByLabel(en.pointDocumentType).getByRole('option', { name: 'PFD', exact: true })).toHaveCount(0);
 	for (const [type, text] of points) {
 		await page.getByLabel(en.pointDocumentType).selectOption({ label: type });
 		await page.getByLabel(en.pointText, { exact: true }).fill(text);
@@ -78,7 +78,7 @@ test('PPAP Engineer menyimpan contoh IQC dengan lima sub-proses beserta poinnya'
 	for (const [i, name] of five.entries()) {
 		await expect(page.getByRole('row', { name: new RegExp(`^${i + 1} ${name} `) })).toBeVisible();
 	}
-	await expect(page.getByRole('row', { name: /^2 IQC MSD PFD 1 · PFMEA 2 · CP 1 / })).toBeVisible();
+	await expect(page.getByRole('row', { name: /^2 IQC MSD PFMEA 2 · CP 1 / })).toBeVisible();
 	await page.getByRole('button', { name: en.subprocessShowPointsOf.replace('{name}', 'IQC MSD') }).click();
 	await expect(page.getByRole('row', { name: /^2 Floor life exceeded before use / })).toBeVisible();
 });

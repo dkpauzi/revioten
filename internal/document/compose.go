@@ -9,9 +9,10 @@ package document
 // pernah diputuskan, misalnya poin baru di versi template berikutnya, tampil
 // sebagai "belum diputuskan".
 //
-// Satu perakitan mengisi PFD, PFMEA, dan CP sekaligus (R-CMP-02): poin PFD
-// masuk ke dokumen PFD di set yang sama, dan seterusnya. Dokumen dari nomor
-// tunggal hanya menerima poin jenisnya sendiri.
+// Satu perakitan mengisi PFMEA dan CP sekaligus (R-CMP-02): poin PFMEA masuk
+// ke dokumen PFMEA di set yang sama, dan seterusnya. Poin PFD tidak dirakit
+// lagi, karena PFD diisi per dokumen tanpa template (D-211, D-214). Dokumen
+// dari nomor tunggal hanya menerima poin jenisnya sendiri.
 
 import (
 	"context"
@@ -150,8 +151,8 @@ func (s *Service) Composition(ctx context.Context, actor access.Actor, id, versi
 		item := ComposedSubprocess{ID: sub.ID, Name: sub.Name, Points: []ComposedPoint{}}
 		for _, p := range sub.Points {
 			doc, ok := docs[p.DocumentType.Key]
-			if !ok {
-				continue // set ini tidak punya dokumen jenis itu
+			if !ok || p.DocumentType.Key == "pfd" {
+				continue // set tanpa dokumen jenis itu, atau poin PFD lama (D-214)
 			}
 			point := ComposedPoint{
 				PointID: p.OriginID, Text: p.Text, DocumentID: doc.ID, State: StateUndecided,
@@ -227,7 +228,8 @@ func (s *Service) Compose(ctx context.Context, actor access.Actor, id string, in
 		targets := map[string]target{}
 		for _, sub := range resolved {
 			for _, p := range sub.Points {
-				if doc, ok := docs[p.DocumentType.Key]; ok {
+				// Poin PFD lama tidak dirakit lagi: PFD diisi per dokumen (D-214).
+				if doc, ok := docs[p.DocumentType.Key]; ok && p.DocumentType.Key != "pfd" {
 					order = append(order, p.OriginID)
 					targets[p.OriginID] = target{point: p, doc: doc}
 				}

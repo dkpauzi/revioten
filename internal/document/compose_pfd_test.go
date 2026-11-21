@@ -84,6 +84,10 @@ func TestComposeFromPFD(t *testing.T) {
 	if got := stepState(view, "cp"); !slices.Equal(got, []string{"10:to_add", "20:no_template", "30:to_add"}) {
 		t.Errorf("keadaan langkah CP: %v", got)
 	}
+	// D-213: IQC dipakai di langkah 10 dan 30, jadi diberi peringatan.
+	if len(view.Repeated) != 1 || view.Repeated[0].ProcessName != "IQC" || !slices.Equal(view.Repeated[0].Operations, []string{"10", "30"}) {
+		t.Errorf("proses berulang: %+v", view.Repeated)
+	}
 	if view.Steps[0].TemplateVersion != 1 || view.Steps[0].ProcessName != "IQC" || view.Steps[1].TemplateVersionID != "" {
 		t.Errorf("template setiap langkah: %+v", view.Steps)
 	}

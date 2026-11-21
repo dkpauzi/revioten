@@ -79,7 +79,7 @@
 				const names = Object.fromEntries(steps.data.documents.map((d) => [d.document_type_key, d.document_type_name]));
 				previewChecks = warnings(steps.data)
 					.filter((w) => w.documentType === doc!.document_type.key)
-					.map((w) => t(w.kind === 'missing' ? 'pfdMissing' : 'pfdExtra', { operation: w.operation, process: w.process, document: names[w.documentType] ?? w.documentType }));
+					.map((w) => t(w.kind === 'missing' ? 'pfdMissing' : w.kind === 'repeated' ? 'pfdRepeated' : 'pfdExtra', { operation: w.operation, process: w.process, document: names[w.documentType] ?? w.documentType }));
 			}
 		}
 	}

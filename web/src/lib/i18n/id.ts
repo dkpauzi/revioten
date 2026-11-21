@@ -1258,6 +1258,7 @@ export const id: Messages = {
 	pfdCheckTitle: 'Pemeriksaan dengan PFD',
 	pfdCheckOk: 'Semua langkah PFD ada di PFMEA dan Control Plan, dan keduanya tidak punya langkah lain.',
 	pfdMissing: 'Langkah {operation} {process} belum ada di {document}.',
+	pfdRepeated: 'Proses {process} dipakai di langkah {operation} PFD. Setiap langkah memakai proses terdaftarnya sendiri; daftarkan proses terpisah untuk setiap langkah.',
 	pfdExtra: 'Langkah {operation} {process} di {document} tidak ada di PFD.',
 	wbToolbar: 'Alat dokumen',
 	wbGroupRows: 'Baris',

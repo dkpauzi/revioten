@@ -22,6 +22,12 @@ export function pointTypes(types: DocumentType[]): DocumentType[] {
 	return types.filter((d) => d.key !== undefined);
 }
 
+// newPointTypes adalah jenis dokumen yang boleh mendapat poin baru: PFMEA dan
+// CP. PFD diisi per dokumen tanpa template (D-214); poin PFD lama tetap tampil.
+export function newPointTypes(types: DocumentType[]): DocumentType[] {
+	return pointTypes(types).filter((d) => d.key !== 'pfd');
+}
+
 // pointsOf mengambil poin satu sub-proses untuk satu jenis dokumen, menurut urutan.
 export function pointsOf(s: Subprocess, documentTypeId: string): TemplatePoint[] {
 	return s.points.filter((p) => p.document_type.id === documentTypeId);

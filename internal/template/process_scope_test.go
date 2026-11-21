@@ -144,7 +144,7 @@ func newScopeFixture(t *testing.T) scopeFixture {
 func (f scopeFixture) laserTemplate(t *testing.T) (ProcessVersion, Point) {
 	t.Helper()
 	v := f.newTemplate(t, "Laser Marking", "Laser")
-	v = f.addPoint(t, v, "Laser", "pfd", "Laser type sesuai spesifikasi")
+	v = f.addPoint(t, v, "Laser", "cp", "Laser type sesuai spesifikasi")
 	return v, subprocessNamed(t, v, "Laser").Points[0]
 }
 
@@ -231,7 +231,7 @@ func TestVariantWithinOrigin(t *testing.T) {
 	add := func(scope ScopeInput, text string) Point {
 		t.Helper()
 		var err error
-		v, err = f.s.AddPoint(ctx, f.maintainer, v.ID, NewPoint{SubprocessID: sub.ID, DocumentTypeID: f.types["pfd"], Text: text, Scope: scope})
+		v, err = f.s.AddPoint(ctx, f.maintainer, v.ID, NewPoint{SubprocessID: sub.ID, DocumentTypeID: f.types["cp"], Text: text, Scope: scope})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -311,7 +311,7 @@ func TestResolvePoints(t *testing.T) {
 	f := newScopeFixture(t)
 	ctx := t.Context()
 	v, laser := f.laserTemplate(t)
-	v = f.addPoint(t, v, "Laser", "pfd", "Isi dan lokasi marking sesuai drawing")
+	v = f.addPoint(t, v, "Laser", "cp", "Isi dan lokasi marking sesuai drawing")
 	v, err := f.s.AddVariant(ctx, f.maintainer, v.ID, laser.ID, NewVariant{Scope: ScopeInput{Level: ScopeModel, TargetID: f.modelX}, Text: "Laser type: fiber 20 W"})
 	if err != nil {
 		t.Fatal(err)

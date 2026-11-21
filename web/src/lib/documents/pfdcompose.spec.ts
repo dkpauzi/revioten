@@ -22,7 +22,8 @@ const view = {
 	pfd_id: 'pfd',
 	documents: [],
 	steps: [step('1', 'Part Receiving', 'present', 'present'), step('2', 'IQC', 'to_add', 'no_template'), step('3', 'SMT', 'not_draft', 'present')],
-	extra: [{ document_id: 'c', document_type_key: 'cp', section_key: '', operation: '99', process_name: 'Packing' }]
+	extra: [{ document_id: 'c', document_type_key: 'cp', section_key: '', operation: '99', process_name: 'Packing' }],
+	repeated: [{ section_key: '', process_name: 'Visual Inspection', operations: ['5.7.2', '9'] }]
 } as PfdComposition;
 
 describe('rakit dari PFD', () => {
@@ -43,6 +44,7 @@ describe('rakit dari PFD', () => {
 			'missing pfmea 2',
 			'missing cp 2',
 			'missing pfmea 3',
+			'repeated pfd 5.7.2, 9',
 			'extra cp 99'
 		]);
 	});

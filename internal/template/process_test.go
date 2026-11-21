@@ -182,7 +182,11 @@ func TestIQCExample(t *testing.T) {
 	v := f.newTemplate(t, "IQC", five...)
 	v = f.addPoint(t, v, "IQC MSD", "cp", "Check MSL label and humidity indicator card")
 	v = f.addPoint(t, v, "IQC MSD", "pfmea", "Floor life exceeded before use")
-	v = f.addPoint(t, v, "IQC MSD", "pfd", "Incoming inspection of MSD")
+	// PFD diisi per dokumen, tanpa poin template (D-214).
+	msdSub := subprocessNamed(t, v, "IQC MSD")
+	if _, err := f.s.AddPoint(ctx, f.maintainer, v.ID, NewPoint{SubprocessID: msdSub.ID, DocumentTypeID: f.types["pfd"], Text: "Incoming inspection of MSD"}); !slices.Equal(problemCodes(t, err), []string{"document_type_id:not_allowed"}) {
+		t.Errorf("poin PFD baru: %v", err)
+	}
 	v = f.addPoint(t, v, "IQC MSD", "pfmea", "Damaged moisture barrier bag")
 	f.addPoint(t, v, "IQC PCB", "pfmea", "Warped PCB")
 
@@ -206,12 +210,12 @@ func TestIQCExample(t *testing.T) {
 	}
 	// Poin urut menurut jenis dokumen (PFD, PFMEA, CP), lalu urutan tambahnya.
 	msd := subprocessNamed(t, got, "IQC MSD")
-	want := []string{"pfd:Incoming inspection of MSD", "pfmea:Floor life exceeded before use",
+	want := []string{"pfmea:Floor life exceeded before use",
 		"pfmea:Damaged moisture barrier bag", "cp:Check MSL label and humidity indicator card"}
 	if !slices.Equal(pointTexts(msd), want) {
 		t.Errorf("poin IQC MSD: %v", pointTexts(msd))
 	}
-	if msd.Points[2].Position != 2 || msd.Points[3].Position != 1 || msd.Points[0].DocumentType.Name != "PFD" {
+	if msd.Points[1].Position != 2 || msd.Points[2].Position != 1 || msd.Points[0].DocumentType.Name != "PFMEA" {
 		t.Errorf("urutan dan jenis poin: %+v", msd.Points)
 	}
 	if general := subprocessNamed(t, got, "IQC General"); general.Points == nil || len(general.Points) != 0 {

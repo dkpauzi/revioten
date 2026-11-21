@@ -8,7 +8,7 @@ import { expect, test } from '@playwright/test';
 import { en } from '../src/lib/i18n/en.ts';
 import { asMaster, createWorkAccount, ensureProjectGroup, logIn, logInFirstTime, logOut, openFromMenu, tool } from './helpers.ts';
 
-test('penyusun merakit CP, PFMEA, dan PFD dari process template IQC', async ({ page }) => {
+test('penyusun merakit CP dan PFMEA dari process template IQC', async ({ page }) => {
 	// Test ini panjang (menyiapkan template, merakit dua kali), jadi batas waktunya dilonggarkan.
 	test.slow();
 	await logIn(page);
@@ -43,7 +43,6 @@ test('penyusun merakit CP, PFMEA, dan PFD dari process template IQC', async ({ p
 			[
 				'IQC General',
 				[
-					['pfd', 'Incoming inspection', {}],
 					['pfmea', 'Wrong part received', { failure_mode: 'Wrong part received', severity: 7 }],
 					['cp', 'Check part number', { product_characteristic: 'Part number', control_method: 'Visual' }]
 				]
@@ -133,7 +132,8 @@ test('penyusun merakit CP, PFMEA, dan PFD dari process template IQC', async ({ p
 	const result = (key: string) => page.getByTestId(`compose-result-${key}`).getByRole('listitem');
 	await expect(result('cp')).toHaveCount(3);
 	await expect(result('pfmea')).toHaveCount(2);
-	await expect(result('pfd')).toHaveCount(1);
+	// PFD tidak dirakit dari template (D-214).
+	await expect(result('pfd')).toHaveCount(0);
 	await expect(result('cp').first()).toContainText(en.composeWillAdd);
 
 	await page.getByRole('button', { name: en.composeApply }).click();
@@ -275,14 +275,16 @@ test('penyusun merakit CP, PFMEA, dan PFD dari process template IQC', async ({ p
 	await iqc.getByRole('button', { name: en.checkMarkFor.replace('{process}', 'Incoming QC') }).click();
 	await expect(iqc.getByTestId('check-mark')).toContainText(en.checkDone.split('{by}')[0].trim());
 
-	// M4.10: diagram PFD terbentuk otomatis dari daftar proses, dan ikut
-	// berubah saat baris ditambah.
+	// M4.10: diagram PFD terbentuk otomatis dari baris PFD, dan ikut berubah
+	// saat baris ditambah. PFD tidak dirakit dari template (D-214), jadi
+	// barisnya diketik sendiri.
 	await page.getByRole('link', { name: 'PFD', exact: true }).click();
+	await expect(rows).toHaveCount(0);
+	await tool(page, en.documentRowAdd).click();
 	await expect(rows).toHaveCount(1);
 	await tool(page, en.diagramOpen).click();
 	const diagram = page.getByTestId('pfd-diagram');
 	await expect(diagram.locator('.svelte-flow__node')).toHaveCount(1);
-	await expect(diagram.locator('.svelte-flow__node').first()).toContainText('Incoming QC');
 	await tool(page, en.documentRowAdd).click();
 	await expect(rows).toHaveCount(2);
 	await expect(diagram.locator('.svelte-flow__node')).toHaveCount(2);

@@ -68,7 +68,6 @@ func (f fixture) newIQC(t *testing.T) iqc {
 		}
 	}
 	add("IQC General",
-		point{"pfd", "Incoming inspection", nil},
 		point{"pfmea", "Wrong part received", map[string]any{"failure_mode": "Wrong part received", "failure_effect": "Line stop", "severity": 7, "work_element": "man"}},
 		point{"cp", "Check part number against PO", map[string]any{"product_characteristic": "Part number", "control_method": "Visual"}},
 	)
@@ -161,7 +160,7 @@ func TestCompose(t *testing.T) {
 		t.Fatal(err)
 	}
 	st := states(view)
-	if len(st) != 9 || st["Check warpage (K-125)"] != StateUndecided || st["Incoming inspection"] != StateUndecided {
+	if len(st) != 8 || st["Check warpage (K-125)"] != StateUndecided || st["Wrong part received"] != StateUndecided {
 		t.Fatalf("keadaan awal: %v", st)
 	}
 
@@ -170,7 +169,7 @@ func TestCompose(t *testing.T) {
 		VersionID: tpl.version.ID,
 		Include: []string{
 			id("Check warpage"), id("Warped PCB"), // sengaja tidak urut: urutan baris mengikuti template
-			id("Incoming inspection"), id("Wrong part received"), id("Check part number against PO"),
+			id("Wrong part received"), id("Check part number against PO"),
 			id("Floor life exceeded"), id("Check MSL label"),
 		},
 		Exclude: []Exclusion{{PointID: id("Check HIC"), Reason: " No HIC for this part "}},
@@ -213,7 +212,8 @@ func TestCompose(t *testing.T) {
 		len(pfmea.Rows[0].Content) != 3 || pfmea.Rows[2].Content[mode] != "Warped PCB" {
 		t.Errorf("baris PFMEA: %+v", pfmea.Rows)
 	}
-	if pfd := f.get(t, set["pfd"].ID); len(pfd.Rows) != 1 || pfd.Rows[0].ProcessID != tpl.process {
+	// PFD tidak dirakit dari template (D-214): diisi per dokumen.
+	if pfd := f.get(t, set["pfd"].ID); len(pfd.Rows) != 0 {
 		t.Errorf("baris PFD: %+v", pfd.Rows)
 	}
 
@@ -237,7 +237,7 @@ func TestCompose(t *testing.T) {
 	if err := f.pool.QueryRow(ctx, "SELECT action, details FROM audit_log ORDER BY seq DESC LIMIT 1").Scan(&action, &details); err != nil {
 		t.Fatal(err)
 	}
-	if action != "document.composed" || details != `{"added":"7","excluded":"1","process":"IQC","removed":"0","version":"1"}` {
+	if action != "document.composed" || details != `{"added":"6","excluded":"1","process":"IQC","removed":"0","version":"1"}` {
 		t.Errorf("audit: %s %s", action, details)
 	}
 
