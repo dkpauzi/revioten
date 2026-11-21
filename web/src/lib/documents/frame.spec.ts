@@ -9,6 +9,23 @@ describe('nextStep', () => {
 		expect(nextStep({ ...draft, rows: 0 })).toEqual({ text: 'nextCompose', open: 'compose' });
 	});
 
+	// C4 (D-211): PFD diisi lebih dulu, lalu PFMEA dan CP dirakit per langkah PFD.
+	it('PFD kosong: isi langkah PFD', () => {
+		expect(nextStep({ ...draft, rows: 0, setRole: 'pfd' })).toEqual({ text: 'nextFillPfd' });
+	});
+
+	it('PFMEA atau CP kosong dengan PFD kosong: isi PFD dulu', () => {
+		expect(nextStep({ ...draft, rows: 0, setRole: 'follows_pfd', pfdSteps: 0, pfdHref: '/documents/view?id=p' })).toEqual({
+			text: 'nextPfdFirst',
+			href: '/documents/view?id=p',
+			label: 'nextPfdOpen'
+		});
+	});
+
+	it('PFMEA atau CP kosong dengan langkah PFD: rakit dari PFD', () => {
+		expect(nextStep({ ...draft, rows: 0, setRole: 'follows_pfd', pfdSteps: 4 })).toEqual({ text: 'nextComposePfd', open: 'pfd' });
+	});
+
 	it('draft berisi: kirim untuk tanda tangan', () => {
 		expect(nextStep(draft)).toEqual({ text: 'nextSign', open: 'signature' });
 	});
@@ -30,7 +47,7 @@ describe('nextStep', () => {
 	});
 
 	it('dokumen terbit: perubahan lewat permintaan perubahan', () => {
-		expect(nextStep({ ...draft, status: 'released' })).toEqual({ text: 'nextChange', href: '/changes' });
+		expect(nextStep({ ...draft, status: 'released' })).toEqual({ text: 'nextChange', href: '/changes', label: 'nextChangeOpen' });
 	});
 
 	it('akun yang hanya membaca tidak mendapat langkah', () => {

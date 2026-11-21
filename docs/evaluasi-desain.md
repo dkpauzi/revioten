@@ -2380,6 +2380,30 @@ Salin blok ini untuk setiap temuan baru.
 - **Status:** Diputuskan (D-212)
 - **Keputusan pemilik:** 22 November 2026, "E-137 ok": rekomendasi diterima. Jangka panjang (c): simbol alur ikut dibekukan di snapshot CP saat rilis; sementara (a).
 
+### E-138 · Proses yang sama di dua langkah PFD, dan baris PFD tanpa nomor langkah
+
+- **Tanggal dan milestone:** 22 November 2026, C4.
+- **Jenis:** Celah
+- **Rujukan:** R-CMP-04, D-211, migrasi 00029 (indeks unik satu poin per bagian).
+- **Temuan:** Satu proses bisa muncul di dua langkah PFD (misalnya Visual inspection sesudah SMT dan sesudah Router). Rakit dari PFD membuat baris template untuk kedua langkah, padahal satu poin template hanya boleh tertaut ke satu baris di satu bagian. Juga: baris PFD tanpa nomor langkah tidak bisa dicocokkan dengan PFMEA dan CP.
+- **Opsi:** (a) baris langkah kedua memakai isi poin yang sama tetapi tidak tertaut ke template; (b) tautan dibuat per langkah (indeks unik diganti dengan poin, bagian, dan nomor langkah); (c) proses hanya boleh dipakai sekali per PFD.
+- **Rekomendasi Claude Code (usulan):** (b) bila Compare with template dan propagasi perlu bekerja di kedua langkah; (a) sementara.
+- **Asumsi sementara di kode (ASUMSI E-138):** (a). Baris PFD tanpa nomor langkah dilewati saat menyusun langkah.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+
+### E-139 · Poin PFD di process template sesudah D-211
+
+- **Tanggal dan milestone:** 22 November 2026, C4.
+- **Jenis:** Kontradiksi
+- **Rujukan:** R-CMP-02, R-TPL-04, D-211.
+- **Temuan:** R-CMP-02 menyebut satu perakitan mengisi PFD, PFMEA, dan CP sekaligus, dan process template masih bisa berisi poin PFD. Menurut pemilik (D-211), PFD dibuat per dokumen tanpa template. C4 menyembunyikan Compose from process templates di sheet PFD, tetapi rakit dari template di PFMEA atau CP masih memasukkan poin PFD ke PFD satu set.
+- **Opsi:** (a) biarkan: poin PFD tetap boleh ada untuk pemakai lama; (b) rakit dari template tidak lagi mengisi PFD, dan jenis dokumen PFD dihapus dari pilihan poin baru; (c) poin PFD menjadi teks bantu (misalnya nama langkah usulan), bukan baris.
+- **Rekomendasi Claude Code (usulan):** (b), supaya PFD hanya punya satu sumber, yaitu ketikan penyusun.
+- **Asumsi sementara di kode:** (a). Tidak ada kode yang diubah.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
+
 ## Usulan desain UI (UX-01 sampai UX-07): dampak ke M0 sampai M3 dan saran
 
 - **Sumber:** `docs/uml/usulan-desain-ui.md` (UML draft 0.12, 3 November 2026) dan kanvas desain UI "Desain UI Sistem PFD PFMEA CP" (18 artboard, baris v2 disarankan).

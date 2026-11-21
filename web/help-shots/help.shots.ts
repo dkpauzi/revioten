@@ -298,11 +298,20 @@ test('potret layar untuk halaman Help', async ({ page }) => {
 	await expect(page.getByRole('status')).toHaveText(en.documentCreated.replace('{number}', 'SH-LM-001'));
 	await page.getByRole('link', { name: 'SH-LM-001' }).click();
 	await expect(page.getByRole('heading', { name: 'SH-LM-001', level: 1 })).toBeVisible();
-	await tool(page, en.composeOpen).click();
-	await page.getByLabel(en.composeProcess).selectOption({ label: `Laser marking · ${en.composeVersion.replace('{version}', '1')}` });
-	await page.getByRole('checkbox', { name: en.composeAll.replace('{name}', 'Marking') }).check();
-	await page.getByRole('button', { name: en.composeApply }).click();
-	await expect(page.getByRole('status')).toHaveText(en.composeDone.replace('{process}', 'Laser marking'));
+	// PFD diisi langsung per dokumen, tanpa template (C4, D-211): satu langkah Laser marking.
+	await page.evaluate(async () => {
+		const id = new URL(location.href).searchParams.get('id');
+		const doc = await (await fetch(`/api/v1/documents/${id}`)).json();
+		const fields = (await (await fetch(`/api/v1/format-template-versions/${doc.format_version_id}`)).json()).fields as { id: string; key?: string }[];
+		const processes = (await (await fetch('/api/v1/processes')).json()).items as { id: string; name: string }[];
+		const symbol = fields.find((f) => f.key === 'flow_symbol')!.id;
+		await fetch(`/api/v1/documents/${id}/rows`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ operation_number: '10', process_id: processes.find((p) => p.name === 'Laser marking')!.id, content: { [symbol]: 'process' } })
+		});
+	});
+	await page.reload();
 	await expect(page.locator('.workbook .tabulator-row')).toHaveCount(1);
 	// Workbook (D-145, C1): kepala, langkah berikutnya, toolbar, lembar, dan tab sheet.
 	await shot(page, 'documents');

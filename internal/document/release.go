@@ -62,6 +62,9 @@ type Snapshot struct {
 	PartNumbers      []string          `json:"part_numbers"`
 	Sections         []SnapshotSection `json:"sections"`
 	Rows             []SnapshotRow     `json:"rows"`
+	// Flow: langkah PFD yang dipakai menggambar Process Flow CP (D-212).
+	// Kosong di snapshot lama dan di dokumen selain CP.
+	Flow []FlowStep `json:"flow,omitempty"`
 }
 
 // SnapshotSection adalah satu bagian per PCB di snapshot.
@@ -101,6 +104,7 @@ func buildSnapshot(d Document) Snapshot {
 		DocumentID: d.ID, Number: d.Number, DocumentType: d.DocumentType.Key, CustomerCode: d.CustomerCode, Revision: d.Revision,
 		FormSetVersionID: d.FormSetVersionID, FormatVersionID: d.FormatVersionID, Header: d.Header,
 		Models: []string{}, PartNumbers: []string{}, Sections: []SnapshotSection{}, Rows: []SnapshotRow{},
+		Flow: d.Flow,
 	}
 	if s.Header == nil {
 		s.Header = map[string]any{}

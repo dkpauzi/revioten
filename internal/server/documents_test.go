@@ -94,6 +94,18 @@ func TestDocumentEndpoints(t *testing.T) {
 		t.Errorf("rakit: status %d, %+v", rec.Code, fake.gotCompose)
 	}
 
+	// C4: langkah PFD dan rakit per langkah.
+	rec = srv.do(http.MethodGet, "/api/v1/documents/d-1/pfd-composition", "")
+	wantSteps := `{"pfd_id":"","documents":[],"extra":[],"steps":[{"section_key":"","operation":"10","process_id":"","process_name":"IQC","symbol":"","ng":"",` +
+		`"template_version_id":"","template_version":0,"targets":[{"document_id":"cp","document_type_key":"cp","points":2,"state":"to_add"}]}]}`
+	if rec.Code != http.StatusOK || !sameJSON(t, rec.Body.String(), wantSteps) {
+		t.Errorf("langkah PFD: status %d: %s", rec.Code, rec.Body.String())
+	}
+	rec = srv.do(http.MethodPost, "/api/v1/documents/d-1/pfd-composition", `{"steps":[{"section_key":"","operation":"10","process_id":"p-1"}]}`)
+	if rec.Code != http.StatusOK || !reflect.DeepEqual(fake.gotSteps, []document.StepChoice{{Operation: "10", ProcessID: "p-1"}}) {
+		t.Errorf("rakit dari PFD: status %d, %+v", rec.Code, fake.gotSteps)
+	}
+
 	// M4.6: urutan baru dan penomoran otomatis.
 	rec = srv.do(http.MethodPut, "/api/v1/documents/d-1/order", `{"row_ids":["row-2","row-1"],"renumber":true}`)
 	if rec.Code != http.StatusOK || !reflect.DeepEqual(fake.gotOrder, document.Order{RowIDs: []string{"row-2", "row-1"}, Renumber: true}) {

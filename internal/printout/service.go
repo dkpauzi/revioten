@@ -267,8 +267,14 @@ func (s *Service) input(ctx context.Context, d document.Document, snap document.
 		ContentHash: hash, Watermark: "UNCONTROLLED COPY", Status: "DRAFT",
 	}
 	// Kolom Process Flow CP digambar dari langkah PFD satu set (D-122, C3).
+	// Langkahnya dari snapshot CP (D-212); snapshot lama tanpa langkah memakai
+	// PFD yang sekarang.
 	if d.DocumentType.Key == "cp" {
-		in.Steps = s.pfdSteps(ctx, d)
+		if len(snap.Flow) > 0 {
+			in.Steps = stepsOfFlow(snap.Flow)
+		} else {
+			in.Steps = s.pfdSteps(ctx, d)
+		}
 	}
 	if info.ReleaseDate.Valid {
 		in.ReleaseDate = info.ReleaseDate.Time.Format(time.DateOnly)
@@ -620,9 +626,23 @@ func (s *Service) digitalSlots(ctx context.Context, in *Input, requestID string,
 	return nil
 }
 
-// pfdSteps membaca langkah PFD satu set dengan CP itu: isi PFD yang sekarang
-// (draft bila ada). Tanpa PFD, peta kosong: setiap langkah digambar sebagai
-// proses. ASUMSI E-137: cetakan revisi CP lama juga memakai PFD sekarang.
+// stepsOfFlow memberi simbol dan arah NG per nomor langkah dari langkah PFD
+// yang dibekukan di snapshot CP (D-212). Langkah dengan beberapa proses
+// memakai simbol proses pertamanya.
+func stepsOfFlow(flow []document.FlowStep) map[string]Step {
+	out := map[string]Step{}
+	for _, f := range flow {
+		if _, ok := out[f.Operation]; !ok {
+			out[f.Operation] = Step{Symbol: f.Symbol, NG: f.NG}
+		}
+	}
+	return out
+}
+
+// pfdSteps membaca langkah PFD satu set dengan CP itu dari isi PFD yang
+// sekarang (draft bila ada), untuk snapshot CP lama yang belum membawa
+// langkah PFD (sebelum D-212). Tanpa PFD, peta kosong: setiap langkah
+// digambar sebagai proses.
 func (s *Service) pfdSteps(ctx context.Context, d document.Document) map[string]Step {
 	for _, m := range d.Set {
 		if m.DocumentType.Key != "pfd" {

@@ -41,6 +41,8 @@ import type {
 	DocumentList,
 	ComposeInput,
 	Composition,
+	PfdComposition,
+	PfdStepKey,
 	DocumentRowInput,
 	RowDifferenceList,
 	Change,
@@ -704,6 +706,16 @@ export function getDocumentComposition(id: string, versionId: string, sectionKey
 // composeDocument memanggil PUT /api/v1/documents/{id}/composition (E-2, M4.5).
 export function composeDocument(id: string, input: ComposeInput, fetchFn: typeof fetch = fetch): Promise<ApiResult<Document>> {
 	return call<Document>(fetchFn, itemPath('documents', id) + '/composition', jsonRequest('PUT', input));
+}
+
+// getPfdComposition memanggil GET /api/v1/documents/{id}/pfd-composition (L-4, C4).
+export function getPfdComposition(id: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<PfdComposition>> {
+	return call<PfdComposition>(fetchFn, itemPath('documents', id) + '/pfd-composition', { method: 'GET' });
+}
+
+// composeFromPfd memanggil POST /api/v1/documents/{id}/pfd-composition (E-2, C4).
+export function composeFromPfd(id: string, steps: PfdStepKey[], fetchFn: typeof fetch = fetch): Promise<ApiResult<Document>> {
+	return call<Document>(fetchFn, itemPath('documents', id) + '/pfd-composition', jsonRequest('POST', { steps }));
 }
 
 // reorderDocumentRows memanggil PUT /api/v1/documents/{id}/order (E-2, M4.6).

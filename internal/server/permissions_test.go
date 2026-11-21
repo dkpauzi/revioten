@@ -473,6 +473,9 @@ func TestPermissionsPerOperation(t *testing.T) {
 		{http.MethodGet, "/api/v1/documents/{documentId}/composition?process_template_version_id={processVersionId}", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		// Versi IQC sudah diterbitkan oleh baris publish di atas.
 		{http.MethodPut, "/api/v1/documents/{documentId}/composition", `{"process_template_version_id":"{processVersionId}"}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		// Rakit dari PFD (C4): baca L-4; tanpa langkah ditolak aturan (422) sesudah haknya lolos.
+		{http.MethodGet, "/api/v1/documents/{documentId}/pfd-composition", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		{http.MethodPost, "/api/v1/documents/{documentId}/pfd-composition", `{"steps":[]}`, http.StatusForbidden, http.StatusUnprocessableEntity, http.StatusForbidden},
 		// Dokumen uji sudah punya beberapa baris, jadi akun yang berhak mendapat 422 (bukan 403): haknya lolos, daftar barisnya yang ditolak.
 		{http.MethodPut, "/api/v1/documents/{documentId}/order", `{"row_ids":["{rowId}"]}`, http.StatusForbidden, http.StatusUnprocessableEntity, http.StatusForbidden},
 		// Menyalin dari dirinya sendiri ditolak aturan (422), sesudah haknya lolos.

@@ -79,3 +79,19 @@ Rencana C2 sampai C5 diganti menjadi:
 | **C5 · Sheet Cover, lalu tur** | Cover seperti sampul form; tur ditulis ulang dengan data TR-020. |
 
 Perubahan atas D-210: Tabulator tetap dipakai untuk mengubah isi. Lembar form dibuat sebagai pratinjau baca saja, bukan pengganti tabel.
+
+## 6. Rencana C4 · PFD lebih dulu, lalu PFMEA dan CP per langkah PFD (22 November 2026)
+
+Alur menurut pemilik: proses yang tidak bergantung model (misalnya Part Receiving) punya template umum. PFD dibuat per dokumen tanpa template, dan langkah PFD menjadi dasar proses di PFMEA dan CP. Dokumen baru dan dokumen migrasi tinggal memilih template untuk setiap langkah.
+
+| Bagian | Isi |
+|---|---|
+| PFD | Baris PFD diisi langsung: nomor langkah, proses (dari master proses), Flow Symbol, NG Disposition. Tombol rakit dari template tidak ditawarkan di sheet PFD; Copy from another model tetap ada. |
+| Rakit dari PFD | Tombol baru **Compose from PFD** di sheet PFMEA dan CP. Laci menampilkan setiap langkah PFD: nomor, proses, template terbit untuk proses itu (versi dan jumlah poin, sesudah varian customer/model diterapkan), dan keadaannya: sudah ada di dokumen, akan ditambah, atau tanpa template. Pilih langkah, tekan Compose: baris PFMEA dan CP dibuat dengan nomor langkah dan proses dari PFD, berurutan mengikuti PFD. Baris yang sudah ada tidak diubah. |
+| Langkah tanpa template | Mendapat satu baris berisi nomor langkah dan proses, kolom lain "--", seperti CP Tokairika (E-136). |
+| Pemeriksaan | Di laci dan pratinjau: langkah PFD yang belum ada di CP, dan nomor langkah CP yang tidak ada di PFD, ditampilkan sebagai peringatan. |
+| Langkah berikutnya | PFMEA/CP dengan PFD kosong: "isi PFD dulu" (catatan evaluasi C1). |
+| Dokumen migrasi | Dokumen lama memakai tombol yang sama: PFD diketik dari hardcopy, lalu PFMEA dan CP dirakit per langkah dan dicocokkan dengan hardcopy. |
+| D-212 | Langkah PFD yang dipakai menggambar alur dibekukan di snapshot CP saat rilis, jadi cetakan revisi lama tidak berubah. |
+
+**Status (22 November 2026):** C4 dibangun. Catatan: `docs/catatan/C4-pfd-dulu-rakit-dari-pfd.md`. Pemeriksaan di pratinjau tampil sebagai daftar di atas halaman, bukan tanda di dalam lembar. Tur ditulis ulang di C5.

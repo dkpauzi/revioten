@@ -273,6 +273,41 @@ func (q *Queries) GetProcessVersion(ctx context.Context, id string) (GetProcessV
 	return i, err
 }
 
+const latestPublishedProcessVersions = `-- name: LatestPublishedProcessVersions :many
+SELECT DISTINCT ON (process_id) id, process_id, version
+FROM process_template_versions
+WHERE status = 'published'
+ORDER BY process_id, version DESC
+`
+
+type LatestPublishedProcessVersionsRow struct {
+	ID        string
+	ProcessID string
+	Version   int32
+}
+
+// LatestPublishedProcessVersions memberi versi terbit terakhir setiap proses,
+// untuk perakitan PFMEA dan CP per langkah PFD (C4, D-211).
+func (q *Queries) LatestPublishedProcessVersions(ctx context.Context) ([]LatestPublishedProcessVersionsRow, error) {
+	rows, err := q.db.Query(ctx, latestPublishedProcessVersions)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []LatestPublishedProcessVersionsRow{}
+	for rows.Next() {
+		var i LatestPublishedProcessVersionsRow
+		if err := rows.Scan(&i.ID, &i.ProcessID, &i.Version); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listAllProcessVersions = `-- name: ListAllProcessVersions :many
 SELECT id, template_id, version, status, published_at
 FROM process_template_versions

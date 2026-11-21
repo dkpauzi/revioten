@@ -184,6 +184,8 @@ type DocumentService interface {
 	AddRows(ctx context.Context, actor access.Actor, id string, rows []document.NewRow) (document.Document, error)
 	Composition(ctx context.Context, actor access.Actor, id, versionID, sectionKey string) (document.Composition, error)
 	Compose(ctx context.Context, actor access.Actor, id string, in document.Compose) (document.Document, error)
+	PFDComposition(ctx context.Context, actor access.Actor, id string) (document.PFDComposition, error)
+	ComposeFromPFD(ctx context.Context, actor access.Actor, id string, choices []document.StepChoice) (document.Document, error)
 	Reorder(ctx context.Context, actor access.Actor, id string, in document.Order) (document.Document, error)
 	CopyFrom(ctx context.Context, actor access.Actor, id, sourceID string) (document.Document, error)
 	Differences(ctx context.Context, actor access.Actor, id string) ([]document.RowDifference, error)

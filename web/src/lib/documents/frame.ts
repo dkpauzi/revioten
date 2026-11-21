@@ -6,6 +6,7 @@ import type { MessageKey } from '#lib/i18n/index.ts';
 // DrawerId adalah panel yang dibuka dari toolbar di laci samping.
 export type DrawerId =
 	| 'compose'
+	| 'pfd'
 	| 'copy'
 	| 'compare'
 	| 'templates'
@@ -23,6 +24,7 @@ export type DrawerId =
 // toolbar, laci, dan isi panel memakai nama yang sama.
 export const drawerTitle: Record<DrawerId, MessageKey> = {
 	compose: 'composeOpen',
+	pfd: 'pfdComposeOpen',
 	copy: 'copyOpen',
 	compare: 'compareOpen',
 	templates: 'templateLinksTitle',
@@ -49,10 +51,17 @@ export type StepInput = {
 	canEdit: boolean; // E-2 pada draft yang tidak terkunci
 	canPropose: boolean; // E-3
 	canRecord: boolean; // E-7
+	// setRole: peran dokumen di set (C4, D-211). pfd diisi langsung;
+	// follows_pfd (PFMEA dan CP satu set dengan PFD) dirakit per langkah PFD.
+	// Tanpa isian: dokumen tanpa PFD di set-nya, dirakit dari process template.
+	setRole?: 'pfd' | 'follows_pfd';
+	pfdSteps?: number; // jumlah langkah PFD; undefined selama belum dibaca
+	pfdHref?: string; // alamat PFD satu set
 };
 
-// Step adalah satu langkah berikutnya: kalimatnya, dan laci yang dibuka atau alamat tujuannya.
-export type Step = { text: MessageKey; open?: DrawerId; href?: string };
+// Step adalah satu langkah berikutnya: kalimatnya, dan laci yang dibuka atau
+// alamat tujuannya beserta nama tautannya.
+export type Step = { text: MessageKey; open?: DrawerId; href?: string; label?: MessageKey };
 
 // nextStep memilih satu langkah berikutnya ("satu aksi utama", D-145).
 // Urutannya mengikuti alur dokumen: isi, cocokkan (dokumen lama), tanda
@@ -60,7 +69,7 @@ export type Step = { text: MessageKey; open?: DrawerId; href?: string };
 // mendapat langkah.
 export function nextStep(d: StepInput): Step | null {
 	if (d.status === 'released') {
-		return d.canPropose ? { text: 'nextChange', href: '/changes' } : null;
+		return d.canPropose ? { text: 'nextChange', href: '/changes', label: 'nextChangeOpen' } : null;
 	}
 	if (d.signing === 'completed') {
 		return d.canRecord ? { text: 'nextRecord', open: 'revisions' } : null;
@@ -75,6 +84,15 @@ export function nextStep(d: StepInput): Step | null {
 		return { text: 'nextVerify', open: 'migration' };
 	}
 	if (d.rows === 0) {
+		if (d.setRole === 'pfd') {
+			return { text: 'nextFillPfd' };
+		}
+		if (d.setRole === 'follows_pfd') {
+			if (d.pfdSteps === 0) {
+				return d.pfdHref ? { text: 'nextPfdFirst', href: d.pfdHref, label: 'nextPfdOpen' } : { text: 'nextPfdFirst' };
+			}
+			return { text: 'nextComposePfd', open: 'pfd' };
+		}
 		return { text: 'nextCompose', open: 'compose' };
 	}
 	return d.hasRoute ? { text: 'nextSign', open: 'signature' } : { text: 'nextPrint', open: 'print' };

@@ -6,10 +6,12 @@
 	// atribut baris (D-122, D-123); kolom yang dihitung tidak diketik.
 	import { untrack } from 'svelte';
 	import { page } from '$app/state';
-	import { addDocumentRow, addDocumentRows, deleteDocumentRow, fillDocumentReferences, reorderDocumentRows, getDocument, getFormatVersion, getPagePreview, listProcesses, setDocumentHeader, updateDocumentRow, type ApiFailure } from '#lib/api/client.ts';
+	import { addDocumentRow, addDocumentRows, deleteDocumentRow, fillDocumentReferences, reorderDocumentRows, getDocument, getFormatVersion, getPagePreview, getPfdComposition, listProcesses, setDocumentHeader, updateDocumentRow, type ApiFailure } from '#lib/api/client.ts';
 	import type { Document, DocumentRow, DocumentRowInput, FormatVersion, PagePreview, Process } from '#lib/api/gen/index.ts';
 	import ComposePanel from '#lib/documents/ComposePanel.svelte';
 	import ComparePanel from '#lib/documents/ComparePanel.svelte';
+	import PfdComposePanel from '#lib/documents/PfdComposePanel.svelte';
+	import { warnings } from '#lib/documents/pfdcompose.ts';
 	import CopyPanel from '#lib/documents/CopyPanel.svelte';
 	import OrderPanel from '#lib/documents/OrderPanel.svelte';
 	import PastePanel from '#lib/documents/PastePanel.svelte';
@@ -69,7 +71,19 @@
 			return;
 		}
 		preview = result.data;
+		// Pemeriksaan dengan PFD (C4) untuk PFMEA dan CP yang dirakit dari PFD.
+		previewChecks = [];
+		if (setRole === 'follows_pfd') {
+			const steps = await getPfdComposition(doc.id);
+			if (steps.ok) {
+				const names = Object.fromEntries(steps.data.documents.map((d) => [d.document_type_key, d.document_type_name]));
+				previewChecks = warnings(steps.data)
+					.filter((w) => w.documentType === doc!.document_type.key)
+					.map((w) => t(w.kind === 'missing' ? 'pfdMissing' : 'pfdExtra', { operation: w.operation, process: w.process, document: names[w.documentType] ?? w.documentType }));
+			}
+		}
 	}
+	let previewChecks = $state<string[]>([]);
 
 	function togglePreview() {
 		reset();
@@ -260,6 +274,33 @@
 		message = t('composeDone', { process });
 	}
 
+	// composedFromPfd menerima dokumen sesudah dirakit dari langkah PFD (C4).
+	function composedFromPfd(d: Document, steps: number) {
+		reset();
+		use(d);
+		drawer = null;
+		message = t('pfdDone', { count: String(steps) });
+	}
+
+	// Peran dokumen di set (C4, D-211): PFD diisi langsung, PFMEA dan CP satu
+	// set dengan PFD dirakit per langkah PFD.
+	let pfdMember = $derived(doc?.set.find((m) => m.document_type.key === 'pfd' && m.id !== doc?.id));
+	let setRole = $derived<'pfd' | 'follows_pfd' | undefined>(
+		doc?.document_type.key === 'pfd' ? 'pfd' : pfdMember ? 'follows_pfd' : undefined
+	);
+	// Jumlah langkah PFD, dibaca hanya untuk dokumen kosong (langkah berikutnya).
+	let pfdSteps = $state<number | undefined>(undefined);
+	$effect(() => {
+		const id = doc?.id;
+		if (!id || setRole !== 'follows_pfd' || doc!.rows.length > 0 || !canEdit) {
+			return;
+		}
+		untrack(async () => {
+			const result = await getPfdComposition(id);
+			pfdSteps = result.ok ? result.data.steps.length : undefined;
+		});
+	});
+
 	// copied menerima dokumen sesudah baris disalin dari model lain (M4.7).
 	function copied(d: Document, source: string) {
 		reset();
@@ -289,7 +330,10 @@
 					verified: doc.baseline?.verified_at !== undefined,
 					canEdit,
 					canPropose: can('E-3'),
-					canRecord: can('E-7')
+					canRecord: can('E-7'),
+					setRole,
+					pfdSteps,
+					pfdHref: pfdMember ? `/documents/view?id=${pfdMember.id}` : undefined
 				})
 			: null
 	);
@@ -383,7 +427,7 @@
 					{@const target = step.open}
 					<button type="button" class="primary" onclick={() => toggle(target)}>{t(drawerTitle[target])}</button>
 				{:else if step.href}
-					<a class="button primary" href={step.href}>{t('nextChangeOpen')}</a>
+					<a class="button primary" href={step.href}>{t(step.label ?? 'nextChangeOpen')}</a>
 				{/if}
 			</section>
 		{/if}
@@ -412,7 +456,9 @@
 		{#if canEdit || hasLinkedRows}
 			<div class="wb-group" role="group" aria-labelledby="wb-template">
 				<div class="wb-buttons">
-					{#if canEdit}{@render drawerButton('compose', 'wbShortCompose')}{/if}
+					<!-- PFD diisi langsung tanpa template; PFMEA dan CP satu set dengan PFD dirakit per langkah PFD (C4, D-211). -->
+					{#if canEdit && setRole === 'follows_pfd'}{@render drawerButton('pfd', 'wbShortPfd')}{/if}
+					{#if canEdit && setRole !== 'pfd'}{@render drawerButton('compose', 'wbShortCompose')}{/if}
 					<!-- Menyalin hanya untuk dokumen yang masih kosong (R-CMP-05). -->
 					{#if canEdit && doc.rows.length === 0}{@render drawerButton('copy', 'wbShortCopy')}{/if}
 					{#if hasLinkedRows}
@@ -502,6 +548,12 @@
 			{:else if !preview}
 				<p>{t('formatLoading')}</p>
 			{:else}
+				{#if previewChecks.length > 0}
+					<div class="preview-checks" data-testid="preview-pfd-check">
+						<h3>{t('pfdCheckTitle')}</h3>
+						<ul>{#each previewChecks as text, i (i)}<li>{text}</li>{/each}</ul>
+					</div>
+				{/if}
 				<PreviewSheet plan={preview} />
 			{/if}
 		</section>
@@ -561,6 +613,10 @@
 				{#key doc.id + sectionId}
 					<ComposePanel {doc} sectionKey={section?.key ?? ''} oncomposed={composed} oncancel={() => (drawer = null)} />
 				{/key}
+			{:else if open === 'pfd' && canEdit}
+				{#key doc.id + doc.rows.length}
+					<PfdComposePanel {doc} oncomposed={composedFromPfd} oncancel={() => (drawer = null)} />
+				{/key}
 			{:else if open === 'compare'}
 				{#key compareRound}
 					<ComparePanel {doc} candetach={canEdit} ondetached={detached} oncancel={() => (drawer = null)} />
@@ -598,6 +654,15 @@
 {/if}
 
 <style>
+	.preview-checks {
+		color: var(--warning);
+		margin: 0 0 12px;
+	}
+
+	.preview-checks h3 {
+		margin: 0 0 4px;
+	}
+
 	.facts {
 		display: grid;
 		grid-template-columns: max-content 1fr;

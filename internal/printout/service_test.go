@@ -13,12 +13,14 @@ import (
 	"github.com/xuri/excelize/v2"
 
 	"github.com/dkpauzi/revioten/internal/access"
+	"github.com/dkpauzi/revioten/internal/db"
 	"github.com/dkpauzi/revioten/internal/document"
 	"github.com/dkpauzi/revioten/internal/document/doctest"
 	"github.com/dkpauzi/revioten/internal/numbering"
 	"github.com/dkpauzi/revioten/internal/printout"
 	"github.com/dkpauzi/revioten/internal/problem"
 	"github.com/dkpauzi/revioten/internal/storage"
+	"github.com/dkpauzi/revioten/internal/template"
 )
 
 func code(t *testing.T, err error) string {
@@ -260,5 +262,57 @@ func TestUploadScanIsVirusScanned(t *testing.T) {
 	_, err = s.UploadScan(ctx, dcc, cp.ID, "signed.pdf", strings.NewReader("%PDF-1.4 signed"))
 	if code(t, err) != "file:not_allowed" || strings.Contains(err.Error(), "Eicar") {
 		t.Errorf("scan berbahaya: %v", err)
+	}
+}
+
+// TestFlowFrozenAtRelease (D-212): alur CP revisi terbit digambar dari
+// langkah PFD yang dibekukan saat rilis, jadi PFD yang diubah sesudahnya
+// tidak mengubah cetakan revisi itu.
+func TestFlowFrozenAtRelease(t *testing.T) {
+	e := doctest.Setup(t)
+	ctx := t.Context()
+	store, err := storage.New(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := printout.NewService(e.Pool, e.Checker, e.Docs, store, "")
+	set := e.NewSet(t, "ab", e.CustomerAB, e.ModelK125)
+	cp, pfd := set["cp"], set["pfd"]
+	format, err := template.LoadFormatVersion(ctx, db.New(e.Pool), pfd.FormatVersionID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	field := map[string]string{}
+	for _, f := range format.Fields {
+		field[f.Key] = f.ID
+	}
+	pfdNow, err := e.Docs.AddRow(ctx, e.Author, pfd.ID, document.NewRow{OperationNumber: "10", ProcessID: e.ProcessSMT,
+		Content: map[string]any{field["flow_symbol"]: "decision", field["ng_disposition"]: "scrap"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	product := doctest.FieldID(t, e.CPFormat, "Product Characteristics")
+	if _, err := e.Docs.AddRow(ctx, e.Author, cp.ID, document.NewRow{OperationNumber: "10", ProcessID: e.ProcessSMT, Content: map[string]any{product: "Solder paste height"}}); err != nil {
+		t.Fatal(err)
+	}
+	dcc := doctest.NewActor(t, e.Pool, "dcc.uji", "work", doctest.All(access.RoleDocumentControl))
+	doctest.AttachScan(t, e.Pool, cp.ID)
+	if _, err := e.Docs.Release(ctx, dcc, cp.ID); err != nil {
+		t.Fatal(err)
+	}
+
+	// PFD diubah sesudah CP terbit: inspeksi menjadi proses biasa tanpa NG.
+	row := pfdNow.Rows[0]
+	if _, err := e.Docs.UpdateRow(ctx, e.Author, pfd.ID, row.ID, document.RowUpdate{OperationNumber: "10", ProcessID: e.ProcessSMT,
+		Content: map[string]any{field["flow_symbol"]: "process"}, Version: row.Version}); err != nil {
+		t.Fatal(err)
+	}
+	view, err := s.Preview(ctx, e.Author, cp.ID, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	flow := string(view.Pages[0].Flow)
+	if !strings.Contains(flow, "SCRAP") || !strings.Contains(flow, `data-step="10"`) {
+		t.Errorf("alur revisi terbit harus memakai PFD saat rilis: %s", flow)
 	}
 }

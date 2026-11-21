@@ -183,3 +183,11 @@ INSERT INTO process_template_variants (version_id, point_id, origin_point_id, te
 SELECT sqlc.arg(target_id)::uuid, s.point_id, s.origin_point_id, s.text, s.hidden, s.content
 FROM process_template_variants s
 WHERE s.version_id = sqlc.arg(source_id);
+
+-- name: LatestPublishedProcessVersions :many
+-- LatestPublishedProcessVersions memberi versi terbit terakhir setiap proses,
+-- untuk perakitan PFMEA dan CP per langkah PFD (C4, D-211).
+SELECT DISTINCT ON (process_id) id, process_id, version
+FROM process_template_versions
+WHERE status = 'published'
+ORDER BY process_id, version DESC;

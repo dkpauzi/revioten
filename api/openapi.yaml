@@ -1979,6 +1979,50 @@ paths:
                 $ref: '#/components/schemas/Document'
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/documents/{documentId}/pfd-composition:
+    get:
+      operationId: getPfdComposition
+      summary: The PFD steps of the document set with their process template and state in the PFMEA and the CP (L-4, C4, D-211)
+      description: >-
+        Each PFD step (operation number and process, in PFD order) shows the latest published process template of its
+        process and, per PFMEA and CP of the set, the number of points that apply to the first model and the state of
+        the step: present (the document already has rows for it), to_add, no_template (it gets one row with "--"), or
+        not_draft. extra lists operation numbers of the PFMEA and CP that the PFD does not have.
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      responses:
+        '200':
+          description: The steps.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PfdComposition'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      operationId: composeFromPfd
+      summary: Make PFMEA and CP rows for the chosen PFD steps (E-2, C4, D-211)
+      description: >-
+        Rows get the operation number and process of the PFD step and are ordered as the PFD. A step without a
+        template gets one row with "--" in every text column (E-136). A document that already has rows for a step is
+        not changed for that step. Not allowed on the PFD itself.
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ComposeFromPfdInput'
+      responses:
+        '200':
+          description: The document after the change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Document'
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/documents/{documentId}/pfmea-cp:
     get:
       operationId: getPfmeaCpComparison
@@ -5076,6 +5120,108 @@ components:
         created_at:
           type: string
           format: date-time
+    PfdStepKey:
+      type: object
+      required: [section_key, operation, process_id]
+      properties:
+        section_key:
+          type: string
+          description: The section (D-155); empty for a set without sections.
+        operation:
+          type: string
+        process_id:
+          type: string
+          description: Empty for a PFD step without a process.
+    ComposeFromPfdInput:
+      type: object
+      required: [steps]
+      properties:
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/PfdStepKey'
+    PfdComposition:
+      type: object
+      required: [pfd_id, documents, steps, extra]
+      properties:
+        pfd_id:
+          type: string
+          description: The PFD of the set; empty when the set has none.
+        documents:
+          type: array
+          description: The PFMEA and the CP of the set.
+          items:
+            $ref: '#/components/schemas/PfdTargetDocument'
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/PfdStep'
+        extra:
+          type: array
+          items:
+            $ref: '#/components/schemas/PfdStepOutside'
+    PfdTargetDocument:
+      type: object
+      required: [id, document_type_key, document_type_name]
+      properties:
+        id:
+          type: string
+        document_type_key:
+          type: string
+        document_type_name:
+          type: string
+    PfdStep:
+      type: object
+      required: [section_key, operation, process_id, process_name, symbol, ng, template_version_id, template_version, targets]
+      properties:
+        section_key:
+          type: string
+        operation:
+          type: string
+        process_id:
+          type: string
+        process_name:
+          type: string
+        symbol:
+          type: string
+        ng:
+          type: string
+        template_version_id:
+          type: string
+          description: The latest published process template version of the process; empty without one.
+        template_version:
+          type: integer
+        targets:
+          type: array
+          items:
+            $ref: '#/components/schemas/PfdStepTarget'
+    PfdStepTarget:
+      type: object
+      required: [document_id, document_type_key, points, state]
+      properties:
+        document_id:
+          type: string
+        document_type_key:
+          type: string
+        points:
+          type: integer
+        state:
+          type: string
+          enum: [present, to_add, no_template, not_draft]
+    PfdStepOutside:
+      type: object
+      required: [document_id, document_type_key, section_key, operation, process_name]
+      properties:
+        document_id:
+          type: string
+        document_type_key:
+          type: string
+        section_key:
+          type: string
+        operation:
+          type: string
+        process_name:
+          type: string
     PagePreview:
       type: object
       description: Page plan shared by the preview, the PDF, and the Excel file (C3). Sizes are in millimetres.

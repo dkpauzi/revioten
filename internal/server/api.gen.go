@@ -1388,6 +1388,30 @@ func (e PermissionInfoLevel) Valid() bool {
 	}
 }
 
+// Defines values for PfdStepTargetState.
+const (
+	PfdStepTargetStateNoTemplate PfdStepTargetState = "no_template"
+	PfdStepTargetStateNotDraft   PfdStepTargetState = "not_draft"
+	PfdStepTargetStatePresent    PfdStepTargetState = "present"
+	PfdStepTargetStateToAdd      PfdStepTargetState = "to_add"
+)
+
+// Valid indicates whether the value is a known member of the PfdStepTargetState enum.
+func (e PfdStepTargetState) Valid() bool {
+	switch e {
+	case PfdStepTargetStateNoTemplate:
+		return true
+	case PfdStepTargetStateNotDraft:
+		return true
+	case PfdStepTargetStatePresent:
+		return true
+	case PfdStepTargetStateToAdd:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PointScopeLevel.
 const (
 	PointScopeLevelCustomer   PointScopeLevel = "customer"
@@ -2776,6 +2800,11 @@ type ChangeVerificationInput struct {
 
 // ChangeVerificationInputDecision defines model for ChangeVerificationInput.Decision.
 type ChangeVerificationInputDecision string
+
+// ComposeFromPfdInput defines model for ComposeFromPfdInput.
+type ComposeFromPfdInput struct {
+	Steps []PfdStepKey `json:"steps"`
+}
 
 // ComposeInput defines model for ComposeInput.
 type ComposeInput struct {
@@ -4622,6 +4651,70 @@ type PersonInfoList struct {
 	Items []PersonInfo `json:"items"`
 }
 
+// PfdComposition defines model for PfdComposition.
+type PfdComposition struct {
+	// Documents The PFMEA and the CP of the set.
+	Documents []PfdTargetDocument `json:"documents"`
+	Extra     []PfdStepOutside    `json:"extra"`
+
+	// PfdId The PFD of the set; empty when the set has none.
+	PfdId string    `json:"pfd_id"`
+	Steps []PfdStep `json:"steps"`
+}
+
+// PfdStep defines model for PfdStep.
+type PfdStep struct {
+	Ng              string          `json:"ng"`
+	Operation       string          `json:"operation"`
+	ProcessId       string          `json:"process_id"`
+	ProcessName     string          `json:"process_name"`
+	SectionKey      string          `json:"section_key"`
+	Symbol          string          `json:"symbol"`
+	Targets         []PfdStepTarget `json:"targets"`
+	TemplateVersion int             `json:"template_version"`
+
+	// TemplateVersionId The latest published process template version of the process; empty without one.
+	TemplateVersionId string `json:"template_version_id"`
+}
+
+// PfdStepKey defines model for PfdStepKey.
+type PfdStepKey struct {
+	Operation string `json:"operation"`
+
+	// ProcessId Empty for a PFD step without a process.
+	ProcessId string `json:"process_id"`
+
+	// SectionKey The section (D-155); empty for a set without sections.
+	SectionKey string `json:"section_key"`
+}
+
+// PfdStepOutside defines model for PfdStepOutside.
+type PfdStepOutside struct {
+	DocumentId      string `json:"document_id"`
+	DocumentTypeKey string `json:"document_type_key"`
+	Operation       string `json:"operation"`
+	ProcessName     string `json:"process_name"`
+	SectionKey      string `json:"section_key"`
+}
+
+// PfdStepTarget defines model for PfdStepTarget.
+type PfdStepTarget struct {
+	DocumentId      string             `json:"document_id"`
+	DocumentTypeKey string             `json:"document_type_key"`
+	Points          int                `json:"points"`
+	State           PfdStepTargetState `json:"state"`
+}
+
+// PfdStepTargetState defines model for PfdStepTarget.State.
+type PfdStepTargetState string
+
+// PfdTargetDocument defines model for PfdTargetDocument.
+type PfdTargetDocument struct {
+	DocumentTypeKey  string `json:"document_type_key"`
+	DocumentTypeName string `json:"document_type_name"`
+	Id               string `json:"id"`
+}
+
 // PfmeaCpCheck defines model for PfmeaCpCheck.
 type PfmeaCpCheck struct {
 	CheckedAt time.Time `json:"checked_at"`
@@ -6395,6 +6488,9 @@ type VerifyMigrationJSONRequestBody = MigrationVerification
 // ReorderDocumentRowsJSONRequestBody defines body for ReorderDocumentRows for application/json ContentType.
 type ReorderDocumentRowsJSONRequestBody = DocumentOrder
 
+// ComposeFromPfdJSONRequestBody defines body for ComposeFromPfd for application/json ContentType.
+type ComposeFromPfdJSONRequestBody = ComposeFromPfdInput
+
 // MarkPfmeaCpCheckedJSONRequestBody defines body for MarkPfmeaCpChecked for application/json ContentType.
 type MarkPfmeaCpCheckedJSONRequestBody = PfmeaCpCheckInput
 
@@ -6829,6 +6925,12 @@ type ServerInterface interface {
 	// GetPagePreview The page plan of one revision as it prints, with the process flow drawn from the PFD (L-4 for a draft, L-1 for a released revision; C3, D-122)
 	// (GET /api/v1/documents/{documentId}/page-preview)
 	GetPagePreview(w http.ResponseWriter, r *http.Request, documentId DocumentId, params GetPagePreviewParams)
+	// GetPfdComposition The PFD steps of the document set with their process template and state in the PFMEA and the CP (L-4, C4, D-211)
+	// (GET /api/v1/documents/{documentId}/pfd-composition)
+	GetPfdComposition(w http.ResponseWriter, r *http.Request, documentId DocumentId)
+	// ComposeFromPfd Make PFMEA and CP rows for the chosen PFD steps (E-2, C4, D-211)
+	// (POST /api/v1/documents/{documentId}/pfd-composition)
+	ComposeFromPfd(w http.ResponseWriter, r *http.Request, documentId DocumentId)
 	// GetPfmeaCpComparison The PFMEA and the CP of the document set side by side, per process (L-4, M4.9)
 	// (GET /api/v1/documents/{documentId}/pfmea-cp)
 	GetPfmeaCpComparison(w http.ResponseWriter, r *http.Request, documentId DocumentId)
@@ -9176,6 +9278,58 @@ func (siw *ServerInterfaceWrapper) GetPagePreview(w http.ResponseWriter, r *http
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetPagePreview(w, r, documentId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetPfdComposition operation middleware
+func (siw *ServerInterfaceWrapper) GetPfdComposition(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", r.PathValue("documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetPfdComposition(w, r, documentId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ComposeFromPfd operation middleware
+func (siw *ServerInterfaceWrapper) ComposeFromPfd(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "documentId" -------------
+	var documentId DocumentId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "documentId", r.PathValue("documentId"), &documentId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "documentId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ComposeFromPfd(w, r, documentId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -13092,6 +13246,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/documents/{documentId}/header", wrapper.SetDocumentHeader)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/documents/{documentId}/composition", wrapper.GetDocumentComposition)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/documents/{documentId}/composition", wrapper.ComposeDocument)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/documents/{documentId}/pfd-composition", wrapper.GetPfdComposition)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/pfd-composition", wrapper.ComposeFromPfd)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/documents/{documentId}/pfmea-cp", wrapper.GetPfmeaCpComparison)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/documents/{documentId}/pfmea-cp", wrapper.MarkPfmeaCpChecked)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/documents/{documentId}/differences", wrapper.GetDocumentDifferences)
@@ -16178,6 +16334,85 @@ type GetPagePreviewdefaultJSONResponse struct {
 }
 
 func (response GetPagePreviewdefaultJSONResponse) VisitGetPagePreviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPfdCompositionRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+}
+
+type GetPfdCompositionResponseObject interface {
+	VisitGetPfdCompositionResponse(w http.ResponseWriter) error
+}
+
+type GetPfdComposition200JSONResponse PfdComposition
+
+func (response GetPfdComposition200JSONResponse) VisitGetPfdCompositionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPfdCompositiondefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response GetPfdCompositiondefaultJSONResponse) VisitGetPfdCompositionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ComposeFromPfdRequestObject struct {
+	DocumentId DocumentId `json:"documentId"`
+	Body       *ComposeFromPfdJSONRequestBody
+}
+
+type ComposeFromPfdResponseObject interface {
+	VisitComposeFromPfdResponse(w http.ResponseWriter) error
+}
+
+type ComposeFromPfd200JSONResponse Document
+
+func (response ComposeFromPfd200JSONResponse) VisitComposeFromPfdResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ComposeFromPfddefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ComposeFromPfddefaultJSONResponse) VisitComposeFromPfdResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -22165,6 +22400,12 @@ type StrictServerInterface interface {
 	// GetPagePreview The page plan of one revision as it prints, with the process flow drawn from the PFD (L-4 for a draft, L-1 for a released revision; C3, D-122)
 	// (GET /api/v1/documents/{documentId}/page-preview)
 	GetPagePreview(ctx context.Context, request GetPagePreviewRequestObject) (GetPagePreviewResponseObject, error)
+	// GetPfdComposition The PFD steps of the document set with their process template and state in the PFMEA and the CP (L-4, C4, D-211)
+	// (GET /api/v1/documents/{documentId}/pfd-composition)
+	GetPfdComposition(ctx context.Context, request GetPfdCompositionRequestObject) (GetPfdCompositionResponseObject, error)
+	// ComposeFromPfd Make PFMEA and CP rows for the chosen PFD steps (E-2, C4, D-211)
+	// (POST /api/v1/documents/{documentId}/pfd-composition)
+	ComposeFromPfd(ctx context.Context, request ComposeFromPfdRequestObject) (ComposeFromPfdResponseObject, error)
 	// GetPfmeaCpComparison The PFMEA and the CP of the document set side by side, per process (L-4, M4.9)
 	// (GET /api/v1/documents/{documentId}/pfmea-cp)
 	GetPfmeaCpComparison(ctx context.Context, request GetPfmeaCpComparisonRequestObject) (GetPfmeaCpComparisonResponseObject, error)
@@ -24779,6 +25020,65 @@ func (sh *strictHandler) GetPagePreview(w http.ResponseWriter, r *http.Request, 
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetPagePreviewResponseObject); ok {
 		if err := validResponse.VisitGetPagePreviewResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetPfdComposition operation middleware
+func (sh *strictHandler) GetPfdComposition(w http.ResponseWriter, r *http.Request, documentId DocumentId) {
+	var request GetPfdCompositionRequestObject
+
+	request.DocumentId = documentId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetPfdComposition(ctx, request.(GetPfdCompositionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetPfdComposition")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetPfdCompositionResponseObject); ok {
+		if err := validResponse.VisitGetPfdCompositionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ComposeFromPfd operation middleware
+func (sh *strictHandler) ComposeFromPfd(w http.ResponseWriter, r *http.Request, documentId DocumentId) {
+	var request ComposeFromPfdRequestObject
+
+	request.DocumentId = documentId
+
+	var body ComposeFromPfdJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ComposeFromPfd(ctx, request.(ComposeFromPfdRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ComposeFromPfd")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ComposeFromPfdResponseObject); ok {
+		if err := validResponse.VisitComposeFromPfdResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

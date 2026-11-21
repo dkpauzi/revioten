@@ -382,3 +382,13 @@ ORDER BY n.number;
 -- name: DocumentReleasedRevision :one
 SELECT d.released_revision FROM documents d JOIN document_numbers n ON n.id = d.document_number_id
 WHERE d.id = $1 AND n.status <> 'void';
+
+-- name: AddStepRow :one
+-- AddStepRow menambah baris PFMEA atau CP untuk satu langkah PFD (C4): nomor
+-- langkah dan proses dari PFD. Nomornya ditandai manual, supaya penomoran
+-- otomatis tidak menggesernya dari nomor di PFD. Tautan ke poin boleh kosong.
+INSERT INTO document_rows (document_id, position, process_id, operation_number, operation_manual, content,
+                           template_point_id, template_version_id, section_id)
+VALUES ($1, (SELECT coalesce(max(position), 0) + 1 FROM document_rows WHERE document_id = $1), sqlc.narg(process_id), $2, true, $3,
+        sqlc.narg(template_point_id), sqlc.narg(template_version_id), sqlc.narg(section_id))
+RETURNING id, position;

@@ -442,3 +442,40 @@ func orNew(origin string) string {
 	}
 	return origin
 }
+
+// GetPfdComposition menjawab GET /api/v1/documents/{documentId}/pfd-composition (C4).
+func (a *apiServer) GetPfdComposition(ctx context.Context, req GetPfdCompositionRequestObject) (GetPfdCompositionResponseObject, error) {
+	c, err := a.documents.PFDComposition(ctx, actorFrom(ctx), req.DocumentId)
+	if err != nil {
+		return nil, err
+	}
+	out := PfdComposition{PfdId: c.PFDID, Documents: []PfdTargetDocument{}, Steps: []PfdStep{}, Extra: []PfdStepOutside{}}
+	for _, d := range c.Documents {
+		out.Documents = append(out.Documents, PfdTargetDocument{Id: d.ID, DocumentTypeKey: d.Key, DocumentTypeName: d.Name})
+	}
+	for _, s := range c.Steps {
+		step := PfdStep{SectionKey: s.SectionKey, Operation: s.Operation, ProcessId: s.ProcessID, ProcessName: s.ProcessName,
+			Symbol: s.Symbol, Ng: s.NG, TemplateVersionId: s.TemplateVersionID, TemplateVersion: s.TemplateVersion, Targets: []PfdStepTarget{}}
+		for _, t := range s.Targets {
+			step.Targets = append(step.Targets, PfdStepTarget{DocumentId: t.DocumentID, DocumentTypeKey: t.DocumentType, Points: t.Points, State: PfdStepTargetState(t.State)})
+		}
+		out.Steps = append(out.Steps, step)
+	}
+	for _, e := range c.Extra {
+		out.Extra = append(out.Extra, PfdStepOutside{DocumentId: e.DocumentID, DocumentTypeKey: e.DocumentType, SectionKey: e.SectionKey, Operation: e.Operation, ProcessName: e.ProcessName})
+	}
+	return GetPfdComposition200JSONResponse(out), nil
+}
+
+// ComposeFromPfd menjawab POST /api/v1/documents/{documentId}/pfd-composition (C4).
+func (a *apiServer) ComposeFromPfd(ctx context.Context, req ComposeFromPfdRequestObject) (ComposeFromPfdResponseObject, error) {
+	choices := make([]document.StepChoice, 0, len(req.Body.Steps))
+	for _, s := range req.Body.Steps {
+		choices = append(choices, document.StepChoice{SectionKey: s.SectionKey, Operation: s.Operation, ProcessID: s.ProcessId})
+	}
+	d, err := a.documents.ComposeFromPFD(ctx, actorFrom(ctx), req.DocumentId, choices)
+	if err != nil {
+		return nil, err
+	}
+	return ComposeFromPfd200JSONResponse(toAPIDocument(d)), nil
+}

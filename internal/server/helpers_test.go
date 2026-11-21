@@ -582,6 +582,7 @@ type fakeDocuments struct {
 	gotRows []document.NewRow
 	// composition dan gotCompose: perakitan (M4.5).
 	composition document.Composition
+	gotSteps    []document.StepChoice
 	gotCompose  document.Compose
 	gotOrder    document.Order // M4.6
 	// differences dan gotReason: perbandingan dan putus tautan (M4.8).
@@ -655,6 +656,17 @@ func (f *fakeDocuments) Composition(_ context.Context, _ access.Actor, id, versi
 
 func (f *fakeDocuments) Compose(_ context.Context, _ access.Actor, id string, in document.Compose) (document.Document, error) {
 	f.got, f.gotCompose = called{method: "Compose", id: id}, in
+	return f.doc, f.err
+}
+
+func (f *fakeDocuments) PFDComposition(_ context.Context, _ access.Actor, id string) (document.PFDComposition, error) {
+	f.got = called{method: "PFDComposition", id: id}
+	return document.PFDComposition{Steps: []document.PFDStepPlan{{FlowStep: document.FlowStep{Operation: "10", ProcessName: "IQC"},
+		Targets: []document.StepTarget{{DocumentID: "cp", DocumentType: "cp", Points: 2, State: document.StepToAdd}}}}}, f.err
+}
+
+func (f *fakeDocuments) ComposeFromPFD(_ context.Context, _ access.Actor, id string, choices []document.StepChoice) (document.Document, error) {
+	f.got, f.gotSteps = called{method: "ComposeFromPFD", id: id}, choices
 	return f.doc, f.err
 }
 

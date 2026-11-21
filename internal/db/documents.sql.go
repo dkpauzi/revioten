@@ -184,6 +184,47 @@ func (q *Queries) AddSectionPartNumber(ctx context.Context, arg AddSectionPartNu
 	return err
 }
 
+const addStepRow = `-- name: AddStepRow :one
+INSERT INTO document_rows (document_id, position, process_id, operation_number, operation_manual, content,
+                           template_point_id, template_version_id, section_id)
+VALUES ($1, (SELECT coalesce(max(position), 0) + 1 FROM document_rows WHERE document_id = $1), $4, $2, true, $3,
+        $5, $6, $7)
+RETURNING id, position
+`
+
+type AddStepRowParams struct {
+	DocumentID        string
+	OperationNumber   *string
+	Content           []byte
+	ProcessID         *string
+	TemplatePointID   *string
+	TemplateVersionID *string
+	SectionID         *string
+}
+
+type AddStepRowRow struct {
+	ID       string
+	Position int32
+}
+
+// AddStepRow menambah baris PFMEA atau CP untuk satu langkah PFD (C4): nomor
+// langkah dan proses dari PFD. Nomornya ditandai manual, supaya penomoran
+// otomatis tidak menggesernya dari nomor di PFD. Tautan ke poin boleh kosong.
+func (q *Queries) AddStepRow(ctx context.Context, arg AddStepRowParams) (AddStepRowRow, error) {
+	row := q.db.QueryRow(ctx, addStepRow,
+		arg.DocumentID,
+		arg.OperationNumber,
+		arg.Content,
+		arg.ProcessID,
+		arg.TemplatePointID,
+		arg.TemplateVersionID,
+		arg.SectionID,
+	)
+	var i AddStepRowRow
+	err := row.Scan(&i.ID, &i.Position)
+	return i, err
+}
+
 const assignExclusionsToSection = `-- name: AssignExclusionsToSection :exec
 UPDATE document_point_exclusions SET section_id = $2 WHERE document_id = $1 AND section_id IS NULL
 `

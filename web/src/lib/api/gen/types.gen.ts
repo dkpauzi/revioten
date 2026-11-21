@@ -303,6 +303,71 @@ export type AccountInfo = {
     created_at: string;
 };
 
+export type PfdStepKey = {
+    /**
+     * The section (D-155); empty for a set without sections.
+     */
+    section_key: string;
+    operation: string;
+    /**
+     * Empty for a PFD step without a process.
+     */
+    process_id: string;
+};
+
+export type ComposeFromPfdInput = {
+    steps: Array<PfdStepKey>;
+};
+
+export type PfdComposition = {
+    /**
+     * The PFD of the set; empty when the set has none.
+     */
+    pfd_id: string;
+    /**
+     * The PFMEA and the CP of the set.
+     */
+    documents: Array<PfdTargetDocument>;
+    steps: Array<PfdStep>;
+    extra: Array<PfdStepOutside>;
+};
+
+export type PfdTargetDocument = {
+    id: string;
+    document_type_key: string;
+    document_type_name: string;
+};
+
+export type PfdStep = {
+    section_key: string;
+    operation: string;
+    process_id: string;
+    process_name: string;
+    symbol: string;
+    ng: string;
+    /**
+     * The latest published process template version of the process; empty without one.
+     */
+    template_version_id: string;
+    template_version: number;
+    targets: Array<PfdStepTarget>;
+};
+
+export type PfdStepTarget = {
+    document_id: string;
+    document_type_key: string;
+    points: number;
+    state: 'present' | 'to_add' | 'no_template' | 'not_draft';
+};
+
+export type PfdStepOutside = {
+    document_id: string;
+    document_type_key: string;
+    section_key: string;
+    operation: string;
+    process_name: string;
+};
+
 /**
  * Page plan shared by the preview, the PDF, and the Excel file (C3). Sizes are in millimetres.
  */
@@ -7113,6 +7178,76 @@ export type ComposeDocumentResponses = {
 };
 
 export type ComposeDocumentResponse = ComposeDocumentResponses[keyof ComposeDocumentResponses];
+
+export type GetPfdCompositionData = {
+    body?: never;
+    path: {
+        documentId: string;
+    };
+    query?: never;
+    url: '/api/v1/documents/{documentId}/pfd-composition';
+};
+
+export type GetPfdCompositionErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type GetPfdCompositionError = GetPfdCompositionErrors[keyof GetPfdCompositionErrors];
+
+export type GetPfdCompositionResponses = {
+    /**
+     * The steps.
+     */
+    200: PfdComposition;
+};
+
+export type GetPfdCompositionResponse = GetPfdCompositionResponses[keyof GetPfdCompositionResponses];
+
+export type ComposeFromPfdData = {
+    body: ComposeFromPfdInput;
+    path: {
+        documentId: string;
+    };
+    query?: never;
+    url: '/api/v1/documents/{documentId}/pfd-composition';
+};
+
+export type ComposeFromPfdErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ComposeFromPfdError = ComposeFromPfdErrors[keyof ComposeFromPfdErrors];
+
+export type ComposeFromPfdResponses = {
+    /**
+     * The document after the change.
+     */
+    200: Document;
+};
+
+export type ComposeFromPfdResponse = ComposeFromPfdResponses[keyof ComposeFromPfdResponses];
 
 export type GetPfmeaCpComparisonData = {
     body?: never;

@@ -136,6 +136,9 @@ type Document struct {
 	// (D-198): "" bila tidak ada, waiting, atau completed. Selama ada, isi
 	// draft dikunci (R-REV-06).
 	Signing string
+	// Flow adalah langkah PFD satu set, hanya untuk CP (C4, D-212): ikut
+	// snapshot supaya alur cetakan revisi terbit tidak berubah. Tidak pernah nil.
+	Flow []FlowStep
 }
 
 // SetMember adalah satu dokumen di set yang sama (M4.2): nomornya didaftarkan
@@ -763,6 +766,12 @@ func getDocument(ctx context.Context, q *db.Queries, id string) (Document, error
 			return Document{}, fmt.Errorf("membaca baris: %w", err)
 		}
 		d.Rows = append(d.Rows, item)
+	}
+	d.Flow = []FlowStep{}
+	if carriesFlow(d.DocumentType.Key) {
+		if d.Flow, err = loadFlow(ctx, q, d); err != nil {
+			return Document{}, err
+		}
 	}
 	return d, nil
 }
