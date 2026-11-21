@@ -2375,10 +2375,10 @@ Salin blok ini untuk setiap temuan baru.
 - **Temuan:** Kolom Process Flow CP digambar dari PFD satu set. Saat mencetak revisi CP lama (misalnya revisi 02 sesudah revisi 03 terbit), belum ditentukan PFD mana yang dipakai: isi PFD sekarang, atau revisi PFD yang berlaku saat revisi CP itu terbit.
 - **Opsi:** (a) isi PFD sekarang (draft bila ada); (b) revisi PFD terbit yang berlaku pada tanggal rilis revisi CP itu; (c) simbol alur ikut dibekukan di snapshot CP saat rilis.
 - **Rekomendasi Claude Code (usulan):** (c) untuk jangka panjang, karena revisi terbit tidak boleh berubah (R-REV-02); (a) sementara.
-- **Asumsi sementara di kode (ASUMSI E-137):** (a).
+- **Asumsi sementara di kode (ASUMSI E-137):** (a), sampai (c) dibangun.
 - **Menghambat milestone?** Tidak
-- **Status:** Terbuka
-- **Keputusan pemilik:**
+- **Status:** Diputuskan (D-212)
+- **Keputusan pemilik:** 22 November 2026, "E-137 ok": rekomendasi diterima. Jangka panjang (c): simbol alur ikut dibekukan di snapshot CP saat rilis; sementara (a).
 
 ## Usulan desain UI (UX-01 sampai UX-07): dampak ke M0 sampai M3 dan saran
 

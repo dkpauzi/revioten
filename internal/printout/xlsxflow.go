@@ -95,10 +95,11 @@ func writeFlowXLSX(f *excelize.File, name string, sh Sheet, x xlsxLayout) error 
 // px: point ke piksel layar Excel (96 dpi).
 func px(pt float64) float64 { return pt * 96 / 72 }
 
-// flowShapes menggambar alur satu halaman. Semua shape dijangkarkan di sel
-// kolom alur baris pertama halaman, dengan jarak dalam piksel.
+// flowShapes menggambar alur satu halaman. Excel memakai jarak vertikal
+// hanya di dalam sel jangkarnya, jadi setiap shape dijangkarkan di baris
+// tempat ia berada, dengan jarak di dalam baris itu.
 func flowShapes(f *excelize.File, name string, sh Sheet, x xlsxLayout, pg PlanPage) error {
-	anchor := cell(sh.FlowColumn+1+x.offset, x.excelRow[pg.Rows[0]])
+	col := sh.FlowColumn + 1 + x.offset
 	scale := x.flowPx / (x.plan.ColumnsMM[sh.FlowColumn] * 96 / 25.4) // piksel lembar per piksel kertas
 	mm := func(v float64) float64 { return v * 96 / 25.4 * scale }
 	tops := make([]float64, len(pg.Rows))
@@ -108,21 +109,31 @@ func flowShapes(f *excelize.File, name string, sh Sheet, x xlsxLayout, pg PlanPa
 		y += px(x.rowPt[r])
 	}
 	height := y
+	// at memberi sel jangkar dan jarak di dalamnya untuk posisi vertikal yy.
+	at := func(yy float64) (string, int) {
+		i := len(tops) - 1
+		for i > 0 && tops[i] > yy {
+			i--
+		}
+		return cell(col, x.excelRow[pg.Rows[i]]), int(math.Round(yy - tops[i]))
+	}
 	cx := math.Min(x.flowPx/2, mm(shapeWMM/2+2.5))
 	black := excelize.Fill{Type: "pattern", Pattern: 1, Color: []string{"000000"}}
 	white := excelize.Fill{Type: "pattern", Pattern: 1, Color: []string{"FFFFFF"}}
 	outline := excelize.LineOptions{Width: 0.75, Fill: black}
 	add := func(typ string, left, top, w, h float64, text string, fill excelize.Fill) error {
+		anchor, off := at(top)
 		s := &excelize.Shape{Cell: anchor, Type: typ, Width: uint(math.Max(1, w)), Height: uint(math.Max(1, h)), Fill: fill, Line: outline,
-			Format: excelize.GraphicOptions{OffsetX: int(math.Round(left)), OffsetY: int(math.Round(top))}}
+			Format: excelize.GraphicOptions{OffsetX: int(math.Round(left)), OffsetY: off}}
 		if text != "" {
 			s.Paragraph = []excelize.RichTextRun{{Text: text, Font: &excelize.Font{Bold: true, Size: 7, Color: "000000", Family: "Arial"}}}
 		}
 		return f.AddShape(name, s)
 	}
 	line := func(x1, y1, w, h float64) error {
+		anchor, off := at(y1)
 		s := &excelize.Shape{Cell: anchor, Type: "line", Width: uint(math.Max(1, w)), Height: uint(math.Max(1, h)), Line: outline,
-			Format: excelize.GraphicOptions{OffsetX: int(math.Round(x1)), OffsetY: int(math.Round(y1))}}
+			Format: excelize.GraphicOptions{OffsetX: int(math.Round(x1)), OffsetY: off}}
 		return f.AddShape(name, s)
 	}
 	ys := make([]float64, len(pg.Nodes))
@@ -157,9 +168,20 @@ func flowShapes(f *excelize.File, name string, sh Sheet, x xlsxLayout, pg PlanPa
 			if err := line(cx+w/2, yy, x.flowPx-cx-w/2-2, 1); err != nil {
 				return err
 			}
-			// Tulisan NG dan arahnya di sel baris itu, rata kanan.
+			// Tulisan NG dan arahnya di sel baris itu, rata kanan bawah, di bawah garis NG.
 			row := x.excelRow[pg.Rows[n.Row]]
-			if err := f.SetCellValue(name, cell(sh.FlowColumn+1+x.offset, row), "NG → "+ngLabel(n.NG)); err != nil {
+			if err := f.SetCellValue(name, cell(col, row), "NG → "+ngLabel(n.NG)); err != nil {
+				return err
+			}
+			style, err := f.NewStyle(&excelize.Style{
+				Font:      &excelize.Font{Bold: true, Size: 6, Family: "Arial"},
+				Alignment: &excelize.Alignment{Horizontal: "right", Vertical: "bottom"},
+				Border:    []excelize.Border{{Type: "left", Color: "000000", Style: 1}, {Type: "right", Color: "000000", Style: 1}},
+			})
+			if err != nil {
+				return err
+			}
+			if err := f.SetCellStyle(name, cell(col, row), cell(col, row), style); err != nil {
 				return err
 			}
 		}
