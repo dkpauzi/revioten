@@ -214,7 +214,7 @@ func checkLegacySet(in LegacySet) ([]LegacySetDocument, error) {
 // checkSameSet memastikan semua nomor isian satu batch: nomor baru selalu
 // satu batch, tetapi nomor yang sudah terdaftar membawa batch-nya sendiri.
 // Set dikenali dari batch (ListDocumentSet), jadi campuran ditolak
-// (ASUMSI E-142).
+// (D-217).
 func checkSameSet(docs []LegacySetDocument, numbers map[string]numbering.LegacyNumber) error {
 	first := numbers[docs[0].TypeKey]
 	for _, d := range docs[1:] {

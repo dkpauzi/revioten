@@ -23,7 +23,7 @@ export function emptyRows(): SetRow[] {
 	return typeKeys.map((key) => ({ key, number: '', revision: '', effectiveDate: '', preparedBy: '', approvedBy: '' }));
 }
 
-// splitLegacyNumber memisahkan akhiran revisi. ASUMSI E-142: nomor dengan
+// splitLegacyNumber memisahkan akhiran revisi (D-217): nomor dengan
 // pola {prefix}-{customer}-{seq} punya dua tanda hubung, jadi segmen angka
 // keempat adalah revisi. Huruf diubah ke huruf besar.
 export function splitLegacyNumber(text: string): { number: string; revision: number | null } {

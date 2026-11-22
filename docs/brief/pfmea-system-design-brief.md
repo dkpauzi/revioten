@@ -1,6 +1,6 @@
 # PFMEA / Control Plan / PFD Web System: Design Brief for AI Collaborators
 
-- Version: 1.45
+- Version: 1.46
 - Date: 2026-11-22
 - Status: living document. Update it whenever a decision changes, and mark replaced items [SUPERSEDED].
 - Owner language: Indonesian. This brief is in English for precision and to match the earlier spec package. Domain terms stay in Indonesian where they matter (section 3).
@@ -602,6 +602,7 @@ stateDiagram-v2
 | D-214 | The PFD has one source: what the author types per document (D-211). Compose from process templates no longer fills the PFD, and new process template points can no longer be of type PFD. Existing PFD points stay readable. Supersedes the PFD part of R-CMP-02. Decides E-139 (option b). | Owner (2026-11-22): "139 Ok". | [DECIDED] |
 | D-215 | Legacy documents get one dedicated migration menu (Documents → Legacy documents) instead of the steps spread over Settings, Numbers, the Documents page, and the document drawer. It holds a readiness checklist, the entry of one set, and a status board per legacy document. The flow for new models stays as it is. Migration rules (R-MIG-01 to R-MIG-07, four eyes, numbers never changed, entry at the current revision, snapshot) do not change. Decides E-141 (option b). | Owner (2026-11-22): "E-141 saya setuju dengan anda, lebih baik kita membuat satu menu khusus untuk migrasi. untuk alur yang ada saat ini cocok jika untuk model baru, namun untuk migrasi, akan sangat merepotkan". | [DECIDED] |
 | D-216 | Legacy numbers are entered in three columns, PFD (SH), PFMEA (SF), and CP (SC). Default is "one set": only one column is filled, and the other two follow with the same running number and customer code. When the running numbers are not aligned (for example SC-TR-005, SF-TR-005, SH-TR-004), all three numbers are typed. Either way the three numbers on one line form one document set: the CP takes its process flow from the PFD on that line. Decides E-140. | Owner (2026-11-22): "bagaimana kalau kita batasi importnya? jadi di bagi tiga kolom, untuk SC, SF dan SH ... defaultnya adalah satu set"; "jadi maksud tidak satu set adalah ada salah satu nomor dokumen yang tidak sejajar". | [DECIDED] |
+| D-217 | Details of the migration menu (decides E-142): (1) a revision typed with the number (SH-TR-020-02) is read from a fourth numeric segment and moved to the revision field; (2) the work right E-10 is enough to register legacy numbers through the migration menu, while the number import keeps E-8; (3) when one number is already registered in another set (batch) and the others are new, the entry is rejected, because a set is identified by its batch; (4) empty Prepared and Approved names take the names on the first line. | Owner (2026-11-22): "E-142 ok, sesuai rekomendasi". | [DECIDED] |
 
 ## 7. Technology stack
 
@@ -1164,6 +1165,7 @@ Findings from the TR-020 documents
 - 1.43 (2026-11-22): recorded D-212 (process flow frozen in the CP snapshot at release; decides E-137).
 - 1.44 (2026-11-22): recorded D-213 (one registered process per PFD step, decides E-138) and D-214 (compose from process templates no longer fills the PFD, decides E-139); both built the same day.
 - 1.45 (2026-11-22): recorded D-215 (dedicated migration menu, decides E-141) and D-216 (legacy numbers in three columns, one set by default, decides E-140). Both built the same day; open details in E-142.
+- 1.46 (2026-11-22): recorded D-217 (details of the migration menu, decides E-142; already built with D-215 and D-216).
 - 1.38 (2026-11-20): recorded D-205 (admin dashboard, phase 4, built with migration 00051) and D-206 (flexible project-group limit for Project Leaders, also for signatures and verification; D-71 becomes the default).
 - 1.37 (2026-11-20, phase 3): digital signatures built (migration 00050): send, sequential signing with password re-entry, reject, withdraw, release without a scan, prints with "Signed digitally", customer signature mode. Admin dashboard proposal recorded in `docs/rencana/dasbor-admin.md` (not decided).
 - 1.37 (2026-11-20, later): D-203 corrected (the Engineer is the Prepared slot; Checked is the Leader- or Supervisor-level Project Leader) and D-204 recorded (release date of a digital signature = date sent; sequential signing). Earlier the same day: recorded D-203 (the Engineer is chosen when a document is sent for signature; decides E-132). D-199 built in phase 2 (migration 00049): new roles, rights S-1 and G-1, and roles the admin can add, rename, and deactivate. The genba view (D-137, step L) is still not built.

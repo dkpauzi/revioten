@@ -49,7 +49,7 @@ Pemilik menilai alur migrasi "sangat membingungkan". Sebelumnya, satu set dokume
 
 ## 5. Asumsi
 
-- ASUMSI E-142 (rincian menu migrasi):
+- Rincian menu migrasi (semula ASUMSI E-142, diputuskan D-217 pada hari yang sama):
   - revisi dikenali dari segmen angka keempat;
   - E-10 cukup untuk mendaftarkan nomor lewat menu migrasi;
   - campuran batch ditolak;
@@ -58,7 +58,7 @@ Pemilik menilai alur migrasi "sangat membingungkan". Sebelumnya, satu set dokume
 
 ## 6. Temuan desain baru
 
-- **E-142:** rincian menu migrasi. Terbuka.
+- **E-142:** rincian menu migrasi. Diputuskan pemilik (D-217, brief v1.46): sesuai yang dibangun.
 
 ## 7. Status test
 
