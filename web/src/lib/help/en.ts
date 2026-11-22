@@ -348,7 +348,11 @@ export const helpEn: HelpContent = {
 				'Released revisions print as {printPurpose_reference} or {printPurpose_controlled}. Controlled copies are numbered, and every print shows in the {printLog}.',
 				'The PPAP Engineer changes paper, fonts, margins, and column widths under {navGroupTemplates}, then {navPrintLayouts}, and can give one customer another layout.'
 			],
-			tips: ['Drafts always print with UNCONTROLLED COPY.', 'Rows changed in the printed revision carry a triangle with the revision number.', 'PDF needs Chrome or Edge on the server computer; Excel always works.'],
+			tips: [
+				'Covers and form heads follow the TR-020 documents. The cover has the company logo, the document number, Customer, Model Name, Part Name, Part Number, Process or Line, the revision history, INHOUSE APPROVAL, and CUSTOMER APPROVAL. The Control Plan head has the approval table on the right; the PFMEA head has Part Name, Key Date, FMEA NO., and Prepared by; the PFD head says Process Flow Chart for the model.',
+				'Part Name comes from the part numbers of the document (Master data, then Models). Process or Line, Core Team, Remark, Process Responsibility, and Key Date are header fields of the document.',
+				'The admin changes the company name and the logo under {navGroupAdmin}, then {navSettings}: {companyTitle}.',
+				'Drafts always print with UNCONTROLLED COPY.', 'Rows changed in the printed revision carry a triangle with the revision number.', 'PDF needs Chrome or Edge on the server computer; Excel always works.'],
 			image: 'printing',
 			imageAlt: 'The Print section of a document with the purpose and the Excel and PDF buttons.'
 		},

@@ -12,6 +12,9 @@ import (
 	"testing"
 
 	"github.com/xuri/excelize/v2"
+
+	"github.com/dkpauzi/revioten/internal/settings"
+	"github.com/dkpauzi/revioten/internal/template"
 )
 
 func TestPaginate(t *testing.T) {
@@ -146,6 +149,14 @@ func TestSampleTokairika(t *testing.T) {
 		t.Fatal(err)
 	}
 	_ = os.WriteFile(filepath.Join(dir, "sample-cp.xlsx"), body, 0o600)
+	// PFMEA berpola SF-TR-020-03 (bagian C).
+	pfmea := tokairikaPFMEA()
+	if pg, err := HTML(pfmea); err == nil {
+		_ = os.WriteFile(filepath.Join(dir, "sample-pfmea.html"), pg, 0o600)
+	}
+	if body, err := XLSX(pfmea); err == nil {
+		_ = os.WriteFile(filepath.Join(dir, "sample-pfmea.xlsx"), body, 0o600)
+	}
 	// PFD berpola SH-TR-020-02 sebagai diagram (bagian B).
 	pfd := tokairikaPFD()
 	pfdPage, err := HTML(pfd)
@@ -180,19 +191,68 @@ func tokairikaSymbol(op, ng string) string {
 	return "process"
 }
 
+// tokairikaHead mengisi bahan kepala dan cover seperti set TR-020: customer,
+// model, part, logo bawaan, slot rute lima tingkat, riwayat revisi, dan field
+// header ber-key (migrasi 00056).
+func tokairikaHead(sh *Sheet, kind, revision string, remark bool) {
+	sh.Snapshot.DocumentType = kind
+	sh.Snapshot.Models = []string{"D660A"}
+	sh.Snapshot.PartNumbers = []string{"75J081-7022"}
+	sh.Snapshot.PartNames = []string{"PC BOARD CP LH"}
+	sh.CustomerName, sh.CompanyName, sh.Logo = "PT. TOKAIRIKA INDONESIA", "PT. SIIX EMS INDONESIA", settings.DefaultLogo
+	sh.RevisionLabel = "-" + revision
+	sh.Layout.Cover = true
+	sh.Slots = []Slot{
+		{Title: "Process. Eng", Stage: "prepared", Names: []string{"Dimas K."}},
+		{Title: "Engineer", Stage: "checked", Names: []string{"A. Fikry"}},
+		{Title: "NPI Manager", Stage: "approved", Names: []string{"Oie S"}},
+		{Title: "QA / QC Mgr.", Stage: "approved", Names: []string{"Carter S."}},
+		{Title: "General Mgr.", Stage: "approved", Names: []string{"Takagi T"}},
+	}
+	sh.History = []HistoryRow{{1, "2014-02-04", "00", "Initial Release"}, {2, "2026-10-23", revision, "Change False NG (Good Ratio) AOI process refer to SW-ZZ-116"}}
+	sh.Snapshot.Header = map[string]any{"h-line": "PCBA Line Process", "h-team": "Dimas K, Khury, Fikry(NPI), Vera(WH), Nugraha (IQC), Jefri(QA/QC)", "h-resp": "Process Engineering", "h-key": "2026-10-23"}
+	sh.Format.Fields = []template.Field{{ID: "h-line", Area: "header", Key: "process_line"}, {ID: "h-team", Area: "header", Key: "core_team"},
+		{ID: "h-resp", Area: "header", Key: "process_responsibility"}, {ID: "h-key", Area: "header", Key: "key_date"}}
+	if remark {
+		sh.Snapshot.Header["h-remark"] = "SEV - Severity (1~10); OCC - Occurrence (1~10); DET - Detection (1~10)"
+		sh.Format.Fields = append(sh.Format.Fields, template.Field{ID: "h-remark", Area: "header", Key: "remark"})
+	}
+}
+
 // tokairikaPFD adalah PFD berpola SH-TR-020-02: satu baris per langkah.
 func tokairikaPFD() Sheet {
 	sh := Sheet{Title: "PROCESS FLOW DIAGRAM", Number: "SH-TR-020", FlowColumn: 2, OpColumn: 0, ProcessColumn: 1,
 		Columns: []Column{{Label: "No", Width: 0.5}, {Label: "Process", Width: 1.6}, {Label: "Flow Symbol", Width: 1.3}, {Label: "NG Disposition", Width: 0.8}},
 		Header:  []Pair{{"Customer", "PT. TOKAIRIKA INDONESIA (TR)"}, {"Model Name", "D660A"}, {"Document No.", "SH-TR-020"}, {"Revision", "-02"}}}
-	sh.Snapshot.DocumentType = "pfd"
 	sh.Layout = Layout{Paper: "A4", Orientation: "portrait", FontSize: 8, MarginsMM: Margins{Top: 10, Right: 10, Bottom: 12, Left: 10}}
+	tokairikaHead(&sh, "pfd", "02", false)
 	sh.Steps = map[string]Step{}
 	for _, f := range tokairikaFlow {
 		sh.Steps[f[0]] = Step{Symbol: tokairikaSymbol(f[0], f[2]), NG: f[2]}
 		sh.Ops = append(sh.Ops, f[0])
 		sh.Processes = append(sh.Processes, f[1])
 		sh.Rows = append(sh.Rows, Row{Cells: []string{f[0], f[1], "", f[2]}})
+	}
+	return sh
+}
+
+// tokairikaPFMEA adalah PFMEA berpola SF-TR-020-03 dengan beberapa baris.
+func tokairikaPFMEA() Sheet {
+	cols := []Column{{Label: "Process Item No.", Width: 0.5}, {Label: "Process Step / Function", Width: 1.2}, {Label: "Requirement", Width: 1.2},
+		{Label: "Potential Failure Mode", Width: 1.4}, {Label: "Potential Effect(s) of Failure", Width: 1.4}, {Label: "SEV", Width: 0.4}, {Label: "Class", Width: 0.4},
+		{Label: "Potential Cause(s) / Mechanism(s) of Failure", Width: 1.6}, {Label: "Controls Prevention", Group: "Current Process", Width: 1.6},
+		{Label: "OCC", Group: "Current Process", Width: 0.4}, {Label: "Controls Detection", Group: "Current Process", Width: 1.8}, {Label: "DET", Group: "Current Process", Width: 0.4},
+		{Label: "RPN", Width: 0.5}, {Label: "Recommended Action", Width: 0.8}, {Label: "Responsibility & Target Completion Date", Width: 0.8},
+		{Label: "Actions Taken Completion Date", Group: "Action Results", Width: 0.8}, {Label: "SEV", Group: "Action Results", Width: 0.4},
+		{Label: "OCC", Group: "Action Results", Width: 0.4}, {Label: "DET", Group: "Action Results", Width: 0.4}, {Label: "RPN", Group: "Action Results", Width: 0.5}}
+	sh := Sheet{Title: "PROCESS FMEA", Number: "SF-TR-020", FlowColumn: -1, OpColumn: 0, ProcessColumn: 1, Columns: cols}
+	sh.Layout = Layout{Paper: "A3", Orientation: "portrait", FontSize: 7, MarginsMM: Margins{Top: 10, Right: 8, Bottom: 12, Left: 8}}
+	tokairikaHead(&sh, "pfmea", "03", true)
+	for _, f := range tokairikaFlow[:4] {
+		sh.Ops = append(sh.Ops, f[0])
+		sh.Processes = append(sh.Processes, f[1])
+		sh.Rows = append(sh.Rows, Row{Cells: []string{f[0], f[1], "Correct Parts Number", "Wrong part number accepted", "Wrong part stored and issued", "7", "--",
+			"Supplier issuing error", "Compare supplier label with DO / PO", "2", "100% check of supplier label", "6", "84", "--", "", "", "", "", "", ""}})
 	}
 	return sh
 }
@@ -207,6 +267,7 @@ func tokairikaSheet() Sheet {
 			{Label: "Process Characteristic", Width: 1.4}, {Label: "Evaluation / Measurement", Width: 1.4}, {Label: "Control Method", Width: 1.4}, {Label: "Reaction Plan", Width: 1.4}},
 		Header: []Pair{{"Customer", "PT. TOKAIRIKA INDONESIA (TR)"}, {"Model Name", "D660A"}, {"Part Number", "75J081-7022"}, {"Document No.", "SC-TR-020"}, {"Revision", "-04"}}}
 	sh.Layout = Layout{Paper: "A3", Orientation: "landscape", FontSize: 8, MarginsMM: Margins{Top: 12, Right: 10, Bottom: 14, Left: 10}}
+	tokairikaHead(&sh, "cp", "04", true)
 	sh.Steps = map[string]Step{}
 	for _, f := range flow {
 		sh.Steps[f[0]] = Step{Symbol: tokairikaSymbol(f[0], f[2]), NG: f[2]}

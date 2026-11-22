@@ -212,7 +212,10 @@ func writeData(f *excelize.File, name string, sh Sheet, st styles) error {
 			return err
 		}
 	}
-	row := writeHead(f, name, sh, st, cols, 0)
+	row, ok := writeFormHead(f, name, sh, widths)
+	if !ok {
+		row = writeHead(f, name, sh, st, cols, 0)
+	}
 	// Judul tabel: baris grup (bila ada) dan baris label, berulang di setiap halaman.
 	first := row
 	offset := 0
@@ -392,98 +395,4 @@ func writeHead(f *excelize.File, name string, sh Sheet, st styles, cols, perRow 
 		row += 4
 	}
 	return row
-}
-
-// writeCover menulis cover TR-020 (R-PRT-07): nomor, judul, header, tabel
-// riwayat revisi (M6.8), slot approval dari rute, area CUSTOMER APPROVAL,
-// dan nama customer di bawah.
-func writeCover(f *excelize.File, name string, sh Sheet, st styles) error {
-	const cols = 8
-	for i := 1; i <= cols; i++ {
-		_ = f.SetColWidth(name, colName(i), colName(i), 16)
-	}
-	_ = f.SetColWidth(name, "A", "A", 6)
-	_ = f.SetColWidth(name, "D", "D", 44)
-	row := 1
-	_ = f.SetCellValue(name, cell(cols, row), sh.Number+" "+sh.RevisionLabel)
-	_ = f.SetCellStyle(name, cell(cols, row), cell(cols, row), st.label)
-	row += 2
-	_ = f.MergeCell(name, cell(1, row), cell(cols, row))
-	_ = f.SetCellValue(name, cell(1, row), sh.Title)
-	_ = f.SetCellStyle(name, cell(1, row), cell(cols, row), st.title)
-	row += 2
-	for _, p := range sh.Header {
-		_ = f.MergeCell(name, cell(1, row), cell(2, row))
-		_ = f.MergeCell(name, cell(3, row), cell(cols, row))
-		_ = f.SetCellValue(name, cell(1, row), p.Label)
-		_ = f.SetCellStyle(name, cell(1, row), cell(2, row), st.label)
-		_ = f.SetCellValue(name, cell(3, row), p.Value)
-		_ = f.SetCellStyle(name, cell(3, row), cell(cols, row), st.value)
-		row++
-	}
-	row++
-	// Riwayat revisi: No, Date, Revision, Description of Change.
-	_ = f.MergeCell(name, cell(4, row), cell(cols, row))
-	for i, h := range []string{"No", "Date", "Revision", "Description of Change"} {
-		_ = f.SetCellValue(name, cell(i+1, row), h)
-	}
-	_ = f.SetCellStyle(name, cell(1, row), cell(cols, row), st.head)
-	row++
-	for _, h := range sh.History {
-		_ = f.MergeCell(name, cell(4, row), cell(cols, row))
-		for i, v := range []any{h.No, h.Date, h.Revision, h.Description} {
-			_ = f.SetCellValue(name, cell(i+1, row), v)
-		}
-		_ = f.SetCellStyle(name, cell(1, row), cell(cols, row), st.cell)
-		_ = f.SetRowHeight(name, row, rowHeight([]string{"", "", "", h.Description}, []float64{6, 16, 16, 100}, sh.Layout.FontSize))
-		row++
-	}
-	row++
-	// Slot approval dari rute: judul cetak, ruang tanda tangan, nama.
-	if len(sh.Slots) > 0 {
-		per := max(1, cols/len(sh.Slots))
-		for i, s := range sh.Slots {
-			start := 1 + i*per
-			end := start + per - 1
-			if i == len(sh.Slots)-1 {
-				end = cols
-			}
-			for r, v := range []string{s.Title, s.Signed, s.Name()} {
-				_ = f.MergeCell(name, cell(start, row+r), cell(end, row+r))
-				_ = f.SetCellValue(name, cell(start, row+r), v)
-				style := st.value
-				if r == 0 {
-					style = st.head
-				}
-				_ = f.SetCellStyle(name, cell(start, row+r), cell(end, row+r), style)
-			}
-		}
-		_ = f.SetRowHeight(name, row+1, 46)
-		row += 4
-	}
-	_ = f.MergeCell(name, cell(1, row), cell(cols, row))
-	_ = f.SetCellValue(name, cell(1, row), "CUSTOMER APPROVAL")
-	_ = f.SetCellStyle(name, cell(1, row), cell(cols, row), st.head)
-	_ = f.MergeCell(name, cell(1, row+1), cell(cols, row+1))
-	_ = f.SetCellStyle(name, cell(1, row+1), cell(cols, row+1), st.value)
-	_ = f.SetRowHeight(name, row+1, 60)
-	row += 3
-	if sh.ReleaseNote != "" {
-		_ = f.MergeCell(name, cell(1, row), cell(cols, row))
-		_ = f.SetCellValue(name, cell(1, row), sh.ReleaseNote)
-		row++
-	}
-	_ = f.MergeCell(name, cell(1, row), cell(cols, row))
-	_ = f.SetCellValue(name, cell(1, row), sh.CustomerName)
-	_ = f.SetCellStyle(name, cell(1, row), cell(cols, row), st.label)
-	if len(sh.QRPNG) > 0 {
-		if err := f.AddPictureFromBytes(name, cell(cols-1, 1), &excelize.Picture{Extension: ".png", File: sh.QRPNG,
-			Format: &excelize.GraphicOptions{ScaleX: 0.6, ScaleY: 0.6}}); err != nil {
-			return err
-		}
-	}
-	cover := sh
-	cover.Layout.Orientation = "portrait"
-	cover.Layout.Paper = "A4"
-	return pageSetup(f, name, cover, "", cols, row)
 }

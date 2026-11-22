@@ -845,6 +845,24 @@ func (f *fakeSettings) Apply(_ context.Context, _ access.Actor, in settings.Upda
 	return f.current, f.err
 }
 
+func (f *fakeSettings) Company(context.Context, access.Actor) (settings.Company, error) {
+	return settings.Company{Name: "PT. Contoh"}, f.err
+}
+
+func (f *fakeSettings) SetCompanyName(_ context.Context, _ access.Actor, name string) (settings.Company, error) {
+	return settings.Company{Name: name}, f.err
+}
+
+func (f *fakeSettings) Logo(context.Context) ([]byte, error) { return settings.DefaultLogo, f.err }
+
+func (f *fakeSettings) SetLogo(context.Context, access.Actor, []byte) (settings.Company, error) {
+	return settings.Company{Name: "PT. Contoh", CustomLogo: true, LogoSHA256: "abc"}, f.err
+}
+
+func (f *fakeSettings) ResetLogo(context.Context, access.Actor) (settings.Company, error) {
+	return settings.Company{Name: "PT. Contoh"}, f.err
+}
+
 // testToken adalah token sesi yang diterima fakeAuth secara bawaan.
 const testToken = "token-uji"
 

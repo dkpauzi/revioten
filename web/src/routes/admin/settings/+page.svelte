@@ -9,6 +9,7 @@
 	import { failureText } from '#lib/errors.ts';
 	import { t } from '#lib/i18n/index.ts';
 	import { can } from '#lib/session.svelte.ts';
+	import CompanyLogo from '#lib/settings/CompanyLogo.svelte';
 
 	let loaded = $state(false);
 	// Aturan persetujuan form set dan tabel AP (D-139).
@@ -81,3 +82,5 @@
 		{/if}
 	</form>
 {/if}
+
+<CompanyLogo />

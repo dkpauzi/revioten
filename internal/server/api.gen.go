@@ -2846,6 +2846,20 @@ type ChangeVerificationInput struct {
 // ChangeVerificationInputDecision defines model for ChangeVerificationInput.Decision.
 type ChangeVerificationInputDecision string
 
+// Company defines model for Company.
+type Company struct {
+	// CustomLogo False while the default logo is used.
+	CustomLogo    bool       `json:"custom_logo"`
+	LogoSha256    *string    `json:"logo_sha256,omitempty"`
+	LogoUpdatedAt *time.Time `json:"logo_updated_at,omitempty"`
+	Name          string     `json:"name"`
+}
+
+// CompanyName defines model for CompanyName.
+type CompanyName struct {
+	Name string `json:"name"`
+}
+
 // ComposeFromPfdInput defines model for ComposeFromPfdInput.
 type ComposeFromPfdInput struct {
 	Steps []PfdStepKey `json:"steps"`
@@ -4542,8 +4556,11 @@ type PagePreview struct {
 	FlowLeftMm float32 `json:"flow_left_mm"`
 	FontSize   float32 `json:"font_size"`
 	GroupRowMm float32 `json:"group_row_mm"`
-	HeadMm     float32 `json:"head_mm"`
-	Header     []struct {
+
+	// HeadHtml Form head in the layout of the TR-020 documents (E-144), the same HTML as the PDF, with its style. Missing for other document types; the preview then draws the plain head from header.
+	HeadHtml *string `json:"head_html,omitempty"`
+	HeadMm   float32 `json:"head_mm"`
+	Header   []struct {
 		Label string `json:"label"`
 		Value string `json:"value"`
 	} `json:"header"`
@@ -6570,6 +6587,9 @@ type SaveChangeImpactsJSONRequestBody = ChangeImpactsInput
 // VerifyChangeJSONRequestBody defines body for VerifyChange for application/json ContentType.
 type VerifyChangeJSONRequestBody = ChangeVerificationInput
 
+// SetCompanyNameJSONRequestBody defines body for SetCompanyName for application/json ContentType.
+type SetCompanyNameJSONRequestBody = CompanyName
+
 // CreateCustomerJSONRequestBody defines body for CreateCustomer for application/json ContentType.
 type CreateCustomerJSONRequestBody = NewCustomer
 
@@ -6977,6 +6997,21 @@ type ServerInterface interface {
 	// VerifyChange Accept or reject a submitted change with a note (V-1, M5.3)
 	// (POST /api/v1/changes/{changeId}/verification)
 	VerifyChange(w http.ResponseWriter, r *http.Request, changeId ChangeId)
+	// GetCompany Company name and logo printed on covers and form heads (L-2, E-144)
+	// (GET /api/v1/company)
+	GetCompany(w http.ResponseWriter, r *http.Request)
+	// SetCompanyName Change the company name printed on covers and form heads (admin)
+	// (PUT /api/v1/company)
+	SetCompanyName(w http.ResponseWriter, r *http.Request)
+	// ResetCompanyLogo Go back to the default logo (admin)
+	// (DELETE /api/v1/company/logo)
+	ResetCompanyLogo(w http.ResponseWriter, r *http.Request)
+	// GetCompanyLogo The logo printed on covers and form heads, PNG (L-2)
+	// (GET /api/v1/company/logo)
+	GetCompanyLogo(w http.ResponseWriter, r *http.Request)
+	// SetCompanyLogo Upload a new logo, PNG at most 1 MB and 2000 pixels wide (admin)
+	// (PUT /api/v1/company/logo)
+	SetCompanyLogo(w http.ResponseWriter, r *http.Request)
 	// ListCustomers List all customers, ordered by code
 	// (GET /api/v1/customers)
 	ListCustomers(w http.ResponseWriter, r *http.Request)
@@ -8338,6 +8373,76 @@ func (siw *ServerInterfaceWrapper) VerifyChange(w http.ResponseWriter, r *http.R
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.VerifyChange(w, r, changeId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetCompany operation middleware
+func (siw *ServerInterfaceWrapper) GetCompany(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetCompany(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetCompanyName operation middleware
+func (siw *ServerInterfaceWrapper) SetCompanyName(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetCompanyName(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ResetCompanyLogo operation middleware
+func (siw *ServerInterfaceWrapper) ResetCompanyLogo(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ResetCompanyLogo(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetCompanyLogo operation middleware
+func (siw *ServerInterfaceWrapper) GetCompanyLogo(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetCompanyLogo(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetCompanyLogo operation middleware
+func (siw *ServerInterfaceWrapper) SetCompanyLogo(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetCompanyLogo(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -13501,6 +13606,11 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/customers/{customerId}/signature-mode", wrapper.SetCustomerSignatureMode)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/customers/{customerId}/submission-required", wrapper.SetCustomerSubmissionRequired)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/change-types/{changeTypeId}/approval-route", wrapper.SetChangeTypeRoute)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/company", wrapper.GetCompany)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/company", wrapper.SetCompanyName)
+	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/company/logo", wrapper.ResetCompanyLogo)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/company/logo", wrapper.GetCompanyLogo)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/company/logo", wrapper.SetCompanyLogo)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/format-templates", wrapper.ListFormatTemplates)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/format-templates", wrapper.CreateFormatTemplate)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/format-templates/{formatTemplateId}", wrapper.RenameFormatTemplate)
@@ -15083,6 +15193,204 @@ type VerifyChangedefaultJSONResponse struct {
 }
 
 func (response VerifyChangedefaultJSONResponse) VisitVerifyChangeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCompanyRequestObject struct {
+}
+
+type GetCompanyResponseObject interface {
+	VisitGetCompanyResponse(w http.ResponseWriter) error
+}
+
+type GetCompany200JSONResponse Company
+
+func (response GetCompany200JSONResponse) VisitGetCompanyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCompanydefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response GetCompanydefaultJSONResponse) VisitGetCompanyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetCompanyNameRequestObject struct {
+	Body *SetCompanyNameJSONRequestBody
+}
+
+type SetCompanyNameResponseObject interface {
+	VisitSetCompanyNameResponse(w http.ResponseWriter) error
+}
+
+type SetCompanyName200JSONResponse Company
+
+func (response SetCompanyName200JSONResponse) VisitSetCompanyNameResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetCompanyNamedefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response SetCompanyNamedefaultJSONResponse) VisitSetCompanyNameResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResetCompanyLogoRequestObject struct {
+}
+
+type ResetCompanyLogoResponseObject interface {
+	VisitResetCompanyLogoResponse(w http.ResponseWriter) error
+}
+
+type ResetCompanyLogo200JSONResponse Company
+
+func (response ResetCompanyLogo200JSONResponse) VisitResetCompanyLogoResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ResetCompanyLogodefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ResetCompanyLogodefaultJSONResponse) VisitResetCompanyLogoResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCompanyLogoRequestObject struct {
+}
+
+type GetCompanyLogoResponseObject interface {
+	VisitGetCompanyLogoResponse(w http.ResponseWriter) error
+}
+
+type GetCompanyLogo200ImagepngResponse struct {
+	Body          io.Reader
+	ContentLength int64
+}
+
+func (response GetCompanyLogo200ImagepngResponse) VisitGetCompanyLogoResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "image/png")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type GetCompanyLogodefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response GetCompanyLogodefaultJSONResponse) VisitGetCompanyLogoResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetCompanyLogoRequestObject struct {
+	Body io.Reader
+}
+
+type SetCompanyLogoResponseObject interface {
+	VisitSetCompanyLogoResponse(w http.ResponseWriter) error
+}
+
+type SetCompanyLogo200JSONResponse Company
+
+func (response SetCompanyLogo200JSONResponse) VisitSetCompanyLogoResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetCompanyLogodefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response SetCompanyLogodefaultJSONResponse) VisitSetCompanyLogoResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -22725,6 +23033,21 @@ type StrictServerInterface interface {
 	// VerifyChange Accept or reject a submitted change with a note (V-1, M5.3)
 	// (POST /api/v1/changes/{changeId}/verification)
 	VerifyChange(ctx context.Context, request VerifyChangeRequestObject) (VerifyChangeResponseObject, error)
+	// GetCompany Company name and logo printed on covers and form heads (L-2, E-144)
+	// (GET /api/v1/company)
+	GetCompany(ctx context.Context, request GetCompanyRequestObject) (GetCompanyResponseObject, error)
+	// SetCompanyName Change the company name printed on covers and form heads (admin)
+	// (PUT /api/v1/company)
+	SetCompanyName(ctx context.Context, request SetCompanyNameRequestObject) (SetCompanyNameResponseObject, error)
+	// ResetCompanyLogo Go back to the default logo (admin)
+	// (DELETE /api/v1/company/logo)
+	ResetCompanyLogo(ctx context.Context, request ResetCompanyLogoRequestObject) (ResetCompanyLogoResponseObject, error)
+	// GetCompanyLogo The logo printed on covers and form heads, PNG (L-2)
+	// (GET /api/v1/company/logo)
+	GetCompanyLogo(ctx context.Context, request GetCompanyLogoRequestObject) (GetCompanyLogoResponseObject, error)
+	// SetCompanyLogo Upload a new logo, PNG at most 1 MB and 2000 pixels wide (admin)
+	// (PUT /api/v1/company/logo)
+	SetCompanyLogo(ctx context.Context, request SetCompanyLogoRequestObject) (SetCompanyLogoResponseObject, error)
 	// ListCustomers List all customers, ordered by code
 	// (GET /api/v1/customers)
 	ListCustomers(ctx context.Context, request ListCustomersRequestObject) (ListCustomersResponseObject, error)
@@ -24346,6 +24669,135 @@ func (sh *strictHandler) VerifyChange(w http.ResponseWriter, r *http.Request, ch
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(VerifyChangeResponseObject); ok {
 		if err := validResponse.VisitVerifyChangeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetCompany operation middleware
+func (sh *strictHandler) GetCompany(w http.ResponseWriter, r *http.Request) {
+	var request GetCompanyRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetCompany(ctx, request.(GetCompanyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetCompany")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetCompanyResponseObject); ok {
+		if err := validResponse.VisitGetCompanyResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SetCompanyName operation middleware
+func (sh *strictHandler) SetCompanyName(w http.ResponseWriter, r *http.Request) {
+	var request SetCompanyNameRequestObject
+
+	var body SetCompanyNameJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetCompanyName(ctx, request.(SetCompanyNameRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetCompanyName")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetCompanyNameResponseObject); ok {
+		if err := validResponse.VisitSetCompanyNameResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ResetCompanyLogo operation middleware
+func (sh *strictHandler) ResetCompanyLogo(w http.ResponseWriter, r *http.Request) {
+	var request ResetCompanyLogoRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ResetCompanyLogo(ctx, request.(ResetCompanyLogoRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ResetCompanyLogo")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ResetCompanyLogoResponseObject); ok {
+		if err := validResponse.VisitResetCompanyLogoResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetCompanyLogo operation middleware
+func (sh *strictHandler) GetCompanyLogo(w http.ResponseWriter, r *http.Request) {
+	var request GetCompanyLogoRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetCompanyLogo(ctx, request.(GetCompanyLogoRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetCompanyLogo")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetCompanyLogoResponseObject); ok {
+		if err := validResponse.VisitGetCompanyLogoResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SetCompanyLogo operation middleware
+func (sh *strictHandler) SetCompanyLogo(w http.ResponseWriter, r *http.Request) {
+	var request SetCompanyLogoRequestObject
+
+	request.Body = r.Body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetCompanyLogo(ctx, request.(SetCompanyLogoRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetCompanyLogo")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetCompanyLogoResponseObject); ok {
+		if err := validResponse.VisitSetCompanyLogoResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

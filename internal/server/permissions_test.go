@@ -540,6 +540,12 @@ func TestPermissionsPerOperation(t *testing.T) {
 		{http.MethodPut, "/api/v1/system-settings", `{"sign_dates_enabled":true}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/roles", "", http.StatusForbidden, http.StatusForbidden, http.StatusOK},
 		// Service account API integrasi (M9.1): hanya admin (A-1). ID palsu: 404 sesudah haknya lolos.
+		// Nama perusahaan dan logo cetakan (bagian C): semua membaca, admin mengubah.
+		{http.MethodGet, "/api/v1/company", "", http.StatusOK, http.StatusOK, http.StatusOK},
+		{http.MethodPut, "/api/v1/company", `{"name":"PT. SIIX EMS INDONESIA"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodGet, "/api/v1/company/logo", "", http.StatusOK, http.StatusOK, http.StatusOK},
+		{http.MethodPut, "/api/v1/company/logo", `bukan png`, http.StatusForbidden, http.StatusForbidden, http.StatusUnprocessableEntity},
+		{http.MethodDelete, "/api/v1/company/logo", "", http.StatusForbidden, http.StatusForbidden, http.StatusOK},
 		{http.MethodGet, "/api/v1/service-accounts", "", http.StatusForbidden, http.StatusForbidden, http.StatusOK},
 		{http.MethodPost, "/api/v1/service-accounts", `{"name":"MES uji","owner_team":"Tim MES","contact":"mes@contoh.test","purpose":"Uji izin","scopes":["documents:read"],"customer_ids":["{customerId}"]}`, http.StatusForbidden, http.StatusForbidden, http.StatusCreated},
 		{http.MethodPost, "/api/v1/service-accounts/{serviceAccountId}/tokens", `{}`, http.StatusForbidden, http.StatusForbidden, http.StatusNotFound},

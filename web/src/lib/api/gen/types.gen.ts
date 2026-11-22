@@ -424,6 +424,10 @@ export type PagePreview = {
      * Height of the legend; 0 for a table.
      */
     legend_mm?: number;
+    /**
+     * Form head in the layout of the TR-020 documents (E-144), the same HTML as the PDF, with its style. Missing for other document types; the preview then draws the plain head from header.
+     */
+    head_html?: string;
 };
 
 export type PreviewPage = {
@@ -1285,6 +1289,20 @@ export type NewFormatTemplate = {
      */
     risk_method?: 'rpn' | 'ap' | 'none';
     copy_from_version_id?: string;
+};
+
+export type Company = {
+    name: string;
+    /**
+     * False while the default logo is used.
+     */
+    custom_logo: boolean;
+    logo_sha256?: string;
+    logo_updated_at?: string;
+};
+
+export type CompanyName = {
+    name: string;
 };
 
 export type HiddenUpdate = {
@@ -6614,6 +6632,171 @@ export type SetChangeTypeRouteResponses = {
 };
 
 export type SetChangeTypeRouteResponse = SetChangeTypeRouteResponses[keyof SetChangeTypeRouteResponses];
+
+export type GetCompanyData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/company';
+};
+
+export type GetCompanyErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type GetCompanyError = GetCompanyErrors[keyof GetCompanyErrors];
+
+export type GetCompanyResponses = {
+    /**
+     * The company name and whether a custom logo is set.
+     */
+    200: Company;
+};
+
+export type GetCompanyResponse = GetCompanyResponses[keyof GetCompanyResponses];
+
+export type SetCompanyNameData = {
+    body: CompanyName;
+    path?: never;
+    query?: never;
+    url: '/api/v1/company';
+};
+
+export type SetCompanyNameErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type SetCompanyNameError = SetCompanyNameErrors[keyof SetCompanyNameErrors];
+
+export type SetCompanyNameResponses = {
+    /**
+     * The company.
+     */
+    200: Company;
+};
+
+export type SetCompanyNameResponse = SetCompanyNameResponses[keyof SetCompanyNameResponses];
+
+export type ResetCompanyLogoData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/company/logo';
+};
+
+export type ResetCompanyLogoErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ResetCompanyLogoError = ResetCompanyLogoErrors[keyof ResetCompanyLogoErrors];
+
+export type ResetCompanyLogoResponses = {
+    /**
+     * The company with the default logo.
+     */
+    200: Company;
+};
+
+export type ResetCompanyLogoResponse = ResetCompanyLogoResponses[keyof ResetCompanyLogoResponses];
+
+export type GetCompanyLogoData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/company/logo';
+};
+
+export type GetCompanyLogoErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type GetCompanyLogoError = GetCompanyLogoErrors[keyof GetCompanyLogoErrors];
+
+export type GetCompanyLogoResponses = {
+    /**
+     * The logo; the default logo when none was uploaded.
+     */
+    200: Blob | File;
+};
+
+export type GetCompanyLogoResponse = GetCompanyLogoResponses[keyof GetCompanyLogoResponses];
+
+export type SetCompanyLogoData = {
+    body: Blob | File;
+    path?: never;
+    query?: never;
+    url: '/api/v1/company/logo';
+};
+
+export type SetCompanyLogoErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type SetCompanyLogoError = SetCompanyLogoErrors[keyof SetCompanyLogoErrors];
+
+export type SetCompanyLogoResponses = {
+    /**
+     * The company with the new logo.
+     */
+    200: Company;
+};
+
+export type SetCompanyLogoResponse = SetCompanyLogoResponses[keyof SetCompanyLogoResponses];
 
 export type ListFormatTemplatesData = {
     body?: never;

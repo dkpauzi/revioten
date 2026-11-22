@@ -260,6 +260,12 @@ type RefDocService interface {
 type SettingsService interface {
 	Get(ctx context.Context, actor access.Actor) (settings.Settings, error)
 	Apply(ctx context.Context, actor access.Actor, in settings.Update) (settings.Settings, error)
+	// Nama perusahaan dan logo cetakan (bagian C, E-144).
+	Company(ctx context.Context, actor access.Actor) (settings.Company, error)
+	SetCompanyName(ctx context.Context, actor access.Actor, name string) (settings.Company, error)
+	Logo(ctx context.Context) ([]byte, error)
+	SetLogo(ctx context.Context, actor access.Actor, data []byte) (settings.Company, error)
+	ResetLogo(ctx context.Context, actor access.Actor) (settings.Company, error)
 }
 
 // AuthService adalah operasi login, sesi, dan pengelolaan akun yang dipakai API.

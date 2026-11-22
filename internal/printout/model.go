@@ -30,6 +30,9 @@ type Input struct {
 	History       []HistoryRow
 	QRPNG         []byte // gambar QR (M6.5); nil bila QR mati
 	VerifyURL     string
+	// Nama perusahaan dan logo (PNG) di kepala dan cover (bagian C, E-144).
+	CompanyName string
+	Logo        []byte
 	// Steps: langkah PFD satu set menurut nomor langkah, untuk kolom Process
 	// Flow CP (D-122, C3). Untuk PFD diisi Build dari barisnya sendiri.
 	Steps map[string]Step

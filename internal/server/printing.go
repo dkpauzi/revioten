@@ -214,6 +214,10 @@ func (a *apiServer) GetPagePreview(ctx context.Context, req GetPagePreviewReques
 			Group string `json:"group"`
 			Label string `json:"label"`
 		}{}, Pages: make([]PreviewPage, 0, len(v.Pages))}
+	if v.HeadHTML != "" {
+		head := v.HeadHTML
+		out.HeadHtml = &head
+	}
 	if v.Legend != "" {
 		legend, h := v.Legend, float32(v.Plan.LegendMM)
 		out.LegendSvg, out.LegendMm = &legend, &h

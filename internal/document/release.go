@@ -48,20 +48,23 @@ type Revision struct {
 // Snapshot adalah isi satu revisi terbit. Bentuknya tetap, supaya hash bisa
 // dihitung ulang dan dua revisi bisa dibandingkan (M5.6).
 type Snapshot struct {
-	DocumentID       string            `json:"document_id"`
-	Number           string            `json:"number"`
-	DocumentType     string            `json:"document_type"`
-	CustomerCode     string            `json:"customer_code"`
-	Revision         int               `json:"revision"`
-	FormSetVersionID string            `json:"form_set_version_id"`
-	FormatVersionID  string            `json:"format_version_id"`
-	RouteID          string            `json:"route_id,omitempty"`
-	RouteName        string            `json:"route_name,omitempty"`
-	Header           map[string]any    `json:"header"`
-	Models           []string          `json:"models"`
-	PartNumbers      []string          `json:"part_numbers"`
-	Sections         []SnapshotSection `json:"sections"`
-	Rows             []SnapshotRow     `json:"rows"`
+	DocumentID       string         `json:"document_id"`
+	Number           string         `json:"number"`
+	DocumentType     string         `json:"document_type"`
+	CustomerCode     string         `json:"customer_code"`
+	Revision         int            `json:"revision"`
+	FormSetVersionID string         `json:"form_set_version_id"`
+	FormatVersionID  string         `json:"format_version_id"`
+	RouteID          string         `json:"route_id,omitempty"`
+	RouteName        string         `json:"route_name,omitempty"`
+	Header           map[string]any `json:"header"`
+	Models           []string       `json:"models"`
+	PartNumbers      []string       `json:"part_numbers"`
+	// PartNames: nama part setiap PartNumbers, untuk cover dan kepala cetakan
+	// (bagian C). Kosong di snapshot lama.
+	PartNames []string          `json:"part_names,omitempty"`
+	Sections  []SnapshotSection `json:"sections"`
+	Rows      []SnapshotRow     `json:"rows"`
 	// Flow: langkah PFD yang dipakai menggambar Process Flow CP (D-212).
 	// Kosong di snapshot lama dan di dokumen selain CP.
 	Flow []FlowStep `json:"flow,omitempty"`
@@ -115,8 +118,15 @@ func buildSnapshot(d Document) Snapshot {
 	for _, m := range d.Models {
 		s.Models = append(s.Models, m.Name)
 	}
+	named := false
 	for _, p := range d.PartNumbers {
 		s.PartNumbers = append(s.PartNumbers, p.Number)
+		named = named || p.Name != ""
+	}
+	if named {
+		for _, p := range d.PartNumbers {
+			s.PartNames = append(s.PartNames, p.Name)
+		}
 	}
 	for _, sec := range d.Sections {
 		item := SnapshotSection{ID: sec.ID, Name: sec.Name, PartNumbers: []string{}}

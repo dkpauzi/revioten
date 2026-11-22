@@ -7,7 +7,38 @@ package db
 
 import (
 	"context"
+	"time"
 )
+
+const getCompany = `-- name: GetCompany :one
+
+SELECT company_name, company_logo_sha256, company_logo_updated_at FROM system_settings
+`
+
+type GetCompanyRow struct {
+	CompanyName          string
+	CompanyLogoSha256    *string
+	CompanyLogoUpdatedAt *time.Time
+}
+
+// Bagian C (E-144): nama perusahaan dan logo cetakan (migrasi 00056).
+func (q *Queries) GetCompany(ctx context.Context) (GetCompanyRow, error) {
+	row := q.db.QueryRow(ctx, getCompany)
+	var i GetCompanyRow
+	err := row.Scan(&i.CompanyName, &i.CompanyLogoSha256, &i.CompanyLogoUpdatedAt)
+	return i, err
+}
+
+const getCompanyLogo = `-- name: GetCompanyLogo :one
+SELECT company_logo FROM system_settings
+`
+
+func (q *Queries) GetCompanyLogo(ctx context.Context) ([]byte, error) {
+	row := q.db.QueryRow(ctx, getCompanyLogo)
+	var company_logo []byte
+	err := row.Scan(&company_logo)
+	return company_logo, err
+}
 
 const getMigrationMode = `-- name: GetMigrationMode :one
 SELECT migration_mode FROM system_settings
@@ -72,6 +103,31 @@ func (q *Queries) LockSystemSettings(ctx context.Context) (LockSystemSettingsRow
 		&i.SubmissionFormNumber,
 	)
 	return i, err
+}
+
+const setCompanyLogo = `-- name: SetCompanyLogo :exec
+UPDATE system_settings
+SET company_logo = $1, company_logo_sha256 = $2, company_logo_updated_at = now(), company_logo_updated_by_person_id = $3
+`
+
+type SetCompanyLogoParams struct {
+	CompanyLogo                  []byte
+	CompanyLogoSha256            *string
+	CompanyLogoUpdatedByPersonID *string
+}
+
+func (q *Queries) SetCompanyLogo(ctx context.Context, arg SetCompanyLogoParams) error {
+	_, err := q.db.Exec(ctx, setCompanyLogo, arg.CompanyLogo, arg.CompanyLogoSha256, arg.CompanyLogoUpdatedByPersonID)
+	return err
+}
+
+const setCompanyName = `-- name: SetCompanyName :exec
+UPDATE system_settings SET company_name = $1
+`
+
+func (q *Queries) SetCompanyName(ctx context.Context, companyName string) error {
+	_, err := q.db.Exec(ctx, setCompanyName, companyName)
+	return err
 }
 
 const setMigrationMode = `-- name: SetMigrationMode :exec

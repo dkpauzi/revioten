@@ -158,7 +158,8 @@ func TestSeededTemplates(t *testing.T) {
 	if v.RiskMethod != RiskRPN || v.HighlightRPNAbove != 100 || v.HighlightSeverityAtLeast != 8 {
 		t.Errorf("PFMEA: metode %s, sorot %d dan %d", v.RiskMethod, v.HighlightRPNAbove, v.HighlightSeverityAtLeast)
 	}
-	if got := labels(v, AreaHeader); !slices.Equal(got, []string{"Process or Line", "Process Responsibility", "Key Date", "Core Team"}) {
+	// Remark ditambah migrasi 00056 (bagian C).
+	if got := labels(v, AreaHeader); !slices.Equal(got, []string{"Process or Line", "Process Responsibility", "Key Date", "Core Team", "Remark"}) {
 		t.Errorf("header PFMEA: %v", got)
 	}
 	// Kolom mengikuti form Excel asli (D-124, migrasi 00014). Nomor operasi dan
@@ -385,7 +386,7 @@ func TestMoveField(t *testing.T) {
 		t.Errorf("urutan setelah dipindah ke akhir: %v", got)
 	}
 	for i, fd := range v.Fields {
-		if fd.Area == AreaRow && fd.Position != i-1 { // dua field header di depan
+		if fd.Area == AreaRow && fd.Position != i-2 { // tiga field header di depan (Remark sejak migrasi 00056)
 			t.Errorf("urutan %s = %d", fd.Label, fd.Position)
 		}
 	}

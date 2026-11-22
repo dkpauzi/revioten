@@ -29,6 +29,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/db"
 	"github.com/dkpauzi/revioten/internal/document"
 	"github.com/dkpauzi/revioten/internal/problem"
+	"github.com/dkpauzi/revioten/internal/settings"
 	"github.com/dkpauzi/revioten/internal/storage"
 	"github.com/dkpauzi/revioten/internal/template"
 )
@@ -265,6 +266,15 @@ func (s *Service) input(ctx context.Context, d document.Document, snap document.
 	in := Input{
 		Snapshot: snap, Format: format, Layout: layout, CustomerName: customer.Name, RevisionLabel: label(revision),
 		ContentHash: hash, Watermark: "UNCONTROLLED COPY", Status: "DRAFT",
+	}
+	// Nama perusahaan dan logo di kepala dan cover (bagian C). Logo yang
+	// berlaku saat dicetak; tanpa unggahan admin, logo bawaan.
+	if company, err := s.q.GetCompany(ctx); err == nil {
+		in.CompanyName = company.CompanyName
+	}
+	in.Logo = settings.DefaultLogo
+	if logo, err := s.q.GetCompanyLogo(ctx); err == nil && len(logo) > 0 {
+		in.Logo = logo
 	}
 	// Kolom Process Flow CP digambar dari langkah PFD satu set (D-122, C3).
 	// Langkahnya dari snapshot CP (D-212); snapshot lama tanpa langkah memakai
@@ -690,6 +700,9 @@ type PageView struct {
 	MarginsMM  Margins
 	Pages      []htmlPage
 	Legend     string // legenda diagram PFD; "" untuk tabel
+	// HeadHTML: kepala lembar bentuk TR-020 beserta gayanya (head.go); ""
+	// untuk kepala umum.
+	HeadHTML string
 }
 
 // Preview menghitung rencana halaman satu revisi tanpa mencatat cetakan
@@ -740,6 +753,9 @@ func (s *Service) Preview(ctx context.Context, actor access.Actor, id string, re
 		MarginsMM: sh.Layout.MarginsMM, Pages: pagesOf(sh, plan)}
 	if len(plan.Diagram) > 0 {
 		v.Legend = DiagramLegendSVG(plan.DiagramW)
+	}
+	if head := HeadHTML(sh); head != "" {
+		v.HeadHTML = "<style>" + headCSS + "</style>" + string(head)
 	}
 	for i := 0; i < sh.FlowColumn && i < len(plan.ColumnsMM); i++ {
 		v.FlowLeftMM += plan.ColumnsMM[i]

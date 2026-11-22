@@ -95,6 +95,7 @@ const actionKeys: Record<string, MessageKey> = {
 	'form_set.created': 'auditActionFormSetCreated',
 	'form_set.changed': 'auditActionFormSetChanged',
 	'form_set.hidden_changed': 'auditActionFormSetHiddenChanged',
+	'system_settings.logo_changed': 'auditActionCompanyLogoChanged',
 	'form_set.version_created': 'auditActionFormSetVersionCreated',
 	'form_set.version_published': 'auditActionFormSetVersionPublished',
 	'form_set.version_approved': 'auditActionFormSetVersionApproved',

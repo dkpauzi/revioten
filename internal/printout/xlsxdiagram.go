@@ -31,7 +31,14 @@ func writeDiagram(f *excelize.File, name string, sh Sheet, st styles) error {
 	if err := f.SetSheetProps(name, &excelize.SheetPropsOptions{CustomHeight: boolPtr(true), DefaultRowHeight: floatPtr(gridRowPt)}); err != nil {
 		return err
 	}
-	head := writeHead(f, name, sh, st, gridCols, 3)
+	grid := make([]float64, gridCols)
+	for i := range grid {
+		grid[i] = gridColW
+	}
+	head, ok := writeFormHead(f, name, sh, grid)
+	if !ok {
+		head = writeHead(f, name, sh, st, gridCols, 3)
+	}
 	titleRows := fmt.Sprintf("$1:$%d", head-1)
 	plan := BuildPlan(sh)
 
@@ -158,7 +165,7 @@ func diagramNodeXLSX(d *drawer, mm func(float64) float64, y func(float64) float6
 		if err := d.line(mm(from), y(n.Y), mm(boxX+boxW), y(n.Y), true); err != nil {
 			return err
 		}
-		if err := d.text(mm(boxX+boxW+0.3), y(n.Y-3.8), mm(6), mm(3.5), "NG", 6); err != nil {
+		if err := d.text(mm(boxX+boxW+0.2), y(n.Y-3.8), mm(from-boxX-boxW-0.4), mm(3.5), "NG", 5); err != nil {
 			return err
 		}
 		if s.Symbol == "decision" {

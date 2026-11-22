@@ -880,14 +880,19 @@ type Subprocess struct {
 }
 
 type SystemSetting struct {
-	ID                   string
-	SignDatesEnabled     bool
-	FormApprovalMode     string
-	QrEnabled            bool
-	MigrationMode        bool
-	ReviewPeriodMonths   int16
-	ReviewWarningDays    int16
-	SubmissionFormNumber string
+	ID                           string
+	SignDatesEnabled             bool
+	FormApprovalMode             string
+	QrEnabled                    bool
+	MigrationMode                bool
+	ReviewPeriodMonths           int16
+	ReviewWarningDays            int16
+	SubmissionFormNumber         string
+	CompanyName                  string
+	CompanyLogo                  []byte
+	CompanyLogoSha256            *string
+	CompanyLogoUpdatedAt         *time.Time
+	CompanyLogoUpdatedByPersonID *string
 }
 
 type TemplatePoint struct {

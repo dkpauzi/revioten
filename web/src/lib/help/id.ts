@@ -348,7 +348,11 @@ export const helpId: HelpContent = {
 				'Revisi terbit dicetak sebagai {printPurpose_reference} atau {printPurpose_controlled}. Salinan terkendali bernomor, dan setiap cetakan tampil di {printLog}.',
 				'PPAP Engineer mengubah kertas, huruf, margin, dan lebar kolom di {navGroupTemplates}, lalu {navPrintLayouts}, dan bisa memberi satu customer layout lain.'
 			],
-			tips: ['Draft selalu dicetak dengan UNCONTROLLED COPY.', 'Baris yang berubah di revisi yang dicetak diberi segitiga dengan nomor revisi.', 'PDF butuh Chrome atau Edge di komputer server; Excel selalu bisa.'],
+			tips: [
+				'Cover dan kepala form mengikuti dokumen TR-020. Cover memuat logo perusahaan, nomor dokumen, Customer, Model Name, Part Name, Part Number, Process or Line, riwayat revisi, INHOUSE APPROVAL, dan CUSTOMER APPROVAL. Kepala Control Plan punya tabel persetujuan di kanan; kepala PFMEA memuat Part Name, Key Date, FMEA NO., dan Prepared by; kepala PFD bertuliskan Process Flow Chart untuk model itu.',
+				'Part Name diambil dari part number dokumen (Master data, lalu Models). Process or Line, Core Team, Remark, Process Responsibility, dan Key Date adalah field header dokumen.',
+				'Admin mengganti nama perusahaan dan logo di {navGroupAdmin}, lalu {navSettings}: {companyTitle}.',
+				'Draft selalu dicetak dengan UNCONTROLLED COPY.', 'Baris yang berubah di revisi yang dicetak diberi segitiga dengan nomor revisi.', 'PDF butuh Chrome atau Edge di komputer server; Excel selalu bisa.'],
 			image: 'printing',
 			imageAlt: 'Bagian Cetak sebuah dokumen dengan tujuan cetak dan tombol Excel dan PDF.'
 		},

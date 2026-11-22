@@ -51,6 +51,10 @@
 			>
 				<div class="sheet" style="height: {contentH}mm">
 					<div class="headbox" style="height: {plan.head_mm}mm">
+						{#if plan.head_html}
+							<!-- Kepala bentuk TR-020 dari server (head.go): isinya di-escape html/template. -->
+							{@html plan.head_html}
+						{:else}
 						<div class="top"><p class="form-title">{plan.title}</p><b>{plan.number} {plan.revision}</b></div>
 						<table class="head">
 							<tbody>
@@ -61,6 +65,7 @@
 								{/each}
 							</tbody>
 						</table>
+						{/if}
 					</div>
 					{#if page.diagram_svg}
 						<!-- PFD sebagai diagram (E-144). SVG dari server: tulisan di dalamnya sudah di-escape (diagram.go). -->

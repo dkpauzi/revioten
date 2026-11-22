@@ -6,6 +6,8 @@
 
 ## L · Logo perusahaan diatur admin
 
+- **Status:** dibangun bersama bagian C (D-220, 23 November 2026). Asumsi pertanyaan 2: cetakan memakai logo yang berlaku saat dicetak. Bila pemilik memilih logo saat rilis, logo perlu ikut dibekukan di snapshot.
+
 Logo dipakai di cover dan kepala lembar cetakan (bagian C), jadi dibangun bersama bagian C.
 
 - **Logo bawaan:** gambar asli dari Excel referensi (`xl/media/image1.png`, sama di SH, SF, dan SC TR-020), disimpan di `docs/referensi/logo-siix.png` (277 × 132 piksel). Logo tidak digambar ulang, karena gambar ulang tidak akan sama persis dengan logo resmi. Bila butuh resolusi lebih tinggi, admin cukup mengunggah file PNG resmi.

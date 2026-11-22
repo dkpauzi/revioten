@@ -70,32 +70,21 @@ tr { break-inside: avoid; }
 .sheet td.merged { font-weight: bold; }
 .flowbox { position: absolute; }
 .flowbox svg { display: block; }
+{{.CSS}}
 .legendbox svg, .diagrambox svg { display: block; }
 </style></head><body>
 {{if .Watermark}}<div class="wm">{{.Watermark}}</div>{{end}}
 <div class="foot"><span>{{.Number}} {{.RevisionLabel}} · <span class="status">{{.Status}}</span>{{if .ReleaseNote}} · {{.ReleaseNote}}{{end}}</span><span>SHA-256 {{short .ContentHash}}</span></div>
 {{if .Layout.Cover}}
-<section class="cover">
-  <div class="top"><h1>{{.Title}}</h1><div><b>{{.Number}} {{.RevisionLabel}}</b>{{if .QRPNG}}<br><img alt="QR" src="data:image/png;base64,{{b64 .QRPNG}}" style="width:24mm"><br><small>{{.VerifyURL}}</small>{{end}}</div></div>
-  <table class="head">{{range .Header}}<tr><td class="l">{{.Label}}</td><td>{{.Value}}</td></tr>{{end}}</table>
-  <p></p>
-  <table><colgroup><col style="width:6%"><col style="width:14%"><col style="width:12%"><col></colgroup>
-    <thead><tr><th>No</th><th>Date</th><th>Revision</th><th>Description of Change</th></tr></thead>
-    <tbody>{{range .History}}<tr><td>{{.No}}</td><td>{{.Date}}</td><td>{{.Revision}}</td><td>{{.Description}}</td></tr>{{end}}</tbody>
-  </table>
-  <p></p>
-  {{if .Slots}}<table class="slots"><tr>{{range .Slots}}<th>{{.Title}}</th>{{end}}</tr><tr>{{range .Slots}}<td class="sign">{{.Signed}}</td>{{end}}</tr><tr>{{range .Slots}}<td>{{.Name}}</td>{{end}}</tr></table>{{end}}
-  <p></p>
-  <table><tr><th>CUSTOMER APPROVAL</th></tr><tr><td class="approval"></td></tr></table>
-  <div class="customer">{{.CustomerName}}</div>
-</section>
+<section class="cover">{{.Cover}}</section>
 {{end}}
 {{range $pi, $pg := .Pages}}<section class="sheet" style="height:{{$.Plan.ContentH}}mm">
 <div class="headbox" style="height:{{$.Plan.HeadMM}}mm">
+{{if $.Head}}{{$.Head}}{{else}}
 <div class="top"><h1>{{$.Title}}</h1><b>{{$.Number}} {{$.RevisionLabel}}</b></div>
 <table class="head"><tr>{{range $i, $p := $.Header}}{{if and $i (eq (mod3 $i) 0)}}</tr><tr>{{end}}<td class="l">{{$p.Label}}</td><td>{{$p.Value}}</td>{{end}}</tr></table>
 {{if $.Slots}}<table class="slots" style="margin-top:2mm"><tr>{{range $.Slots}}<th>{{.Title}}</th>{{end}}</tr><tr>{{range $.Slots}}<td class="sign">{{if $.Layout.Cover}}Refer approval sheet{{else}}{{.Signed}}{{end}}</td>{{end}}</tr><tr>{{range $.Slots}}<td>{{.Name}}</td>{{end}}</tr></table>{{end}}
-</div>
+{{end}}</div>
 {{if $pg.Diagram}}<div class="legendbox" style="height:{{$.Plan.LegendMM}}mm">{{$.Legend}}</div>
 <div class="diagrambox">{{$pg.Diagram}}</div>
 {{else}}<div class="tw">
@@ -130,6 +119,9 @@ type htmlView struct {
 	Pages       []htmlPage
 	FlowLeftMM  float64
 	Legend      template.HTML // legenda diagram PFD
+	Head        template.HTML // kepala lembar bentuk TR-020; kosong untuk kepala umum
+	Cover       template.HTML
+	CSS         template.CSS
 }
 
 // planView adalah rencana halaman ditambah tinggi area isi.
@@ -259,6 +251,7 @@ func HTML(sh Sheet) ([]byte, error) {
 	plan := BuildPlan(sh)
 	v.Plan = planView{Plan: plan, ContentH: plan.PaperH - sh.Layout.MarginsMM.Top - sh.Layout.MarginsMM.Bottom}
 	v.Pages = pagesOf(sh, plan)
+	v.Head, v.Cover, v.CSS = HeadHTML(sh), CoverHTML(sh), template.CSS(headCSS)
 	if len(plan.Diagram) > 0 {
 		v.Legend = template.HTML(DiagramLegendSVG(plan.DiagramW))
 	}

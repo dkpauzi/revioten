@@ -1582,6 +1582,82 @@ paths:
                 $ref: '#/components/schemas/ChangeType'
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/company:
+    get:
+      operationId: getCompany
+      summary: Company name and logo printed on covers and form heads (L-2, E-144)
+      responses:
+        '200':
+          description: The company name and whether a custom logo is set.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Company'
+        default:
+          $ref: '#/components/responses/Error'
+    put:
+      operationId: setCompanyName
+      summary: Change the company name printed on covers and form heads (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanyName'
+      responses:
+        '200':
+          description: The company.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Company'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/company/logo:
+    get:
+      operationId: getCompanyLogo
+      summary: The logo printed on covers and form heads, PNG (L-2)
+      responses:
+        '200':
+          description: The logo; the default logo when none was uploaded.
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+        default:
+          $ref: '#/components/responses/Error'
+    put:
+      operationId: setCompanyLogo
+      summary: Upload a new logo, PNG at most 1 MB and 2000 pixels wide (admin)
+      requestBody:
+        required: true
+        content:
+          image/png:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '200':
+          description: The company with the new logo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Company'
+        default:
+          $ref: '#/components/responses/Error'
+    delete:
+      operationId: resetCompanyLogo
+      summary: Go back to the default logo (admin)
+      responses:
+        '200':
+          description: The company with the default logo.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Company'
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/format-templates:
     get:
       operationId: listFormatTemplates
@@ -5407,6 +5483,9 @@ components:
         legend_mm:
           type: number
           description: Height of the legend; 0 for a table.
+        head_html:
+          type: string
+          description: Form head in the layout of the TR-020 documents (E-144), the same HTML as the PDF, with its style. Missing for other document types; the preview then draws the plain head from header.
     PreviewPage:
       type: object
       required: [rows, flow_svg]
@@ -6540,6 +6619,26 @@ components:
           enum: [rpn, ap, none]
           description: Required without copy_from_version_id; a copy takes the risk method of its source.
         copy_from_version_id:
+          type: string
+    Company:
+      type: object
+      required: [name, custom_logo]
+      properties:
+        name:
+          type: string
+        custom_logo:
+          type: boolean
+          description: False while the default logo is used.
+        logo_sha256:
+          type: string
+        logo_updated_at:
+          type: string
+          format: date-time
+    CompanyName:
+      type: object
+      required: [name]
+      properties:
+        name:
           type: string
     HiddenUpdate:
       type: object

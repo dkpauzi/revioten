@@ -80,6 +80,7 @@ import type {
 	ReferencedDocumentUpdate,
 	PfmeaCpComparison,
 	NewDocument,
+	Company,
 	FormSet,
 	FormSetList,
 	FormSetSheets,
@@ -1332,6 +1333,28 @@ export function setChangeTypeRoute(
 // getSystemSettings memanggil GET /api/v1/system-settings.
 export function getSystemSettings(fetchFn: typeof fetch = fetch): Promise<ApiResult<SystemSettings>> {
 	return call<SystemSettings>(fetchFn, '/api/v1/system-settings', { method: 'GET' });
+}
+
+// Nama perusahaan dan logo cetakan (bagian C, E-144).
+
+// getCompany memanggil GET /api/v1/company.
+export function getCompany(fetchFn: typeof fetch = fetch): Promise<ApiResult<Company>> {
+	return call<Company>(fetchFn, '/api/v1/company', { method: 'GET' });
+}
+
+// setCompanyName memanggil PUT /api/v1/company (admin).
+export function setCompanyName(name: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<Company>> {
+	return call<Company>(fetchFn, '/api/v1/company', jsonRequest('PUT', { name }));
+}
+
+// setCompanyLogo memanggil PUT /api/v1/company/logo dengan isi berkas PNG (admin).
+export function setCompanyLogo(file: Blob, fetchFn: typeof fetch = fetch): Promise<ApiResult<Company>> {
+	return call<Company>(fetchFn, '/api/v1/company/logo', { method: 'PUT', headers: { 'Content-Type': 'image/png' }, body: file });
+}
+
+// resetCompanyLogo memanggil DELETE /api/v1/company/logo (admin).
+export function resetCompanyLogo(fetchFn: typeof fetch = fetch): Promise<ApiResult<Company>> {
+	return call<Company>(fetchFn, '/api/v1/company/logo', { method: 'DELETE' });
 }
 
 // updateSystemSettings memanggil PUT /api/v1/system-settings (A-3).

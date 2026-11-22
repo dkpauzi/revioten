@@ -159,6 +159,8 @@ const (
 	ActionDocumentRowRemoved     = "document.row_removed"
 	ActionChangeTypeRouteChanged = "change_type.route_changed"
 	ActionSystemSettingsUpdated  = "system_settings.updated"
+	// Bagian C (E-144): logo cetakan diganti atau kembali ke bawaan.
+	ActionCompanyLogoChanged = "system_settings.logo_changed"
 	// Register nomor dokumen (Tahap 2).
 	ActionDocumentNumberRegistered = "document_number.registered"
 	ActionDocumentNumberImported   = "document_number.imported"

@@ -263,11 +263,8 @@ func BuildPlan(sh Sheet) Plan {
 		p.ColumnsMM = append(p.ColumnsMM, c.Width/total*p.ContentW)
 	}
 
-	// Kepala form: judul, isian header tiga per baris, dan blok tanda tangan.
-	p.HeadMM = 9 + math.Ceil(float64(len(sh.Header))/3)*6
-	if len(sh.Slots) > 0 {
-		p.HeadMM += 20
-	}
+	// Kepala form menurut jenis dokumen (head.go).
+	p.HeadMM = headMM(sh)
 	const footMM = 6
 	if isDiagram(sh) {
 		p.LegendMM = diagLegendMM

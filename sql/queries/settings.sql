@@ -17,3 +17,19 @@ UPDATE system_settings SET migration_mode = $1;
 
 -- name: GetMigrationMode :one
 SELECT migration_mode FROM system_settings;
+
+
+-- Bagian C (E-144): nama perusahaan dan logo cetakan (migrasi 00056).
+
+-- name: GetCompany :one
+SELECT company_name, company_logo_sha256, company_logo_updated_at FROM system_settings;
+
+-- name: GetCompanyLogo :one
+SELECT company_logo FROM system_settings;
+
+-- name: SetCompanyName :exec
+UPDATE system_settings SET company_name = $1;
+
+-- name: SetCompanyLogo :exec
+UPDATE system_settings
+SET company_logo = $1, company_logo_sha256 = $2, company_logo_updated_at = now(), company_logo_updated_by_person_id = $3;
