@@ -190,7 +190,7 @@ test('potret layar untuk halaman Help', async ({ page }) => {
 
 	// Persiapan untuk gambar Tahap 4 sampai 8: format terbit.
 	await openFromMenu(page, en.navGroupTemplates, en.navFormatTemplates);
-	for (const name of ['PFD · PFD', 'PFMEA AIAG 4th · PFMEA', 'CP · CP']) {
+	for (const name of ['PFD v1 · PFD', 'PFMEA v1 · PFMEA', 'Control Plan v1 · CP']) {
 		await page.getByLabel(en.formatChoose, { exact: true }).selectOption({ label: name });
 		page.once('dialog', (dialog) => dialog.accept());
 		await page.getByRole('button', { name: en.versionPublish.replace('{version}', '1') }).click();

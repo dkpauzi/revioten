@@ -45,7 +45,7 @@ test('PPAP Engineer menyusun, penyetuju form menerbitkan, lalu form set dipilih 
 
 	// Ketiga format set AIAG 4th diterbitkan PPAP Engineer dulu; form set baru bisa
 	// terbit setelah isinya tidak bisa berubah lagi.
-	for (const name of ['PFD', 'PFMEA AIAG 4th', 'CP']) {
+	for (const name of ['PFD v1', 'PFMEA v1', 'Control Plan v1']) {
 		await publishFormat(page, name);
 	}
 
@@ -56,6 +56,17 @@ test('PPAP Engineer menyusun, penyetuju form menerbitkan, lalu form set dipilih 
 	// PPAP Engineer menyusun, tetapi tidak menerbitkan form set (V-3).
 	await expect(oldSet.getByRole('button', { name: en.versionPublish.replace('{version}', '1') })).toHaveCount(0);
 	await expect(oldSet.getByRole('button', { name: en.formSetSaveSheets })).toBeVisible();
+
+	// D-218: set AIAG-VDA tersembunyi, jadi tidak bisa dipilih customer. Set
+	// bawaan tidak punya tombol sembunyikan.
+	const customerChoice = page.getByLabel(en.formSetCustomerChoose.replace('{code}', 'FS'));
+	await expect(customerChoice.locator('option', { hasText: 'AIAG-VDA set' })).toHaveCount(0);
+	await expect(oldSet.getByRole('button', { name: en.formSetHideFor.replace('{name}', 'AIAG 4th set') })).toHaveCount(0);
+	await page.getByRole('checkbox', { name: en.showHidden }).check();
+	const hiddenSet = page.locator('section').filter({ has: page.getByRole('heading', { name: /^AIAG-VDA set/ }) });
+	await expect(hiddenSet.getByRole('heading')).toContainText(en.hiddenMark);
+	await hiddenSet.getByRole('button', { name: en.formSetShowFor.replace('{name}', 'AIAG-VDA set') }).click();
+	await expect(page.getByRole('status')).toHaveText(en.formSetShown.replace('{name}', 'AIAG-VDA set'));
 
 	// Form set customer: FS memakai AIAG-VDA set.
 	await page.getByLabel(en.formSetCustomerChoose.replace('{code}', 'FS')).selectOption({ label: 'AIAG-VDA set' });
@@ -71,7 +82,7 @@ test('PPAP Engineer menyusun, penyetuju form menerbitkan, lalu form set dipilih 
 	acceptNextDialog(page);
 	await approverView.getByRole('button', { name: en.versionPublish.replace('{version}', '1') }).click();
 	await expect(page.getByRole('status')).toHaveText(en.formSetPublished.replace('{version}', '1').replace('{name}', 'AIAG 4th set'));
-	await expect(approverView.getByRole('row', { name: new RegExp(`^${en.formSetSheetPfmea} PFMEA AIAG 4th`) })).toContainText(
+	await expect(approverView.getByRole('row', { name: new RegExp(`^${en.formSetSheetPfmea} PFMEA v1`) })).toContainText(
 		en.versionStatusPublished
 	);
 	// Penyetuju form hanya melihat pilihan customer.

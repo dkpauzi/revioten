@@ -2,21 +2,36 @@
 
 -- name: ListFormSets :many
 -- Set bawaan dulu, lalu menurut waktu dibuat.
-SELECT id, key, name, is_default, created_at
+SELECT id, key, name, is_default, created_at, hidden
 FROM form_sets
 ORDER BY is_default DESC, created_at, id;
 
 
 -- name: GetFormSet :one
-SELECT id, key, name, is_default, created_at
+SELECT id, key, name, is_default, created_at, hidden
 FROM form_sets
 WHERE id = $1;
 
 
 -- name: GetDefaultFormSet :one
-SELECT id, key, name, is_default, created_at
+SELECT id, key, name, is_default, created_at, hidden
 FROM form_sets
 WHERE is_default;
+
+
+-- name: LockFormSet :exec
+-- LockFormSet mengunci baris form set sampai transaksi selesai.
+SELECT id FROM form_sets WHERE id = $1 FOR NO KEY UPDATE;
+
+
+-- name: SetFormSetHidden :exec
+-- D-218: form set tersembunyi tidak bisa dipilih customer.
+UPDATE form_sets SET hidden = $2 WHERE id = $1;
+
+
+-- name: CustomersUsingFormSet :many
+-- CustomersUsingFormSet mengambil kode customer yang memilih form set ini.
+SELECT code FROM customers WHERE default_form_set_id = $1 ORDER BY code;
 
 
 -- name: ListFormSetKeys :many

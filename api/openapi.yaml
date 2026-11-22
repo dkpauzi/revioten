@@ -1638,6 +1638,28 @@ paths:
                 $ref: '#/components/schemas/FormatTemplate'
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/format-templates/{formatTemplateId}/hidden:
+    put:
+      operationId: setFormatTemplateHidden
+      summary: Hide or show a format template (E-11, D-218)
+      description: A hidden format template is not offered for new choices (sheets of a form set, copy source). Form sets and documents that already use it do not change.
+      parameters:
+        - $ref: '#/components/parameters/FormatTemplateId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HiddenUpdate'
+      responses:
+        '200':
+          description: The format template.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormatTemplate'
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/format-templates/{formatTemplateId}/versions:
     post:
       operationId: createFormatVersion
@@ -3998,6 +4020,28 @@ paths:
       responses:
         '201':
           description: The form set was added.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormSet'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/form-sets/{formSetId}/hidden:
+    put:
+      operationId: setFormSetHidden
+      summary: Hide or show a form set (E-11, D-218)
+      description: A hidden form set cannot be chosen for a customer. The default form set and a form set chosen by a customer cannot be hidden (409).
+      parameters:
+        - $ref: '#/components/parameters/FormSetId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HiddenUpdate'
+      responses:
+        '200':
+          description: The form set.
           content:
             application/json:
               schema:
@@ -6424,12 +6468,15 @@ components:
             $ref: '#/components/schemas/FormatTemplate'
     FormatTemplate:
       type: object
-      required: [id, name, document_type, versions, created_at]
+      required: [id, name, document_type, hidden, versions, created_at]
       properties:
         id:
           type: string
         name:
           type: string
+        hidden:
+          type: boolean
+          description: Not offered for new choices (D-218).
         document_type:
           $ref: '#/components/schemas/DocumentTypeRef'
         methodology:
@@ -6485,6 +6532,12 @@ components:
           description: Required without copy_from_version_id; a copy takes the risk method of its source.
         copy_from_version_id:
           type: string
+    HiddenUpdate:
+      type: object
+      required: [hidden]
+      properties:
+        hidden:
+          type: boolean
     FormatTemplateRename:
       type: object
       required: [name]
@@ -9202,7 +9255,7 @@ components:
             $ref: '#/components/schemas/CustomerFormSet'
     FormSet:
       type: object
-      required: [id, key, name, default, versions]
+      required: [id, key, name, default, hidden, versions]
       properties:
         id:
           type: string
@@ -9214,6 +9267,9 @@ components:
         default:
           type: boolean
           description: The form set of customers that have not chosen one.
+        hidden:
+          type: boolean
+          description: Cannot be chosen for a customer (D-218).
         versions:
           type: array
           items:

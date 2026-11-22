@@ -134,8 +134,8 @@ func TestCheckAPRules(t *testing.T) {
 func TestAPRulesInVersions(t *testing.T) {
 	f := newFixture(t)
 	ctx := t.Context()
-	pfmea := f.template(t, "PFMEA AIAG 4th")
-	if v := f.version(t, "PFMEA AIAG 4th"); len(v.APRules) != 0 {
+	pfmea := f.template(t, "PFMEA v1")
+	if v := f.version(t, "PFMEA v1"); len(v.APRules) != 0 {
 		t.Errorf("template RPN punya %d aturan AP", len(v.APRules))
 	}
 	created, err := f.s.CreateFormatTemplate(ctx, f.master, NewTemplate{
@@ -176,7 +176,7 @@ func TestAPRulesInVersions(t *testing.T) {
 		t.Errorf("entri audit: %s %s", action, details)
 	}
 	// Tabel RPN tidak punya tabel AP.
-	if _, err := f.s.SetAPRules(ctx, f.master, f.version(t, "PFMEA AIAG 4th").ID, changed); !slices.Equal(problemCodes(t, err), []string{"ap_rules:not_allowed"}) {
+	if _, err := f.s.SetAPRules(ctx, f.master, f.version(t, "PFMEA v1").ID, changed); !slices.Equal(problemCodes(t, err), []string{"ap_rules:not_allowed"}) {
 		t.Errorf("tabel AP di template RPN: %v", err)
 	}
 

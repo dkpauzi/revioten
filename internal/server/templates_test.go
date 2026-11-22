@@ -18,7 +18,7 @@ func TestFormatTemplateEndpoints(t *testing.T) {
 	created := time.Date(2026, 10, 31, 8, 0, 0, 0, time.UTC)
 	fake := &fakeTemplates{
 		templates: []template.FormatTemplate{{
-			ID: "ft-1", Name: "PFMEA AIAG 4th", DocumentTypeID: "dt-2", DocumentTypeKey: "pfmea", DocumentTypeName: "PFMEA",
+			ID: "ft-1", Name: "PFMEA v1", DocumentTypeID: "dt-2", DocumentTypeKey: "pfmea", DocumentTypeName: "PFMEA",
 			Methodology: template.MethodAIAG4th, CreatedAt: created,
 			Versions: []template.VersionSummary{{ID: "v-1", Version: 1, Status: template.StatusDraft, RiskMethod: template.RiskRPN}},
 		}},
@@ -33,7 +33,7 @@ func TestFormatTemplateEndpoints(t *testing.T) {
 
 	rec := srv.do(http.MethodGet, "/api/v1/format-templates", "")
 	want := `{"items":[{"created_at":"2026-10-31T08:00:00Z","document_type":{"id":"dt-2","key":"pfmea","name":"PFMEA"},` +
-		`"id":"ft-1","methodology":"aiag_4th","name":"PFMEA AIAG 4th","versions":[{"id":"v-1","risk_method":"rpn","status":"draft","version":1}]}]}` + "\n"
+		`"hidden":false,"id":"ft-1","methodology":"aiag_4th","name":"PFMEA v1","versions":[{"id":"v-1","risk_method":"rpn","status":"draft","version":1}]}]}` + "\n"
 	if rec.Code != http.StatusOK || rec.Body.String() != want {
 		t.Errorf("daftar: status %d\n%s\ningin\n%s", rec.Code, rec.Body.String(), want)
 	}
@@ -116,16 +116,16 @@ func TestFormatTemplateEndpoints(t *testing.T) {
 		return template.SheetRef{FormatVersionID: id, TemplateName: name, Version: 1, Status: template.StatusDraft}
 	}
 	fake.formSet = template.FormSet{ID: "fs-1", Key: "aiag_4th", Name: "AIAG 4th set", Default: true, Versions: []template.FormSetVersion{{
-		ID: "fsv-1", Version: 1, Status: template.StatusDraft, PFD: sheet("v-1", "PFD"), PFMEA: sheet("v-2", "PFMEA AIAG 4th"), CP: sheet("v-3", "CP"),
+		ID: "fsv-1", Version: 1, Status: template.StatusDraft, PFD: sheet("v-1", "PFD"), PFMEA: sheet("v-2", "PFMEA v1"), CP: sheet("v-3", "CP"),
 	}}}
 	fake.formSets = template.FormSetList{
 		Sets:     []template.FormSet{fake.formSet},
 		Defaults: []template.CustomerFormSet{{CustomerID: "c-1", CustomerCode: "AB", CustomerName: "Customer AB"}, {CustomerID: "c-2", CustomerCode: "CD", CustomerName: "Customer CD", FormSetID: "fs-1"}},
 	}
 	rec = srv.do(http.MethodGet, "/api/v1/form-sets", "")
-	want = `{"items":[{"id":"fs-1","key":"aiag_4th","name":"AIAG 4th set","default":true,"versions":[{"id":"fsv-1","version":1,"status":"draft",` +
+	want = `{"items":[{"id":"fs-1","key":"aiag_4th","name":"AIAG 4th set","default":true,"hidden":false,"versions":[{"id":"fsv-1","version":1,"status":"draft",` +
 		`"pfd":{"format_version_id":"v-1","template_name":"PFD","version":1,"status":"draft"},` +
-		`"pfmea":{"format_version_id":"v-2","template_name":"PFMEA AIAG 4th","version":1,"status":"draft"},` +
+		`"pfmea":{"format_version_id":"v-2","template_name":"PFMEA v1","version":1,"status":"draft"},` +
 		`"cp":{"format_version_id":"v-3","template_name":"CP","version":1,"status":"draft"}}]}],` +
 		`"customer_defaults":[{"customer_id":"c-1","customer_code":"AB","customer_name":"Customer AB"},` +
 		`{"customer_id":"c-2","customer_code":"CD","customer_name":"Customer CD","form_set_id":"fs-1"}]}`

@@ -74,10 +74,10 @@ func TestSeededFormSets(t *testing.T) {
 	if old.Name != "AIAG 4th set" || !old.Default || vda.Name != "AIAG-VDA set" || vda.Default {
 		t.Errorf("set: %+v dan %+v", old, vda)
 	}
-	if got := sheetNames(old.Versions[0]); !slices.Equal(got, []string{"PFD", "PFMEA AIAG 4th", "CP"}) {
+	if got := sheetNames(old.Versions[0]); !slices.Equal(got, []string{"PFD v1", "PFMEA v1", "Control Plan v1"}) {
 		t.Errorf("isi set AIAG 4th: %v", got)
 	}
-	if got := sheetNames(vda.Versions[0]); !slices.Equal(got, []string{"PFD", "PFMEA AIAG-VDA 2019", "Control Plan AIAG 2024"}) {
+	if got := sheetNames(vda.Versions[0]); !slices.Equal(got, []string{"PFD v1", "PFMEA v2", "Control Plan v2"}) {
 		t.Errorf("isi set AIAG-VDA: %v", got)
 	}
 	if old.Versions[0].PFD.FormatVersionID != vda.Versions[0].PFD.FormatVersionID {
@@ -108,6 +108,10 @@ func TestCustomerDefaultFormSet(t *testing.T) {
 	}
 	if err := f.s.SetCustomerFormSet(ctx, f.master, f.customer, "01a180aa-a98b-7bf2-8e0d-b97a25ecc489"); !slices.Equal(problemCodes(t, err), []string{"form_set_id:invalid_format"}) {
 		t.Errorf("form set tidak ada: %v", err)
+	}
+	// Set AIAG-VDA tersembunyi sejak D-218; ditampilkan dulu supaya bisa dipilih.
+	if _, err := f.s.SetFormSetHidden(ctx, f.master, vda.ID, false); err != nil {
+		t.Fatal(err)
 	}
 	if err := f.s.SetCustomerFormSet(ctx, f.master, f.customer, vda.ID); err != nil {
 		t.Fatal(err)
@@ -184,16 +188,16 @@ func TestFormSetVersions(t *testing.T) {
 	if _, err := f.s.NewFormSetVersion(ctx, f.master, old.ID); !slices.Equal(problemCodes(t, err), notAllowed) {
 		t.Errorf("versi baru saat masih ada draft: %v", err)
 	}
-	cp2024 := f.version(t, "Control Plan AIAG 2024")
+	cp2024 := f.version(t, "Control Plan v2")
 	sheets.CP = cp2024.ID
 	fs, err = f.s.SetFormSetSheets(ctx, f.master, v2.ID, sheets)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := sheetNames(fs.Versions[1]); !slices.Equal(got, []string{"PFD", "PFMEA AIAG 4th", "Control Plan AIAG 2024"}) {
+	if got := sheetNames(fs.Versions[1]); !slices.Equal(got, []string{"PFD v1", "PFMEA v1", "Control Plan v2"}) {
 		t.Errorf("isi versi 2: %v", got)
 	}
-	if got := sheetNames(fs.Versions[0]); !slices.Equal(got, []string{"PFD", "PFMEA AIAG 4th", "CP"}) {
+	if got := sheetNames(fs.Versions[0]); !slices.Equal(got, []string{"PFD v1", "PFMEA v1", "Control Plan v1"}) {
 		t.Errorf("isi versi 1 ikut berubah: %v", got)
 	}
 	// Sheet harus berisi format dengan jenis dokumen yang cocok.
@@ -239,7 +243,7 @@ func TestSeparationOfDuties(t *testing.T) {
 	same := newActor(t, f.pool, "ppap.supervisor.uji", access.AccountWork, access.RolePPAPEngineerSupervisor)
 
 	// Tabel AP: Supervisor mengubah, lalu orang yang sama tidak boleh menerbitkan.
-	vda := f.version(t, "PFMEA AIAG-VDA 2019")
+	vda := f.version(t, "PFMEA v2")
 	changed := DefaultAPRules()
 	changed[0].Priority = "M"
 	if _, err := f.s.SetAPRules(ctx, same, vda.ID, changed); err != nil {

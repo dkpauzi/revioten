@@ -216,7 +216,7 @@ func TestPermissionsPerOperation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// Format template isian awal (M3.1): PFMEA AIAG 4th, versi 1, field pertamanya.
+	// Format template isian awal (M3.1): PFMEA v1, versi 1, field pertamanya.
 	templates := template.NewService(pool, checker)
 	formats, err := templates.ListFormatTemplates(ctx, admin)
 	if err != nil {
@@ -247,6 +247,10 @@ func TestPermissionsPerOperation(t *testing.T) {
 		t.Fatal(err)
 	}
 	if _, err := templates.PublishFormSetVersion(ctx, engineer, vdaV.ID); err != nil {
+		t.Fatal(err)
+	}
+	// Set AIAG-VDA tersembunyi sejak D-218; ditampilkan dulu supaya bisa dipilih.
+	if _, err := templates.SetFormSetHidden(ctx, engineer, vdaSet.ID, false); err != nil {
 		t.Fatal(err)
 	}
 	if err := templates.SetCustomerFormSet(ctx, engineer, cust.ID, vdaSet.ID); err != nil {
@@ -413,7 +417,8 @@ func TestPermissionsPerOperation(t *testing.T) {
 		// Format template (M3.1): semua akun melihat (L-2), PPAP Engineer mengubah (E-11, UC-20, D-209).
 		{http.MethodGet, "/api/v1/format-templates", "", http.StatusOK, http.StatusOK, http.StatusOK},
 		{http.MethodPost, "/api/v1/format-templates", `{"name":"PFD copy","document_type_id":"{documentTypeId}","risk_method":"none"}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
-		{http.MethodPut, "/api/v1/format-templates/{formatTemplateId}", `{"name":"PFMEA AIAG 4th"}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		{http.MethodPut, "/api/v1/format-templates/{formatTemplateId}", `{"name":"PFMEA v1"}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		{http.MethodPut, "/api/v1/format-templates/{formatTemplateId}/hidden", `{"hidden":false}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/format-template-versions/{formatVersionId}", "", http.StatusOK, http.StatusOK, http.StatusOK},
 		{http.MethodPut, "/api/v1/format-template-versions/{formatVersionId}", `{"highlight_rpn_above":100}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodPost, "/api/v1/format-template-versions/{formatVersionId}/fields", `{"area":"row","kind":"text","label":"Note"}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
@@ -500,6 +505,7 @@ func TestPermissionsPerOperation(t *testing.T) {
 		// Form set (langkah D): melihat lewat L-2, menyusun lewat E-11, menerbitkan lewat V-3 (D-139).
 		// Engineer memegang V-3, tetapi format di dalam set masih draft, jadi jawabannya 409, bukan 403.
 		{http.MethodGet, "/api/v1/form-sets", "", http.StatusOK, http.StatusOK, http.StatusOK},
+		{http.MethodPut, "/api/v1/form-sets/{formSetId}/hidden", `{"hidden":false}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodPost, "/api/v1/form-sets", `{"name":"Set uji izin","pfd_format_version_id":"{pfdSheetId}","pfmea_format_version_id":"{pfmeaSheetId}","cp_format_version_id":"{cpSheetId}"}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
 		{http.MethodPut, "/api/v1/form-set-versions/{formSetVersionId}", `{"pfd_format_version_id":"{pfdSheetId}","pfmea_format_version_id":"{pfmeaSheetId}","cp_format_version_id":"{cpSheetId}"}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodPost, "/api/v1/form-set-versions/{formSetVersionId}/publish", "", http.StatusForbidden, http.StatusConflict, http.StatusForbidden},

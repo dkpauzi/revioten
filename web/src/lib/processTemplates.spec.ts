@@ -81,7 +81,7 @@ describe('pointColumns (D-146)', () => {
 	const field = (id: string, kind: string, key: string | undefined, label: string, hidden = false) => ({ id, area: 'row', kind, key, label, position: 1, required: false, hidden });
 	const forms = [
 		{
-			name: 'PFMEA AIAG 4th',
+			name: 'PFMEA v1',
 			version: {
 				fields: [
 					field('a', 'process', undefined, 'Process Step'),
@@ -94,7 +94,7 @@ describe('pointColumns (D-146)', () => {
 			} as unknown as FormatVersion
 		},
 		{
-			name: 'PFMEA AIAG-VDA 2019',
+			name: 'PFMEA v2',
 			version: {
 				fields: [
 					field('f', 'text', 'failure_mode', '2. Failure Mode (FM)'),
@@ -108,9 +108,9 @@ describe('pointColumns (D-146)', () => {
 
 	it('menggabungkan kolom ber-key dari semua form; kolom yang sama muncul sekali', () => {
 		expect(pointColumns(forms)).toEqual([
-			{ key: 'failure_mode', kind: 'text', label: 'Potential Failure Mode', forms: ['PFMEA AIAG 4th', 'PFMEA AIAG-VDA 2019'] },
-			{ key: 'severity', kind: 'rating', label: 'Severity', forms: ['PFMEA AIAG 4th'] },
-			{ key: 'function_process_item', kind: 'text', label: '1. Function of the Process Item', forms: ['PFMEA AIAG-VDA 2019'] }
+			{ key: 'failure_mode', kind: 'text', label: 'Potential Failure Mode', forms: ['PFMEA v1', 'PFMEA v2'] },
+			{ key: 'severity', kind: 'rating', label: 'Severity', forms: ['PFMEA v1'] },
+			{ key: 'function_process_item', kind: 'text', label: '1. Function of the Process Item', forms: ['PFMEA v2'] }
 		]);
 	});
 

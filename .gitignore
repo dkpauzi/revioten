@@ -44,3 +44,9 @@ desktop.ini
 
 # Panduan migrasi Tokairika: memuat nama login akun, tidak di-push (pemilik, 22 November 2026).
 docs/panduan/alur-migrasi-tokairika.md
+
+# Tur otomatis alur web: memuat nama orang dan isi dokumen Tokairika, tidak di-push (pemilik, 22 November 2026).
+web/tour/alur.tour.ts
+
+# Skenario alur web: memuat nama orang dan isi dokumen Tokairika, tidak di-push (pemilik, 22 November 2026).
+docs/panduan/skenario-alur-web.md

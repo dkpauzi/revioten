@@ -8,7 +8,7 @@ import (
 )
 
 // Form set langkah B dan C (D-133, D-135, D-140): isi awal form PFMEA
-// AIAG-VDA 2019 dan Control Plan AIAG 2024, kolom AP yang dihitung, dan
+// AIAG-VDA 2019 dan Control Plan v2, kolom AP yang dihitung, dan
 // field nomor dokumen yang diisi dari register.
 
 // keysOf menulis key field satu area menurut urutan.
@@ -42,11 +42,11 @@ func optionKeys(f Field) []string {
 	return out
 }
 
-// TestSeededPFMEAVDA: form PFMEA AIAG-VDA 2019 persis seperti tabel di prompt pemilik.
+// TestSeededPFMEAVDA: form PFMEA v2 persis seperti tabel di prompt pemilik.
 func TestSeededPFMEAVDA(t *testing.T) {
 	f := newFixture(t)
-	ft := f.template(t, "PFMEA AIAG-VDA 2019")
-	v := f.version(t, "PFMEA AIAG-VDA 2019")
+	ft := f.template(t, "PFMEA v2")
+	v := f.version(t, "PFMEA v2")
 	if ft.DocumentTypeKey != "pfmea" || ft.Methodology != MethodAIAGVDA || v.RiskMethod != RiskAP || v.Status != StatusDraft {
 		t.Errorf("template: %s %s %s %s", ft.DocumentTypeKey, ft.Methodology, v.RiskMethod, v.Status)
 	}
@@ -114,12 +114,12 @@ func TestSeededPFMEAVDA(t *testing.T) {
 	}
 }
 
-// TestSeededCP2024: form Control Plan AIAG 2024, tanpa kolom Process Flow
+// TestSeededCP2024: form Control Plan v2, tanpa kolom Process Flow
 // dan dengan empat pilihan fase (D-135).
 func TestSeededCP2024(t *testing.T) {
 	f := newFixture(t)
-	ft := f.template(t, "Control Plan AIAG 2024")
-	v := f.version(t, "Control Plan AIAG 2024")
+	ft := f.template(t, "Control Plan v2")
+	v := f.version(t, "Control Plan v2")
 	if ft.DocumentTypeKey != "cp" || ft.Methodology != MethodAIAGCP2024 || v.RiskMethod != RiskNone {
 		t.Errorf("template: %s %s %s", ft.DocumentTypeKey, ft.Methodology, v.RiskMethod)
 	}
@@ -165,7 +165,7 @@ func TestSeededCP2024(t *testing.T) {
 // bisa diketik, dan baris AP H tanpa tindakan disorot (R-TPL-11).
 func TestAPInContent(t *testing.T) {
 	f := newFixture(t)
-	v := f.version(t, "PFMEA AIAG-VDA 2019")
+	v := f.version(t, "PFMEA v2")
 	id := func(key string) string { return byKey(t, v, key).ID }
 	content := map[string]any{id("severity"): 8, id("occurrence"): 6, id("detection"): 4, id("failure_mode"): "Wrong part"}
 
@@ -206,8 +206,8 @@ func TestAPInContent(t *testing.T) {
 func TestAPFieldRules(t *testing.T) {
 	f := newFixture(t)
 	ctx := t.Context()
-	rpn := f.version(t, "PFMEA AIAG 4th")
-	vda := f.version(t, "PFMEA AIAG-VDA 2019")
+	rpn := f.version(t, "PFMEA v1")
+	vda := f.version(t, "PFMEA v2")
 
 	if _, err := f.s.AddField(ctx, f.master, rpn.ID, NewField{Area: AreaRow, Kind: KindAP, Label: "AP", RatingSet: 1}); !slices.Equal(problemCodes(t, err), []string{"kind:not_allowed"}) {
 		t.Errorf("kolom AP di template RPN: %v", err)
@@ -223,7 +223,7 @@ func TestAPFieldRules(t *testing.T) {
 	}
 
 	// Salinan template dan versi baru membawa key dan grup.
-	ft := f.template(t, "PFMEA AIAG-VDA 2019")
+	ft := f.template(t, "PFMEA v2")
 	copied, err := f.s.CreateFormatTemplate(ctx, f.master, NewTemplate{Name: "PFMEA VDA salinan", DocumentTypeID: ft.DocumentTypeID, CopyFromVersionID: vda.ID})
 	if err != nil {
 		t.Fatal(err)

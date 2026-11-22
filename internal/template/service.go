@@ -149,6 +149,42 @@ func (s *Service) RenameFormatTemplate(ctx context.Context, actor access.Actor, 
 	return getTemplate(ctx, s.q, id)
 }
 
+// SetFormatTemplateHidden menyembunyikan atau menampilkan format template
+// (E-11, D-218). Template tersembunyi tidak ditawarkan untuk pilihan baru;
+// form set dan dokumen yang sudah memakainya tidak berubah.
+func (s *Service) SetFormatTemplateHidden(ctx context.Context, actor access.Actor, id string, hidden bool) (FormatTemplate, error) {
+	if err := s.authz.Authorize(ctx, actor, access.ManageMasterData, access.Resource{}); err != nil {
+		return FormatTemplate{}, err
+	}
+	if !db.IsUUID(id) {
+		return FormatTemplate{}, problem.ErrNotFound
+	}
+	err := db.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
+		q := s.q.WithTx(tx)
+		if err := q.LockFormatTemplate(ctx, id); err != nil {
+			return err
+		}
+		before, err := getTemplate(ctx, q, id)
+		if err != nil {
+			return err
+		}
+		if before.Hidden == hidden {
+			return nil
+		}
+		if err := q.SetFormatTemplateHidden(ctx, db.SetFormatTemplateHiddenParams{ID: id, Hidden: hidden}); err != nil {
+			return err
+		}
+		return audit.Record(ctx, q, actor, audit.Event{
+			Action: audit.ActionFormatTemplateHiddenChanged, TargetType: audit.TargetFormatTemplate, TargetID: id,
+			Details: map[string]string{"hidden": audit.Change(strconv.FormatBool(before.Hidden), strconv.FormatBool(hidden))},
+		})
+	})
+	if err := result(err, "menyembunyikan format template"); err != nil {
+		return FormatTemplate{}, err
+	}
+	return getTemplate(ctx, s.q, id)
+}
+
 // AddField menambah field header atau kolom baris di akhir areanya.
 func (s *Service) AddField(ctx context.Context, actor access.Actor, versionID string, in NewField) (FormatVersion, error) {
 	return s.editVersion(ctx, actor, versionID, audit.ActionFormatFieldAdded, func(q *db.Queries, v FormatVersion) (map[string]string, error) {
@@ -612,7 +648,7 @@ func fromTemplate(r db.GetFormatTemplateRow, versions []VersionSummary) FormatTe
 	return FormatTemplate{
 		ID: r.ID, Name: r.Name, DocumentTypeID: r.DocumentTypeID, DocumentTypeKey: derefText(r.DocumentTypeKey),
 		DocumentTypeName: r.DocumentTypeName, Methodology: derefText(r.Methodology), CustomerID: derefText(r.CustomerID),
-		CustomerCode: derefText(r.CustomerCode), Versions: versions, CreatedAt: r.CreatedAt.UTC(),
+		CustomerCode: derefText(r.CustomerCode), Hidden: r.Hidden, Versions: versions, CreatedAt: r.CreatedAt.UTC(),
 	}
 }
 

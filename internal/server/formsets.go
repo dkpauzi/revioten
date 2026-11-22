@@ -50,6 +50,15 @@ func (a *apiServer) SetFormSetSheets(ctx context.Context, req SetFormSetSheetsRe
 	return SetFormSetSheets200JSONResponse(toAPIFormSet(fs)), nil
 }
 
+// SetFormSetHidden menjawab PUT /api/v1/form-sets/{formSetId}/hidden (D-218).
+func (a *apiServer) SetFormSetHidden(ctx context.Context, req SetFormSetHiddenRequestObject) (SetFormSetHiddenResponseObject, error) {
+	fs, err := a.templates.SetFormSetHidden(ctx, actorFrom(ctx), req.FormSetId, req.Body.Hidden)
+	if err != nil {
+		return nil, err
+	}
+	return SetFormSetHidden200JSONResponse(toAPIFormSet(fs)), nil
+}
+
 // CreateFormSetVersion menjawab POST /api/v1/form-sets/{formSetId}/versions.
 func (a *apiServer) CreateFormSetVersion(ctx context.Context, req CreateFormSetVersionRequestObject) (CreateFormSetVersionResponseObject, error) {
 	fs, err := a.templates.NewFormSetVersion(ctx, actorFrom(ctx), req.FormSetId)
@@ -94,7 +103,7 @@ func toAPIFormSet(fs template.FormSet) FormSet {
 	sheet := func(s template.SheetRef) FormSetSheet {
 		return FormSetSheet{FormatVersionId: s.FormatVersionID, TemplateName: s.TemplateName, Version: s.Version, Status: FormSetSheetStatus(s.Status)}
 	}
-	out := FormSet{Id: fs.ID, Key: fs.Key, Name: fs.Name, Default: fs.Default, Versions: make([]FormSetVersion, 0, len(fs.Versions))}
+	out := FormSet{Id: fs.ID, Key: fs.Key, Name: fs.Name, Default: fs.Default, Hidden: fs.Hidden, Versions: make([]FormSetVersion, 0, len(fs.Versions))}
 	for _, v := range fs.Versions {
 		out.Versions = append(out.Versions, FormSetVersion{
 			Id: v.ID, Version: v.Version, Status: FormSetVersionStatus(v.Status), PublishedAt: v.PublishedAt,

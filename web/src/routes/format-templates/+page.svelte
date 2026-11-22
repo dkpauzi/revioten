@@ -17,6 +17,7 @@
 		listFormatTemplates,
 		publishFormatVersion,
 		renameFormatTemplate,
+		setFormatTemplateHidden,
 		saveFormatSymbols,
 		setFormatApRules,
 		setFormatRatingCriteria,
@@ -48,6 +49,7 @@
 		symbolLines,
 		templateLabel
 	} from '#lib/formats.ts';
+	import { visibleItems } from '#lib/formSets.ts';
 	import { t } from '#lib/i18n/index.ts';
 	import { can } from '#lib/session.svelte.ts';
 	import Approvals from '#lib/templates/Approvals.svelte';
@@ -67,6 +69,9 @@
 	// Template yang dipilih dan versinya.
 	let selectedId = $state('');
 	let selected = $derived(templates?.find((ft) => ft.id === selectedId) ?? null);
+	// D-218: template tersembunyi hanya ditawarkan bila Show hidden dicentang.
+	let showHidden = $state(false);
+	let choices = $derived(visibleItems(templates ?? [], showHidden, selectedId));
 	let version = $state<FormatVersion | null>(null);
 	// Isi versi hanya bisa diubah oleh pemegang E-11, dan hanya selama versinya
 	// draft (M3.4). Nama template bukan bagian dari versi, jadi tetap memakai canEdit.
@@ -93,7 +98,7 @@
 	);
 
 	// Versi yang bisa disalin: versi terakhir setiap template dengan jenis dokumen yang dipilih.
-	let copySources = $derived((templates ?? []).filter((ft) => ft.document_type.id === draft.documentTypeId));
+	let copySources = $derived((templates ?? []).filter((ft) => ft.document_type.id === draft.documentTypeId && !ft.hidden));
 
 	async function load() {
 		const [templateResult, typeResult, customerResult] = await Promise.all([
@@ -220,6 +225,21 @@
 			return;
 		}
 		message = t('formatSaved', { name: result.data.name });
+		await load();
+	}
+
+	// setHidden menyembunyikan atau menampilkan template yang dipilih (E-11, D-218).
+	async function setHidden(hidden: boolean) {
+		reset();
+		if (selected === null) {
+			return;
+		}
+		const result = await setFormatTemplateHidden(selected.id, hidden);
+		if (!result.ok) {
+			showErrors(result.error, 'formatTemplate');
+			return;
+		}
+		message = t(hidden ? 'formatTemplateHidden' : 'formatTemplateShown', { name: result.data.name });
 		await load();
 	}
 
@@ -370,10 +390,11 @@
 		<label for="format-choose">{t('formatChoose')}</label>
 		<select id="format-choose" bind:value={selectedId} onchange={show}>
 			<option value="">{t('formatChooseOption')}</option>
-			{#each templates as ft (ft.id)}
+			{#each choices as ft (ft.id)}
 				<option value={ft.id}>{templateLabel(ft)}</option>
 			{/each}
 		</select>
+		<label class="check"><input type="checkbox" bind:checked={showHidden} /> {t('showHidden')}</label>
 	</div>
 
 	{#if selected && version}
@@ -410,6 +431,10 @@
 					</div>
 					<button type="submit">{t('formatRename')}</button>
 				</form>
+				<p class="row">
+					<button type="button" onclick={() => setHidden(!selected?.hidden)}>{t(selected.hidden ? 'formatShow' : 'formatHide')}</button>
+				</p>
+				<p class="hint">{t('formatHiddenHint')}</p>
 			{/if}
 		</section>
 

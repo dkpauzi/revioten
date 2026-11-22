@@ -144,7 +144,8 @@ export const helpId: HelpContent = {
 			image: 'format-templates',
 			imageAlt: 'Halaman Format templates dengan kolom form PFMEA.',
 			tips: [
-				'Sistem dimulai dengan dua set form: PFMEA AIAG 4th (RPN) dengan Control Plan yang dipakai sekarang, dan PFMEA AIAG-VDA 2019 (Action Priority) dengan Control Plan AIAG 2024. Form PFD sama untuk keduanya.',
+				'Sistem dimulai dengan lima form: PFD v1, PFMEA v1 (AIAG 4th, RPN), dan Control Plan v1 (form yang dipakai sekarang), ditambah PFMEA v2 (AIAG-VDA, Action Priority) dan Control Plan v2 (AIAG 2024). PFMEA v2 dan Control Plan v2 disembunyikan dulu; centang {showHidden} untuk melihatnya.',
+				'{formatHide} mengeluarkan template dari pilihan baru (sheet form set, sumber salinan). Dokumen yang sudah memakainya tidak berubah. {formatShow} mengembalikannya.',
 				'Nomor operasi, nama proses, process flow, nomor dokumen, RPN, dan Action Priority diisi sistem dan tidak pernah diketik.',
 				'Mengganti label tidak mengubah data dokumen, karena dokumen menunjuk ID tetap sebuah field.'
 			]
@@ -211,14 +212,15 @@ export const helpId: HelpContent = {
 			id: 'form-sets',
 			title: 'Form set',
 			who: 'PPAP Engineer, dan PPAP Engineer Supervisor untuk menerbitkan',
-			intro: 'Form set adalah satu paket form untuk PFD, PFMEA, dan Control Plan. Sistem punya dua: set AIAG 4th (RPN) dan set AIAG-VDA (Action Priority). Setiap customer memakai satu form set untuk dokumen barunya.',
+			intro: 'Form set adalah satu paket form untuk PFD, PFMEA, dan Control Plan. Sistem punya dua: set AIAG 4th (PFD v1, PFMEA v1, Control Plan v1) dan set AIAG-VDA (PFD v1, PFMEA v2, Control Plan v2). Set AIAG-VDA disembunyikan dulu. Setiap customer memakai satu form set untuk dokumen barunya.',
 			steps: [
 				'Buka {navGroupTemplates}, lalu {navFormSets}.',
 				'Setiap form set menampilkan tiga sheet-nya: {formSetSheetPfd}, {formSetSheetPfmea}, dan {formSetSheetCp}. PPAP Engineer mengganti sheet versi draft dan menekan {formSetSaveSheets}.',
 				'Terbitkan dulu format template ketiga sheet itu, di {navFormatTemplates}.',
 				'Penyetuju form membuka form set itu dan menekan [[Terbitkan versi 1]]. Orang yang menyusun draft tidak boleh menerbitkannya. Bawaannya semua penyetuju form harus setuju; daftarnya menampilkan {approvalsDone} dan {approvalsPending}. Admin bisa mengubah aturan ini di {navGroupAdmin}, lalu {navSettings}.',
 				'Di bagian {formSetCustomersTitle}, PPAP Engineer memilih form set setiap customer. Tanpa pilihan, customer memakai form set bawaan.',
-				'Untuk membuat paket baru, pakai {formSetCreateTitle} di bagian bawah halaman.'
+				'Untuk membuat paket baru, pakai {formSetCreateTitle} di bagian bawah halaman.',
+				'Form set yang tersembunyi tidak bisa dipilih untuk customer. Centang {showHidden} untuk melihatnya, lalu tekan tombol tampilkan. Form set bawaan dan form set yang dipakai customer tidak bisa disembunyikan.'
 			],
 			image: 'form-sets',
 			imageAlt: 'Halaman Form set dengan dua form set dan form set per customer.',

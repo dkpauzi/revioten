@@ -128,7 +128,8 @@
 			return;
 		}
 		const byType: Record<string, { name: string; version: FormatVersion }[]> = {};
-		for (const f of formats.data.items) {
+		// Format tersembunyi tidak ikut (D-218): kolomnya tidak ditawarkan.
+		for (const f of formats.data.items.filter((ft) => !ft.hidden)) {
 			const latest = latestVersion(f.versions);
 			const loaded = latest ? await getFormatVersion(latest.id) : null;
 			if (loaded?.ok) {

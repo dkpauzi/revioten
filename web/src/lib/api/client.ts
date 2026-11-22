@@ -605,6 +605,15 @@ export function renameFormatTemplate(
 	return call<FormatTemplate>(fetchFn, itemPath('format-templates', id), jsonRequest('PUT', { name }));
 }
 
+// setFormatTemplateHidden memanggil PUT /api/v1/format-templates/{id}/hidden (E-11, D-218).
+export function setFormatTemplateHidden(
+	id: string,
+	hidden: boolean,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<FormatTemplate>> {
+	return call<FormatTemplate>(fetchFn, itemPath('format-templates', id) + '/hidden', jsonRequest('PUT', { hidden }));
+}
+
 // getFormatVersion memanggil GET /api/v1/format-template-versions/{id}.
 // Dokumen (M4.1).
 
@@ -1057,6 +1066,11 @@ export function deleteDocumentRow(id: string, rowId: string, fetchFn: typeof fet
 // listFormSets memanggil GET /api/v1/form-sets (L-2).
 export function listFormSets(fetchFn: typeof fetch = fetch): Promise<ApiResult<FormSetList>> {
 	return call<FormSetList>(fetchFn, '/api/v1/form-sets', { method: 'GET' });
+}
+
+// setFormSetHidden memanggil PUT /api/v1/form-sets/{id}/hidden (E-11, D-218).
+export function setFormSetHidden(id: string, hidden: boolean, fetchFn: typeof fetch = fetch): Promise<ApiResult<FormSet>> {
+	return call<FormSet>(fetchFn, itemPath('form-sets', id) + '/hidden', jsonRequest('PUT', { hidden }));
 }
 
 // createFormSet memanggil POST /api/v1/form-sets (E-11).

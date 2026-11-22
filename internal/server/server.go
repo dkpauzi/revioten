@@ -128,6 +128,8 @@ type TemplateService interface {
 	GetFormatVersion(ctx context.Context, actor access.Actor, id string) (template.FormatVersion, error)
 	CreateFormatTemplate(ctx context.Context, actor access.Actor, in template.NewTemplate) (template.FormatTemplate, error)
 	RenameFormatTemplate(ctx context.Context, actor access.Actor, id, name string) (template.FormatTemplate, error)
+	SetFormatTemplateHidden(ctx context.Context, actor access.Actor, id string, hidden bool) (template.FormatTemplate, error)
+	SetFormSetHidden(ctx context.Context, actor access.Actor, id string, hidden bool) (template.FormSet, error)
 	AddField(ctx context.Context, actor access.Actor, versionID string, in template.NewField) (template.FormatVersion, error)
 	UpdateField(ctx context.Context, actor access.Actor, versionID, fieldID string, in template.FieldUpdate) (template.FormatVersion, error)
 	SetRatingCriteria(ctx context.Context, actor access.Actor, versionID string, ratings []template.Rating) (template.FormatVersion, error)

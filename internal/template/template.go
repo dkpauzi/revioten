@@ -114,6 +114,7 @@ type FormatTemplate struct {
 	Methodology      string // "" untuk form yang dipakai sekarang
 	CustomerID       string // "" untuk template umum
 	CustomerCode     string
+	Hidden           bool             // D-218: tidak ditawarkan untuk pilihan baru
 	Versions         []VersionSummary // menurut nomor versi, tidak pernah nil
 	CreatedAt        time.Time        // selalu UTC
 }

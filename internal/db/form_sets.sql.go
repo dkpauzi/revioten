@@ -79,6 +79,31 @@ func (q *Queries) CreateFormSetVersion(ctx context.Context, arg CreateFormSetVer
 	return id, err
 }
 
+const customersUsingFormSet = `-- name: CustomersUsingFormSet :many
+SELECT code FROM customers WHERE default_form_set_id = $1 ORDER BY code
+`
+
+// CustomersUsingFormSet mengambil kode customer yang memilih form set ini.
+func (q *Queries) CustomersUsingFormSet(ctx context.Context, defaultFormSetID *string) ([]string, error) {
+	rows, err := q.db.Query(ctx, customersUsingFormSet, defaultFormSetID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var code string
+		if err := rows.Scan(&code); err != nil {
+			return nil, err
+		}
+		items = append(items, code)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getCustomerFormSet = `-- name: GetCustomerFormSet :one
 SELECT c.id, c.code, c.default_form_set_id
 FROM customers c
@@ -99,7 +124,7 @@ func (q *Queries) GetCustomerFormSet(ctx context.Context, id string) (GetCustome
 }
 
 const getDefaultFormSet = `-- name: GetDefaultFormSet :one
-SELECT id, key, name, is_default, created_at
+SELECT id, key, name, is_default, created_at, hidden
 FROM form_sets
 WHERE is_default
 `
@@ -113,6 +138,7 @@ func (q *Queries) GetDefaultFormSet(ctx context.Context) (FormSet, error) {
 		&i.Name,
 		&i.IsDefault,
 		&i.CreatedAt,
+		&i.Hidden,
 	)
 	return i, err
 }
@@ -131,7 +157,7 @@ func (q *Queries) GetFormApprovalMode(ctx context.Context) (string, error) {
 }
 
 const getFormSet = `-- name: GetFormSet :one
-SELECT id, key, name, is_default, created_at
+SELECT id, key, name, is_default, created_at, hidden
 FROM form_sets
 WHERE id = $1
 `
@@ -145,6 +171,7 @@ func (q *Queries) GetFormSet(ctx context.Context, id string) (FormSet, error) {
 		&i.Name,
 		&i.IsDefault,
 		&i.CreatedAt,
+		&i.Hidden,
 	)
 	return i, err
 }
@@ -469,7 +496,7 @@ func (q *Queries) ListFormSetVersions(ctx context.Context) ([]ListFormSetVersion
 
 const listFormSets = `-- name: ListFormSets :many
 
-SELECT id, key, name, is_default, created_at
+SELECT id, key, name, is_default, created_at, hidden
 FROM form_sets
 ORDER BY is_default DESC, created_at, id
 `
@@ -491,6 +518,7 @@ func (q *Queries) ListFormSets(ctx context.Context) ([]FormSet, error) {
 			&i.Name,
 			&i.IsDefault,
 			&i.CreatedAt,
+			&i.Hidden,
 		); err != nil {
 			return nil, err
 		}
@@ -500,6 +528,16 @@ func (q *Queries) ListFormSets(ctx context.Context) ([]FormSet, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const lockFormSet = `-- name: LockFormSet :exec
+SELECT id FROM form_sets WHERE id = $1 FOR NO KEY UPDATE
+`
+
+// LockFormSet mengunci baris form set sampai transaksi selesai.
+func (q *Queries) LockFormSet(ctx context.Context, id string) error {
+	_, err := q.db.Exec(ctx, lockFormSet, id)
+	return err
 }
 
 const lockFormSetVersion = `-- name: LockFormSetVersion :exec
@@ -546,6 +584,21 @@ UPDATE system_settings SET form_approval_mode = $1
 
 func (q *Queries) SetFormApprovalMode(ctx context.Context, formApprovalMode string) error {
 	_, err := q.db.Exec(ctx, setFormApprovalMode, formApprovalMode)
+	return err
+}
+
+const setFormSetHidden = `-- name: SetFormSetHidden :exec
+UPDATE form_sets SET hidden = $2 WHERE id = $1
+`
+
+type SetFormSetHiddenParams struct {
+	ID     string
+	Hidden bool
+}
+
+// D-218: form set tersembunyi tidak bisa dipilih customer.
+func (q *Queries) SetFormSetHidden(ctx context.Context, arg SetFormSetHiddenParams) error {
+	_, err := q.db.Exec(ctx, setFormSetHidden, arg.ID, arg.Hidden)
 	return err
 }
 

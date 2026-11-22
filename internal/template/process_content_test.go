@@ -123,9 +123,9 @@ func TestSeedFieldKeys(t *testing.T) {
 		return out
 	}
 	for template, wantKeys := range map[string][]string{
-		"PFMEA AIAG 4th": {"failure_mode", "failure_effect", "failure_cause", "prevention_control", "detection_control", "severity", "occurrence", "detection"},
-		"CP":             {"product_characteristic", "process_characteristic", "control_method", "reaction_plan", "sample_frequency"},
-		"PFD":            {"flow_symbol"},
+		"PFMEA v1":        {"failure_mode", "failure_effect", "failure_cause", "prevention_control", "detection_control", "severity", "occurrence", "detection"},
+		"Control Plan v1": {"product_characteristic", "process_characteristic", "control_method", "reaction_plan", "sample_frequency"},
+		"PFD v1":          {"flow_symbol"},
 	} {
 		got := keys(template)
 		for _, k := range wantKeys {

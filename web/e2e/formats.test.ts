@@ -9,7 +9,7 @@ test('PPAP Engineer mengganti label kolom PFMEA, menyembunyikan kolom, dan mengi
 	// Format template diurus PPAP Engineer (E-11, D-209).
 	await logInAsMaster(page);
 	await openFromMenu(page, en.navGroupTemplates, en.navFormatTemplates);
-	await page.getByLabel(en.formatChoose).selectOption({ label: 'PFMEA AIAG 4th · PFMEA' });
+	await page.getByLabel(en.formatChoose).selectOption({ label: 'PFMEA v1 · PFMEA' });
 
 	// Ganti label: kolom ke-3 tetap di tempatnya dengan nama baru.
 	await page.getByRole('row', { name: /^4 Potential Failure Mode / }).getByRole('button', { name: en.formatEdit }).click();
@@ -31,7 +31,7 @@ test('PPAP Engineer mengganti label kolom PFMEA, menyembunyikan kolom, dan mengi
 
 	// Setelah dimuat ulang, perubahan tetap ada.
 	await page.reload();
-	await page.getByLabel(en.formatChoose).selectOption({ label: 'PFMEA AIAG 4th · PFMEA' });
+	await page.getByLabel(en.formatChoose).selectOption({ label: 'PFMEA v1 · PFMEA' });
 	await expect(page.getByRole('row', { name: /^4 Failure Mode / })).toBeVisible();
 	await expect(page.getByLabel(en.formatRatingCriteriaFor.replace('{scale}', en.formatScaleSeverity).replace('{value}', '10'))).toHaveValue(
 		'Hazardous without warning'
@@ -47,7 +47,7 @@ test('akun tanpa hak E-11 hanya melihat format template', async ({ page }) => {
 
 	await openFromMenu(page, en.navGroupTemplates, en.navFormatTemplates);
 	await expect(page.getByText(en.formatReadOnly)).toBeVisible();
-	await page.getByLabel(en.formatChoose).selectOption({ label: 'CP · CP' });
+	await page.getByLabel(en.formatChoose).selectOption({ label: 'Control Plan v1 · CP' });
 	await expect(page.getByRole('row', { name: /^9 Special Characteristics / })).toBeVisible();
 	// Process Flow tampil dan tercetak, terisi dari PFD (D-122); nama proses
 	// terisi dari master proses (D-123); Revision dipasang sistem (R-REV-09).
@@ -63,7 +63,7 @@ test('PPAP Engineer menyalin format template CP lalu menambah kolom pilihan', as
 	await openFromMenu(page, en.navGroupTemplates, en.navFormatTemplates);
 	await page.getByLabel(en.formatName, { exact: true }).fill('CP with phase');
 	await page.getByLabel(en.formatDocumentType, { exact: true }).selectOption({ label: 'CP' });
-	await page.getByLabel(en.formatCopyFrom).selectOption({ label: 'CP · CP' });
+	await page.getByLabel(en.formatCopyFrom).selectOption({ label: 'Control Plan v1 · CP' });
 	await page.getByRole('button', { name: en.formatCreate }).click();
 	await expect(page.getByRole('status')).toHaveText(en.formatCreated.replace('{name}', 'CP with phase'));
 	// Salinan langsung terbuka dengan kolom yang sama.
@@ -113,7 +113,7 @@ test('format template dengan metode AP menampilkan tabel Action Priority dan kal
 	expect(priority).toBe('H');
 });
 
-test('form PFMEA AIAG-VDA 2019 dan Control Plan AIAG 2024 tersedia sejak awal', async ({ page }) => {
+test('form PFMEA v2 dan Control Plan v2 tersedia sejak awal', async ({ page }) => {
 	// Form set langkah B dan C (D-133, D-135): isi awal kedua form baru.
 	await logInAsMaster(page);
 	await openFromMenu(page, en.navGroupTemplates, en.navFormatTemplates);
@@ -124,7 +124,11 @@ test('form PFMEA AIAG-VDA 2019 dan Control Plan AIAG 2024 tersedia sejak awal', 
 		await choose.selectOption(value ?? '');
 	};
 
-	await pick('PFMEA AIAG-VDA 2019');
+	// D-218: kedua form ini tersembunyi; ditampilkan lewat Show hidden.
+	await expect(choose.locator('option', { hasText: 'PFMEA v2' })).toHaveCount(0);
+	await page.getByRole('checkbox', { name: en.showHidden }).check();
+	await pick('PFMEA v2');
+	await expect(page.getByRole('button', { name: en.formatShow })).toBeVisible();
 	// Kolom dengan judul grupnya, dan dua kolom AP yang dihitung.
 	const failureMode = page.getByRole('row', { name: /^10 2\. Failure Mode \(FM\) FAILURE ANALYSIS \(STEP 4\) / });
 	await expect(failureMode).toContainText(en.formatKindText);
@@ -138,7 +142,7 @@ test('form PFMEA AIAG-VDA 2019 dan Control Plan AIAG 2024 tersedia sejak awal', 
 	await expect(page.getByRole('row', { name: /^10 PFMEA ID Number / })).toContainText(en.formatKindDocumentNumber);
 	await expect(page.getByRole('heading', { name: en.apTableTitle })).toBeVisible();
 
-	await pick('Control Plan AIAG 2024');
+	await pick('Control Plan v2');
 	await expect(page.getByRole('row', { name: /^1 Phase / })).toContainText('Prototype, Pre-launch, Safe Launch, Production');
 	await expect(page.getByRole('row', { name: /^2 Control plan No\. / })).toContainText(en.formatKindDocumentNumber);
 	await expect(page.getByRole('row', { name: /^3 Owner Part\/Process Number / })).toBeVisible();

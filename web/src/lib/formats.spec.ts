@@ -39,10 +39,13 @@ describe('teks format template', () => {
 			methodology: 'sqam',
 			customer_id: 'c',
 			customer_code: 'KT',
+			hidden: false,
 			versions: [],
 			created_at: '2026-10-31T00:00:00Z'
 		};
 		expect(templateLabel(ft)).toBe('PFMEA SQAM · PFMEA · KT');
+		// D-218: template tersembunyi diberi tanda.
+		expect(templateLabel({ ...ft, hidden: true })).toBe('PFMEA SQAM · PFMEA · KT · ' + en.hiddenMark);
 		expect(methodologyText(ft.methodology)).toBe(en.formatMethodSqam);
 		expect(methodologyText(undefined)).toBe('');
 	});

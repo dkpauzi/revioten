@@ -144,7 +144,8 @@ export const helpEn: HelpContent = {
 			image: 'format-templates',
 			imageAlt: 'The Format templates page with the columns of the PFMEA form.',
 			tips: [
-				'The system starts with two sets of forms: PFMEA AIAG 4th (RPN) with the current Control Plan, and PFMEA AIAG-VDA 2019 (Action Priority) with Control Plan AIAG 2024. The PFD form is the same for both.',
+				'The system starts with five forms: PFD v1, PFMEA v1 (AIAG 4th, RPN), and Control Plan v1 (the form in use today), plus PFMEA v2 (AIAG-VDA, Action Priority) and Control Plan v2 (AIAG 2024). PFMEA v2 and Control Plan v2 are hidden for now; tick {showHidden} to see them.',
+				'{formatHide} takes a template out of new choices (sheets of a form set, copy sources). Documents that already use it do not change. {formatShow} brings it back.',
 				'The operation number, the process name, the process flow, the document number, RPN, and Action Priority are filled in by the system and are never typed.',
 				'Changing a label never changes the data of documents, because documents refer to the fixed ID of a field.'
 			]
@@ -211,14 +212,15 @@ export const helpEn: HelpContent = {
 			id: 'form-sets',
 			title: 'Form sets',
 			who: 'PPAP Engineer, and the PPAP Engineer Supervisor to publish',
-			intro: 'A form set is one package of forms for PFD, PFMEA, and Control Plan. The system has two: the AIAG 4th set (RPN) and the AIAG-VDA set (Action Priority). Each customer uses one form set for its new documents.',
+			intro: 'A form set is one package of forms for PFD, PFMEA, and Control Plan. The system has two: the AIAG 4th set (PFD v1, PFMEA v1, Control Plan v1) and the AIAG-VDA set (PFD v1, PFMEA v2, Control Plan v2). The AIAG-VDA set is hidden for now. Each customer uses one form set for its new documents.',
 			steps: [
 				'Open {navGroupTemplates}, then {navFormSets}.',
 				'Each form set shows its three sheets: {formSetSheetPfd}, {formSetSheetPfmea}, and {formSetSheetCp}. The PPAP Engineer changes the sheets of a draft version and presses {formSetSaveSheets}.',
 				'Publish the format templates of the three sheets first, under {navFormatTemplates}.',
 				'The form approver opens the form set and presses [[Publish version 1]]. The person who prepared the draft cannot publish it. By default every form approver must approve; the list shows {approvalsDone} and {approvalsPending}. The admin can change this rule under {navGroupAdmin}, then {navSettings}.',
 				'Under {formSetCustomersTitle}, the PPAP Engineer chooses the form set of each customer. Without a choice the customer uses the default form set.',
-				'To make a new package, use {formSetCreateTitle} at the bottom of the page.'
+				'To make a new package, use {formSetCreateTitle} at the bottom of the page.',
+				'A hidden form set cannot be chosen for a customer. Tick {showHidden} to see it, then press its show button. The default form set and a form set that a customer uses cannot be hidden.'
 			],
 			image: 'form-sets',
 			imageAlt: 'The Form sets page with the two form sets and the form set per customer.',

@@ -381,6 +381,7 @@ type FormSet struct {
 	Name      string
 	IsDefault bool
 	CreatedAt time.Time
+	Hidden    bool
 }
 
 type FormSetVersion struct {
@@ -430,6 +431,7 @@ type FormatTemplate struct {
 	Methodology    *string
 	CustomerID     *string
 	CreatedAt      time.Time
+	Hidden         bool
 }
 
 type FormatTemplateVersion struct {

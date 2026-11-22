@@ -230,7 +230,7 @@ func (q *Queries) CreateFormatVersion(ctx context.Context, arg CreateFormatVersi
 
 const getFormatTemplate = `-- name: GetFormatTemplate :one
 SELECT t.id, t.name, t.document_type_id, d.key AS document_type_key, d.name AS document_type_name,
-       t.methodology, t.customer_id, c.code AS customer_code, t.created_at
+       t.methodology, t.customer_id, c.code AS customer_code, t.created_at, t.hidden
 FROM format_templates t
 JOIN document_types d ON d.id = t.document_type_id
 LEFT JOIN customers c ON c.id = t.customer_id
@@ -247,6 +247,7 @@ type GetFormatTemplateRow struct {
 	CustomerID       *string
 	CustomerCode     *string
 	CreatedAt        time.Time
+	Hidden           bool
 }
 
 func (q *Queries) GetFormatTemplate(ctx context.Context, id string) (GetFormatTemplateRow, error) {
@@ -262,6 +263,7 @@ func (q *Queries) GetFormatTemplate(ctx context.Context, id string) (GetFormatTe
 		&i.CustomerID,
 		&i.CustomerCode,
 		&i.CreatedAt,
+		&i.Hidden,
 	)
 	return i, err
 }
@@ -329,7 +331,7 @@ func (q *Queries) ListFormatSymbols(ctx context.Context, versionID string) ([]Li
 
 const listFormatTemplates = `-- name: ListFormatTemplates :many
 SELECT t.id, t.name, t.document_type_id, d.key AS document_type_key, d.name AS document_type_name,
-       t.methodology, t.customer_id, c.code AS customer_code, t.created_at
+       t.methodology, t.customer_id, c.code AS customer_code, t.created_at, t.hidden
 FROM format_templates t
 JOIN document_types d ON d.id = t.document_type_id
 LEFT JOIN customers c ON c.id = t.customer_id
@@ -346,6 +348,7 @@ type ListFormatTemplatesRow struct {
 	CustomerID       *string
 	CustomerCode     *string
 	CreatedAt        time.Time
+	Hidden           bool
 }
 
 // ListFormatTemplates mengambil semua format template, menurut urutan jenis
@@ -369,6 +372,7 @@ func (q *Queries) ListFormatTemplates(ctx context.Context) ([]ListFormatTemplate
 			&i.CustomerID,
 			&i.CustomerCode,
 			&i.CreatedAt,
+			&i.Hidden,
 		); err != nil {
 			return nil, err
 		}
@@ -665,6 +669,21 @@ type SetFormatHighlightsParams struct {
 
 func (q *Queries) SetFormatHighlights(ctx context.Context, arg SetFormatHighlightsParams) error {
 	_, err := q.db.Exec(ctx, setFormatHighlights, arg.ID, arg.HighlightRpnAbove, arg.HighlightSeverityAtLeast)
+	return err
+}
+
+const setFormatTemplateHidden = `-- name: SetFormatTemplateHidden :exec
+UPDATE format_templates SET hidden = $2 WHERE id = $1
+`
+
+type SetFormatTemplateHiddenParams struct {
+	ID     string
+	Hidden bool
+}
+
+// D-218: format template tersembunyi tidak ditawarkan untuk pilihan baru.
+func (q *Queries) SetFormatTemplateHidden(ctx context.Context, arg SetFormatTemplateHiddenParams) error {
+	_, err := q.db.Exec(ctx, setFormatTemplateHidden, arg.ID, arg.Hidden)
 	return err
 }
 

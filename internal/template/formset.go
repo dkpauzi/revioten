@@ -5,8 +5,8 @@ package template
 // Satu form set adalah paket versi format template untuk tiga sheet: PFD,
 // PFMEA, dan Control Plan. Dua set bawaan:
 //
-//	AIAG 4th set   PFD, PFMEA AIAG 4th (RPN), CP
-//	AIAG-VDA set   PFD yang sama, PFMEA AIAG-VDA 2019 (AP), Control Plan AIAG 2024
+//	AIAG 4th set   PFD, PFMEA v1 (RPN), CP
+//	AIAG-VDA set   PFD yang sama, PFMEA v2 (AP), Control Plan v2
 //
 // Setiap customer punya form set bawaan untuk dokumen baru; tanpa pilihan
 // berarti set bawaan sistem (AIAG 4th). Dokumen yang sudah ada nanti tetap
@@ -67,6 +67,7 @@ type FormSet struct {
 	Key      string // tetap, misalnya aiag_4th
 	Name     string
 	Default  bool             // set bawaan sistem untuk customer yang belum memilih
+	Hidden   bool             // D-218: tidak bisa dipilih customer
 	Versions []FormSetVersion // menurut nomor versi, tidak pernah nil
 }
 
@@ -187,6 +188,16 @@ func (s *Service) SetCustomerFormSet(ctx context.Context, actor access.Actor, cu
 		if err != nil {
 			return err
 		}
+		// D-218: set tersembunyi tidak bisa dipilih. Kunci barisnya supaya tidak
+		// bersamaan dengan SetFormSetHidden.
+		if formSetID != "" {
+			if err := q.LockFormSet(ctx, formSetID); err != nil {
+				return err
+			}
+			if fs, err := q.GetFormSet(ctx, formSetID); err == nil && fs.Hidden {
+				return problems(&problem.Problem{Field: "form_set_id", Code: problem.NotAllowed, Message: "This form set is hidden. Show it on the Form sets page first."})
+			}
+		}
 		after, err := name(optional(formSetID))
 		if err != nil {
 			return err
@@ -203,6 +214,58 @@ func (s *Service) SetCustomerFormSet(ctx context.Context, actor access.Actor, cu
 		})
 	})
 	return result(err, "menyimpan form set customer")
+}
+
+// SetFormSetHidden menyembunyikan atau menampilkan form set (E-11, D-218).
+// Set bawaan dan set yang dipilih customer tidak bisa disembunyikan.
+func (s *Service) SetFormSetHidden(ctx context.Context, actor access.Actor, id string, hidden bool) (FormSet, error) {
+	if err := s.authz.Authorize(ctx, actor, access.ManageMasterData, access.Resource{}); err != nil {
+		return FormSet{}, err
+	}
+	if !db.IsUUID(id) {
+		return FormSet{}, problem.ErrNotFound
+	}
+	err := db.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
+		q := s.q.WithTx(tx)
+		if err := q.LockFormSet(ctx, id); err != nil {
+			return err
+		}
+		fs, err := q.GetFormSet(ctx, id)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return problem.ErrNotFound
+		}
+		if err != nil {
+			return err
+		}
+		if fs.Hidden == hidden {
+			return nil
+		}
+		if hidden && fs.IsDefault {
+			return &problem.ConflictError{Problems: []problem.Problem{{Field: "hidden", Code: problem.NotAllowed,
+				Message: "The default form set cannot be hidden."}}}
+		}
+		if hidden {
+			codes, err := q.CustomersUsingFormSet(ctx, &id)
+			if err != nil {
+				return err
+			}
+			if len(codes) > 0 {
+				return &problem.ConflictError{Problems: []problem.Problem{{Field: "hidden", Code: problem.NotAllowed,
+					Message: fmt.Sprintf("Customers %v use this form set. Choose another form set for them first.", codes)}}}
+			}
+		}
+		if err := q.SetFormSetHidden(ctx, db.SetFormSetHiddenParams{ID: id, Hidden: hidden}); err != nil {
+			return err
+		}
+		return audit.Record(ctx, q, actor, audit.Event{
+			Action: audit.ActionFormSetHiddenChanged, TargetType: audit.TargetFormSet, TargetID: id,
+			Details: map[string]string{"hidden": audit.Change(strconv.FormatBool(fs.Hidden), strconv.FormatBool(hidden))},
+		})
+	})
+	if err := result(err, "menyembunyikan form set"); err != nil {
+		return FormSet{}, err
+	}
+	return getFormSet(ctx, s.q, id)
 }
 
 // CreateFormSet membuat form set baru dengan versi 1 berstatus draft (E-11).
@@ -454,7 +517,7 @@ func listFormSets(ctx context.Context, q *db.Queries) ([]FormSet, error) {
 	}
 	sets := make([]FormSet, 0, len(rows))
 	for _, r := range rows {
-		sets = append(sets, FormSet{ID: r.ID, Key: r.Key, Name: r.Name, Default: r.IsDefault, Versions: orNone(bySet[r.ID])})
+		sets = append(sets, FormSet{ID: r.ID, Key: r.Key, Name: r.Name, Default: r.IsDefault, Hidden: r.Hidden, Versions: orNone(bySet[r.ID])})
 	}
 	return sets, nil
 }

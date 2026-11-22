@@ -3535,8 +3535,11 @@ type FormApprover struct {
 // FormSet defines model for FormSet.
 type FormSet struct {
 	// Default The form set of customers that have not chosen one.
-	Default bool   `json:"default"`
-	Id      string `json:"id"`
+	Default bool `json:"default"`
+
+	// Hidden Cannot be chosen for a customer (D-218).
+	Hidden bool   `json:"hidden"`
+	Id     string `json:"id"`
 
 	// Key Fixed key, for example aiag_4th.
 	Key      string           `json:"key"`
@@ -3669,7 +3672,10 @@ type FormatTemplate struct {
 	// CustomerId Missing for a general format template; set for a customer SQAM format.
 	CustomerId   *string         `json:"customer_id,omitempty"`
 	DocumentType DocumentTypeRef `json:"document_type"`
-	Id           string          `json:"id"`
+
+	// Hidden Not offered for new choices (D-218).
+	Hidden bool   `json:"hidden"`
+	Id     string `json:"id"`
 
 	// Methodology Missing for the forms in use today (PFD, CP).
 	Methodology *FormatTemplateMethodology `json:"methodology,omitempty"`
@@ -3773,6 +3779,11 @@ type HealthDatabase string
 
 // HealthStatus defines model for Health.Status.
 type HealthStatus string
+
+// HiddenUpdate defines model for HiddenUpdate.
+type HiddenUpdate struct {
+	Hidden bool `json:"hidden"`
+}
 
 // HistoryEntry defines model for HistoryEntry.
 type HistoryEntry struct {
@@ -6670,6 +6681,9 @@ type SetFormSetSheetsJSONRequestBody = FormSetSheets
 // CreateFormSetJSONRequestBody defines body for CreateFormSet for application/json ContentType.
 type CreateFormSetJSONRequestBody = NewFormSet
 
+// SetFormSetHiddenJSONRequestBody defines body for SetFormSetHidden for application/json ContentType.
+type SetFormSetHiddenJSONRequestBody = HiddenUpdate
+
 // UpdateFormatHighlightsJSONRequestBody defines body for UpdateFormatHighlights for application/json ContentType.
 type UpdateFormatHighlightsJSONRequestBody = FormatHighlights
 
@@ -6693,6 +6707,9 @@ type CreateFormatTemplateJSONRequestBody = NewFormatTemplate
 
 // RenameFormatTemplateJSONRequestBody defines body for RenameFormatTemplate for application/json ContentType.
 type RenameFormatTemplateJSONRequestBody = FormatTemplateRename
+
+// SetFormatTemplateHiddenJSONRequestBody defines body for SetFormatTemplateHidden for application/json ContentType.
+type SetFormatTemplateHiddenJSONRequestBody = HiddenUpdate
 
 // UpdateFourMCategoryJSONRequestBody defines body for UpdateFourMCategory for application/json ContentType.
 type UpdateFourMCategoryJSONRequestBody = NameUpdate
@@ -7164,6 +7181,9 @@ type ServerInterface interface {
 	// CreateFormSet Add a form set with a draft version 1 (E-11, D-133)
 	// (POST /api/v1/form-sets)
 	CreateFormSet(w http.ResponseWriter, r *http.Request)
+	// SetFormSetHidden Hide or show a form set (E-11, D-218)
+	// (PUT /api/v1/form-sets/{formSetId}/hidden)
+	SetFormSetHidden(w http.ResponseWriter, r *http.Request, formSetId FormSetId)
 	// CreateFormSetVersion Make the next draft version of a form set from its last published version (E-11)
 	// (POST /api/v1/form-sets/{formSetId}/versions)
 	CreateFormSetVersion(w http.ResponseWriter, r *http.Request, formSetId FormSetId)
@@ -7203,6 +7223,9 @@ type ServerInterface interface {
 	// RenameFormatTemplate Rename a format template (E-11)
 	// (PUT /api/v1/format-templates/{formatTemplateId})
 	RenameFormatTemplate(w http.ResponseWriter, r *http.Request, formatTemplateId FormatTemplateId)
+	// SetFormatTemplateHidden Hide or show a format template (E-11, D-218)
+	// (PUT /api/v1/format-templates/{formatTemplateId}/hidden)
+	SetFormatTemplateHidden(w http.ResponseWriter, r *http.Request, formatTemplateId FormatTemplateId)
 	// CreateFormatVersion Make the next draft version of a format template from its last published version (E-11, R-TPL-05)
 	// (POST /api/v1/format-templates/{formatTemplateId}/versions)
 	CreateFormatVersion(w http.ResponseWriter, r *http.Request, formatTemplateId FormatTemplateId)
@@ -10396,6 +10419,32 @@ func (siw *ServerInterfaceWrapper) CreateFormSet(w http.ResponseWriter, r *http.
 	handler.ServeHTTP(w, r)
 }
 
+// SetFormSetHidden operation middleware
+func (siw *ServerInterfaceWrapper) SetFormSetHidden(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "formSetId" -------------
+	var formSetId FormSetId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "formSetId", r.PathValue("formSetId"), &formSetId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "formSetId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetFormSetHidden(w, r, formSetId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // CreateFormSetVersion operation middleware
 func (siw *ServerInterfaceWrapper) CreateFormSetVersion(w http.ResponseWriter, r *http.Request) {
 
@@ -10752,6 +10801,32 @@ func (siw *ServerInterfaceWrapper) RenameFormatTemplate(w http.ResponseWriter, r
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.RenameFormatTemplate(w, r, formatTemplateId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetFormatTemplateHidden operation middleware
+func (siw *ServerInterfaceWrapper) SetFormatTemplateHidden(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "formatTemplateId" -------------
+	var formatTemplateId FormatTemplateId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "formatTemplateId", r.PathValue("formatTemplateId"), &formatTemplateId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "formatTemplateId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetFormatTemplateHidden(w, r, formatTemplateId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -13420,6 +13495,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/format-templates", wrapper.ListFormatTemplates)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/format-templates", wrapper.CreateFormatTemplate)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/format-templates/{formatTemplateId}", wrapper.RenameFormatTemplate)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/format-templates/{formatTemplateId}/hidden", wrapper.SetFormatTemplateHidden)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/format-templates/{formatTemplateId}/versions", wrapper.CreateFormatVersion)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/format-template-versions/{formatVersionId}/ap-rules", wrapper.SetFormatApRules)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/format-template-versions/{formatVersionId}/action-priority", wrapper.GetActionPriority)
@@ -13534,6 +13610,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/documents/{documentId}/rows/{rowId}", wrapper.UpdateDocumentRow)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/form-sets", wrapper.ListFormSets)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/form-sets", wrapper.CreateFormSet)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/form-sets/{formSetId}/hidden", wrapper.SetFormSetHidden)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/form-sets/{formSetId}/versions", wrapper.CreateFormSetVersion)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/form-set-versions/{formSetVersionId}", wrapper.SetFormSetSheets)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/form-set-versions/{formSetVersionId}/publish", wrapper.PublishFormSetVersion)
@@ -17944,6 +18021,46 @@ func (response CreateFormSetdefaultJSONResponse) VisitCreateFormSetResponse(w ht
 	return err
 }
 
+type SetFormSetHiddenRequestObject struct {
+	FormSetId FormSetId `json:"formSetId"`
+	Body      *SetFormSetHiddenJSONRequestBody
+}
+
+type SetFormSetHiddenResponseObject interface {
+	VisitSetFormSetHiddenResponse(w http.ResponseWriter) error
+}
+
+type SetFormSetHidden200JSONResponse FormSet
+
+func (response SetFormSetHidden200JSONResponse) VisitSetFormSetHiddenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetFormSetHiddendefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response SetFormSetHiddendefaultJSONResponse) VisitSetFormSetHiddenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type CreateFormSetVersionRequestObject struct {
 	FormSetId FormSetId `json:"formSetId"`
 }
@@ -18448,6 +18565,46 @@ type RenameFormatTemplatedefaultJSONResponse struct {
 }
 
 func (response RenameFormatTemplatedefaultJSONResponse) VisitRenameFormatTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetFormatTemplateHiddenRequestObject struct {
+	FormatTemplateId FormatTemplateId `json:"formatTemplateId"`
+	Body             *SetFormatTemplateHiddenJSONRequestBody
+}
+
+type SetFormatTemplateHiddenResponseObject interface {
+	VisitSetFormatTemplateHiddenResponse(w http.ResponseWriter) error
+}
+
+type SetFormatTemplateHidden200JSONResponse FormatTemplate
+
+func (response SetFormatTemplateHidden200JSONResponse) VisitSetFormatTemplateHiddenResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SetFormatTemplateHiddendefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response SetFormatTemplateHiddendefaultJSONResponse) VisitSetFormatTemplateHiddenResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -22772,6 +22929,9 @@ type StrictServerInterface interface {
 	// CreateFormSet Add a form set with a draft version 1 (E-11, D-133)
 	// (POST /api/v1/form-sets)
 	CreateFormSet(ctx context.Context, request CreateFormSetRequestObject) (CreateFormSetResponseObject, error)
+	// SetFormSetHidden Hide or show a form set (E-11, D-218)
+	// (PUT /api/v1/form-sets/{formSetId}/hidden)
+	SetFormSetHidden(ctx context.Context, request SetFormSetHiddenRequestObject) (SetFormSetHiddenResponseObject, error)
 	// CreateFormSetVersion Make the next draft version of a form set from its last published version (E-11)
 	// (POST /api/v1/form-sets/{formSetId}/versions)
 	CreateFormSetVersion(ctx context.Context, request CreateFormSetVersionRequestObject) (CreateFormSetVersionResponseObject, error)
@@ -22811,6 +22971,9 @@ type StrictServerInterface interface {
 	// RenameFormatTemplate Rename a format template (E-11)
 	// (PUT /api/v1/format-templates/{formatTemplateId})
 	RenameFormatTemplate(ctx context.Context, request RenameFormatTemplateRequestObject) (RenameFormatTemplateResponseObject, error)
+	// SetFormatTemplateHidden Hide or show a format template (E-11, D-218)
+	// (PUT /api/v1/format-templates/{formatTemplateId}/hidden)
+	SetFormatTemplateHidden(ctx context.Context, request SetFormatTemplateHiddenRequestObject) (SetFormatTemplateHiddenResponseObject, error)
 	// CreateFormatVersion Make the next draft version of a format template from its last published version (E-11, R-TPL-05)
 	// (POST /api/v1/format-templates/{formatTemplateId}/versions)
 	CreateFormatVersion(ctx context.Context, request CreateFormatVersionRequestObject) (CreateFormatVersionResponseObject, error)
@@ -26306,6 +26469,39 @@ func (sh *strictHandler) CreateFormSet(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// SetFormSetHidden operation middleware
+func (sh *strictHandler) SetFormSetHidden(w http.ResponseWriter, r *http.Request, formSetId FormSetId) {
+	var request SetFormSetHiddenRequestObject
+
+	request.FormSetId = formSetId
+
+	var body SetFormSetHiddenJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetFormSetHidden(ctx, request.(SetFormSetHiddenRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetFormSetHidden")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetFormSetHiddenResponseObject); ok {
+		if err := validResponse.VisitSetFormSetHiddenResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // CreateFormSetVersion operation middleware
 func (sh *strictHandler) CreateFormSetVersion(w http.ResponseWriter, r *http.Request, formSetId FormSetId) {
 	var request CreateFormSetVersionRequestObject
@@ -26691,6 +26887,39 @@ func (sh *strictHandler) RenameFormatTemplate(w http.ResponseWriter, r *http.Req
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(RenameFormatTemplateResponseObject); ok {
 		if err := validResponse.VisitRenameFormatTemplateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SetFormatTemplateHidden operation middleware
+func (sh *strictHandler) SetFormatTemplateHidden(w http.ResponseWriter, r *http.Request, formatTemplateId FormatTemplateId) {
+	var request SetFormatTemplateHiddenRequestObject
+
+	request.FormatTemplateId = formatTemplateId
+
+	var body SetFormatTemplateHiddenJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetFormatTemplateHidden(ctx, request.(SetFormatTemplateHiddenRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetFormatTemplateHidden")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetFormatTemplateHiddenResponseObject); ok {
+		if err := validResponse.VisitSetFormatTemplateHiddenResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

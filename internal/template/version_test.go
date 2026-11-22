@@ -35,7 +35,7 @@ func lastAudit(t *testing.T, f fixture) (action, details string) {
 func TestPublishFormatVersion(t *testing.T) {
 	f := newFixture(t)
 	ctx := t.Context()
-	draft := f.version(t, "PFMEA AIAG 4th")
+	draft := f.version(t, "PFMEA v1")
 	if draft.Status != StatusDraft || draft.PublishedAt != nil {
 		t.Fatalf("versi awal: status %s, terbit %v", draft.Status, draft.PublishedAt)
 	}
@@ -53,7 +53,7 @@ func TestPublishFormatVersion(t *testing.T) {
 	if action, details := lastAudit(t, f); action != "format_template.version_published" || details != `{"version":"1"}` {
 		t.Errorf("entri audit: %s %s", action, details)
 	}
-	summary := f.template(t, "PFMEA AIAG 4th").Versions[0]
+	summary := f.template(t, "PFMEA v1").Versions[0]
 	if summary.Status != StatusPublished || summary.PublishedAt == nil {
 		t.Errorf("ringkasan versi: %+v", summary)
 	}
@@ -76,8 +76,8 @@ func TestPublishFormatVersion(t *testing.T) {
 func TestNewFormatVersion(t *testing.T) {
 	f := newFixture(t)
 	ctx := t.Context()
-	ft := f.template(t, "PFMEA AIAG 4th")
-	v1 := f.version(t, "PFMEA AIAG 4th")
+	ft := f.template(t, "PFMEA v1")
+	v1 := f.version(t, "PFMEA v1")
 
 	// Masih ada draft: versi baru ditolak.
 	if _, err := f.s.NewFormatVersion(ctx, f.master, ft.ID); !slices.Equal(problemCodes(t, err), []string{"status:not_allowed"}) {
@@ -130,7 +130,7 @@ func TestNewFormatVersion(t *testing.T) {
 	if _, err := f.s.NewFormatVersion(ctx, f.master, ft.ID); !slices.Equal(problemCodes(t, err), []string{"status:not_allowed"}) {
 		t.Errorf("versi baru kedua: %v", err)
 	}
-	if got := f.template(t, "PFMEA AIAG 4th").Versions; len(got) != 2 || got[1].Version != 2 {
+	if got := f.template(t, "PFMEA v1").Versions; len(got) != 2 || got[1].Version != 2 {
 		t.Errorf("ringkasan versi: %+v", got)
 	}
 }
@@ -154,8 +154,8 @@ func TestPublishedFormatGuards(t *testing.T) {
 	f.master = newActor(t, app, "ppap.master", access.AccountWork, access.RolePPAPEngineer)
 	f.author = newActor(t, app, "penyusun.uji", access.AccountWork, access.RoleAuthor)
 	ctx := t.Context()
-	ft := f.template(t, "PFMEA AIAG 4th")
-	v1 := f.version(t, "PFMEA AIAG 4th")
+	ft := f.template(t, "PFMEA v1")
+	v1 := f.version(t, "PFMEA v1")
 	asOwner := func(sql string, args ...any) error {
 		_, err := owner.Exec(ctx, sql, args...)
 		return err

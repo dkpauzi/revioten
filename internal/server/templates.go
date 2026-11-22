@@ -47,6 +47,15 @@ func (a *apiServer) RenameFormatTemplate(ctx context.Context, req RenameFormatTe
 	return RenameFormatTemplate200JSONResponse(toAPIFormatTemplate(renamed)), nil
 }
 
+// SetFormatTemplateHidden menjawab PUT /api/v1/format-templates/{formatTemplateId}/hidden (D-218).
+func (a *apiServer) SetFormatTemplateHidden(ctx context.Context, req SetFormatTemplateHiddenRequestObject) (SetFormatTemplateHiddenResponseObject, error) {
+	ft, err := a.templates.SetFormatTemplateHidden(ctx, actorFrom(ctx), req.FormatTemplateId, req.Body.Hidden)
+	if err != nil {
+		return nil, err
+	}
+	return SetFormatTemplateHidden200JSONResponse(toAPIFormatTemplate(ft)), nil
+}
+
 // GetFormatVersion menjawab GET /api/v1/format-template-versions/{formatVersionId}.
 func (a *apiServer) GetFormatVersion(ctx context.Context, req GetFormatVersionRequestObject) (GetFormatVersionResponseObject, error) {
 	v, err := a.templates.GetFormatVersion(ctx, actorFrom(ctx), req.FormatVersionId)
@@ -174,7 +183,7 @@ func (a *apiServer) SaveFormatSymbols(ctx context.Context, req SaveFormatSymbols
 // toAPIFormatTemplate mengubah FormatTemplate domain menjadi FormatTemplate kontrak API.
 func toAPIFormatTemplate(t template.FormatTemplate) FormatTemplate {
 	out := FormatTemplate{
-		Id: t.ID, Name: t.Name, CreatedAt: t.CreatedAt,
+		Id: t.ID, Name: t.Name, Hidden: t.Hidden, CreatedAt: t.CreatedAt,
 		DocumentType: DocumentTypeRef{Id: t.DocumentTypeID, Key: DocumentTypeRefKey(t.DocumentTypeKey), Name: t.DocumentTypeName},
 		Versions:     make([]FormatVersionSummary, 0, len(t.Versions)),
 	}

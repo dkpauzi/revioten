@@ -167,11 +167,14 @@ const (
 	// Format template (Tahap 3). Sasarannya selalu template; versinya ada di rincian.
 	ActionFormatTemplateCreated = "format_template.created"
 	ActionFormatTemplateRenamed = "format_template.renamed"
-	ActionFormatSettingsChanged = "format_template.settings_changed"
-	ActionFormatFieldAdded      = "format_template.field_added"
-	ActionFormatFieldChanged    = "format_template.field_changed"
-	ActionFormatRatingsChanged  = "format_template.ratings_changed"
-	ActionFormatSymbolsChanged  = "format_template.symbols_changed"
+	// D-218: format template dan form set disembunyikan atau ditampilkan.
+	ActionFormatTemplateHiddenChanged = "format_template.hidden_changed"
+	ActionFormSetHiddenChanged        = "form_set.hidden_changed"
+	ActionFormatSettingsChanged       = "format_template.settings_changed"
+	ActionFormatFieldAdded            = "format_template.field_added"
+	ActionFormatFieldChanged          = "format_template.field_changed"
+	ActionFormatRatingsChanged        = "format_template.ratings_changed"
+	ActionFormatSymbolsChanged        = "format_template.symbols_changed"
 	// M3.4: versi terbit dan versi baru (R-TPL-05).
 	ActionFormatVersionPublished = "format_template.version_published"
 	ActionFormatVersionCreated   = "format_template.version_created"

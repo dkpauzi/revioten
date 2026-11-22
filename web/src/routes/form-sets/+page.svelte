@@ -11,12 +11,13 @@
 		listFormatTemplates,
 		publishFormSetVersion,
 		setCustomerFormSet,
+		setFormSetHidden,
 		setFormSetSheets,
 		type ApiFailure
 	} from '#lib/api/client.ts';
 	import type { FormSet, FormSetList, FormSetVersion, FormatTemplate } from '#lib/api/gen/index.ts';
 	import { failureText, problemText } from '#lib/errors.ts';
-	import { formSetNameOf, sheetKeys, sheetOptions, sheetText, type SheetKey } from '#lib/formSets.ts';
+	import { formSetNameOf, sheetKeys, sheetOptions, sheetText, visibleItems, type SheetKey } from '#lib/formSets.ts';
 	import { t, type MessageKey } from '#lib/i18n/index.ts';
 	import { can } from '#lib/session.svelte.ts';
 	import Approvals from '#lib/templates/Approvals.svelte';
@@ -31,6 +32,9 @@
 	let loadError = $state('');
 	let canEdit = $derived(can('E-11'));
 	let canApprove = $derived(can('V-3'));
+	// D-218: form set tersembunyi hanya tampil bila Show hidden dicentang.
+	let showHidden = $state(false);
+	let visibleSets = $derived(visibleItems(list?.items ?? [], showHidden));
 
 	// Versi yang sedang dibuka per form set (id form set ke id versi).
 	let shown = $state<Record<string, string>>({});
@@ -158,6 +162,18 @@
 		message = t('formSetCustomerSaved', { code });
 	}
 
+	// setHidden menyembunyikan atau menampilkan satu form set (E-11, D-218).
+	async function setHidden(fs: FormSet, hidden: boolean) {
+		reset();
+		const result = await setFormSetHidden(fs.id, hidden);
+		if (!result.ok) {
+			showErrors(result.error);
+			return;
+		}
+		await load();
+		message = t(hidden ? 'formSetHidden' : 'formSetShown', { name: result.data.name });
+	}
+
 	async function create(event: SubmitEvent) {
 		event.preventDefault();
 		reset();
@@ -194,18 +210,29 @@
 	{#if !canEdit}<p class="hint">{t('formSetsReadOnly')}</p>{/if}
 	{#if message}<p role="status">{message}</p>{/if}
 	{#if failure}<p class="error" role="alert">{failure}</p>{/if}
-	{#each ['status', 'sheets', 'approver'] as field (field)}
+	{#each ['status', 'sheets', 'approver', 'hidden'] as field (field)}
 		{#if fieldErrors[field]}<p class="error" role="alert">{fieldErrors[field]}</p>{/if}
 	{/each}
 
-	{#each list.items as fs (fs.id)}
+	<p class="hint">{t('formSetHiddenHint')}</p>
+	<label class="check"><input type="checkbox" bind:checked={showHidden} /> {t('showHidden')}</label>
+
+	{#each visibleSets as fs (fs.id)}
 		{@const v = current(fs)}
 		<section aria-labelledby="set-{fs.id}">
 			<h2 id="set-{fs.id}">
 				{fs.name}
 				{#if fs.default}<span class="badge">{t('formSetDefault')}</span>{/if}
+				{#if fs.hidden}<span class="badge">{t('hiddenMark')}</span>{/if}
 			</h2>
 			{#if fs.default}<p class="hint">{t('formSetDefaultHint')}</p>{/if}
+			{#if canEdit && !fs.default}
+				<p>
+					<button type="button" onclick={() => setHidden(fs, !fs.hidden)}>
+						{t(fs.hidden ? 'formSetShowFor' : 'formSetHideFor', { name: fs.name })}
+					</button>
+				</p>
+			{/if}
 			{#if v}
 				<VersionBar
 					id="form-set-{fs.key}"
@@ -228,7 +255,7 @@
 							<div class="field">
 								<label for="sheet-{v.id}-{key}">{t(sheetLabels[key])}</label>
 								<select id="sheet-{v.id}-{key}" bind:value={() => sheetsOf(v)[key], (id) => setSheet(v, key, id)}>
-									{#each sheetOptions(templates, key) as o (o.id)}
+									{#each sheetOptions(templates, key, sheetsOf(v)[key]) as o (o.id)}
 										<option value={o.id}>{o.label}</option>
 									{/each}
 								</select>
@@ -275,7 +302,7 @@
 									onchange={(e) => chooseCustomerSet(c.customer_id, c.customer_code, e.currentTarget.value)}
 								>
 									<option value="">{t('formSetUseDefault', { name: formSetNameOf(list.items, undefined) })}</option>
-									{#each list.items as fs (fs.id)}
+									{#each visibleItems(list.items, false, c.form_set_id ?? '') as fs (fs.id)}
 										<option value={fs.id}>{fs.name}</option>
 									{/each}
 								</select>

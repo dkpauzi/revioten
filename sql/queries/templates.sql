@@ -2,7 +2,7 @@
 -- ListFormatTemplates mengambil semua format template, menurut urutan jenis
 -- dokumen lalu nama (M3.1).
 SELECT t.id, t.name, t.document_type_id, d.key AS document_type_key, d.name AS document_type_name,
-       t.methodology, t.customer_id, c.code AS customer_code, t.created_at
+       t.methodology, t.customer_id, c.code AS customer_code, t.created_at, t.hidden
 FROM format_templates t
 JOIN document_types d ON d.id = t.document_type_id
 LEFT JOIN customers c ON c.id = t.customer_id
@@ -10,7 +10,7 @@ ORDER BY d.position, lower(t.name);
 
 -- name: GetFormatTemplate :one
 SELECT t.id, t.name, t.document_type_id, d.key AS document_type_key, d.name AS document_type_name,
-       t.methodology, t.customer_id, c.code AS customer_code, t.created_at
+       t.methodology, t.customer_id, c.code AS customer_code, t.created_at, t.hidden
 FROM format_templates t
 JOIN document_types d ON d.id = t.document_type_id
 LEFT JOIN customers c ON c.id = t.customer_id
@@ -28,6 +28,10 @@ RETURNING id;
 
 -- name: RenameFormatTemplate :exec
 UPDATE format_templates SET name = $2 WHERE id = $1;
+
+-- name: SetFormatTemplateHidden :exec
+-- D-218: format template tersembunyi tidak ditawarkan untuk pilihan baru.
+UPDATE format_templates SET hidden = $2 WHERE id = $1;
 
 -- name: ListFormatVersions :many
 -- ListFormatVersions mengambil semua versi semua template, untuk daftar template.

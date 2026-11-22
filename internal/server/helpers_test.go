@@ -452,6 +452,16 @@ func (f *fakeTemplates) RenameFormatTemplate(_ context.Context, _ access.Actor, 
 	return f.template, f.err
 }
 
+func (f *fakeTemplates) SetFormatTemplateHidden(_ context.Context, _ access.Actor, id string, hidden bool) (template.FormatTemplate, error) {
+	f.got = called{method: "SetFormatTemplateHidden", id: id, input: hidden}
+	return f.template, f.err
+}
+
+func (f *fakeTemplates) SetFormSetHidden(_ context.Context, _ access.Actor, id string, hidden bool) (template.FormSet, error) {
+	f.got = called{method: "SetFormSetHidden", id: id, input: hidden}
+	return template.FormSet{ID: id, Hidden: hidden, Versions: []template.FormSetVersion{}}, f.err
+}
+
 func (f *fakeTemplates) AddField(_ context.Context, _ access.Actor, versionID string, in template.NewField) (template.FormatVersion, error) {
 	f.got, f.gotNew = called{method: "AddField", id: versionID}, in
 	return f.version, f.err

@@ -132,7 +132,7 @@ func problemCodes(t *testing.T, err error) []string {
 }
 
 // TestSeededTemplates: isi awal M3.1 dari kolom form yang dipakai sekarang
-// (F-09 sampai F-11): PFD, PFMEA AIAG 4th dengan RPN, dan CP, masing-masing
+// (F-09 sampai F-11): PFD, PFMEA v1 dengan RPN, dan CP, masing-masing
 // versi 1 berstatus draft.
 func TestSeededTemplates(t *testing.T) {
 	f := newFixture(t)
@@ -147,13 +147,14 @@ func TestSeededTemplates(t *testing.T) {
 			t.Errorf("%s: versi %+v", ft.Name, ft.Versions)
 		}
 	}
-	// Sejak migrasi 00018 ada dua form baru: PFMEA AIAG-VDA 2019 dan Control Plan AIAG 2024 (D-133).
-	want := []string{"PFD:pfd:", "PFMEA AIAG 4th:pfmea:aiag_4th", "PFMEA AIAG-VDA 2019:pfmea:aiag_vda", "Control Plan AIAG 2024:cp:aiag_cp_2024", "CP:cp:"}
+	// Sejak migrasi 00018 ada dua form baru: PFMEA v2 dan Control Plan v2 (D-133).
+	// Sejak migrasi 00054 namanya v1 dan v2 (D-218), diurutkan menurut nama.
+	want := []string{"PFD v1:pfd:", "PFMEA v1:pfmea:aiag_4th", "PFMEA v2:pfmea:aiag_vda", "Control Plan v1:cp:", "Control Plan v2:cp:aiag_cp_2024"}
 	if !slices.Equal(names, want) {
 		t.Errorf("format template = %v, ingin %v", names, want)
 	}
 
-	v := f.version(t, "PFMEA AIAG 4th")
+	v := f.version(t, "PFMEA v1")
 	if v.RiskMethod != RiskRPN || v.HighlightRPNAbove != 100 || v.HighlightSeverityAtLeast != 8 {
 		t.Errorf("PFMEA: metode %s, sorot %d dan %d", v.RiskMethod, v.HighlightRPNAbove, v.HighlightSeverityAtLeast)
 	}
@@ -185,7 +186,7 @@ func TestSeededTemplates(t *testing.T) {
 		t.Errorf("simbol PFMEA: %+v", v.Symbols)
 	}
 
-	cp := f.version(t, "CP")
+	cp := f.version(t, "Control Plan v1")
 	wantCP := []string{"Process Flow", "No", "Process Name / Operation Description",
 		"Machine, Equipment, Jigs, Fixture, Tools for Mfg", "Product Characteristics", "Product Specification / Tolerance",
 		"Process Characteristics", "Process Specification / Tolerance", "Special Characteristics", "Equipment", "Method",
@@ -211,7 +212,7 @@ func TestSeededTemplates(t *testing.T) {
 	if !cp.Symbols[1].Automatic {
 		t.Errorf("simbol Revision di CP harus otomatis: %+v", cp.Symbols)
 	}
-	pfd := f.version(t, "PFD")
+	pfd := f.version(t, "PFD v1")
 	if got := labels(pfd, AreaRow); !slices.Equal(got, []string{"No", "Process", "Flow Symbol", "NG Disposition"}) {
 		t.Errorf("kolom PFD: %v", got)
 	}
@@ -227,7 +228,7 @@ func TestSeededTemplates(t *testing.T) {
 func TestRenameKeepsData(t *testing.T) {
 	f := newFixture(t)
 	ctx := t.Context()
-	v := f.version(t, "PFMEA AIAG 4th")
+	v := f.version(t, "PFMEA v1")
 	mode, sev, occ, det := field(t, v, "Potential Failure Mode"), field(t, v, "Severity"), field(t, v, "Occurrence"), field(t, v, "Detection")
 	req, class := field(t, v, "Requirement"), field(t, v, "Class")
 	content := map[string]any{
@@ -278,10 +279,10 @@ func TestRenameKeepsData(t *testing.T) {
 func TestFieldRules(t *testing.T) {
 	f := newFixture(t)
 	ctx := t.Context()
-	pfmeaV := f.version(t, "PFMEA AIAG 4th")
-	cp := f.version(t, "CP")
+	pfmeaV := f.version(t, "PFMEA v1")
+	cp := f.version(t, "Control Plan v1")
 	mode := field(t, pfmeaV, "Potential Failure Mode")
-	pfd := f.version(t, "PFD")
+	pfd := f.version(t, "PFD v1")
 	flow := field(t, pfd, "Flow Symbol")
 
 	adds := []struct {
@@ -316,7 +317,7 @@ func TestFieldRules(t *testing.T) {
 	}
 	// Template kosong boleh menambah kolom terisi otomatis, misalnya format CP
 	// customer yang dibuat dari nol.
-	empty, err := f.s.CreateFormatTemplate(ctx, f.master, NewTemplate{Name: "CP kosong", DocumentTypeID: f.template(t, "CP").DocumentTypeID, RiskMethod: RiskNone})
+	empty, err := f.s.CreateFormatTemplate(ctx, f.master, NewTemplate{Name: "CP kosong", DocumentTypeID: f.template(t, "Control Plan v1").DocumentTypeID, RiskMethod: RiskNone})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -364,7 +365,7 @@ func TestFieldRules(t *testing.T) {
 // bersambung.
 func TestMoveField(t *testing.T) {
 	f := newFixture(t)
-	v := f.version(t, "CP")
+	v := f.version(t, "Control Plan v1")
 	spec := field(t, v, "Product Specification / Tolerance")
 	v, err := f.s.UpdateField(t.Context(), f.master, v.ID, spec.ID, FieldUpdate{Label: spec.Label, Position: new(2)})
 	if err != nil {
@@ -404,8 +405,8 @@ func TestCreateTemplate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	pfmeaT := f.template(t, "PFMEA AIAG 4th")
-	cpT := f.template(t, "CP")
+	pfmeaT := f.template(t, "PFMEA v1")
+	cpT := f.template(t, "Control Plan v1")
 
 	sqam, err := f.s.CreateFormatTemplate(ctx, f.master, NewTemplate{
 		Name: "PFMEA SQAM KT", DocumentTypeID: pfmeaT.DocumentTypeID, Methodology: MethodSQAM, CustomerID: kt.ID, RiskMethod: RiskAP,
@@ -422,7 +423,7 @@ func TestCreateTemplate(t *testing.T) {
 	}
 
 	copied, err := f.s.CreateFormatTemplate(ctx, f.master, NewTemplate{
-		Name: "PFMEA AIAG 4th copy", DocumentTypeID: pfmeaT.DocumentTypeID, Methodology: MethodAIAG4th, CopyFromVersionID: pfmeaT.Versions[0].ID,
+		Name: "PFMEA v1 copy", DocumentTypeID: pfmeaT.DocumentTypeID, Methodology: MethodAIAG4th, CopyFromVersionID: pfmeaT.Versions[0].ID,
 	})
 	if err != nil {
 		t.Fatalf("salinan: %v", err)
@@ -431,7 +432,7 @@ func TestCreateTemplate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	source := f.version(t, "PFMEA AIAG 4th")
+	source := f.version(t, "PFMEA v1")
 	if !slices.Equal(labels(cv, AreaRow), labels(source, AreaRow)) || cv.RiskMethod != RiskRPN || cv.HighlightRPNAbove != 100 || len(cv.Ratings) != 30 || len(cv.Symbols) != 4 {
 		t.Errorf("salinan: %+v", cv)
 	}
@@ -448,7 +449,7 @@ func TestCreateTemplate(t *testing.T) {
 		want []string
 	}{
 		{"semua kosong", NewTemplate{}, []string{"name:required", "document_type_id:required", "risk_method:required"}},
-		{"nama dipakai", NewTemplate{Name: "pfd", DocumentTypeID: pfmeaT.DocumentTypeID, RiskMethod: RiskRPN}, []string{"name:taken"}},
+		{"nama dipakai", NewTemplate{Name: "pfd V1", DocumentTypeID: pfmeaT.DocumentTypeID, RiskMethod: RiskRPN}, []string{"name:taken"}},
 		{"metodologi tidak dikenal", NewTemplate{Name: "X", DocumentTypeID: pfmeaT.DocumentTypeID, Methodology: "iso", RiskMethod: RiskRPN}, []string{"methodology:invalid_format"}},
 		{"salinan jenis lain", NewTemplate{Name: "X", DocumentTypeID: cpT.DocumentTypeID, CopyFromVersionID: pfmeaT.Versions[0].ID}, []string{"copy_from_version_id:not_allowed"}},
 		{"customer tidak ada", NewTemplate{Name: "X", DocumentTypeID: cpT.DocumentTypeID, CustomerID: "01a180aa-a98b-7bf2-8e0d-b97a25ecc489", RiskMethod: RiskNone}, []string{"customer_id:invalid_format"}},
@@ -473,7 +474,7 @@ func TestCreateTemplate(t *testing.T) {
 func TestRatingsSymbolsAndHighlights(t *testing.T) {
 	f := newFixture(t)
 	ctx := t.Context()
-	v := f.version(t, "PFMEA AIAG 4th")
+	v := f.version(t, "PFMEA v1")
 
 	v, err := f.s.SetRatingCriteria(ctx, f.master, v.ID, []Rating{
 		{Scale: ScaleSeverity, Value: 10, Criteria: "Hazardous without warning (contoh)"},
@@ -488,7 +489,7 @@ func TestRatingsSymbolsAndHighlights(t *testing.T) {
 	if _, err := f.s.SetRatingCriteria(ctx, f.master, v.ID, []Rating{{Scale: "x", Value: 11}}); !slices.Equal(problemCodes(t, err), []string{"ratings:invalid_format"}) {
 		t.Errorf("skala salah: %v", err)
 	}
-	cp := f.version(t, "CP")
+	cp := f.version(t, "Control Plan v1")
 	if _, err := f.s.SetRatingCriteria(ctx, f.master, cp.ID, []Rating{{Scale: ScaleSeverity, Value: 1, Criteria: "x"}}); !slices.Equal(problemCodes(t, err), []string{"ratings:not_allowed"}) {
 		t.Errorf("tabel skala untuk CP tanpa metode risiko: %v", err)
 	}
@@ -526,8 +527,8 @@ func TestRatingsSymbolsAndHighlights(t *testing.T) {
 func TestPermissionsAndAudit(t *testing.T) {
 	f := newFixture(t)
 	ctx := t.Context()
-	v := f.version(t, "PFD")
-	ft := f.template(t, "PFD")
+	v := f.version(t, "PFD v1")
+	ft := f.template(t, "PFD v1")
 	if _, err := f.s.AddField(ctx, f.author, v.ID, NewField{Area: AreaRow, Kind: KindText, Label: "Note"}); !errors.Is(err, access.ErrForbidden) {
 		t.Errorf("Penyusun menambah kolom: %v", err)
 	}

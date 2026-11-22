@@ -1234,6 +1234,10 @@ export type FormatTemplateList = {
 export type FormatTemplate = {
     id: string;
     name: string;
+    /**
+     * Not offered for new choices (D-218).
+     */
+    hidden: boolean;
     document_type: DocumentTypeRef;
     /**
      * Missing for the forms in use today (PFD, CP).
@@ -1269,6 +1273,10 @@ export type NewFormatTemplate = {
      */
     risk_method?: 'rpn' | 'ap' | 'none';
     copy_from_version_id?: string;
+};
+
+export type HiddenUpdate = {
+    hidden: boolean;
 };
 
 export type FormatTemplateRename = {
@@ -3010,6 +3018,10 @@ export type FormSet = {
      * The form set of customers that have not chosen one.
      */
     default: boolean;
+    /**
+     * Cannot be chosen for a customer (D-218).
+     */
+    hidden: boolean;
     versions: Array<FormSetVersion>;
 };
 
@@ -6691,6 +6703,41 @@ export type RenameFormatTemplateResponses = {
 };
 
 export type RenameFormatTemplateResponse = RenameFormatTemplateResponses[keyof RenameFormatTemplateResponses];
+
+export type SetFormatTemplateHiddenData = {
+    body: HiddenUpdate;
+    path: {
+        formatTemplateId: string;
+    };
+    query?: never;
+    url: '/api/v1/format-templates/{formatTemplateId}/hidden';
+};
+
+export type SetFormatTemplateHiddenErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type SetFormatTemplateHiddenError = SetFormatTemplateHiddenErrors[keyof SetFormatTemplateHiddenErrors];
+
+export type SetFormatTemplateHiddenResponses = {
+    /**
+     * The format template.
+     */
+    200: FormatTemplate;
+};
+
+export type SetFormatTemplateHiddenResponse = SetFormatTemplateHiddenResponses[keyof SetFormatTemplateHiddenResponses];
 
 export type CreateFormatVersionData = {
     body?: never;
@@ -10707,6 +10754,41 @@ export type CreateFormSetResponses = {
 };
 
 export type CreateFormSetResponse = CreateFormSetResponses[keyof CreateFormSetResponses];
+
+export type SetFormSetHiddenData = {
+    body: HiddenUpdate;
+    path: {
+        formSetId: string;
+    };
+    query?: never;
+    url: '/api/v1/form-sets/{formSetId}/hidden';
+};
+
+export type SetFormSetHiddenErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type SetFormSetHiddenError = SetFormSetHiddenErrors[keyof SetFormSetHiddenErrors];
+
+export type SetFormSetHiddenResponses = {
+    /**
+     * The form set.
+     */
+    200: FormSet;
+};
+
+export type SetFormSetHiddenResponse = SetFormSetHiddenResponses[keyof SetFormSetHiddenResponses];
 
 export type CreateFormSetVersionData = {
     body?: never;

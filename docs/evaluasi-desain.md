@@ -158,6 +158,8 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-140 | Nomor dari satu impor dianggap satu set | Celah | M2.5, M7.1, C4 | Tidak | Diputuskan (D-216) |
 | E-141 | Alur migrasi dokumen lama tersebar di banyak menu | Penyederhanaan | M7.1, M7.5 | Tidak | Diputuskan (D-215) |
 | E-142 | Rincian menu migrasi yang belum diputuskan | Celah | D-215, D-216 | Tidak | Diputuskan (D-217) |
+| E-143 | Password standar untuk akun hasil import | Kontradiksi | D-132, D-85 | Tidak | Terbuka |
+| E-144 | Cetakan dan simbol alur belum sama dengan dokumen Tokairika | Celah | R-PRT-07, D-122, D-161 | Tidak | Terbuka |
 
 ## Keputusan 4 November 2026
 
@@ -2468,6 +2470,31 @@ Salin blok ini untuk setiap temuan baru.
 - **Menghambat milestone?** Tidak
 - **Status:** Diputuskan (D-217)
 - **Keputusan pemilik:** 22 November 2026: "E-142 ok, sesuai rekomendasi", jadi opsi (a), seperti yang dibangun.
+
+### E-143 · Password standar untuk akun hasil import
+
+- **Tanggal dan milestone:** 22 November 2026, rencana import (`docs/rencana/import-tur-dan-logo.md`, I1).
+- **Jenis:** Kontradiksi
+- **Rujukan:** D-132, D-85, R-SEC-11 (setiap akun mengurus akunnya sendiri).
+- **Temuan:** Pemilik meminta semua akun hasil import memakai password `password123`, lalu wajib diganti saat login pertama. D-132 menolak password yang ada di daftar terlarang, dan `password123` ada di daftar itu. Satu password yang sama dan mudah ditebak juga berarti siapa pun yang tahu nama login seseorang bisa masuk lebih dulu dan memilih password orang itu.
+- **Opsi:** (a) `password123` persis seperti diminta; daftar terlarang hanya untuk password pilihan pengguna. (b) Seperti (a), tetapi hanya saat Migration mode menyala, dan password sementara kedaluwarsa 7 hari. (c) Password sementara acak per akun, ditampilkan sekali dan bisa diunduh.
+- **Rekomendasi Claude Code (usulan):** (b).
+- **Menghambat milestone?** Tidak (I1 belum dimulai).
+- **Status:** Terbuka
+
+### E-144 · Cetakan dan simbol alur belum sama dengan dokumen Tokairika
+
+- **Tanggal dan milestone:** 22 November 2026, pemeriksaan cetakan SC-TR-002, SF-TR-002, dan SH-TR-002 terhadap set TR-020.
+- **Jenis:** Celah
+- **Rujukan:** R-PRT-07, D-122, D-161, D-211.
+- **Temuan:**
+  - Cover dan kepala lembar CP dan PFMEA memakai satu bentuk umum (label dan isi), tidak seperti form Tokairika. Tidak ada nama perusahaan dan logo, Part Name, Product, Remark, legenda simbol, judul grup kolom, dan slot General Mgr. di cover.
+  - Di kolom Process Flow, NCP dan SCRAP hanya berupa tulisan, padahal di referensi berupa kotak *predefined process*. Router (6.1) di referensi punya cabang NG ke SCRAP tanpa label OK; sistem selalu menulis OK.
+  - Cetakan PFD hanya memakai simbol kecil bernomor. Di referensi, kotak proses berisi nomor dan nama, inspeksi berupa kotak lalu belah ketupat, dan ada legenda.
+  - Rework: pemilik memutuskan kotak REWORK tanpa panah balik (jawaban 22 November 2026).
+- **Opsi:** bagian B (simbol alur) dan C (cover dan header) sesuai rencana yang disampaikan ke pemilik.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka (menunggu bagian B dan C)
 
 ## Usulan desain UI (UX-01 sampai UX-07): dampak ke M0 sampai M3 dan saran
 

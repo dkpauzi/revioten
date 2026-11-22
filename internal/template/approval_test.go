@@ -71,7 +71,7 @@ func TestApprovalAll(t *testing.T) {
 	if _, err := f.pool.Exec(ctx, "UPDATE accounts SET disabled_at = now() WHERE id = $1", second.AccountID); err != nil {
 		t.Fatal(err)
 	}
-	vda := f.version(t, "PFMEA AIAG-VDA 2019")
+	vda := f.version(t, "PFMEA v2")
 	if v, err := f.s.PublishFormatVersion(ctx, f.approver, vda.ID); err != nil || v.Status != StatusPublished {
 		t.Errorf("format AP dengan satu penyetuju aktif: %s, %v", v.Status, err)
 	}
@@ -100,7 +100,7 @@ func TestApprovalAny(t *testing.T) {
 func TestApprovalPreparerNotCounted(t *testing.T) {
 	f := newFormSetFixture(t)
 	ctx := t.Context()
-	vda := f.version(t, "PFMEA AIAG-VDA 2019")
+	vda := f.version(t, "PFMEA v2")
 	changed := DefaultAPRules()
 	changed[0].Priority = "M"
 	// Penyetuju form sendiri tidak punya A-2, jadi admin yang mengubah; lalu

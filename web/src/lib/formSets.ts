@@ -13,16 +13,26 @@ export function sheetText(sheet: FormSetSheet): string {
 	return t('formSetSheetOption', { template: sheet.template_name, version: String(sheet.version), status: statusText(sheet.status) });
 }
 
+// visibleItems menyaring daftar menurut saklar hidden (D-218): yang
+// tersembunyi hanya tampil bila Show hidden dicentang, atau bila sedang dipilih.
+export function visibleItems<T extends { id: string; hidden: boolean }>(items: T[], showHidden: boolean, keepId = ''): T[] {
+	return items.filter((item) => showHidden || !item.hidden || item.id === keepId);
+}
+
 // sheetOptions memberi pilihan versi format untuk satu sheet: semua versi
-// dari template dengan jenis dokumen itu. Server tetap memeriksa jenisnya.
-export function sheetOptions(templates: FormatTemplate[], sheet: SheetKey): { id: string; label: string }[] {
+// dari template dengan jenis dokumen itu. Template tersembunyi tidak
+// ditawarkan, kecuali versi currentId yang sedang dipakai (D-218). Server
+// tetap memeriksa jenisnya.
+export function sheetOptions(templates: FormatTemplate[], sheet: SheetKey, currentId = ''): { id: string; label: string }[] {
 	return templates
 		.filter((ft) => ft.document_type.key === sheet)
 		.flatMap((ft) =>
-			ft.versions.map((v) => ({
-				id: v.id,
-				label: t('formSetSheetOption', { template: ft.name, version: String(v.version), status: statusText(v.status) })
-			}))
+			ft.versions
+				.filter((v) => !ft.hidden || v.id === currentId)
+				.map((v) => ({
+					id: v.id,
+					label: t('formSetSheetOption', { template: ft.name, version: String(v.version), status: statusText(v.status) })
+				}))
 		);
 }
 

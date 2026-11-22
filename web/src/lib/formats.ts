@@ -82,9 +82,10 @@ export function riskText(risk: FormatVersion['risk_method']): string {
 }
 
 // templateLabel menulis satu format template untuk daftar pilihan, misalnya
-// "PFMEA AIAG 4th · PFMEA" atau "PFMEA SQAM · PFMEA · KT".
+// "PFMEA v1 · PFMEA" atau "PFMEA SQAM · PFMEA · KT". Template tersembunyi
+// diberi tanda Hidden (D-218).
 export function templateLabel(ft: FormatTemplate): string {
-	return [ft.name, ft.document_type.name, ft.customer_code].filter((part) => part).join(' · ');
+	return [ft.name, ft.document_type.name, ft.customer_code, ft.hidden ? t('hiddenMark') : ''].filter((part) => part).join(' · ');
 }
 
 // fieldsOf mengambil field satu area menurut urutan.
