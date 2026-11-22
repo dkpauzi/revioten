@@ -355,18 +355,22 @@ test('potret layar untuk halaman Help', async ({ page }) => {
 	await expect(page.getByRole('status')).toHaveText(en.changeCreated.replace('{ref}', 'CHG-0001'));
 	await shot(page, 'changes');
 
-	await openFromMenu(page, en.navGroupDocuments, en.navDocuments);
+	await openFromMenu(page, en.navGroupDocuments, en.navLegacy);
 	await page.getByLabel(en.documentCustomer, { exact: true }).selectOption({ label: 'LM · Contoh Customer LM' });
-	const legacy = page.locator('section', { has: page.getByRole('heading', { name: en.migrateTitle }) });
-	await legacy.getByLabel(en.migrateNumber, { exact: true }).selectOption({ label: 'SC-LM-001 · CP' });
-	await legacy.getByRole('checkbox', { name: 'K-125' }).check();
-	await legacy.getByLabel(en.migrateRevision, { exact: true }).fill('4');
-	await legacy.getByLabel(en.migrateEffectiveDate, { exact: true }).fill('2025-03-10');
-	await legacy.getByLabel(en.migratePreparedBy, { exact: true }).fill('Contoh Penyusun Lama');
-	await legacy.getByLabel(en.migrateApprovedBy, { exact: true }).fill('Contoh NPI Manager, Contoh QA Manager');
-	await legacy.getByRole('button', { name: en.migrateSubmit }).click();
-	await expect(page.getByRole('status')).toHaveText(en.migrateDone.replace('{number}', 'SC-LM-001').replace('{revision}', '4'));
-	await page.getByRole('link', { name: 'SC-LM-001' }).click();
+	await page.getByRole('checkbox', { name: en.legacyOneSet }).uncheck();
+	const cpRow = page.getByTestId('migration-set').locator('tr').filter({ has: page.getByRole('rowheader', { name: 'CP', exact: true }) });
+	await cpRow.getByLabel(en.legacyNumberOf.replace('{type}', 'CP')).fill('SC-LM-001');
+	await cpRow.getByLabel(en.legacyRevisionOf.replace('{type}', 'CP')).fill('4');
+	await cpRow.getByLabel(en.legacyDateOf.replace('{type}', 'CP')).fill('2025-03-10');
+	await cpRow.getByLabel(en.legacyPreparedOf.replace('{type}', 'CP')).fill('Contoh Penyusun Lama');
+	await cpRow.getByLabel(en.legacyApprovedOf.replace('{type}', 'CP')).fill('Contoh NPI Manager, Contoh QA Manager');
+	await page.getByRole('checkbox', { name: 'K-125' }).check();
+	await page.getByRole('button', { name: en.legacySetSubmit }).click();
+	await expect(page.getByRole('status')).toHaveText(en.legacySetDone.replace('{numbers}', 'SC-LM-001'));
+	await page.getByRole('checkbox', { name: en.legacyOneSet }).check();
+	await page.getByTestId('migration-set').locator('tr').filter({ has: page.getByRole('rowheader', { name: 'PFD', exact: true }) }).getByLabel(en.legacyNumberOf.replace('{type}', 'PFD')).fill('SH-LM-050-02');
+	await shot(page, 'migration', page.getByRole('heading', { name: en.legacyTitle, level: 1 }));
+	await page.getByTestId('migration-board').getByRole('link', { name: 'SC-LM-001' }).click();
 	await openTool(page, en.migrationTitle);
 	const baseline = page.locator('section', { has: page.getByRole('heading', { name: en.migrationTitle, exact: true }) });
 	await baseline.getByRole('button', { name: en.historyAdd }).click();
@@ -375,7 +379,6 @@ test('potret layar untuk halaman Help', async ({ page }) => {
 	await baseline.getByLabel(`${en.historyDescription} 1`).fill('Initial release');
 	await baseline.getByRole('button', { name: en.historySave }).click();
 	await expect(baseline.getByRole('status')).toHaveText(en.historySaved);
-	await shot(page, 'migration', page.getByRole('heading', { name: en.migrationTitle, exact: true }));
 
 	await openFromMenu(page, en.navGroupDocuments, en.navDashboard);
 	await expect(page.getByRole('heading', { name: en.dashboardRows })).toBeVisible();

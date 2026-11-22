@@ -292,7 +292,7 @@ export const helpEn: HelpContent = {
 				'Open {navGroupDocuments}, then {navNumbers}.',
 				'On the row of the number, press {numberVoid} or {numberObsolete}, give the reason, and press {numberStatusConfirm}.',
 				'To bring in old numbers, open {navGroupDocuments}, then {numberImportLink}.',
-				'Choose the customer and the {numberImportStatus}, then paste the numbers under {numberImportText}.',
+				'Choose the customer and the {numberImportStatus}, then paste the numbers under {numberImportText}: up to three columns (PFD, PFMEA, CP), one set per line. With {numberImportOneSet}, one number on a line also registers the other two.',
 				'Press {numberImportPreview} and read the report: which lines will be imported, which are refused and why.',
 				'When the report is right, press {numberImportRun}.'
 			],
@@ -395,15 +395,17 @@ export const helpEn: HelpContent = {
 			intro: 'A document that already exists on paper enters at its current revision and is released after another person checks it against the signed hard copy. Nothing is cleaned up on the way in.',
 			steps: [
 				'The admin switches on {settingsMigration} under {navGroupAdmin}, then {navSettings}.',
-				'Open {navDocuments}, choose the customer, and fill in {migrateTitle}: the original number, the models, {migrateRevision}, {migrateEffectiveDate}, and the names on the hard copy. Press {migrateSubmit}.',
-				'Open the document. Type or compose the content until it equals the hard copy. Press {migrationTitle} in the toolbar; under {historyTitle}, press {historyAdd} for each line of the old history table, then {historySave}.',
+				'Open {navGroupDocuments}, then {navLegacy}, and choose the customer. Under {legacyReadyTitle}, every line needs a tick; a line without one links to the page that fixes it.',
+				'Under {legacySetTitle}, keep {legacyOneSet} ticked when PFD, PFMEA, and CP share one running number, and type one number, for example SH-TR-020. A revision typed with it, such as SH-TR-020-02, moves to {migrateRevision}. Untick it when the numbers are not aligned, for example SC-TR-005, SF-TR-005, SH-TR-004, and type each number.',
+				'Fill in {migrateRevision}, {migrateEffectiveDate}, and the names on the hard copy for each document, tick the models, and press {legacySetSubmit}. Numbers that are not in the register yet are registered as Released, as one set.',
+				'Open the document from {legacyBoardTitle}. Type or compose the content until it equals the hard copy. Press {migrationTitle} in the toolbar; under {historyTitle}, press {historyAdd} for each line of the old history table, then {historySave}.',
 				'To check your typing, upload the old file under {excelCompareTitle} and press {excelCompareButton}. The file is only compared, never imported.',
 				'Under {linkTitle}, press {linkFind}, tick the pairs that are right, and press {linkConfirm}. Linked rows receive later template updates.',
 				'Another migration officer opens the document, compares it with the signed hard copy, fills in {migrationEffort}, and presses {migrationVerify}. The status becomes {documentStatusReleasedMigrated}.'
 			],
-			tips: ['The person who entered a document cannot verify it.', 'A scan of the hard copy is optional. To keep one as evidence, upload it under {revisions} before the verification.', 'After verification the baseline and its history cannot be changed; the next change goes through a normal change request.', 'Switch migration mode off when the migration is finished.'],
+			tips: ['{legacyBoardTitle} shows each legacy document as {legacyStateEmpty}, {legacyStateToVerify}, or {documentStatusReleasedMigrated}.', 'The person who entered a document cannot verify it.', 'A scan of the hard copy is optional. To keep one as evidence, upload it under {revisions} before the verification.', 'After verification the baseline and its history cannot be changed; the next change goes through a normal change request.', 'Switch migration mode off when the migration is finished.'],
 			image: 'migration',
-			imageAlt: 'The migration baseline of a legacy document with its revision history lines.'
+			imageAlt: 'The Legacy documents page with the readiness checks, the set of three numbers, and the status board.'
 		},
 		{
 			id: 'dashboard',

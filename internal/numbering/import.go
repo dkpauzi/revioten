@@ -32,7 +32,12 @@ const (
 	LineDuplicate        = "duplicate"         // nomor yang sama sudah ada di baris sebelumnya
 	LineCustomerMismatch = "customer_mismatch" // kode di nomor bukan kode customer ini (R-POR-01)
 	LineInvalid          = "invalid"           // bukan nomor PFD, PFMEA, atau CP menurut pola sekarang
+	LineTypeRepeated     = "type_repeated"     // baris yang sama sudah punya nomor jenis ini (D-216)
 )
+
+// maxImportColumns adalah jumlah kolom yang dibaca per baris: PFD, PFMEA, dan
+// CP satu set (D-216). Kolom sesudahnya, misalnya judul, diabaikan.
+const maxImportColumns = 3
 
 // importStatuses adalah status yang boleh dipilih untuk nomor lama. Skipped
 // hanya dibuat oleh daftar sebagai set.
@@ -43,10 +48,15 @@ type ImportInput struct {
 	CustomerID string
 	// Status untuk semua nomor di impor ini (ASUMSI E-65).
 	Status string
-	// Text berisi nomor lama, satu per baris, misalnya kolom nomor yang
-	// disalin dari register Excel. Bila satu baris berisi beberapa kolom
-	// (dipisah tab), hanya kolom pertama yang dibaca.
+	// Text berisi nomor lama, satu set per baris (D-216): sampai tiga kolom
+	// nomor PFD, PFMEA, dan CP yang disalin dari register Excel (dipisah
+	// tab), dalam urutan apa pun, karena jenisnya dibaca dari awalan nomor.
+	// Kolom kosong dilewati, dan kolom sesudah kolom ketiga diabaikan. Setiap baris menjadi satu batch,
+	// jadi nomor satu baris adalah satu set dokumen (E-140).
 	Text string
+	// OneSet true (bawaan di layar): nomor yang tidak ada di baris mengikuti
+	// nomor berjalan dan kode customer nomor pertama baris itu.
+	OneSet bool
 	// DryRun true berarti pratinjau: laporan saja, tidak ada yang disimpan.
 	DryRun bool
 }
@@ -57,6 +67,7 @@ type ImportLine struct {
 	Text      string // kolom pertama, tanpa spasi di awal dan akhir
 	Result    string // LineImported, LineExisting, dan seterusnya
 	FirstLine int    // untuk LineDuplicate: baris tempat nomor itu pertama muncul
+	Derived   bool   // true bila nomor ini mengikuti nomor lain di barisnya (OneSet)
 }
 
 // SequenceRange adalah rentang nomor berjalan, misalnya 003 sampai 006.
@@ -131,6 +142,10 @@ func (s *Service) Import(ctx context.Context, actor access.Actor, in ImportInput
 		return ImportReport{}, err
 	}
 	parseImportLines(rows, pattern, types)
+	rows = markRepeatedTypes(rows)
+	if in.OneSet {
+		rows = deriveSetNumbers(rows, pattern, types)
+	}
 
 	report := ImportReport{DryRun: in.DryRun, Status: in.Status}
 	err = db.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
@@ -224,12 +239,17 @@ func splitImportLines(text string) []importRow {
 		if strings.TrimSpace(line) == "" {
 			continue
 		}
-		cell, _, _ := strings.Cut(line, "\t")
-		cell = strings.TrimSpace(cell)
-		if runes := []rune(cell); len(runes) > maxImportCell {
-			cell = string(runes[:maxImportCell])
+		cells := strings.Split(line, "\t")
+		for _, cell := range cells[:min(len(cells), maxImportColumns)] {
+			cell = strings.TrimSpace(cell)
+			if cell == "" {
+				continue
+			}
+			if runes := []rune(cell); len(runes) > maxImportCell {
+				cell = string(runes[:maxImportCell])
+			}
+			rows = append(rows, importRow{ImportLine: ImportLine{Line: i + 1, Text: cell}})
 		}
-		rows = append(rows, importRow{ImportLine: ImportLine{Line: i + 1, Text: cell}})
 	}
 	return rows
 }
@@ -253,6 +273,67 @@ func parseImportLines(rows []importRow, pattern Pattern, types []DocumentType) {
 		rows[i].key = numberKey{code: parts.Customer, typeID: d.ID, sequence: sequence}
 		rows[i].docType = d
 	}
+}
+
+// markRepeatedTypes menandai nomor kedua dengan jenis yang sama di satu
+// baris: satu baris adalah satu set, jadi hanya punya satu nomor per jenis.
+func markRepeatedTypes(rows []importRow) []importRow {
+	seen := map[int]map[string]bool{}
+	for i := range rows {
+		r := &rows[i]
+		if r.Result != "" {
+			continue
+		}
+		if seen[r.Line] == nil {
+			seen[r.Line] = map[string]bool{}
+		}
+		if seen[r.Line][r.key.typeID] {
+			r.Result = LineTypeRepeated
+			continue
+		}
+		seen[r.Line][r.key.typeID] = true
+	}
+	return rows
+}
+
+// deriveSetNumbers menambah nomor yang tidak ada di setiap baris (OneSet):
+// awalan jenis itu dengan kode customer dan nomor berjalan nomor sah pertama
+// di baris, misalnya SH-TR-020 menjadi juga SF-TR-020 dan SC-TR-020.
+func deriveSetNumbers(rows []importRow, pattern Pattern, types []DocumentType) []importRow {
+	var out []importRow
+	for start := 0; start < len(rows); {
+		end := start
+		for end < len(rows) && rows[end].Line == rows[start].Line {
+			end++
+		}
+		line := rows[start:end]
+		out = append(out, line...)
+		var source *importRow
+		present := map[string]bool{}
+		for i := range line {
+			if line[i].Result == "" || line[i].Result == LineTypeRepeated {
+				present[line[i].key.typeID] = true
+			}
+			if line[i].Result == "" && source == nil {
+				source = &line[i]
+			}
+		}
+		if source != nil {
+			for _, d := range types {
+				if present[d.ID] {
+					continue
+				}
+				out = append(out, importRow{
+					ImportLine: ImportLine{Line: source.Line, Derived: true,
+						Text: pattern.Format(d.Prefix, source.key.code, sequenceText(source.key.sequence))},
+					key:     numberKey{code: source.key.code, typeID: d.ID, sequence: source.key.sequence},
+					docType: d,
+				})
+			}
+		}
+		start = end
+	}
+	return out
 }
 
 // lockCustomerCodes mengunci customer seperti pendaftaran, sebagai langkah
@@ -359,16 +440,17 @@ func markExisting(ctx context.Context, q *db.Queries, rows []importRow, codes []
 
 // insertImported menyimpan baris yang tersisa dengan teks aslinya, mencatat
 // entri audit setiap nomor, lalu menaikkan penghitung ke nomor tertinggi.
-// Batch impor baru dibuat bila ada nomor yang masuk. Hasilnya jumlah nomor
-// yang masuk.
+// Setiap baris yang punya nomor masuk mendapat batch sendiri, jadi nomor satu
+// baris adalah satu set (D-216, E-140). Hasilnya jumlah nomor yang masuk.
 func insertImported(ctx context.Context, q *db.Queries, actor access.Actor, in ImportInput, rows []importRow) (int, error) {
-	var batchID string
+	batches := map[int]string{} // nomor baris -> batch
 	highest := map[counterKey]int{}
 	for i := range rows {
 		r := &rows[i]
 		if r.Result != "" {
 			continue
 		}
+		batchID := batches[r.Line]
 		if batchID == "" {
 			// Impor tanpa kunci idempoten: impor yang diulang hanya
 			// menghasilkan baris LineExisting.
@@ -379,6 +461,7 @@ func insertImported(ctx context.Context, q *db.Queries, actor access.Actor, in I
 				return 0, err
 			}
 			batchID = id
+			batches[r.Line] = id
 		}
 		id, err := q.InsertDocumentNumber(ctx, db.InsertDocumentNumberParams{
 			Number: r.Text, CustomerID: in.CustomerID, CustomerCode: r.key.code, DocumentTypeID: r.key.typeID,

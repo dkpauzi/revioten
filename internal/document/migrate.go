@@ -152,6 +152,20 @@ func (s *Service) Migrate(ctx context.Context, actor access.Actor, in LegacyDocu
 		if err := requireMigrationMode(ctx, q); err != nil {
 			return err
 		}
+		id, err = s.migrateOne(ctx, q, actor, in)
+		return err
+	})
+	if err != nil {
+		return Document{}, result(err, "memasukkan dokumen lama")
+	}
+	return getDocument(ctx, s.q, id)
+}
+
+// migrateOne membuat satu dokumen lama dari nomor in.NumberID di dalam
+// transaksi pemanggil (M7.1). Dipakai Migrate dan MigrateSet (D-215).
+func (s *Service) migrateOne(ctx context.Context, q *db.Queries, actor access.Actor, in LegacyDocument) (string, error) {
+	var id string
+	err := func() error {
 		number, err := q.GetNumberForDocument(ctx, in.NumberID)
 		if err != nil {
 			return err
@@ -226,11 +240,8 @@ func (s *Service) Migrate(ctx context.Context, actor access.Actor, in LegacyDocu
 		}
 		return audit.Record(ctx, q, actor, audit.Event{Action: audit.ActionDocumentMigrated, TargetType: audit.TargetDocument, TargetID: id,
 			Details: map[string]string{"document_number": number.Number, "revision": strconv.Itoa(in.Revision), "effective_date": in.EffectiveDate}})
-	})
-	if err != nil {
-		return Document{}, result(err, "memasukkan dokumen lama")
-	}
-	return getDocument(ctx, s.q, id)
+	}()
+	return id, err
 }
 
 // openBaseline memeriksa bahwa dokumen adalah baseline migrasi yang belum

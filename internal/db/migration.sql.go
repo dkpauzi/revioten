@@ -197,6 +197,67 @@ func (q *Queries) ListHistoryEntries(ctx context.Context, documentID string) ([]
 	return items, nil
 }
 
+const listLegacyDocuments = `-- name: ListLegacyDocuments :many
+SELECT d.id, n.number, t.key AS document_type_key, t.name AS document_type_name, b.revision,
+       (SELECT count(*) FROM document_rows r WHERE r.document_id = d.id) AS rows,
+       cp.name AS entered_by, b.created_at AS entered_at, vp.name AS verified_by, b.verified_at
+FROM documents d
+JOIN document_numbers n ON n.id = d.document_number_id
+JOIN document_types t ON t.id = d.document_type_id
+JOIN document_baselines b ON b.document_id = d.id
+JOIN people cp ON cp.id = b.created_by_person_id
+LEFT JOIN people vp ON vp.id = b.verified_by_person_id
+WHERE d.customer_id = $1 AND d.origin = 'migrated'
+ORDER BY n.sequence, t.position, n.number
+`
+
+type ListLegacyDocumentsRow struct {
+	ID               string
+	Number           string
+	DocumentTypeKey  *string
+	DocumentTypeName string
+	Revision         int16
+	Rows             int64
+	EnteredBy        string
+	EnteredAt        time.Time
+	VerifiedBy       *string
+	VerifiedAt       *time.Time
+}
+
+// ListLegacyDocuments memberi papan status dokumen lama satu customer
+// (D-215): nomor, jenis, revisi baseline, jumlah baris, pemasuk, dan
+// pemeriksa hardcopy.
+func (q *Queries) ListLegacyDocuments(ctx context.Context, customerID string) ([]ListLegacyDocumentsRow, error) {
+	rows, err := q.db.Query(ctx, listLegacyDocuments, customerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListLegacyDocumentsRow{}
+	for rows.Next() {
+		var i ListLegacyDocumentsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Number,
+			&i.DocumentTypeKey,
+			&i.DocumentTypeName,
+			&i.Revision,
+			&i.Rows,
+			&i.EnteredBy,
+			&i.EnteredAt,
+			&i.VerifiedBy,
+			&i.VerifiedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listMigratableNumbers = `-- name: ListMigratableNumbers :many
 
 SELECT n.id, n.number, n.status, t.name AS document_type_name
@@ -399,6 +460,27 @@ func (q *Queries) MetricYokoten(ctx context.Context, customerID *string) ([]Metr
 		return nil, err
 	}
 	return items, nil
+}
+
+const migrationReadiness = `-- name: MigrationReadiness :one
+SELECT (SELECT s.migration_mode FROM system_settings s LIMIT 1)::boolean AS migration_mode,
+       (SELECT count(*) FROM models m WHERE m.customer_id = $1 AND m.eol_at IS NULL) AS models,
+       (SELECT count(*) FROM processes) AS processes
+`
+
+type MigrationReadinessRow struct {
+	MigrationMode bool
+	Models        int64
+	Processes     int64
+}
+
+// MigrationReadiness memberi prasyarat menu migrasi satu customer (D-215):
+// saklar mode migrasi, jumlah model customer, dan jumlah proses di master.
+func (q *Queries) MigrationReadiness(ctx context.Context, customerID string) (MigrationReadinessRow, error) {
+	row := q.db.QueryRow(ctx, migrationReadiness, customerID)
+	var i MigrationReadinessRow
+	err := row.Scan(&i.MigrationMode, &i.Models, &i.Processes)
+	return i, err
 }
 
 const releaseMigratedRevision = `-- name: ReleaseMigratedRevision :execrows

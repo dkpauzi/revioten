@@ -1113,9 +1113,13 @@ paths:
       operationId: importDocumentNumbers
       summary: Import legacy numbers of one customer, with a report (E-8, UC-14, R-NUM-06)
       description: |
-        Paste the legacy numbers one per line, for example the number column
-        copied from the Excel register; only the first column (before a tab)
-        is read. Numbers keep their original text, and the counter of each
+        Paste the legacy numbers one set per line (D-216): up to three columns
+        with the PFD, PFMEA, and CP numbers copied from the Excel register,
+        separated by tabs, in any order. Blank columns are skipped, and
+        columns after the third are ignored. Each line becomes one batch, so
+        the numbers of one line are one document set (E-140). With
+        `one_set`, the numbers missing from a line follow the running number
+        of its first number. Numbers keep their original text, and the counter of each
         customer code and document type rises to the highest number, so new
         numbers continue after it. Gaps, duplicates, and misaligned sets are
         reported and never fixed or renumbered. Lines that are not a PFD,
@@ -2629,6 +2633,49 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Document'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/migration/overview:
+    get:
+      operationId: getMigrationOverview
+      summary: Readiness and status board of the migration menu for one customer (E-10, D-215)
+      parameters:
+        - name: customer_id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The readiness checks and every legacy document of the customer.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MigrationOverview'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/migration/sets:
+    post:
+      operationId: migrateSet
+      summary: Enter one set of legacy documents at once (E-10, D-215, D-216)
+      description: >-
+        Numbers are typed as on the hard copy, without the revision. With one_set, the empty numbers follow
+        the running number of the number given. Numbers not yet in the register are registered as Released in
+        one batch, so the documents are one set. All or nothing: when one document is refused, nothing is
+        saved. Refused while migration mode is off (R-MIG-06).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LegacySet'
+      responses:
+        '201':
+          description: The documents, PFD first, then PFMEA and CP.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MigratedSet'
         default:
           $ref: '#/components/responses/Error'
   /api/v1/documents/{documentId}/history:
@@ -5956,7 +6003,10 @@ components:
           description: The status of every number in this import.
         text:
           type: string
-          description: Legacy numbers, one per line, at most 5000 lines that are not blank.
+          description: Legacy numbers, one set per line, at most 5000 lines that are not blank.
+        one_set:
+          type: boolean
+          description: True when the numbers missing from a line follow its first number (D-216). Default false.
         dry_run:
           type: boolean
           description: True to get the report without saving anything. Default false.
@@ -5995,13 +6045,16 @@ components:
           description: The line in the pasted text, from 1. Blank lines are left out.
         text:
           type: string
-          description: The first column of the line, without surrounding spaces.
+          description: One column of the line, without surrounding spaces, or the number that follows (derived).
         result:
           type: string
-          enum: [imported, existing, duplicate, customer_mismatch, invalid]
+          enum: [imported, existing, duplicate, customer_mismatch, invalid, type_repeated]
         first_line:
           type: integer
           description: For a duplicate, the line where the number first appears.
+        derived:
+          type: boolean
+          description: True when the number follows the first number of its line (one_set).
     NumberImportGroup:
       type: object
       required: [customer_code, document_type, count, gaps]
@@ -6458,6 +6511,103 @@ components:
           type: string
         document_type:
           type: string
+    LegacySet:
+      type: object
+      required: [customer_id, one_set, documents, model_ids]
+      properties:
+        customer_id:
+          type: string
+        one_set:
+          type: boolean
+          description: True when the empty numbers follow the running number of the number given (D-216).
+        documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/LegacySetDocument'
+        model_ids:
+          type: array
+          items:
+            type: string
+        part_number_ids:
+          type: array
+          items:
+            type: string
+    MigratedSet:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Document'
+    LegacySetDocument:
+      type: object
+      required: [document_type_key, number, revision, effective_date, prepared_by, approved_by]
+      properties:
+        document_type_key:
+          type: string
+          enum: [pfd, pfmea, cp]
+        number:
+          type: string
+          description: The original number without the revision, for example SH-TR-020. Empty with one_set to follow.
+        revision:
+          type: integer
+          description: The current revision on the hard copy, for example 2 for -02.
+        effective_date:
+          type: string
+          description: YYYY-MM-DD
+        prepared_by:
+          type: string
+        approved_by:
+          type: string
+    MigrationOverview:
+      type: object
+      required: [migration_mode, form_set_published, models, processes, documents]
+      properties:
+        migration_mode:
+          type: boolean
+        form_set_published:
+          type: boolean
+          description: The form set of the customer, or the default one, has a published version.
+        models:
+          type: integer
+          description: Models of the customer that are not end of life.
+        processes:
+          type: integer
+          description: Processes in the master.
+        documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/LegacyDocumentSummary'
+    LegacyDocumentSummary:
+      type: object
+      required: [id, number, document_type_key, document_type, revision, rows, entered_by, entered_at, state]
+      properties:
+        id:
+          type: string
+        number:
+          type: string
+        document_type_key:
+          type: string
+        document_type:
+          type: string
+        revision:
+          type: integer
+        rows:
+          type: integer
+        entered_by:
+          type: string
+        entered_at:
+          type: string
+          format: date-time
+        verified_by:
+          type: string
+        verified_at:
+          type: string
+          format: date-time
+        state:
+          type: string
+          enum: [empty, to_verify, released]
     MigratableNumberList:
       type: object
       required: [items]

@@ -112,3 +112,26 @@ SELECT count(*)::int AS documents,
        coalesce(sum(b.effort_minutes), 0)::int AS total_minutes
 FROM document_baselines b JOIN documents d ON d.id = b.document_id
 WHERE (sqlc.narg(customer_id)::uuid IS NULL OR d.customer_id = sqlc.narg(customer_id)::uuid);
+
+-- name: MigrationReadiness :one
+-- MigrationReadiness memberi prasyarat menu migrasi satu customer (D-215):
+-- saklar mode migrasi, jumlah model customer, dan jumlah proses di master.
+SELECT (SELECT s.migration_mode FROM system_settings s LIMIT 1)::boolean AS migration_mode,
+       (SELECT count(*) FROM models m WHERE m.customer_id = $1 AND m.eol_at IS NULL) AS models,
+       (SELECT count(*) FROM processes) AS processes;
+
+-- name: ListLegacyDocuments :many
+-- ListLegacyDocuments memberi papan status dokumen lama satu customer
+-- (D-215): nomor, jenis, revisi baseline, jumlah baris, pemasuk, dan
+-- pemeriksa hardcopy.
+SELECT d.id, n.number, t.key AS document_type_key, t.name AS document_type_name, b.revision,
+       (SELECT count(*) FROM document_rows r WHERE r.document_id = d.id) AS rows,
+       cp.name AS entered_by, b.created_at AS entered_at, vp.name AS verified_by, b.verified_at
+FROM documents d
+JOIN document_numbers n ON n.id = d.document_number_id
+JOIN document_types t ON t.id = d.document_type_id
+JOIN document_baselines b ON b.document_id = d.id
+JOIN people cp ON cp.id = b.created_by_person_id
+LEFT JOIN people vp ON vp.id = b.verified_by_person_id
+WHERE d.customer_id = $1 AND d.origin = 'migrated'
+ORDER BY n.sequence, t.position, n.number;

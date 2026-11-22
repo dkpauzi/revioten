@@ -144,7 +144,9 @@ test('dokumen kontrol mengimpor nomor lama: pratinjau, laporan, lalu impor', asy
 
 	await page.getByLabel(en.numberCustomer, { exact: true }).selectOption({ label: 'LG · Customer LG' });
 	await page.getByLabel(en.numberImportStatus).selectOption({ label: en.numberStatusReleased });
-	const lines = ['SH-LG-001', 'SH-LG-002\tModel A', '', 'SC-LG-001', 'SC-LG-004', 'SC-LG-004', 'SC-NB-001', 'hello'];
+	// Bukan satu set: setiap nomor diketik (D-216). Satu baris adalah satu set.
+	await page.getByRole('checkbox', { name: en.numberImportOneSet }).uncheck();
+	const lines = ['SH-LG-001', 'SH-LG-002\t\t\tModel A', '', 'SC-LG-001', 'SC-LG-004', 'SC-LG-004', 'SC-NB-001', 'hello'];
 	await page.getByLabel(en.numberImportText).fill(lines.join('\n'));
 	await page.getByRole('button', { name: en.numberImportPreview }).click();
 
@@ -167,4 +169,13 @@ test('dokumen kontrol mengimpor nomor lama: pratinjau, laporan, lalu impor', asy
 	await page.getByLabel(en.numberFilterSearch).fill('SC-LG-004');
 	await page.getByRole('button', { name: en.numberFilterApply }).click();
 	await expect(page.getByRole('row', { name: /^SC-LG-004 / })).toContainText(en.numberStatusReleased);
+
+	// Satu set per baris (bawaan): satu nomor juga mendaftarkan dua lainnya.
+	await page.goto('/numbers/import');
+	await expect(page.getByRole('heading', { name: en.numberImportTitle })).toBeVisible();
+	await page.getByLabel(en.numberCustomer, { exact: true }).selectOption({ label: 'LG · Customer LG' });
+	await page.getByLabel(en.numberImportStatus).selectOption({ label: en.numberStatusReleased });
+	await page.getByLabel(en.numberImportText).fill('SH-LG-010');
+	await page.getByRole('button', { name: en.numberImportPreview }).click();
+	await expect(page.getByRole('status')).toHaveText(en.numberImportPreviewed.replace('{count}', '3'));
 });

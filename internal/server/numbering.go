@@ -114,6 +114,7 @@ func (a *apiServer) ImportDocumentNumbers(ctx context.Context, req ImportDocumen
 	in := numbering.ImportInput{
 		CustomerID: req.Body.CustomerId, Status: string(req.Body.Status), Text: req.Body.Text,
 		DryRun: req.Body.DryRun != nil && *req.Body.DryRun,
+		OneSet: req.Body.OneSet != nil && *req.Body.OneSet,
 	}
 	report, err := a.numbering.Import(ctx, actorFrom(ctx), in)
 	if err != nil {
@@ -135,6 +136,9 @@ func toAPIImportReport(r numbering.ImportReport) NumberImportReport {
 		line := NumberImportLine{Line: l.Line, Text: l.Text, Result: NumberImportLineResult(l.Result)}
 		if l.FirstLine != 0 {
 			line.FirstLine = &l.FirstLine
+		}
+		if l.Derived {
+			line.Derived = &l.Derived
 		}
 		out.Lines = append(out.Lines, line)
 	}

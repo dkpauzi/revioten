@@ -161,6 +161,9 @@ import type {
 	LinkSuggestionList,
 	Metrics,
 	MigratableNumberList,
+	MigratedSet,
+	MigrationOverview,
+	LegacySet,
 	RowLink,
 	PermissionList,
 	Role,
@@ -630,6 +633,16 @@ export function migrateDocument(input: LegacyDocument, fetchFn: typeof fetch = f
 // setDocumentHistory memanggil PUT /api/v1/documents/{id}/history (E-10, M7.2).
 export function setDocumentHistory(id: string, entries: HistoryEntry[], fetchFn: typeof fetch = fetch): Promise<ApiResult<Document>> {
 	return call<Document>(fetchFn, itemPath('documents', id) + '/history', jsonRequest('PUT', { entries }));
+}
+
+// getMigrationOverview memanggil GET /api/v1/migration/overview (E-10, D-215).
+export function getMigrationOverview(customerId: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<MigrationOverview>> {
+	return call<MigrationOverview>(fetchFn, `/api/v1/migration/overview?customer_id=${encodeURIComponent(customerId)}`, { method: 'GET' });
+}
+
+// migrateSet memanggil POST /api/v1/migration/sets (E-10, D-215, D-216).
+export function migrateSet(input: LegacySet, fetchFn: typeof fetch = fetch): Promise<ApiResult<MigratedSet>> {
+	return call<MigratedSet>(fetchFn, '/api/v1/migration/sets', jsonRequest('POST', input));
 }
 
 // verifyMigration memanggil POST /api/v1/documents/{id}/migration/verify (E-10, M7.5).

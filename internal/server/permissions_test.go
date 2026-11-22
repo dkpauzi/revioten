@@ -624,6 +624,9 @@ func TestPermissionsPerOperation(t *testing.T) {
 		{http.MethodGet, "/api/v1/inbox", "", http.StatusOK, http.StatusOK, http.StatusOK},
 		{http.MethodGet, "/api/v1/migration/numbers?customer_id={customerId}", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		{http.MethodPost, "/api/v1/migration/documents", `{"document_number_id":"{documentNumberId}","model_ids":[],"revision":4,"effective_date":"2025-03-10","prepared_by":"A","approved_by":"B"}`, http.StatusForbidden, http.StatusUnprocessableEntity, http.StatusForbidden},
+		// Menu migrasi (D-215, D-216): papan dan set lewat E-10; mode mati, jadi set ditolak 422.
+		{http.MethodGet, "/api/v1/migration/overview?customer_id={customerId}", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		{http.MethodPost, "/api/v1/migration/sets", `{"customer_id":"{customerId}","one_set":true,"model_ids":[],"documents":[{"document_type_key":"pfd","number":"SH-AB-090","revision":1,"effective_date":"2025-03-10","prepared_by":"A","approved_by":"B"}]}`, http.StatusForbidden, http.StatusUnprocessableEntity, http.StatusForbidden},
 		{http.MethodPut, "/api/v1/documents/{documentId}/history", `{"entries":[]}`, http.StatusForbidden, http.StatusUnprocessableEntity, http.StatusForbidden},
 		{http.MethodPost, "/api/v1/documents/{documentId}/migration/verify", `{}`, http.StatusForbidden, http.StatusUnprocessableEntity, http.StatusForbidden},
 		// Penautan (M7.4): usulan lewat L-4, menautkan lewat E-2 (daftar kosong ditolak 422).

@@ -135,3 +135,13 @@ ORDER BY customer_code, document_type_id, sequence;
 -- ListNumbersByText mengambil teks nomor yang sudah ada di register dari
 -- daftar teks (impor, M2.5).
 SELECT number FROM document_numbers WHERE number = ANY(sqlc.arg(numbers)::text[]);
+
+-- name: FindRegisteredNumber :one
+-- FindRegisteredNumber mencari nomor lama di register: nomor berjalan yang
+-- sama untuk kode dan jenis itu, atau teks yang sama (menu migrasi, D-216).
+SELECT id, number, status, batch_id
+FROM document_numbers
+WHERE (customer_code = sqlc.arg(customer_code) AND document_type_id = sqlc.arg(document_type_id) AND sequence = sqlc.arg(sequence))
+   OR number = sqlc.arg(number)
+ORDER BY id
+LIMIT 1;

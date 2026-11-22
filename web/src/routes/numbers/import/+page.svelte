@@ -25,6 +25,8 @@
 	let customerId = $state('');
 	let status = $state('');
 	let text = $state('');
+	// Bawaannya satu set per baris (D-216).
+	let oneSet = $state(true);
 
 	let report = $state<NumberImportReport | null>(null);
 	let fieldErrors = $state<Record<string, string>>({});
@@ -46,7 +48,7 @@
 		fieldErrors = {};
 		failure = '';
 		busy = true;
-		const input = { customer_id: customerId, status: status as NumberImportRequest['status'], text, dry_run: dryRun };
+		const input = { customer_id: customerId, status: status as NumberImportRequest['status'], text, one_set: oneSet, dry_run: dryRun };
 		const result = await importDocumentNumbers(input);
 		busy = false;
 		if (!result.ok) {
@@ -126,6 +128,8 @@
 			<p class="hint">{t('numberImportTextHint')}</p>
 			{#if fieldErrors.text}<p class="error">{fieldErrors.text}</p>{/if}
 		</div>
+		<label class="check"><input type="checkbox" bind:checked={oneSet} onchange={changed} /> {t('numberImportOneSet')}</label>
+		<p class="hint">{t('numberImportOneSetHint')}</p>
 		<div class="row">
 			<button type="submit" disabled={busy}>{t('numberImportPreview')}</button>
 			{#if report?.dry_run && report.imported > 0}
@@ -152,7 +156,7 @@
 						{#each notImported(report.lines) as l (l.line)}
 							<tr>
 								<td>{l.line}</td>
-								<td>{l.text}</td>
+								<td>{l.text}{#if l.derived} {t('numberImportDerived')}{/if}</td>
 								<td>{lineResultText(l)}</td>
 							</tr>
 						{/each}

@@ -16,37 +16,48 @@ test('M7: dokumen lama masuk di revisi 4, diverifikasi orang lain, dan tampil di
 	const second = await createWorkAccount(page, 'Petugas migrasi dua', 'migrasi2.e2e', ['ppap_engineer']);
 	await logOut(page);
 
-	// Petugas pertama mendaftarkan nomor dan memasukkan CP lama di revisi 4.
+	// Petugas pertama membuka menu Legacy documents (D-215) dan memasukkan CP lama di revisi 4.
 	await logInFirstTime(page, 'migrasi1.e2e', first, 'dokumen lama masuk apa adanya');
-	const number = await page.evaluate(async () => {
-		const customers = await (await fetch('/api/v1/customers')).json();
-		const customer = customers.items.find((c: { code: string }) => c.code === 'CH');
-		const set = await (
-			await fetch('/api/v1/document-numbers/sets', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json', 'Idempotency-Key': crypto.randomUUID() },
-				body: JSON.stringify({ customer_id: customer.id })
-			})
-		).json();
-		const free = await (await fetch(`/api/v1/migration/numbers?customer_id=${customer.id}`)).json();
-		const ids = new Set((set.items as { id: string }[]).map((n) => n.id));
-		const cp = (free.items as { id: string; number: string }[]).filter((n) => ids.has(n.id)).at(-1)!;
-		return cp;
-	});
-	await openFromMenu(page, en.navGroupDocuments, en.navDocuments);
+	await openFromMenu(page, en.navGroupDocuments, en.navLegacy);
+	await expect(page.getByRole('heading', { name: en.legacyTitle, level: 1 })).toBeVisible();
 	await page.getByLabel(en.documentCustomer, { exact: true }).selectOption({ label: 'CH · Customer CH' });
-	const form = page.locator('section', { has: page.getByRole('heading', { name: en.migrateTitle }) });
-	await form.getByLabel(en.migrateNumber, { exact: true }).selectOption(number.id);
-	await form.getByRole('checkbox', { name: 'C-1' }).check();
-	// Tanpa revisi ditolak.
-	await form.getByRole('button', { name: en.migrateSubmit }).click();
-	await expect(form.locator('.error').first()).toBeVisible();
-	await form.getByLabel(en.migrateRevision, { exact: true }).fill('4');
-	await form.getByLabel(en.migrateEffectiveDate, { exact: true }).fill('2025-03-10');
-	await form.getByLabel(en.migratePreparedBy, { exact: true }).fill('Budi Santoso');
-	await form.getByLabel(en.migrateApprovedBy, { exact: true }).fill('Siti Aminah, Agus Wijaya');
-	await form.getByRole('button', { name: en.migrateSubmit }).click();
-	await expect(page.getByRole('status')).toHaveText(en.migrateDone.replace('{number}', number.number).replace('{revision}', '4'));
+	await expect(page.getByTestId('migration-ready')).toContainText(en.legacyReadyModeOn);
+	const set = page.getByTestId('migration-set');
+	const row = (type: string) => set.locator('tr').filter({ has: page.getByRole('rowheader', { name: type, exact: true }) });
+
+	// Bukan satu set: hanya CP. Revisi kosong ditolak per kolom.
+	await page.getByRole('checkbox', { name: en.legacyOneSet }).uncheck();
+	await row('CP').getByLabel(en.legacyNumberOf.replace('{type}', 'CP')).fill('SC-CH-050');
+	await page.getByRole('checkbox', { name: 'C-1' }).check();
+	await page.getByRole('button', { name: en.legacySetSubmit }).click();
+	await expect(row('CP').locator('.error').first()).toBeVisible();
+	await row('CP').getByLabel(en.legacyRevisionOf.replace('{type}', 'CP')).fill('4');
+	await row('CP').getByLabel(en.legacyDateOf.replace('{type}', 'CP')).fill('2025-03-10');
+	await row('CP').getByLabel(en.legacyPreparedOf.replace('{type}', 'CP')).fill('Budi Santoso');
+	await row('CP').getByLabel(en.legacyApprovedOf.replace('{type}', 'CP')).fill('Siti Aminah, Agus Wijaya');
+	await page.getByRole('button', { name: en.legacySetSubmit }).click();
+	await expect(page.getByRole('status')).toHaveText(en.legacySetDone.replace('{numbers}', 'SC-CH-050'));
+	const board = page.getByTestId('migration-board');
+	await expect(board.getByRole('row', { name: /SC-CH-050/ })).toContainText(en.legacyStateEmpty);
+
+	// Satu set (bawaan): nomor PFD dengan revisinya; PFMEA dan CP mengikuti nomor berjalan 060.
+	await page.getByRole('checkbox', { name: 'C-1' }).check();
+	const pfdNumber = row('PFD').getByLabel(en.legacyNumberOf.replace('{type}', 'PFD'));
+	await pfdNumber.fill('SH-CH-060-02');
+	await pfdNumber.blur();
+	await expect(pfdNumber).toHaveValue('SH-CH-060');
+	await expect(row('PFD').getByLabel(en.legacyRevisionOf.replace('{type}', 'PFD'))).toHaveValue('2');
+	await expect(row('CP').getByLabel(en.legacyNumberOf.replace('{type}', 'CP'))).toHaveAttribute('placeholder', 'SC-CH-060');
+	for (const [type, revision] of [['PFD', '2'], ['PFMEA', '3'], ['CP', '4']]) {
+		await row(type).getByLabel(en.legacyRevisionOf.replace('{type}', type)).fill(revision);
+		await row(type).getByLabel(en.legacyDateOf.replace('{type}', type)).fill('2025-10-23');
+	}
+	await row('PFD').getByLabel(en.legacyPreparedOf.replace('{type}', 'PFD')).fill('Budi Santoso');
+	await row('PFD').getByLabel(en.legacyApprovedOf.replace('{type}', 'PFD')).fill('Siti Aminah');
+	await page.getByRole('button', { name: en.legacySetSubmit }).click();
+	await expect(page.getByRole('status')).toHaveText(en.legacySetDone.replace('{numbers}', 'SH-CH-060, SF-CH-060, SC-CH-060'));
+	await expect(board.getByRole('row')).toHaveCount(5);
+	const number = { number: 'SC-CH-050' };
 
 	// Halaman dokumen: riwayat teks, pembanding Excel, dan scan hardcopy.
 	await page.getByRole('link', { name: number.number }).click();

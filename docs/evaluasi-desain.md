@@ -157,6 +157,7 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-133 | Peran lama sesudah matriks D-199 | Penyederhanaan | D-199 | Tidak | Terbuka |
 | E-140 | Nomor dari satu impor dianggap satu set | Celah | M2.5, M7.1, C4 | Tidak | Diputuskan (D-216) |
 | E-141 | Alur migrasi dokumen lama tersebar di banyak menu | Penyederhanaan | M7.1, M7.5 | Tidak | Diputuskan (D-215) |
+| E-142 | Rincian menu migrasi yang belum diputuskan | Celah | D-215, D-216 | Tidak | Terbuka |
 
 ## Keputusan 4 November 2026
 
@@ -2450,6 +2451,22 @@ Salin blok ini untuk setiap temuan baru.
 - **Menghambat milestone?** Tidak
 - **Status:** Diputuskan (D-215)
 - **Keputusan pemilik:** 22 November 2026: setuju opsi (b), satu menu khusus migrasi; alur yang ada tetap untuk model baru.
+
+### E-142 · Rincian menu migrasi yang belum diputuskan
+
+- **Tanggal dan milestone:** 22 November 2026, membangun D-215 dan D-216.
+- **Jenis:** Celah
+- **Rujukan:** D-215, D-216, R-NUM-06, R-SEC-11, M2.4.
+- **Temuan:** Empat hal kecil belum diatur keputusan:
+  1. Revisi yang ikut diketik (SH-TR-020-02) dikenali dari bentuknya: segmen angka keempat sesudah tanda hubung. Pola nomor lain bisa membutuhkan aturan lain.
+  2. Mendaftarkan nomor lama lewat menu migrasi cukup dengan hak E-10; impor nomor tetap butuh E-8.
+  3. Bila satu nomor isian sudah terdaftar di set lain (batch lain) dan nomor lainnya baru, isian ditolak, karena set dikenali dari batch.
+  4. Nama penyusun dan approver diisi per dokumen; yang kosong memakai nama di baris pertama.
+- **Opsi:** (a) seperti yang dibangun; (b) revisi selalu diketik terpisah; (c) nomor terdaftar dipindah ke batch set baru.
+- **Rekomendasi Claude Code (usulan):** (a).
+- **Asumsi sementara di kode (ASUMSI E-142):** (a), di `web/src/lib/migration.ts` dan `internal/document/migrate_set.go`.
+- **Menghambat milestone?** Tidak
+- **Status:** Terbuka
 
 ## Usulan desain UI (UX-01 sampai UX-07): dampak ke M0 sampai M3 dan saran
 

@@ -33,6 +33,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/access"
 	"github.com/dkpauzi/revioten/internal/audit"
 	"github.com/dkpauzi/revioten/internal/db"
+	"github.com/dkpauzi/revioten/internal/numbering"
 	"github.com/dkpauzi/revioten/internal/problem"
 	"github.com/dkpauzi/revioten/internal/template"
 )
@@ -201,14 +202,15 @@ func conflict(field, message string) error {
 
 // Service membuat, membaca, dan mengubah dokumen.
 type Service struct {
-	pool  *pgxpool.Pool
-	q     *db.Queries
-	authz access.Authorizer
+	pool    *pgxpool.Pool
+	q       *db.Queries
+	authz   access.Authorizer
+	numbers *numbering.Service // nomor lama di menu migrasi (D-216)
 }
 
 // NewService membuat Service yang memakai pool database.
 func NewService(pool *pgxpool.Pool, authz access.Authorizer) *Service {
-	return &Service{pool: pool, q: db.New(pool), authz: authz}
+	return &Service{pool: pool, q: db.New(pool), authz: authz, numbers: numbering.NewService(pool, authz)}
 }
 
 func invalid(field, code, message string) *problem.Problem {

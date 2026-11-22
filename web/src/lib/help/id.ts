@@ -292,7 +292,7 @@ export const helpId: HelpContent = {
 				'Buka {navGroupDocuments}, lalu {navNumbers}.',
 				'Pada baris nomornya, tekan {numberVoid} atau {numberObsolete}, isi alasannya, dan tekan {numberStatusConfirm}.',
 				'Untuk memasukkan nomor lama, buka {navGroupDocuments}, lalu {numberImportLink}.',
-				'Pilih customer dan {numberImportStatus}, lalu tempel nomornya di {numberImportText}.',
+				'Pilih customer dan {numberImportStatus}, lalu tempel nomornya di {numberImportText}: sampai tiga kolom (PFD, PFMEA, CP), satu set per baris. Dengan {numberImportOneSet}, satu nomor di satu baris juga mendaftarkan dua nomor lainnya.',
 				'Tekan {numberImportPreview} dan baca laporannya: baris mana yang akan diimpor, mana yang ditolak dan alasannya.',
 				'Bila laporannya sudah benar, tekan {numberImportRun}.'
 			],
@@ -395,15 +395,17 @@ export const helpId: HelpContent = {
 			intro: 'Dokumen yang sudah ada di kertas masuk di revisinya yang sekarang dan terbit setelah orang lain mencocokkannya dengan hardcopy bertanda tangan. Isinya tidak dirapikan saat masuk.',
 			steps: [
 				'Admin menyalakan {settingsMigration} di {navGroupAdmin}, lalu {navSettings}.',
-				'Buka {navDocuments}, pilih customer, lalu isi {migrateTitle}: nomor asli, model, {migrateRevision}, {migrateEffectiveDate}, dan nama di hardcopy. Tekan {migrateSubmit}.',
-				'Buka dokumennya. Ketik atau rakit isinya sampai sama dengan hardcopy. Tekan {migrationTitle} di toolbar; di {historyTitle}, tekan {historyAdd} untuk setiap baris tabel riwayat lama, lalu {historySave}.',
+				'Buka {navGroupDocuments}, lalu {navLegacy}, dan pilih customer. Di {legacyReadyTitle}, setiap baris harus bertanda centang; baris tanpa centang menautkan ke halaman yang memperbaikinya.',
+				'Di {legacySetTitle}, biarkan {legacyOneSet} tercentang bila PFD, PFMEA, dan CP memakai satu nomor berjalan, lalu ketik satu nomor, misalnya SH-TR-020. Revisi yang ikut diketik, seperti SH-TR-020-02, pindah ke {migrateRevision}. Hilangkan centangnya bila nomornya tidak sejajar, misalnya SC-TR-005, SF-TR-005, SH-TR-004, lalu ketik setiap nomor.',
+				'Isi {migrateRevision}, {migrateEffectiveDate}, dan nama di hardcopy untuk setiap dokumen, centang modelnya, lalu tekan {legacySetSubmit}. Nomor yang belum ada di register didaftarkan berstatus Released, sebagai satu set.',
+				'Buka dokumennya dari {legacyBoardTitle}. Ketik atau rakit isinya sampai sama dengan hardcopy. Tekan {migrationTitle} di toolbar; di {historyTitle}, tekan {historyAdd} untuk setiap baris tabel riwayat lama, lalu {historySave}.',
 				'Untuk memeriksa ketikan, unggah berkas lama di {excelCompareTitle} dan tekan {excelCompareButton}. Berkas hanya dibandingkan, tidak pernah diimpor.',
 				'Di {linkTitle}, tekan {linkFind}, centang pasangan yang benar, lalu tekan {linkConfirm}. Baris yang tertaut menerima pembaruan template berikutnya.',
 				'Petugas migrasi lain membuka dokumen itu, membandingkannya dengan hardcopy bertanda tangan, mengisi {migrationEffort}, lalu menekan {migrationVerify}. Statusnya menjadi {documentStatusReleasedMigrated}.'
 			],
-			tips: ['Orang yang memasukkan dokumen tidak bisa memverifikasinya.', 'Scan hardcopy opsional. Bila ingin menyimpannya sebagai bukti, unggah di {revisions} sebelum verifikasi.', 'Sesudah diverifikasi, baseline dan riwayatnya tidak bisa diubah; perubahan berikutnya lewat permintaan perubahan biasa.', 'Matikan mode migrasi setelah migrasi selesai.'],
+			tips: ['{legacyBoardTitle} menampilkan setiap dokumen lama sebagai {legacyStateEmpty}, {legacyStateToVerify}, atau {documentStatusReleasedMigrated}.', 'Orang yang memasukkan dokumen tidak bisa memverifikasinya.', 'Scan hardcopy opsional. Bila ingin menyimpannya sebagai bukti, unggah di {revisions} sebelum verifikasi.', 'Sesudah diverifikasi, baseline dan riwayatnya tidak bisa diubah; perubahan berikutnya lewat permintaan perubahan biasa.', 'Matikan mode migrasi setelah migrasi selesai.'],
 			image: 'migration',
-			imageAlt: 'Baseline migrasi sebuah dokumen lama dengan baris riwayat revisinya.'
+			imageAlt: 'Halaman Dokumen lama dengan pemeriksaan kesiapan, isian tiga nomor satu set, dan papan status.'
 		},
 		{
 			id: 'dashboard',

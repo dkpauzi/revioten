@@ -924,9 +924,13 @@ export type NumberImportRequest = {
      */
     status: 'reserved' | 'in_use' | 'released' | 'obsolete' | 'void';
     /**
-     * Legacy numbers, one per line, at most 5000 lines that are not blank.
+     * Legacy numbers, one set per line, at most 5000 lines that are not blank.
      */
     text: string;
+    /**
+     * True when the numbers missing from a line follow its first number (D-216). Default false.
+     */
+    one_set?: boolean;
     /**
      * True to get the report without saving anything. Default false.
      */
@@ -957,14 +961,18 @@ export type NumberImportLine = {
      */
     line: number;
     /**
-     * The first column of the line, without surrounding spaces.
+     * One column of the line, without surrounding spaces, or the number that follows (derived).
      */
     text: string;
-    result: 'imported' | 'existing' | 'duplicate' | 'customer_mismatch' | 'invalid';
+    result: 'imported' | 'existing' | 'duplicate' | 'customer_mismatch' | 'invalid' | 'type_repeated';
     /**
      * For a duplicate, the line where the number first appears.
      */
     first_line?: number;
+    /**
+     * True when the number follows the first number of its line (one_set).
+     */
+    derived?: boolean;
 };
 
 export type NumberImportGroup = {
@@ -1276,6 +1284,70 @@ export type MigratableNumber = {
     number: string;
     status: string;
     document_type: string;
+};
+
+export type LegacySet = {
+    customer_id: string;
+    /**
+     * True when the empty numbers follow the running number of the number given (D-216).
+     */
+    one_set: boolean;
+    documents: Array<LegacySetDocument>;
+    model_ids: Array<string>;
+    part_number_ids?: Array<string>;
+};
+
+export type MigratedSet = {
+    items: Array<Document>;
+};
+
+export type LegacySetDocument = {
+    document_type_key: 'pfd' | 'pfmea' | 'cp';
+    /**
+     * The original number without the revision, for example SH-TR-020. Empty with one_set to follow.
+     */
+    number: string;
+    /**
+     * The current revision on the hard copy, for example 2 for -02.
+     */
+    revision: number;
+    /**
+     * YYYY-MM-DD
+     */
+    effective_date: string;
+    prepared_by: string;
+    approved_by: string;
+};
+
+export type MigrationOverview = {
+    migration_mode: boolean;
+    /**
+     * The form set of the customer, or the default one, has a published version.
+     */
+    form_set_published: boolean;
+    /**
+     * Models of the customer that are not end of life.
+     */
+    models: number;
+    /**
+     * Processes in the master.
+     */
+    processes: number;
+    documents: Array<LegacyDocumentSummary>;
+};
+
+export type LegacyDocumentSummary = {
+    id: string;
+    number: string;
+    document_type_key: string;
+    document_type: string;
+    revision: number;
+    rows: number;
+    entered_by: string;
+    entered_at: string;
+    verified_by?: string;
+    verified_at?: string;
+    state: 'empty' | 'to_verify' | 'released';
 };
 
 export type MigratableNumberList = {
@@ -8300,6 +8372,74 @@ export type MigrateDocumentResponses = {
 };
 
 export type MigrateDocumentResponse = MigrateDocumentResponses[keyof MigrateDocumentResponses];
+
+export type GetMigrationOverviewData = {
+    body?: never;
+    path?: never;
+    query: {
+        customer_id: string;
+    };
+    url: '/api/v1/migration/overview';
+};
+
+export type GetMigrationOverviewErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type GetMigrationOverviewError = GetMigrationOverviewErrors[keyof GetMigrationOverviewErrors];
+
+export type GetMigrationOverviewResponses = {
+    /**
+     * The readiness checks and every legacy document of the customer.
+     */
+    200: MigrationOverview;
+};
+
+export type GetMigrationOverviewResponse = GetMigrationOverviewResponses[keyof GetMigrationOverviewResponses];
+
+export type MigrateSetData = {
+    body: LegacySet;
+    path?: never;
+    query?: never;
+    url: '/api/v1/migration/sets';
+};
+
+export type MigrateSetErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type MigrateSetError = MigrateSetErrors[keyof MigrateSetErrors];
+
+export type MigrateSetResponses = {
+    /**
+     * The documents, PFD first, then PFMEA and CP.
+     */
+    201: MigratedSet;
+};
+
+export type MigrateSetResponse = MigrateSetResponses[keyof MigrateSetResponses];
 
 export type SetDocumentHistoryData = {
     body: HistoryEntryList;

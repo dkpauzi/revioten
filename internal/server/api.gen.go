@@ -1010,6 +1010,48 @@ func (e InboxTaskKind) Valid() bool {
 	}
 }
 
+// Defines values for LegacyDocumentSummaryState.
+const (
+	LegacyDocumentSummaryStateEmpty    LegacyDocumentSummaryState = "empty"
+	LegacyDocumentSummaryStateReleased LegacyDocumentSummaryState = "released"
+	LegacyDocumentSummaryStateToVerify LegacyDocumentSummaryState = "to_verify"
+)
+
+// Valid indicates whether the value is a known member of the LegacyDocumentSummaryState enum.
+func (e LegacyDocumentSummaryState) Valid() bool {
+	switch e {
+	case LegacyDocumentSummaryStateEmpty:
+		return true
+	case LegacyDocumentSummaryStateReleased:
+		return true
+	case LegacyDocumentSummaryStateToVerify:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacySetDocumentDocumentTypeKey.
+const (
+	LegacySetDocumentDocumentTypeKeyCp    LegacySetDocumentDocumentTypeKey = "cp"
+	LegacySetDocumentDocumentTypeKeyPfd   LegacySetDocumentDocumentTypeKey = "pfd"
+	LegacySetDocumentDocumentTypeKeyPfmea LegacySetDocumentDocumentTypeKey = "pfmea"
+)
+
+// Valid indicates whether the value is a known member of the LegacySetDocumentDocumentTypeKey enum.
+func (e LegacySetDocumentDocumentTypeKey) Valid() bool {
+	switch e {
+	case LegacySetDocumentDocumentTypeKeyCp:
+		return true
+	case LegacySetDocumentDocumentTypeKeyPfd:
+		return true
+	case LegacySetDocumentDocumentTypeKeyPfmea:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for MetricsDocumentsStatus.
 const (
 	MetricsDocumentsStatusDraft            MetricsDocumentsStatus = "draft"
@@ -1209,6 +1251,7 @@ const (
 	NumberImportLineResultExisting         NumberImportLineResult = "existing"
 	NumberImportLineResultImported         NumberImportLineResult = "imported"
 	NumberImportLineResultInvalid          NumberImportLineResult = "invalid"
+	NumberImportLineResultTypeRepeated     NumberImportLineResult = "type_repeated"
 )
 
 // Valid indicates whether the value is a known member of the NumberImportLineResult enum.
@@ -1223,6 +1266,8 @@ func (e NumberImportLineResult) Valid() bool {
 	case NumberImportLineResultImported:
 		return true
 	case NumberImportLineResultInvalid:
+		return true
+	case NumberImportLineResultTypeRepeated:
 		return true
 	default:
 		return false
@@ -3793,6 +3838,54 @@ type LegacyDocument struct {
 	RouteReason *string `json:"route_reason,omitempty"`
 }
 
+// LegacyDocumentSummary defines model for LegacyDocumentSummary.
+type LegacyDocumentSummary struct {
+	DocumentType    string                     `json:"document_type"`
+	DocumentTypeKey string                     `json:"document_type_key"`
+	EnteredAt       time.Time                  `json:"entered_at"`
+	EnteredBy       string                     `json:"entered_by"`
+	Id              string                     `json:"id"`
+	Number          string                     `json:"number"`
+	Revision        int                        `json:"revision"`
+	Rows            int                        `json:"rows"`
+	State           LegacyDocumentSummaryState `json:"state"`
+	VerifiedAt      *time.Time                 `json:"verified_at,omitempty"`
+	VerifiedBy      *string                    `json:"verified_by,omitempty"`
+}
+
+// LegacyDocumentSummaryState defines model for LegacyDocumentSummary.State.
+type LegacyDocumentSummaryState string
+
+// LegacySet defines model for LegacySet.
+type LegacySet struct {
+	CustomerId string              `json:"customer_id"`
+	Documents  []LegacySetDocument `json:"documents"`
+	ModelIds   []string            `json:"model_ids"`
+
+	// OneSet True when the empty numbers follow the running number of the number given (D-216).
+	OneSet        bool      `json:"one_set"`
+	PartNumberIds *[]string `json:"part_number_ids,omitempty"`
+}
+
+// LegacySetDocument defines model for LegacySetDocument.
+type LegacySetDocument struct {
+	ApprovedBy      string                           `json:"approved_by"`
+	DocumentTypeKey LegacySetDocumentDocumentTypeKey `json:"document_type_key"`
+
+	// EffectiveDate YYYY-MM-DD
+	EffectiveDate string `json:"effective_date"`
+
+	// Number The original number without the revision, for example SH-TR-020. Empty with one_set to follow.
+	Number     string `json:"number"`
+	PreparedBy string `json:"prepared_by"`
+
+	// Revision The current revision on the hard copy, for example 2 for -02.
+	Revision int `json:"revision"`
+}
+
+// LegacySetDocumentDocumentTypeKey defines model for LegacySetDocument.DocumentTypeKey.
+type LegacySetDocumentDocumentTypeKey string
+
 // LinkSuggestion defines model for LinkSuggestion.
 type LinkSuggestion struct {
 	// Matched The text of the point that matches row_text.
@@ -3865,6 +3958,26 @@ type MigratableNumber struct {
 // MigratableNumberList defines model for MigratableNumberList.
 type MigratableNumberList struct {
 	Items []MigratableNumber `json:"items"`
+}
+
+// MigratedSet defines model for MigratedSet.
+type MigratedSet struct {
+	Items []Document `json:"items"`
+}
+
+// MigrationOverview defines model for MigrationOverview.
+type MigrationOverview struct {
+	Documents []LegacyDocumentSummary `json:"documents"`
+
+	// FormSetPublished The form set of the customer, or the default one, has a published version.
+	FormSetPublished bool `json:"form_set_published"`
+	MigrationMode    bool `json:"migration_mode"`
+
+	// Models Models of the customer that are not end of life.
+	Models int `json:"models"`
+
+	// Processes Processes in the master.
+	Processes int `json:"processes"`
 }
 
 // MigrationVerification defines model for MigrationVerification.
@@ -4277,6 +4390,9 @@ type NumberImportGroup struct {
 
 // NumberImportLine defines model for NumberImportLine.
 type NumberImportLine struct {
+	// Derived True when the number follows the first number of its line (one_set).
+	Derived *bool `json:"derived,omitempty"`
+
 	// FirstLine For a duplicate, the line where the number first appears.
 	FirstLine *int `json:"first_line,omitempty"`
 
@@ -4284,7 +4400,7 @@ type NumberImportLine struct {
 	Line   int                    `json:"line"`
 	Result NumberImportLineResult `json:"result"`
 
-	// Text The first column of the line, without surrounding spaces.
+	// Text One column of the line, without surrounding spaces, or the number that follows (derived).
 	Text string `json:"text"`
 }
 
@@ -4317,10 +4433,13 @@ type NumberImportRequest struct {
 	// DryRun True to get the report without saving anything. Default false.
 	DryRun *bool `json:"dry_run,omitempty"`
 
+	// OneSet True when the numbers missing from a line follow its first number (D-216). Default false.
+	OneSet *bool `json:"one_set,omitempty"`
+
 	// Status The status of every number in this import.
 	Status NumberImportRequestStatus `json:"status"`
 
-	// Text Legacy numbers, one per line, at most 5000 lines that are not blank.
+	// Text Legacy numbers, one set per line, at most 5000 lines that are not blank.
 	Text string `json:"text"`
 }
 
@@ -6287,6 +6406,11 @@ type ListMigratableNumbersParams struct {
 	CustomerId string `form:"customer_id" json:"customer_id"`
 }
 
+// GetMigrationOverviewParams defines parameters for GetMigrationOverview.
+type GetMigrationOverviewParams struct {
+	CustomerId string `form:"customer_id" json:"customer_id"`
+}
+
 // ListModelGroupsParams defines parameters for ListModelGroups.
 type ListModelGroupsParams struct {
 	// CustomerId The customer whose master data is listed.
@@ -6575,6 +6699,9 @@ type UpdateFourMCategoryJSONRequestBody = NameUpdate
 
 // MigrateDocumentJSONRequestBody defines body for MigrateDocument for application/json ContentType.
 type MigrateDocumentJSONRequestBody = LegacyDocument
+
+// MigrateSetJSONRequestBody defines body for MigrateSet for application/json ContentType.
+type MigrateSetJSONRequestBody = LegacySet
 
 // CreateModelGroupJSONRequestBody defines body for CreateModelGroup for application/json ContentType.
 type CreateModelGroupJSONRequestBody = NewModelGroup
@@ -7097,6 +7224,12 @@ type ServerInterface interface {
 	// ListMigratableNumbers Numbers of one customer that a legacy document can take (E-10, M7.1)
 	// (GET /api/v1/migration/numbers)
 	ListMigratableNumbers(w http.ResponseWriter, r *http.Request, params ListMigratableNumbersParams)
+	// GetMigrationOverview Readiness and status board of the migration menu for one customer (E-10, D-215)
+	// (GET /api/v1/migration/overview)
+	GetMigrationOverview(w http.ResponseWriter, r *http.Request, params GetMigrationOverviewParams)
+	// MigrateSet Enter one set of legacy documents at once (E-10, D-215, D-216)
+	// (POST /api/v1/migration/sets)
+	MigrateSet(w http.ResponseWriter, r *http.Request)
 	// ListModelGroups The model groups of one customer, ordered by name
 	// (GET /api/v1/model-groups)
 	ListModelGroups(w http.ResponseWriter, r *http.Request, params ListModelGroupsParams)
@@ -10788,6 +10921,53 @@ func (siw *ServerInterfaceWrapper) ListMigratableNumbers(w http.ResponseWriter, 
 	handler.ServeHTTP(w, r)
 }
 
+// GetMigrationOverview operation middleware
+func (siw *ServerInterfaceWrapper) GetMigrationOverview(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetMigrationOverviewParams
+
+	// ------------- Required query parameter "customer_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "customer_id", r.URL.Query(), &params.CustomerId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "customer_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customer_id", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMigrationOverview(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// MigrateSet operation middleware
+func (siw *ServerInterfaceWrapper) MigrateSet(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.MigrateSet(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListModelGroups operation middleware
 func (siw *ServerInterfaceWrapper) ListModelGroups(w http.ResponseWriter, r *http.Request) {
 
@@ -13288,6 +13468,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/documents/{documentId}/changes", wrapper.ListDocumentChanges)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/migration/numbers", wrapper.ListMigratableNumbers)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/migration/documents", wrapper.MigrateDocument)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/migration/overview", wrapper.GetMigrationOverview)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/migration/sets", wrapper.MigrateSet)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/documents/{documentId}/history", wrapper.SetDocumentHistory)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/documents/{documentId}/migration/verify", wrapper.VerifyMigration)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/documents/{documentId}/link-suggestions", wrapper.ListLinkSuggestions)
@@ -18549,6 +18731,84 @@ func (response ListMigratableNumbersdefaultJSONResponse) VisitListMigratableNumb
 	return err
 }
 
+type GetMigrationOverviewRequestObject struct {
+	Params GetMigrationOverviewParams
+}
+
+type GetMigrationOverviewResponseObject interface {
+	VisitGetMigrationOverviewResponse(w http.ResponseWriter) error
+}
+
+type GetMigrationOverview200JSONResponse MigrationOverview
+
+func (response GetMigrationOverview200JSONResponse) VisitGetMigrationOverviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMigrationOverviewdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response GetMigrationOverviewdefaultJSONResponse) VisitGetMigrationOverviewResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type MigrateSetRequestObject struct {
+	Body *MigrateSetJSONRequestBody
+}
+
+type MigrateSetResponseObject interface {
+	VisitMigrateSetResponse(w http.ResponseWriter) error
+}
+
+type MigrateSet201JSONResponse MigratedSet
+
+func (response MigrateSet201JSONResponse) VisitMigrateSetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type MigrateSetdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response MigrateSetdefaultJSONResponse) VisitMigrateSetResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type ListModelGroupsRequestObject struct {
 	Params ListModelGroupsParams
 }
@@ -22572,6 +22832,12 @@ type StrictServerInterface interface {
 	// ListMigratableNumbers Numbers of one customer that a legacy document can take (E-10, M7.1)
 	// (GET /api/v1/migration/numbers)
 	ListMigratableNumbers(ctx context.Context, request ListMigratableNumbersRequestObject) (ListMigratableNumbersResponseObject, error)
+	// GetMigrationOverview Readiness and status board of the migration menu for one customer (E-10, D-215)
+	// (GET /api/v1/migration/overview)
+	GetMigrationOverview(ctx context.Context, request GetMigrationOverviewRequestObject) (GetMigrationOverviewResponseObject, error)
+	// MigrateSet Enter one set of legacy documents at once (E-10, D-215, D-216)
+	// (POST /api/v1/migration/sets)
+	MigrateSet(ctx context.Context, request MigrateSetRequestObject) (MigrateSetResponseObject, error)
 	// ListModelGroups The model groups of one customer, ordered by name
 	// (GET /api/v1/model-groups)
 	ListModelGroups(ctx context.Context, request ListModelGroupsRequestObject) (ListModelGroupsResponseObject, error)
@@ -26615,6 +26881,63 @@ func (sh *strictHandler) ListMigratableNumbers(w http.ResponseWriter, r *http.Re
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ListMigratableNumbersResponseObject); ok {
 		if err := validResponse.VisitListMigratableNumbersResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetMigrationOverview operation middleware
+func (sh *strictHandler) GetMigrationOverview(w http.ResponseWriter, r *http.Request, params GetMigrationOverviewParams) {
+	var request GetMigrationOverviewRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetMigrationOverview(ctx, request.(GetMigrationOverviewRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetMigrationOverview")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetMigrationOverviewResponseObject); ok {
+		if err := validResponse.VisitGetMigrationOverviewResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// MigrateSet operation middleware
+func (sh *strictHandler) MigrateSet(w http.ResponseWriter, r *http.Request) {
+	var request MigrateSetRequestObject
+
+	var body MigrateSetJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.MigrateSet(ctx, request.(MigrateSetRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "MigrateSet")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(MigrateSetResponseObject); ok {
+		if err := validResponse.VisitMigrateSetResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

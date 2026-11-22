@@ -79,7 +79,7 @@ func TestImport(t *testing.T) {
 	text := strings.Join([]string{
 		"SH-KU-001",
 		"SH-KU-002",
-		"SH-KU-005\tModel A\t-03", // kolom lain dari Excel diabaikan
+		"SH-KU-005\t\t\tModel A", // kolom kosong dilewati, kolom keempat diabaikan (D-216)
 		"",
 		"SF-KU-001",
 		"SF-KU-002",
@@ -160,8 +160,9 @@ func TestImport(t *testing.T) {
 	if err != nil || again.Imported != 0 || again.Lines[0].Result != LineExisting || again.Lines[2].Result != LineExisting {
 		t.Errorf("impor diulang: %v, %v", lineResults(again), err)
 	}
-	if err := f.pool.QueryRow(ctx, "SELECT count(*) FROM number_batches WHERE kind = 'import'").Scan(&count); err != nil || count != 1 {
-		t.Errorf("batch impor %d, %v; ingin 1", count, err)
+	// Satu batch per baris yang punya nomor masuk (D-216, E-140).
+	if err := f.pool.QueryRow(ctx, "SELECT count(*) FROM number_batches WHERE kind = 'import'").Scan(&count); err != nil || count != 8 {
+		t.Errorf("batch impor %d, %v; ingin 8", count, err)
 	}
 }
 

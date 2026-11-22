@@ -57,7 +57,8 @@ const lineResultKeys: Record<NumberImportLine['result'], MessageKey> = {
 	existing: 'numberImportLineExisting',
 	duplicate: 'numberImportLineDuplicate',
 	customer_mismatch: 'numberImportLineMismatch',
-	invalid: 'numberImportLineInvalid'
+	invalid: 'numberImportLineInvalid',
+	type_repeated: 'numberImportLineTypeRepeated'
 };
 
 // lineResultText memberi teks hasil satu baris impor nomor lama (M2.5). Nomor

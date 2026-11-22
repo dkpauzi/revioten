@@ -10,6 +10,48 @@ import (
 	"time"
 )
 
+const findRegisteredNumber = `-- name: FindRegisteredNumber :one
+SELECT id, number, status, batch_id
+FROM document_numbers
+WHERE (customer_code = $1 AND document_type_id = $2 AND sequence = $3)
+   OR number = $4
+ORDER BY id
+LIMIT 1
+`
+
+type FindRegisteredNumberParams struct {
+	CustomerCode   string
+	DocumentTypeID string
+	Sequence       int32
+	Number         string
+}
+
+type FindRegisteredNumberRow struct {
+	ID      string
+	Number  string
+	Status  string
+	BatchID string
+}
+
+// FindRegisteredNumber mencari nomor lama di register: nomor berjalan yang
+// sama untuk kode dan jenis itu, atau teks yang sama (menu migrasi, D-216).
+func (q *Queries) FindRegisteredNumber(ctx context.Context, arg FindRegisteredNumberParams) (FindRegisteredNumberRow, error) {
+	row := q.db.QueryRow(ctx, findRegisteredNumber,
+		arg.CustomerCode,
+		arg.DocumentTypeID,
+		arg.Sequence,
+		arg.Number,
+	)
+	var i FindRegisteredNumberRow
+	err := row.Scan(
+		&i.ID,
+		&i.Number,
+		&i.Status,
+		&i.BatchID,
+	)
+	return i, err
+}
+
 const getCounterValue = `-- name: GetCounterValue :one
 SELECT last_value FROM number_counters WHERE customer_code = $1 AND document_type_id = $2
 `

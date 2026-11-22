@@ -19,6 +19,8 @@ import (
 type MigrationService interface {
 	MigratableNumbers(ctx context.Context, actor access.Actor, customerID string) ([]document.MigratableNumber, error)
 	Migrate(ctx context.Context, actor access.Actor, in document.LegacyDocument) (document.Document, error)
+	MigrateSet(ctx context.Context, actor access.Actor, in document.LegacySet) ([]document.Document, error)
+	MigrationOverview(ctx context.Context, actor access.Actor, customerID string) (document.MigrationOverview, error)
 	SetHistory(ctx context.Context, actor access.Actor, id string, entries []document.HistoryEntry) (document.Document, error)
 	VerifyMigration(ctx context.Context, actor access.Actor, id string, effortMinutes *int) (document.Document, error)
 	LinkSuggestions(ctx context.Context, actor access.Actor, id string) ([]document.LinkSuggestion, error)
@@ -61,6 +63,54 @@ func (a *apiServer) MigrateDocument(ctx context.Context, req MigrateDocumentRequ
 		return nil, err
 	}
 	return MigrateDocument201JSONResponse(toAPIDocument(d)), nil
+}
+
+// GetMigrationOverview menjawab GET /api/v1/migration/overview (D-215).
+func (a *apiServer) GetMigrationOverview(ctx context.Context, req GetMigrationOverviewRequestObject) (GetMigrationOverviewResponseObject, error) {
+	v, err := a.migration.MigrationOverview(ctx, actorFrom(ctx), req.Params.CustomerId)
+	if err != nil {
+		return nil, err
+	}
+	out := MigrationOverview{
+		MigrationMode: v.MigrationMode, FormSetPublished: v.FormSetPublished, Models: v.Models, Processes: v.Processes,
+		Documents: make([]LegacyDocumentSummary, 0, len(v.Documents)),
+	}
+	for _, d := range v.Documents {
+		item := LegacyDocumentSummary{
+			Id: d.ID, Number: d.Number, DocumentTypeKey: d.DocumentTypeKey, DocumentType: d.DocumentType,
+			Revision: d.Revision, Rows: d.Rows, EnteredBy: d.EnteredBy, EnteredAt: d.EnteredAt,
+			VerifiedAt: d.VerifiedAt, State: LegacyDocumentSummaryState(d.State),
+		}
+		if d.VerifiedBy != "" {
+			item.VerifiedBy = &d.VerifiedBy
+		}
+		out.Documents = append(out.Documents, item)
+	}
+	return GetMigrationOverview200JSONResponse(out), nil
+}
+
+// MigrateSet menjawab POST /api/v1/migration/sets (D-215, D-216).
+func (a *apiServer) MigrateSet(ctx context.Context, req MigrateSetRequestObject) (MigrateSetResponseObject, error) {
+	b := req.Body
+	in := document.LegacySet{CustomerID: b.CustomerId, OneSet: b.OneSet, ModelIDs: b.ModelIds}
+	if b.PartNumberIds != nil {
+		in.PartNumberIDs = *b.PartNumberIds
+	}
+	for _, d := range b.Documents {
+		in.Documents = append(in.Documents, document.LegacySetDocument{
+			TypeKey: string(d.DocumentTypeKey), Number: d.Number, Revision: d.Revision,
+			EffectiveDate: d.EffectiveDate, PreparedBy: d.PreparedBy, ApprovedBy: d.ApprovedBy,
+		})
+	}
+	docs, err := a.migration.MigrateSet(ctx, actorFrom(ctx), in)
+	if err != nil {
+		return nil, err
+	}
+	out := MigratedSet{Items: make([]Document, 0, len(docs))}
+	for _, d := range docs {
+		out.Items = append(out.Items, toAPIDocument(d))
+	}
+	return MigrateSet201JSONResponse(out), nil
 }
 
 // SetDocumentHistory menjawab PUT /api/v1/documents/{documentId}/history.

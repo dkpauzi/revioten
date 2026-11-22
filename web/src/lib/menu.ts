@@ -42,6 +42,8 @@ const groups: { id: MenuGroup['id']; label: MessageKey; entries: Entry[] }[] = [
 			// Laporan kinerja PPAP Engineer (L-5, D-197).
 			{ href: '/performance', label: 'navPerformance', permission: 'L-5' },
 			{ href: '/numbers', label: 'navNumbers' },
+			// Menu migrasi dokumen lama (D-215): petugas migrasi (E-10).
+			{ href: '/migration', label: 'navLegacy', permission: 'E-10' },
 			// Impor nomor lama hanya untuk document control (E-8, M2.5).
 			{ href: '/numbers/import', label: 'numberImportLink', permission: 'E-8' }
 		]
