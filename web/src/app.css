@@ -623,3 +623,93 @@ kbd {
 		height: 22px;
 	}
 }
+
+/*
+ * Keadaan interaktif (rencana E, docs/rencana/import-tur-dan-logo.md): hover,
+ * focus, klik, dan terpilih terlihat jelas, supaya orang (dan tur otomatis)
+ * mudah melihat bagian yang sedang dikerjakan. Warna memakai token di atas.
+ */
+
+/* Focus juga saat diklik mouse, bukan hanya lewat keyboard. */
+button:focus,
+a.button:focus,
+summary:focus {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+}
+
+/* Klik: tombol sedikit tertekan dan lebih gelap. */
+button:not(:disabled):active,
+a.button:active {
+	transform: translateY(1px);
+	background: var(--border);
+}
+
+form button:not([type='button']):not(:disabled):active,
+button.primary:not(:disabled):active,
+a.button.primary:active {
+	background: var(--accent-ink);
+	box-shadow: inset 0 2px 4px rgba(16, 24, 40, 0.25);
+}
+
+/* Hover kotak isian dan pilihan. */
+input:not([type='checkbox'], [type='radio'], :disabled, :read-only):hover,
+select:not(:disabled):hover,
+textarea:not(:disabled):hover {
+	border-color: var(--accent);
+}
+
+/* Centang dan radio: label ikut menunjukkan hover dan pilihan. */
+label:has(> input[type='checkbox'], > input[type='radio']) {
+	cursor: pointer;
+	border-radius: 6px;
+}
+
+label:has(> input[type='checkbox']:not(:disabled), > input[type='radio']:not(:disabled)):hover {
+	background: var(--accent-weak);
+}
+
+input[type='checkbox']:focus-visible,
+input[type='radio']:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+}
+
+/* Baris tabel data: latar tipis saat hover. Tabel cetak dan pratinjau punya
+   kelasnya sendiri, jadi tidak ikut. */
+table:not([class]) tbody tr:hover > td,
+table:not([class]) tbody tr:hover > th {
+	background: var(--accent-weak);
+}
+
+/* Tautan halaman aktif di dalam isi halaman (misalnya tab). */
+a[aria-current='page'] {
+	font-weight: 600;
+}
+
+/* Perubahan warna singkat; mati bila pengguna meminta gerak dikurangi. */
+button,
+a.button,
+input,
+select,
+textarea,
+label,
+td,
+th {
+	transition:
+		background-color 120ms ease,
+		border-color 120ms ease,
+		box-shadow 120ms ease,
+		transform 60ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	* {
+		transition: none !important;
+	}
+
+	button:not(:disabled):active,
+	a.button:active {
+		transform: none;
+	}
+}

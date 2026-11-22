@@ -46,7 +46,7 @@ test('admin mengganti nama perusahaan dan logo cetakan, lalu kembali ke logo baw
 	await expect(company.getByText(en.companyLogoDefault)).toBeVisible();
 	await expect(company.getByRole('img', { name: en.companyLogoAlt })).toBeVisible();
 
-	await company.getByLabel(en.companyName).fill('PT. SIIX EMS INDONESIA');
+	await company.getByLabel(en.companyName, { exact: true }).fill('PT. SIIX EMS INDONESIA');
 	await company.getByRole('button', { name: en.companyNameSave }).click();
 	await expect(company.getByRole('status')).toHaveText(en.companyNameSaved);
 

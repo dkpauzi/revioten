@@ -6,7 +6,7 @@
 
 ## L · Logo perusahaan diatur admin
 
-- **Status:** dibangun bersama bagian C (D-220, 23 November 2026). Asumsi pertanyaan 2: cetakan memakai logo yang berlaku saat dicetak. Bila pemilik memilih logo saat rilis, logo perlu ikut dibekukan di snapshot.
+- **Status:** dibangun bersama bagian C (D-220, 23 November 2026). Pertanyaan 2 dijawab pemilik: logo yang berlaku saat dicetak, juga untuk cetak ulang revisi lama (D-221).
 
 Logo dipakai di cover dan kepala lembar cetakan (bagian C), jadi dibangun bersama bagian C.
 
@@ -22,6 +22,8 @@ Logo dipakai di cover dan kepala lembar cetakan (bagian C), jadi dibangun bersam
 
 ## E · Efek hover, focus, dan klik
 
+- **Status:** dibangun (D-221, 23 November 2026).
+
 Sebagian sudah ada di `web/src/app.css`: tombol berganti warna saat hover, dan garis fokus `:focus-visible`. Yang ditambahkan di file yang sama (D-127, tanpa `<style>` per halaman):
 
 | Keadaan | Tombol dan tautan tombol | Kotak isian, pilihan, centang | Baris tabel dan menu |
@@ -36,6 +38,8 @@ Sebagian sudah ada di `web/src/app.css`: tombol berganti warna saat hover, dan g
 - Test: satu E2E memeriksa gaya fokus dan terpilih lewat `getComputedStyle`; `responsive.test.ts` tetap lulus.
 
 ## T · Layar tur mengikuti bagian yang sedang dikerjakan
+
+- **Status:** dibangun (D-221, 23 November 2026). Method Locator dibungkus sekali di `web/tour/act.ts`, jadi langkah tur tidak perlu diubah satu per satu.
 
 Playwright memang menggulir elemen ke layar sebelum mengklik, tetapi hanya sampai elemen terlihat, sering di tepi bawah layar dan tertutup pita keterangan. Usulan:
 
@@ -106,6 +110,6 @@ Jadi revisi memang belum diisi saat import nomor, dan baru diisi di menu migrasi
 ## Ringkasan pertanyaan
 
 1. E-143: cara password akun hasil import, opsi (a), (b), atau (c).
-2. Logo: cetakan ulang revisi lama memakai logo saat dicetak, atau logo saat rilis?
+2. ~~Logo: cetakan ulang revisi lama memakai logo saat dicetak, atau logo saat rilis?~~ Dijawab: saat dicetak (D-221).
 3. I3: template import sendiri saja dulu, atau juga membaca Excel bentuk Tokairika?
 4. I4: nomor yang sudah dipakai berarti Released saja, atau juga Reserved?
