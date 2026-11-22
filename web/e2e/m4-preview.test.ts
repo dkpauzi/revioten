@@ -21,7 +21,7 @@ const flow: [string, string, string, string][] = [
 	['5.6', 'Reflow', 'process', ''],
 	['5.7.1', 'AOI', 'decision', 'scrap'],
 	['5.7.2', 'VMI', 'decision', 'scrap'],
-	['6.1', 'Router', 'process', ''],
+	['6.1', 'Router', 'process', 'scrap'],
 	['6.2', 'Dust removal', 'process', ''],
 	['7', 'ICT', 'decision', 'scrap'],
 	['8', 'LED Lighting Test', 'decision', 'scrap'],

@@ -146,16 +146,61 @@ func TestSampleTokairika(t *testing.T) {
 		t.Fatal(err)
 	}
 	_ = os.WriteFile(filepath.Join(dir, "sample-cp.xlsx"), body, 0o600)
+	// PFD berpola SH-TR-020-02 sebagai diagram (bagian B).
+	pfd := tokairikaPFD()
+	pfdPage, err := HTML(pfd)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = os.WriteFile(filepath.Join(dir, "sample-pfd.html"), pfdPage, 0o600)
+	if browser, err := FindBrowser(""); err == nil {
+		if pdf, err := PDF(t.Context(), browser, pfdPage); err == nil {
+			_ = os.WriteFile(filepath.Join(dir, "sample-pfd.pdf"), pdf, 0o600)
+		}
+	}
+	if body, err := XLSX(pfd); err == nil {
+		_ = os.WriteFile(filepath.Join(dir, "sample-pfd.xlsx"), body, 0o600)
+	}
+}
+
+// tokairikaFlow: 19 langkah PFD SH-TR-020-02 (nomor, nama, arah NG). Router
+// (6.1) adalah proses dengan cabang NG ke SCRAP tanpa label OK; langkah lain
+// yang punya NG adalah inspeksi.
+var tokairikaFlow = [][3]string{{"1", "Part Receiving", ""}, {"2", "IQC", "ncp"}, {"3", "Material Storage", ""}, {"4", "Kitting", ""},
+	{"5.1", "Loading PCB", ""}, {"5.2", "Cleaning", ""}, {"5.3", "Solder Paste Printing", ""}, {"5.4", "SPI", "scrap"},
+	{"5.5", "SMT", ""}, {"5.6", "Reflow", ""}, {"5.7.1", "AOI", "scrap"}, {"5.7.2", "VMI", "scrap"}, {"6.1", "Router", "scrap"},
+	{"6.2", "Dust removal", ""}, {"7", "ICT", "scrap"}, {"8", "LED Lighting Test", "scrap"}, {"9", "Final Visual Inspection", "scrap"},
+	{"10", "OQC", "ncp"}, {"11", "Delivery", ""}}
+
+// tokairikaSymbol memberi simbol langkah TR-020: inspeksi bila punya NG, kecuali Router.
+func tokairikaSymbol(op, ng string) string {
+	if ng != "" && op != "6.1" {
+		return "decision"
+	}
+	return "process"
+}
+
+// tokairikaPFD adalah PFD berpola SH-TR-020-02: satu baris per langkah.
+func tokairikaPFD() Sheet {
+	sh := Sheet{Title: "PROCESS FLOW DIAGRAM", Number: "SH-TR-020", FlowColumn: 2, OpColumn: 0, ProcessColumn: 1,
+		Columns: []Column{{Label: "No", Width: 0.5}, {Label: "Process", Width: 1.6}, {Label: "Flow Symbol", Width: 1.3}, {Label: "NG Disposition", Width: 0.8}},
+		Header:  []Pair{{"Customer", "PT. TOKAIRIKA INDONESIA (TR)"}, {"Model Name", "D660A"}, {"Document No.", "SH-TR-020"}, {"Revision", "-02"}}}
+	sh.Snapshot.DocumentType = "pfd"
+	sh.Layout = Layout{Paper: "A4", Orientation: "portrait", FontSize: 8, MarginsMM: Margins{Top: 10, Right: 10, Bottom: 12, Left: 10}}
+	sh.Steps = map[string]Step{}
+	for _, f := range tokairikaFlow {
+		sh.Steps[f[0]] = Step{Symbol: tokairikaSymbol(f[0], f[2]), NG: f[2]}
+		sh.Ops = append(sh.Ops, f[0])
+		sh.Processes = append(sh.Processes, f[1])
+		sh.Rows = append(sh.Rows, Row{Cells: []string{f[0], f[1], "", f[2]}})
+	}
+	return sh
 }
 
 // tokairikaSheet adalah CP berpola SC-TR-020-04: 19 langkah PFD SH-TR-020-02,
 // tiga baris per langkah, inspeksi dengan NG ke SCRAP atau NCP.
 func tokairikaSheet() Sheet {
-	flow := [][3]string{{"1", "Part Receiving", ""}, {"2", "IQC", "ncp"}, {"3", "Material Storage", ""}, {"4", "Kitting", ""},
-		{"5.1", "Loading PCB", ""}, {"5.2", "Cleaning", ""}, {"5.3", "Solder Paste Printing", ""}, {"5.4", "SPI", "scrap"},
-		{"5.5", "SMT", ""}, {"5.6", "Reflow", ""}, {"5.7.1", "AOI", "scrap"}, {"5.7.2", "VMI", "scrap"}, {"6.1", "Router", ""},
-		{"6.2", "Dust removal", ""}, {"7", "ICT", "scrap"}, {"8", "LED Lighting Test", "scrap"}, {"9", "Final Visual Inspection", "scrap"},
-		{"10", "OQC", "ncp"}, {"11", "Delivery", ""}}
+	flow := tokairikaFlow
 	sh := Sheet{Title: "CONTROL PLAN", Number: "SC-TR-020", FlowColumn: 0, OpColumn: 1, ProcessColumn: 2,
 		Columns: []Column{{Label: "Process Flow", Width: 1.3}, {Label: "No", Width: 0.5}, {Label: "Process Name / Operation Description", Width: 1.6},
 			{Label: "Machine Equipment Jigs", Width: 1.4}, {Label: "Product Characteristic", Width: 1.4}, {Label: "Specification / Tolerance", Width: 1.4},
@@ -164,11 +209,7 @@ func tokairikaSheet() Sheet {
 	sh.Layout = Layout{Paper: "A3", Orientation: "landscape", FontSize: 8, MarginsMM: Margins{Top: 12, Right: 10, Bottom: 14, Left: 10}}
 	sh.Steps = map[string]Step{}
 	for _, f := range flow {
-		symbol := "process"
-		if f[2] != "" {
-			symbol = "decision"
-		}
-		sh.Steps[f[0]] = Step{Symbol: symbol, NG: f[2]}
+		sh.Steps[f[0]] = Step{Symbol: tokairikaSymbol(f[0], f[2]), NG: f[2]}
 		for n := 1; n <= 3; n++ {
 			sh.Ops = append(sh.Ops, f[0])
 			sh.Processes = append(sh.Processes, f[1])

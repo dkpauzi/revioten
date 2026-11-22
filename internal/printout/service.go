@@ -689,6 +689,7 @@ type PageView struct {
 	FontSize   float64
 	MarginsMM  Margins
 	Pages      []htmlPage
+	Legend     string // legenda diagram PFD; "" untuk tabel
 }
 
 // Preview menghitung rencana halaman satu revisi tanpa mencatat cetakan
@@ -737,6 +738,9 @@ func (s *Service) Preview(ctx context.Context, actor access.Actor, id string, re
 	v := PageView{Plan: plan, Title: sh.Title, Number: sh.Number, Revision: sh.RevisionLabel, Header: sh.Header, Columns: sh.Columns,
 		Marks: sh.Layout.RevisionMarks, FlowColumn: sh.FlowColumn, FlowLeftMM: plan.MarkMM, FontSize: sh.Layout.FontSize,
 		MarginsMM: sh.Layout.MarginsMM, Pages: pagesOf(sh, plan)}
+	if len(plan.Diagram) > 0 {
+		v.Legend = DiagramLegendSVG(plan.DiagramW)
+	}
 	for i := 0; i < sh.FlowColumn && i < len(plan.ColumnsMM); i++ {
 		v.FlowLeftMM += plan.ColumnsMM[i]
 	}

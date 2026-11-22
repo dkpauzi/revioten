@@ -4548,7 +4548,13 @@ type PagePreview struct {
 		Value string `json:"value"`
 	} `json:"header"`
 	LabelRowMm float32 `json:"label_row_mm"`
-	MarginsMm  struct {
+
+	// LegendMm Height of the legend; 0 for a table.
+	LegendMm *float32 `json:"legend_mm,omitempty"`
+
+	// LegendSvg Legend of the PFD diagram, shown above the diagram of every page; missing for a table.
+	LegendSvg *string `json:"legend_svg,omitempty"`
+	MarginsMm struct {
 		Bottom float32 `json:"bottom"`
 		Left   float32 `json:"left"`
 		Right  float32 `json:"right"`
@@ -4986,6 +4992,9 @@ type PositionRef struct {
 
 // PreviewPage defines model for PreviewPage.
 type PreviewPage struct {
+	// DiagramSvg A PFD prints as a diagram (E-144). SVG of the diagram of this page, in millimetres; missing for a table. The page then has no rows.
+	DiagramSvg *string `json:"diagram_svg,omitempty"`
+
 	// FlowSvg SVG of the process flow of this page (symbols, NG branches, connectors), in millimetres; empty without a flow column.
 	FlowSvg string `json:"flow_svg"`
 	Rows    []struct {

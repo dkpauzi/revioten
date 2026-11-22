@@ -159,7 +159,7 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-141 | Alur migrasi dokumen lama tersebar di banyak menu | Penyederhanaan | M7.1, M7.5 | Tidak | Diputuskan (D-215) |
 | E-142 | Rincian menu migrasi yang belum diputuskan | Celah | D-215, D-216 | Tidak | Diputuskan (D-217) |
 | E-143 | Password standar untuk akun hasil import | Kontradiksi | D-132, D-85 | Tidak | Terbuka |
-| E-144 | Cetakan dan simbol alur belum sama dengan dokumen Tokairika | Celah | R-PRT-07, D-122, D-161 | Tidak | Terbuka |
+| E-144 | Cetakan dan simbol alur belum sama dengan dokumen Tokairika | Celah | R-PRT-07, D-122, D-161 | Tidak | Sebagian diputuskan (D-219, bagian B); bagian C terbuka |
 
 ## Keputusan 4 November 2026
 
@@ -2494,7 +2494,7 @@ Salin blok ini untuk setiap temuan baru.
   - Rework: pemilik memutuskan kotak REWORK tanpa panah balik (jawaban 22 November 2026).
 - **Opsi:** bagian B (simbol alur) dan C (cover dan header) sesuai rencana yang disampaikan ke pemilik.
 - **Menghambat milestone?** Tidak
-- **Status:** Terbuka (menunggu bagian B dan C)
+- **Status:** Bagian B diputuskan dan dibangun (D-219, 22 November 2026). Bagian C (cover dan header) masih terbuka.
 
 ## Usulan desain UI (UX-01 sampai UX-07): dampak ke M0 sampai M3 dan saran
 

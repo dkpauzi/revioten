@@ -13,8 +13,14 @@ import (
 	"github.com/xuri/excelize/v2"
 )
 
-// excelColPx: lebar kolom Excel (jumlah karakter) dalam piksel.
-func excelColPx(chars float64) float64 { return math.Floor(chars*7 + 5) }
+// excelColPx: lebar kolom Excel (nilai width di berkas) dalam piksel layar,
+// dengan rumus Excel untuk huruf bawaan Calibri 11 (lebar angka 7 piksel).
+// excelize sendiri menghitung 8 piksel per huruf, jadi posisi shape tidak
+// memakai hitungan excelize (lihat xlsxdraw.go).
+func excelColPx(width float64) float64 { return math.Floor((math.Floor(256*width) + 18) / 256 * 7) }
+
+// excelRowPx: tinggi baris Excel (point) dalam piksel layar.
+func excelRowPx(pt float64) float64 { return math.Round(pt * 96 / 72) }
 
 // mmPt: milimeter ke point.
 const mmPt = 72 / 25.4
@@ -26,6 +32,8 @@ type xlsxLayout struct {
 	excelRow []int     // nomor baris Excel setiap baris Sheet.Rows
 	offset   int       // 1 bila kolom tanda revisi dicetak
 	flowPx   float64   // lebar kolom alur (piksel)
+	flowLeft float64   // jarak kolom alur dari kiri lembar (piksel)
+	rowY     []float64 // jarak atas setiap baris Excel dari atas lembar (piksel); indeks = nomor baris
 }
 
 // planRows menghitung tinggi baris Excel dari rencana halaman. Excel
@@ -97,9 +105,9 @@ func px(pt float64) float64 { return pt * 96 / 72 }
 
 // flowShapes menggambar alur satu halaman. Excel memakai jarak vertikal
 // hanya di dalam sel jangkarnya, jadi setiap shape dijangkarkan di baris
-// tempat ia berada, dengan jarak di dalam baris itu.
+// tempat ia berada, dengan jarak di dalam baris itu. Bentuknya sama dengan
+// FlowSVG: kotak NG di kiri, garis siku berpanah, OK hanya di belah ketupat.
 func flowShapes(f *excelize.File, name string, sh Sheet, x xlsxLayout, pg PlanPage) error {
-	col := sh.FlowColumn + 1 + x.offset
 	scale := x.flowPx / (x.plan.ColumnsMM[sh.FlowColumn] * 96 / 25.4) // piksel lembar per piksel kertas
 	mm := func(v float64) float64 { return v * 96 / 25.4 * scale }
 	tops := make([]float64, len(pg.Rows))
@@ -109,93 +117,79 @@ func flowShapes(f *excelize.File, name string, sh Sheet, x xlsxLayout, pg PlanPa
 		y += px(x.rowPt[r])
 	}
 	height := y
-	// at memberi sel jangkar dan jarak di dalamnya untuk posisi vertikal yy.
-	at := func(yy float64) (string, int) {
-		i := len(tops) - 1
-		for i > 0 && tops[i] > yy {
-			i--
-		}
-		return cell(col, x.excelRow[pg.Rows[i]]), int(math.Round(yy - tops[i]))
-	}
-	cx := math.Min(x.flowPx/2, mm(shapeWMM/2+2.5))
-	black := excelize.Fill{Type: "pattern", Pattern: 1, Color: []string{"000000"}}
-	white := excelize.Fill{Type: "pattern", Pattern: 1, Color: []string{"FFFFFF"}}
-	outline := excelize.LineOptions{Width: 0.75, Fill: black}
-	add := func(typ string, left, top, w, h float64, text string, fill excelize.Fill) error {
-		anchor, off := at(top)
-		s := &excelize.Shape{Cell: anchor, Type: typ, Width: uint(math.Max(1, w)), Height: uint(math.Max(1, h)), Fill: fill, Line: outline,
-			Format: excelize.GraphicOptions{OffsetX: int(math.Round(left)), OffsetY: off}}
-		if text != "" {
-			s.Paragraph = []excelize.RichTextRun{{Text: text, Font: &excelize.Font{Bold: true, Size: 7, Color: "000000", Family: "Arial"}}}
-		}
-		return f.AddShape(name, s)
-	}
-	line := func(x1, y1, w, h float64) error {
-		anchor, off := at(y1)
-		s := &excelize.Shape{Cell: anchor, Type: "line", Width: uint(math.Max(1, w)), Height: uint(math.Max(1, h)), Line: outline,
-			Format: excelize.GraphicOptions{OffsetX: int(math.Round(x1)), OffsetY: off}}
-		return f.AddShape(name, s)
-	}
+	pageTop := x.rowY[x.excelRow[pg.Rows[0]]]
+	d := &drawer{f: f, name: name, abs: func(xx, yy float64) (float64, float64) { return x.flowLeft + xx, pageTop + yy }}
+	widthMM := x.plan.ColumnsMM[sh.FlowColumn]
+	cx := mm(flowX(widthMM))
 	ys := make([]float64, len(pg.Nodes))
 	for i, n := range pg.Nodes {
 		ys[i] = tops[n.Row] + mm(nodeTopMM)
 	}
-	top, bottom := height, 0.0
-	if len(ys) > 0 {
-		top, bottom = ys[0], ys[len(ys)-1]
-	}
+	r := mm(connRMM)
+	prev := math.NaN()
 	if pg.In != "" {
-		top = mm(connEdgeMM)
+		prev = mm(connEdgeMM) + r
+	}
+	for i, n := range pg.Nodes {
+		_, h := flowSize(n.Symbol)
+		if !math.IsNaN(prev) {
+			if err := d.line(cx, prev, cx, ys[i]-mm(h)/2, true); err != nil {
+				return err
+			}
+		}
+		prev = ys[i] + mm(h)/2
 	}
 	if pg.Out != "" {
-		bottom = height - mm(connEdgeMM)
-	}
-	if bottom > top {
-		if err := line(cx, top, 1, bottom-top); err != nil {
+		if math.IsNaN(prev) {
+			prev = 0
+		}
+		if err := d.line(cx, prev, cx, height-mm(connEdgeMM)-r, true); err != nil {
 			return err
 		}
 	}
-	r := mm(connRMM)
 	if pg.In != "" {
-		if err := add("ellipse", cx-r, mm(connEdgeMM)-r, 2*r, 2*r, pg.In, white); err != nil {
+		if err := d.shape("ellipse", cx-r, mm(connEdgeMM)-r, 2*r, 2*r, []string{pg.In}, 7); err != nil {
 			return err
 		}
 	}
-	w, h := mm(shapeWMM), mm(shapeHMM)
 	for i, n := range pg.Nodes {
 		yy := ys[i]
+		w, h := flowSize(n.Symbol)
 		if n.NG != "" {
-			if err := line(cx+w/2, yy, x.flowPx-cx-w/2-2, 1); err != nil {
+			from := cx - mm(w)/2
+			boxW := math.Max(mm(6), math.Min(mm(ngBoxWMM), from-mm(2.6)))
+			boxX := math.Max(mm(0.6), from-mm(2)-boxW)
+			boxH := mm(ngBoxHMM)
+			boxY := math.Max(mm(0.4), yy-boxH-mm(0.8))
+			if err := d.ngBox(boxX, boxY, boxW, boxH, n.NG, 6); err != nil {
 				return err
 			}
-			// Tulisan NG dan arahnya di sel baris itu, rata kanan bawah, di bawah garis NG.
-			row := x.excelRow[pg.Rows[n.Row]]
-			if err := f.SetCellValue(name, cell(col, row), "NG → "+ngLabel(n.NG)); err != nil {
+			mid := boxX + boxW/2
+			if boxY+boxH < yy-mm(0.5) {
+				if err := d.line(mid, yy, from, yy, false); err != nil {
+					return err
+				}
+				if err := d.line(mid, yy, mid, boxY+boxH, true); err != nil {
+					return err
+				}
+			} else if err := d.line(from, yy, boxX+boxW, yy, true); err != nil {
 				return err
 			}
-			style, err := f.NewStyle(&excelize.Style{
-				Font:      &excelize.Font{Bold: true, Size: 6, Family: "Arial"},
-				Alignment: &excelize.Alignment{Horizontal: "right", Vertical: "bottom"},
-				Border:    []excelize.Border{{Type: "left", Color: "000000", Style: 1}, {Type: "right", Color: "000000", Style: 1}},
-			})
-			if err != nil {
+			if err := d.text(mid, yy+mm(0.4), from-mid, mm(3), "NG", 6); err != nil {
 				return err
 			}
-			if err := f.SetCellStyle(name, cell(col, row), cell(col, row), style); err != nil {
-				return err
+			if n.Symbol == "decision" {
+				if err := d.text(cx+mm(0.5), yy+mm(h)/2, mm(5), mm(3), "OK", 6); err != nil {
+					return err
+				}
 			}
 		}
-		typ := map[string]string{"decision": "flowChartDecision", "merge": "flowChartMerge", "connector": "flowChartConnector",
-			"alternate_process": "flowChartAlternateProcess", "document": "flowChartDocument"}[n.Symbol]
-		if typ == "" {
-			typ = "flowChartProcess"
-		}
-		if err := add(typ, cx-w/2, yy-h/2, w, h, n.Op, white); err != nil {
+		if err := d.shape(excelShape(n.Symbol), cx-mm(w)/2, yy-mm(h)/2, mm(w), mm(h), []string{n.Op}, 7); err != nil {
 			return err
 		}
 	}
 	if pg.Out != "" {
-		if err := add("ellipse", cx-r, height-mm(connEdgeMM)-r, 2*r, 2*r, pg.Out, white); err != nil {
+		if err := d.shape("ellipse", cx-r, height-mm(connEdgeMM)-r, 2*r, 2*r, []string{pg.Out}, 7); err != nil {
 			return err
 		}
 	}

@@ -70,6 +70,7 @@ tr { break-inside: avoid; }
 .sheet td.merged { font-weight: bold; }
 .flowbox { position: absolute; }
 .flowbox svg { display: block; }
+.legendbox svg, .diagrambox svg { display: block; }
 </style></head><body>
 {{if .Watermark}}<div class="wm">{{.Watermark}}</div>{{end}}
 <div class="foot"><span>{{.Number}} {{.RevisionLabel}} · <span class="status">{{.Status}}</span>{{if .ReleaseNote}} · {{.ReleaseNote}}{{end}}</span><span>SHA-256 {{short .ContentHash}}</span></div>
@@ -95,7 +96,9 @@ tr { break-inside: avoid; }
 <table class="head"><tr>{{range $i, $p := $.Header}}{{if and $i (eq (mod3 $i) 0)}}</tr><tr>{{end}}<td class="l">{{$p.Label}}</td><td>{{$p.Value}}</td>{{end}}</tr></table>
 {{if $.Slots}}<table class="slots" style="margin-top:2mm"><tr>{{range $.Slots}}<th>{{.Title}}</th>{{end}}</tr><tr>{{range $.Slots}}<td class="sign">{{if $.Layout.Cover}}Refer approval sheet{{else}}{{.Signed}}{{end}}</td>{{end}}</tr><tr>{{range $.Slots}}<td>{{.Name}}</td>{{end}}</tr></table>{{end}}
 </div>
-<div class="tw">
+{{if $pg.Diagram}}<div class="legendbox" style="height:{{$.Plan.LegendMM}}mm">{{$.Legend}}</div>
+<div class="diagrambox">{{$pg.Diagram}}</div>
+{{else}}<div class="tw">
 <table>
   <colgroup>{{if $.Layout.RevisionMarks}}<col style="width:{{$.Plan.MarkMM}}mm">{{end}}{{range $.Plan.ColumnsMM}}<col style="width:{{.}}mm">{{end}}</colgroup>
   <thead>
@@ -107,7 +110,7 @@ tr { break-inside: avoid; }
   </tbody>
 </table>
 {{if $pg.Flow}}<div class="flowbox" style="left:{{$.FlowLeftMM}}mm;top:{{$.Plan.TheadMM}}mm">{{$pg.Flow}}</div>{{end}}
-</div>
+</div>{{end}}
 </section>
 {{end}}
 </body></html>`))
@@ -126,6 +129,7 @@ type htmlView struct {
 	Plan        planView
 	Pages       []htmlPage
 	FlowLeftMM  float64
+	Legend      template.HTML // legenda diagram PFD
 }
 
 // planView adalah rencana halaman ditambah tinggi area isi.
@@ -163,6 +167,8 @@ type htmlPage = PageContent
 type PageContent struct {
 	Rows []htmlRow
 	Flow template.HTML
+	// Diagram: SVG satu halaman diagram PFD (bagian B); kosong untuk tabel.
+	Diagram template.HTML
 }
 
 // pagesOf menyusun isi setiap halaman: sel nomor langkah digabung per
@@ -170,6 +176,12 @@ type PageContent struct {
 // alur dikosongkan karena digambar, dan SVG alur halaman itu.
 func pagesOf(sh Sheet, plan Plan) []htmlPage {
 	var pages []htmlPage
+	if len(plan.Diagram) > 0 {
+		for _, d := range plan.Diagram {
+			pages = append(pages, htmlPage{Diagram: template.HTML(DiagramSVG(d, plan.DiagramW, plan.DiagramH))})
+		}
+		return pages
+	}
 	for _, pg := range plan.Pages {
 		page := htmlPage{}
 		tops := make([]float64, len(pg.Rows))
@@ -247,6 +259,9 @@ func HTML(sh Sheet) ([]byte, error) {
 	plan := BuildPlan(sh)
 	v.Plan = planView{Plan: plan, ContentH: plan.PaperH - sh.Layout.MarginsMM.Top - sh.Layout.MarginsMM.Bottom}
 	v.Pages = pagesOf(sh, plan)
+	if len(plan.Diagram) > 0 {
+		v.Legend = template.HTML(DiagramLegendSVG(plan.DiagramW))
+	}
 	v.FlowLeftMM = plan.MarkMM
 	for i := 0; i < sh.FlowColumn && i < len(plan.ColumnsMM); i++ {
 		v.FlowLeftMM += plan.ColumnsMM[i]

@@ -46,14 +46,19 @@ func XLSX(sh Sheet) ([]byte, error) {
 			return nil, err
 		}
 	}
-	if err := writeData(f, data, sh, st); err != nil {
+	write := writeData
+	if isDiagram(sh) {
+		write = writeDiagram
+	}
+	if err := write(f, data, sh, st); err != nil {
 		return nil, err
 	}
 	var buf bytes.Buffer
 	if err := f.Write(&buf); err != nil {
 		return nil, err
 	}
-	return buf.Bytes(), nil
+	// Kepala panah dan teks rata tengah shape alur (xlsxdraw.go).
+	return fixDrawings(buf.Bytes())
 }
 
 func sheetName(sh Sheet) string {
@@ -68,7 +73,7 @@ func sheetName(sh Sheet) string {
 	return "Document"
 }
 
-type styles struct{ title, label, value, head, cell, mark, section, small int }
+type styles struct{ title, label, value, head, cell, mark, section, small, flow int }
 
 func newStyles(f *excelize.File, size float64) (styles, error) {
 	border := []excelize.Border{
@@ -99,6 +104,8 @@ func newStyles(f *excelize.File, size float64) (styles, error) {
 		out.cell = mk(&excelize.Style{Font: &excelize.Font{Family: "Arial", Size: size}, Border: border, Alignment: wrap})
 		out.mark = mk(&excelize.Style{Font: &excelize.Font{Family: "Arial", Size: size, Bold: true}, Border: border, Alignment: &excelize.Alignment{Horizontal: "center", Vertical: "top"}})
 		out.section = mk(&excelize.Style{Font: &excelize.Font{Family: "Arial", Size: size + 1, Bold: true}, Border: border, Fill: excelize.Fill{Type: "pattern", Color: []string{"F2F2F2"}, Pattern: 1}})
+		// Kolom Process Flow: hanya garis kiri dan kanan, seperti CP referensi.
+		out.flow = mk(&excelize.Style{Border: border[:2]})
 		out.small = mk(&excelize.Style{Font: &excelize.Font{Family: "Arial", Size: size - 1, Italic: true}, Border: border, Alignment: &excelize.Alignment{Horizontal: "center", Vertical: "center", WrapText: true}})
 	}()
 	return out, err
@@ -205,57 +212,7 @@ func writeData(f *excelize.File, name string, sh Sheet, st styles) error {
 			return err
 		}
 	}
-	row := 1
-	_ = f.SetCellValue(name, cell(1, row), sh.Title)
-	_ = f.SetCellStyle(name, cell(1, row), cell(1, row), st.title)
-	_ = f.SetCellValue(name, cell(cols, row), sh.Number+" "+sh.RevisionLabel)
-	_ = f.SetCellStyle(name, cell(cols, row), cell(cols, row), st.title)
-	row += 2
-	// Header: pasangan label dan nilai, beberapa pasangan per baris.
-	perRow := max(1, cols/4)
-	span := max(1, cols/(perRow*2))
-	for i := 0; i < len(sh.Header); i += perRow {
-		col := 1
-		for _, p := range sh.Header[i:min(i+perRow, len(sh.Header))] {
-			labelEnd, valueEnd := col+span-1, col+2*span-1
-			_ = f.MergeCell(name, cell(col, row), cell(labelEnd, row))
-			_ = f.MergeCell(name, cell(labelEnd+1, row), cell(valueEnd, row))
-			_ = f.SetCellValue(name, cell(col, row), p.Label)
-			_ = f.SetCellStyle(name, cell(col, row), cell(labelEnd, row), st.label)
-			_ = f.SetCellValue(name, cell(labelEnd+1, row), p.Value)
-			_ = f.SetCellStyle(name, cell(labelEnd+1, row), cell(valueEnd, row), st.value)
-			col = valueEnd + 1
-		}
-		row++
-	}
-	row++
-	// Blok tanda tangan di setiap sheet: dari rute (R-APR-08). Dengan cover,
-	// sheet isi menulis "Refer approval sheet" (R-PRT-07).
-	if len(sh.Slots) > 0 {
-		per := max(1, cols/len(sh.Slots))
-		for i, s := range sh.Slots {
-			start := 1 + i*per
-			end := start + per - 1
-			if i == len(sh.Slots)-1 {
-				end = cols
-			}
-			_ = f.MergeCell(name, cell(start, row), cell(end, row))
-			_ = f.SetCellValue(name, cell(start, row), s.Title)
-			_ = f.SetCellStyle(name, cell(start, row), cell(end, row), st.head)
-			_ = f.MergeCell(name, cell(start, row+1), cell(end, row+1))
-			sign := s.Signed
-			if sh.Layout.Cover {
-				sign = "Refer approval sheet"
-			}
-			_ = f.SetCellValue(name, cell(start, row+1), sign)
-			_ = f.SetCellStyle(name, cell(start, row+1), cell(end, row+1), st.small)
-			_ = f.MergeCell(name, cell(start, row+2), cell(end, row+2))
-			_ = f.SetCellValue(name, cell(start, row+2), s.Name())
-			_ = f.SetCellStyle(name, cell(start, row+2), cell(end, row+2), st.value)
-		}
-		_ = f.SetRowHeight(name, row+1, 28)
-		row += 4
-	}
+	row := writeHead(f, name, sh, st, cols, 0)
 	// Judul tabel: baris grup (bila ada) dan baris label, berulang di setiap halaman.
 	first := row
 	offset := 0
@@ -336,16 +293,105 @@ func writeData(f *excelize.File, name string, sh Sheet, st styles) error {
 			_ = f.SetCellValue(name, cell(i+1, row), v)
 		}
 		_ = f.SetCellStyle(name, cell(1, row), cell(cols, row), st.cell)
+		if sh.FlowColumn >= 0 {
+			fc := sh.FlowColumn + 1 + offset
+			_ = f.SetCellStyle(name, cell(fc, row), cell(fc, row), st.flow)
+		}
 		if offset == 1 {
 			_ = f.SetCellStyle(name, cell(1, row), cell(1, row), st.mark)
 		}
 		_ = f.SetRowHeight(name, row, x.rowPt[ri])
 		row++
 	}
+	// Posisi mutlak shape alur dalam piksel Excel (xlsxdraw.go).
+	tops, err := rowTops(f, name, row)
+	if err != nil {
+		return err
+	}
+	x.rowY = tops
+	for i := 0; i < sh.FlowColumn+offset; i++ {
+		x.flowLeft += excelColPx(widths[i])
+	}
 	if err := writeFlowXLSX(f, name, sh, x); err != nil {
 		return err
 	}
 	return pageSetup(f, name, sh, titleRows, cols, row-1)
+}
+
+// rowTops memberi jarak atas baris 1 sampai last dari atas lembar, dalam
+// piksel Excel; indeks slice adalah nomor baris.
+func rowTops(f *excelize.File, name string, last int) ([]float64, error) {
+	tops := make([]float64, last+1)
+	y := 0.0
+	for r := 1; r <= last; r++ {
+		tops[r] = y
+		h, err := f.GetRowHeight(name, r)
+		if err != nil {
+			return nil, err
+		}
+		y += excelRowPx(h)
+	}
+	return tops, nil
+}
+
+// writeHead menulis kepala form (judul, isian header, blok tanda tangan)
+// selebar cols kolom, mulai baris 1. Hasilnya baris pertama sesudah kepala.
+// perRow: jumlah pasangan label dan isi per baris; 0 berarti menurut lebar.
+func writeHead(f *excelize.File, name string, sh Sheet, st styles, cols, perRow int) int {
+	row := 1
+	_ = f.SetCellValue(name, cell(1, row), sh.Title)
+	_ = f.SetCellStyle(name, cell(1, row), cell(1, row), st.title)
+	_ = f.SetCellValue(name, cell(cols, row), sh.Number+" "+sh.RevisionLabel)
+	_ = f.SetCellStyle(name, cell(cols, row), cell(cols, row), st.title)
+	row += 2
+	// Header: pasangan label dan nilai, beberapa pasangan per baris.
+	if perRow <= 0 {
+		perRow = max(1, cols/4)
+	}
+	span := max(1, cols/(perRow*2))
+	for i := 0; i < len(sh.Header); i += perRow {
+		col := 1
+		for _, p := range sh.Header[i:min(i+perRow, len(sh.Header))] {
+			labelEnd, valueEnd := col+span-1, col+2*span-1
+			_ = f.MergeCell(name, cell(col, row), cell(labelEnd, row))
+			_ = f.MergeCell(name, cell(labelEnd+1, row), cell(valueEnd, row))
+			_ = f.SetCellValue(name, cell(col, row), p.Label)
+			_ = f.SetCellStyle(name, cell(col, row), cell(labelEnd, row), st.label)
+			_ = f.SetCellValue(name, cell(labelEnd+1, row), p.Value)
+			_ = f.SetCellStyle(name, cell(labelEnd+1, row), cell(valueEnd, row), st.value)
+			col = valueEnd + 1
+		}
+		row++
+	}
+	row++
+	// Blok tanda tangan di setiap sheet: dari rute (R-APR-08). Dengan cover,
+	// sheet isi menulis "Refer approval sheet" (R-PRT-07).
+	if len(sh.Slots) > 0 {
+		per := max(1, cols/len(sh.Slots))
+		for i, s := range sh.Slots {
+			start := 1 + i*per
+			end := start + per - 1
+			if i == len(sh.Slots)-1 {
+				end = cols
+			}
+			_ = f.MergeCell(name, cell(start, row), cell(end, row))
+			_ = f.SetCellValue(name, cell(start, row), s.Title)
+			_ = f.SetCellStyle(name, cell(start, row), cell(end, row), st.head)
+			_ = f.MergeCell(name, cell(start, row+1), cell(end, row+1))
+			sign := s.Signed
+			if sh.Layout.Cover {
+				sign = "Refer approval sheet"
+			}
+			_ = f.SetCellValue(name, cell(start, row+1), sign)
+			_ = f.SetCellStyle(name, cell(start, row+1), cell(end, row+1), st.small)
+			_ = f.MergeCell(name, cell(start, row+2), cell(end, row+2))
+			_ = f.SetCellValue(name, cell(start, row+2), s.Name())
+			_ = f.SetCellStyle(name, cell(start, row+2), cell(end, row+2), st.value)
+		}
+		_ = f.SetRowHeight(name, row+1, 28)
+		row += 4
+	}
+	return row
 }
 
 // writeCover menulis cover TR-020 (R-PRT-07): nomor, judul, header, tabel

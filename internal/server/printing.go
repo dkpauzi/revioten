@@ -214,6 +214,10 @@ func (a *apiServer) GetPagePreview(ctx context.Context, req GetPagePreviewReques
 			Group string `json:"group"`
 			Label string `json:"label"`
 		}{}, Pages: make([]PreviewPage, 0, len(v.Pages))}
+	if v.Legend != "" {
+		legend, h := v.Legend, float32(v.Plan.LegendMM)
+		out.LegendSvg, out.LegendMm = &legend, &h
+	}
 	out.MarginsMm.Top, out.MarginsMm.Right, out.MarginsMm.Bottom, out.MarginsMm.Left = float32(v.MarginsMM.Top), float32(v.MarginsMM.Right), float32(v.MarginsMM.Bottom), float32(v.MarginsMM.Left)
 	for _, w := range v.Plan.ColumnsMM {
 		out.ColumnsMm = append(out.ColumnsMm, float32(w))
@@ -232,6 +236,10 @@ func (a *apiServer) GetPagePreview(ctx context.Context, req GetPagePreviewReques
 	}
 	for _, p := range v.Pages {
 		page := PreviewPage{FlowSvg: string(p.Flow)}
+		if p.Diagram != "" {
+			svg := string(p.Diagram)
+			page.DiagramSvg = &svg
+		}
 		for _, r := range p.Rows {
 			row := struct {
 				Cells []struct {

@@ -62,6 +62,11 @@
 							</tbody>
 						</table>
 					</div>
+					{#if page.diagram_svg}
+						<!-- PFD sebagai diagram (E-144). SVG dari server: tulisan di dalamnya sudah di-escape (diagram.go). -->
+						<div class="legendbox" style="height: {plan.legend_mm ?? 0}mm">{@html plan.legend_svg ?? ''}</div>
+						<div class="diagrambox" data-testid="process-flow">{@html page.diagram_svg}</div>
+					{:else}
 					<div class="tw">
 						<table class="form">
 							<colgroup>
@@ -109,6 +114,7 @@
 							</div>
 						{/if}
 					</div>
+					{/if}
 				</div>
 				<p class="page-foot">
 					<span>{plan.number} {plan.revision}</span>
@@ -245,6 +251,11 @@
 
 	.tw {
 		position: relative;
+	}
+
+	.legendbox :global(svg),
+	.diagrambox :global(svg) {
+		display: block;
 	}
 
 	.flowbox {

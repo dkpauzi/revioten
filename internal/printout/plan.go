@@ -50,6 +50,11 @@ type Plan struct {
 	ColumnsMM      []float64 // lebar setiap kolom isi
 	RowsMM         []float64 // tinggi setiap baris Sheet.Rows
 	Pages          []PlanPage
+	// PFD dicetak sebagai diagram (bagian B): satu DiagramPage per halaman,
+	// legenda setinggi LegendMM, dan area diagram DiagramW x DiagramH.
+	Diagram            []DiagramPage
+	LegendMM           float64
+	DiagramW, DiagramH float64
 }
 
 // Ukuran huruf ke milimeter: 1 pt = 0,3528 mm. Lebar rata-rata huruf Arial
@@ -263,6 +268,15 @@ func BuildPlan(sh Sheet) Plan {
 	if len(sh.Slots) > 0 {
 		p.HeadMM += 20
 	}
+	const footMM = 6
+	if isDiagram(sh) {
+		p.LegendMM = diagLegendMM
+		p.DiagramW = p.ContentW
+		p.DiagramH = h - l.MarginsMM.Top - l.MarginsMM.Bottom - p.HeadMM - p.LegendMM - footMM
+		p.Diagram = DiagramLayout(diagramSteps(sh), p.DiagramW, p.DiagramH)
+		p.Pages = make([]PlanPage, len(p.Diagram))
+		return p
+	}
 	// Judul kolom: baris grup (bila ada) dan baris label.
 	labels := make([]string, len(sh.Columns))
 	hasGroups := false
@@ -275,7 +289,6 @@ func BuildPlan(sh Sheet) Plan {
 		p.GroupRowMM = math.Round((lineMM(font)+cellPadMM)*10) / 10
 	}
 	p.TheadMM = p.LabelRowMM + p.GroupRowMM
-	const footMM = 6
 	p.AvailableMM = h - l.MarginsMM.Top - l.MarginsMM.Bottom - p.HeadMM - p.TheadMM - footMM
 
 	ops := make([]string, len(sh.Rows))
