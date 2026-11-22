@@ -155,6 +155,8 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-131 | Zona waktu pabrik untuk tanggal dan periode laporan | Celah | D-196, D-197 | Tidak | Terbuka |
 | E-132 | Penanggung jawab model (engineer) di daftar review dan laporan | Celah | D-202 | Tidak | Diputuskan (D-203) |
 | E-133 | Peran lama sesudah matriks D-199 | Penyederhanaan | D-199 | Tidak | Terbuka |
+| E-140 | Nomor dari satu impor dianggap satu set | Celah | M2.5, M7.1, C4 | Tidak | Diputuskan (D-216) |
+| E-141 | Alur migrasi dokumen lama tersebar di banyak menu | Penyederhanaan | M7.1, M7.5 | Tidak | Diputuskan (D-215) |
 
 ## Keputusan 4 November 2026
 
@@ -2405,6 +2407,49 @@ Salin blok ini untuk setiap temuan baru.
 - **Menghambat milestone?** Tidak
 - **Status:** Diputuskan (D-214)
 - **Keputusan pemilik:** 22 November 2026, "139 Ok": rekomendasi (b) diterima (D-214).
+
+### E-140 · Nomor dari satu impor dianggap satu set
+
+- **Tanggal dan milestone:** 22 November 2026, saat menyusun alur migrasi Tokairika.
+- **Jenis:** Celah
+- **Rujukan:** M2.4 (set lewat satu pendaftaran), M2.5, M7.1, D-211, query `ListDocumentSet` (set = `batch_id` yang sama).
+- **Temuan:** Set PFD, PFMEA, dan CP dikenali dari batch pendaftaran nomor. Impor nomor lama membuat satu batch untuk semua baris yang masuk. Bila register Tokairika diimpor sekaligus (SH/SF/SC-TR-020 sampai -022), sembilan nomor itu menjadi satu "set" dengan tiga PFD. Rakit dari PFD dan kolom Process Flow CP lalu memakai PFD pertama yang ditemukan, belum tentu PFD dengan nomor berjalan yang sama.
+- **Opsi:** (a) impor membuat satu batch per nomor berjalan (SH, SF, SC dengan nomor 020 yang sama menjadi satu set); (b) set dikenali dari nomor berjalan dan kode customer, bukan batch; (c) biarkan, dan panduan meminta satu impor per set.
+- **Rekomendasi Claude Code (usulan):** (a), karena pola nomor sudah memuat nomor berjalan yang sama untuk satu set, dan pendaftaran set biasa tidak berubah.
+- **Asumsi sementara:** (c). Tidak ada kode yang diubah; `docs/panduan/alur-migrasi-tokairika.md` meminta satu impor per set.
+- **Menghambat milestone?** Tidak
+- **Status:** Diputuskan (D-216)
+- **Keputusan pemilik:** 22 November 2026: nomor lama diisi dalam tiga kolom (SH, SF, SC). Bawaannya satu set: cukup satu kolom, dua lainnya mengikuti nomor berjalan yang sama. Bila nomor berjalannya tidak sejajar (misalnya SC-TR-005, SF-TR-005, SH-TR-004), ketiga nomor diketik. Ketiga nomor di satu baris tetap satu set dokumen: CP mengambil alur dari PFD di baris itu.
+
+### E-141 · Alur migrasi dokumen lama tersebar di banyak menu
+
+- **Tanggal dan milestone:** 22 November 2026, dari pemilik: "alurnya masih sangat membingungkan", dan migrasi tanpa menu impor.
+- **Jenis:** Penyederhanaan
+- **Rujukan:** M7.1 sampai M7.5, R-MIG-01 sampai R-MIG-07, D-186, UC-60 sampai UC-64.
+- **Temuan:** Satu set dokumen lama melewati enam tempat:
+  - Settings (saklar);
+  - Format templates dan Form sets (prasyarat yang tidak terlihat dari form migrasi);
+  - Numbers → Import legacy numbers (satu-satunya jalan memasukkan nomor asli seperti 020);
+  - Documents → Enter a legacy document (di bagian bawah halaman, satu dokumen per kali);
+  - empat panel di laci dokumen (Migration baseline, Revision history, Compare with the legacy Excel, Link rows).
+
+  Yang membingungkan:
+  1. Nomor asli tidak bisa diketik di form dokumen lama, dan harus diimpor dulu di menu lain. Teks seperti `SH-TR-020-02` ditolak dengan pesan "Not a PFD, PFMEA, or CP number in the current pattern" tanpa contoh, padahal akhiran `-02` adalah revisi.
+  2. Prasyarat (form set terbit, model, proses) baru ketahuan saat tombol ditekan dan ditolak.
+  3. Tiga dokumen satu set dimasukkan satu per satu, dan model, tanggal, serta nama diketik tiga kali.
+  4. Tidak ada daftar "sudah dan belum" per dokumen lama. Pemeriksa harus tahu sendiri dokumen mana yang menunggu verifikasi.
+- **Opsi:**
+  - (a) Biarkan, dan andalkan panduan `docs/panduan/alur-migrasi-tokairika.md`.
+  - (b) Satu halaman **Legacy documents** di menu Documents, dengan tiga bagian:
+    1. **Siap migrasi?** Daftar periksa: Migration mode, form set customer terbit, model ada, proses ada. Butir yang belum siap memberi tautan ke menunya.
+    2. **Masukkan satu set.** Nomor asli diketik apa adanya, misalnya `SH-TR-020-02`. Sistem memisahkan nomor dan revisinya, lalu menawarkan pasangan SF dan SC dengan nomor berjalan yang sama. Model, tanggal berlaku, dan nama di hardcopy diisi sekali untuk ketiganya, sedangkan revisi diisi per dokumen. Nomor yang belum ada di register didaftarkan berstatus Released dalam satu batch, sekaligus menutup E-140. Menu impor tetap ada untuk register besar.
+    3. **Papan status** per dokumen lama: Isi belum lengkap, Menunggu verifikasi (dengan nama pemasuk), dan Released (migrated), dengan tautan ke dokumennya.
+  - (c) Hanya butir 2 dari (b): nomor asli bisa diketik di form yang ada.
+- **Rekomendasi Claude Code (usulan):** (b), dibangun sebagai satu milestone kecil sesudah pemilik memutuskan. Aturan migrasi tidak berubah (empat mata, nomor tidak diubah, masuk di revisi saat ini, snapshot); yang berubah hanya cara masuknya.
+- **Asumsi sementara:** (a). Tidak ada kode yang diubah.
+- **Menghambat milestone?** Tidak
+- **Status:** Diputuskan (D-215)
+- **Keputusan pemilik:** 22 November 2026: setuju opsi (b), satu menu khusus migrasi; alur yang ada tetap untuk model baru.
 
 ## Usulan desain UI (UX-01 sampai UX-07): dampak ke M0 sampai M3 dan saran
 

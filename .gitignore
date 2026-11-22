@@ -41,3 +41,6 @@ Thumbs.db
 desktop.ini
 .idea/
 .vscode/
+
+# Panduan migrasi Tokairika: memuat nama login akun, tidak di-push (pemilik, 22 November 2026).
+docs/panduan/alur-migrasi-tokairika.md
