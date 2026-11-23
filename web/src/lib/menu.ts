@@ -67,6 +67,8 @@ const groups: { id: MenuGroup['id']; label: MessageKey; entries: Entry[] }[] = [
 		entries: [
 			{ href: '/customers', label: 'navCustomers' },
 			{ href: '/models', label: 'navModels' },
+			// Import customer dan model dari Excel (I5): pengurus master data.
+			{ href: '/customers/import', label: 'navMasterImport', permission: 'E-11' },
 			{ href: '/document-types', label: 'navDocumentTypes' },
 			{ href: '/change-types', label: 'navChangeTypes' },
 			{ href: '/positions', label: 'navPositions' },

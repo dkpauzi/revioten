@@ -22,6 +22,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/health"
 	"github.com/dkpauzi/revioten/internal/inbox"
 	"github.com/dkpauzi/revioten/internal/integration"
+	"github.com/dkpauzi/revioten/internal/masterimport"
 	"github.com/dkpauzi/revioten/internal/metrics"
 	"github.com/dkpauzi/revioten/internal/notify"
 	"github.com/dkpauzi/revioten/internal/numbering"
@@ -94,6 +95,7 @@ func TestPermissionsPerOperation(t *testing.T) {
 		Signatures:      signature.NewService(pool, checker, authSvc),
 		Health:          health.NewService(pool, checker, ""),
 		Submissions:     submission.NewService(pool, checker, attachmentStore, "missing-browser"),
+		MasterImport:    masterimport.NewService(checker, customers, products),
 	})
 
 	// Admin pertama, satu akun kerja tanpa peran (hanya hak dasar Viewer), dan
@@ -572,6 +574,9 @@ func TestPermissionsPerOperation(t *testing.T) {
 		{http.MethodGet, "/api/v1/accounts", "", http.StatusForbidden, http.StatusForbidden, http.StatusOK},
 		{http.MethodPost, "/api/v1/accounts", `{"person_name":"Orang Baru","kind":"work","login":"orang.baru"}`, http.StatusForbidden, http.StatusForbidden, http.StatusCreated},
 		{http.MethodPut, "/api/v1/accounts/{accountId}/roles", `{"roles":[{"role":"manager","scope":"all"}]}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		// Import master data (I5): pengurus master data (E-11). Berkas teks bukan Excel: 422.
+		{http.MethodGet, "/api/v1/master-data/import-template", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		{http.MethodPost, "/api/v1/master-data/import?commit=false", multipartBody, http.StatusForbidden, http.StatusUnprocessableEntity, http.StatusForbidden},
 		// Import akun (I1): hanya admin. Migration mode mati di database uji, jadi admin mendapat 422.
 		{http.MethodGet, "/api/v1/accounts/import-template", "", http.StatusForbidden, http.StatusForbidden, http.StatusOK},
 		{http.MethodPost, "/api/v1/accounts/import?commit=false", multipartBody, http.StatusForbidden, http.StatusForbidden, http.StatusUnprocessableEntity},

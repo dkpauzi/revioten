@@ -1082,6 +1082,54 @@ func (e LegacySetDocumentDocumentTypeKey) Valid() bool {
 	}
 }
 
+// Defines values for MasterDataImportRowCreates.
+const (
+	MasterDataImportRowCreatesCustomer     MasterDataImportRowCreates = "customer"
+	MasterDataImportRowCreatesModel        MasterDataImportRowCreates = "model"
+	MasterDataImportRowCreatesModelGroup   MasterDataImportRowCreates = "model_group"
+	MasterDataImportRowCreatesPartNumber   MasterDataImportRowCreates = "part_number"
+	MasterDataImportRowCreatesProjectGroup MasterDataImportRowCreates = "project_group"
+)
+
+// Valid indicates whether the value is a known member of the MasterDataImportRowCreates enum.
+func (e MasterDataImportRowCreates) Valid() bool {
+	switch e {
+	case MasterDataImportRowCreatesCustomer:
+		return true
+	case MasterDataImportRowCreatesModel:
+		return true
+	case MasterDataImportRowCreatesModelGroup:
+		return true
+	case MasterDataImportRowCreatesPartNumber:
+		return true
+	case MasterDataImportRowCreatesProjectGroup:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for MasterDataImportRowStatus.
+const (
+	MasterDataImportRowStatusExisting MasterDataImportRowStatus = "existing"
+	MasterDataImportRowStatusInvalid  MasterDataImportRowStatus = "invalid"
+	MasterDataImportRowStatusNew      MasterDataImportRowStatus = "new"
+)
+
+// Valid indicates whether the value is a known member of the MasterDataImportRowStatus enum.
+func (e MasterDataImportRowStatus) Valid() bool {
+	switch e {
+	case MasterDataImportRowStatusExisting:
+		return true
+	case MasterDataImportRowStatusInvalid:
+		return true
+	case MasterDataImportRowStatusNew:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for MetricsDocumentsStatus.
 const (
 	MetricsDocumentsStatusDraft            MetricsDocumentsStatus = "draft"
@@ -4015,6 +4063,34 @@ type LogoChangeInput struct {
 	Reason string `json:"reason"`
 }
 
+// MasterDataImport defines model for MasterDataImport.
+type MasterDataImport struct {
+	Committed bool                  `json:"committed"`
+	Customers []MasterDataImportRow `json:"customers"`
+	Existing  int                   `json:"existing"`
+	Invalid   int                   `json:"invalid"`
+	Models    []MasterDataImportRow `json:"models"`
+	New       int                   `json:"new"`
+}
+
+// MasterDataImportRow defines model for MasterDataImportRow.
+type MasterDataImportRow struct {
+	// Cells The cells of the row by lower-case column title, for example "customer code".
+	Cells    map[string]string            `json:"cells"`
+	Creates  []MasterDataImportRowCreates `json:"creates"`
+	Problems []ErrorDetail                `json:"problems"`
+
+	// Row The Excel row number, from 2.
+	Row    int                       `json:"row"`
+	Status MasterDataImportRowStatus `json:"status"`
+}
+
+// MasterDataImportRowCreates defines model for MasterDataImportRow.Creates.
+type MasterDataImportRowCreates string
+
+// MasterDataImportRowStatus defines model for MasterDataImportRow.Status.
+type MasterDataImportRowStatus string
+
 // Metrics defines model for Metrics.
 type Metrics struct {
 	Documents []struct {
@@ -6550,6 +6626,16 @@ type GetActionPriorityParams struct {
 	Detection  int `form:"detection" json:"detection"`
 }
 
+// ImportMasterDataMultipartBody defines parameters for ImportMasterData.
+type ImportMasterDataMultipartBody struct {
+	File *openapi_types.File `json:"file,omitempty"`
+}
+
+// ImportMasterDataParams defines parameters for ImportMasterData.
+type ImportMasterDataParams struct {
+	Commit bool `form:"commit" json:"commit"`
+}
+
 // GetMetricsParams defines parameters for GetMetrics.
 type GetMetricsParams struct {
 	CustomerId *string `form:"customer_id,omitempty" json:"customer_id,omitempty"`
@@ -6865,6 +6951,9 @@ type UpdateFourMCategoryJSONRequestBody = NameUpdate
 
 // SubmitLogoChangeJSONRequestBody defines body for SubmitLogoChange for application/json ContentType.
 type SubmitLogoChangeJSONRequestBody = LogoChangeInput
+
+// ImportMasterDataMultipartRequestBody defines body for ImportMasterData for multipart/form-data ContentType.
+type ImportMasterDataMultipartRequestBody ImportMasterDataMultipartBody
 
 // MigrateDocumentJSONRequestBody defines body for MigrateDocument for application/json ContentType.
 type MigrateDocumentJSONRequestBody = LegacyDocument
@@ -7417,6 +7506,12 @@ type ServerInterface interface {
 	// SubmitLogoChange Submit the logo change of one customer for every active document (E-3, D-223)
 	// (POST /api/v1/logo-changes)
 	SubmitLogoChange(w http.ResponseWriter, r *http.Request)
+	// ImportMasterData Import project groups, customers, model groups, models, and part numbers from Excel (E-11, I5)
+	// (POST /api/v1/master-data/import)
+	ImportMasterData(w http.ResponseWriter, r *http.Request, params ImportMasterDataParams)
+	// GetMasterDataImportTemplate The Excel template for importing customers and models (E-11, I5)
+	// (GET /api/v1/master-data/import-template)
+	GetMasterDataImportTemplate(w http.ResponseWriter, r *http.Request)
 	// GetMetrics The measurement dashboard (L-2, M7.7)
 	// (GET /api/v1/metrics)
 	GetMetrics(w http.ResponseWriter, r *http.Request, params GetMetricsParams)
@@ -11290,6 +11385,53 @@ func (siw *ServerInterfaceWrapper) SubmitLogoChange(w http.ResponseWriter, r *ht
 	handler.ServeHTTP(w, r)
 }
 
+// ImportMasterData operation middleware
+func (siw *ServerInterfaceWrapper) ImportMasterData(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ImportMasterDataParams
+
+	// ------------- Required query parameter "commit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "commit", r.URL.Query(), &params.Commit, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "commit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "commit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ImportMasterData(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetMasterDataImportTemplate operation middleware
+func (siw *ServerInterfaceWrapper) GetMasterDataImportTemplate(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetMasterDataImportTemplate(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetMetrics operation middleware
 func (siw *ServerInterfaceWrapper) GetMetrics(w http.ResponseWriter, r *http.Request) {
 
@@ -13810,6 +13952,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/accounts", wrapper.CreateAccount)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/accounts/import-template", wrapper.GetAccountImportTemplate)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/accounts/import", wrapper.ImportAccounts)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/master-data/import-template", wrapper.GetMasterDataImportTemplate)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/master-data/import", wrapper.ImportMasterData)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/accounts/{accountId}/roles", wrapper.SetAccountRoles)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/accounts/{accountId}/password-reset", wrapper.ResetAccountPassword)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/accounts/{accountId}/disable", wrapper.DisableAccount)
@@ -19524,6 +19668,98 @@ func (response SubmitLogoChangedefaultJSONResponse) VisitSubmitLogoChangeRespons
 	return err
 }
 
+type ImportMasterDataRequestObject struct {
+	Params ImportMasterDataParams
+	Body   *multipart.Reader
+}
+
+type ImportMasterDataResponseObject interface {
+	VisitImportMasterDataResponse(w http.ResponseWriter) error
+}
+
+type ImportMasterData200JSONResponse MasterDataImport
+
+func (response ImportMasterData200JSONResponse) VisitImportMasterDataResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ImportMasterDatadefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ImportMasterDatadefaultJSONResponse) VisitImportMasterDataResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetMasterDataImportTemplateRequestObject struct {
+}
+
+type GetMasterDataImportTemplateResponseObject interface {
+	VisitGetMasterDataImportTemplateResponse(w http.ResponseWriter) error
+}
+
+type GetMasterDataImportTemplate200ResponseHeaders struct {
+	ContentDisposition *string
+}
+
+type GetMasterDataImportTemplate200ApplicationoctetStreamResponse struct {
+	Body          io.Reader
+	Headers       GetMasterDataImportTemplate200ResponseHeaders
+	ContentLength int64
+}
+
+func (response GetMasterDataImportTemplate200ApplicationoctetStreamResponse) VisitGetMasterDataImportTemplateResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "application/octet-stream")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	if response.Headers.ContentDisposition != nil {
+		w.Header().Set("Content-Disposition", fmt.Sprint(*response.Headers.ContentDisposition))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type GetMasterDataImportTemplatedefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response GetMasterDataImportTemplatedefaultJSONResponse) VisitGetMasterDataImportTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetMetricsRequestObject struct {
 	Params GetMetricsParams
 }
@@ -23766,6 +24002,12 @@ type StrictServerInterface interface {
 	// SubmitLogoChange Submit the logo change of one customer for every active document (E-3, D-223)
 	// (POST /api/v1/logo-changes)
 	SubmitLogoChange(ctx context.Context, request SubmitLogoChangeRequestObject) (SubmitLogoChangeResponseObject, error)
+	// ImportMasterData Import project groups, customers, model groups, models, and part numbers from Excel (E-11, I5)
+	// (POST /api/v1/master-data/import)
+	ImportMasterData(ctx context.Context, request ImportMasterDataRequestObject) (ImportMasterDataResponseObject, error)
+	// GetMasterDataImportTemplate The Excel template for importing customers and models (E-11, I5)
+	// (GET /api/v1/master-data/import-template)
+	GetMasterDataImportTemplate(ctx context.Context, request GetMasterDataImportTemplateRequestObject) (GetMasterDataImportTemplateResponseObject, error)
 	// GetMetrics The measurement dashboard (L-2, M7.7)
 	// (GET /api/v1/metrics)
 	GetMetrics(ctx context.Context, request GetMetricsRequestObject) (GetMetricsResponseObject, error)
@@ -28054,6 +28296,63 @@ func (sh *strictHandler) SubmitLogoChange(w http.ResponseWriter, r *http.Request
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(SubmitLogoChangeResponseObject); ok {
 		if err := validResponse.VisitSubmitLogoChangeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ImportMasterData operation middleware
+func (sh *strictHandler) ImportMasterData(w http.ResponseWriter, r *http.Request, params ImportMasterDataParams) {
+	var request ImportMasterDataRequestObject
+
+	request.Params = params
+
+	if reader, err := r.MultipartReader(); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode multipart body: %w", err))
+		return
+	} else {
+		request.Body = reader
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ImportMasterData(ctx, request.(ImportMasterDataRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ImportMasterData")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ImportMasterDataResponseObject); ok {
+		if err := validResponse.VisitImportMasterDataResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetMasterDataImportTemplate operation middleware
+func (sh *strictHandler) GetMasterDataImportTemplate(w http.ResponseWriter, r *http.Request) {
+	var request GetMasterDataImportTemplateRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetMasterDataImportTemplate(ctx, request.(GetMasterDataImportTemplateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetMasterDataImportTemplate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetMasterDataImportTemplateResponseObject); ok {
+		if err := validResponse.VisitGetMasterDataImportTemplateResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

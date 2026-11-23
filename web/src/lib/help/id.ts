@@ -93,7 +93,8 @@ export const helpId: HelpContent = {
 			imageAlt: 'Halaman Customers dengan project group dan daftar customer.',
 			tips: [
 				'Kode customer menjadi bagian dari setiap nomor dokumen, misalnya SC-AB-001.',
-				'Customer tidak pernah dihapus. Pakai {customerEdit} untuk menonaktifkannya, atau {customerChangeCode} untuk mengganti kodenya; kode lama tetap tercatat.'
+				'Customer tidak pernah dihapus. Pakai {customerEdit} untuk menonaktifkannya, atau {customerChangeCode} untuk mengganti kodenya; kode lama tetap tercatat.',
+				'Untuk menambah banyak customer dan model sekaligus, misalnya sesudah database direset, buka {navMasterImport}, tekan {masterImportTemplate}, isi sheet Customers dan Models, pilih berkasnya, tekan {masterImportPreview}, lalu {masterImportRun}. Data yang sudah ada dilewati.'
 			]
 		},
 		{

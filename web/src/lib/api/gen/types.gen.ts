@@ -307,6 +307,31 @@ export type AccountInfo = {
     temporary_password_expires_at?: string;
 };
 
+export type MasterDataImport = {
+    customers: Array<MasterDataImportRow>;
+    models: Array<MasterDataImportRow>;
+    new: number;
+    existing: number;
+    invalid: number;
+    committed: boolean;
+};
+
+export type MasterDataImportRow = {
+    /**
+     * The Excel row number, from 2.
+     */
+    row: number;
+    /**
+     * The cells of the row by lower-case column title, for example "customer code".
+     */
+    cells: {
+        [key: string]: string;
+    };
+    status: 'new' | 'existing' | 'invalid';
+    creates: Array<'project_group' | 'customer' | 'model_group' | 'model' | 'part_number'>;
+    problems: Array<ErrorDetail>;
+};
+
 export type AccountImport = {
     rows: Array<AccountImportRow>;
     new: number;
@@ -4692,6 +4717,76 @@ export type ImportAccountsResponses = {
 };
 
 export type ImportAccountsResponse = ImportAccountsResponses[keyof ImportAccountsResponses];
+
+export type GetMasterDataImportTemplateData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/master-data/import-template';
+};
+
+export type GetMasterDataImportTemplateErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type GetMasterDataImportTemplateError = GetMasterDataImportTemplateErrors[keyof GetMasterDataImportTemplateErrors];
+
+export type GetMasterDataImportTemplateResponses = {
+    /**
+     * The template, with the Customers, Models, and Help sheets.
+     */
+    200: Blob | File;
+};
+
+export type GetMasterDataImportTemplateResponse = GetMasterDataImportTemplateResponses[keyof GetMasterDataImportTemplateResponses];
+
+export type ImportMasterDataData = {
+    body: {
+        file?: Blob | File;
+    };
+    path?: never;
+    query: {
+        commit: boolean;
+    };
+    url: '/api/v1/master-data/import';
+};
+
+export type ImportMasterDataErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ImportMasterDataError = ImportMasterDataErrors[keyof ImportMasterDataErrors];
+
+export type ImportMasterDataResponses = {
+    /**
+     * The report.
+     */
+    200: MasterDataImport;
+};
+
+export type ImportMasterDataResponse = ImportMasterDataResponses[keyof ImportMasterDataResponses];
 
 export type SetAccountRolesData = {
     body: RolesUpdate;

@@ -18,6 +18,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/change"
 	"github.com/dkpauzi/revioten/internal/customer"
 	"github.com/dkpauzi/revioten/internal/document"
+	"github.com/dkpauzi/revioten/internal/masterimport"
 	"github.com/dkpauzi/revioten/internal/numbering"
 	"github.com/dkpauzi/revioten/internal/printout"
 	"github.com/dkpauzi/revioten/internal/process"
@@ -289,6 +290,13 @@ type AuthService interface {
 	ImportAccounts(ctx context.Context, actor access.Actor, data []byte, commit bool) (auth.AccountImport, error)
 }
 
+// MasterImportService adalah import master data dari Excel (I5).
+// *masterimport.Service memenuhinya.
+type MasterImportService interface {
+	Template(ctx context.Context, actor access.Actor) ([]byte, error)
+	Import(ctx context.Context, actor access.Actor, data []byte, commit bool) (masterimport.Report, error)
+}
+
 // AccessService adalah operasi hak akses yang dipakai API.
 // *access.Checker memenuhinya; test memakai versi palsu.
 type AccessService interface {
@@ -317,6 +325,8 @@ type Deps struct {
 	Approval  ApprovalService
 	Settings  SettingsService
 	Templates TemplateService
+	// MasterImport adalah import master data dari Excel (I5).
+	MasterImport MasterImportService
 	// ProcessTemplates adalah pustaka proses (M3.2).
 	ProcessTemplates ProcessTemplateService
 	// Documents adalah dokumen dan barisnya (M4.1).
@@ -368,7 +378,7 @@ func NewHandler(ui fs.FS, deps Deps) http.Handler {
 		numbering: deps.Numbering, changes: deps.Changes, approval: deps.Approval, settings: deps.Settings,
 		templates: deps.Templates, processTemplates: deps.ProcessTemplates, documents: deps.Documents, refDocs: deps.RefDocs, changeRequests: deps.ChangeRequests, printing: deps.Printing,
 		migration: deps.Migration, metrics: deps.Metrics, reviews: deps.Reviews, inbox: deps.Inbox, signatures: deps.Signatures, health: deps.Health, submissions: deps.Submissions, roles: deps.Roles,
-		serviceAccounts: deps.ServiceAccounts, notifications: deps.Notifications, log: log,
+		serviceAccounts: deps.ServiceAccounts, notifications: deps.Notifications, masterImport: deps.MasterImport, log: log,
 	}
 
 	// Route dari kontrak didaftarkan oleh kode hasil generate ke mux khusus API.
@@ -421,12 +431,14 @@ type apiServer struct {
 	access    AccessService
 	audit     AuditService
 	products  ProductService
-	processes ProcessService
-	numbering NumberingService
-	changes   ChangeMasterService
-	approval  ApprovalService
-	settings  SettingsService
-	templates TemplateService
+	// masterImport adalah import master data dari Excel (I5).
+	masterImport MasterImportService
+	processes    ProcessService
+	numbering    NumberingService
+	changes      ChangeMasterService
+	approval     ApprovalService
+	settings     SettingsService
+	templates    TemplateService
 	// processTemplates adalah pustaka proses (M3.2).
 	processTemplates ProcessTemplateService
 	documents        DocumentService

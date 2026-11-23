@@ -93,7 +93,8 @@ export const helpEn: HelpContent = {
 			imageAlt: 'The Customers page with the project groups and the list of customers.',
 			tips: [
 				'The customer code becomes part of every document number, for example SC-AB-001.',
-				'A customer is never deleted. Use {customerEdit} to make it inactive, or {customerChangeCode} to change its code; the old code stays on record.'
+				'A customer is never deleted. Use {customerEdit} to make it inactive, or {customerChangeCode} to change its code; the old code stays on record.',
+				'To add many customers and models at once, for example after the database was reset, open {navMasterImport}, press {masterImportTemplate}, fill in the Customers and Models sheets, choose the file, press {masterImportPreview}, and then {masterImportRun}. Data that already exists is skipped.'
 			]
 		},
 		{

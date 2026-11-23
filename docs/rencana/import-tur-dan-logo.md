@@ -112,7 +112,9 @@ Jadi revisi memang belum diisi saat import nomor, dan baru diisi di menu migrasi
 - **Jawaban pemilik 24 November 2026:** import memakai berkas Excel dengan template yang bisa diunduh, supaya setelah reset database cukup diunggah lagi (berlaku juga untuk I1). Nomor boleh memuat revisi, misalnya `SC-KT-001-05`: opsi b, revisi disimpan sebagai revisi terakhir nomor itu dan mengisi kolom revisi di menu Legacy documents (masih bisa diubah). Setiap sel PFD, PFMEA, dan CP punya revisinya sendiri; sel tanpa revisi tetap diterima.
 - **Pertanyaan untuk pemilik:** "nomor document yang sudah digunakan" artinya nomor yang dokumennya sudah terbit di kertas (Released), atau juga nomor yang sudah dipesan tetapi dokumennya belum jadi (Reserved)? Usulan: pilihan status tetap ada, bawaannya Released.
 
-### I5 · Customer dan Project Group (Master data → Customers → Import customers) (usulan)
+### I5 · Customer dan Project Group (Master data → Customers → Import customers)
+
+- **Status:** dibangun 24 November 2026, termasuk group model, model, dan part number di sheet Models (catatan `docs/catatan/I5-import-customer-dan-model.md`).
 
 - **Asal:** pemilik (24 November 2026) meminta import customer, supaya import lain tidak gagal karena customer belum ada.
 - **Yang butuh customer:** import nomor lama (I4) dan menu Legacy documents. Akun (I1) tidak menunjuk customer: cakupan akun hanya "All customers" atau "Own project group", dan Project Group seseorang dicatat di Positions.

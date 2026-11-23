@@ -37,6 +37,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/inbox"
 	"github.com/dkpauzi/revioten/internal/integration"
 	"github.com/dkpauzi/revioten/internal/integrationapi"
+	"github.com/dkpauzi/revioten/internal/masterimport"
 	"github.com/dkpauzi/revioten/internal/metrics"
 	"github.com/dkpauzi/revioten/internal/notify"
 	"github.com/dkpauzi/revioten/internal/numbering"
@@ -134,12 +135,14 @@ func runServer(args []string) error {
 	audit.SetListener(notify.NewNotifier(cmp.Or(cfg.PublicBaseURL, "http://"+*addr)).Listener())
 	go notifications.Run(ctx, 15*time.Second)
 	go integrations.RunExports(ctx, 2*time.Second, func(err error) { slog.Error("ekspor gagal", "error", err.Error()) })
+	customers := customer.NewService(pool, checker)
+	products := product.NewService(pool, checker)
 	srv := &http.Server{
 		Addr: *addr,
 		// web.Files berisi hasil build SvelteKit yang di-embed ke binary ini.
 		Handler: server.NewHandler(web.Files(), server.Deps{
 			DB:               pool,
-			Customers:        customer.NewService(pool, checker),
+			Customers:        customers,
 			Auth:             authSvc,
 			Roles:            authSvc,
 			ServiceAccounts:  integrations,
@@ -147,7 +150,8 @@ func runServer(args []string) error {
 			Integration:      integrationapi.NewHandler(integrations, cfg.IntegrationRate, nil),
 			Access:           checker,
 			Audit:            audit.NewService(pool, checker),
-			Products:         product.NewService(pool, checker),
+			Products:         products,
+			MasterImport:     masterimport.NewService(checker, customers, products),
 			Processes:        process.NewService(pool, checker),
 			Numbering:        numbering.NewService(pool, checker),
 			Changes:          change.NewService(pool, checker),

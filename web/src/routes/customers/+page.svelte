@@ -184,6 +184,7 @@
 </script>
 
 <h1>{t('customersTitle')}</h1>
+{#if can('E-11')}<p><a href="/customers/import">{t('customersImportLink')}</a></p>{/if}
 
 {#if loadError}
 	<p class="error" role="alert">{loadError}</p>

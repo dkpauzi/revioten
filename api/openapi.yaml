@@ -528,6 +528,57 @@ paths:
                 $ref: '#/components/schemas/AccountImport'
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/master-data/import-template:
+    get:
+      operationId: getMasterDataImportTemplate
+      summary: The Excel template for importing customers and models (E-11, I5)
+      responses:
+        '200':
+          description: The template, with the Customers, Models, and Help sheets.
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/master-data/import:
+    post:
+      operationId: importMasterData
+      summary: Import project groups, customers, model groups, models, and part numbers from Excel (E-11, I5)
+      description: >-
+        With commit false nothing is stored (Preview). With commit true every correct row is stored through
+        the usual master data rules, one row at a time; invalid rows are reported and left out, and data that
+        already exists is skipped, so the same file can be uploaded again.
+      parameters:
+        - name: commit
+          in: query
+          required: true
+          schema:
+            type: boolean
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: The report.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MasterDataImport'
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/accounts/{accountId}/roles:
     put:
       operationId: setAccountRoles
@@ -5391,6 +5442,50 @@ components:
           type: string
           format: date-time
           description: The temporary password of an imported account expires then (D-224). Absent once the password was changed or reset.
+    MasterDataImport:
+      type: object
+      required: [customers, models, new, existing, invalid, committed]
+      properties:
+        customers:
+          type: array
+          items:
+            $ref: '#/components/schemas/MasterDataImportRow'
+        models:
+          type: array
+          items:
+            $ref: '#/components/schemas/MasterDataImportRow'
+        new:
+          type: integer
+        existing:
+          type: integer
+        invalid:
+          type: integer
+        committed:
+          type: boolean
+    MasterDataImportRow:
+      type: object
+      required: [row, cells, status, creates, problems]
+      properties:
+        row:
+          type: integer
+          description: The Excel row number, from 2.
+        cells:
+          type: object
+          additionalProperties:
+            type: string
+          description: The cells of the row by lower-case column title, for example "customer code".
+        status:
+          type: string
+          enum: [new, existing, invalid]
+        creates:
+          type: array
+          items:
+            type: string
+            enum: [project_group, customer, model_group, model, part_number]
+        problems:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorDetail'
     AccountImport:
       type: object
       required: [rows, new, existing, invalid, committed]
