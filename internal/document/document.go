@@ -35,6 +35,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/db"
 	"github.com/dkpauzi/revioten/internal/numbering"
 	"github.com/dkpauzi/revioten/internal/problem"
+	"github.com/dkpauzi/revioten/internal/settings"
 	"github.com/dkpauzi/revioten/internal/template"
 )
 
@@ -140,6 +141,9 @@ type Document struct {
 	// Flow adalah langkah PFD satu set, hanya untuk CP (C4, D-212): ikut
 	// snapshot supaya alur cetakan revisi terbit tidak berubah. Tidak pernah nil.
 	Flow []FlowStep
+	// LogoSHA256 adalah logo perusahaan yang berlaku sekarang (D-223). Ikut
+	// dibekukan di snapshot saat rilis.
+	LogoSHA256 string
 }
 
 // SetMember adalah satu dokumen di set yang sama (M4.2): nomornya didaftarkan
@@ -698,6 +702,11 @@ func getDocument(ctx context.Context, q *db.Queries, id string) (Document, error
 		Models: []Ref{}, PartNumbers: []PartRef{}, Rows: []Row{}, CreatedAt: r.CreatedAt.UTC(), UpdatedAt: r.UpdatedAt.UTC(),
 		HeaderVersion: int(r.HeaderVersion), Origin: r.Origin, ReleasedMigrated: r.ReleasedMigrated,
 	}
+	logo, err := settings.CurrentLogoSHA(ctx, q)
+	if err != nil {
+		return Document{}, err
+	}
+	d.LogoSHA256 = logo
 	if d.Origin == OriginMigrated {
 		if d.Baseline, err = loadBaseline(ctx, q, id); err != nil {
 			return Document{}, err

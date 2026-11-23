@@ -267,14 +267,24 @@ func (s *Service) input(ctx context.Context, d document.Document, snap document.
 		Snapshot: snap, Format: format, Layout: layout, CustomerName: customer.Name, RevisionLabel: label(revision),
 		ContentHash: hash, Watermark: "UNCONTROLLED COPY", Status: "DRAFT",
 	}
-	// Nama perusahaan dan logo di kepala dan cover (bagian C). Logo yang
-	// berlaku saat dicetak; tanpa unggahan admin, logo bawaan.
+	// Nama perusahaan dan logo di kepala dan cover (bagian C). Logo dibekukan
+	// di snapshot (D-223): revisi selalu dicetak dengan logo saat rilisnya, dan
+	// draft dengan logo yang berlaku. Snapshot sebelum D-223 tidak punya logo
+	// dan memakai logo yang berlaku sekarang.
 	if company, err := s.q.GetCompany(ctx); err == nil {
 		in.CompanyName = company.CompanyName
 	}
 	in.Logo = settings.DefaultLogo
-	if logo, err := s.q.GetCompanyLogo(ctx); err == nil && len(logo) > 0 {
-		in.Logo = logo
+	switch {
+	case snap.LogoSHA256 == settings.DefaultLogoSHA:
+	case snap.LogoSHA256 != "":
+		if logo, err := s.q.GetCompanyLogoBySHA(ctx, snap.LogoSHA256); err == nil {
+			in.Logo = logo
+		}
+	default:
+		if logo, err := s.q.GetCompanyLogo(ctx); err == nil && len(logo) > 0 {
+			in.Logo = logo
+		}
 	}
 	// Kolom Process Flow CP digambar dari langkah PFD satu set (D-122, C3).
 	// Langkahnya dari snapshot CP (D-212); snapshot lama tanpa langkah memakai

@@ -142,6 +142,7 @@ func (e AuditVerificationReason) Valid() bool {
 
 // Defines values for ChangeMechanism.
 const (
+	ChangeMechanismLogo     ChangeMechanism = "logo"
 	ChangeMechanismManual   ChangeMechanism = "manual"
 	ChangeMechanismSqam     ChangeMechanism = "sqam"
 	ChangeMechanismTemplate ChangeMechanism = "template"
@@ -151,6 +152,8 @@ const (
 // Valid indicates whether the value is a known member of the ChangeMechanism enum.
 func (e ChangeMechanism) Valid() bool {
 	switch e {
+	case ChangeMechanismLogo:
+		return true
 	case ChangeMechanismManual:
 		return true
 	case ChangeMechanismSqam:
@@ -2674,7 +2677,7 @@ type Change struct {
 	// Impacts The impact checklist (R-CHG-05, M5.7).
 	Impacts []ChangeImpact `json:"impacts"`
 
-	// Mechanism How the change started (D-113). Manual changes are submitted on screen.
+	// Mechanism How the change started (D-113). Manual changes are submitted on screen; logo changes follow a new company logo (D-223).
 	Mechanism ChangeMechanism `json:"mechanism"`
 	Reason    string          `json:"reason"`
 
@@ -2700,7 +2703,7 @@ type Change struct {
 	Verification *ChangeVerification `json:"verification,omitempty"`
 }
 
-// ChangeMechanism How the change started (D-113). Manual changes are submitted on screen.
+// ChangeMechanism How the change started (D-113). Manual changes are submitted on screen; logo changes follow a new company logo (D-223).
 type ChangeMechanism string
 
 // ChangeStatus Submitted, then accepted or rejected by a verifier (M5.3).
@@ -3945,6 +3948,17 @@ type LinkSuggestionList struct {
 	Items []LinkSuggestion `json:"items"`
 }
 
+// LogoChangeInput defines model for LogoChangeInput.
+type LogoChangeInput struct {
+	ChangeTypeId    string  `json:"change_type_id"`
+	CustomerId      string  `json:"customer_id"`
+	FourMCategoryId *string `json:"four_m_category_id,omitempty"`
+	LogoChangeId    string  `json:"logo_change_id"`
+
+	// Reason Goes into the revision history, for example "Change company logo".
+	Reason string `json:"reason"`
+}
+
 // Metrics defines model for Metrics.
 type Metrics struct {
 	Documents []struct {
@@ -4636,6 +4650,16 @@ type PasswordChange struct {
 // PasswordConfirmation defines model for PasswordConfirmation.
 type PasswordConfirmation struct {
 	Password string `json:"password"`
+}
+
+// PendingLogoChange defines model for PendingLogoChange.
+type PendingLogoChange struct {
+	ChangedAt *time.Time `json:"changed_at,omitempty"`
+
+	// DefaultLogo True when the logo went back to the default logo.
+	DefaultLogo  *bool   `json:"default_logo,omitempty"`
+	LogoChangeId *string `json:"logo_change_id,omitempty"`
+	Pending      bool    `json:"pending"`
 }
 
 // Performance defines model for Performance.
@@ -6294,6 +6318,9 @@ type ProjectGroupId = string
 // RefDocId defines model for RefDocId.
 type RefDocId = string
 
+// ReviseDocuments defines model for ReviseDocuments.
+type ReviseDocuments = bool
+
 // RowId defines model for RowId.
 type RowId = string
 
@@ -6338,6 +6365,18 @@ type ListChangesParams struct {
 // AddChangeAttachmentMultipartBody defines parameters for AddChangeAttachment.
 type AddChangeAttachmentMultipartBody struct {
 	File openapi_types.File `json:"file"`
+}
+
+// ResetCompanyLogoParams defines parameters for ResetCompanyLogo.
+type ResetCompanyLogoParams struct {
+	// Revise Whether the documents are revised for the new logo (D-223).
+	Revise ReviseDocuments `form:"revise" json:"revise"`
+}
+
+// SetCompanyLogoParams defines parameters for SetCompanyLogo.
+type SetCompanyLogoParams struct {
+	// Revise Whether the documents are revised for the new logo (D-223).
+	Revise ReviseDocuments `form:"revise" json:"revise"`
 }
 
 // ListDocumentNumbersParams defines parameters for ListDocumentNumbers.
@@ -6755,6 +6794,9 @@ type SetFormatTemplateHiddenJSONRequestBody = HiddenUpdate
 // UpdateFourMCategoryJSONRequestBody defines body for UpdateFourMCategory for application/json ContentType.
 type UpdateFourMCategoryJSONRequestBody = NameUpdate
 
+// SubmitLogoChangeJSONRequestBody defines body for SubmitLogoChange for application/json ContentType.
+type SubmitLogoChangeJSONRequestBody = LogoChangeInput
+
 // MigrateDocumentJSONRequestBody defines body for MigrateDocument for application/json ContentType.
 type MigrateDocumentJSONRequestBody = LegacyDocument
 
@@ -7017,13 +7059,13 @@ type ServerInterface interface {
 	SetCompanyName(w http.ResponseWriter, r *http.Request)
 	// ResetCompanyLogo Go back to the default logo (admin)
 	// (DELETE /api/v1/company/logo)
-	ResetCompanyLogo(w http.ResponseWriter, r *http.Request)
+	ResetCompanyLogo(w http.ResponseWriter, r *http.Request, params ResetCompanyLogoParams)
 	// GetCompanyLogo The logo printed on covers and form heads, PNG (L-2)
 	// (GET /api/v1/company/logo)
 	GetCompanyLogo(w http.ResponseWriter, r *http.Request)
 	// SetCompanyLogo Upload a new logo, PNG at most 1 MB and 2000 pixels wide (admin)
 	// (PUT /api/v1/company/logo)
-	SetCompanyLogo(w http.ResponseWriter, r *http.Request)
+	SetCompanyLogo(w http.ResponseWriter, r *http.Request, params SetCompanyLogoParams)
 	// ListCustomers List all customers, ordered by code
 	// (GET /api/v1/customers)
 	ListCustomers(w http.ResponseWriter, r *http.Request)
@@ -7042,6 +7084,9 @@ type ServerInterface interface {
 	// SetCustomerDefaultRoute Set the default approval route of a customer (E-11, D-47)
 	// (PUT /api/v1/customers/{customerId}/default-route)
 	SetCustomerDefaultRoute(w http.ResponseWriter, r *http.Request, customerId CustomerId)
+	// GetPendingLogoChange The logo change this customer still has to submit, if any (L-2, D-223)
+	// (GET /api/v1/customers/{customerId}/pending-logo-change)
+	GetPendingLogoChange(w http.ResponseWriter, r *http.Request, customerId CustomerId)
 	// ListCustomerPrintLayouts The layout a customer uses per document type; missing means the default (L-2, M6.1)
 	// (GET /api/v1/customers/{customerId}/print-layouts)
 	ListCustomerPrintLayouts(w http.ResponseWriter, r *http.Request, customerId CustomerId)
@@ -7294,6 +7339,9 @@ type ServerInterface interface {
 	// GetInbox The work waiting for the signed-in person (D-202)
 	// (GET /api/v1/inbox)
 	GetInbox(w http.ResponseWriter, r *http.Request)
+	// SubmitLogoChange Submit the logo change of one customer for every active document (E-3, D-223)
+	// (POST /api/v1/logo-changes)
+	SubmitLogoChange(w http.ResponseWriter, r *http.Request)
 	// GetMetrics The measurement dashboard (L-2, M7.7)
 	// (GET /api/v1/metrics)
 	GetMetrics(w http.ResponseWriter, r *http.Request, params GetMetricsParams)
@@ -8425,8 +8473,27 @@ func (siw *ServerInterfaceWrapper) SetCompanyName(w http.ResponseWriter, r *http
 // ResetCompanyLogo operation middleware
 func (siw *ServerInterfaceWrapper) ResetCompanyLogo(w http.ResponseWriter, r *http.Request) {
 
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ResetCompanyLogoParams
+
+	// ------------- Required query parameter "revise" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "revise", r.URL.Query(), &params.Revise, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "revise"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "revise", Err: err})
+		}
+		return
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.ResetCompanyLogo(w, r)
+		siw.Handler.ResetCompanyLogo(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -8453,8 +8520,27 @@ func (siw *ServerInterfaceWrapper) GetCompanyLogo(w http.ResponseWriter, r *http
 // SetCompanyLogo operation middleware
 func (siw *ServerInterfaceWrapper) SetCompanyLogo(w http.ResponseWriter, r *http.Request) {
 
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SetCompanyLogoParams
+
+	// ------------- Required query parameter "revise" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "revise", r.URL.Query(), &params.Revise, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "revise"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "revise", Err: err})
+		}
+		return
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.SetCompanyLogo(w, r)
+		siw.Handler.SetCompanyLogo(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -8587,6 +8673,32 @@ func (siw *ServerInterfaceWrapper) SetCustomerDefaultRoute(w http.ResponseWriter
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.SetCustomerDefaultRoute(w, r, customerId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetPendingLogoChange operation middleware
+func (siw *ServerInterfaceWrapper) GetPendingLogoChange(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "customerId" -------------
+	var customerId CustomerId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "customerId", r.PathValue("customerId"), &customerId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customerId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetPendingLogoChange(w, r, customerId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -11033,6 +11145,20 @@ func (siw *ServerInterfaceWrapper) GetInbox(w http.ResponseWriter, r *http.Reque
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetInbox(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SubmitLogoChange operation middleware
+func (siw *ServerInterfaceWrapper) SubmitLogoChange(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SubmitLogoChange(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -13662,6 +13788,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/changes/{changeId}/documents", wrapper.AddChangeDocument)
 	m.HandleFunc(http.MethodDelete+" "+options.BaseURL+"/api/v1/changes/{changeId}/documents/{documentId}", wrapper.RemoveChangeDocument)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/sqam-changes", wrapper.SubmitSQAMChange)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/logo-changes", wrapper.SubmitLogoChange)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/customers/{customerId}/pending-logo-change", wrapper.GetPendingLogoChange)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/yokotens", wrapper.ListYokotens)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/yokotens", wrapper.CreateYokoten)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/yokoten-targets/search", wrapper.SearchYokotenTargets)
@@ -15294,6 +15422,7 @@ func (response SetCompanyNamedefaultJSONResponse) VisitSetCompanyNameResponse(w 
 }
 
 type ResetCompanyLogoRequestObject struct {
+	Params ResetCompanyLogoParams
 }
 
 type ResetCompanyLogoResponseObject interface {
@@ -15376,7 +15505,8 @@ func (response GetCompanyLogodefaultJSONResponse) VisitGetCompanyLogoResponse(w 
 }
 
 type SetCompanyLogoRequestObject struct {
-	Body io.Reader
+	Params SetCompanyLogoParams
+	Body   io.Reader
 }
 
 type SetCompanyLogoResponseObject interface {
@@ -15676,6 +15806,45 @@ type SetCustomerDefaultRoutedefaultJSONResponse struct {
 }
 
 func (response SetCustomerDefaultRoutedefaultJSONResponse) VisitSetCustomerDefaultRouteResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPendingLogoChangeRequestObject struct {
+	CustomerId CustomerId `json:"customerId"`
+}
+
+type GetPendingLogoChangeResponseObject interface {
+	VisitGetPendingLogoChangeResponse(w http.ResponseWriter) error
+}
+
+type GetPendingLogoChange200JSONResponse PendingLogoChange
+
+func (response GetPendingLogoChange200JSONResponse) VisitGetPendingLogoChangeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetPendingLogoChangedefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response GetPendingLogoChangedefaultJSONResponse) VisitGetPendingLogoChangeResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -19089,6 +19258,45 @@ type GetInboxdefaultJSONResponse struct {
 }
 
 func (response GetInboxdefaultJSONResponse) VisitGetInboxResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitLogoChangeRequestObject struct {
+	Body *SubmitLogoChangeJSONRequestBody
+}
+
+type SubmitLogoChangeResponseObject interface {
+	VisitSubmitLogoChangeResponse(w http.ResponseWriter) error
+}
+
+type SubmitLogoChange201JSONResponse Change
+
+func (response SubmitLogoChange201JSONResponse) VisitSubmitLogoChangeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitLogoChangedefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response SubmitLogoChangedefaultJSONResponse) VisitSubmitLogoChangeResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -23078,6 +23286,9 @@ type StrictServerInterface interface {
 	// SetCustomerDefaultRoute Set the default approval route of a customer (E-11, D-47)
 	// (PUT /api/v1/customers/{customerId}/default-route)
 	SetCustomerDefaultRoute(ctx context.Context, request SetCustomerDefaultRouteRequestObject) (SetCustomerDefaultRouteResponseObject, error)
+	// GetPendingLogoChange The logo change this customer still has to submit, if any (L-2, D-223)
+	// (GET /api/v1/customers/{customerId}/pending-logo-change)
+	GetPendingLogoChange(ctx context.Context, request GetPendingLogoChangeRequestObject) (GetPendingLogoChangeResponseObject, error)
 	// ListCustomerPrintLayouts The layout a customer uses per document type; missing means the default (L-2, M6.1)
 	// (GET /api/v1/customers/{customerId}/print-layouts)
 	ListCustomerPrintLayouts(ctx context.Context, request ListCustomerPrintLayoutsRequestObject) (ListCustomerPrintLayoutsResponseObject, error)
@@ -23330,6 +23541,9 @@ type StrictServerInterface interface {
 	// GetInbox The work waiting for the signed-in person (D-202)
 	// (GET /api/v1/inbox)
 	GetInbox(ctx context.Context, request GetInboxRequestObject) (GetInboxResponseObject, error)
+	// SubmitLogoChange Submit the logo change of one customer for every active document (E-3, D-223)
+	// (POST /api/v1/logo-changes)
+	SubmitLogoChange(ctx context.Context, request SubmitLogoChangeRequestObject) (SubmitLogoChangeResponseObject, error)
 	// GetMetrics The measurement dashboard (L-2, M7.7)
 	// (GET /api/v1/metrics)
 	GetMetrics(ctx context.Context, request GetMetricsRequestObject) (GetMetricsResponseObject, error)
@@ -24744,8 +24958,10 @@ func (sh *strictHandler) SetCompanyName(w http.ResponseWriter, r *http.Request) 
 }
 
 // ResetCompanyLogo operation middleware
-func (sh *strictHandler) ResetCompanyLogo(w http.ResponseWriter, r *http.Request) {
+func (sh *strictHandler) ResetCompanyLogo(w http.ResponseWriter, r *http.Request, params ResetCompanyLogoParams) {
 	var request ResetCompanyLogoRequestObject
+
+	request.Params = params
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
 		return sh.ssi.ResetCompanyLogo(ctx, request.(ResetCompanyLogoRequestObject))
@@ -24792,8 +25008,10 @@ func (sh *strictHandler) GetCompanyLogo(w http.ResponseWriter, r *http.Request) 
 }
 
 // SetCompanyLogo operation middleware
-func (sh *strictHandler) SetCompanyLogo(w http.ResponseWriter, r *http.Request) {
+func (sh *strictHandler) SetCompanyLogo(w http.ResponseWriter, r *http.Request, params SetCompanyLogoParams) {
 	var request SetCompanyLogoRequestObject
+
+	request.Params = params
 
 	request.Body = r.Body
 
@@ -24997,6 +25215,32 @@ func (sh *strictHandler) SetCustomerDefaultRoute(w http.ResponseWriter, r *http.
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(SetCustomerDefaultRouteResponseObject); ok {
 		if err := validResponse.VisitSetCustomerDefaultRouteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetPendingLogoChange operation middleware
+func (sh *strictHandler) GetPendingLogoChange(w http.ResponseWriter, r *http.Request, customerId CustomerId) {
+	var request GetPendingLogoChangeRequestObject
+
+	request.CustomerId = customerId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetPendingLogoChange(ctx, request.(GetPendingLogoChangeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetPendingLogoChange")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetPendingLogoChangeResponseObject); ok {
+		if err := validResponse.VisitGetPendingLogoChangeResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -27500,6 +27744,37 @@ func (sh *strictHandler) GetInbox(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetInboxResponseObject); ok {
 		if err := validResponse.VisitGetInboxResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SubmitLogoChange operation middleware
+func (sh *strictHandler) SubmitLogoChange(w http.ResponseWriter, r *http.Request) {
+	var request SubmitLogoChangeRequestObject
+
+	var body SubmitLogoChangeJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SubmitLogoChange(ctx, request.(SubmitLogoChangeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SubmitLogoChange")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SubmitLogoChangeResponseObject); ok {
+		if err := validResponse.VisitSubmitLogoChangeResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

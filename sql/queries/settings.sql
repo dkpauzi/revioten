@@ -33,3 +33,17 @@ UPDATE system_settings SET company_name = $1;
 -- name: SetCompanyLogo :exec
 UPDATE system_settings
 SET company_logo = $1, company_logo_sha256 = $2, company_logo_updated_at = now(), company_logo_updated_by_person_id = $3;
+
+
+-- D-223: riwayat logo dan penggantian logo (migrasi 00058).
+
+-- name: SaveCompanyLogo :exec
+INSERT INTO company_logos (sha256, png, created_by_person_id) VALUES ($1, $2, $3)
+ON CONFLICT (sha256) DO NOTHING;
+
+-- name: GetCompanyLogoBySHA :one
+SELECT png FROM company_logos WHERE sha256 = $1;
+
+-- name: RecordLogoChange :one
+INSERT INTO logo_changes (logo_sha256, revise, created_by_person_id) VALUES ($1, $2, $3)
+RETURNING id;

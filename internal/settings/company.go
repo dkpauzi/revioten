@@ -13,6 +13,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"image/png"
+	"strconv"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -27,6 +28,40 @@ import (
 //
 //go:embed logo-default.png
 var DefaultLogo []byte
+
+// DefaultLogoSHA adalah SHA-256 logo bawaan. Snapshot revisi yang terbit
+// dengan logo bawaan menyimpan hash ini (D-223).
+var DefaultLogoSHA = func() string {
+	sum := sha256.Sum256(DefaultLogo)
+	return hex.EncodeToString(sum[:])
+}()
+
+// CurrentLogoSHA memberi hash logo yang berlaku sekarang: logo unggahan, atau
+// logo bawaan. Dipakai dokumen saat membekukan snapshot (D-223).
+func CurrentLogoSHA(ctx context.Context, q *db.Queries) (string, error) {
+	row, err := q.GetCompany(ctx)
+	if err != nil {
+		return "", fmt.Errorf("membaca logo: %w", err)
+	}
+	if row.CompanyLogoSha256 == nil {
+		return DefaultLogoSHA, nil
+	}
+	return *row.CompanyLogoSha256, nil
+}
+
+// LogoBySHA memberi logo menurut hash-nya, untuk mencetak revisi dengan logo
+// yang dibekukan di snapshot (D-223). Hash logo bawaan memberi logo bawaan.
+// Tanpa pemeriksaan izin, seperti Logo.
+func (s *Service) LogoBySHA(ctx context.Context, sha string) ([]byte, error) {
+	if sha == DefaultLogoSHA {
+		return DefaultLogo, nil
+	}
+	data, err := s.q.GetCompanyLogoBySHA(ctx, sha)
+	if err != nil {
+		return nil, fmt.Errorf("membaca logo %s: %w", sha, err)
+	}
+	return data, nil
+}
 
 // Batas logo unggahan.
 const (
@@ -100,8 +135,10 @@ func (s *Service) SetCompanyName(ctx context.Context, actor access.Actor, name s
 	}, audit.ActionSystemSettingsUpdated)
 }
 
-// SetLogo mengganti logo cetakan dengan PNG unggahan (admin).
-func (s *Service) SetLogo(ctx context.Context, actor access.Actor, data []byte) (Company, error) {
+// SetLogo mengganti logo cetakan dengan PNG unggahan (admin). revise adalah
+// jawaban admin apakah dokumen direvisi karena logo baru (D-223): bila ya,
+// PPAP Engineer diminta mengajukan perubahan logo per customer.
+func (s *Service) SetLogo(ctx context.Context, actor access.Actor, data []byte, revise bool) (Company, error) {
 	if err := s.authz.Authorize(ctx, actor, access.ManageSettings, access.Resource{}); err != nil {
 		return Company{}, err
 	}
@@ -114,13 +151,20 @@ func (s *Service) SetLogo(ctx context.Context, actor access.Actor, data []byte) 
 		if err := q.SetCompanyLogo(ctx, db.SetCompanyLogoParams{CompanyLogo: data, CompanyLogoSha256: &hash, CompanyLogoUpdatedByPersonID: optionalPerson(actor)}); err != nil {
 			return nil, err
 		}
+		// Riwayat logo (D-223): revisi lama tetap bisa dicetak dengan logonya.
+		if err := q.SaveCompanyLogo(ctx, db.SaveCompanyLogoParams{Sha256: hash, Png: data, CreatedByPersonID: optionalPerson(actor)}); err != nil {
+			return nil, err
+		}
+		if _, err := q.RecordLogoChange(ctx, db.RecordLogoChangeParams{LogoSha256: &hash, Revise: revise, CreatedByPersonID: optionalPerson(actor)}); err != nil {
+			return nil, err
+		}
 		// Isi gambar tidak masuk audit log; cukup hash-nya.
-		return map[string]string{"logo_sha256": audit.Change(orDefault(before.LogoSHA256), hash)}, nil
+		return map[string]string{"logo_sha256": audit.Change(orDefault(before.LogoSHA256), hash), "revise_documents": strconv.FormatBool(revise)}, nil
 	}, audit.ActionCompanyLogoChanged)
 }
 
-// ResetLogo kembali ke logo bawaan (admin).
-func (s *Service) ResetLogo(ctx context.Context, actor access.Actor) (Company, error) {
+// ResetLogo kembali ke logo bawaan (admin). revise seperti di SetLogo.
+func (s *Service) ResetLogo(ctx context.Context, actor access.Actor, revise bool) (Company, error) {
 	if err := s.authz.Authorize(ctx, actor, access.ManageSettings, access.Resource{}); err != nil {
 		return Company{}, err
 	}
@@ -131,7 +175,10 @@ func (s *Service) ResetLogo(ctx context.Context, actor access.Actor) (Company, e
 		if err := q.SetCompanyLogo(ctx, db.SetCompanyLogoParams{CompanyLogoUpdatedByPersonID: optionalPerson(actor)}); err != nil {
 			return nil, err
 		}
-		return map[string]string{"logo_sha256": audit.Change(before.LogoSHA256, "default")}, nil
+		if _, err := q.RecordLogoChange(ctx, db.RecordLogoChangeParams{Revise: revise, CreatedByPersonID: optionalPerson(actor)}); err != nil {
+			return nil, err
+		}
+		return map[string]string{"logo_sha256": audit.Change(before.LogoSHA256, "default"), "revise_documents": strconv.FormatBool(revise)}, nil
 	}, audit.ActionCompanyLogoChanged)
 }
 

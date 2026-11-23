@@ -160,7 +160,7 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-142 | Rincian menu migrasi yang belum diputuskan | Celah | D-215, D-216 | Tidak | Diputuskan (D-217) |
 | E-143 | Password standar untuk akun hasil import | Kontradiksi | D-132, D-85 | Tidak | Terbuka |
 | E-144 | Cetakan dan simbol alur belum sama dengan dokumen Tokairika | Celah | R-PRT-07, D-122, D-161 | Tidak | Diputuskan (D-219 bagian B, D-220 bagian C) |
-| E-145 | Ganti logo sebagai revisi dokumen | Kontradiksi | D-221, D-220, R-SEC-11, M5.10 | Tidak | Terbuka |
+| E-145 | Ganti logo sebagai revisi dokumen | Kontradiksi | D-221, D-220, R-SEC-11, M5.10 | Tidak | Diputuskan (D-223) |
 
 ## Keputusan 4 November 2026
 
@@ -2509,8 +2509,9 @@ Salin blok ini untuk setiap temuan baru.
   - **(a)** Logo dibekukan per revisi: snapshot menyimpan hash logo, dan logo lama tetap disimpan. Revisi lama tetap dicetak dengan logonya. Bila admin menjawab "ya, revisi", sistem memberi tugas ke PPAP Engineer untuk mengajukan perubahan "Logo change" per customer (seperti perubahan surut SQAM: semua dokumen aktif customer). Perubahan itu lalu diverifikasi, ditandatangani, dan dirilis seperti biasa, dan riwayat revisi mencatat "Change company logo". Bila "tidak", logo baru hanya dipakai dokumen dan revisi yang dibuat sesudahnya.
   - **(b)** Logo tetap berlaku saat dicetak (D-221). Jawaban "ya" hanya membuat perubahan "Logo change" untuk riwayat dan tanda tangan.
 - **Rekomendasi Claude Code (usulan):** (a), karena hanya dengan cara ini tanda tangan dan riwayat revisi benar-benar sesuai dengan kertas yang dicetak.
-- **Menghambat milestone?** Tidak (belum dibangun).
-- **Status:** Terbuka
+- **Menghambat milestone?** Tidak.
+- **Status:** Diputuskan (D-223)
+- **Keputusan pemilik:** 23 November 2026: "Ya, opsi a".
 
 ## Usulan desain UI (UX-01 sampai UX-07): dampak ke M0 sampai M3 dan saran
 

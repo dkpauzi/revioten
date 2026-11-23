@@ -62,7 +62,7 @@ func TestCompanyAndLogo(t *testing.T) {
 	if _, err := s.SetCompanyName(ctx, engineer, "PT. Lain"); !errors.Is(err, access.ErrForbidden) {
 		t.Errorf("PPAP Engineer mengganti nama: %v", err)
 	}
-	if _, err := s.SetLogo(ctx, engineer, pngOf(t, 10, 10)); !errors.Is(err, access.ErrForbidden) {
+	if _, err := s.SetLogo(ctx, engineer, pngOf(t, 10, 10), false); !errors.Is(err, access.ErrForbidden) {
 		t.Errorf("PPAP Engineer mengganti logo: %v", err)
 	}
 	if c, err := s.SetCompanyName(ctx, admin, "  PT. Contoh  "); err != nil || c.Name != "PT. Contoh" {
@@ -77,16 +77,16 @@ func TestCompanyAndLogo(t *testing.T) {
 		"bukan PNG":     []byte("GIF89a bukan png"),
 		"terlalu lebar": pngOf(t, 2100, 10),
 	} {
-		if _, err := s.SetLogo(ctx, admin, body); !slices.Equal(problemCodes(err), []string{"logo:invalid_format"}) {
+		if _, err := s.SetLogo(ctx, admin, body, false); !slices.Equal(problemCodes(err), []string{"logo:invalid_format"}) {
 			t.Errorf("%s: %v", name, err)
 		}
 	}
-	if _, err := s.SetLogo(ctx, admin, append([]byte("\x89PNG"), make([]byte, MaxLogoBytes)...)); !slices.Equal(problemCodes(err), []string{"logo:too_long"}) {
+	if _, err := s.SetLogo(ctx, admin, append([]byte("\x89PNG"), make([]byte, MaxLogoBytes)...), false); !slices.Equal(problemCodes(err), []string{"logo:too_long"}) {
 		t.Errorf("terlalu besar: %v", err)
 	}
 
 	custom := pngOf(t, 40, 20)
-	c, err = s.SetLogo(ctx, admin, custom)
+	c, err = s.SetLogo(ctx, admin, custom, false)
 	if err != nil || !c.CustomLogo || c.LogoSHA256 == "" || c.LogoUpdatedAt == nil {
 		t.Fatalf("unggah logo: %+v, %v", c, err)
 	}
@@ -98,7 +98,7 @@ func TestCompanyAndLogo(t *testing.T) {
 		t.Errorf("audit: %s %s %v", action, details, err)
 	}
 	// Kembali ke logo bawaan.
-	if c, err := s.ResetLogo(ctx, admin); err != nil || c.CustomLogo {
+	if c, err := s.ResetLogo(ctx, admin, false); err != nil || c.CustomLogo {
 		t.Errorf("logo bawaan lagi: %+v, %v", c, err)
 	}
 	if got, _ := s.Logo(ctx); !bytes.Equal(got, DefaultLogo) {

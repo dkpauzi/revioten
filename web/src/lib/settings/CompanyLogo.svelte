@@ -1,7 +1,9 @@
 <script lang="ts">
 	// Nama perusahaan dan logo cetakan (bagian C, E-144). Semua akun melihat;
 	// hanya admin (A-3) yang mengubah. Server tetap memeriksa jenis berkas,
-	// ukuran, dan haknya.
+	// ukuran, dan haknya. Sejak D-223 admin wajib menjawab apakah dokumen
+	// direvisi karena logo baru; bila ya, PPAP Engineer diminta mengajukan
+	// perubahan logo per customer (halaman Changes).
 	import { onMount } from 'svelte';
 	import { getCompany, resetCompanyLogo, setCompanyLogo, setCompanyName, type ApiResult } from '#lib/api/client.ts';
 	import type { Company } from '#lib/api/gen/index.ts';
@@ -14,18 +16,21 @@
 	let file = $state<File | null>(null);
 	let message = $state('');
 	let failure = $state('');
+	// Jawaban "revisi dokumen?": kosong sampai admin memilih (D-223).
+	let revise = $state<'' | 'yes' | 'no'>('');
 	let canEdit = $derived(can('A-3'));
 	// Alamat logo berubah setiap kali logo diganti, supaya browser tidak memakai salinan lama.
 	let logoUrl = $derived('/api/v1/company/logo?v=' + (company?.logo_sha256 ?? 'default'));
 
-	function done(result: ApiResult<Company>, text: string) {
+	function done(result: ApiResult<Company>, text: string): boolean {
 		if (!result.ok) {
 			failure = failureText(result.error);
-			return;
+			return false;
 		}
 		company = result.data;
 		name = result.data.name;
 		message = text;
+		return true;
 	}
 
 	async function load() {
@@ -53,14 +58,31 @@
 			failure = t('companyLogoChoose');
 			return;
 		}
-		done(await setCompanyLogo(file), t('companyLogoUploaded'));
-		file = null;
+		if (!revise) {
+			failure = t('companyLogoReviseChoose');
+			return;
+		}
+		if (done(await setCompanyLogo(file, revise === 'yes'), revisedText(t('companyLogoUploaded')))) {
+			file = null;
+			revise = '';
+		}
 	}
 
 	async function reset() {
 		message = '';
 		failure = '';
-		done(await resetCompanyLogo(), t('companyLogoResetDone'));
+		if (!revise) {
+			failure = t('companyLogoReviseChoose');
+			return;
+		}
+		if (done(await resetCompanyLogo(revise === 'yes'), revisedText(t('companyLogoResetDone')))) {
+			revise = '';
+		}
+	}
+
+	// Pesan hasil menyebut langkah berikutnya bila dokumen direvisi.
+	function revisedText(text: string): string {
+		return revise === 'yes' ? text + ' ' + t('companyLogoReviseNext') : text;
 	}
 
 	onMount(() => {
@@ -91,6 +113,11 @@
 					<label for="company-logo">{t('companyLogoFile')}</label>
 					<input id="company-logo" type="file" accept="image/png" onchange={(e) => (file = e.currentTarget.files?.[0] ?? null)} />
 				</div>
+				<fieldset class="revise">
+					<legend>{t('companyLogoRevise')}</legend>
+					<label class="check"><input type="radio" name="logo-revise" value="yes" bind:group={revise} /> {t('companyLogoReviseYes')}</label>
+					<label class="check"><input type="radio" name="logo-revise" value="no" bind:group={revise} /> {t('companyLogoReviseNo')}</label>
+				</fieldset>
 				<button type="submit">{t('companyLogoUpload')}</button>
 				{#if company.custom_logo}<button type="button" onclick={reset}>{t('companyLogoReset')}</button>{/if}
 			</form>

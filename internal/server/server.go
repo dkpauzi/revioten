@@ -240,6 +240,9 @@ type ChangeRequestService interface {
 	Propagate(ctx context.Context, actor access.Actor, in change.Propagation) ([]change.Change, error)
 	CreateYokoten(ctx context.Context, actor access.Actor, in change.NewYokoten) (change.Yokoten, error)
 	SubmitSQAM(ctx context.Context, actor access.Actor, in change.SQAMChange) (change.Change, error)
+	// Perubahan logo (D-223).
+	PendingLogoChange(ctx context.Context, actor access.Actor, customerID string) (*change.PendingLogo, error)
+	SubmitLogoChange(ctx context.Context, actor access.Actor, in change.LogoChange) (change.Change, error)
 	GetYokoten(ctx context.Context, actor access.Actor, id string) (change.Yokoten, error)
 	ListYokotens(ctx context.Context, actor access.Actor) ([]change.Yokoten, error)
 	Decide(ctx context.Context, actor access.Actor, yokotenID, targetID, decision, reason string) (change.Yokoten, error)
@@ -264,8 +267,8 @@ type SettingsService interface {
 	Company(ctx context.Context, actor access.Actor) (settings.Company, error)
 	SetCompanyName(ctx context.Context, actor access.Actor, name string) (settings.Company, error)
 	Logo(ctx context.Context) ([]byte, error)
-	SetLogo(ctx context.Context, actor access.Actor, data []byte) (settings.Company, error)
-	ResetLogo(ctx context.Context, actor access.Actor) (settings.Company, error)
+	SetLogo(ctx context.Context, actor access.Actor, data []byte, revise bool) (settings.Company, error)
+	ResetLogo(ctx context.Context, actor access.Actor, revise bool) (settings.Company, error)
 }
 
 // AuthService adalah operasi login, sesi, dan pengelolaan akun yang dipakai API.

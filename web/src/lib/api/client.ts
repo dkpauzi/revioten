@@ -59,6 +59,8 @@ import type {
 	PrintLayoutInput,
 	CustomerPrintLayoutList,
 	SqamChangeInput,
+	LogoChangeInput,
+	PendingLogoChange,
 	Yokoten,
 	NewYokoten,
 	YokotenSearch,
@@ -1348,13 +1350,28 @@ export function setCompanyName(name: string, fetchFn: typeof fetch = fetch): Pro
 }
 
 // setCompanyLogo memanggil PUT /api/v1/company/logo dengan isi berkas PNG (admin).
-export function setCompanyLogo(file: Blob, fetchFn: typeof fetch = fetch): Promise<ApiResult<Company>> {
-	return call<Company>(fetchFn, '/api/v1/company/logo', { method: 'PUT', headers: { 'Content-Type': 'image/png' }, body: file });
+// revise adalah jawaban admin apakah dokumen direvisi karena logo baru (D-223).
+export function setCompanyLogo(file: Blob, revise: boolean, fetchFn: typeof fetch = fetch): Promise<ApiResult<Company>> {
+	return call<Company>(fetchFn, '/api/v1/company/logo?revise=' + String(revise), {
+		method: 'PUT',
+		headers: { 'Content-Type': 'image/png' },
+		body: file
+	});
 }
 
-// resetCompanyLogo memanggil DELETE /api/v1/company/logo (admin).
-export function resetCompanyLogo(fetchFn: typeof fetch = fetch): Promise<ApiResult<Company>> {
-	return call<Company>(fetchFn, '/api/v1/company/logo', { method: 'DELETE' });
+// resetCompanyLogo memanggil DELETE /api/v1/company/logo (admin), revise seperti di atas.
+export function resetCompanyLogo(revise: boolean, fetchFn: typeof fetch = fetch): Promise<ApiResult<Company>> {
+	return call<Company>(fetchFn, '/api/v1/company/logo?revise=' + String(revise), { method: 'DELETE' });
+}
+
+// getPendingLogoChange memanggil GET /api/v1/customers/{id}/pending-logo-change (D-223).
+export function getPendingLogoChange(customerId: string, fetchFn: typeof fetch = fetch): Promise<ApiResult<PendingLogoChange>> {
+	return call<PendingLogoChange>(fetchFn, itemPath('customers', customerId) + '/pending-logo-change', { method: 'GET' });
+}
+
+// submitLogoChange memanggil POST /api/v1/logo-changes (E-3, D-223).
+export function submitLogoChange(input: LogoChangeInput, fetchFn: typeof fetch = fetch): Promise<ApiResult<Change>> {
+	return call<Change>(fetchFn, '/api/v1/logo-changes', jsonRequest('POST', input));
 }
 
 // updateSystemSettings memanggil PUT /api/v1/system-settings (A-3).

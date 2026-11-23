@@ -1630,6 +1630,9 @@ paths:
     put:
       operationId: setCompanyLogo
       summary: Upload a new logo, PNG at most 1 MB and 2000 pixels wide (admin)
+      description: Released revisions keep the logo of their release (D-223). revise says whether the documents are revised for the new logo; when true, every customer with active documents waits for a logo change.
+      parameters:
+        - $ref: '#/components/parameters/ReviseDocuments'
       requestBody:
         required: true
         content:
@@ -1649,6 +1652,8 @@ paths:
     delete:
       operationId: resetCompanyLogo
       summary: Go back to the default logo (admin)
+      parameters:
+        - $ref: '#/components/parameters/ReviseDocuments'
       responses:
         '200':
           description: The company with the default logo.
@@ -2468,6 +2473,41 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Change'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/logo-changes:
+    post:
+      operationId: submitLogoChange
+      summary: Submit the logo change of one customer for every active document (E-3, D-223)
+      description: Once per customer for the latest logo change that the admin marked for revision. When accepted, every document gets a new draft with the new logo; the reason goes into the revision history.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogoChangeInput'
+      responses:
+        '201':
+          description: The change.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Change'
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/customers/{customerId}/pending-logo-change:
+    get:
+      operationId: getPendingLogoChange
+      summary: The logo change this customer still has to submit, if any (L-2, D-223)
+      parameters:
+        - $ref: '#/components/parameters/CustomerId'
+      responses:
+        '200':
+          description: pending is false when nothing waits.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PendingLogoChange'
         default:
           $ref: '#/components/responses/Error'
   /api/v1/yokotens:
@@ -4698,6 +4738,13 @@ components:
       required: true
       schema:
         type: string
+    ReviseDocuments:
+      name: revise
+      in: query
+      required: true
+      description: Whether the documents are revised for the new logo (D-223).
+      schema:
+        type: boolean
     FormatTemplateId:
       name: formatTemplateId
       in: path
@@ -8413,8 +8460,8 @@ components:
           type: string
         mechanism:
           type: string
-          enum: [manual, yokoten, template, sqam]
-          description: How the change started (D-113). Manual changes are submitted on screen.
+          enum: [manual, yokoten, template, sqam, logo]
+          description: How the change started (D-113). Manual changes are submitted on screen; logo changes follow a new company logo (D-223).
         trigger:
           $ref: '#/components/schemas/ChangeRef'
         change_type:
@@ -8462,6 +8509,35 @@ components:
         updated_at:
           type: string
           format: date-time
+    LogoChangeInput:
+      type: object
+      required: [customer_id, logo_change_id, change_type_id, reason]
+      properties:
+        customer_id:
+          type: string
+        logo_change_id:
+          type: string
+        change_type_id:
+          type: string
+        four_m_category_id:
+          type: string
+        reason:
+          type: string
+          description: Goes into the revision history, for example "Change company logo".
+    PendingLogoChange:
+      type: object
+      required: [pending]
+      properties:
+        pending:
+          type: boolean
+        logo_change_id:
+          type: string
+        changed_at:
+          type: string
+          format: date-time
+        default_logo:
+          type: boolean
+          description: True when the logo went back to the default logo.
     SQAMChangeInput:
       type: object
       required: [customer_id, change_type_id, reason, sqam_reference]

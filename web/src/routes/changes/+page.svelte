@@ -9,6 +9,7 @@
 	import { createChange, listChangeSources, listChangeTypes, listChanges, listCustomers, listDocuments, listFourMCategories } from '#lib/api/client.ts';
 	import type { Change, ChangeSource, ChangeType, Customer, DocumentSummary, FourMCategory } from '#lib/api/gen/index.ts';
 	import { failureText, problemText } from '#lib/errors.ts';
+	import LogoChangeForm from '#lib/changes/LogoChangeForm.svelte';
 	import SQAMForm from '#lib/changes/SQAMForm.svelte';
 	import { formatDateTime } from '#lib/format.ts';
 	import { t } from '#lib/i18n/index.ts';
@@ -167,6 +168,17 @@
 				<p class="wide"><button type="submit" class="primary">{t('changeSubmit')}</button></p>
 			</form>
 		</section>
+		{#key customerId}
+			<LogoChangeForm
+				{customerId}
+				{types}
+				{categories}
+				onsubmitted={(c) => {
+					changes = [c, ...(changes ?? [])];
+					message = t('logoChangeSubmitted', { ref: c.ref, count: String(c.documents.length) });
+				}}
+			/>
+		{/key}
 		{#key customerId}
 			<SQAMForm
 				{customerId}

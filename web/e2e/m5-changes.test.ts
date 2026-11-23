@@ -5,7 +5,7 @@
 // menerbitkan form set AIAG 4th; dokumen hanya memakai form set yang terbit.
 import { expect, test, type Page } from '@playwright/test';
 import { en } from '../src/lib/i18n/en.ts';
-import { asMaster, createWorkAccount, ensureProjectGroup, logIn, logInFirstTime, logOut, openFromMenu, openTool } from './helpers.ts';
+import { asMaster, createWorkAccount, ensureProjectGroup, logIn, logInFirstTime, logOut, openFromMenu, openTool, tinyPNG } from './helpers.ts';
 
 // setupSet membuat customer CH dengan model C-1 dan satu set dokumen PFD,
 // PFMEA, dan CP. Dipanggil sebagai akun penyusun. Hasilnya nomor ketiganya.
@@ -420,4 +420,44 @@ test('M5.10: perubahan surut SQAM mencakup semua dokumen aktif, dan semuanya men
 	});
 	expect(docs).toHaveLength(6);
 	for (const d of docs) expect(d.draft_revision, d.number).toBeDefined();
+});
+
+test('D-223: logo baru dengan jawaban "revisi dokumen" menunggu satu perubahan logo per customer', async ({ page }) => {
+	// Admin mengganti logo dan memilih merevisi dokumen.
+	await logIn(page);
+	await openFromMenu(page, en.navGroupAdmin, en.navSettings);
+	const company = page.locator('section', { has: page.getByRole('heading', { name: en.companyTitle }) });
+	await company.getByLabel(en.companyLogoFile).setInputFiles({ name: 'logo.png', mimeType: 'image/png', buffer: tinyPNG() });
+	await company.getByLabel(en.companyLogoReviseYes).check();
+	await company.getByRole('button', { name: en.companyLogoUpload }).click();
+	await expect(company.getByRole('status')).toHaveText(`${en.companyLogoUploaded} ${en.companyLogoReviseNext}`);
+	await logOut(page);
+
+	// PPAP Engineer melihat perubahan logo yang menunggu di Changes dan mengajukannya.
+	await page.getByLabel(en.loginName, { exact: true }).fill('pemohon.e2e');
+	await page.getByLabel(en.loginPassword, { exact: true }).fill('perubahan selalu punya alasan');
+	await page.getByRole('button', { name: en.loginSubmit }).click();
+	await expect(page.getByRole('button', { name: en.logout })).toBeVisible();
+	await openFromMenu(page, en.navGroupDocuments, en.navChanges);
+	await page.getByLabel(en.documentCustomer, { exact: true }).selectOption({ label: 'CH · Customer CH' });
+	const logo = page.locator('section', { has: page.getByRole('heading', { name: en.logoChangeTitle }) });
+	await expect(logo).toBeVisible();
+	await expect(logo.getByLabel(en.changeReason)).toHaveValue(en.logoChangeDefaultReason);
+	await logo.locator('#logo-change-type').selectOption({ index: 1 });
+	await logo.getByRole('button', { name: en.logoChangeSubmit }).click();
+	const status = page.getByRole('status');
+	await expect(status).toContainText('CHG-');
+	const ref = (await status.textContent())?.match(/CHG-\d{4}/)?.[0] ?? '';
+	await expect(status).toHaveText(en.logoChangeSubmitted.replace('{ref}', ref).replace('{count}', '6'));
+	// Sekali per customer: formulirnya hilang.
+	await expect(logo).toHaveCount(0);
+	await expect(page.getByRole('row', { name: new RegExp(ref) })).toContainText(en.logoChangeDefaultReason);
+	await logOut(page);
+
+	// Logo bawaan lagi tanpa revisi, supaya test lain tidak melihat perubahan logo yang menunggu.
+	await logIn(page);
+	await openFromMenu(page, en.navGroupAdmin, en.navSettings);
+	await company.getByLabel(en.companyLogoReviseNo).check();
+	await company.getByRole('button', { name: en.companyLogoReset }).click();
+	await expect(company.getByRole('status')).toHaveText(en.companyLogoResetDone);
 });

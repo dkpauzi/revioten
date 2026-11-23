@@ -3,9 +3,13 @@ package printout_test
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html"
+	"image"
+	"image/png"
 	"io"
 	"strings"
 	"testing"
@@ -19,6 +23,7 @@ import (
 	"github.com/dkpauzi/revioten/internal/numbering"
 	"github.com/dkpauzi/revioten/internal/printout"
 	"github.com/dkpauzi/revioten/internal/problem"
+	"github.com/dkpauzi/revioten/internal/settings"
 	"github.com/dkpauzi/revioten/internal/storage"
 	"github.com/dkpauzi/revioten/internal/template"
 )
@@ -314,5 +319,42 @@ func TestFlowFrozenAtRelease(t *testing.T) {
 	flow := string(view.Pages[0].Flow)
 	if !strings.Contains(flow, "SCRAP") || !strings.Contains(flow, `data-step="10"`) {
 		t.Errorf("alur revisi terbit harus memakai PFD saat rilis: %s", flow)
+	}
+}
+
+// TestLogoFrozenAtRelease (D-223): revisi terbit dicetak dengan logo saat
+// rilisnya, juga sesudah admin mengganti logo.
+func TestLogoFrozenAtRelease(t *testing.T) {
+	e := doctest.Setup(t)
+	ctx := t.Context()
+	store, err := storage.New(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := printout.NewService(e.Pool, e.Checker, e.Docs, store, "")
+	cp := e.NewSet(t, "ab", e.CustomerAB, e.ModelK125)["cp"]
+	dcc := doctest.NewActor(t, e.Pool, "dcc.uji", "work", doctest.All(access.RoleDocumentControl))
+	doctest.AttachScan(t, e.Pool, cp.ID)
+	if _, err := e.Docs.Release(ctx, dcc, cp.ID); err != nil {
+		t.Fatal(err)
+	}
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, image.NewGray(image.Rect(0, 0, 50, 5))); err != nil {
+		t.Fatal(err)
+	}
+	newLogo := buf.Bytes()
+	if _, err := settings.NewService(e.Pool, e.Checker).SetLogo(ctx, e.Admin, newLogo, false); err != nil {
+		t.Fatal(err)
+	}
+	zero := 0
+	view, err := s.Preview(ctx, e.Author, cp.ID, &zero)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Isi atribut di-escape html/template (misalnya + menjadi &#43;), jadi
+	// dibandingkan sesudah di-unescape, seperti yang dibaca browser.
+	head := html.UnescapeString(view.HeadHTML)
+	if !strings.Contains(head, base64.StdEncoding.EncodeToString(settings.DefaultLogo)) || strings.Contains(head, base64.StdEncoding.EncodeToString(newLogo)) {
+		t.Error("revisi 0 tidak dicetak dengan logo saat rilisnya")
 	}
 }

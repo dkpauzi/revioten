@@ -455,6 +455,9 @@ func TestPermissionsPerOperation(t *testing.T) {
 		{http.MethodGet, "/api/v1/customers/{customerId}/print-layouts", "", http.StatusOK, http.StatusOK, http.StatusOK},
 		{http.MethodPut, "/api/v1/customers/{customerId}/print-layouts/{documentTypeId}", `{"layout_id":"{firstTypeLayoutId}"}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		// Perubahan surut SQAM (M5.10) lewat E-3: engineer mengajukannya untuk semua dokumen aktif customer uji.
+		// Perubahan logo (D-223): tidak ada penggantian logo yang menunggu, jadi pengajuan ditolak 422.
+		{http.MethodGet, "/api/v1/customers/{customerId}/pending-logo-change", "", http.StatusOK, http.StatusOK, http.StatusOK},
+		{http.MethodPost, "/api/v1/logo-changes", `{"customer_id":"{customerId}","logo_change_id":"01a180aa-a98b-7bf2-8e0d-b97a25ecc489","change_type_id":"{contentTypeId}","reason":"Change company logo"}`, http.StatusForbidden, http.StatusUnprocessableEntity, http.StatusForbidden},
 		{http.MethodPost, "/api/v1/sqam-changes", `{"customer_id":"{customerId}","change_type_id":"{contentTypeId}","reason":"Uji SQAM","sqam_reference":"SQAM rev 1","effective_date":"2026-12-01"}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
 		// Yokoten (M5.9). Daftar disaring per customer, jadi semua akun mendapat 200.
 		// Perubahan uji masih diajukan, jadi tidak bisa disebarkan (422) sesudah haknya lolos.
@@ -544,8 +547,8 @@ func TestPermissionsPerOperation(t *testing.T) {
 		{http.MethodGet, "/api/v1/company", "", http.StatusOK, http.StatusOK, http.StatusOK},
 		{http.MethodPut, "/api/v1/company", `{"name":"PT. SIIX EMS INDONESIA"}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
 		{http.MethodGet, "/api/v1/company/logo", "", http.StatusOK, http.StatusOK, http.StatusOK},
-		{http.MethodPut, "/api/v1/company/logo", `bukan png`, http.StatusForbidden, http.StatusForbidden, http.StatusUnprocessableEntity},
-		{http.MethodDelete, "/api/v1/company/logo", "", http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodPut, "/api/v1/company/logo?revise=false", `bukan png`, http.StatusForbidden, http.StatusForbidden, http.StatusUnprocessableEntity},
+		{http.MethodDelete, "/api/v1/company/logo?revise=false", "", http.StatusForbidden, http.StatusForbidden, http.StatusOK},
 		{http.MethodGet, "/api/v1/service-accounts", "", http.StatusForbidden, http.StatusForbidden, http.StatusOK},
 		{http.MethodPost, "/api/v1/service-accounts", `{"name":"MES uji","owner_team":"Tim MES","contact":"mes@contoh.test","purpose":"Uji izin","scopes":["documents:read"],"customer_ids":["{customerId}"]}`, http.StatusForbidden, http.StatusForbidden, http.StatusCreated},
 		{http.MethodPost, "/api/v1/service-accounts/{serviceAccountId}/tokens", `{}`, http.StatusForbidden, http.StatusForbidden, http.StatusNotFound},

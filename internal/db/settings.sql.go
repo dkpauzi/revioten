@@ -40,6 +40,17 @@ func (q *Queries) GetCompanyLogo(ctx context.Context) ([]byte, error) {
 	return company_logo, err
 }
 
+const getCompanyLogoBySHA = `-- name: GetCompanyLogoBySHA :one
+SELECT png FROM company_logos WHERE sha256 = $1
+`
+
+func (q *Queries) GetCompanyLogoBySHA(ctx context.Context, sha256 string) ([]byte, error) {
+	row := q.db.QueryRow(ctx, getCompanyLogoBySHA, sha256)
+	var png []byte
+	err := row.Scan(&png)
+	return png, err
+}
+
 const getMigrationMode = `-- name: GetMigrationMode :one
 SELECT migration_mode FROM system_settings
 `
@@ -103,6 +114,42 @@ func (q *Queries) LockSystemSettings(ctx context.Context) (LockSystemSettingsRow
 		&i.SubmissionFormNumber,
 	)
 	return i, err
+}
+
+const recordLogoChange = `-- name: RecordLogoChange :one
+INSERT INTO logo_changes (logo_sha256, revise, created_by_person_id) VALUES ($1, $2, $3)
+RETURNING id
+`
+
+type RecordLogoChangeParams struct {
+	LogoSha256        *string
+	Revise            bool
+	CreatedByPersonID *string
+}
+
+func (q *Queries) RecordLogoChange(ctx context.Context, arg RecordLogoChangeParams) (string, error) {
+	row := q.db.QueryRow(ctx, recordLogoChange, arg.LogoSha256, arg.Revise, arg.CreatedByPersonID)
+	var id string
+	err := row.Scan(&id)
+	return id, err
+}
+
+const saveCompanyLogo = `-- name: SaveCompanyLogo :exec
+
+INSERT INTO company_logos (sha256, png, created_by_person_id) VALUES ($1, $2, $3)
+ON CONFLICT (sha256) DO NOTHING
+`
+
+type SaveCompanyLogoParams struct {
+	Sha256            string
+	Png               []byte
+	CreatedByPersonID *string
+}
+
+// D-223: riwayat logo dan penggantian logo (migrasi 00058).
+func (q *Queries) SaveCompanyLogo(ctx context.Context, arg SaveCompanyLogoParams) error {
+	_, err := q.db.Exec(ctx, saveCompanyLogo, arg.Sha256, arg.Png, arg.CreatedByPersonID)
+	return err
 }
 
 const setCompanyLogo = `-- name: SetCompanyLogo :exec

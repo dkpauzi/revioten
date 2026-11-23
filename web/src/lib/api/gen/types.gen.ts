@@ -2391,9 +2391,9 @@ export type Change = {
     customer_id: string;
     customer_code: string;
     /**
-     * How the change started (D-113). Manual changes are submitted on screen.
+     * How the change started (D-113). Manual changes are submitted on screen; logo changes follow a new company logo (D-223).
      */
-    mechanism: 'manual' | 'yokoten' | 'template' | 'sqam';
+    mechanism: 'manual' | 'yokoten' | 'template' | 'sqam' | 'logo';
     trigger?: ChangeRef;
     change_type: ChangeRef;
     four_m?: ChangeRef;
@@ -2425,6 +2425,27 @@ export type Change = {
     impacts: Array<ChangeImpact>;
     created_at: string;
     updated_at: string;
+};
+
+export type LogoChangeInput = {
+    customer_id: string;
+    logo_change_id: string;
+    change_type_id: string;
+    four_m_category_id?: string;
+    /**
+     * Goes into the revision history, for example "Change company logo".
+     */
+    reason: string;
+};
+
+export type PendingLogoChange = {
+    pending: boolean;
+    logo_change_id?: string;
+    changed_at?: string;
+    /**
+     * True when the logo went back to the default logo.
+     */
+    default_logo?: boolean;
 };
 
 export type SqamChangeInput = {
@@ -3670,6 +3691,11 @@ export type PositionId = string;
 export type HolderId = string;
 
 export type ApprovalRouteId = string;
+
+/**
+ * Whether the documents are revised for the new logo (D-223).
+ */
+export type ReviseDocuments = boolean;
 
 export type FormatTemplateId = string;
 
@@ -6702,7 +6728,12 @@ export type SetCompanyNameResponse = SetCompanyNameResponses[keyof SetCompanyNam
 export type ResetCompanyLogoData = {
     body?: never;
     path?: never;
-    query?: never;
+    query: {
+        /**
+         * Whether the documents are revised for the new logo (D-223).
+         */
+        revise: boolean;
+    };
     url: '/api/v1/company/logo';
 };
 
@@ -6768,7 +6799,12 @@ export type GetCompanyLogoResponse = GetCompanyLogoResponses[keyof GetCompanyLog
 export type SetCompanyLogoData = {
     body: Blob | File;
     path?: never;
-    query?: never;
+    query: {
+        /**
+         * Whether the documents are revised for the new logo (D-223).
+         */
+        revise: boolean;
+    };
     url: '/api/v1/company/logo';
 };
 
@@ -8162,6 +8198,74 @@ export type SubmitSqamChangeResponses = {
 };
 
 export type SubmitSqamChangeResponse = SubmitSqamChangeResponses[keyof SubmitSqamChangeResponses];
+
+export type SubmitLogoChangeData = {
+    body: LogoChangeInput;
+    path?: never;
+    query?: never;
+    url: '/api/v1/logo-changes';
+};
+
+export type SubmitLogoChangeErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type SubmitLogoChangeError = SubmitLogoChangeErrors[keyof SubmitLogoChangeErrors];
+
+export type SubmitLogoChangeResponses = {
+    /**
+     * The change.
+     */
+    201: Change;
+};
+
+export type SubmitLogoChangeResponse = SubmitLogoChangeResponses[keyof SubmitLogoChangeResponses];
+
+export type GetPendingLogoChangeData = {
+    body?: never;
+    path: {
+        customerId: string;
+    };
+    query?: never;
+    url: '/api/v1/customers/{customerId}/pending-logo-change';
+};
+
+export type GetPendingLogoChangeErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type GetPendingLogoChangeError = GetPendingLogoChangeErrors[keyof GetPendingLogoChangeErrors];
+
+export type GetPendingLogoChangeResponses = {
+    /**
+     * pending is false when nothing waits.
+     */
+    200: PendingLogoChange;
+};
+
+export type GetPendingLogoChangeResponse = GetPendingLogoChangeResponses[keyof GetPendingLogoChangeResponses];
 
 export type ListYokotensData = {
     body?: never;

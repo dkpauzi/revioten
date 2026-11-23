@@ -78,6 +78,7 @@ type Change struct {
 	EffectiveDate               pgtype.Date
 	SourceChangeID              *string
 	RequestedByServiceAccountID *string
+	LogoChangeID                *string
 }
 
 type ChangeAttachment struct {
@@ -141,6 +142,13 @@ type ChangeType struct {
 	Name            string
 	Position        int16
 	ApprovalRouteID *string
+}
+
+type CompanyLogo struct {
+	Sha256            string
+	Png               []byte
+	CreatedAt         time.Time
+	CreatedByPersonID *string
 }
 
 type Customer struct {
@@ -474,6 +482,14 @@ type IntegrationRequest struct {
 	RequestHash      string
 	ChangeID         *string
 	CreatedAt        time.Time
+}
+
+type LogoChange struct {
+	ID                string
+	LogoSha256        *string
+	Revise            bool
+	CreatedAt         time.Time
+	CreatedByPersonID *string
 }
 
 type Model struct {

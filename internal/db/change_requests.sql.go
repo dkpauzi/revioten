@@ -145,6 +145,38 @@ func (q *Queries) CreateChange(ctx context.Context, arg CreateChangeParams) (str
 	return id, err
 }
 
+const createLogoChange = `-- name: CreateLogoChange :one
+INSERT INTO changes (customer_id, mechanism, change_type_id, four_m_category_id, reason, logo_change_id,
+                     requested_by_person_id, requested_by_account_id)
+VALUES ($1, 'logo', $2, $3, $4, $5, $6, $7)
+RETURNING id
+`
+
+type CreateLogoChangeParams struct {
+	CustomerID           string
+	ChangeTypeID         string
+	FourMCategoryID      *string
+	Reason               string
+	LogoChangeID         *string
+	RequestedByPersonID  *string
+	RequestedByAccountID *string
+}
+
+func (q *Queries) CreateLogoChange(ctx context.Context, arg CreateLogoChangeParams) (string, error) {
+	row := q.db.QueryRow(ctx, createLogoChange,
+		arg.CustomerID,
+		arg.ChangeTypeID,
+		arg.FourMCategoryID,
+		arg.Reason,
+		arg.LogoChangeID,
+		arg.RequestedByPersonID,
+		arg.RequestedByAccountID,
+	)
+	var id string
+	err := row.Scan(&id)
+	return id, err
+}
+
 const createSQAMChange = `-- name: CreateSQAMChange :one
 INSERT INTO changes (customer_id, mechanism, change_type_id, four_m_category_id, reason, source_reference, effective_date,
                      requested_by_person_id, requested_by_account_id)
@@ -452,6 +484,32 @@ func (q *Queries) IsChangeVerifier(ctx context.Context, arg IsChangeVerifierPara
 	return exists, err
 }
 
+const latestLogoChange = `-- name: LatestLogoChange :one
+
+SELECT id, logo_sha256, revise, created_at FROM logo_changes ORDER BY created_at DESC, id DESC LIMIT 1
+`
+
+type LatestLogoChangeRow struct {
+	ID         string
+	LogoSha256 *string
+	Revise     bool
+	CreatedAt  time.Time
+}
+
+// D-223: perubahan logo (migrasi 00058).
+// LatestLogoChange mengambil penggantian logo terakhir.
+func (q *Queries) LatestLogoChange(ctx context.Context) (LatestLogoChangeRow, error) {
+	row := q.db.QueryRow(ctx, latestLogoChange)
+	var i LatestLogoChangeRow
+	err := row.Scan(
+		&i.ID,
+		&i.LogoSha256,
+		&i.Revise,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const listActiveCustomerDocuments = `-- name: ListActiveCustomerDocuments :many
 
 SELECT d.id, n.number
@@ -757,6 +815,22 @@ SELECT id FROM changes WHERE id = $1 FOR NO KEY UPDATE
 func (q *Queries) LockChange(ctx context.Context, id string) error {
 	_, err := q.db.Exec(ctx, lockChange, id)
 	return err
+}
+
+const logoChangeSubmitted = `-- name: LogoChangeSubmitted :one
+SELECT EXISTS (SELECT 1 FROM changes WHERE logo_change_id = $1 AND customer_id = $2)
+`
+
+type LogoChangeSubmittedParams struct {
+	LogoChangeID *string
+	CustomerID   string
+}
+
+func (q *Queries) LogoChangeSubmitted(ctx context.Context, arg LogoChangeSubmittedParams) (bool, error) {
+	row := q.db.QueryRow(ctx, logoChangeSubmitted, arg.LogoChangeID, arg.CustomerID)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
 }
 
 const removeChangeAttachment = `-- name: RemoveChangeAttachment :execrows

@@ -192,3 +192,19 @@ INSERT INTO changes (customer_id, mechanism, change_type_id, four_m_category_id,
                      requested_by_person_id, requested_by_account_id)
 VALUES ($1, 'sqam', $2, $3, $4, $5, $6, $7, $8)
 RETURNING id;
+
+
+-- D-223: perubahan logo (migrasi 00058).
+
+-- name: LatestLogoChange :one
+-- LatestLogoChange mengambil penggantian logo terakhir.
+SELECT id, logo_sha256, revise, created_at FROM logo_changes ORDER BY created_at DESC, id DESC LIMIT 1;
+
+-- name: LogoChangeSubmitted :one
+SELECT EXISTS (SELECT 1 FROM changes WHERE logo_change_id = $1 AND customer_id = $2);
+
+-- name: CreateLogoChange :one
+INSERT INTO changes (customer_id, mechanism, change_type_id, four_m_category_id, reason, logo_change_id,
+                     requested_by_person_id, requested_by_account_id)
+VALUES ($1, 'logo', $2, $3, $4, $5, $6, $7)
+RETURNING id;

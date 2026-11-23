@@ -855,11 +855,11 @@ func (f *fakeSettings) SetCompanyName(_ context.Context, _ access.Actor, name st
 
 func (f *fakeSettings) Logo(context.Context) ([]byte, error) { return settings.DefaultLogo, f.err }
 
-func (f *fakeSettings) SetLogo(context.Context, access.Actor, []byte) (settings.Company, error) {
+func (f *fakeSettings) SetLogo(context.Context, access.Actor, []byte, bool) (settings.Company, error) {
 	return settings.Company{Name: "PT. Contoh", CustomLogo: true, LogoSHA256: "abc"}, f.err
 }
 
-func (f *fakeSettings) ResetLogo(context.Context, access.Actor) (settings.Company, error) {
+func (f *fakeSettings) ResetLogo(context.Context, access.Actor, bool) (settings.Company, error) {
 	return settings.Company{Name: "PT. Contoh"}, f.err
 }
 
@@ -1233,6 +1233,15 @@ func (f *fakeChangeRequests) ListYokotens(_ context.Context, _ access.Actor) ([]
 func (f *fakeChangeRequests) Decide(_ context.Context, _ access.Actor, yokotenID, targetID, decision, reason string) (change.Yokoten, error) {
 	f.got = called{method: "Decide", id: yokotenID, input: targetID + ":" + decision + ":" + reason}
 	return f.yokoten, f.err
+}
+
+func (f *fakeChangeRequests) PendingLogoChange(context.Context, access.Actor, string) (*change.PendingLogo, error) {
+	return nil, f.err
+}
+
+func (f *fakeChangeRequests) SubmitLogoChange(_ context.Context, _ access.Actor, in change.LogoChange) (change.Change, error) {
+	f.got = called{method: "SubmitLogoChange", id: in.CustomerID, input: in.LogoChangeID}
+	return change.Change{}, f.err
 }
 
 func (f *fakeChangeRequests) SubmitSQAM(_ context.Context, _ access.Actor, in change.SQAMChange) (change.Change, error) {
