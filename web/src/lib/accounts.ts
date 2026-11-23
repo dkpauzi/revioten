@@ -17,6 +17,11 @@ export function accountStatus(account: AccountInfo, now: Date = new Date()): str
 	if (account.must_change_password) {
 		status.push(t('accountStatusMustChange'));
 	}
+	// Password sementara akun hasil import kedaluwarsa 7 hari (D-224).
+	if (account.temporary_password_expires_at) {
+		const at = account.temporary_password_expires_at;
+		status.push(new Date(at) <= now ? t('accountStatusTemporaryExpired') : t('accountStatusTemporaryUntil', { time: formatDateTime(at) }));
+	}
 	return status.length > 0 ? status : [t('accountStatusActive')];
 }
 

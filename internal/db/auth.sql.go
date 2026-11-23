@@ -205,23 +205,24 @@ func (q *Queries) GetAccountByID(ctx context.Context, id string) (GetAccountByID
 
 const getAccountByLogin = `-- name: GetAccountByLogin :one
 SELECT a.id, a.person_id, a.kind, a.login, a.password_hash, a.must_change_password,
-       a.failed_logins, a.locked_until, a.disabled_at, p.name AS person_name
+       a.failed_logins, a.locked_until, a.disabled_at, a.temporary_password_expires_at, p.name AS person_name
 FROM accounts a
 JOIN people p ON p.id = a.person_id
 WHERE a.login = $1
 `
 
 type GetAccountByLoginRow struct {
-	ID                 string
-	PersonID           string
-	Kind               string
-	Login              string
-	PasswordHash       string
-	MustChangePassword bool
-	FailedLogins       int32
-	LockedUntil        *time.Time
-	DisabledAt         *time.Time
-	PersonName         string
+	ID                         string
+	PersonID                   string
+	Kind                       string
+	Login                      string
+	PasswordHash               string
+	MustChangePassword         bool
+	FailedLogins               int32
+	LockedUntil                *time.Time
+	DisabledAt                 *time.Time
+	TemporaryPasswordExpiresAt *time.Time
+	PersonName                 string
 }
 
 // GetAccountByLogin mengambil akun beserta nama orangnya untuk proses login.
@@ -238,6 +239,7 @@ func (q *Queries) GetAccountByLogin(ctx context.Context, login string) (GetAccou
 		&i.FailedLogins,
 		&i.LockedUntil,
 		&i.DisabledAt,
+		&i.TemporaryPasswordExpiresAt,
 		&i.PersonName,
 	)
 	return i, err
@@ -335,7 +337,9 @@ func (q *Queries) RecordLoginSuccess(ctx context.Context, id string) error {
 }
 
 const setPasswordHash = `-- name: SetPasswordHash :exec
-UPDATE accounts SET password_hash = $2, must_change_password = $3 WHERE id = $1
+UPDATE accounts SET password_hash = $2, must_change_password = $3,
+    temporary_password_expires_at = CASE WHEN $3 THEN temporary_password_expires_at END
+WHERE id = $1
 `
 
 type SetPasswordHashParams struct {
@@ -344,6 +348,8 @@ type SetPasswordHashParams struct {
 	MustChangePassword bool
 }
 
+// Batas password sementara (D-224) hanya tetap selama password masih
+// sementara; password baru pilihan pemiliknya tidak pernah kedaluwarsa.
 func (q *Queries) SetPasswordHash(ctx context.Context, arg SetPasswordHashParams) error {
 	_, err := q.db.Exec(ctx, setPasswordHash, arg.ID, arg.PasswordHash, arg.MustChangePassword)
 	return err

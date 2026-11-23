@@ -24,3 +24,19 @@ func Text(field, value string, required bool, max int) (string, *Problem) {
 	}
 	return value, nil
 }
+
+// Email memeriksa satu alamat email (D-194). Kosong berarti tidak ada alamat
+// (nil tanpa masalah). Dipakai halaman akun dan import akun (I1), supaya
+// aturannya sama di kedua tempat.
+func Email(field, raw string) (*string, *Problem) {
+	email := strings.TrimSpace(raw)
+	if email == "" {
+		return nil, nil
+	}
+	at := strings.Index(email, "@")
+	if len(email) > 254 || at < 1 || strings.Count(email, "@") != 1 || !strings.Contains(email[at:], ".") ||
+		strings.ContainsAny(email, " \t\r\n<>,;") || strings.HasSuffix(email, ".") {
+		return nil, &Problem{Field: field, Code: InvalidFormat, Message: "Enter an email address such as name@company.co.id."}
+	}
+	return &email, nil
+}

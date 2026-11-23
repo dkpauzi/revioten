@@ -301,6 +301,41 @@ export type AccountInfo = {
     locked_until?: string;
     disabled: boolean;
     created_at: string;
+    /**
+     * The temporary password of an imported account expires then (D-224). Absent once the password was changed or reset.
+     */
+    temporary_password_expires_at?: string;
+};
+
+export type AccountImport = {
+    rows: Array<AccountImportRow>;
+    new: number;
+    existing: number;
+    invalid: number;
+    /**
+     * True when the new accounts were stored.
+     */
+    committed: boolean;
+    /**
+     * When the temporary password of the new accounts expires; only after an import.
+     */
+    expires_at?: string;
+};
+
+export type AccountImportRow = {
+    /**
+     * The Excel row number, from 2.
+     */
+    row: number;
+    name: string;
+    employee_number: string;
+    login: string;
+    email: string;
+    roles_text: string;
+    scope_text: string;
+    roles: Array<RoleGrant>;
+    status: 'new' | 'existing' | 'invalid';
+    problems: Array<ErrorDetail>;
 };
 
 export type PfdStepKey = {
@@ -4587,6 +4622,76 @@ export type CreateAccountResponses = {
 };
 
 export type CreateAccountResponse = CreateAccountResponses[keyof CreateAccountResponses];
+
+export type GetAccountImportTemplateData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/accounts/import-template';
+};
+
+export type GetAccountImportTemplateErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type GetAccountImportTemplateError = GetAccountImportTemplateErrors[keyof GetAccountImportTemplateErrors];
+
+export type GetAccountImportTemplateResponses = {
+    /**
+     * The template, with the Accounts, Roles, and Help sheets.
+     */
+    200: Blob | File;
+};
+
+export type GetAccountImportTemplateResponse = GetAccountImportTemplateResponses[keyof GetAccountImportTemplateResponses];
+
+export type ImportAccountsData = {
+    body: {
+        file?: Blob | File;
+    };
+    path?: never;
+    query: {
+        commit: boolean;
+    };
+    url: '/api/v1/accounts/import';
+};
+
+export type ImportAccountsErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ImportAccountsError = ImportAccountsErrors[keyof ImportAccountsErrors];
+
+export type ImportAccountsResponses = {
+    /**
+     * The report.
+     */
+    200: AccountImport;
+};
+
+export type ImportAccountsResponse = ImportAccountsResponses[keyof ImportAccountsResponses];
 
 export type SetAccountRolesData = {
     body: RolesUpdate;

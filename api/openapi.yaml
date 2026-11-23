@@ -475,6 +475,59 @@ paths:
                 $ref: '#/components/schemas/CreatedAccount'
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/accounts/import-template:
+    get:
+      operationId: getAccountImportTemplate
+      summary: The Excel template for importing accounts (A-1, I1)
+      responses:
+        '200':
+          description: The template, with the Accounts, Roles, and Help sheets.
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/accounts/import:
+    post:
+      operationId: importAccounts
+      summary: Import work accounts from an Excel file (A-1, I1, D-224)
+      description: >-
+        Works only while Migration mode is on. With commit false nothing is stored (Preview). With commit
+        true the new rows are stored in one transaction; invalid rows are reported and left out, and logins
+        that already exist are skipped, so the same file can be uploaded again. Every imported account gets
+        the temporary password password123, must change it at the first login, and the temporary password
+        expires after 7 days.
+      parameters:
+        - name: commit
+          in: query
+          required: true
+          schema:
+            type: boolean
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: The report.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountImport'
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/accounts/{accountId}/roles:
     put:
       operationId: setAccountRoles
@@ -5334,6 +5387,61 @@ components:
         created_at:
           type: string
           format: date-time
+        temporary_password_expires_at:
+          type: string
+          format: date-time
+          description: The temporary password of an imported account expires then (D-224). Absent once the password was changed or reset.
+    AccountImport:
+      type: object
+      required: [rows, new, existing, invalid, committed]
+      properties:
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/AccountImportRow'
+        new:
+          type: integer
+        existing:
+          type: integer
+        invalid:
+          type: integer
+        committed:
+          type: boolean
+          description: True when the new accounts were stored.
+        expires_at:
+          type: string
+          format: date-time
+          description: When the temporary password of the new accounts expires; only after an import.
+    AccountImportRow:
+      type: object
+      required: [row, name, employee_number, login, email, roles_text, scope_text, roles, status, problems]
+      properties:
+        row:
+          type: integer
+          description: The Excel row number, from 2.
+        name:
+          type: string
+        employee_number:
+          type: string
+        login:
+          type: string
+        email:
+          type: string
+        roles_text:
+          type: string
+        scope_text:
+          type: string
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleGrant'
+        status:
+          type: string
+          enum: [new, existing, invalid]
+        problems:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorDetail'
     PfdStepKey:
       type: object
       required: [section_key, operation, process_id]

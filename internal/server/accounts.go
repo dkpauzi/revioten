@@ -111,6 +111,8 @@ func toAPIAccount(info auth.AccountInfo) AccountInfo {
 		LockedUntil:        info.LockedUntil,
 		Disabled:           info.Disabled,
 		CreatedAt:          info.CreatedAt,
+
+		TemporaryPasswordExpiresAt: info.TemporaryPasswordExpiresAt,
 	}
 }
 

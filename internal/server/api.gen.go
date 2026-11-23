@@ -38,6 +38,27 @@ func (e AccountKind) Valid() bool {
 	}
 }
 
+// Defines values for AccountImportRowStatus.
+const (
+	AccountImportRowStatusExisting AccountImportRowStatus = "existing"
+	AccountImportRowStatusInvalid  AccountImportRowStatus = "invalid"
+	AccountImportRowStatusNew      AccountImportRowStatus = "new"
+)
+
+// Valid indicates whether the value is a known member of the AccountImportRowStatus enum.
+func (e AccountImportRowStatus) Valid() bool {
+	switch e {
+	case AccountImportRowStatusExisting:
+		return true
+	case AccountImportRowStatusInvalid:
+		return true
+	case AccountImportRowStatusNew:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AccountInfoKind.
 const (
 	AccountInfoKindAdmin AccountInfoKind = "admin"
@@ -2439,6 +2460,38 @@ type Account struct {
 // AccountKind A work account, or the separate admin account (D-72).
 type AccountKind string
 
+// AccountImport defines model for AccountImport.
+type AccountImport struct {
+	// Committed True when the new accounts were stored.
+	Committed bool `json:"committed"`
+	Existing  int  `json:"existing"`
+
+	// ExpiresAt When the temporary password of the new accounts expires; only after an import.
+	ExpiresAt *time.Time         `json:"expires_at,omitempty"`
+	Invalid   int                `json:"invalid"`
+	New       int                `json:"new"`
+	Rows      []AccountImportRow `json:"rows"`
+}
+
+// AccountImportRow defines model for AccountImportRow.
+type AccountImportRow struct {
+	Email          string        `json:"email"`
+	EmployeeNumber string        `json:"employee_number"`
+	Login          string        `json:"login"`
+	Name           string        `json:"name"`
+	Problems       []ErrorDetail `json:"problems"`
+	Roles          []RoleGrant   `json:"roles"`
+	RolesText      string        `json:"roles_text"`
+
+	// Row The Excel row number, from 2.
+	Row       int                    `json:"row"`
+	ScopeText string                 `json:"scope_text"`
+	Status    AccountImportRowStatus `json:"status"`
+}
+
+// AccountImportRowStatus defines model for AccountImportRow.Status.
+type AccountImportRowStatus string
+
 // AccountInfo defines model for AccountInfo.
 type AccountInfo struct {
 	CreatedAt time.Time `json:"created_at"`
@@ -2454,6 +2507,9 @@ type AccountInfo struct {
 	MustChangePassword bool        `json:"must_change_password"`
 	Person             PersonInfo  `json:"person"`
 	Roles              []RoleGrant `json:"roles"`
+
+	// TemporaryPasswordExpiresAt The temporary password of an imported account expires then (D-224). Absent once the password was changed or reset.
+	TemporaryPasswordExpiresAt *time.Time `json:"temporary_password_expires_at,omitempty"`
 }
 
 // AccountInfoKind defines model for AccountInfo.Kind.
@@ -6348,6 +6404,16 @@ type VariantId = string
 // YokotenId defines model for YokotenId.
 type YokotenId = string
 
+// ImportAccountsMultipartBody defines parameters for ImportAccounts.
+type ImportAccountsMultipartBody struct {
+	File *openapi_types.File `json:"file,omitempty"`
+}
+
+// ImportAccountsParams defines parameters for ImportAccounts.
+type ImportAccountsParams struct {
+	Commit bool `form:"commit" json:"commit"`
+}
+
 // ListAuditLogParams defines parameters for ListAuditLog.
 type ListAuditLogParams struct {
 	// Before Return entries with a lower number than this. Leave it out for the newest entries.
@@ -6595,6 +6661,9 @@ type ChangePasswordJSONRequestBody = PasswordChange
 
 // CreateAccountJSONRequestBody defines body for CreateAccount for application/json ContentType.
 type CreateAccountJSONRequestBody = NewAccount
+
+// ImportAccountsMultipartRequestBody defines body for ImportAccounts for multipart/form-data ContentType.
+type ImportAccountsMultipartRequestBody ImportAccountsMultipartBody
 
 // SetAccountEmailJSONRequestBody defines body for SetAccountEmail for application/json ContentType.
 type SetAccountEmailJSONRequestBody = EmailAddress
@@ -6958,6 +7027,12 @@ type ServerInterface interface {
 	// CreateAccount Create an account with a temporary password (A-1)
 	// (POST /api/v1/accounts)
 	CreateAccount(w http.ResponseWriter, r *http.Request)
+	// ImportAccounts Import work accounts from an Excel file (A-1, I1, D-224)
+	// (POST /api/v1/accounts/import)
+	ImportAccounts(w http.ResponseWriter, r *http.Request, params ImportAccountsParams)
+	// GetAccountImportTemplate The Excel template for importing accounts (A-1, I1)
+	// (GET /api/v1/accounts/import-template)
+	GetAccountImportTemplate(w http.ResponseWriter, r *http.Request)
 	// DisableAccount Disable another account and end its sessions (A-1)
 	// (POST /api/v1/accounts/{accountId}/disable)
 	DisableAccount(w http.ResponseWriter, r *http.Request, accountId AccountId)
@@ -7705,6 +7780,53 @@ func (siw *ServerInterfaceWrapper) CreateAccount(w http.ResponseWriter, r *http.
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreateAccount(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ImportAccounts operation middleware
+func (siw *ServerInterfaceWrapper) ImportAccounts(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ImportAccountsParams
+
+	// ------------- Required query parameter "commit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "commit", r.URL.Query(), &params.Commit, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "commit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "commit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ImportAccounts(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAccountImportTemplate operation middleware
+func (siw *ServerInterfaceWrapper) GetAccountImportTemplate(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAccountImportTemplate(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -13686,6 +13808,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/service-accounts/{serviceAccountId}/disable", wrapper.DisableServiceAccount)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/accounts", wrapper.ListAccounts)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/accounts", wrapper.CreateAccount)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/accounts/import-template", wrapper.GetAccountImportTemplate)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/accounts/import", wrapper.ImportAccounts)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/accounts/{accountId}/roles", wrapper.SetAccountRoles)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/accounts/{accountId}/password-reset", wrapper.ResetAccountPassword)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/accounts/{accountId}/disable", wrapper.DisableAccount)
@@ -14110,6 +14234,98 @@ type CreateAccountdefaultJSONResponse struct {
 }
 
 func (response CreateAccountdefaultJSONResponse) VisitCreateAccountResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ImportAccountsRequestObject struct {
+	Params ImportAccountsParams
+	Body   *multipart.Reader
+}
+
+type ImportAccountsResponseObject interface {
+	VisitImportAccountsResponse(w http.ResponseWriter) error
+}
+
+type ImportAccounts200JSONResponse AccountImport
+
+func (response ImportAccounts200JSONResponse) VisitImportAccountsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ImportAccountsdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ImportAccountsdefaultJSONResponse) VisitImportAccountsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetAccountImportTemplateRequestObject struct {
+}
+
+type GetAccountImportTemplateResponseObject interface {
+	VisitGetAccountImportTemplateResponse(w http.ResponseWriter) error
+}
+
+type GetAccountImportTemplate200ResponseHeaders struct {
+	ContentDisposition *string
+}
+
+type GetAccountImportTemplate200ApplicationoctetStreamResponse struct {
+	Body          io.Reader
+	Headers       GetAccountImportTemplate200ResponseHeaders
+	ContentLength int64
+}
+
+func (response GetAccountImportTemplate200ApplicationoctetStreamResponse) VisitGetAccountImportTemplateResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "application/octet-stream")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	if response.Headers.ContentDisposition != nil {
+		w.Header().Set("Content-Disposition", fmt.Sprint(*response.Headers.ContentDisposition))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type GetAccountImportTemplatedefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response GetAccountImportTemplatedefaultJSONResponse) VisitGetAccountImportTemplateResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -23160,6 +23376,12 @@ type StrictServerInterface interface {
 	// CreateAccount Create an account with a temporary password (A-1)
 	// (POST /api/v1/accounts)
 	CreateAccount(ctx context.Context, request CreateAccountRequestObject) (CreateAccountResponseObject, error)
+	// ImportAccounts Import work accounts from an Excel file (A-1, I1, D-224)
+	// (POST /api/v1/accounts/import)
+	ImportAccounts(ctx context.Context, request ImportAccountsRequestObject) (ImportAccountsResponseObject, error)
+	// GetAccountImportTemplate The Excel template for importing accounts (A-1, I1)
+	// (GET /api/v1/accounts/import-template)
+	GetAccountImportTemplate(ctx context.Context, request GetAccountImportTemplateRequestObject) (GetAccountImportTemplateResponseObject, error)
 	// DisableAccount Disable another account and end its sessions (A-1)
 	// (POST /api/v1/accounts/{accountId}/disable)
 	DisableAccount(ctx context.Context, request DisableAccountRequestObject) (DisableAccountResponseObject, error)
@@ -24010,6 +24232,63 @@ func (sh *strictHandler) CreateAccount(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(CreateAccountResponseObject); ok {
 		if err := validResponse.VisitCreateAccountResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ImportAccounts operation middleware
+func (sh *strictHandler) ImportAccounts(w http.ResponseWriter, r *http.Request, params ImportAccountsParams) {
+	var request ImportAccountsRequestObject
+
+	request.Params = params
+
+	if reader, err := r.MultipartReader(); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode multipart body: %w", err))
+		return
+	} else {
+		request.Body = reader
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ImportAccounts(ctx, request.(ImportAccountsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ImportAccounts")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ImportAccountsResponseObject); ok {
+		if err := validResponse.VisitImportAccountsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetAccountImportTemplate operation middleware
+func (sh *strictHandler) GetAccountImportTemplate(w http.ResponseWriter, r *http.Request) {
+	var request GetAccountImportTemplateRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetAccountImportTemplate(ctx, request.(GetAccountImportTemplateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetAccountImportTemplate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetAccountImportTemplateResponseObject); ok {
+		if err := validResponse.VisitGetAccountImportTemplateResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

@@ -48,6 +48,7 @@ describe('buildMenu', () => {
 		expect(hrefs(['A-1', 'A-3', 'A-4']).admin).toEqual([
 			'/admin/health',
 			'/admin/accounts',
+			'/admin/accounts/import',
 			'/admin/roles',
 			'/admin/service-accounts',
 			'/admin/audit',

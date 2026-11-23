@@ -19,7 +19,7 @@ RETURNING id, person_id, kind, login, must_change_password, created_at;
 -- name: GetAccountByLogin :one
 -- GetAccountByLogin mengambil akun beserta nama orangnya untuk proses login.
 SELECT a.id, a.person_id, a.kind, a.login, a.password_hash, a.must_change_password,
-       a.failed_logins, a.locked_until, a.disabled_at, p.name AS person_name
+       a.failed_logins, a.locked_until, a.disabled_at, a.temporary_password_expires_at, p.name AS person_name
 FROM accounts a
 JOIN people p ON p.id = a.person_id
 WHERE a.login = $1;
@@ -48,7 +48,11 @@ UPDATE accounts SET disabled_at = $2 WHERE id = $1;
 UPDATE accounts SET failed_logins = 0, locked_until = NULL WHERE id = $1;
 
 -- name: SetPasswordHash :exec
-UPDATE accounts SET password_hash = $2, must_change_password = $3 WHERE id = $1;
+-- Batas password sementara (D-224) hanya tetap selama password masih
+-- sementara; password baru pilihan pemiliknya tidak pernah kedaluwarsa.
+UPDATE accounts SET password_hash = $2, must_change_password = $3,
+    temporary_password_expires_at = CASE WHEN $3 THEN temporary_password_expires_at END
+WHERE id = $1;
 
 -- name: CreateSession :exec
 INSERT INTO sessions (token_hash, account_id, created_at, last_seen_at, expires_at)

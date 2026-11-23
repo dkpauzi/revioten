@@ -572,6 +572,9 @@ func TestPermissionsPerOperation(t *testing.T) {
 		{http.MethodGet, "/api/v1/accounts", "", http.StatusForbidden, http.StatusForbidden, http.StatusOK},
 		{http.MethodPost, "/api/v1/accounts", `{"person_name":"Orang Baru","kind":"work","login":"orang.baru"}`, http.StatusForbidden, http.StatusForbidden, http.StatusCreated},
 		{http.MethodPut, "/api/v1/accounts/{accountId}/roles", `{"roles":[{"role":"manager","scope":"all"}]}`, http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		// Import akun (I1): hanya admin. Migration mode mati di database uji, jadi admin mendapat 422.
+		{http.MethodGet, "/api/v1/accounts/import-template", "", http.StatusForbidden, http.StatusForbidden, http.StatusOK},
+		{http.MethodPost, "/api/v1/accounts/import?commit=false", multipartBody, http.StatusForbidden, http.StatusForbidden, http.StatusUnprocessableEntity},
 		{http.MethodPost, "/api/v1/accounts/{accountId}/password-reset", "", http.StatusForbidden, http.StatusForbidden, http.StatusOK},
 		{http.MethodPost, "/api/v1/accounts/{accountId}/disable", "", http.StatusForbidden, http.StatusForbidden, http.StatusOK},
 		{http.MethodPost, "/api/v1/accounts/{accountId}/enable", "", http.StatusForbidden, http.StatusForbidden, http.StatusOK},

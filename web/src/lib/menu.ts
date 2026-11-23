@@ -82,6 +82,8 @@ const groups: { id: MenuGroup['id']; label: MessageKey; entries: Entry[] }[] = [
 			// Kesehatan web (D-205): tanda tangan tertahan, error, laporan masalah.
 			{ href: '/admin/health', label: 'navAdminHealth', permission: 'A-3' },
 			{ href: '/admin/accounts', label: 'navAccounts', permission: 'A-1' },
+			// Import akun dari Excel (I1, D-224).
+			{ href: '/admin/accounts/import', label: 'navAccountImport', permission: 'A-1' },
 			// Isi peran diatur admin (M8.1, D-66).
 			{ href: '/admin/roles', label: 'navRoles', permission: 'A-1' },
 			// Aplikasi lain yang memakai API integrasi (Tahap 9).

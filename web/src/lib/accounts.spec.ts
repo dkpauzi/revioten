@@ -40,6 +40,19 @@ describe('accountStatus', () => {
 		]);
 	});
 
+	// Password sementara akun hasil import (D-224): batasnya, lalu kedaluwarsa.
+	it('menyebut batas password sementara akun hasil import', () => {
+		const until = '2026-10-30T08:00:00Z';
+		expect(accountStatus(account({ must_change_password: true, temporary_password_expires_at: until }), now)).toEqual([
+			en.accountStatusMustChange,
+			en.accountStatusTemporaryUntil.replace('{time}', formatDateTime(until))
+		]);
+		expect(accountStatus(account({ must_change_password: true, temporary_password_expires_at: '2026-10-28T07:00:00Z' }), now)).toEqual([
+			en.accountStatusMustChange,
+			en.accountStatusTemporaryExpired
+		]);
+	});
+
 	// Kunci yang waktunya sudah lewat tidak berlaku lagi (M1.1).
 	it('kunci yang sudah lewat tidak disebut', () => {
 		expect(accountStatus(account({ locked_until: '2026-10-28T07:59:00Z' }), now)).toEqual([

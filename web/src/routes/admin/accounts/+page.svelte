@@ -208,6 +208,7 @@
 </script>
 
 <h1>{t('accountsTitle')}</h1>
+<p><a href="/admin/accounts/import">{t('accountsImportLink')}</a></p>
 
 {#if temporary}
 	<div class="notice" bind:this={notice}>

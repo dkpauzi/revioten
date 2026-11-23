@@ -59,6 +59,7 @@ import type {
 	PrintLayoutInput,
 	CustomerPrintLayoutList,
 	SqamChangeInput,
+	AccountImport,
 	LogoChangeInput,
 	PendingLogoChange,
 	Yokoten,
@@ -670,6 +671,14 @@ export function listLinkSuggestions(id: string, fetchFn: typeof fetch = fetch): 
 // linkDocumentRows memanggil POST /api/v1/documents/{id}/links (E-2, M7.4).
 export function linkDocumentRows(id: string, links: RowLink[], fetchFn: typeof fetch = fetch): Promise<ApiResult<Document>> {
 	return call<Document>(fetchFn, itemPath('documents', id) + '/links', jsonRequest('POST', { links }));
+}
+
+// importAccounts memanggil POST /api/v1/accounts/import (A-1, I1, D-224).
+// commit false hanya memberi laporan (Preview).
+export function importAccounts(file: File, commit: boolean, fetchFn: typeof fetch = fetch): Promise<ApiResult<AccountImport>> {
+	const form = new FormData();
+	form.append('file', file);
+	return call<AccountImport>(fetchFn, '/api/v1/accounts/import?commit=' + String(commit), { method: 'POST', body: form });
 }
 
 // compareDocumentWithExcel memanggil POST /api/v1/documents/{id}/excel-comparison

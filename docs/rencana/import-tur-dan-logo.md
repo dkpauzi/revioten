@@ -67,6 +67,8 @@ Tujuannya: pemilik bisa mulai dari database bersih, lalu mengisi data dasar seka
 
 ### I1 · Akun (Admin → Accounts → Import accounts)
 
+- **Status:** dibangun 24 November 2026 dengan berkas Excel (catatan `docs/catatan/I1-import-akun.md`).
+
 - **Kolom:** Name, Employee number, Login, Email, Roles (dipisah koma), Scope (All customers / Own project group).
 - Login yang sudah ada dilewati dan dilaporkan, tidak diubah.
 - **Password:** permintaan pemilik adalah `password123` untuk semua akun hasil import, dan setiap akun wajib mengganti password saat login pertama.

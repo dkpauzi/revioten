@@ -285,6 +285,8 @@ type AuthService interface {
 	DisableAccount(ctx context.Context, actor access.Actor, accountID string) (auth.AccountInfo, error)
 	EnableAccount(ctx context.Context, actor access.Actor, accountID string) (auth.AccountInfo, error)
 	SetRoles(ctx context.Context, actor access.Actor, accountID string, grants []access.RoleGrant) error
+	AccountImportTemplate(ctx context.Context, actor access.Actor) ([]byte, error)
+	ImportAccounts(ctx context.Context, actor access.Actor, data []byte, commit bool) (auth.AccountImport, error)
 }
 
 // AccessService adalah operasi hak akses yang dipakai API.

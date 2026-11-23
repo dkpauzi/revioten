@@ -21,6 +21,18 @@ func (q *Queries) CountEnabledAdmins(ctx context.Context) (int64, error) {
 	return count, err
 }
 
+const employeeNumberTaken = `-- name: EmployeeNumberTaken :one
+SELECT EXISTS (SELECT 1 FROM people WHERE employee_number = $1)
+`
+
+// EmployeeNumberTaken melaporkan apakah nomor karyawan sudah dipakai orang lain.
+func (q *Queries) EmployeeNumberTaken(ctx context.Context, employeeNumber *string) (bool, error) {
+	row := q.db.QueryRow(ctx, employeeNumberTaken, employeeNumber)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const enableAccount = `-- name: EnableAccount :exec
 UPDATE accounts SET disabled_at = NULL, failed_logins = 0, locked_until = NULL WHERE id = $1
 `
@@ -32,6 +44,7 @@ func (q *Queries) EnableAccount(ctx context.Context, id string) error {
 
 const getAccountInfo = `-- name: GetAccountInfo :one
 SELECT a.id, a.kind, a.login, a.must_change_password, a.locked_until, a.disabled_at, a.created_at,
+       a.temporary_password_expires_at,
        p.id AS person_id, p.name AS person_name, p.employee_number, p.email
 FROM accounts a
 JOIN people p ON p.id = a.person_id
@@ -39,17 +52,18 @@ WHERE a.id = $1
 `
 
 type GetAccountInfoRow struct {
-	ID                 string
-	Kind               string
-	Login              string
-	MustChangePassword bool
-	LockedUntil        *time.Time
-	DisabledAt         *time.Time
-	CreatedAt          time.Time
-	PersonID           string
-	PersonName         string
-	EmployeeNumber     *string
-	Email              *string
+	ID                         string
+	Kind                       string
+	Login                      string
+	MustChangePassword         bool
+	LockedUntil                *time.Time
+	DisabledAt                 *time.Time
+	CreatedAt                  time.Time
+	TemporaryPasswordExpiresAt *time.Time
+	PersonID                   string
+	PersonName                 string
+	EmployeeNumber             *string
+	Email                      *string
 }
 
 func (q *Queries) GetAccountInfo(ctx context.Context, id string) (GetAccountInfoRow, error) {
@@ -63,6 +77,7 @@ func (q *Queries) GetAccountInfo(ctx context.Context, id string) (GetAccountInfo
 		&i.LockedUntil,
 		&i.DisabledAt,
 		&i.CreatedAt,
+		&i.TemporaryPasswordExpiresAt,
 		&i.PersonID,
 		&i.PersonName,
 		&i.EmployeeNumber,
@@ -90,6 +105,7 @@ func (q *Queries) GetPerson(ctx context.Context, id string) (Person, error) {
 
 const listAccounts = `-- name: ListAccounts :many
 SELECT a.id, a.kind, a.login, a.must_change_password, a.locked_until, a.disabled_at, a.created_at,
+       a.temporary_password_expires_at,
        p.id AS person_id, p.name AS person_name, p.employee_number, p.email
 FROM accounts a
 JOIN people p ON p.id = a.person_id
@@ -97,17 +113,18 @@ ORDER BY p.name, a.kind
 `
 
 type ListAccountsRow struct {
-	ID                 string
-	Kind               string
-	Login              string
-	MustChangePassword bool
-	LockedUntil        *time.Time
-	DisabledAt         *time.Time
-	CreatedAt          time.Time
-	PersonID           string
-	PersonName         string
-	EmployeeNumber     *string
-	Email              *string
+	ID                         string
+	Kind                       string
+	Login                      string
+	MustChangePassword         bool
+	LockedUntil                *time.Time
+	DisabledAt                 *time.Time
+	CreatedAt                  time.Time
+	TemporaryPasswordExpiresAt *time.Time
+	PersonID                   string
+	PersonName                 string
+	EmployeeNumber             *string
+	Email                      *string
 }
 
 // ListAccounts mengambil semua akun beserta orangnya, untuk layar admin (A-1).
@@ -128,6 +145,7 @@ func (q *Queries) ListAccounts(ctx context.Context) ([]ListAccountsRow, error) {
 			&i.LockedUntil,
 			&i.DisabledAt,
 			&i.CreatedAt,
+			&i.TemporaryPasswordExpiresAt,
 			&i.PersonID,
 			&i.PersonName,
 			&i.EmployeeNumber,
@@ -160,7 +178,8 @@ func (q *Queries) LockAccount(ctx context.Context, id string) error {
 
 const resetAccountPassword = `-- name: ResetAccountPassword :exec
 UPDATE accounts
-SET password_hash = $2, must_change_password = true, failed_logins = 0, locked_until = NULL
+SET password_hash = $2, must_change_password = true, failed_logins = 0, locked_until = NULL,
+    temporary_password_expires_at = NULL
 WHERE id = $1
 `
 
@@ -173,5 +192,21 @@ type ResetAccountPasswordParams struct {
 // password, dan membuka kunci akun.
 func (q *Queries) ResetAccountPassword(ctx context.Context, arg ResetAccountPasswordParams) error {
 	_, err := q.db.Exec(ctx, resetAccountPassword, arg.ID, arg.PasswordHash)
+	return err
+}
+
+const setTemporaryPasswordExpiry = `-- name: SetTemporaryPasswordExpiry :exec
+UPDATE accounts SET temporary_password_expires_at = $2 WHERE id = $1
+`
+
+type SetTemporaryPasswordExpiryParams struct {
+	ID                         string
+	TemporaryPasswordExpiresAt *time.Time
+}
+
+// SetTemporaryPasswordExpiry memasang batas password sementara akun hasil
+// import (D-224).
+func (q *Queries) SetTemporaryPasswordExpiry(ctx context.Context, arg SetTemporaryPasswordExpiryParams) error {
+	_, err := q.db.Exec(ctx, setTemporaryPasswordExpiry, arg.ID, arg.TemporaryPasswordExpiresAt)
 	return err
 }

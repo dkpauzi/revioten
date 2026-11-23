@@ -71,7 +71,8 @@ export const helpId: HelpContent = {
 				'{roleProjectLeader} bawaannya dibatasi ke Project Group sendiri. Untuk Project Leader yang membantu Project Group lain, pilih {scopeAll}: orang itu lalu juga bisa menandatangani dan memverifikasi untuk Project Group itu.',
 				'Kata sandi sementara hanya tampil satu kali. Bila hilang, atur ulang kata sandi akun itu.',
 				'Akun admin tidak memegang peran kerja. Pemegangnya memakai akun kerja terpisah untuk pekerjaan sehari-hari.',
-				'Akun tidak pernah dihapus, hanya dinonaktifkan.'
+				'Akun tidak pernah dihapus, hanya dinonaktifkan.',
+				'Untuk membuat banyak akun sekaligus, misalnya sesudah database direset, nyalakan Migration mode di {navSettings}, buka {navAccountImport}, tekan {accountImportTemplate}, isi berkas Excel-nya, pilih berkas itu, tekan {accountImportPreview}, lalu {accountImportRun}. Login yang sudah ada dilewati. Setiap akun hasil import mendapat password sementara password123, wajib menggantinya saat login pertama, dan password itu kedaluwarsa 7 hari.'
 			]
 		},
 		{

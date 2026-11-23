@@ -71,7 +71,8 @@ export const helpEn: HelpContent = {
 				'A {roleProjectLeader} is limited to the own project group by default. For a Project Leader who helps another group, choose {scopeAll}: the person can then also sign and verify for that group.',
 				'The temporary password is shown only once. If it is lost, reset the password of the account.',
 				'An admin account holds no work role. The person who holds it uses a separate work account for daily work.',
-				'An account is never deleted, only disabled.'
+				'An account is never deleted, only disabled.',
+				'To create many accounts at once, for example after the database was reset, switch on Migration mode in {navSettings}, open {navAccountImport}, press {accountImportTemplate}, fill in the Excel file, choose it, press {accountImportPreview}, and then {accountImportRun}. Logins that already exist are skipped. Every imported account gets the temporary password password123, must change it at the first log-in, and the password expires after 7 days.'
 			]
 		},
 		{

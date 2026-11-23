@@ -79,6 +79,11 @@ func (s *Service) Login(ctx context.Context, login, password string) (access.Act
 			return access.Actor{}, "", err
 		}
 		return access.Actor{}, "", ErrInvalidCredentials
+	case acc.MustChangePassword && acc.TemporaryPasswordExpiresAt != nil && !now.Before(*acc.TemporaryPasswordExpiresAt):
+		// Password sementara akun hasil import kedaluwarsa 7 hari (D-224).
+		// Ditolak seperti password salah, supaya tidak membuka login mana
+		// yang ada; admin melihat tandanya di Accounts dan mereset password.
+		return access.Actor{}, "", ErrInvalidCredentials
 	}
 
 	actor := access.Actor{

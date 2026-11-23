@@ -960,6 +960,14 @@ func (f *fakeAuth) SetRoles(_ context.Context, _ access.Actor, accountID string,
 	return f.adminErr
 }
 
+func (f *fakeAuth) AccountImportTemplate(context.Context, access.Actor) ([]byte, error) {
+	return []byte("xlsx"), f.adminErr
+}
+
+func (f *fakeAuth) ImportAccounts(context.Context, access.Actor, []byte, bool) (auth.AccountImport, error) {
+	return auth.AccountImport{}, f.adminErr
+}
+
 // fakeAccess meniru access.Checker untuk hak dan katalog peran.
 type fakeAccess struct {
 	permissions []access.Permission

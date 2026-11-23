@@ -32,6 +32,9 @@ type AccountInfo struct {
 	LockedUntil        *time.Time
 	Disabled           bool
 	CreatedAt          time.Time
+	// TemporaryPasswordExpiresAt adalah batas password sementara akun hasil
+	// import (D-224); nil untuk akun lain dan sesudah password diganti.
+	TemporaryPasswordExpiresAt *time.Time
 }
 
 // NewAccount adalah input untuk membuat akun. Isi PersonID untuk orang yang
@@ -65,7 +68,8 @@ func (s *Service) ListAccounts(ctx context.Context, actor access.Actor) ([]Accou
 			ID: r.ID, Kind: r.Kind, Login: r.Login, PersonID: r.PersonID, PersonName: r.PersonName,
 			EmployeeNumber: deref(r.EmployeeNumber), Email: deref(r.Email), MustChangePassword: r.MustChangePassword,
 			LockedUntil: r.LockedUntil, Disabled: r.DisabledAt != nil, CreatedAt: r.CreatedAt.UTC(),
-			Roles: []access.RoleGrant{},
+			TemporaryPasswordExpiresAt: utcOrNil(r.TemporaryPasswordExpiresAt),
+			Roles:                      []access.RoleGrant{},
 		}
 		for _, ar := range roles {
 			if ar.AccountID == r.ID {
@@ -447,7 +451,8 @@ func (s *Service) accountInfo(ctx context.Context, accountID string) (AccountInf
 		ID: r.ID, Kind: r.Kind, Login: r.Login, PersonID: r.PersonID, PersonName: r.PersonName,
 		EmployeeNumber: deref(r.EmployeeNumber), Email: deref(r.Email), MustChangePassword: r.MustChangePassword,
 		LockedUntil: r.LockedUntil, Disabled: r.DisabledAt != nil, CreatedAt: r.CreatedAt.UTC(),
-		Roles: roles,
+		TemporaryPasswordExpiresAt: utcOrNil(r.TemporaryPasswordExpiresAt),
+		Roles:                      roles,
 	}, nil
 }
 
@@ -489,6 +494,15 @@ func notAllowedOnOwnAccount(message string) error {
 // menggantinya saat login pertama.
 func newTemporaryPassword() string {
 	return rand.Text()
+}
+
+// utcOrNil memberi waktu dalam UTC, atau nil.
+func utcOrNil(t *time.Time) *time.Time {
+	if t == nil {
+		return nil
+	}
+	u := t.UTC()
+	return &u
 }
 
 // deref mengembalikan isi pointer teks, atau "" bila nil.

@@ -151,18 +151,14 @@ func (s *Service) SendTest(ctx context.Context, actor access.Actor) error {
 	})
 }
 
-// cleanEmail memeriksa satu alamat email. Kosong berarti dihapus.
+// cleanEmail memeriksa satu alamat email. Kosong berarti dihapus. Aturannya
+// di problem.Email, sama dengan import akun (I1).
 func cleanEmail(raw string) (*string, error) {
-	email := strings.TrimSpace(raw)
-	if email == "" {
-		return nil, nil
+	email, p := problem.Email("email", raw)
+	if p != nil {
+		return nil, &problem.ValidationError{Problems: []problem.Problem{*p}}
 	}
-	at := strings.Index(email, "@")
-	if len(email) > 254 || at < 1 || strings.Count(email, "@") != 1 || !strings.Contains(email[at:], ".") ||
-		strings.ContainsAny(email, " \t\r\n<>,;") || strings.HasSuffix(email, ".") {
-		return nil, invalid("email", problem.InvalidFormat, "Enter an email address such as name@company.co.id.")
-	}
-	return &email, nil
+	return email, nil
 }
 
 // SetEmail mengganti alamat email orang pemegang satu akun: admin (A-1) untuk

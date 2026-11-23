@@ -12,17 +12,18 @@ import (
 )
 
 type Account struct {
-	ID                 string
-	PersonID           string
-	Kind               string
-	Login              string
-	PasswordHash       string
-	MustChangePassword bool
-	FailedLogins       int32
-	LockedUntil        *time.Time
-	DisabledAt         *time.Time
-	ExternalID         *string
-	CreatedAt          time.Time
+	ID                         string
+	PersonID                   string
+	Kind                       string
+	Login                      string
+	PasswordHash               string
+	MustChangePassword         bool
+	FailedLogins               int32
+	LockedUntil                *time.Time
+	DisabledAt                 *time.Time
+	ExternalID                 *string
+	CreatedAt                  time.Time
+	TemporaryPasswordExpiresAt *time.Time
 }
 
 type AccountRole struct {
