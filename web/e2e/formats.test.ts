@@ -48,11 +48,14 @@ test('akun tanpa hak E-11 hanya melihat format template', async ({ page }) => {
 	await openFromMenu(page, en.navGroupTemplates, en.navFormatTemplates);
 	await expect(page.getByText(en.formatReadOnly)).toBeVisible();
 	await page.getByLabel(en.formatChoose).selectOption({ label: 'Control Plan v1 · CP' });
-	await expect(page.getByRole('row', { name: /^9 Special Characteristics / })).toBeVisible();
+	await expect(page.getByRole('row', { name: /^11 Special Characteristics / })).toBeVisible();
 	// Process Flow tampil dan tercetak, terisi dari PFD (D-122); nama proses
 	// terisi dari master proses (D-123); Revision dipasang sistem (R-REV-09).
 	await expect(page.getByRole('row', { name: /^1 Process Flow / })).toContainText(en.formatKindProcessFlow);
 	await expect(page.getByRole('row', { name: /^3 Process Name \/ Operation Description / })).toContainText(en.formatKindProcess);
+	// Nomor karakteristik terisi otomatis (D-222).
+	await expect(page.getByRole('row', { name: /^5 Product No / })).toContainText(en.formatKindProductCharNo);
+	await expect(page.getByRole('row', { name: /^8 Process No / })).toContainText(en.formatKindProcessCharNo);
 	await expect(page.getByText(en.formatSymbolsAutomatic.replace('{names}', 'Revision'))).toBeVisible();
 	await expect(page.getByRole('button', { name: en.formatEdit })).toHaveCount(0);
 	await expect(page.getByRole('button', { name: en.formatCreate })).toHaveCount(0);
@@ -67,14 +70,14 @@ test('PPAP Engineer menyalin format template CP lalu menambah kolom pilihan', as
 	await page.getByRole('button', { name: en.formatCreate }).click();
 	await expect(page.getByRole('status')).toHaveText(en.formatCreated.replace('{name}', 'CP with phase'));
 	// Salinan langsung terbuka dengan kolom yang sama.
-	await expect(page.getByRole('row', { name: /^16 Reaction Plan / })).toBeVisible();
+	await expect(page.getByRole('row', { name: /^18 Reaction Plan / })).toBeVisible();
 
 	await page.getByLabel(en.formatKind).selectOption({ label: en.formatKindSelect });
 	await page.getByLabel(en.formatColumnLabel, { exact: true }).fill('Phase');
 	await page.getByLabel(en.formatOptions).fill('Prototype\nPre-Launch\nProduction');
 	await page.getByRole('button', { name: en.formatAddField }).click();
 	await expect(page.getByRole('status')).toHaveText(en.formatFieldAdded.replace('{label}', 'Phase'));
-	await expect(page.getByRole('row', { name: /^17 Phase / })).toContainText('Prototype, Pre-Launch, Production');
+	await expect(page.getByRole('row', { name: /^19 Phase / })).toContainText('Prototype, Pre-Launch, Production');
 });
 
 test('format template dengan metode AP menampilkan tabel Action Priority dan kalkulatornya', async ({ page }) => {

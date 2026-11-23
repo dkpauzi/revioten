@@ -137,7 +137,13 @@ func Build(in Input) Sheet {
 	sh.FlowColumn, sh.OpColumn, sh.ProcessColumn = -1, -1, -1
 	symbolField, ngField := "", ""
 	for i, f := range fields {
-		sh.Columns = append(sh.Columns, Column{Label: f.Label, Group: f.Group, Width: in.Layout.Width(f.Key, f.ID, defaultWidth(f))})
+		label := f.Label
+		// Nomor karakteristik tercetak "No" seperti SC-TR-020-04; label di format
+		// berbeda karena label dalam satu versi harus unik (D-222).
+		if f.Kind == template.KindProductCharNo || f.Kind == template.KindProcessCharNo {
+			label = "No"
+		}
+		sh.Columns = append(sh.Columns, Column{Label: label, Group: f.Group, Width: in.Layout.Width(f.Key, f.ID, defaultWidth(f))})
 		switch {
 		case f.Kind == template.KindProcessFlow:
 			sh.FlowColumn = i
@@ -159,6 +165,7 @@ func Build(in Input) Sheet {
 	}
 
 	changed := marks(in)
+	charNo := charNumbers(in.Format, s.Rows)
 	sections := map[string]string{}
 	for _, sec := range s.Sections {
 		sections[sec.ID] = sec.Name
@@ -175,7 +182,14 @@ func Build(in Input) Sheet {
 		sh.Processes = append(sh.Processes, r.ProcessName)
 		row := Row{Mark: changed[r.ID], Cells: make([]string, 0, len(fields))}
 		for _, f := range fields {
-			row.Cells = append(row.Cells, cellText(in.Format, f, r.Content[f.ID], r.Content, r, s))
+			text := cellText(in.Format, f, r.Content[f.ID], r.Content, r, s)
+			switch f.Kind {
+			case template.KindProductCharNo:
+				text = charNo[r.ID][0]
+			case template.KindProcessCharNo:
+				text = charNo[r.ID][1]
+			}
+			row.Cells = append(row.Cells, text)
 		}
 		sh.Rows = append(sh.Rows, row)
 	}
@@ -202,6 +216,8 @@ func defaultWidth(f template.Field) float64 {
 		return 1.3
 	}
 	switch f.Kind {
+	case template.KindProductCharNo, template.KindProcessCharNo:
+		return 0.35
 	case template.KindOperationNumber, template.KindRating, template.KindRPN, template.KindAP, template.KindSymbol:
 		return 0.5
 	case template.KindProcess:

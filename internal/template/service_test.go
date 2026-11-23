@@ -189,8 +189,8 @@ func TestSeededTemplates(t *testing.T) {
 
 	cp := f.version(t, "Control Plan v1")
 	wantCP := []string{"Process Flow", "No", "Process Name / Operation Description",
-		"Machine, Equipment, Jigs, Fixture, Tools for Mfg", "Product Characteristics", "Product Specification / Tolerance",
-		"Process Characteristics", "Process Specification / Tolerance", "Special Characteristics", "Equipment", "Method",
+		"Machine, Equipment, Jigs, Fixture, Tools for Mfg", "Product No", "Product Characteristics", "Product Specification / Tolerance",
+		"Process No", "Process Characteristics", "Process Specification / Tolerance", "Special Characteristics", "Equipment", "Method",
 		"Frequency", "PIC", "Relevant Document", "Pokayoke", "Reaction Plan"}
 	if got := labels(cp, AreaRow); cp.RiskMethod != RiskNone || len(cp.Ratings) != 0 || !slices.Equal(got, wantCP) {
 		t.Errorf("CP: metode %s, %d tabel skala, kolom %v", cp.RiskMethod, len(cp.Ratings), got)

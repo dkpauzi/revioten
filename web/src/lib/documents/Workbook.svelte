@@ -8,7 +8,7 @@
 	import { TabulatorFull as Tabulator, type CellComponent, type ColumnDefinition } from 'tabulator-tables';
 	import 'tabulator-tables/dist/css/tabulator_simple.min.css';
 	import type { Document, DocumentRow, DocumentRowInput, FormatVersion, Process } from '#lib/api/gen/index.ts';
-	import { cellText, gridRow, rowInputFrom } from '#lib/documents.ts';
+	import { cellText, charNumbers, gridRow, rowInputFrom } from '#lib/documents.ts';
 	import { t } from '#lib/i18n/index.ts';
 
 	let {
@@ -105,6 +105,16 @@
 				// Kolom yang dihitung atau terisi dari PFD: hanya dibaca (D-122).
 				col.cssClass = 'readonly';
 			}
+			if (f.kind === 'product_char_number' || f.kind === 'process_char_number') {
+				// Nomor karakteristik dihitung dari semua baris tabel (D-222).
+				const index = f.kind === 'product_char_number' ? 0 : 1;
+				col.formatter = (cell: CellComponent) => {
+					const data = cell.getTable().getData() as Record<string, unknown>[];
+					return charNumbers(format.fields, data)[String(cell.getRow().getData().id)]?.[index] ?? '';
+				};
+				col.width = 56;
+				col.minWidth = 48;
+			}
 			cols.push(col);
 		}
 		if (canEdit) {
@@ -172,6 +182,10 @@
 				}
 				// Versi baru dicatat di baris, untuk penyimpanan berikutnya (R-DOC-07).
 				await row.update({ _version: saved.version });
+				// Nomor karakteristik baris lain bisa ikut bergeser (D-222).
+				for (const r of table?.getRows() ?? []) {
+					r.reformat();
+				}
 			});
 		});
 	});

@@ -4,7 +4,7 @@
 import type { DocumentRow, DocumentRowInput, FormatField, FormatVersion } from './api/gen/index.ts';
 
 // notTyped adalah jenis field yang isinya tidak diketik penyusun.
-const notTyped: FormatField['kind'][] = ['rpn', 'ap', 'operation_number', 'process', 'process_flow', 'document_number'];
+const notTyped: FormatField['kind'][] = ['rpn', 'ap', 'operation_number', 'process', 'process_flow', 'document_number', 'product_char_number', 'process_char_number'];
 
 // typedFields memberi field satu area yang diketik penyusun, menurut urutan.
 export function typedFields(fields: FormatField[], area: FormatField['area']): FormatField[] {
@@ -42,6 +42,35 @@ export function cellText(field: FormatField, row: Pick<DocumentRow, 'process_nam
 		return field.options?.find((o) => o.key === value)?.label ?? String(value);
 	}
 	return String(value);
+}
+
+// charNumbers memberi nomor karakteristik setiap baris workbook (D-222),
+// sama dengan cetakan (internal/printout/charno.go): No produk untuk baris
+// yang Product Characteristics-nya diisi, No proses untuk Process
+// Characteristics, berurutan dan mulai lagi dari 1 di setiap proses. Isian
+// "--" mendapat "--"; yang kosong dibiarkan kosong.
+export function charNumbers(fields: FormatField[], rows: Record<string, unknown>[]): Record<string, [string, string]> {
+	const ids = ['product_characteristic', 'process_characteristic'].map((key) => fields.find((f) => f.key === key)?.id ?? '');
+	const out: Record<string, [string, string]> = {};
+	let group = '';
+	let counts = [0, 0];
+	for (const r of rows) {
+		const key = `${r._section ?? ''}|${r._operation ?? ''}|${r._process ?? ''}`;
+		if (key !== group) {
+			group = key;
+			counts = [0, 0];
+		}
+		const nums = ids.map((id, i) => {
+			const value = id === '' || r[id] === undefined || r[id] === null ? '' : String(r[id]).trim();
+			if (value === '' || value === '--') {
+				return value;
+			}
+			counts[i]++;
+			return String(counts[i]);
+		});
+		out[String(r.id)] = [nums[0], nums[1]];
+	}
+	return out;
 }
 
 // GridData adalah satu baris di tabel workbook (M4.2): isi per ID kolom,

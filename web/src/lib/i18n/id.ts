@@ -1713,6 +1713,8 @@ export const id: Messages = {
 	formatKindOperationNumber: 'Nomor operasi, terisi dari baris',
 	formatKindProcess: 'Proses, terisi dari master proses',
 	formatKindProcessFlow: 'Alur proses, terisi dari PFD',
+	formatKindProductCharNo: 'Nomor karakteristik produk, dihitung dari baris',
+	formatKindProcessCharNo: 'Nomor karakteristik proses, dihitung dari baris',
 	formatKindRatingDetail: 'Nilai skala: {scale}, {set}',
 	formatKindRpnDetail: 'RPN, {set}',
 	formatSetCurrent: 'sekarang',

@@ -754,17 +754,19 @@ func (e FormatFieldArea) Valid() bool {
 
 // Defines values for FormatFieldKind.
 const (
-	FormatFieldKindAp              FormatFieldKind = "ap"
-	FormatFieldKindDate            FormatFieldKind = "date"
-	FormatFieldKindDocumentNumber  FormatFieldKind = "document_number"
-	FormatFieldKindOperationNumber FormatFieldKind = "operation_number"
-	FormatFieldKindProcess         FormatFieldKind = "process"
-	FormatFieldKindProcessFlow     FormatFieldKind = "process_flow"
-	FormatFieldKindRating          FormatFieldKind = "rating"
-	FormatFieldKindRpn             FormatFieldKind = "rpn"
-	FormatFieldKindSelect          FormatFieldKind = "select"
-	FormatFieldKindSymbol          FormatFieldKind = "symbol"
-	FormatFieldKindText            FormatFieldKind = "text"
+	FormatFieldKindAp                FormatFieldKind = "ap"
+	FormatFieldKindDate              FormatFieldKind = "date"
+	FormatFieldKindDocumentNumber    FormatFieldKind = "document_number"
+	FormatFieldKindOperationNumber   FormatFieldKind = "operation_number"
+	FormatFieldKindProcess           FormatFieldKind = "process"
+	FormatFieldKindProcessCharNumber FormatFieldKind = "process_char_number"
+	FormatFieldKindProcessFlow       FormatFieldKind = "process_flow"
+	FormatFieldKindProductCharNumber FormatFieldKind = "product_char_number"
+	FormatFieldKindRating            FormatFieldKind = "rating"
+	FormatFieldKindRpn               FormatFieldKind = "rpn"
+	FormatFieldKindSelect            FormatFieldKind = "select"
+	FormatFieldKindSymbol            FormatFieldKind = "symbol"
+	FormatFieldKindText              FormatFieldKind = "text"
 )
 
 // Valid indicates whether the value is a known member of the FormatFieldKind enum.
@@ -780,7 +782,11 @@ func (e FormatFieldKind) Valid() bool {
 		return true
 	case FormatFieldKindProcess:
 		return true
+	case FormatFieldKindProcessCharNumber:
+		return true
 	case FormatFieldKindProcessFlow:
+		return true
+	case FormatFieldKindProductCharNumber:
 		return true
 	case FormatFieldKindRating:
 		return true
@@ -1135,17 +1141,19 @@ func (e NewFormatFieldArea) Valid() bool {
 
 // Defines values for NewFormatFieldKind.
 const (
-	NewFormatFieldKindAp              NewFormatFieldKind = "ap"
-	NewFormatFieldKindDate            NewFormatFieldKind = "date"
-	NewFormatFieldKindDocumentNumber  NewFormatFieldKind = "document_number"
-	NewFormatFieldKindOperationNumber NewFormatFieldKind = "operation_number"
-	NewFormatFieldKindProcess         NewFormatFieldKind = "process"
-	NewFormatFieldKindProcessFlow     NewFormatFieldKind = "process_flow"
-	NewFormatFieldKindRating          NewFormatFieldKind = "rating"
-	NewFormatFieldKindRpn             NewFormatFieldKind = "rpn"
-	NewFormatFieldKindSelect          NewFormatFieldKind = "select"
-	NewFormatFieldKindSymbol          NewFormatFieldKind = "symbol"
-	NewFormatFieldKindText            NewFormatFieldKind = "text"
+	NewFormatFieldKindAp                NewFormatFieldKind = "ap"
+	NewFormatFieldKindDate              NewFormatFieldKind = "date"
+	NewFormatFieldKindDocumentNumber    NewFormatFieldKind = "document_number"
+	NewFormatFieldKindOperationNumber   NewFormatFieldKind = "operation_number"
+	NewFormatFieldKindProcess           NewFormatFieldKind = "process"
+	NewFormatFieldKindProcessCharNumber NewFormatFieldKind = "process_char_number"
+	NewFormatFieldKindProcessFlow       NewFormatFieldKind = "process_flow"
+	NewFormatFieldKindProductCharNumber NewFormatFieldKind = "product_char_number"
+	NewFormatFieldKindRating            NewFormatFieldKind = "rating"
+	NewFormatFieldKindRpn               NewFormatFieldKind = "rpn"
+	NewFormatFieldKindSelect            NewFormatFieldKind = "select"
+	NewFormatFieldKindSymbol            NewFormatFieldKind = "symbol"
+	NewFormatFieldKindText              NewFormatFieldKind = "text"
 )
 
 // Valid indicates whether the value is a known member of the NewFormatFieldKind enum.
@@ -1161,7 +1169,11 @@ func (e NewFormatFieldKind) Valid() bool {
 		return true
 	case NewFormatFieldKindProcess:
 		return true
+	case NewFormatFieldKindProcessCharNumber:
+		return true
 	case NewFormatFieldKindProcessFlow:
+		return true
+	case NewFormatFieldKindProductCharNumber:
 		return true
 	case NewFormatFieldKindRating:
 		return true

@@ -20,7 +20,9 @@ const kindKeys: Record<FormatField['kind'], MessageKey> = {
 	operation_number: 'formatKindOperationNumber',
 	process: 'formatKindProcess',
 	process_flow: 'formatKindProcessFlow',
-	document_number: 'formatKindDocumentNumber'
+	document_number: 'formatKindDocumentNumber',
+	product_char_number: 'formatKindProductCharNo',
+	process_char_number: 'formatKindProcessCharNo'
 };
 
 const scaleKeys: Record<RatingCriterion['scale'], MessageKey> = {

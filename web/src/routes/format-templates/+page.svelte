@@ -56,7 +56,7 @@
 	import VersionBar from '#lib/templates/VersionBar.svelte';
 	import { isDraft, latestVersion } from '#lib/versions.ts';
 
-	const kinds: FormatField['kind'][] = ['text', 'date', 'select', 'symbol', 'rating', 'rpn', 'ap', 'operation_number', 'process', 'process_flow', 'document_number'];
+	const kinds: FormatField['kind'][] = ['text', 'date', 'select', 'symbol', 'rating', 'rpn', 'ap', 'operation_number', 'process', 'process_flow', 'document_number', 'product_char_number', 'process_char_number'];
 	const scales = ['severity', 'occurrence', 'detection'] as const;
 
 	// Data dari server. null berarti belum selesai dimuat.

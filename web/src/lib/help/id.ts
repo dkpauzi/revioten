@@ -350,6 +350,7 @@ export const helpId: HelpContent = {
 			],
 			tips: [
 				'Cover dan kepala form mengikuti dokumen TR-020. Cover memuat logo perusahaan, nomor dokumen, Customer, Model Name, Part Name, Part Number, Process or Line, riwayat revisi, INHOUSE APPROVAL, dan CUSTOMER APPROVAL. Kepala Control Plan punya tabel persetujuan di kanan; kepala PFMEA memuat Part Name, Key Date, FMEA NO., dan Prepared by; kepala PFD bertuliskan Process Flow Chart untuk model itu.',
+				'Dua kolom No di Control Plan terisi sendiri: No di depan Product Characteristics menomori baris yang karakteristik produknya diisi, dan No di depan Process Characteristics menomori baris yang karakteristik prosesnya diisi, 1, 2, 3 di setiap proses. Karakteristik yang ditulis -- tercetak --.',
 				'Part Name diambil dari part number dokumen (Master data, lalu Models). Process or Line, Core Team, Remark, Process Responsibility, dan Key Date adalah field header dokumen.',
 				'Admin mengganti nama perusahaan dan logo di {navGroupAdmin}, lalu {navSettings}: {companyTitle}.',
 				'Draft selalu dicetak dengan UNCONTROLLED COPY.', 'Baris yang berubah di revisi yang dicetak diberi segitiga dengan nomor revisi.', 'PDF butuh Chrome atau Edge di komputer server; Excel selalu bisa.'],

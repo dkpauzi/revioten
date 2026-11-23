@@ -43,6 +43,10 @@ const (
 	KindOperationNumber = "operation_number" // nomor operasi baris, misalnya 5.2 (R-CMP-01)
 	KindProcess         = "process"          // nama proses baris dari master proses (D-06, R-DOC-04)
 	KindProcessFlow     = "process_flow"     // simbol alur langkah itu, dibentuk dari PFD (R-DOC-09)
+	// Nomor karakteristik CP (D-222): urutan baris yang Product atau Process
+	// Characteristics-nya diisi, mulai lagi dari 1 di setiap proses.
+	KindProductCharNo = "product_char_number"
+	KindProcessCharNo = "process_char_number"
 	// Field header yang diisi dari register nomor, tidak diketik (form set langkah B dan C).
 	KindDocumentNumber = "document_number"
 )
@@ -92,13 +96,13 @@ const (
 
 var (
 	scales = []string{ScaleSeverity, ScaleOccurrence, ScaleDetection}
-	kinds  = []string{KindText, KindDate, KindSelect, KindSymbol, KindRating, KindRPN, KindAP, KindOperationNumber, KindProcess, KindProcessFlow, KindDocumentNumber}
+	kinds  = []string{KindText, KindDate, KindSelect, KindSymbol, KindRating, KindRPN, KindAP, KindOperationNumber, KindProcess, KindProcessFlow, KindDocumentNumber, KindProductCharNo, KindProcessCharNo}
 	// filledKinds adalah kolom terisi otomatis: tidak diketik, dan paling
 	// banyak satu kolom per jenis dalam satu versi.
-	filledKinds = []string{KindOperationNumber, KindProcess, KindProcessFlow}
+	filledKinds = []string{KindOperationNumber, KindProcess, KindProcessFlow, KindProductCharNo, KindProcessCharNo}
 	// notTyped adalah semua jenis yang isinya tidak pernah diketik: dihitung
 	// (RPN, AP) atau diisi sistem (kolom terisi otomatis, nomor dokumen).
-	notTyped  = []string{KindRPN, KindAP, KindOperationNumber, KindProcess, KindProcessFlow, KindDocumentNumber}
+	notTyped  = []string{KindRPN, KindAP, KindOperationNumber, KindProcess, KindProcessFlow, KindDocumentNumber, KindProductCharNo, KindProcessCharNo}
 	methods   = []string{MethodAIAG4th, MethodAIAGVDA, MethodSQAM, MethodAIAGCP2024}
 	risks     = []string{RiskRPN, RiskAP, RiskNone}
 	areaOrder = map[string]int{AreaHeader: 0, AreaRow: 1}
@@ -317,6 +321,8 @@ func checkValue(f Field, value any, symbols []Symbol) *problem.Problem {
 		return bad(problem.NotAllowed, "The process comes from the process master through the row, not typed.")
 	case KindProcessFlow:
 		return bad(problem.NotAllowed, "The process flow comes from the PFD steps, not typed.")
+	case KindProductCharNo, KindProcessCharNo:
+		return bad(problem.NotAllowed, "The characteristic number is counted from the rows, not typed.")
 	case KindRating:
 		if n, ok := whole(value); !ok || n < 1 || n > maxRating {
 			return bad(problem.InvalidFormat, "Use a whole number from 1 to 10.")

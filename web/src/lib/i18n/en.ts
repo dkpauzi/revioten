@@ -1714,6 +1714,8 @@ export const en = {
 	formatKindOperationNumber: 'Operation number, filled from the row',
 	formatKindProcess: 'Process, filled from the process master',
 	formatKindProcessFlow: 'Process flow, filled from the PFD',
+	formatKindProductCharNo: 'Product characteristic number, counted from the rows',
+	formatKindProcessCharNo: 'Process characteristic number, counted from the rows',
 	formatKindRatingDetail: 'Rating: {scale}, {set}',
 	formatKindRpnDetail: 'RPN, {set}',
 	formatSetCurrent: 'current',

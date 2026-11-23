@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { FormatField } from './api/gen/index.ts';
-import { cellText, cleanContent, gridRow, rowInputFrom, rowsOfSection, typedFields } from './documents.ts';
+import { cellText, charNumbers, cleanContent, gridRow, rowInputFrom, rowsOfSection, typedFields } from './documents.ts';
 
 const field = (over: Partial<FormatField>): FormatField => ({
 	id: 'f', area: 'row', kind: 'text', label: 'L', position: 1, required: false, hidden: false, ...over
@@ -72,5 +72,23 @@ describe('rowsOfSection (D-155)', () => {
 
 	it('tanpa bagian memberi semua baris', () => {
 		expect(rowsOfSection(rows, '').map((r) => r.id)).toEqual(['a', 'b', 'c']);
+	});
+});
+
+describe('charNumbers (D-222)', () => {
+	const fields = [
+		{ id: 'pc', area: 'row', kind: 'text', key: 'product_characteristic', label: 'Product Characteristics', position: 5, required: false, hidden: false },
+		{ id: 'qc', area: 'row', kind: 'text', key: 'process_characteristic', label: 'Process Characteristics', position: 8, required: false, hidden: false }
+	] as FormatField[];
+	const row = (id: string, op: string, process: string, pc: string, qc: string) => ({ id, position: 1, _operation: op, _process: process, pc, qc });
+
+	it('menomori baris yang karakteristiknya diisi, mulai lagi di setiap proses', () => {
+		const got = charNumbers(fields, [
+			row('a', '1', 'p1', '--', 'Packaging'),
+			row('b', '1', 'p1', '--', 'Document'),
+			row('c', '1', 'p1', 'Label', ''),
+			row('d', '2', 'p2', 'PCB Appearance', '--')
+		]);
+		expect(got).toEqual({ a: ['--', '1'], b: ['--', '2'], c: ['1', ''], d: ['1', '--'] });
 	});
 });
