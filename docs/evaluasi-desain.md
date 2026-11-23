@@ -158,7 +158,7 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-140 | Nomor dari satu impor dianggap satu set | Celah | M2.5, M7.1, C4 | Tidak | Diputuskan (D-216) |
 | E-141 | Alur migrasi dokumen lama tersebar di banyak menu | Penyederhanaan | M7.1, M7.5 | Tidak | Diputuskan (D-215) |
 | E-142 | Rincian menu migrasi yang belum diputuskan | Celah | D-215, D-216 | Tidak | Diputuskan (D-217) |
-| E-143 | Password standar untuk akun hasil import | Kontradiksi | D-132, D-85 | Tidak | Terbuka |
+| E-143 | Password standar untuk akun hasil import | Kontradiksi | D-132, D-85 | Tidak | Diputuskan (D-224) |
 | E-144 | Cetakan dan simbol alur belum sama dengan dokumen Tokairika | Celah | R-PRT-07, D-122, D-161 | Tidak | Diputuskan (D-219 bagian B, D-220 bagian C) |
 | E-145 | Ganti logo sebagai revisi dokumen | Kontradiksi | D-221, D-220, R-SEC-11, M5.10 | Tidak | Diputuskan (D-223) |
 
@@ -2481,7 +2481,7 @@ Salin blok ini untuk setiap temuan baru.
 - **Opsi:** (a) `password123` persis seperti diminta; daftar terlarang hanya untuk password pilihan pengguna. (b) Seperti (a), tetapi hanya saat Migration mode menyala, dan password sementara kedaluwarsa 7 hari. (c) Password sementara acak per akun, ditampilkan sekali dan bisa diunduh.
 - **Rekomendasi Claude Code (usulan):** (b).
 - **Menghambat milestone?** Tidak (I1 belum dimulai).
-- **Status:** Terbuka
+- **Status:** Diputuskan 24 November 2026: opsi (b), dicatat sebagai D-224. Pemilik: "E-143, oke, saya setuju dengan saran anda". Belum dibangun (I1).
 
 ### E-144 · Cetakan dan simbol alur belum sama dengan dokumen Tokairika
 

@@ -81,6 +81,8 @@ Tujuannya: pemilik bisa mulai dari database bersih, lalu mengisi data dasar seka
 
   Usulan Claude Code: (b), karena sesuai permintaan untuk database uji tetapi tidak terbawa ke pemakaian sungguhan.
 
+  **Diputuskan 24 November 2026: opsi (b), D-224.**
+
 ### I2 · Nama proses (Template library → Processes → Import processes)
 
 - **Kolom:** Process name, Aliases (dipisah titik koma).
@@ -109,7 +111,7 @@ Jadi revisi memang belum diisi saat import nomor, dan baru diisi di menu migrasi
 
 ## Ringkasan pertanyaan
 
-1. E-143: cara password akun hasil import, opsi (a), (b), atau (c).
-2. ~~Logo: cetakan ulang revisi lama memakai logo saat dicetak, atau logo saat rilis?~~ Dijawab: saat dicetak (D-221).
+1. E-143: cara password akun hasil import, opsi (a), (b), atau (c). Dijawab: (b), D-224.
+2. ~~Logo: cetakan ulang revisi lama memakai logo saat dicetak, atau logo saat rilis?~~ Dijawab: saat dicetak (D-221), lalu diganti D-223: logo dibekukan saat rilis.
 3. I3: template import sendiri saja dulu, atau juga membaca Excel bentuk Tokairika?
 4. I4: nomor yang sudah dipakai berarti Released saja, atau juga Reserved?
