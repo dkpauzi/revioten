@@ -301,7 +301,10 @@ export const helpEn: HelpContent = {
 				'Press {numberImportPreview} and read the report: which lines will be imported, which are refused and why.',
 				'When the report is right, press {numberImportRun}.'
 			],
-			tips: ['A voided number stays in the register with its reason. It is never given to another document.'],
+			tips: [
+				'A voided number stays in the register with its reason. It is never given to another document.',
+				'For many customers at once, for example after the database was reset, use {numberImportFileTitle}: press {numberImportFileTemplate}, fill one set per row with the customer code and Status (Released or Reserved), choose the file, press {numberImportFilePreview}, and then {numberImportFileRun}. Numbers that already exist are skipped. A number may end with its revision, for example SC-KT-001-05: the revision fills the revision column in {navLegacy}, where you can still change it.'
+			],
 			image: 'document-control',
 			imageAlt: 'The Revisions section with a released revision and its signed scan.'
 		},

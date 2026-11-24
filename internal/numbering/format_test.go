@@ -119,3 +119,34 @@ func TestSequenceOrder(t *testing.T) {
 		t.Errorf("urutan %v", texts)
 	}
 }
+
+// TestSplitRevision: I4 opsi b. Akhiran revisi nomor lama dipisahkan menurut
+// jumlah digit revisi di master data; nomor tanpa revisi tetap diterima.
+func TestSplitRevision(t *testing.T) {
+	p, err := ParsePattern(DefaultPattern)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cases := []struct {
+		text, number string
+		digits       int
+		revision     int
+		ok           bool
+	}{
+		{"SC-KT-001-05", "SC-KT-001", 2, 5, true},
+		{"SC-KT-001-5", "SC-KT-001", 2, 5, true},
+		{"SC-KT-001-00", "SC-KT-001", 2, 0, true},
+		{"SC-KT-001", "SC-KT-001", 2, 0, false},         // tanpa revisi
+		{"SC-KT-001-123", "SC-KT-001-123", 2, 0, false}, // lebih dari dua digit
+		{"SC-KT-001-123", "SC-KT-001", 3, 123, true},
+		{"SC-KT-001-A1", "SC-KT-001-A1", 2, 0, false}, // bukan angka
+		{"SC-KT-01-05", "SC-KT-01-05", 2, 0, false},   // sisanya bukan nomor
+		{"SC-KT-001-", "SC-KT-001-", 2, 0, false},
+	}
+	for _, c := range cases {
+		number, revision, ok := p.SplitRevision(c.text, c.digits)
+		if number != c.number || revision != c.revision || ok != c.ok {
+			t.Errorf("SplitRevision(%q, %d) = %q, %d, %v; ingin %q, %d, %v", c.text, c.digits, number, revision, ok, c.number, c.revision, c.ok)
+		}
+	}
+}

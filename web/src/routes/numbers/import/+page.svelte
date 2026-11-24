@@ -3,12 +3,15 @@
 	// menempel kolom nomor dari register Excel satu customer. Pratinjau dulu,
 	// lalu impor. Lubang, nomor ganda, dan set yang tidak sejajar hanya
 	// dilaporkan; tidak ada nomor yang diperbaiki atau dinomori ulang.
+	// Sejak I4 juga dari berkas Excel (beberapa customer, status per baris),
+	// dan nomor boleh memuat revisi, misalnya SC-KT-001-05.
 	import { onMount } from 'svelte';
-	import { importDocumentNumbers, listCustomers } from '#lib/api/client.ts';
+	import { getNumberSettings, importDocumentNumbers, importDocumentNumbersFile, listCustomers } from '#lib/api/client.ts';
 	import type { Customer, NumberImportReport, NumberImportRequest } from '#lib/api/gen/index.ts';
 	import { failureText, problemText } from '#lib/errors.ts';
 	import { t } from '#lib/i18n/index.ts';
-	import { lineResultText, notImported, rangesText, statusLabel, typeNames } from '#lib/numbers.ts';
+	import ImportReport from '#lib/numbers/ImportReport.svelte';
+	import { statusLabel } from '#lib/numbers.ts';
 	import { can } from '#lib/session.svelte.ts';
 
 	// Status yang boleh untuk nomor lama. Skipped hanya dari daftar sebagai set.
@@ -28,6 +31,14 @@
 	// Bawaannya satu set per baris (D-216).
 	let oneSet = $state(true);
 
+	// Isian berkas Excel (I4).
+	let file = $state<File | null>(null);
+	let fileOneSet = $state(true);
+	let fileFailure = $state('');
+	// fromFile true bila laporan yang tampil berasal dari berkas.
+	let fromFile = $state(false);
+	let revisionDigits = $state(2);
+
 	let report = $state<NumberImportReport | null>(null);
 	let fieldErrors = $state<Record<string, string>>({});
 	let failure = $state('');
@@ -41,6 +52,35 @@
 		}
 		customers = result.data.items;
 		loadError = '';
+		const settings = await getNumberSettings();
+		if (settings.ok) {
+			revisionDigits = settings.data.revision_digits;
+		}
+	}
+
+	// sendFile mengirim berkas sebagai pratinjau (commit false) atau impor.
+	async function sendFile(commit: boolean) {
+		fileFailure = '';
+		if (!file) {
+			fileFailure = t('numberImportFileChoose');
+			return;
+		}
+		busy = true;
+		const result = await importDocumentNumbersFile(file, commit, fileOneSet);
+		busy = false;
+		fromFile = true;
+		if (!result.ok) {
+			report = null;
+			const details = result.error.body?.details ?? [];
+			fileFailure = details.length > 0 ? details.map((d) => problemText(d)).join(' ') : failureText(result.error);
+			return;
+		}
+		report = result.data;
+	}
+
+	function previewFile(event: SubmitEvent) {
+		event.preventDefault();
+		sendFile(false);
 	}
 
 	// send mengirim isian sebagai pratinjau (dryRun true) atau impor sungguhan.
@@ -51,6 +91,7 @@
 		const input = { customer_id: customerId, status: status as NumberImportRequest['status'], text, one_set: oneSet, dry_run: dryRun };
 		const result = await importDocumentNumbers(input);
 		busy = false;
+		fromFile = false;
 		if (!result.ok) {
 			report = null;
 			const details = result.error.body?.details ?? [];
@@ -74,14 +115,6 @@
 		report = null;
 	}
 
-	// summary adalah ringkasan laporan di atas tabel.
-	function summary(r: NumberImportReport): string {
-		if (r.imported === 0) {
-			return t('numberImportNothing');
-		}
-		return t(r.dry_run ? 'numberImportPreviewed' : 'numberImportDone', { count: String(r.imported) });
-	}
-
 	onMount(() => {
 		load();
 	});
@@ -98,6 +131,37 @@
 {:else if customers === null}
 	<p>{t('numbersLoading')}</p>
 {:else}
+	<h2>{t('numberImportFileTitle')}</h2>
+	<ol class="steps">
+		<li><a href="/api/v1/document-number-imports/template" download>{t('numberImportFileTemplate')}</a> · {t('numberImportFileTemplateHint')}</li>
+		<li>{t('numberImportFileFillHint')}</li>
+		<li>{t('numberImportFileUploadHint')}</li>
+	</ol>
+	{#if fileFailure}<p class="error" role="alert">{fileFailure}</p>{/if}
+	<form onsubmit={previewFile} novalidate>
+		<div class="field">
+			<label for="number-import-file">{t('numberImportFile')}</label>
+			<input
+				id="number-import-file"
+				type="file"
+				accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+				onchange={(e) => {
+					file = e.currentTarget.files?.[0] ?? null;
+					changed();
+				}}
+			/>
+		</div>
+		<label class="check"><input type="checkbox" bind:checked={fileOneSet} onchange={changed} /> {t('numberImportFileOneSet')}</label>
+		<div class="row">
+			<button type="submit" disabled={busy}>{t('numberImportFilePreview')}</button>
+			{#if fromFile && report?.dry_run && report.imported > 0}
+				<button type="button" class="primary" disabled={busy} onclick={() => sendFile(true)}>{t('numberImportFileRun')}</button>
+			{/if}
+		</div>
+	</form>
+	{#if fromFile && report}<ImportReport {report} {revisionDigits} />{/if}
+
+	<h2>{t('numberImportPasteTitle')}</h2>
 	{#if failure}<p class="error" role="alert">{failure}</p>{/if}
 	<form onsubmit={preview} novalidate>
 		<div class="row">
@@ -132,90 +196,13 @@
 		<p class="hint">{t('numberImportOneSetHint')}</p>
 		<div class="row">
 			<button type="submit" disabled={busy}>{t('numberImportPreview')}</button>
-			{#if report?.dry_run && report.imported > 0}
+			{#if !fromFile && report?.dry_run && report.imported > 0}
 				<button type="button" disabled={busy} onclick={() => send(false)}>{t('numberImportRun')}</button>
 			{/if}
 		</div>
 	</form>
 
-	{#if report}
-		<section>
-			<p role="status">{summary(report)}</p>
-
-			{#if notImported(report.lines).length > 0}
-				<h2>{t('numberImportLinesTitle')}</h2>
-				<table>
-					<thead>
-						<tr>
-							<th>{t('numberImportColumnLine')}</th>
-							<th>{t('numberImportColumnText')}</th>
-							<th>{t('numberImportColumnResult')}</th>
-						</tr>
-					</thead>
-					<tbody>
-						{#each notImported(report.lines) as l (l.line)}
-							<tr>
-								<td>{l.line}</td>
-								<td>{l.text}{#if l.derived} {t('numberImportDerived')}{/if}</td>
-								<td>{lineResultText(l)}</td>
-							</tr>
-						{/each}
-					</tbody>
-				</table>
-			{/if}
-
-			{#if report.groups.length > 0}
-				<h2>{t('numberImportGroupsTitle')}</h2>
-				<table>
-					<thead>
-						<tr>
-							<th>{t('numberImportColumnCode')}</th>
-							<th>{t('numberType')}</th>
-							<th>{t('numberImportColumnCount')}</th>
-							<th>{t('numberImportColumnHighest')}</th>
-							<th>{t('numberImportColumnGaps')}</th>
-						</tr>
-					</thead>
-					<tbody>
-						{#each report.groups as g (g.customer_code + g.document_type.id)}
-							<tr>
-								<td>{g.customer_code}</td>
-								<td>{g.document_type.name}</td>
-								<td>{g.count}</td>
-								<td>{g.highest ?? ''}</td>
-								<td>{g.count === 0 ? '' : rangesText(g.gaps) || t('numberImportNoGaps')}</td>
-							</tr>
-						{/each}
-					</tbody>
-				</table>
-
-				<h2>{t('numberImportMisalignedTitle')}</h2>
-				<p class="hint">{t('numberImportMisalignedHint')}</p>
-				{#if report.misaligned.length === 0}
-					<p>{t('numberImportAligned')}</p>
-				{:else}
-					<table>
-						<thead>
-							<tr>
-								<th>{t('numberImportColumnCode')}</th>
-								<th>{t('numberImportColumnRange')}</th>
-								<th>{t('numberImportColumnPresent')}</th>
-							</tr>
-						</thead>
-						<tbody>
-							{#each report.misaligned as m (m.customer_code + m.range.first)}
-								<tr>
-									<td>{m.customer_code}</td>
-									<td>{rangesText([m.range])}</td>
-									<td>{typeNames(m.present)}</td>
-								</tr>
-							{/each}
-						</tbody>
-					</table>
-				{/if}
-			{/if}
-		</section>
-	{/if}
+	{#if !fromFile && report}<ImportReport {report} {revisionDigits} />{/if}
 {/if}
 
 <style>
@@ -235,5 +222,9 @@
 
 	textarea {
 		font-family: var(--font-mono);
+	}
+
+	.steps {
+		padding-left: 1.25rem;
 	}
 </style>

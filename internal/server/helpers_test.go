@@ -262,6 +262,16 @@ func (f *fakeNumbering) Import(_ context.Context, _ access.Actor, in numbering.I
 	return f.report, f.err
 }
 
+func (f *fakeNumbering) ImportFile(_ context.Context, _ access.Actor, in numbering.FileImportInput) (numbering.ImportReport, error) {
+	f.got = called{method: "ImportFile", input: in}
+	return f.report, f.err
+}
+
+func (f *fakeNumbering) ImportTemplate(_ context.Context, _ access.Actor) ([]byte, error) {
+	f.got = called{method: "ImportTemplate"}
+	return nil, f.err
+}
+
 func (f *fakeNumbering) NextNumber(_ context.Context, _ access.Actor, customerID, documentTypeID string) (string, error) {
 	f.got = called{method: "NextNumber", id: customerID, input: documentTypeID}
 	return f.next, f.err

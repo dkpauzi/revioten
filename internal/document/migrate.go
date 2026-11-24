@@ -78,6 +78,7 @@ type MigratableNumber struct {
 	Number       string
 	Status       string
 	DocumentType string
+	Revision     int // revisi awal nomor, misalnya dari nomor lama SC-KT-001-05 (I4)
 }
 
 // requireMigrationMode menolak bila saklar mode migrasi mati (R-MIG-06).
@@ -107,7 +108,7 @@ func (s *Service) MigratableNumbers(ctx context.Context, actor access.Actor, cus
 	}
 	out := make([]MigratableNumber, 0, len(rows))
 	for _, r := range rows {
-		out = append(out, MigratableNumber{ID: r.ID, Number: r.Number, Status: r.Status, DocumentType: r.DocumentTypeName})
+		out = append(out, MigratableNumber{ID: r.ID, Number: r.Number, Status: r.Status, DocumentType: r.DocumentTypeName, Revision: int(r.InitialRevision)})
 	}
 	return out, nil
 }

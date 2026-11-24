@@ -443,6 +443,20 @@ export function importDocumentNumbers(
 	return call<NumberImportReport>(fetchFn, '/api/v1/document-number-imports', jsonRequest('POST', input));
 }
 
+// importDocumentNumbersFile memanggil POST /api/v1/document-number-imports/file
+// (E-8, I4): nomor lama dari berkas Excel. commit false hanya memberi laporan.
+export function importDocumentNumbersFile(
+	file: File,
+	commit: boolean,
+	oneSet: boolean,
+	fetchFn: typeof fetch = fetch
+): Promise<ApiResult<NumberImportReport>> {
+	const form = new FormData();
+	form.append('file', file);
+	const query = `?commit=${String(commit)}&one_set=${String(oneSet)}`;
+	return call<NumberImportReport>(fetchFn, '/api/v1/document-number-imports/file' + query, { method: 'POST', body: form });
+}
+
 // getNextDocumentNumber memanggil GET /api/v1/document-numbers/next: nomor yang
 // akan didapat pendaftaran berikutnya, tanpa mendaftarkannya (L-2).
 export function getNextDocumentNumber(

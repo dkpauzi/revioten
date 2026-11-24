@@ -301,7 +301,10 @@ export const helpId: HelpContent = {
 				'Tekan {numberImportPreview} dan baca laporannya: baris mana yang akan diimpor, mana yang ditolak dan alasannya.',
 				'Bila laporannya sudah benar, tekan {numberImportRun}.'
 			],
-			tips: ['Nomor yang dibatalkan tetap ada di register beserta alasannya. Nomor itu tidak pernah diberikan ke dokumen lain.'],
+			tips: [
+				'Nomor yang dibatalkan tetap ada di register beserta alasannya. Nomor itu tidak pernah diberikan ke dokumen lain.',
+				'Untuk banyak customer sekaligus, misalnya sesudah database direset, pakai {numberImportFileTitle}: tekan {numberImportFileTemplate}, isi satu set per baris dengan kode customer dan Status (Released atau Reserved), pilih berkasnya, tekan {numberImportFilePreview}, lalu {numberImportFileRun}. Nomor yang sudah ada dilewati. Nomor boleh diakhiri revisinya, misalnya SC-KT-001-05: revisi itu mengisi kolom revisi di {navLegacy}, dan masih bisa diubah di sana.'
+			],
 			image: 'document-control',
 			imageAlt: 'Bagian Revisi dengan satu revisi terbit dan scan bertanda tangannya.'
 		},

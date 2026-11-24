@@ -33,6 +33,10 @@ const (
 	LineCustomerMismatch = "customer_mismatch" // kode di nomor bukan kode customer ini (R-POR-01)
 	LineInvalid          = "invalid"           // bukan nomor PFD, PFMEA, atau CP menurut pola sekarang
 	LineTypeRepeated     = "type_repeated"     // baris yang sama sudah punya nomor jenis ini (D-216)
+	// Hanya impor berkas Excel (I4):
+	LineUnknownCustomer  = "unknown_customer"  // kode di kolom Customer code tidak dikenal
+	LineInactiveCustomer = "inactive_customer" // customer nonaktif (ASUMSI E-67)
+	LineInvalidStatus    = "invalid_status"    // kolom Status bukan Released atau Reserved
 )
 
 // maxImportColumns adalah jumlah kolom yang dibaca per baris: PFD, PFMEA, dan
@@ -68,6 +72,15 @@ type ImportLine struct {
 	Result    string // LineImported, LineExisting, dan seterusnya
 	FirstLine int    // untuk LineDuplicate: baris tempat nomor itu pertama muncul
 	Derived   bool   // true bila nomor ini mengikuti nomor lain di barisnya (OneSet)
+	// Revision adalah revisi yang ikut ditulis di belakang nomor, misalnya 5
+	// untuk SC-KT-001-05 (I4, opsi b); nil bila tanpa revisi. Revisi ini
+	// disimpan sebagai revisi awal nomor (ASUMSI E-146) dan mengisi kolom
+	// revisi di menu Legacy documents. Text selalu nomor tanpa revisi.
+	Revision *int
+	// CustomerCode dan Status hanya diisi impor berkas Excel, yang memuat
+	// beberapa customer dan status per baris.
+	CustomerCode string
+	Status       string
 }
 
 // SequenceRange adalah rentang nomor berjalan, misalnya 003 sampai 006.
@@ -129,28 +142,61 @@ func (s *Service) Import(ctx context.Context, actor access.Actor, in ImportInput
 	if err := problems(list...); err != nil {
 		return ImportReport{}, err
 	}
-	settings, err := s.q.GetNumberSettings(ctx)
-	if err != nil {
-		return ImportReport{}, fmt.Errorf("membaca pengaturan nomor: %w", err)
+	for i := range rows {
+		rows[i].Status = in.Status
 	}
-	pattern, err := ParsePattern(settings.Pattern)
-	if err != nil {
-		return ImportReport{}, fmt.Errorf("pola nomor di database tidak sah: %w", err)
-	}
-	types, err := s.setTypes(ctx)
+	env, err := s.importEnv(ctx)
 	if err != nil {
 		return ImportReport{}, err
 	}
-	parseImportLines(rows, pattern, types)
+	report, err := s.importRows(ctx, actor, env, in.CustomerID, rows, in.OneSet, in.DryRun)
+	if err != nil {
+		return ImportReport{}, err
+	}
+	// Status impor tempel satu untuk semua baris, jadi hanya ditulis sekali.
+	report.Status = in.Status
+	for i := range report.Lines {
+		report.Lines[i].Status = ""
+	}
+	return report, nil
+}
+
+// importEnv adalah pengaturan nomor yang dipakai satu impor.
+type importEnv struct {
+	pattern        Pattern
+	types          []DocumentType
+	revisionDigits int
+}
+
+func (s *Service) importEnv(ctx context.Context) (importEnv, error) {
+	settings, err := s.q.GetNumberSettings(ctx)
+	if err != nil {
+		return importEnv{}, fmt.Errorf("membaca pengaturan nomor: %w", err)
+	}
+	pattern, err := ParsePattern(settings.Pattern)
+	if err != nil {
+		return importEnv{}, fmt.Errorf("pola nomor di database tidak sah: %w", err)
+	}
+	types, err := s.setTypes(ctx)
+	if err != nil {
+		return importEnv{}, err
+	}
+	return importEnv{pattern: pattern, types: types, revisionDigits: int(settings.RevisionDigits)}, nil
+}
+
+// importRows mengimpor baris nomor satu customer dalam satu transaksi. Status
+// setiap baris sudah diisi pemanggil, dan hak serta customer sudah diperiksa.
+func (s *Service) importRows(ctx context.Context, actor access.Actor, env importEnv, customerID string, rows []importRow, oneSet, dryRun bool) (ImportReport, error) {
+	parseImportLines(rows, env.pattern, env.types, env.revisionDigits)
 	rows = markRepeatedTypes(rows)
-	if in.OneSet {
-		rows = deriveSetNumbers(rows, pattern, types)
+	if oneSet {
+		rows = deriveSetNumbers(rows, env.pattern, env.types)
 	}
 
-	report := ImportReport{DryRun: in.DryRun, Status: in.Status}
-	err = db.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
+	report := ImportReport{DryRun: dryRun}
+	err := db.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
 		q := s.q.WithTx(tx)
-		codes, err := lockCustomerCodes(ctx, q, in.CustomerID)
+		codes, err := lockCustomerCodes(ctx, q, customerID)
 		if err != nil {
 			return err
 		}
@@ -161,7 +207,7 @@ func (s *Service) Import(ctx context.Context, actor access.Actor, in ImportInput
 		if err := markExisting(ctx, q, rows, codes); err != nil {
 			return err
 		}
-		report.Imported, err = insertImported(ctx, q, actor, in, rows)
+		report.Imported, err = insertImported(ctx, q, actor, customerID, rows)
 		if err != nil {
 			return err
 		}
@@ -169,8 +215,8 @@ func (s *Service) Import(ctx context.Context, actor access.Actor, in ImportInput
 		if err != nil {
 			return err
 		}
-		report.Groups, report.Misaligned = buildReport(codes, types, register)
-		if in.DryRun || report.Imported == 0 {
+		report.Groups, report.Misaligned = buildReport(codes, env.types, register)
+		if dryRun || report.Imported == 0 {
 			// Laporan sudah tersusun; semua perubahan dibatalkan.
 			return errRollback
 		}
@@ -256,13 +302,21 @@ func splitImportLines(text string) []importRow {
 
 // parseImportLines membaca setiap baris dengan pola nomor sekarang. Baris
 // yang tidak terbaca, atau yang awalannya bukan awalan PFD, PFMEA, atau CP,
-// ditandai LineInvalid (ASUMSI E-66).
-func parseImportLines(rows []importRow, pattern Pattern, types []DocumentType) {
+// ditandai LineInvalid (ASUMSI E-66). Akhiran revisi, misalnya -05,
+// dipisahkan dulu menurut jumlah digit revisi (I4, opsi b).
+func parseImportLines(rows []importRow, pattern Pattern, types []DocumentType, revisionDigits int) {
 	byPrefix := map[string]DocumentType{}
 	for _, d := range types {
 		byPrefix[d.Prefix] = d
 	}
 	for i := range rows {
+		if rows[i].Result != "" {
+			continue
+		}
+		if number, revision, ok := pattern.SplitRevision(rows[i].Text, revisionDigits); ok {
+			rows[i].Text = number
+			rows[i].Revision = &revision
+		}
 		parts, ok := pattern.Parse(rows[i].Text)
 		d, known := byPrefix[parts.Prefix]
 		if !ok || !known {
@@ -324,7 +378,7 @@ func deriveSetNumbers(rows []importRow, pattern Pattern, types []DocumentType) [
 					continue
 				}
 				out = append(out, importRow{
-					ImportLine: ImportLine{Line: source.Line, Derived: true,
+					ImportLine: ImportLine{Line: source.Line, Derived: true, Status: source.Status, CustomerCode: source.CustomerCode,
 						Text: pattern.Format(d.Prefix, source.key.code, sequenceText(source.key.sequence))},
 					key:     numberKey{code: source.key.code, typeID: d.ID, sequence: source.key.sequence},
 					docType: d,
@@ -442,7 +496,7 @@ func markExisting(ctx context.Context, q *db.Queries, rows []importRow, codes []
 // entri audit setiap nomor, lalu menaikkan penghitung ke nomor tertinggi.
 // Setiap baris yang punya nomor masuk mendapat batch sendiri, jadi nomor satu
 // baris adalah satu set (D-216, E-140). Hasilnya jumlah nomor yang masuk.
-func insertImported(ctx context.Context, q *db.Queries, actor access.Actor, in ImportInput, rows []importRow) (int, error) {
+func insertImported(ctx context.Context, q *db.Queries, actor access.Actor, customerID string, rows []importRow) (int, error) {
 	batches := map[int]string{} // nomor baris -> batch
 	highest := map[counterKey]int{}
 	for i := range rows {
@@ -455,7 +509,7 @@ func insertImported(ctx context.Context, q *db.Queries, actor access.Actor, in I
 			// Impor tanpa kunci idempoten: impor yang diulang hanya
 			// menghasilkan baris LineExisting.
 			id, err := q.InsertNumberBatch(ctx, db.InsertNumberBatchParams{
-				Kind: OriginImport, CustomerID: in.CustomerID, AccountID: actor.AccountID, PersonID: actor.PersonID,
+				Kind: OriginImport, CustomerID: customerID, AccountID: actor.AccountID, PersonID: actor.PersonID,
 			})
 			if err != nil {
 				return 0, err
@@ -463,16 +517,22 @@ func insertImported(ctx context.Context, q *db.Queries, actor access.Actor, in I
 			batchID = id
 			batches[r.Line] = id
 		}
+		revision := 0
+		details := map[string]string{"number": r.Text, "status": r.Status}
+		if r.Revision != nil {
+			revision = *r.Revision
+			details["initial_revision"] = strconv.Itoa(revision)
+		}
 		id, err := q.InsertDocumentNumber(ctx, db.InsertDocumentNumberParams{
-			Number: r.Text, CustomerID: in.CustomerID, CustomerCode: r.key.code, DocumentTypeID: r.key.typeID,
-			Sequence: int32(r.key.sequence), Status: in.Status, BatchID: batchID,
+			Number: r.Text, CustomerID: customerID, CustomerCode: r.key.code, DocumentTypeID: r.key.typeID,
+			Sequence: int32(r.key.sequence), Status: r.Status, InitialRevision: int16(revision), BatchID: batchID,
 		})
 		if err != nil {
 			return 0, err
 		}
 		err = audit.Record(ctx, q, actor, audit.Event{
 			Action: audit.ActionDocumentNumberImported, TargetType: audit.TargetDocumentNumber, TargetID: id,
-			Details: map[string]string{"number": r.Text, "status": in.Status},
+			Details: details,
 		})
 		if err != nil {
 			return 0, err

@@ -4,7 +4,7 @@
 -- ListMigratableNumbers memberi nomor PFD, PFMEA, dan CP satu customer yang
 -- belum punya dokumen dan masih hidup (M7.1): nomor lama hasil impor (M2.5)
 -- atau nomor Reserved.
-SELECT n.id, n.number, n.status, t.name AS document_type_name
+SELECT n.id, n.number, n.status, t.name AS document_type_name, n.initial_revision
 FROM document_numbers n
 JOIN document_types t ON t.id = n.document_type_id
 WHERE n.customer_id = $1 AND n.status IN ('reserved', 'in_use', 'released')

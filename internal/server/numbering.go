@@ -127,7 +127,7 @@ func (a *apiServer) ImportDocumentNumbers(ctx context.Context, req ImportDocumen
 // kontrak API. Daftar kosong dikirim sebagai [] dan bukan null.
 func toAPIImportReport(r numbering.ImportReport) NumberImportReport {
 	out := NumberImportReport{
-		DryRun: r.DryRun, Status: NumberImportReportStatus(r.Status), Imported: r.Imported,
+		DryRun: r.DryRun, Imported: r.Imported,
 		Lines:      make([]NumberImportLine, 0, len(r.Lines)),
 		Groups:     make([]NumberImportGroup, 0, len(r.Groups)),
 		Misaligned: make([]NumberMisalignment, 0, len(r.Misaligned)),
@@ -140,7 +140,19 @@ func toAPIImportReport(r numbering.ImportReport) NumberImportReport {
 		if l.Derived {
 			line.Derived = &l.Derived
 		}
+		line.Revision = l.Revision
+		if l.CustomerCode != "" {
+			line.CustomerCode = &l.CustomerCode
+		}
+		if l.Status != "" {
+			status := NumberImportLineStatus(l.Status)
+			line.Status = &status
+		}
 		out.Lines = append(out.Lines, line)
+	}
+	if r.Status != "" {
+		status := NumberImportReportStatus(r.Status)
+		out.Status = &status
 	}
 	for _, g := range r.Groups {
 		group := NumberImportGroup{

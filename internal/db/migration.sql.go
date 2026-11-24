@@ -260,7 +260,7 @@ func (q *Queries) ListLegacyDocuments(ctx context.Context, customerID string) ([
 
 const listMigratableNumbers = `-- name: ListMigratableNumbers :many
 
-SELECT n.id, n.number, n.status, t.name AS document_type_name
+SELECT n.id, n.number, n.status, t.name AS document_type_name, n.initial_revision
 FROM document_numbers n
 JOIN document_types t ON t.id = n.document_type_id
 WHERE n.customer_id = $1 AND n.status IN ('reserved', 'in_use', 'released')
@@ -274,6 +274,7 @@ type ListMigratableNumbersRow struct {
 	Number           string
 	Status           string
 	DocumentTypeName string
+	InitialRevision  int16
 }
 
 // Tahap 7 · Migrasi dan bukti nilai. Lihat migrasi 00041.
@@ -294,6 +295,7 @@ func (q *Queries) ListMigratableNumbers(ctx context.Context, customerID string) 
 			&i.Number,
 			&i.Status,
 			&i.DocumentTypeName,
+			&i.InitialRevision,
 		); err != nil {
 			return nil, err
 		}

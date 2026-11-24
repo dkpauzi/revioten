@@ -4,7 +4,7 @@
 	// status sampai Released (migrated). Isi dokumen tetap diketik di halaman
 	// dokumen, dan dicocokkan dengan hardcopy oleh orang lain (M7.5).
 	import { onMount } from 'svelte';
-	import { getMigrationOverview, listCustomers, listDocumentTypes, listModels, listPartNumbers, migrateSet } from '#lib/api/client.ts';
+	import { getMigrationOverview, listCustomers, listDocumentTypes, listMigratableNumbers, listModels, listPartNumbers, migrateSet } from '#lib/api/client.ts';
 	import type { Customer, MigrationOverview, Model, PartNumber } from '#lib/api/gen/index.ts';
 	import { failureText, problemText } from '#lib/errors.ts';
 	import { formatDateTime } from '#lib/format.ts';
@@ -19,6 +19,9 @@
 	let overview = $state<MigrationOverview | null>(null);
 	let models = $state<Model[]>([]);
 	let parts = $state<PartNumber[]>([]);
+	// Revisi nomor yang sudah terdaftar tanpa dokumen, misalnya dari nomor lama
+	// yang diimpor sebagai SC-TR-020-03 (I4). Dipakai mengisi kolom revisi.
+	let knownRevisions = $state<Record<string, number>>({});
 	let loadError = $state('');
 	let canMigrate = $derived(can('E-10'));
 
@@ -67,10 +70,11 @@
 	}
 
 	async function refresh() {
-		const [viewResult, modelResult, partResult] = await Promise.all([
+		const [viewResult, modelResult, partResult, numberResult] = await Promise.all([
 			getMigrationOverview(customerId),
 			listModels(customerId),
-			listPartNumbers(customerId)
+			listPartNumbers(customerId),
+			listMigratableNumbers(customerId)
 		]);
 		if (!viewResult.ok) {
 			loadError = failureText(viewResult.error);
@@ -80,6 +84,7 @@
 		overview = viewResult.data;
 		models = modelResult.ok ? modelResult.data.items.filter((m) => !m.eol_at) : [];
 		parts = partResult.ok ? partResult.data.items : [];
+		knownRevisions = numberResult.ok ? Object.fromEntries(numberResult.data.items.map((n) => [n.number, n.revision])) : {};
 	}
 
 	function resetForm() {
@@ -97,6 +102,22 @@
 		row.number = parts.number;
 		if (parts.revision !== null && revisionText(row.revision) === '') {
 			row.revision = String(parts.revision);
+		}
+		fillKnownRevisions();
+	}
+
+	// fillKnownRevisions mengisi kolom revisi yang masih kosong dengan revisi
+	// nomor itu di register (I4, opsi b), juga untuk nomor yang mengikuti
+	// (satu set). ASUMSI E-146: revisi 0 tidak diisi, karena sama dengan nomor
+	// tanpa revisi.
+	// Isinya tetap bisa diubah.
+	function fillKnownRevisions() {
+		for (const row of rows) {
+			const number = row.number.trim() || placeholder(row.key);
+			const known = knownRevisions[number];
+			if (known !== undefined && known > 0 && revisionText(row.revision) === '') {
+				row.revision = String(known);
+			}
 		}
 	}
 

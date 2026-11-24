@@ -1334,8 +1334,11 @@ const (
 	NumberImportLineResultDuplicate        NumberImportLineResult = "duplicate"
 	NumberImportLineResultExisting         NumberImportLineResult = "existing"
 	NumberImportLineResultImported         NumberImportLineResult = "imported"
+	NumberImportLineResultInactiveCustomer NumberImportLineResult = "inactive_customer"
 	NumberImportLineResultInvalid          NumberImportLineResult = "invalid"
+	NumberImportLineResultInvalidStatus    NumberImportLineResult = "invalid_status"
 	NumberImportLineResultTypeRepeated     NumberImportLineResult = "type_repeated"
+	NumberImportLineResultUnknownCustomer  NumberImportLineResult = "unknown_customer"
 )
 
 // Valid indicates whether the value is a known member of the NumberImportLineResult enum.
@@ -1349,9 +1352,33 @@ func (e NumberImportLineResult) Valid() bool {
 		return true
 	case NumberImportLineResultImported:
 		return true
+	case NumberImportLineResultInactiveCustomer:
+		return true
 	case NumberImportLineResultInvalid:
 		return true
+	case NumberImportLineResultInvalidStatus:
+		return true
 	case NumberImportLineResultTypeRepeated:
+		return true
+	case NumberImportLineResultUnknownCustomer:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for NumberImportLineStatus.
+const (
+	NumberImportLineStatusReleased NumberImportLineStatus = "released"
+	NumberImportLineStatusReserved NumberImportLineStatus = "reserved"
+)
+
+// Valid indicates whether the value is a known member of the NumberImportLineStatus enum.
+func (e NumberImportLineStatus) Valid() bool {
+	switch e {
+	case NumberImportLineStatusReleased:
+		return true
+	case NumberImportLineStatusReserved:
 		return true
 	default:
 		return false
@@ -4135,7 +4162,10 @@ type MigratableNumber struct {
 	DocumentType string `json:"document_type"`
 	Id           string `json:"id"`
 	Number       string `json:"number"`
-	Status       string `json:"status"`
+
+	// Revision The initial revision of the number, for example from a legacy number imported as SC-KT-001-05 (I4).
+	Revision int    `json:"revision"`
+	Status   string `json:"status"`
 }
 
 // MigratableNumberList defines model for MigratableNumberList.
@@ -4573,22 +4603,34 @@ type NumberImportGroup struct {
 
 // NumberImportLine defines model for NumberImportLine.
 type NumberImportLine struct {
+	// CustomerCode File import only. The customer code of the row.
+	CustomerCode *string `json:"customer_code,omitempty"`
+
 	// Derived True when the number follows the first number of its line (one_set).
 	Derived *bool `json:"derived,omitempty"`
 
 	// FirstLine For a duplicate, the line where the number first appears.
 	FirstLine *int `json:"first_line,omitempty"`
 
-	// Line The line in the pasted text, from 1. Blank lines are left out.
+	// Line The line in the pasted text, from 1, or the row in the Excel file, from 2. Blank lines are left out.
 	Line   int                    `json:"line"`
 	Result NumberImportLineResult `json:"result"`
 
-	// Text One column of the line, without surrounding spaces, or the number that follows (derived).
+	// Revision The revision written after the number, for example 5 for SC-KT-001-05. Missing when there was none.
+	Revision *int `json:"revision,omitempty"`
+
+	// Status File import only. The status of the row.
+	Status *NumberImportLineStatus `json:"status,omitempty"`
+
+	// Text One column of the line, without surrounding spaces and without the revision, or the number that follows (derived).
 	Text string `json:"text"`
 }
 
 // NumberImportLineResult defines model for NumberImportLine.Result.
 type NumberImportLineResult string
+
+// NumberImportLineStatus File import only. The status of the row.
+type NumberImportLineStatus string
 
 // NumberImportReport defines model for NumberImportReport.
 type NumberImportReport struct {
@@ -4602,11 +4644,13 @@ type NumberImportReport struct {
 	Lines    []NumberImportLine `json:"lines"`
 
 	// Misaligned Running numbers that only some of PFD, PFMEA, and CP have. Skipped numbers do not count.
-	Misaligned []NumberMisalignment     `json:"misaligned"`
-	Status     NumberImportReportStatus `json:"status"`
+	Misaligned []NumberMisalignment `json:"misaligned"`
+
+	// Status The status of the pasted import. Missing for a file import, where each line has its status.
+	Status *NumberImportReportStatus `json:"status,omitempty"`
 }
 
-// NumberImportReportStatus defines model for NumberImportReport.Status.
+// NumberImportReportStatus The status of the pasted import. Missing for a file import, where each line has its status.
 type NumberImportReportStatus string
 
 // NumberImportRequest defines model for NumberImportRequest.
@@ -6521,6 +6565,17 @@ type SetCompanyLogoParams struct {
 	Revise ReviseDocuments `form:"revise" json:"revise"`
 }
 
+// ImportDocumentNumbersFileMultipartBody defines parameters for ImportDocumentNumbersFile.
+type ImportDocumentNumbersFileMultipartBody struct {
+	File *openapi_types.File `json:"file,omitempty"`
+}
+
+// ImportDocumentNumbersFileParams defines parameters for ImportDocumentNumbersFile.
+type ImportDocumentNumbersFileParams struct {
+	Commit bool `form:"commit" json:"commit"`
+	OneSet bool `form:"one_set" json:"one_set"`
+}
+
 // ListDocumentNumbersParams defines parameters for ListDocumentNumbers.
 type ListDocumentNumbersParams struct {
 	CustomerId     *string                          `form:"customer_id,omitempty" json:"customer_id,omitempty"`
@@ -6822,6 +6877,9 @@ type SetCustomerSubmissionRequiredJSONRequestBody = SubmissionRequiredChoice
 
 // ImportDocumentNumbersJSONRequestBody defines body for ImportDocumentNumbers for application/json ContentType.
 type ImportDocumentNumbersJSONRequestBody = NumberImportRequest
+
+// ImportDocumentNumbersFileMultipartRequestBody defines body for ImportDocumentNumbersFile for multipart/form-data ContentType.
+type ImportDocumentNumbersFileMultipartRequestBody ImportDocumentNumbersFileMultipartBody
 
 // RegisterDocumentNumberJSONRequestBody defines body for RegisterDocumentNumber for application/json ContentType.
 type RegisterDocumentNumberJSONRequestBody = NewDocumentNumber
@@ -7266,6 +7324,12 @@ type ServerInterface interface {
 	// ImportDocumentNumbers Import legacy numbers of one customer, with a report (E-8, UC-14, R-NUM-06)
 	// (POST /api/v1/document-number-imports)
 	ImportDocumentNumbers(w http.ResponseWriter, r *http.Request)
+	// ImportDocumentNumbersFile Import legacy numbers from an Excel file, with a report (E-8, I4)
+	// (POST /api/v1/document-number-imports/file)
+	ImportDocumentNumbersFile(w http.ResponseWriter, r *http.Request, params ImportDocumentNumbersFileParams)
+	// GetNumberImportTemplate The Excel template for importing legacy numbers (E-8, I4)
+	// (GET /api/v1/document-number-imports/template)
+	GetNumberImportTemplate(w http.ResponseWriter, r *http.Request)
 	// ListDocumentNumbers The number register, newest first, with filters (L-2, UC-12, R-NUM-04)
 	// (GET /api/v1/document-numbers)
 	ListDocumentNumbers(w http.ResponseWriter, r *http.Request, params ListDocumentNumbersParams)
@@ -9043,6 +9107,66 @@ func (siw *ServerInterfaceWrapper) ImportDocumentNumbers(w http.ResponseWriter, 
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ImportDocumentNumbers(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ImportDocumentNumbersFile operation middleware
+func (siw *ServerInterfaceWrapper) ImportDocumentNumbersFile(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ImportDocumentNumbersFileParams
+
+	// ------------- Required query parameter "commit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "commit", r.URL.Query(), &params.Commit, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "commit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "commit", Err: err})
+		}
+		return
+	}
+
+	// ------------- Required query parameter "one_set" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "one_set", r.URL.Query(), &params.OneSet, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "one_set"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "one_set", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ImportDocumentNumbersFile(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetNumberImportTemplate operation middleware
+func (siw *ServerInterfaceWrapper) GetNumberImportTemplate(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetNumberImportTemplate(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -13986,6 +14110,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/document-numbers/{documentNumberId}/void", wrapper.VoidDocumentNumber)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/document-numbers/{documentNumberId}/obsolete", wrapper.MakeDocumentNumberObsolete)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/document-numbers/next", wrapper.GetNextDocumentNumber)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/document-number-imports/template", wrapper.GetNumberImportTemplate)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/document-number-imports/file", wrapper.ImportDocumentNumbersFile)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/document-number-imports", wrapper.ImportDocumentNumbers)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/document-types", wrapper.ListDocumentTypes)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/document-types", wrapper.CreateDocumentType)
@@ -16404,6 +16530,98 @@ type ImportDocumentNumbersdefaultJSONResponse struct {
 }
 
 func (response ImportDocumentNumbersdefaultJSONResponse) VisitImportDocumentNumbersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ImportDocumentNumbersFileRequestObject struct {
+	Params ImportDocumentNumbersFileParams
+	Body   *multipart.Reader
+}
+
+type ImportDocumentNumbersFileResponseObject interface {
+	VisitImportDocumentNumbersFileResponse(w http.ResponseWriter) error
+}
+
+type ImportDocumentNumbersFile200JSONResponse NumberImportReport
+
+func (response ImportDocumentNumbersFile200JSONResponse) VisitImportDocumentNumbersFileResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ImportDocumentNumbersFiledefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ImportDocumentNumbersFiledefaultJSONResponse) VisitImportDocumentNumbersFileResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetNumberImportTemplateRequestObject struct {
+}
+
+type GetNumberImportTemplateResponseObject interface {
+	VisitGetNumberImportTemplateResponse(w http.ResponseWriter) error
+}
+
+type GetNumberImportTemplate200ResponseHeaders struct {
+	ContentDisposition *string
+}
+
+type GetNumberImportTemplate200ApplicationoctetStreamResponse struct {
+	Body          io.Reader
+	Headers       GetNumberImportTemplate200ResponseHeaders
+	ContentLength int64
+}
+
+func (response GetNumberImportTemplate200ApplicationoctetStreamResponse) VisitGetNumberImportTemplateResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "application/octet-stream")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	if response.Headers.ContentDisposition != nil {
+		w.Header().Set("Content-Disposition", fmt.Sprint(*response.Headers.ContentDisposition))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type GetNumberImportTemplatedefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response GetNumberImportTemplatedefaultJSONResponse) VisitGetNumberImportTemplateResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
@@ -23762,6 +23980,12 @@ type StrictServerInterface interface {
 	// ImportDocumentNumbers Import legacy numbers of one customer, with a report (E-8, UC-14, R-NUM-06)
 	// (POST /api/v1/document-number-imports)
 	ImportDocumentNumbers(ctx context.Context, request ImportDocumentNumbersRequestObject) (ImportDocumentNumbersResponseObject, error)
+	// ImportDocumentNumbersFile Import legacy numbers from an Excel file, with a report (E-8, I4)
+	// (POST /api/v1/document-number-imports/file)
+	ImportDocumentNumbersFile(ctx context.Context, request ImportDocumentNumbersFileRequestObject) (ImportDocumentNumbersFileResponseObject, error)
+	// GetNumberImportTemplate The Excel template for importing legacy numbers (E-8, I4)
+	// (GET /api/v1/document-number-imports/template)
+	GetNumberImportTemplate(ctx context.Context, request GetNumberImportTemplateRequestObject) (GetNumberImportTemplateResponseObject, error)
 	// ListDocumentNumbers The number register, newest first, with filters (L-2, UC-12, R-NUM-04)
 	// (GET /api/v1/document-numbers)
 	ListDocumentNumbers(ctx context.Context, request ListDocumentNumbersRequestObject) (ListDocumentNumbersResponseObject, error)
@@ -25919,6 +26143,63 @@ func (sh *strictHandler) ImportDocumentNumbers(w http.ResponseWriter, r *http.Re
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ImportDocumentNumbersResponseObject); ok {
 		if err := validResponse.VisitImportDocumentNumbersResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ImportDocumentNumbersFile operation middleware
+func (sh *strictHandler) ImportDocumentNumbersFile(w http.ResponseWriter, r *http.Request, params ImportDocumentNumbersFileParams) {
+	var request ImportDocumentNumbersFileRequestObject
+
+	request.Params = params
+
+	if reader, err := r.MultipartReader(); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode multipart body: %w", err))
+		return
+	} else {
+		request.Body = reader
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ImportDocumentNumbersFile(ctx, request.(ImportDocumentNumbersFileRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ImportDocumentNumbersFile")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ImportDocumentNumbersFileResponseObject); ok {
+		if err := validResponse.VisitImportDocumentNumbersFileResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetNumberImportTemplate operation middleware
+func (sh *strictHandler) GetNumberImportTemplate(w http.ResponseWriter, r *http.Request) {
+	var request GetNumberImportTemplateRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetNumberImportTemplate(ctx, request.(GetNumberImportTemplateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetNumberImportTemplate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetNumberImportTemplateResponseObject); ok {
+		if err := validResponse.VisitGetNumberImportTemplateResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

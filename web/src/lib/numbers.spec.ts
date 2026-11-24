@@ -5,10 +5,10 @@ import {
 	canObsolete,
 	canVoid,
 	lineResultText,
-	notImported,
 	rangesText,
 	registeredText,
 	reservedDays,
+	revisionLabel,
 	skippedText,
 	statusLabel,
 	typeNames
@@ -89,11 +89,13 @@ describe('laporan impor nomor lama (M2.5)', () => {
 		expect(lineResultText({ line: 2, text: 'hello', result: 'invalid' })).toBe(en.numberImportLineInvalid);
 	});
 
-	it('hanya baris yang tidak masuk yang ditampilkan di tabel', () => {
-		const lines = [
-			{ line: 1, text: 'SC-AB-001', result: 'imported' as const },
-			{ line: 2, text: 'SC-AB-001', result: 'duplicate' as const, first_line: 1 }
-		];
-		expect(notImported(lines).map((l) => l.line)).toEqual([2]);
+	it('menulis revisi nomor lama dengan digit revisi (I4)', () => {
+		expect(revisionLabel(5, 2)).toBe('-05');
+		expect(revisionLabel(0, 3)).toBe('-000');
+		expect(revisionLabel(undefined, 2)).toBe('');
+	});
+
+	it('menulis hasil baris impor berkas (I4)', () => {
+		expect(lineResultText({ line: 4, text: 'SH-ZZ-001', result: 'unknown_customer' })).toBe(en.numberImportLineUnknownCustomer);
 	});
 });

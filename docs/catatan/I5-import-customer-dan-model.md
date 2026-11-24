@@ -44,7 +44,7 @@ Urutan kolom bebas, asal judulnya sama dengan template. Sheet boleh hanya salah 
 1. `create-admin`, lalu login sebagai admin.
 2. Nyalakan Migration mode, lalu import akun (I1).
 3. Login sebagai PPAP Engineer, lalu import customer dan model (I5).
-4. Import nomor lama (I4, belum dibangun).
+4. Import nomor lama dari Excel (I4).
 
 ## 4. Cara mengulang dari nol
 

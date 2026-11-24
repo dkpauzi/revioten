@@ -1015,7 +1015,10 @@ export type NumberImportRequest = {
 
 export type NumberImportReport = {
     dry_run: boolean;
-    status: 'reserved' | 'in_use' | 'released' | 'obsolete' | 'void';
+    /**
+     * The status of the pasted import. Missing for a file import, where each line has its status.
+     */
+    status?: 'reserved' | 'in_use' | 'released' | 'obsolete' | 'void';
     /**
      * Numbers imported, or the numbers a dry run would import.
      */
@@ -1033,14 +1036,26 @@ export type NumberImportReport = {
 
 export type NumberImportLine = {
     /**
-     * The line in the pasted text, from 1. Blank lines are left out.
+     * The line in the pasted text, from 1, or the row in the Excel file, from 2. Blank lines are left out.
      */
     line: number;
     /**
-     * One column of the line, without surrounding spaces, or the number that follows (derived).
+     * One column of the line, without surrounding spaces and without the revision, or the number that follows (derived).
      */
     text: string;
-    result: 'imported' | 'existing' | 'duplicate' | 'customer_mismatch' | 'invalid' | 'type_repeated';
+    result: 'imported' | 'existing' | 'duplicate' | 'customer_mismatch' | 'invalid' | 'type_repeated' | 'unknown_customer' | 'inactive_customer' | 'invalid_status';
+    /**
+     * The revision written after the number, for example 5 for SC-KT-001-05. Missing when there was none.
+     */
+    revision?: number;
+    /**
+     * File import only. The customer code of the row.
+     */
+    customer_code?: string;
+    /**
+     * File import only. The status of the row.
+     */
+    status?: 'reserved' | 'released';
     /**
      * For a duplicate, the line where the number first appears.
      */
@@ -1382,6 +1397,10 @@ export type MigratableNumber = {
     number: string;
     status: string;
     document_type: string;
+    /**
+     * The initial revision of the number, for example from a legacy number imported as SC-KT-001-05 (I4).
+     */
+    revision: number;
 };
 
 export type LegacySet = {
@@ -5973,6 +5992,77 @@ export type GetNextDocumentNumberResponses = {
 };
 
 export type GetNextDocumentNumberResponse = GetNextDocumentNumberResponses[keyof GetNextDocumentNumberResponses];
+
+export type GetNumberImportTemplateData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/document-number-imports/template';
+};
+
+export type GetNumberImportTemplateErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type GetNumberImportTemplateError = GetNumberImportTemplateErrors[keyof GetNumberImportTemplateErrors];
+
+export type GetNumberImportTemplateResponses = {
+    /**
+     * The template, with the Numbers and Help sheets.
+     */
+    200: Blob | File;
+};
+
+export type GetNumberImportTemplateResponse = GetNumberImportTemplateResponses[keyof GetNumberImportTemplateResponses];
+
+export type ImportDocumentNumbersFileData = {
+    body: {
+        file?: Blob | File;
+    };
+    path?: never;
+    query: {
+        commit: boolean;
+        one_set: boolean;
+    };
+    url: '/api/v1/document-number-imports/file';
+};
+
+export type ImportDocumentNumbersFileErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ImportDocumentNumbersFileError = ImportDocumentNumbersFileErrors[keyof ImportDocumentNumbersFileErrors];
+
+export type ImportDocumentNumbersFileResponses = {
+    /**
+     * The import report. The lines follow the rows of the file.
+     */
+    200: NumberImportReport;
+};
+
+export type ImportDocumentNumbersFileResponse = ImportDocumentNumbersFileResponses[keyof ImportDocumentNumbersFileResponses];
 
 export type ImportDocumentNumbersData = {
     body: NumberImportRequest;

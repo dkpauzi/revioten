@@ -101,6 +101,8 @@ Tujuannya: pemilik bisa mulai dari database bersih, lalu mengisi data dasar seka
 
 ### I4 · Nomor dokumen yang sudah dipakai (Documents → Numbers → Import legacy numbers)
 
+- **Status:** dibangun 25 November 2026 (catatan `docs/catatan/I4-import-nomor-lama.md`). Kolom berkas: Customer code, PFD, PFMEA, CP, Status (Released atau Reserved). Model tidak ikut di berkas; model tetap dipilih di menu Legacy documents.
+
 Sebagian besar sudah ada:
 - impor nomor tiga kolom, satu set per baris (D-216);
 - status nomor bisa dipilih;
@@ -119,11 +121,11 @@ Jadi revisi memang belum diisi saat import nomor, dan baru diisi di menu migrasi
 - **Asal:** pemilik (24 November 2026) meminta import customer, supaya import lain tidak gagal karena customer belum ada.
 - **Yang butuh customer:** import nomor lama (I4) dan menu Legacy documents. Akun (I1) tidak menunjuk customer: cakupan akun hanya "All customers" atau "Own project group", dan Project Group seseorang dicatat di Positions.
 - **Pemilik:** PPAP Engineer (E-11, D-209), seperti halaman Customers.
-- **Urutan sesudah reset database:** `create-admin`, nyalakan Migration mode, import akun (admin), lalu login sebagai PPAP Engineer, import customer, lalu import nomor lama.
+- **Urutan sesudah reset database:** `create-admin`, import akun (admin; Import butuh Migration mode), lalu login sebagai PPAP Engineer, import customer, lalu import nomor lama.
 
 ## Ringkasan pertanyaan
 
 1. E-143: cara password akun hasil import, opsi (a), (b), atau (c). Dijawab: (b), D-224.
 2. ~~Logo: cetakan ulang revisi lama memakai logo saat dicetak, atau logo saat rilis?~~ Dijawab: saat dicetak (D-221), lalu diganti D-223: logo dibekukan saat rilis.
 3. I3: template import sendiri saja dulu, atau juga membaca Excel bentuk Tokairika?
-4. I4: nomor yang sudah dipakai berarti Released saja, atau juga Reserved?
+4. ~~I4: nomor yang sudah dipakai berarti Released saja, atau juga Reserved?~~ Dijawab: Released atau Reserved, kosong berarti Released.

@@ -498,8 +498,8 @@ paths:
       operationId: importAccounts
       summary: Import work accounts from an Excel file (A-1, I1, D-224)
       description: >-
-        Works only while Migration mode is on. With commit false nothing is stored (Preview). With commit
-        true the new rows are stored in one transaction; invalid rows are reported and left out, and logins
+        With commit false nothing is stored (Preview), and this works at any time. With commit true, which
+        works only while Migration mode is on, the new rows are stored in one transaction; invalid rows are reported and left out, and logins
         that already exist are skipped, so the same file can be uploaded again. Every imported account gets
         the temporary password password123, must change it at the first login, and the temporary password
         expires after 7 days.
@@ -1212,6 +1212,68 @@ paths:
                 $ref: '#/components/schemas/NextDocumentNumber'
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/document-number-imports/template:
+    get:
+      operationId: getNumberImportTemplate
+      summary: The Excel template for importing legacy numbers (E-8, I4)
+      responses:
+        '200':
+          description: The template, with the Numbers and Help sheets.
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/document-number-imports/file:
+    post:
+      operationId: importDocumentNumbersFile
+      summary: Import legacy numbers from an Excel file, with a report (E-8, I4)
+      description: |
+        The Numbers sheet has one set per row: Customer code, PFD, PFMEA, CP,
+        and Status (Released or Reserved; empty means Released). One file may
+        hold several customers; each customer is imported in its own
+        transaction. A number may end with its revision, for example
+        SC-KT-001-05: the number is stored without it, and the revision becomes
+        the initial revision of the number, used by the legacy documents menu.
+        The rules are those of the pasted import. With commit false nothing is
+        saved. Numbers that already exist are skipped, so the same file can be
+        uploaded again.
+      parameters:
+        - name: commit
+          in: query
+          required: true
+          schema:
+            type: boolean
+        - name: one_set
+          in: query
+          required: true
+          schema:
+            type: boolean
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: The import report. The lines follow the rows of the file.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NumberImportReport'
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/document-number-imports:
     post:
       operationId: importDocumentNumbers
@@ -1226,7 +1288,9 @@ paths:
         of its first number. Numbers keep their original text, and the counter of each
         customer code and document type rises to the highest number, so new
         numbers continue after it. Gaps, duplicates, and misaligned sets are
-        reported and never fixed or renumbered. Lines that are not a PFD,
+        reported and never fixed or renumbered. A number may end with its
+        revision, for example SC-KT-001-05 (I4): the number is stored without
+        it, and the revision becomes the initial revision of the number. Lines that are not a PFD,
         PFMEA, or CP number in the current pattern, and numbers with another
         customer's code (R-POR-01), are reported and not imported. With
         `dry_run`, nothing is saved. Repeating an import imports nothing new:
@@ -6394,13 +6458,14 @@ components:
           description: True to get the report without saving anything. Default false.
     NumberImportReport:
       type: object
-      required: [dry_run, status, imported, lines, groups, misaligned]
+      required: [dry_run, imported, lines, groups, misaligned]
       properties:
         dry_run:
           type: boolean
         status:
           type: string
           enum: [reserved, in_use, released, obsolete, void]
+          description: The status of the pasted import. Missing for a file import, where each line has its status.
         imported:
           type: integer
           description: Numbers imported, or the numbers a dry run would import.
@@ -6424,13 +6489,23 @@ components:
       properties:
         line:
           type: integer
-          description: The line in the pasted text, from 1. Blank lines are left out.
+          description: The line in the pasted text, from 1, or the row in the Excel file, from 2. Blank lines are left out.
         text:
           type: string
-          description: One column of the line, without surrounding spaces, or the number that follows (derived).
+          description: One column of the line, without surrounding spaces and without the revision, or the number that follows (derived).
         result:
           type: string
-          enum: [imported, existing, duplicate, customer_mismatch, invalid, type_repeated]
+          enum: [imported, existing, duplicate, customer_mismatch, invalid, type_repeated, unknown_customer, inactive_customer, invalid_status]
+        revision:
+          type: integer
+          description: The revision written after the number, for example 5 for SC-KT-001-05. Missing when there was none.
+        customer_code:
+          type: string
+          description: File import only. The customer code of the row.
+        status:
+          type: string
+          enum: [reserved, released]
+          description: File import only. The status of the row.
         first_line:
           type: integer
           description: For a duplicate, the line where the number first appears.
@@ -6912,7 +6987,7 @@ components:
             $ref: '#/components/schemas/DocumentSummary'
     MigratableNumber:
       type: object
-      required: [id, number, status, document_type]
+      required: [id, number, status, document_type, revision]
       properties:
         id:
           type: string
@@ -6922,6 +6997,9 @@ components:
           type: string
         document_type:
           type: string
+        revision:
+          type: integer
+          description: The initial revision of the number, for example from a legacy number imported as SC-KT-001-05 (I4).
     LegacySet:
       type: object
       required: [customer_id, one_set, documents, model_ids]

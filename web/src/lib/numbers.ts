@@ -58,19 +58,16 @@ const lineResultKeys: Record<NumberImportLine['result'], MessageKey> = {
 	duplicate: 'numberImportLineDuplicate',
 	customer_mismatch: 'numberImportLineMismatch',
 	invalid: 'numberImportLineInvalid',
-	type_repeated: 'numberImportLineTypeRepeated'
+	type_repeated: 'numberImportLineTypeRepeated',
+	unknown_customer: 'numberImportLineUnknownCustomer',
+	inactive_customer: 'numberImportLineInactiveCustomer',
+	invalid_status: 'numberImportLineInvalidStatus'
 };
 
 // lineResultText memberi teks hasil satu baris impor nomor lama (M2.5). Nomor
 // ganda menunjuk baris tempat nomor itu pertama muncul.
 export function lineResultText(line: NumberImportLine): string {
 	return t(lineResultKeys[line.result], { line: String(line.first_line ?? '') });
-}
-
-// notImported mengembalikan baris yang tidak masuk ke register, untuk tabel
-// di laporan impor. Baris yang masuk cukup dihitung.
-export function notImported(lines: NumberImportLine[]): NumberImportLine[] {
-	return lines.filter((l) => l.result !== 'imported');
 }
 
 // rangesText menulis rentang nomor berjalan dari laporan impor, misalnya
@@ -82,4 +79,10 @@ export function rangesText(ranges: SequenceRange[]): string {
 // typeNames menulis nama jenis dokumen, dipisah koma, misalnya "PFD, CP".
 export function typeNames(types: DocumentTypeRef[]): string {
 	return types.map((d) => d.name).join(', ');
+}
+
+// revisionLabel menulis revisi dengan jumlah digit dari master data, misalnya
+// 5 menjadi -05 (R-REV-01). Tanpa revisi menjadi "".
+export function revisionLabel(revision: number | undefined, digits: number): string {
+	return revision === undefined ? '' : '-' + String(revision).padStart(digits, '0');
 }

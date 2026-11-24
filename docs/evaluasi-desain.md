@@ -161,6 +161,7 @@ Mulai 27 Oktober 2026 kode dibangun sejajar dengan UML, dan dipakai untuk menguj
 | E-143 | Password standar untuk akun hasil import | Kontradiksi | D-132, D-85 | Tidak | Diputuskan (D-224) |
 | E-144 | Cetakan dan simbol alur belum sama dengan dokumen Tokairika | Celah | R-PRT-07, D-122, D-161 | Tidak | Diputuskan (D-219 bagian B, D-220 bagian C) |
 | E-145 | Ganti logo sebagai revisi dokumen | Kontradiksi | D-221, D-220, R-SEC-11, M5.10 | Tidak | Diputuskan (D-223) |
+| E-146 | Revisi nomor lama disimpan sebagai revisi awal | Ambigu | I4, M2.4, D-217 | Tidak | Terbuka |
 
 ## Keputusan 4 November 2026
 
@@ -2512,6 +2513,21 @@ Salin blok ini untuk setiap temuan baru.
 - **Menghambat milestone?** Tidak.
 - **Status:** Diputuskan (D-223)
 - **Keputusan pemilik:** 23 November 2026: "Ya, opsi a".
+
+### E-146 · Revisi nomor lama disimpan sebagai revisi awal
+
+- **Tanggal dan milestone:** 25 November 2026, I4.
+- **Jenis:** Ambigu
+- **Rujukan:** I4 opsi b (jawaban pemilik 24 November 2026), M2.4 (revisi awal), D-217 (revisi pindah ke kolomnya di menu migrasi).
+- **Temuan:** Pemilik memilih opsi b: revisi di belakang nomor lama, misalnya SC-KT-001-05, disimpan sebagai "revisi terakhir" nomor itu dan mengisi kolom revisi di menu Legacy documents. Register sudah punya kolom revisi awal (`initial_revision`, M2.4), yang dipakai dokumen saat dibuat dari nomor itu. Untuk nomor lama, revisi terakhir di kertas sama dengan revisi awal dokumen di sistem, jadi kode memakai kolom itu tanpa kolom baru.
+  - Akibatnya, revisi 0 tidak bisa dibedakan dari "tanpa revisi", karena bawaan kolom itu 0. Menu Legacy documents hanya mengisi kolom revisi bila revisinya lebih dari 0.
+  - Sesudah dokumennya dimigrasi, revisi di register tidak diubah lagi; revisi dokumen yang berlaku dibaca dari dokumennya.
+- **Opsi:**
+  - **(a)** Tetap memakai revisi awal (sekarang). Sederhana, tanpa migrasi.
+  - **(b)** Kolom baru `legacy_revision` yang boleh kosong, supaya revisi 0 juga terisi otomatis.
+- **Rekomendasi Claude Code (usulan):** (a). Dokumen lama di revisi 00 jarang, dan kolom revisi tetap bisa diketik.
+- **Menghambat milestone?** Tidak. Asumsi (a) dipakai, ditandai `ASUMSI E-146` di kode.
+- **Status:** Terbuka
 
 ## Usulan desain UI (UX-01 sampai UX-07): dampak ke M0 sampai M3 dan saran
 

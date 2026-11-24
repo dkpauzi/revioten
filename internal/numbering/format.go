@@ -181,6 +181,35 @@ func (p Pattern) Format(prefix, customer, sequence string) string {
 	return r.Replace(p.text)
 }
 
+// SplitRevision memisahkan akhiran revisi dari nomor lama (I4, opsi b),
+// misalnya SC-KT-001-05 menjadi SC-KT-001 dan revisi 5. Akhirannya tanda
+// hubung dan 1 sampai digits angka, dan sisanya harus nomor menurut pola.
+// ASUMSI: -5 dan -05 sama-sama revisi 5. Teks yang sudah nomor utuh, atau
+// yang akhirannya tidak cocok, dikembalikan apa adanya dengan ok false.
+func (p Pattern) SplitRevision(text string, digits int) (number string, revision int, ok bool) {
+	if _, whole := p.Parse(text); whole {
+		return text, 0, false
+	}
+	i := strings.LastIndex(text, "-")
+	if i < 0 {
+		return text, 0, false
+	}
+	suffix := text[i+1:]
+	if len(suffix) == 0 || len(suffix) > digits {
+		return text, 0, false
+	}
+	for _, c := range suffix {
+		if c < '0' || c > '9' {
+			return text, 0, false
+		}
+		revision = revision*10 + int(c-'0')
+	}
+	if _, rest := p.Parse(text[:i]); !rest {
+		return text, 0, false
+	}
+	return text[:i], revision, true
+}
+
 // Parse membaca teks nomor menjadi bagiannya. ok false bila teks tidak
 // mengikuti pola, atau nomor berjalannya tidak sah.
 func (p Pattern) Parse(number string) (Parts, bool) {

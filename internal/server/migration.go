@@ -43,7 +43,7 @@ func (a *apiServer) ListMigratableNumbers(ctx context.Context, req ListMigratabl
 	}
 	out := MigratableNumberList{Items: make([]MigratableNumber, 0, len(list))}
 	for _, n := range list {
-		out.Items = append(out.Items, MigratableNumber{Id: n.ID, Number: n.Number, Status: n.Status, DocumentType: n.DocumentType})
+		out.Items = append(out.Items, MigratableNumber{Id: n.ID, Number: n.Number, Status: n.Status, DocumentType: n.DocumentType, Revision: n.Revision})
 	}
 	return ListMigratableNumbers200JSONResponse(out), nil
 }

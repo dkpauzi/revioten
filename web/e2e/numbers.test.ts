@@ -148,7 +148,7 @@ test('dokumen kontrol mengimpor nomor lama: pratinjau, laporan, lalu impor', asy
 	await page.getByRole('checkbox', { name: en.numberImportOneSet }).uncheck();
 	const lines = ['SH-LG-001', 'SH-LG-002\t\t\tModel A', '', 'SC-LG-001', 'SC-LG-004', 'SC-LG-004', 'SC-NB-001', 'hello'];
 	await page.getByLabel(en.numberImportText).fill(lines.join('\n'));
-	await page.getByRole('button', { name: en.numberImportPreview }).click();
+	await page.getByRole('button', { name: en.numberImportPreview, exact: true }).click();
 
 	// Pratinjau: empat nomor akan masuk; baris lain dilaporkan dengan alasannya.
 	await expect(page.getByRole('status')).toHaveText(en.numberImportPreviewed.replace('{count}', '4'));
@@ -176,6 +176,6 @@ test('dokumen kontrol mengimpor nomor lama: pratinjau, laporan, lalu impor', asy
 	await page.getByLabel(en.numberCustomer, { exact: true }).selectOption({ label: 'LG · Customer LG' });
 	await page.getByLabel(en.numberImportStatus).selectOption({ label: en.numberStatusReleased });
 	await page.getByLabel(en.numberImportText).fill('SH-LG-010');
-	await page.getByRole('button', { name: en.numberImportPreview }).click();
+	await page.getByRole('button', { name: en.numberImportPreview, exact: true }).click();
 	await expect(page.getByRole('status')).toHaveText(en.numberImportPreviewed.replace('{count}', '3'));
 });
