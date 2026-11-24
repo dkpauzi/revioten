@@ -1,0 +1,446 @@
+' U4 · Activity diagram dengan swimlane (draft 0.24, 24 November 2026, sumber brief v1.53 dan kode sampai I5)
+' Alur kerja utama dari sudut orang yang mengerjakannya. Setiap langkah menyebut aturan, keputusan,
+' atau hak yang menjaganya (R-UML-01). Satu file berisi empat diagram:
+'   U4-A  dokumen baru, dari master data sampai rilis, dengan tanda tangan basah
+'   U4-B  dokumen baru, dari master data sampai rilis, dengan tanda tangan digital
+'   U4-C  migrasi dokumen lama
+'   U4-D  revisi dokumen terbit (permintaan perubahan sampai rilis revisi berikutnya)
+' Konvensi paket: langkah dan panah putus-putus berwarna krem adalah tindakan di atas kertas,
+' di luar sistem (tanda tangan basah, hardcopy, pengiriman ke customer).
+' Render dari folder docs/uml:
+'   java -jar plantuml-1.2026.9.jar -tsvg -o export U4-activity.puml
+'   java -jar plantuml-1.2026.9.jar -tpng -o export U4-activity.puml
+
+' ---------------------------------------------------------------------------
+@startuml U4-A-dokumen-baru-tanda-tangan-basah
+skinparam shadowing false
+skinparam ArrowColor #444444
+skinparam ActivityBorderColor #1F4E79
+skinparam ActivityBackgroundColor #FFFFFF
+skinparam SwimlaneTitleFontStyle bold
+title U4-A · Dokumen baru sampai rilis, tanda tangan basah (D-07, R-APR-02, D-59, D-173)
+
+|PPAP Engineer|
+start
+note right
+  Bagian 1 sekali per customer atau model.
+  Master data milik PPAP Engineer, hak E-11 (D-209).
+  Admin hanya melihat.
+end note
+:Daftarkan Project Group dan customer
+(Customers, atau Import customers and models, I5).
+Atur kolom **Signatures** = Wet only atau Digital allowed (D-198)
+dan **Customer submission** (D-207);
+:Daftarkan group model, model, dan part number
+(Models, atau sheet Models di berkas I5; D-42);
+:Pastikan proses ada di master proses
+(Processes, nama tetap dan alias, D-06, D-213);
+:Catat pemegang jabatan dan rute default customer
+(Positions, Approval routes; D-46, D-47, D-54);
+:Susun process template PFMEA dan CP per proses,
+lalu **Publish version N** (R-TPL-05, D-214: tanpa poin PFD baru);
+:Pilih form set customer (Form sets, D-133);
+
+|PPAP Engineer Supervisor|
+:Terbitkan form set dan format bermetode AP
+(hak V-3; penyusun draft tidak menerbitkan sendiri, D-139, D-148);
+
+|PPAP Engineer|
+note right
+  Bagian 2 per set dokumen
+  (PFD, PFMEA, CP satu nomor berjalan).
+end note
+:Numbers: **Register as a set** (hak E-1, M2.4);
+
+|Sistem|
+:Alokasikan tiga nomor dalam satu transaksi
+(baris penghitung, tanpa lubang, R-NUM-03).
+Status nomor **Reserved**, nomor yang dilewati **Skipped**;
+
+|PPAP Engineer|
+:Documents: pilih customer, nomor Reserved, dan model,
+lalu **Make document** untuk PFD, PFMEA, dan CP (M4.1);
+
+|Sistem|
+:Buat dokumen: nomor menjadi **In use**,
+draft revisi awal, versi form set terbit terakhir,
+rute default customer (rute lain wajib alasan, D-47);
+
+|PPAP Engineer|
+:Isi PFD langsung per dokumen: nomor langkah, proses,
+Flow Symbol, NG Disposition (D-211, D-214);
+:Di PFMEA dan CP tekan **From PFD**,
+centang langkah, **Compose the chosen steps** (C4);
+
+|Sistem|
+:Rakit baris dari versi terbit process template setiap proses.
+Langkah tanpa template mendapat satu baris "--" (E-136).
+Isi Relevant Document dari master dokumen terkait (D-130).
+Peringatan bila satu proses dipakai di dua langkah (D-213);
+
+|PPAP Engineer|
+:Ubah sel di tabel, periksa tab **Check**
+PFMEA dan CP berdampingan (M4.3, M4.9);
+:Periksa **Preview** halaman per halaman
+(Process Flow dan konektor dari PFD, D-122, D-211);
+:Tekan **Ready to print** di Revisions (D-202);
+:**Print** tujuan **For signature**, Excel atau PDF (hak E-5);
+
+|Sistem|
+:Isi tanggal rilis = tanggal cetak (D-59).
+Bentuk slot tanda tangan dari rute dokumen (D-46),
+catat cetakan dengan hash isi (M6.6);
+
+|#FFF3E0|Penanda tangan (kertas)|
+#FFF3E0;line.dashed:Tanda tangan basah berurutan menurut rute:
+Prepared, Checked, lalu Approved
+(NPI Manager, QA QC Manager, sampai GM bila rutenya begitu;
+R-APR-07, D-49, D-203);
+-[dashed]-> hardcopy bertanda tangan;
+
+|PPAP Engineer|
+:Pindai hardcopy, unggah scan di **Revisions**
+(hak E-7; mengunggah tidak dihitung menyusun, D-166);
+
+|PPAP Engineer lain (dokumen kontrol)|
+:**Record release of revision N** (hak E-7);
+
+|Sistem|
+if (Scan ada dan pencatat bukan penyusun?\nR-APR-02, D-166, D-173) then (ya)
+  :Bekukan isi sebagai snapshot dengan SHA-256,
+  termasuk langkah PFD untuk CP dan hash logo
+  (R-REV-02, D-212, D-223).
+  Dokumen dan nomor menjadi **Released**;
+else (tidak)
+  :Tolak dengan pesan dan request ID (R-API-13);
+  stop
+endif
+:Mulai jam review berkala 36 bulan (D-196);
+
+|PPAP Engineer|
+if (Customer wajib submission?\nD-207) then (ya)
+  #FFF3E0;line.dashed:Kirim dokumen ke customer;
+  :Catat pengiriman, hasil customer, dan bukti
+  di **Submission** (hak E-7);
+else (tidak)
+endif
+:Cetak **Controlled copy** bila perlu (M6.4);
+stop
+@enduml
+
+' ---------------------------------------------------------------------------
+@startuml U4-B-dokumen-baru-tanda-tangan-digital
+skinparam shadowing false
+skinparam ArrowColor #444444
+skinparam ActivityBorderColor #1F4E79
+skinparam ActivityBackgroundColor #FFFFFF
+skinparam SwimlaneTitleFontStyle bold
+title U4-B · Dokumen baru sampai rilis, tanda tangan digital (D-198, D-203, D-204)
+
+|PPAP Engineer|
+start
+:Siapkan master data sekali per customer atau model,
+sama seperti U4-A bagian 1:
+customer dan Project Group, model dan part number,
+proses, pemegang jabatan, rute default, process template,
+form set (hak E-11, D-209).
+Kolom **Signatures** customer = **Digital allowed** (D-198);
+
+|PPAP Engineer Supervisor|
+:Terbitkan form set (hak V-3, D-139);
+
+|PPAP Engineer|
+:Numbers: **Register as a set** (E-1, M2.4);
+
+|Sistem|
+:Alokasikan nomor PFD, PFMEA, CP: **Reserved** (R-NUM-03);
+
+|PPAP Engineer|
+:**Make document** untuk ketiga jenis (M4.1);
+
+|Sistem|
+:Nomor **In use**, draft revisi awal, rute default (D-47);
+
+repeat
+  |PPAP Engineer|
+  :Isi PFD, rakit PFMEA dan CP **From PFD**,
+  ubah sel, periksa tab **Check** dan **Preview**
+  (D-211, D-214, M4.9; rincian di U4-A);
+  :Tekan **Signature** di toolbar draft (hak E-5).
+  Pilih **Prepared**: pengirim atau Project Leader tingkat Leader.
+  Pilih **Checked**: Project Leader tingkat Leader atau Supervisor;
+  Supervisor otomatis bila Leader menjadi Prepared (D-203).
+  Slot Approved terisi pemegang jabatan rute (D-115).
+  Ketik ulang password, **Send for digital signature**;
+
+  |Sistem|
+  if (Customer **Wet only**?) then (ya)
+    :Tolak: cetak untuk tanda tangan basah (U4-A);
+    stop
+  else (tidak)
+  endif
+  :Bekukan isi draft dengan SHA-256 dan bekukan rute.
+  Tanggal rilis = tanggal kirim, WIB, tidak berubah lagi (D-204).
+  Kunci baris, bagian, header, dan rute (trigger database).
+  Email ke penanda tangan slot pertama (D-194);
+
+  repeat
+    |Penanda tangan slot yang ditunggu|
+    :Documents, **Signatures**, **Open and sign**.
+    Periksa isi yang dibekukan, **Compare revisions** bila perlu;
+    if (Isi benar?) then (ya)
+      :Ketik ulang password, **Sign** (hak S-1, L-4);
+      |Sistem|
+      :Tambah tanda tangan (append-only, tidak bisa diubah).
+      Password salah dihitung seperti gagal login.
+      Email ke penanda tangan slot berikutnya (D-49);
+    else (tidak)
+      |Penanda tangan slot yang ditunggu|
+      :**Reject** dengan alasan wajib;
+      |Sistem|
+      :Tutup permintaan: **rejected**.
+      Kosongkan tanggal rilis, buka kunci draft,
+      email ke pengirim;
+      break
+    endif
+  repeat while (Masih ada slot berikutnya?) is (ya) not (semua sudah)
+  note right
+    Selama belum lengkap, pengirim boleh **Withdraw**:
+    permintaan **withdrawn**, tanggal rilis dikosongkan,
+    draft terbuka lagi.
+  end note
+  |Sistem|
+repeat while (Permintaan ditolak atau ditarik?) is (ya, perbaiki draft) not (lengkap)
+
+|Sistem|
+:Permintaan **completed**.
+Email ke pencatat rilis (D-194);
+
+|PPAP Engineer lain (dokumen kontrol)|
+:Documents, **Signatures**, tab siap dirilis,
+lalu **Record release** tanpa scan (hak E-7);
+
+|Sistem|
+if (Permintaan lengkap, hash cocok,\npencatat bukan penyusun?\nR-APR-02, D-166) then (ya)
+  :Snapshot dengan SHA-256 (R-REV-02, D-212, D-223).
+  Dokumen dan nomor **Released**.
+  Mulai jam review 36 bulan (D-196);
+else (tidak)
+  :Tolak dengan pesan dan request ID (R-API-13);
+  stop
+endif
+
+|PPAP Engineer|
+:Cetakan menulis "Signed digitally <tanggal>" dan nama
+di setiap slot. **For signature** tetap bisa untuk cetak basah,
+tanpa keterangan itu (D-198);
+if (Customer wajib submission?\nD-207) then (ya)
+  #FFF3E0;line.dashed:Kirim dokumen ke customer;
+  :Catat pengiriman dan hasil di **Submission** (E-7);
+else (tidak)
+endif
+stop
+@enduml
+
+' ---------------------------------------------------------------------------
+@startuml U4-C-migrasi-dokumen-lama
+skinparam shadowing false
+skinparam ArrowColor #444444
+skinparam ActivityBorderColor #1F4E79
+skinparam ActivityBackgroundColor #FFFFFF
+skinparam SwimlaneTitleFontStyle bold
+title U4-C · Migrasi dokumen lama (R-MIG-01 sampai R-MIG-07, M7, D-215 sampai D-217)
+
+|Admin|
+start
+:Admin, **Settings**: nyalakan **Migration mode**
+(bawaannya mati, E-115);
+
+|PPAP Engineer (pemasuk)|
+:Documents, **Legacy documents**, pilih customer (hak E-10, D-215);
+
+|Sistem|
+:**Ready to migrate?** memeriksa mode migrasi,
+form set terbit, model, dan proses;
+
+|PPAP Engineer (pemasuk)|
+if (Semua prasyarat siap?) then (belum)
+  :Lengkapi master data: customer dan model (Import I5),
+  proses, process template, form set (lihat U4-A bagian 1);
+else (siap)
+endif
+if (Nomor lama sudah di register Excel?) then (ya, banyak)
+  :Numbers, **Import legacy numbers**: tiga kolom,
+  satu set per baris (hak E-8, D-216, M2.5);
+else (tidak)
+endif
+:**Enter one set**. Bawaannya **One set**: cukup satu nomor,
+misalnya SH-TR-020-02 (revisi pindah ke kolomnya, D-217).
+PFMEA dan CP mengikuti nomor berjalan; tanpa centang,
+setiap nomor diketik (tidak sejajar, atau satu dokumen saja).
+Isi model, revisi saat ini, tanggal berlaku,
+dan nama di hardcopy;
+
+|Sistem|
+if (Pola nomor, kode customer, dan batch sesuai?\nD-216, D-217) then (ya)
+  :Dalam satu transaksi: daftarkan nomor yang belum ada
+  sebagai **Released** dalam satu batch, lalu buat dokumen
+  sebagai draft di revisi hardcopy, asal **migrated** (M7.1).
+  Papan status: **Empty**;
+else (tidak)
+  :Tolak per kolom, tanpa meninggalkan nomor;
+  stop
+endif
+
+repeat
+  |PPAP Engineer (pemasuk)|
+  :Di halaman dokumen: ketik isi PFD, rakit PFMEA dan CP
+  **From PFD** atau ketik (C4; impor isi dari Excel ditunda, D-151);
+  :Isi **Revision history from the legacy table**
+  sebagai teks (M7.2);
+  :**Compare with the legacy Excel**: berkas .xlsx hanya
+  dibandingkan, tidak diimpor dan tidak disimpan (M7.3, E-112);
+  :**Link rows to process templates**: sistem mengusulkan
+  menurut kemiripan teks, orang yang mengonfirmasi (M7.4, E-114);
+  #FFF3E0;line.dashed:Unggah scan hardcopy bila ada (opsional, D-186);
+
+  |Sistem|
+  :Papan status: **Waiting for check**;
+
+  |PPAP Engineer lain (pemverifikasi)|
+  #FFF3E0;line.dashed:Bandingkan isi di layar dengan hardcopy;
+repeat while (Ada selisih?) is (ya, pemasuk membetulkan) not (sama)
+
+|PPAP Engineer lain (pemverifikasi)|
+:**Verify against the hard copy**,
+menit usaha opsional (M7.5, M7.6);
+
+|Sistem|
+if (Pemverifikasi bukan pemasuk?\nR-SEC-11, CHECK database) then (ya)
+  :Revisi terbit sebagai **Released (migrated)**
+  dengan snapshot dan SHA-256. Baseline tidak bisa diubah.
+  Jam review berkala mulai dari tanggal berlaku (D-196);
+else (tidak)
+  :Tolak: empat mata;
+  stop
+endif
+:Dasbor menjumlahkan usaha migrasi (M7.7);
+
+|Admin|
+:Matikan **Migration mode** sesudah migrasi selesai;
+note right
+  Revisi berikutnya dokumen migrasi
+  mengikuti alur U4-D.
+end note
+stop
+@enduml
+
+' ---------------------------------------------------------------------------
+@startuml U4-D-revisi-dokumen
+skinparam shadowing false
+skinparam ArrowColor #444444
+skinparam ActivityBorderColor #1F4E79
+skinparam ActivityBackgroundColor #FFFFFF
+skinparam SwimlaneTitleFontStyle bold
+title U4-D · Revisi dokumen terbit (R-CHG-01 sampai R-CHG-05, R-REV-01, R-REV-02, M5)
+
+|PPAP Engineer (pemohon)|
+start
+split
+  :Pemicu manual: PP, customer claim, ECR,
+  temuan audit (D-113);
+  :Documents, **Changes**, pilih customer.
+  Isi pemicu, jenis perubahan, kategori 4M, alasan, rujukan,
+  centang dokumen terdampak, **Submit the change** (hak E-3, M5.1);
+split again
+  :**3-year review**: **Start review**, lalu **Changes needed**
+  (pemicu Periodic review, D-196, D-202);
+split again
+  :Process templates: terbitkan versi baru, **Propagate version N**,
+  **Preview** lalu propagasi (M5.8);
+split again
+  :Changes: **Submit a retroactive SQAM change**
+  (semua dokumen aktif customer, M5.10)
+  atau **Submit the logo change** (D-223);
+split again
+  :Pemilik target yokoten memilih **Apply** atau **Adapt** (M5.9);
+split again
+  :Aplikasi lain mengusulkan perubahan
+  lewat /integration/v1 (changes:propose, R-API-07);
+end split
+
+|Sistem|
+:Simpan perubahan berstatus **Submitted** dengan nomor CHG-nnnn,
+mekanisme dan pemicunya (D-113).
+Email ke verifikator customer itu (D-194);
+
+|PPAP Engineer (pemohon)|
+:Tambah lampiran (paling besar 20 MB, dipindai antivirus
+bila diatur, M5.2, M8.2) dan isi **Impact checklist**
+(PFD, PFMEA, CP, WI, standar inspeksi; M5.7);
+
+|Verifikator|
+note right
+  PPAP Engineer Supervisor, atau Project Leader yang memegang
+  jabatan Project Engineer atau Project Leader Project Group
+  customer, atau APQP/PPAP Controller (hak V-1, D-71).
+end note
+:Baca perubahan, tulis catatan (wajib);
+if (Pemohon sendiri?\nR-SEC-11) then (ya)
+  :Sistem menolak: pemohon tidak memverifikasi sendiri;
+  stop
+else (bukan)
+endif
+if (Perubahan diterima?) then (Reject)
+  |Sistem|
+  :Perubahan **Rejected**, final (E-100).
+  Email ke pemohon;
+  stop
+else (Accept)
+  |Sistem|
+  :Perubahan **Accepted**. Untuk setiap dokumen terdampak:
+  draft terbuka dipakai bersama, atau revisi berikutnya dibuka
+  sebagai draft. Revisi yang berlaku tidak berubah
+  (R-CHG-03, M5.4). Isi usulan propagasi atau aplikasi
+  ditulis ke draft;
+endif
+
+|PPAP Engineer (pemohon)|
+:Ubah isi draft. Baris yang berubah diberi tanda revisi
+yang berlaku saja; riwayat lengkap tetap di snapshot dan diff
+(D-121, R-REV-09);
+:**Compare revisions** dengan revisi terbit, bisa per proses (M5.6);
+:**Ready to print** (D-202);
+
+|Sistem|
+if (Customer Digital allowed\ndan dipilih digital?) then (digital)
+  :Kirim, tanda tangan berurutan, rilis tanpa scan,
+  seperti U4-B (D-198, D-203, D-204);
+else (basah)
+  :Cetak For signature, tanda tangan basah, unggah scan,
+  seperti U4-A (D-59, D-173);
+endif
+
+|PPAP Engineer lain (dokumen kontrol)|
+:**Record release of revision N** (E-7, bukan penyusun, D-166);
+
+|Sistem|
+:Snapshot dan SHA-256 revisi baru (R-REV-02).
+Revisi lama menjadi **Superseded** dan tetap tersimpan.
+Jam review berkala mulai lagi (D-196).
+Baris di Submission control (D-207);
+
+|PPAP Engineer (pemohon)|
+if (Perubahan perlu disebar ke model lain?) then (ya)
+  :**Spread to other models**: pilih customer, group model,
+  atau model; saring proses atau teks; **Find targets**;
+  buat yokoten YKT-nnnn (M5.9, D-40, D-118);
+  |Sistem|
+  :Papan status per model. Pemilik target memutuskan
+  Apply, Adapt, atau Not applicable (alasan wajib).
+  Apply dan Adapt membuat perubahan baru bermekanisme
+  yokoten, yang mulai lagi dari awal diagram ini;
+else (tidak)
+endif
+stop
+@enduml
