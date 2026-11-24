@@ -2210,7 +2210,7 @@ export const id: Messages = {
 	accountImportIntro: 'Buat banyak akun kerja sekaligus dari berkas Excel. Login yang sudah ada dilewati, jadi berkas yang sama bisa diunggah lagi, misalnya sesudah database direset.',
 	accountImportBack: 'Kembali ke Akun',
 	accountImportNoPermission: 'Hanya admin yang mengimpor akun.',
-	accountImportMigrationOff: 'Migration mode mati. Nyalakan di Pengaturan sebelum mengimpor akun.',
+	accountImportMigrationOff: 'Migration mode mati. Pratinjau berkas tetap bisa; nyalakan Migration mode di Pengaturan sebelum menekan Import.',
 	accountImportTemplate: 'Unduh template',
 	accountImportTemplateHint: 'Sheet Roles memuat nama peran, dan sheet Help menjelaskan setiap kolom.',
 	accountImportFillHint: 'Isi satu akun per baris di sheet Accounts: Name, Employee number, Login, Email, Roles (dipisah koma), dan Scope (All customers, atau kosong).',

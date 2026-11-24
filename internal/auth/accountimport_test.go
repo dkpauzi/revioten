@@ -88,9 +88,12 @@ func TestImportAccounts(t *testing.T) {
 		t.Errorf("PPAP Engineer mengimpor akun: %v", err)
 	}
 
-	// Migration mode mati: ditolak, juga untuk Preview.
-	if _, err := s.ImportAccounts(ctx, admin, book, false); !slices.Equal(problemCodes(t, err), []string{"migration_mode:not_allowed"}) {
-		t.Errorf("tanpa Migration mode: %v", err)
+	// Migration mode mati: Preview boleh (tidak menyimpan), Import ditolak.
+	if r, err := s.ImportAccounts(ctx, admin, book, false); err != nil || r.Committed || r.New != 3 {
+		t.Errorf("Preview tanpa Migration mode: %+v, %v", r, err)
+	}
+	if _, err := s.ImportAccounts(ctx, admin, book, true); !slices.Equal(problemCodes(t, err), []string{"migration_mode:not_allowed"}) {
+		t.Errorf("Import tanpa Migration mode: %v", err)
 	}
 	setMigrationMode(t, s, true)
 

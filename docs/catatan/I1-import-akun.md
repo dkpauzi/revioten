@@ -20,7 +20,7 @@
 | Bagian | Isi |
 |---|---|
 | Migrasi 00059 | Kolom `accounts.temporary_password_expires_at`. Kolom ini kosong untuk akun lain. `SetPasswordHash` mengosongkannya saat password diganti, dan `ResetAccountPassword` mengosongkannya saat admin mereset. |
-| Layanan | `internal/auth/accountimport.go`. **`AccountImportTemplate`** membuat berkas Excel dengan sheet Accounts (judul kolom saja), Roles (peran yang bisa diberikan), dan Help. **`ImportAccounts`** membaca sheet pertama: Preview tanpa menyimpan, atau Import dalam satu transaksi. Login yang sudah ada dilewati, dan baris yang salah dilaporkan lalu tidak diimpor. Hanya admin (A-1), dan hanya saat Migration mode menyala. |
+| Layanan | `internal/auth/accountimport.go`. **`AccountImportTemplate`** membuat berkas Excel dengan sheet Accounts (judul kolom saja), Roles (peran yang bisa diberikan), dan Help. **`ImportAccounts`** membaca sheet pertama: Preview tanpa menyimpan, atau Import dalam satu transaksi. Login yang sudah ada dilewati, dan baris yang salah dilaporkan lalu tidak diimpor. Hanya admin (A-1). Preview bisa kapan saja; Import hanya saat Migration mode menyala (diubah 25 November 2026). |
 | Login | Password sementara yang sudah lewat batasnya ditolak dengan pesan gagal login biasa. |
 | Email | Aturan email dipindah ke `problem.Email`, supaya halaman akun dan import memakai aturan yang sama. |
 | API | `GET /api/v1/accounts/import-template` dan `POST /api/v1/accounts/import?commit=` (multipart, kolom `file`). `AccountInfo` mendapat `temporary_password_expires_at`. |
@@ -59,7 +59,7 @@ Urutan kolom bebas, asal judulnya sama dengan template. Batasnya 5 MB dan 500 ak
 
 ## 5. Asumsi
 
-- **Preview juga butuh Migration mode,** supaya tombol dan pesannya sederhana.
+- **Preview tidak butuh Migration mode** (keputusan pemilik 25 November 2026, "Yes, allow Preview"): Preview tidak menyimpan apa pun, jadi berkas bisa diperiksa dulu. Import tetap butuh Migration mode. Awalnya Preview juga dikunci.
 - **Baris yang salah tidak menghentikan import.** Baris yang benar tetap disimpan, seperti pada import nomor lama (M2.5). Perbaiki berkasnya, lalu unggah lagi; akun yang sudah dibuat akan dilewati.
 - **Hanya akun kerja.** Akun admin tetap dibuat satu per satu atau lewat `create-admin`.
 - **Login yang sudah ada tidak diperiksa ulang.** Nama, peran, dan email akun lama tidak dibandingkan dan tidak diubah.

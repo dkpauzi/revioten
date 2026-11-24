@@ -3,7 +3,8 @@
 	// mengisinya di Excel, lalu mengunggahnya: Preview melaporkan setiap baris
 	// tanpa menyimpan, Import menyimpan baris yang benar. Login yang sudah ada
 	// dilewati, jadi berkas yang sama bisa dipakai lagi sesudah database
-	// direset. Hanya saat Migration mode menyala; server tetap memeriksanya.
+	// direset. Preview bisa kapan saja; Import hanya saat Migration mode
+	// menyala, dan server tetap memeriksanya.
 	import { onMount } from 'svelte';
 	import { getSystemSettings, importAccounts, listRoles } from '#lib/api/client.ts';
 	import type { AccountImport, AccountImportRow, Role } from '#lib/api/gen/index.ts';
@@ -81,7 +82,7 @@
 	<p>{t('numbersLoading')}</p>
 {:else}
 	{#if !migrationMode}
-		<p class="error" role="alert">{t('accountImportMigrationOff')}</p>
+		<p class="hint" data-migration="off">{t('accountImportMigrationOff')}</p>
 	{/if}
 	<ol class="steps">
 		<li><a href="/api/v1/accounts/import-template" download>{t('accountImportTemplate')}</a> · {t('accountImportTemplateHint')}</li>
@@ -104,7 +105,7 @@
 			/>
 		</div>
 		<div class="row">
-			<button type="submit" disabled={busy || !migrationMode}>{t('accountImportPreview')}</button>
+			<button type="submit" disabled={busy}>{t('accountImportPreview')}</button>
 			{#if report && !report.committed && report.new > 0}
 				<button type="button" class="primary" disabled={busy || !migrationMode} onclick={() => send(true)}>{t('accountImportRun')}</button>
 			{/if}

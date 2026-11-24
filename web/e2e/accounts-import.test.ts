@@ -1,5 +1,5 @@
-// Test E2E I1 (D-224): admin mengimpor akun dari berkas Excel. Hanya saat
-// Migration mode menyala; Preview tidak menyimpan; baris yang salah
+// Test E2E I1 (D-224): admin mengimpor akun dari berkas Excel. Preview bisa
+// kapan saja dan tidak menyimpan; Import hanya saat Migration mode menyala; baris yang salah
 // dilaporkan; akun hasil import login dengan password123 lalu wajib ganti.
 // Nama di berkas fixture fiktif.
 import { expect, test, type Page } from '@playwright/test';
@@ -22,9 +22,14 @@ test('I1: admin mengimpor akun dari Excel, dan akun baru login dengan password12
 	await logIn(page);
 	await openFromMenu(page, en.navGroupAdmin, en.navAccountImport);
 	await expect(page.getByRole('heading', { name: en.accountImportTitle, level: 1 })).toBeVisible();
-	// Migration mode mati: tombol Preview nonaktif.
-	await expect(page.getByRole('alert')).toHaveText(en.accountImportMigrationOff);
-	await expect(page.getByRole('button', { name: en.accountImportPreview })).toBeDisabled();
+	// Migration mode mati: Preview tetap bisa, tombol Import nonaktif.
+	await expect(page.getByText(en.accountImportMigrationOff)).toBeVisible();
+	await page.getByLabel(en.accountImportFile).setInputFiles(fixture);
+	await page.getByRole('button', { name: en.accountImportPreview }).click();
+	await expect(page.getByRole('status')).toHaveText(
+		en.accountImportPreviewSummary.replace('{new}', '2').replace('{existing}', '0').replace('{invalid}', '1')
+	);
+	await expect(page.getByRole('button', { name: en.accountImportRun })).toBeDisabled();
 	// Template bisa diunduh.
 	const download = page.waitForEvent('download');
 	await page.getByRole('link', { name: en.accountImportTemplate }).click();

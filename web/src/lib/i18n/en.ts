@@ -2212,7 +2212,7 @@ export const en = {
 	accountImportIntro: 'Create many work accounts at once from an Excel file. Logins that already exist are skipped, so you can upload the same file again, for example after the database was reset.',
 	accountImportBack: 'Back to Accounts',
 	accountImportNoPermission: 'Only the admin imports accounts.',
-	accountImportMigrationOff: 'Migration mode is off. Switch it on in Settings before importing accounts.',
+	accountImportMigrationOff: 'Migration mode is off. You can preview a file now; switch Migration mode on in Settings before pressing Import.',
 	accountImportTemplate: 'Download the template',
 	accountImportTemplateHint: 'The Roles sheet lists the role names, and the Help sheet explains every column.',
 	accountImportFillHint: 'Fill in one account per row in the Accounts sheet: Name, Employee number, Login, Email, Roles (separated by commas), and Scope (All customers, or empty).',

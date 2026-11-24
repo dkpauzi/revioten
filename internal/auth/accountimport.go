@@ -8,7 +8,8 @@ package auth
 //
 // Semua akun hasil import memakai password sementara bersama password123.
 // Supaya password yang mudah ditebak ini tidak terbawa ke pemakaian
-// sungguhan, import hanya jalan saat Migration mode menyala, setiap akun
+// sungguhan, Import hanya jalan saat Migration mode menyala (Preview boleh
+// kapan saja), setiap akun
 // wajib mengganti password saat login pertama, dan password sementaranya
 // kedaluwarsa 7 hari bila tidak dipakai. Daftar password terlarang (D-132)
 // tetap berlaku untuk password yang dipilih pemiliknya.
@@ -169,13 +170,17 @@ func (s *Service) ImportAccounts(ctx context.Context, actor access.Actor, data [
 	if err := s.authz.Authorize(ctx, actor, access.ManageUsers, access.Resource{}); err != nil {
 		return AccountImport{}, err
 	}
-	on, err := s.q.GetMigrationMode(ctx)
-	if err != nil {
-		return AccountImport{}, fmt.Errorf("membaca mode migrasi: %w", err)
-	}
-	if !on {
-		return AccountImport{}, fileProblem("migration_mode", problem.NotAllowed,
-			"Migration mode is off. Switch it on in Settings before importing accounts.")
+	// Preview tidak menyimpan apa pun, jadi boleh saat Migration mode mati;
+	// hanya Import yang butuh Migration mode (keputusan pemilik 25 November 2026).
+	if commit {
+		on, err := s.q.GetMigrationMode(ctx)
+		if err != nil {
+			return AccountImport{}, fmt.Errorf("membaca mode migrasi: %w", err)
+		}
+		if !on {
+			return AccountImport{}, fileProblem("migration_mode", problem.NotAllowed,
+				"Migration mode is off. Switch it on in Settings before importing accounts.")
+		}
 	}
 	rows, err := readAccountRows(data)
 	if err != nil {
