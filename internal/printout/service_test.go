@@ -296,9 +296,19 @@ func TestFlowFrozenAtRelease(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	product := doctest.FieldID(t, e.CPFormat, "Product Characteristics")
-	if _, err := e.Docs.AddRow(ctx, e.Author, cp.ID, document.NewRow{OperationNumber: "10", ProcessID: e.ProcessSMT, Content: map[string]any{product: "Solder paste height"}}); err != nil {
+	// Lompatan (D-227, migrasi 00060): langkah 20 kembali ke 10 bila No.
+	if field["jump_to"] == "" || field["jump_label"] == "" {
+		t.Fatalf("PFD v1 tanpa field lompatan: %v", field)
+	}
+	if _, err := e.Docs.AddRow(ctx, e.Author, pfd.ID, document.NewRow{OperationNumber: "20", ProcessID: e.ProcessSMT,
+		Content: map[string]any{field["flow_symbol"]: "decision", field["jump_to"]: "10", field["jump_label"]: "no"}}); err != nil {
 		t.Fatal(err)
+	}
+	product := doctest.FieldID(t, e.CPFormat, "Product Characteristics")
+	for _, r := range []struct{ op, process string }{{"10", e.ProcessSMT}, {"20", e.ProcessSMT}} {
+		if _, err := e.Docs.AddRow(ctx, e.Author, cp.ID, document.NewRow{OperationNumber: r.op, ProcessID: r.process, Content: map[string]any{product: "Solder paste height"}}); err != nil {
+			t.Fatal(err)
+		}
 	}
 	dcc := doctest.NewActor(t, e.Pool, "dcc.uji", "work", doctest.All(access.RoleDocumentControl))
 	doctest.AttachScan(t, e.Pool, cp.ID)
@@ -319,6 +329,9 @@ func TestFlowFrozenAtRelease(t *testing.T) {
 	flow := string(view.Pages[0].Flow)
 	if !strings.Contains(flow, "SCRAP") || !strings.Contains(flow, `data-step="10"`) {
 		t.Errorf("alur revisi terbit harus memakai PFD saat rilis: %s", flow)
+	}
+	if !strings.Contains(flow, `data-jump-label="No"`) || strings.Count(flow, `data-connector="A"`) != 2 {
+		t.Errorf("lompatan 20 ke 10 harus tercetak dengan konektor A: %s", flow)
 	}
 }
 

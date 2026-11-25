@@ -24,6 +24,8 @@ function optionLabel(field: FormatField | undefined, value: unknown): string {
 export function diagramOf(rows: DocumentRow[], format: Pick<FormatVersion, 'fields'>): { nodes: DiagramNode[]; edges: DiagramEdge[] } {
 	const symbolField = fieldByKey(format, 'flow_symbol');
 	const ngField = fieldByKey(format, 'ng_disposition');
+	const jumpField = fieldByKey(format, 'jump_to');
+	const labelField = fieldByKey(format, 'jump_label');
 	const nodes: DiagramNode[] = [];
 	const edges: DiagramEdge[] = [];
 	rows.forEach((r, i) => {
@@ -40,6 +42,13 @@ export function diagramOf(rows: DocumentRow[], format: Pick<FormatVersion, 'fiel
 		const next = rows[i + 1];
 		if (next) {
 			edges.push({ id: `${r.id}-${next.id}`, source: r.id, target: next.id, ng: false });
+		}
+		// Lompatan (D-227): panah ke baris pertama langkah tujuan.
+		const jump = jumpField ? String(r.content[jumpField.id] ?? '').trim() : '';
+		const target = jump ? rows.find((o) => o.id !== r.id && (o.operation_number ?? '').trim() === jump) : undefined;
+		if (target) {
+			const label = labelField ? optionLabel(labelField, r.content[labelField.id] ?? '') : '';
+			edges.push({ id: `${r.id}-jump-${target.id}`, source: r.id, target: target.id, ng: false, ...(label ? { label } : {}) });
 		}
 	});
 	return { nodes, edges };

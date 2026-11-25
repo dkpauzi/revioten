@@ -6,8 +6,9 @@ package printout
 //
 // Bentuknya mengikuti CP SC-TR-020-04 (bagian B, E-144): tujuan NG berupa
 // kotak di kiri alur (SCRAP dan NCP berbentuk predefined process, REWORK
-// kotak proses biasa) yang disambung garis siku dengan kepala panah; label OK
-// hanya di bawah belah ketupat; garis alur berpanah dari simbol ke simbol.
+// kotak proses biasa), sejajar dengan simbolnya dan disambung panah lurus ke
+// kiri (D-227); label OK hanya di bawah belah ketupat; garis alur berpanah
+// dari simbol ke simbol. Sisi kanan alur dipakai lompatan (flowjump.go).
 
 import (
 	"fmt"
@@ -25,6 +26,10 @@ const (
 	connEdgeMM = 3.2 // pusat konektor dari tepi atas atau bawah area baris
 	ngBoxWMM   = 16.0
 	ngBoxHMM   = 5.5
+	// minFlowWidthMM: lebar kolom Process Flow paling kecil untuk kotak NG di
+	// kiri (12 mm) dan lompatan di kanan (garis dan konektor), D-227.
+	minFlowWidthMM = 37.0
+	ngGapMM        = 3.0 // panjang panah dari simbol ke kotak NG, berisi label NG
 )
 
 // ngLabel memberi tulisan arah NG, seperti di CP Tokairika.
@@ -45,10 +50,17 @@ func ngLabel(ng string) string {
 func predefined(ng string) bool { return ng != "rework" }
 
 // flowX memberi pusat garis alur di dalam kolom selebar width. Alur sedikit
-// ke kanan, supaya kotak NG muat di kirinya.
+// ke kanan, supaya kotak NG muat di kirinya; di kolom yang pas-pasan pusatnya
+// digeser sampai kotak NG 12 mm muat, selama konektor lompatan di kanan masih
+// muat (D-227).
 func flowX(width float64) float64 {
-	return math.Max(width*0.6, shapeWMM/2+1)
+	right := width - jumpConnMM - connRMM - 0.8
+	return math.Max(math.Max(width*0.6, math.Min(flowLeftNeedMM, right)), shapeWMM/2+1)
 }
+
+// flowLeftNeedMM: jarak pusat alur dari tepi kiri supaya kotak NG 12 mm muat
+// di kiri belah ketupat: 0,6 tepi + 12 kotak + panah + setengah belah ketupat.
+const flowLeftNeedMM = 0.6 + 12 + ngGapMM + (shapeWMM+2)/2
 
 // arrowDefs adalah penanda kepala panah untuk garis alur.
 const arrowDefs = `<defs><marker id="arrow" viewBox="0 0 6 6" refX="6" refY="3" markerUnits="userSpaceOnUse" markerWidth="1.8" markerHeight="1.8" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#000"/></marker></defs>`
@@ -103,29 +115,26 @@ func flowSize(symbol string) (float64, float64) {
 	return shapeWMM, shapeHMM
 }
 
-// ngBranch menggambar cabang NG: kotak tujuan di kiri dan sedikit di atas
-// simbol, disambung garis siku (mendatar, lalu naik) berkepala panah, label
-// NG di bawah garis, dan label OK di bawah belah ketupat.
-func ngBranch(b *strings.Builder, n FlowNode, cx, y, left float64) {
+// ngBoxSpan memberi letak kotak NG di kiri simbol selebar w berpusat di cx:
+// kiri kotak dan lebarnya. Kotak paling lebar ngBoxWMM dan paling sedikit 6 mm.
+func ngBoxSpan(cx, w, left float64) (float64, float64) {
+	from := cx - w/2
+	boxW := math.Max(6, math.Min(ngBoxWMM, from-ngGapMM-left))
+	return math.Max(left, from-ngGapMM-boxW), boxW
+}
+
+// ngBranch menggambar cabang NG: kotak tujuan lurus di kiri simbol, sejajar
+// dengan pusatnya, disambung panah mendatar dengan label NG di atasnya
+// (D-227). down adalah label garis lurus ke bawah belah ketupat (biasanya OK).
+func ngBranch(b *strings.Builder, n FlowNode, cx, y, left float64, down string) {
 	w, h := flowSize(n.Symbol)
 	from := cx - w/2
-	boxW := math.Min(ngBoxWMM, from-2-left)
-	if boxW < 6 {
-		boxW = 6
-	}
-	boxX := math.Max(left, from-2-boxW)
-	boxY := math.Max(0.4, y-ngBoxHMM-0.8)
-	ngBox(b, boxX, boxY, boxW, ngBoxHMM, n.NG, 2.2)
-	mid := boxX + boxW/2
-	if boxY+ngBoxHMM < y-0.5 {
-		fmt.Fprintf(b, `<line x1="%.2f" y1="%.2f" x2="%.2f" y2="%.2f" stroke="#000" stroke-width="0.3"/>`, from, y, mid, y)
-		arrow(b, mid, y, mid, boxY+ngBoxHMM)
-	} else {
-		arrow(b, from, y, boxX+boxW, y)
-	}
-	fmt.Fprintf(b, `<text x="%.2f" y="%.2f" font-size="2.2" text-anchor="middle">NG</text>`, (mid+from)/2+1, y+2.6)
-	if n.Symbol == "decision" {
-		fmt.Fprintf(b, `<text x="%.2f" y="%.2f" font-size="2.2">OK</text>`, cx+0.8, y+h/2+2.6)
+	boxX, boxW := ngBoxSpan(cx, w, left)
+	ngBox(b, boxX, y-ngBoxHMM/2, boxW, ngBoxHMM, n.NG, 2.2)
+	arrow(b, from, y, boxX+boxW, y)
+	fmt.Fprintf(b, `<text x="%.2f" y="%.2f" font-size="2" text-anchor="middle">NG</text>`, (from+boxX+boxW)/2, y-0.7)
+	if n.Symbol == "decision" && down != "" {
+		fmt.Fprintf(b, `<text x="%.2f" y="%.2f" font-size="2.2">%s</text>`, cx+0.8, y+h/2+2.6, html.EscapeString(down))
 	}
 }
 
@@ -165,12 +174,17 @@ func FlowSVG(page PlanPage, tops []float64, height, width float64) string {
 	if page.In != "" {
 		connector(connEdgeMM, page.In)
 	}
+	// Lompatan di kanan alur (D-227), di bawah simbol.
+	partsSVG(&b, cpJumpParts(page, ys, cx, func(v float64) float64 { return v }), connRMM, jumpFontMM)
 	for i, n := range page.Nodes {
 		y := ys[i]
-		if n.NG != "" {
-			ngBranch(&b, n, cx, y, 0.6)
-		}
 		w, h := flowSize(n.Symbol)
+		if n.NG != "" {
+			ngBranch(&b, n, cx, y, 0.6, "")
+		}
+		if n.Down != "" {
+			fmt.Fprintf(&b, `<text x="%.2f" y="%.2f" font-size="2.2" data-down="%s">%s</text>`, cx+0.8, y+h/2+2.6, html.EscapeString(n.Down), html.EscapeString(n.Down))
+		}
 		symbolShape(&b, n.Symbol, cx, y, w, h)
 		fmt.Fprintf(&b, `<text x="%.2f" y="%.2f" font-size="2.6" font-weight="bold" text-anchor="middle" dominant-baseline="central" data-step="%s">%s</text>`, cx, y, html.EscapeString(n.Op), html.EscapeString(n.Op))
 	}

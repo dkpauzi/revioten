@@ -26,6 +26,10 @@ type FlowStep struct {
 	ProcessName string `json:"process_name,omitempty"`
 	Symbol      string `json:"symbol,omitempty"` // isi kolom Flow Symbol PFD
 	NG          string `json:"ng,omitempty"`     // isi kolom NG Disposition PFD
+	// Lompatan (D-227): nomor langkah tujuan dan labelnya (ok, ng, yes, no).
+	// omitempty: snapshot lama tanpa lompatan tetap sama isinya.
+	Jump      string `json:"jump,omitempty"`
+	JumpLabel string `json:"jump_label,omitempty"`
 }
 
 // key menandai satu langkah di dalam bagiannya.
@@ -68,13 +72,17 @@ func loadFlow(ctx context.Context, q *db.Queries, d Document) ([]FlowStep, error
 // langkah dilewati, karena tidak bisa dicocokkan dengan PFMEA dan CP
 // (ASUMSI E-138).
 func StepsOfPFD(pfd Document, format template.FormatVersion) []FlowStep {
-	symbol, ng := "", ""
+	symbol, ng, jump, label := "", "", "", ""
 	for _, f := range format.Fields {
 		switch f.Key {
 		case "flow_symbol":
 			symbol = f.ID
 		case "ng_disposition":
 			ng = f.ID
+		case "jump_to":
+			jump = f.ID
+		case "jump_label":
+			label = f.ID
 		}
 	}
 	keys := map[string]string{}
@@ -89,7 +97,8 @@ func StepsOfPFD(pfd Document, format template.FormatVersion) []FlowStep {
 			continue
 		}
 		step := FlowStep{SectionKey: keys[r.SectionID], Operation: op, ProcessID: r.ProcessID, ProcessName: r.ProcessName,
-			Symbol: cellText(r.Content[symbol]), NG: cellText(r.Content[ng])}
+			Symbol: cellText(r.Content[symbol]), NG: cellText(r.Content[ng]),
+			Jump: cellText(r.Content[jump]), JumpLabel: cellText(r.Content[label])}
 		if seen[step.key()] {
 			continue
 		}

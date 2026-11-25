@@ -98,6 +98,13 @@
 					col.formatter = (cell: CellComponent) => cellText(f, { content: { [f.id]: cell.getValue() } });
 				} else if (f.kind === 'date') {
 					col.editor = 'date';
+				} else if (f.key === 'jump_to') {
+					// Jump to (D-227): nomor langkah dokumen ini, bukan teks bebas.
+					col.editor = 'list';
+					col.editorParams = (cell: CellComponent) => {
+						const ops = (cell.getTable().getData() as Record<string, unknown>[]).map((r) => String(r._operation ?? '').trim());
+						return { values: [...new Set(ops.filter((op) => op !== ''))], clearable: true };
+					};
 				} else {
 					col.editor = 'textarea';
 				}

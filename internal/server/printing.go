@@ -213,7 +213,10 @@ func (a *apiServer) GetPagePreview(ctx context.Context, req GetPagePreviewReques
 		}{}, Columns: []struct {
 			Group string `json:"group"`
 			Label string `json:"label"`
-		}{}, Pages: make([]PreviewPage, 0, len(v.Pages))}
+		}{}, Pages: make([]PreviewPage, 0, len(v.Pages)), Warnings: make([]PreviewWarning, 0, len(v.Plan.Warnings))}
+	for _, w := range v.Plan.Warnings {
+		out.Warnings = append(out.Warnings, PreviewWarning{Kind: PreviewWarningKind(w.Kind), Operation: w.Operation, Target: w.Target, WidthMm: float32(w.WidthMM)})
+	}
 	if v.HeadHTML != "" {
 		head := v.HeadHTML
 		out.HeadHtml = &head

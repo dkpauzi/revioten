@@ -2530,6 +2530,20 @@ Salin blok ini untuk setiap temuan baru.
 - **Status:** Diputuskan (D-225)
 - **Keputusan pemilik:** 25 November 2026: "ya, opsi A".
 
+### E-147 · Kolom Process Flow CP terlalu sempit untuk cabang dan lompatan
+
+- **Tanggal dan milestone:** 25 November 2026, D-227.
+- **Jenis:** Celah
+- **Rujukan:** D-219 (simbol alur, kotak NG di kiri), D-122 dan D-211 (Process Flow otomatis), `defaultWidth` di `internal/printout/model.go`, `docs/referensi/Process_Flow_PCBA_Generic.md` (AOI NG ke VMI, langkah sisi kedua kembali ke Loading PCB).
+- **Temuan:** Di A3 landscape, Control Plan v1 punya 16 kolom tampil. Dengan bobot bawaan 1,3, kolom Process Flow hanya sekitar 25 mm (contoh di test 39,39 mm karena kolomnya lebih sedikit). Belah ketupat 14 mm menyisakan sekitar 8 mm di kiri, jadi kotak NG hanya sekitar 5 mm, terlalu kecil untuk tulisan REWORK. Selain itu, PFD belum bisa menyatakan lompatan: OK dari AOI langsung ke ICT (melewati VMI), atau No di Finish 2nd side kembali ke Loading PCB. Lompatan itu butuh ruang di kanan garis alur.
+- **Opsi:**
+  - **(a)** Bobot Process Flow dinaikkan menjadi 2,1 (sekitar 38 mm), kiri untuk kotak NG, kanan untuk lompatan.
+  - **(b)** Simbol dan kotak NG diperkecil menjadi 10 mm; kolom tetap perlu dilebarkan sedikit.
+- **Rekomendasi Claude Code (usulan):** (a).
+- **Menghambat milestone?** Ya, untuk lompatan.
+- **Status:** Diputuskan (D-227)
+- **Keputusan pemilik:** 25 November 2026: "Lebarkan ke bobot 2,1", "Setuju, mulai A dan B". Sebelumnya: NG lurus ke samping OK; AOI NG ke VMI, OK langsung ke ICT / Router / Finish 2nd side OK; konektor hanya huruf, "karna angka sudah digunakan untuk nomor process".
+
 ## Usulan desain UI (UX-01 sampai UX-07): dampak ke M0 sampai M3 dan saran
 
 - **Sumber:** `docs/uml/usulan-desain-ui.md` (UML draft 0.12, 3 November 2026) dan kanvas desain UI "Desain UI Sistem PFD PFMEA CP" (18 artboard, baris v2 disarankan).

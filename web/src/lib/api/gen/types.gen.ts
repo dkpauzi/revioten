@@ -558,6 +558,29 @@ export type PagePreview = {
      * Form head in the layout of the TR-020 documents (E-144), the same HTML as the PDF, with its style. Missing for other document types; the preview then draws the plain head from header.
      */
     head_html?: string;
+    /**
+     * Things to check before printing (D-227). Empty when there is nothing to check.
+     */
+    warnings: Array<PreviewWarning>;
+};
+
+/**
+ * One check of the process flow (D-227): jump_unknown (Jump to names a step that is not in the PFD), jump_self (a step jumps to itself), jump_not_decision (a jump on a symbol other than Decision), flow_narrow (the Process Flow column is narrower than 37 mm).
+ */
+export type PreviewWarning = {
+    kind: 'jump_unknown' | 'jump_self' | 'jump_not_decision' | 'flow_narrow';
+    /**
+     * Step number that has the jump; empty for flow_narrow.
+     */
+    operation: string;
+    /**
+     * Step number in Jump to; empty for flow_narrow.
+     */
+    target: string;
+    /**
+     * Width of the Process Flow column for flow_narrow; 0 otherwise.
+     */
+    width_mm: number;
 };
 
 export type PreviewPage = {

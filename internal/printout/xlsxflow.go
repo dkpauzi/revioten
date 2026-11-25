@@ -152,36 +152,32 @@ func flowShapes(f *excelize.File, name string, sh Sheet, x xlsxLayout, pg PlanPa
 			return err
 		}
 	}
+	// Lompatan di kanan alur (D-227), dengan ukuran yang sama dengan FlowSVG.
+	same := func(v float64) float64 { return v }
+	if err := partsXLSX(d, cpJumpParts(pg, ys, cx, mm), same, same, r, mm(5), mm(3), 6); err != nil {
+		return err
+	}
 	for i, n := range pg.Nodes {
 		yy := ys[i]
 		w, h := flowSize(n.Symbol)
+		if n.Down != "" {
+			if err := d.text(cx+mm(0.5), yy+mm(h)/2, mm(5), mm(3), n.Down, 6); err != nil {
+				return err
+			}
+		}
 		if n.NG != "" {
+			// Kotak NG lurus di kiri simbol, sejajar dengan pusatnya (D-227).
 			from := cx - mm(w)/2
-			boxW := math.Max(mm(6), math.Min(mm(ngBoxWMM), from-mm(2.6)))
-			boxX := math.Max(mm(0.6), from-mm(2)-boxW)
-			boxH := mm(ngBoxHMM)
-			boxY := math.Max(mm(0.4), yy-boxH-mm(0.8))
-			if err := d.ngBox(boxX, boxY, boxW, boxH, n.NG, 6); err != nil {
+			bx, bw := ngBoxSpan(flowX(widthMM), w, 0.6)
+			boxX, boxW, boxH := mm(bx), mm(bw), mm(ngBoxHMM)
+			if err := d.ngBox(boxX, yy-boxH/2, boxW, boxH, n.NG, 6); err != nil {
 				return err
 			}
-			mid := boxX + boxW/2
-			if boxY+boxH < yy-mm(0.5) {
-				if err := d.line(mid, yy, from, yy, false); err != nil {
-					return err
-				}
-				if err := d.line(mid, yy, mid, boxY+boxH, true); err != nil {
-					return err
-				}
-			} else if err := d.line(from, yy, boxX+boxW, yy, true); err != nil {
+			if err := d.line(from, yy, boxX+boxW, yy, true); err != nil {
 				return err
 			}
-			if err := d.text(mid, yy+mm(0.4), from-mid, mm(3), "NG", 6); err != nil {
+			if err := d.text(boxX+boxW, yy-mm(3), from-boxX-boxW, mm(2.8), "NG", 5); err != nil {
 				return err
-			}
-			if n.Symbol == "decision" {
-				if err := d.text(cx+mm(0.5), yy+mm(h)/2, mm(5), mm(3), "OK", 6); err != nil {
-					return err
-				}
 			}
 		}
 		if err := d.shape(excelShape(n.Symbol), cx-mm(w)/2, yy-mm(h)/2, mm(w), mm(h), []string{n.Op}, 7); err != nil {

@@ -10,14 +10,19 @@ package printout
 
 import (
 	"math"
+	"sort"
 	"strings"
 	"unicode/utf8"
 )
 
-// Step adalah satu langkah PFD: simbol alur dan, untuk inspeksi, arah NG (R-DOC-09).
+// Step adalah satu langkah PFD: simbol alur, untuk inspeksi arah NG
+// (R-DOC-09), dan lompatan ke langkah lain (D-227): Jump nomor langkah
+// tujuan, JumpLabel ok, ng, yes, atau no.
 type Step struct {
-	Symbol string
-	NG     string
+	Symbol    string
+	NG        string
+	Jump      string
+	JumpLabel string
 }
 
 // FlowNode adalah satu simbol di kolom Process Flow: baris ke-Row di halamannya.
@@ -30,6 +35,20 @@ type FlowNode struct {
 	// paling atas halaman yang punya konektor masuk, simbolnya digeser ke
 	// bawah konektor (D-226). 0 dianggap nodeTopMM.
 	TopMM float64
+	// Lompatan (D-227). Jump: label garis lompatan (OK, NG, Yes, No); Down:
+	// label garis lurus ke bawah (lawan Jump, atau OK di belah ketupat yang
+	// punya kotak NG). JumpOut: huruf konektor lompatan yang keluar dari
+	// simbol ini; JumpIn: huruf konektor lompatan yang menuju simbol ini.
+	Jump    string
+	Down    string
+	JumpOut string
+	JumpIn  []string
+}
+
+// FlowLine adalah lompatan maju di satu halaman, digambar sebagai garis di
+// kanan alur: dari simbol ke-From ke simbol ke-To di Nodes halaman itu.
+type FlowLine struct {
+	From, To int
 }
 
 // centerMM memberi pusat simbol dari atas barisnya.
@@ -47,6 +66,7 @@ type PlanPage struct {
 	Nodes []FlowNode
 	In    string
 	Out   string
+	Lines []FlowLine
 	// Filled: halaman ini berakhir lebih awal karena baris awal langkah
 	// dipindah ke halaman berikutnya, jadi baris terakhirnya dipertinggi
 	// sampai halaman penuh (D-226).
@@ -71,6 +91,9 @@ type Plan struct {
 	Diagram            []DiagramPage
 	LegendMM           float64
 	DiagramW, DiagramH float64
+	// Warnings: hal yang perlu diperiksa penyusun sebelum mencetak (D-227),
+	// ditampilkan di atas pratinjau.
+	Warnings []PlanWarning
 }
 
 // Ukuran huruf ke milimeter: 1 pt = 0,3528 mm. Lebar rata-rata huruf Arial
@@ -225,10 +248,17 @@ func ConnectorLetter(n int) string {
 
 // flowPages menempatkan simbol dan konektor. Simbol ada di baris pertama
 // setiap langkah; simbolnya dari PFD, atau "process" bila langkah itu tidak
-// ada di PFD. Konektor dipasang di setiap batas halaman yang dilewati alur,
-// dengan huruf berurutan. Karena dihitung dari baris, menambah atau menghapus
-// baris menggeser simbol dan konektor sendiri (G11).
-func flowPages(ops []string, pages [][]int, steps map[string]Step) []PlanPage {
+// ada di PFD. Konektor dipasang di setiap batas halaman yang dilewati alur.
+// Karena dihitung dari baris, menambah atau menghapus baris menggeser simbol
+// dan konektor sendiri (G11).
+//
+// Lompatan (D-227): lompatan maju di halaman yang sama menjadi garis di kanan
+// alur; lompatan mundur, yang menyeberang halaman, atau yang garisnya akan
+// menumpuk dengan garis lain menjadi sepasang konektor. Konektor halaman dan
+// konektor lompatan memakai satu urutan huruf menurut urutan muncul. sec
+// memberi nomor bagian per PCB setiap baris (nil berarti satu bagian), karena
+// tujuan lompatan dicari di bagian yang sama.
+func flowPages(ops []string, sec []int, pages [][]int, steps map[string]Step) []PlanPage {
 	var flowing []opGroup
 	for _, g := range opGroups(ops) {
 		if g.op != "" {
@@ -249,15 +279,17 @@ func flowPages(ops []string, pages [][]int, steps map[string]Step) []PlanPage {
 		return started && continues
 	}
 	out := make([]PlanPage, len(pages))
-	letters := 0
+	// at: letak simbol setiap langkah (indeks di flowing): halaman dan indeks
+	// di Nodes halaman itu.
+	at := make([][2]int, len(flowing))
 	for p, rows := range pages {
 		pos := map[int]int{}
 		for i, r := range rows {
 			pos[r] = i
 		}
 		page := PlanPage{Rows: rows}
-		for _, g := range flowing {
-			at, ok := pos[g.start]
+		for k, g := range flowing {
+			row, ok := pos[g.start]
 			if !ok {
 				continue
 			}
@@ -265,24 +297,105 @@ func flowPages(ops []string, pages [][]int, steps map[string]Step) []PlanPage {
 			if !known || step.Symbol == "" {
 				step.Symbol = "process"
 			}
-			page.Nodes = append(page.Nodes, FlowNode{Row: at, Op: g.op, Symbol: step.Symbol, NG: step.NG, TopMM: nodeTopMM})
-		}
-		if p > 0 && crosses(p-1) {
-			page.In = out[p-1].Out
-			// Simbol di baris paling atas digeser ke bawah konektor masuk (D-226).
-			for i, n := range page.Nodes {
-				if n.Row == 0 {
-					page.Nodes[i].TopMM = shiftedTopMM(n.Symbol)
-				}
+			n := FlowNode{Row: row, Op: g.op, Symbol: step.Symbol, NG: step.NG, TopMM: nodeTopMM}
+			if step.NG != "" && step.Symbol == "decision" {
+				n.Down = "OK"
 			}
-		}
-		if p < len(pages)-1 && crosses(p) {
-			page.Out = ConnectorLetter(letters)
-			letters++
+			at[k] = [2]int{p, len(page.Nodes)}
+			page.Nodes = append(page.Nodes, n)
 		}
 		out[p] = page
 	}
+
+	// Huruf konektor dibagikan menurut urutan muncul: konektor halaman di
+	// bawah halamannya, konektor lompatan di langkah yang lebih atas.
+	type event struct {
+		pos  float64
+		page int // konektor halaman: halaman yang berakhir; -1 untuk lompatan
+		from int // lompatan: indeks langkah asal dan tujuan di flowing
+		to   int
+	}
+	var events []event
+	for p := 0; p+1 < len(pages); p++ {
+		if crosses(p) {
+			events = append(events, event{pos: float64(last(p)) + 0.5, page: p})
+		}
+	}
+	section := func(row int) int {
+		if row < len(sec) {
+			return sec[row]
+		}
+		return 0
+	}
+	for k, g := range flowing {
+		step := steps[g.op]
+		to := jumpTarget(flowing, k, step.Jump, section)
+		if to < 0 {
+			continue
+		}
+		p, i := at[k][0], at[k][1]
+		if label := jumpText(step.JumpLabel); label != "" {
+			out[p].Nodes[i].Jump = label
+			out[p].Nodes[i].Down = jumpText(oppositeJump(step.JumpLabel))
+		}
+		if to > k && at[to][0] == p && !linesOverlap(out[p].Lines, i, at[to][1]) {
+			out[p].Lines = append(out[p].Lines, FlowLine{From: i, To: at[to][1]})
+			continue
+		}
+		events = append(events, event{pos: float64(min(g.start, flowing[to].start)), page: -1, from: k, to: to})
+	}
+	sort.SliceStable(events, func(i, j int) bool { return events[i].pos < events[j].pos })
+	for n, e := range events {
+		letter := ConnectorLetter(n)
+		if e.page >= 0 {
+			out[e.page].Out = letter
+			out[e.page+1].In = letter
+			continue
+		}
+		from, to := at[e.from], at[e.to]
+		out[from[0]].Nodes[from[1]].JumpOut = letter
+		out[to[0]].Nodes[to[1]].JumpIn = append(out[to[0]].Nodes[to[1]].JumpIn, letter)
+	}
+	// Simbol di baris paling atas digeser ke bawah konektor masuk (D-226).
+	for p := range out {
+		if out[p].In == "" {
+			continue
+		}
+		for i, n := range out[p].Nodes {
+			if n.Row == 0 {
+				out[p].Nodes[i].TopMM = shiftedTopMM(n.Symbol)
+			}
+		}
+	}
 	return out
+}
+
+// jumpTarget memberi indeks langkah tujuan lompatan langkah ke-k di flowing:
+// langkah dengan nomor op di bagian yang sama, bukan langkah itu sendiri.
+// -1 bila tidak ada lompatan atau tujuannya tidak ditemukan.
+func jumpTarget(flowing []opGroup, k int, op string, section func(int) int) int {
+	op = strings.TrimSpace(op)
+	if op == "" {
+		return -1
+	}
+	for j, g := range flowing {
+		if j != k && g.op == op && section(g.start) == section(flowing[k].start) {
+			return j
+		}
+	}
+	return -1
+}
+
+// linesOverlap melaporkan apakah garis lompatan dari simbol from ke to akan
+// menumpuk dengan garis lain di halaman yang sama (satu jalur di kanan alur).
+// Garis yang hanya bersambung di satu simbol tidak dianggap menumpuk.
+func linesOverlap(lines []FlowLine, from, to int) bool {
+	for _, l := range lines {
+		if from < l.To && l.From < to {
+			return true
+		}
+	}
+	return false
 }
 
 // BuildPlan menghitung rencana halaman satu model cetak.
@@ -321,6 +434,7 @@ func BuildPlan(sh Sheet) Plan {
 		p.DiagramH = h - l.MarginsMM.Top - l.MarginsMM.Bottom - p.HeadMM - p.LegendMM - footMM
 		p.Diagram = DiagramLayout(diagramSteps(sh), p.DiagramW, p.DiagramH)
 		p.Pages = make([]PlanPage, len(p.Diagram))
+		p.Warnings = jumpWarnings(sh.Ops, sectionsOf(sh), sh.Steps)
 		return p
 	}
 	// Judul kolom: baris grup (bila ada) dan baris label.
@@ -387,7 +501,14 @@ func BuildPlan(sh Sheet) Plan {
 			p.RowsMM[r] = math.Max(p.RowsMM[r], topMin[r])
 		}
 	}
-	p.Pages = flowPages(ops, pages, sh.Steps)
+	sec := sectionsOf(sh)
+	p.Pages = flowPages(ops, sec, pages, sh.Steps)
+	if sh.FlowColumn >= 0 {
+		p.Warnings = jumpWarnings(sh.Ops, sec, sh.Steps)
+		if w := p.ColumnsMM[sh.FlowColumn]; w < minFlowWidthMM {
+			p.Warnings = append(p.Warnings, PlanWarning{Kind: WarnFlowNarrow, WidthMM: math.Round(w*10) / 10})
+		}
+	}
 	// Halaman yang berakhir karena baris awal langkah dipindah diisi penuh:
 	// baris terakhirnya dipertinggi sampai ruang halaman habis (D-226).
 	for pi, rows := range pages {

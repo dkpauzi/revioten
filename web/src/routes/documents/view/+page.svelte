@@ -85,6 +85,20 @@
 	}
 	let previewChecks = $state<string[]>([]);
 
+	// flowWarningText menulis satu peringatan Process Flow dari pratinjau (D-227).
+	function flowWarningText(w: PagePreview['warnings'][number]): string {
+		switch (w.kind) {
+			case 'jump_unknown':
+				return t('flowJumpUnknown', { operation: w.operation, target: w.target });
+			case 'jump_self':
+				return t('flowJumpSelf', { operation: w.operation });
+			case 'jump_not_decision':
+				return t('flowJumpNotDecision', { operation: w.operation });
+			default:
+				return t('flowNarrow', { width: String(w.width_mm) });
+		}
+	}
+
 	function togglePreview() {
 		reset();
 		previewing = !previewing;
@@ -552,6 +566,13 @@
 					<div class="preview-checks" data-testid="preview-pfd-check">
 						<h3>{t('pfdCheckTitle')}</h3>
 						<ul>{#each previewChecks as text, i (i)}<li>{text}</li>{/each}</ul>
+					</div>
+				{/if}
+				{#if preview.warnings.length > 0}
+					<!-- Pemeriksaan Process Flow (D-227): lompatan dan lebar kolom. -->
+					<div class="preview-checks" data-testid="preview-flow-check">
+						<h3>{t('flowCheckTitle')}</h3>
+						<ul>{#each preview.warnings as w, i (i)}<li>{flowWarningText(w)}</li>{/each}</ul>
 					</div>
 				{/if}
 				<PreviewSheet plan={preview} />

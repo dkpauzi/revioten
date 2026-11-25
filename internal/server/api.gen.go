@@ -1631,6 +1631,30 @@ func (e PositionKey) Valid() bool {
 	}
 }
 
+// Defines values for PreviewWarningKind.
+const (
+	PreviewWarningKindFlowNarrow      PreviewWarningKind = "flow_narrow"
+	PreviewWarningKindJumpNotDecision PreviewWarningKind = "jump_not_decision"
+	PreviewWarningKindJumpSelf        PreviewWarningKind = "jump_self"
+	PreviewWarningKindJumpUnknown     PreviewWarningKind = "jump_unknown"
+)
+
+// Valid indicates whether the value is a known member of the PreviewWarningKind enum.
+func (e PreviewWarningKind) Valid() bool {
+	switch e {
+	case PreviewWarningKindFlowNarrow:
+		return true
+	case PreviewWarningKindJumpNotDecision:
+		return true
+	case PreviewWarningKindJumpSelf:
+		return true
+	case PreviewWarningKindJumpUnknown:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PrintLayoutContentOrientation.
 const (
 	PrintLayoutContentOrientationLandscape PrintLayoutContentOrientation = "landscape"
@@ -4851,6 +4875,9 @@ type PagePreview struct {
 	PaperWMm float32       `json:"paper_w_mm"`
 	Revision string        `json:"revision"`
 	Title    string        `json:"title"`
+
+	// Warnings Things to check before printing (D-227). Empty when there is nothing to check.
+	Warnings []PreviewWarning `json:"warnings"`
 }
 
 // PartNumber defines model for PartNumber.
@@ -5307,6 +5334,23 @@ type PreviewPage struct {
 		Section string `json:"section"`
 	} `json:"rows"`
 }
+
+// PreviewWarning One check of the process flow (D-227): jump_unknown (Jump to names a step that is not in the PFD), jump_self (a step jumps to itself), jump_not_decision (a jump on a symbol other than Decision), flow_narrow (the Process Flow column is narrower than 37 mm).
+type PreviewWarning struct {
+	Kind PreviewWarningKind `json:"kind"`
+
+	// Operation Step number that has the jump; empty for flow_narrow.
+	Operation string `json:"operation"`
+
+	// Target Step number in Jump to; empty for flow_narrow.
+	Target string `json:"target"`
+
+	// WidthMm Width of the Process Flow column for flow_narrow; 0 otherwise.
+	WidthMm float32 `json:"width_mm"`
+}
+
+// PreviewWarningKind defines model for PreviewWarning.Kind.
+type PreviewWarningKind string
 
 // PrintLayout defines model for PrintLayout.
 type PrintLayout struct {

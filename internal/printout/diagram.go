@@ -15,15 +15,19 @@ import (
 	"fmt"
 	"html"
 	"math"
+	"sort"
 	"strings"
 )
 
-// DiagramStep adalah satu langkah PFD di diagram.
+// DiagramStep adalah satu langkah PFD di diagram. Jump dan JumpLabel:
+// lompatan ke langkah lain (D-227).
 type DiagramStep struct {
-	Op     string
-	Name   string
-	Symbol string
-	NG     string
+	Op        string
+	Name      string
+	Symbol    string
+	NG        string
+	Jump      string
+	JumpLabel string
 }
 
 // Label menulis isi kotak: "nomor. nama", seperti PFD referensi.
@@ -37,19 +41,32 @@ func (s DiagramStep) Label() string {
 	return s.Op + ". " + s.Name
 }
 
-// DiagramNode adalah satu simbol: pusat (X, Y) dan ukuran luarnya.
+// DiagramNode adalah satu simbol: pusat (X, Y) dan ukuran luarnya. Jump,
+// Down, JumpOut, dan JumpIn sama artinya dengan di FlowNode (D-227).
 type DiagramNode struct {
-	Step DiagramStep
-	X, Y float64
-	W, H float64
+	Step    DiagramStep
+	X, Y    float64
+	W, H    float64
+	Jump    string
+	Down    string
+	JumpOut string
+	JumpIn  []string
 }
 
-// DiagramColumn adalah satu kolom alur: pusat garis alur, simbolnya, dan
-// konektor masuk (In) di atas dan keluar (Out) di bawah.
+// DiagramColumn adalah satu kolom alur: pusat garis alur, simbolnya,
+// konektor masuk (In) di atas dan keluar (Out) di bawah, dan garis lompatan
+// di dalam kolom itu.
 type DiagramColumn struct {
 	X       float64
 	Nodes   []DiagramNode
 	In, Out string
+	Lines   []DiagramLine
+}
+
+// DiagramLine adalah lompatan di dalam satu kolom: dari simbol ke-From ke
+// simbol ke-To, lewat jalur ke-Lane di kanan alur (maju atau mundur).
+type DiagramLine struct {
+	From, To, Lane int
 }
 
 // DiagramPage adalah satu halaman diagram.
@@ -73,6 +90,12 @@ const (
 	diagNGH       = 8.0
 	diagFontMM    = 2.5 // tinggi huruf isi kotak (sekitar 7 pt)
 	diagLegendMM  = 26.0
+	// Lompatan (D-227): jalur pertama di kanan ujung belah ketupat, jalur
+	// berikutnya bergeser diagLaneStep; konektor lompatan di diagJumpConn
+	// dari pusat alur.
+	diagLaneMM   = diagDiamondW/2 + 4
+	diagLaneStep = 3.0
+	diagJumpConn = diagDiamondW/2 + 3 + diagConnR
 )
 
 // diagSize memberi ukuran luar satu simbol.
@@ -90,6 +113,11 @@ func diagSize(s DiagramStep) (float64, float64) {
 
 // DiagramLayout menempatkan langkah ke kolom dan halaman. width dan height
 // adalah ukuran area diagram satu halaman.
+//
+// Lompatan (D-227): bila kedua langkah ada di kolom yang sama, lompatan
+// digambar sebagai garis di kanan alur (maju atau mundur); selain itu sebagai
+// sepasang konektor. Konektor kolom dan konektor lompatan memakai satu urutan
+// huruf menurut urutan muncul.
 func DiagramLayout(steps []DiagramStep, width, height float64) []DiagramPage {
 	colW := width / diagColumns
 	var pages []DiagramPage
@@ -97,13 +125,19 @@ func DiagramLayout(steps []DiagramStep, width, height float64) []DiagramPage {
 	index := 0
 	col := DiagramColumn{X: colW * 0.6}
 	y := 2.0
-	letters := 0
-	for _, s := range steps {
+	// at: letak setiap langkah (halaman, kolom, simbol). ends: kolom yang
+	// berlanjut ke kolom berikutnya, dengan langkah terakhirnya.
+	type ref struct{ page, col, node int }
+	at := make([]ref, len(steps))
+	type end struct {
+		ref  ref
+		last int
+	}
+	var ends []end
+	for i, s := range steps {
 		w, h := diagSize(s)
 		if len(col.Nodes) > 0 && y+h+diagConnSpace > height {
-			letter := ConnectorLetter(letters)
-			letters++
-			col.Out = letter
+			ends = append(ends, end{ref: ref{len(pages), len(page.Columns), 0}, last: i - 1})
 			page.Columns = append(page.Columns, col)
 			index++
 			if index == diagColumns {
@@ -111,16 +145,145 @@ func DiagramLayout(steps []DiagramStep, width, height float64) []DiagramPage {
 				page = DiagramPage{}
 				index = 0
 			}
-			col = DiagramColumn{X: colW*float64(index) + colW*0.6, In: letter}
+			col = DiagramColumn{X: colW*float64(index) + colW*0.6}
 			y = diagConnSpace
 		}
+		at[i] = ref{len(pages), len(page.Columns), len(col.Nodes)}
 		col.Nodes = append(col.Nodes, DiagramNode{Step: s, X: col.X, Y: y + h/2, W: w, H: h})
+		if s.NG != "" && s.Symbol == "decision" {
+			col.Nodes[len(col.Nodes)-1].Down = "OK"
+		}
 		y += h + diagGap
 	}
-	if len(col.Nodes) > 0 || col.In != "" {
-		page.Columns = append(page.Columns, col)
+	page.Columns = append(page.Columns, col)
+	pages = append(pages, page)
+	node := func(r ref) *DiagramNode { return &pages[r.page].Columns[r.col].Nodes[r.node] }
+
+	type event struct {
+		pos      float64
+		end      int // kolom yang berlanjut: indeks di ends; -1 untuk lompatan
+		from, to int
 	}
-	return append(pages, page)
+	var events []event
+	for i, e := range ends {
+		events = append(events, event{pos: float64(e.last) + 0.5, end: i})
+	}
+	for k, s := range steps {
+		to := -1
+		if target := strings.TrimSpace(s.Jump); target != "" {
+			for j, t := range steps {
+				if j != k && t.Op == target {
+					to = j
+					break
+				}
+			}
+		}
+		if to < 0 {
+			continue
+		}
+		n := node(at[k])
+		if label := jumpText(s.JumpLabel); label != "" {
+			n.Jump, n.Down = label, jumpText(oppositeJump(s.JumpLabel))
+		}
+		a, b := at[k], at[to]
+		if a.page == b.page && a.col == b.col {
+			c := &pages[a.page].Columns[a.col]
+			right := colW*float64(a.col+1) - 1.5
+			if lane := freeLane(c.Lines, a.node, b.node, int((right-c.X-diagLaneMM)/diagLaneStep)+1); lane >= 0 {
+				c.Lines = append(c.Lines, DiagramLine{From: a.node, To: b.node, Lane: lane})
+				continue
+			}
+		}
+		events = append(events, event{pos: float64(min(k, to)), end: -1, from: k, to: to})
+	}
+	sort.SliceStable(events, func(i, j int) bool { return events[i].pos < events[j].pos })
+	for n, e := range events {
+		letter := ConnectorLetter(n)
+		if e.end >= 0 {
+			r := ends[e.end].ref
+			pages[r.page].Columns[r.col].Out = letter
+			if r.col+1 < len(pages[r.page].Columns) {
+				pages[r.page].Columns[r.col+1].In = letter
+			} else {
+				pages[r.page+1].Columns[0].In = letter
+			}
+			continue
+		}
+		node(at[e.from]).JumpOut = letter
+		in := node(at[e.to])
+		in.JumpIn = append(in.JumpIn, letter)
+	}
+	// Kolom kosong terakhir (tanpa langkah dan tanpa konektor) dibuang.
+	last := &pages[len(pages)-1]
+	if c := last.Columns[len(last.Columns)-1]; len(c.Nodes) == 0 && c.In == "" {
+		last.Columns = last.Columns[:len(last.Columns)-1]
+	}
+	return pages
+}
+
+// freeLane memberi jalur pertama (0 sampai lanes-1) yang tidak menumpuk
+// dengan garis lain di kolom itu untuk lompatan dari simbol a ke b; -1 bila
+// semua jalur terpakai.
+func freeLane(lines []DiagramLine, a, b, lanes int) int {
+	lo, hi := min(a, b), max(a, b)
+	for lane := 0; lane < lanes; lane++ {
+		free := true
+		for _, l := range lines {
+			if l.Lane == lane && lo < max(l.From, l.To) && min(l.From, l.To) < hi {
+				free = false
+				break
+			}
+		}
+		if free {
+			return lane
+		}
+	}
+	return -1
+}
+
+// diagramJumpParts menghitung gambar lompatan satu kolom diagram (mm).
+func diagramJumpParts(c DiagramColumn) []jumpPart {
+	var out []jumpPart
+	joinY := func(i int) float64 {
+		n := c.Nodes[i]
+		top := n.Y - n.H/2
+		above := 0.0
+		switch {
+		case i > 0:
+			above = c.Nodes[i-1].Y + c.Nodes[i-1].H/2
+		case c.In != "":
+			above = 2*diagConnR + 1
+		}
+		return top - math.Min(diagGap/2, (top-above)/2)
+	}
+	for _, l := range c.Lines {
+		src := c.Nodes[l.From]
+		lane := c.X + diagLaneMM + float64(l.Lane)*diagLaneStep
+		jy := joinY(l.To)
+		out = append(out,
+			jumpPart{Kind: "line", X1: src.X + src.W/2, Y1: src.Y, X2: lane, Y2: src.Y},
+			jumpPart{Kind: "line", X1: lane, Y1: src.Y, X2: lane, Y2: jy},
+			jumpPart{Kind: "arrow", X1: lane, Y1: jy, X2: c.X, Y2: jy})
+		if src.Jump != "" {
+			out = append(out, jumpPart{Kind: "label", X1: (src.X + src.W/2 + lane) / 2, Y1: src.Y - 1.6, Text: src.Jump})
+		}
+	}
+	for i, n := range c.Nodes {
+		x := c.X + diagJumpConn
+		if n.JumpOut != "" {
+			out = append(out, jumpPart{Kind: "arrow", X1: n.X + n.W/2, Y1: n.Y, X2: x - diagConnR, Y2: n.Y},
+				jumpPart{Kind: "conn", X1: x, Y1: n.Y, Text: n.JumpOut})
+			if n.Jump != "" {
+				out = append(out, jumpPart{Kind: "label", X1: x, Y1: n.Y - diagConnR - 1.6, Text: n.Jump})
+			}
+		}
+		for k, letter := range n.JumpIn {
+			jy := math.Max(diagConnR+0.3, joinY(i)) - float64(k)*(2*diagConnR+0.6)
+			out = append(out, jumpPart{Kind: "conn", X1: x, Y1: jy, Text: letter},
+				jumpPart{Kind: "arrow", X1: x - diagConnR, Y1: jy, X2: c.X, Y2: jy})
+		}
+	}
+	return out
 }
 
 // wrapText membungkus teks per kata menjadi baris paling banyak max huruf.
@@ -177,9 +340,9 @@ func diagramNode(b *strings.Builder, n DiagramNode, colLeft float64) {
 		ngBox(b, boxX, n.Y-diagNGH/2, boxW, diagNGH, s.NG, 2.6)
 		arrow(b, from, n.Y, boxX+boxW, n.Y)
 		fmt.Fprintf(b, `<text x="%.2f" y="%.2f" font-size="2.4" text-anchor="middle">NG</text>`, (from+boxX+boxW)/2, n.Y-1)
-		if s.Symbol == "decision" {
-			fmt.Fprintf(b, `<text x="%.2f" y="%.2f" font-size="2.4">OK</text>`, n.X+1.2, n.Y+n.H/2+3)
-		}
+	}
+	if n.Down != "" {
+		fmt.Fprintf(b, `<text x="%.2f" y="%.2f" font-size="2.4" data-down="%s">%s</text>`, n.X+1.2, n.Y+n.H/2+3, html.EscapeString(n.Down), html.EscapeString(n.Down))
 	}
 	fmt.Fprintf(b, `<g data-step="%s">`, html.EscapeString(s.Op))
 	symbolShape(b, s.Symbol, n.X, n.Y, n.W, n.H)
@@ -211,6 +374,7 @@ func DiagramSVG(page DiagramPage, width, height float64) string {
 			connectorCircle(&b, c.X, diagConnR+1, diagConnR, c.In)
 			prev = 2*diagConnR + 1
 		}
+		partsSVG(&b, diagramJumpParts(c), diagConnR, 2.4)
 		for _, n := range c.Nodes {
 			if !math.IsNaN(prev) {
 				arrow(&b, c.X, prev, c.X, n.Y-n.H/2)
@@ -288,7 +452,7 @@ func diagramSteps(sh Sheet) []DiagramStep {
 		if g.start < len(sh.Processes) {
 			name = sh.Processes[g.start]
 		}
-		out = append(out, DiagramStep{Op: g.op, Name: name, Symbol: symbol, NG: step.NG})
+		out = append(out, DiagramStep{Op: g.op, Name: name, Symbol: symbol, NG: step.NG, Jump: step.Jump, JumpLabel: step.JumpLabel})
 	}
 	return out
 }

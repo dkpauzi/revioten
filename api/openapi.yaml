@@ -5934,7 +5934,7 @@ components:
     PagePreview:
       type: object
       description: Page plan shared by the preview, the PDF, and the Excel file (C3). Sizes are in millimetres.
-      required: [title, number, revision, paper_w_mm, paper_h_mm, margins_mm, font_size, head_mm, group_row_mm, label_row_mm, mark_mm, columns_mm, flow_column, flow_left_mm, header, columns, pages]
+      required: [title, number, revision, paper_w_mm, paper_h_mm, margins_mm, font_size, head_mm, group_row_mm, label_row_mm, mark_mm, columns_mm, flow_column, flow_left_mm, header, columns, pages, warnings]
       properties:
         title:
           type: string
@@ -6011,6 +6011,28 @@ components:
         head_html:
           type: string
           description: Form head in the layout of the TR-020 documents (E-144), the same HTML as the PDF, with its style. Missing for other document types; the preview then draws the plain head from header.
+        warnings:
+          type: array
+          description: Things to check before printing (D-227). Empty when there is nothing to check.
+          items:
+            $ref: '#/components/schemas/PreviewWarning'
+    PreviewWarning:
+      type: object
+      description: "One check of the process flow (D-227): jump_unknown (Jump to names a step that is not in the PFD), jump_self (a step jumps to itself), jump_not_decision (a jump on a symbol other than Decision), flow_narrow (the Process Flow column is narrower than 37 mm)."
+      required: [kind, operation, target, width_mm]
+      properties:
+        kind:
+          type: string
+          enum: [jump_unknown, jump_self, jump_not_decision, flow_narrow]
+        operation:
+          type: string
+          description: Step number that has the jump; empty for flow_narrow.
+        target:
+          type: string
+          description: Step number in Jump to; empty for flow_narrow.
+        width_mm:
+          type: number
+          description: Width of the Process Flow column for flow_narrow; 0 otherwise.
     PreviewPage:
       type: object
       required: [rows, flow_svg]

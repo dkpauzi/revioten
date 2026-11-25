@@ -214,8 +214,15 @@ func TestSeededTemplates(t *testing.T) {
 		t.Errorf("simbol Revision di CP harus otomatis: %+v", cp.Symbols)
 	}
 	pfd := f.version(t, "PFD v1")
-	if got := labels(pfd, AreaRow); !slices.Equal(got, []string{"No", "Process", "Flow Symbol", "NG Disposition"}) {
+	if got := labels(pfd, AreaRow); !slices.Equal(got, []string{"No", "Process", "Flow Symbol", "NG Disposition", "Jump to", "Jump label"}) {
 		t.Errorf("kolom PFD: %v", got)
+	}
+	// Lompatan (D-227, migrasi 00060): field ber-key, label pilihan OK, NG, Yes, No.
+	if jump := field(t, pfd, "Jump label"); jump.Key != "jump_label" || jump.Kind != KindSelect || len(jump.Options) != 4 {
+		t.Errorf("Jump label: %+v", jump)
+	}
+	if jump := field(t, pfd, "Jump to"); jump.Key != "jump_to" || jump.Kind != "text" {
+		t.Errorf("Jump to: %+v", jump)
 	}
 	if flow := field(t, pfd, "Flow Symbol"); flow.Kind != KindSelect || len(flow.Options) != 6 || flow.Options[1] != (Option{Key: "alternate_process", Label: "Alternate Process"}) {
 		t.Errorf("Flow Symbol: %+v", flow)

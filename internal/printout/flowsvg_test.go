@@ -8,8 +8,9 @@ import (
 // Bagian B (E-144, D-161): kolom Process Flow CP mengikuti SC-TR-020-04.
 // Tujuan NG digambar sebagai kotak di kiri alur: SCRAP dan NCP berbentuk
 // predefined process (persegi dengan garis ganda di kiri dan kanan), REWORK
-// kotak proses biasa. Label OK hanya untuk belah ketupat; langkah proses yang
-// punya cabang NG (Router 6.1) tidak diberi OK.
+// kotak proses biasa. Label OK hanya untuk belah ketupat (Down diisi rencana
+// halaman, flowPages); langkah proses yang punya cabang NG (Router 6.1) tidak
+// diberi OK.
 
 func flowOf(nodes ...FlowNode) string {
 	tops := make([]float64, len(nodes))
@@ -22,9 +23,9 @@ func flowOf(nodes ...FlowNode) string {
 
 func TestFlowSVGNGBoxes(t *testing.T) {
 	svg := flowOf(
-		FlowNode{Op: "2", Symbol: "decision", NG: "ncp"},
+		FlowNode{Op: "2", Symbol: "decision", NG: "ncp", Down: "OK"},
 		FlowNode{Op: "6.1", Symbol: "process", NG: "scrap"},
-		FlowNode{Op: "7", Symbol: "decision", NG: "rework"},
+		FlowNode{Op: "7", Symbol: "decision", NG: "rework", Down: "OK"},
 	)
 	for _, want := range []string{
 		`data-ng-box="ncp"`, `data-ng-box="scrap"`, `data-ng-box="rework"`,

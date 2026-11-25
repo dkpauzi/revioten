@@ -51,6 +51,18 @@ const row = (id: string, operation: string, process: string, content: Record<str
 });
 
 describe('diagramOf', () => {
+	it('lompatan menjadi panah berlabel ke langkah tujuan (D-227)', () => {
+		const withJump = {
+			fields: [
+				...format.fields,
+				{ id: 'jt', key: 'jump_to', area: 'row', kind: 'text', label: 'Jump to', position: 5, required: false, hidden: false },
+				{ id: 'jl', key: 'jump_label', area: 'row', kind: 'select', label: 'Jump label', position: 6, required: false, hidden: false, options: [{ key: 'no', label: 'No' }] }
+			]
+		} as unknown as FormatVersion;
+		const d = diagramOf([row('a', '10', 'Loading PCB'), row('b', '20', 'Finish 2nd side', { sym: 'decision', jt: '10', jl: 'no' }), row('c', '30', 'ICT', { jt: '99' })], withJump);
+		expect(d.edges.filter((e) => e.id.includes('-jump-'))).toEqual([{ id: 'b-jump-a', source: 'b', target: 'a', ng: false, label: 'No' }]);
+	});
+
 	it('satu simpul per baris menurut urutan, dihubungkan berurutan', () => {
 		const d = diagramOf([row('a', '10', 'Receiving'), row('b', '20', 'Inspection', { sym: 'decision', ng: 'scrap' }), row('c', '', '')], format);
 		expect(d.nodes).toEqual([

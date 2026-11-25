@@ -124,6 +124,10 @@ func diagramPageXLSX(d *drawer, mm func(float64) float64, off float64, page Diag
 			}
 			prev = 2*diagConnR + 1
 		}
+		// Lompatan (D-227), dengan ukuran yang sama dengan DiagramSVG.
+		if err := partsXLSX(d, diagramJumpParts(c), mm, y, diagConnR, 5, 3.5, 6); err != nil {
+			return err
+		}
 		for _, n := range c.Nodes {
 			if !math.IsNaN(prev) {
 				if err := d.line(mm(c.X), y(prev), mm(c.X), y(n.Y-n.H/2), true); err != nil {
@@ -168,10 +172,10 @@ func diagramNodeXLSX(d *drawer, mm func(float64) float64, y func(float64) float6
 		if err := d.text(mm(boxX+boxW+0.2), y(n.Y-3.8), mm(from-boxX-boxW-0.4), mm(3.5), "NG", 5); err != nil {
 			return err
 		}
-		if s.Symbol == "decision" {
-			if err := d.text(mm(n.X+0.8), y(n.Y+n.H/2+0.5), mm(5), mm(3.5), "OK", 6); err != nil {
-				return err
-			}
+	}
+	if n.Down != "" {
+		if err := d.text(mm(n.X+0.8), y(n.Y+n.H/2+0.5), mm(5), mm(3.5), n.Down, 6); err != nil {
+			return err
 		}
 	}
 	label := s.Label()

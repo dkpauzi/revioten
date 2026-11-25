@@ -135,7 +135,6 @@ func Build(in Input) Sheet {
 		}
 	}
 	sh.FlowColumn, sh.OpColumn, sh.ProcessColumn = -1, -1, -1
-	symbolField, ngField := "", ""
 	for i, f := range fields {
 		label := f.Label
 		// Nomor karakteristik tercetak "No" seperti SC-TR-020-04; label di format
@@ -149,19 +148,17 @@ func Build(in Input) Sheet {
 			sh.FlowColumn = i
 		case s.DocumentType == "pfd" && f.Key == "flow_symbol":
 			sh.FlowColumn = i
-			symbolField = f.ID
 		case f.Kind == template.KindOperationNumber:
 			sh.OpColumn = i
 		case f.Kind == template.KindProcess:
 			sh.ProcessColumn = i
 		}
-		if s.DocumentType == "pfd" && f.Key == "ng_disposition" {
-			ngField = f.ID
-		}
 	}
 	// PFD menggambar alurnya sendiri dari barisnya (R-DOC-09).
-	if s.DocumentType == "pfd" && symbolField != "" {
-		sh.Steps = StepsOf(s.Rows, symbolField, ngField)
+	if s.DocumentType == "pfd" {
+		if pfd := PFDFieldsOf(fields); pfd.Symbol != "" {
+			sh.Steps = StepsOf(s.Rows, pfd)
+		}
 	}
 
 	changed := marks(in)
@@ -196,15 +193,44 @@ func Build(in Input) Sheet {
 	return sh
 }
 
+// PFDFields adalah ID field PFD yang menggambar alur, dicari lewat key tetap
+// (D-146): Flow Symbol, NG Disposition, dan lompatan (D-227).
+type PFDFields struct {
+	Symbol, NG, Jump, JumpLabel string
+}
+
+// PFDFieldsOf mencari field alur di kolom baris format PFD.
+func PFDFieldsOf(fields []template.Field) PFDFields {
+	var out PFDFields
+	for _, f := range fields {
+		if f.Area != template.AreaRow {
+			continue
+		}
+		switch f.Key {
+		case "flow_symbol":
+			out.Symbol = f.ID
+		case "ng_disposition":
+			out.NG = f.ID
+		case "jump_to":
+			out.Jump = f.ID
+		case "jump_label":
+			out.JumpLabel = f.ID
+		}
+	}
+	return out
+}
+
 // StepsOf membaca langkah PFD menurut nomor langkahnya (R-DOC-09): simbol dari
-// field Flow Symbol dan arah NG dari field NG Disposition.
-func StepsOf(rows []document.SnapshotRow, symbolField, ngField string) map[string]Step {
+// field Flow Symbol, arah NG dari field NG Disposition, dan lompatan dari
+// Jump to dan Jump label (D-227).
+func StepsOf(rows []document.SnapshotRow, f PFDFields) map[string]Step {
 	steps := map[string]Step{}
 	for _, r := range rows {
 		if r.OperationNumber == "" {
 			continue
 		}
-		steps[r.OperationNumber] = Step{Symbol: text(r.Content[symbolField]), NG: text(r.Content[ngField])}
+		steps[r.OperationNumber] = Step{Symbol: text(r.Content[f.Symbol]), NG: text(r.Content[f.NG]),
+			Jump: text(r.Content[f.Jump]), JumpLabel: text(r.Content[f.JumpLabel])}
 	}
 	return steps
 }
@@ -212,7 +238,12 @@ func StepsOf(rows []document.SnapshotRow, symbolField, ngField string) map[strin
 // defaultWidth memberi lebar bawaan menurut jenis kolom. Kolom alur cukup
 // lebar untuk simbol dan cabang NG (C3).
 func defaultWidth(f template.Field) float64 {
-	if f.Kind == template.KindProcessFlow || f.Key == "flow_symbol" {
+	// Process Flow: cukup untuk kotak NG di kiri dan lompatan di kanan,
+	// sekitar 38 mm di A3 landscape dengan Control Plan v1 (D-227).
+	if f.Kind == template.KindProcessFlow {
+		return 2.1
+	}
+	if f.Key == "flow_symbol" {
 		return 1.3
 	}
 	switch f.Kind {

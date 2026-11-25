@@ -62,7 +62,7 @@ func TestConnectorLetter(t *testing.T) {
 func TestFlowPages(t *testing.T) {
 	steps := map[string]Step{"1": {Symbol: "process"}, "2": {Symbol: "decision", NG: "ncp"}, "3": {Symbol: "process"}}
 	ops := []string{"1", "2", "2", "2", "3"}
-	pages := flowPages(ops, [][]int{{0, 1}, {2, 3}, {4}}, steps)
+	pages := flowPages(ops, nil, [][]int{{0, 1}, {2, 3}, {4}}, steps)
 	type summary struct {
 		In, Out string
 		Ops     []string
@@ -83,8 +83,12 @@ func TestFlowPages(t *testing.T) {
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("halaman\n got %+v\nwant %+v", got, want)
 	}
+	// Belah ketupat dengan kotak NG mendapat label OK di garis ke bawah.
+	if n := pages[0].Nodes[1]; n.Down != "OK" {
+		t.Errorf("label bawah langkah 2: %q, ingin OK", n.Down)
+	}
 	// Langkah yang tidak ada di PFD memakai simbol proses.
-	if p := flowPages([]string{"9"}, [][]int{{0}}, steps); p[0].Nodes[0].Symbol != "process" {
+	if p := flowPages([]string{"9"}, nil, [][]int{{0}}, steps); p[0].Nodes[0].Symbol != "process" {
 		t.Errorf("langkah tanpa PFD: %+v", p[0].Nodes)
 	}
 }
@@ -240,6 +244,8 @@ func TestSampleTokairika(t *testing.T) {
 	if body, err := XLSX(pfd); err == nil {
 		_ = os.WriteFile(filepath.Join(dir, "sample-pfd.xlsx"), body, 0o600)
 	}
+	// Lompatan (D-227) dengan kolom Control Plan v1 yang sebenarnya.
+	writeJumpSamples(t, dir)
 }
 
 // tokairikaFlow: 19 langkah PFD SH-TR-020-02 (nomor, nama, arah NG). Router
@@ -314,7 +320,7 @@ func tokairikaPFMEA() Sheet {
 		{Label: "Actions Taken Completion Date", Group: "Action Results", Width: 0.8}, {Label: "SEV", Group: "Action Results", Width: 0.4},
 		{Label: "OCC", Group: "Action Results", Width: 0.4}, {Label: "DET", Group: "Action Results", Width: 0.4}, {Label: "RPN", Group: "Action Results", Width: 0.5}}
 	sh := Sheet{Title: "PROCESS FMEA", Number: "SF-TR-020", FlowColumn: -1, OpColumn: 0, ProcessColumn: 1, Columns: cols}
-	sh.Layout = Layout{Paper: "A3", Orientation: "portrait", FontSize: 7, MarginsMM: Margins{Top: 10, Right: 8, Bottom: 12, Left: 8}}
+	sh.Layout = Layout{Paper: "A3", Orientation: "landscape", FontSize: 7, MarginsMM: Margins{Top: 10, Right: 8, Bottom: 12, Left: 8}}
 	tokairikaHead(&sh, "pfmea", "03", true)
 	for _, f := range tokairikaFlow[:4] {
 		sh.Ops = append(sh.Ops, f[0])

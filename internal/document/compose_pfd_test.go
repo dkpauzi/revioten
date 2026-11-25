@@ -182,16 +182,17 @@ func TestComposeFromPFD(t *testing.T) {
 // TestStepsOfPFD: baris berurutan dengan nomor dan proses yang sama adalah
 // satu langkah; baris tanpa nomor dilewati (ASUMSI E-138).
 func TestStepsOfPFD(t *testing.T) {
-	format := template.FormatVersion{Fields: []template.Field{{ID: "s", Key: "flow_symbol"}, {ID: "n", Key: "ng_disposition"}}}
+	format := template.FormatVersion{Fields: []template.Field{{ID: "s", Key: "flow_symbol"}, {ID: "n", Key: "ng_disposition"}, {ID: "j", Key: "jump_to"}, {ID: "l", Key: "jump_label"}}}
 	pfd := Document{Rows: []Row{
 		{OperationNumber: "1", ProcessID: "a", ProcessName: "Part Receiving", Content: map[string]any{"s": "process"}},
 		{OperationNumber: "2", ProcessID: "b", ProcessName: "IQC", Content: map[string]any{"s": "decision", "n": "ncp"}},
 		{OperationNumber: "2", ProcessID: "b", Content: map[string]any{}},
-		{OperationNumber: "2", ProcessID: "c", ProcessName: "IQC PCB", Content: map[string]any{"s": "decision"}},
+		{OperationNumber: "2", ProcessID: "c", ProcessName: "IQC PCB", Content: map[string]any{"s": "decision", "j": " 1 ", "l": "no"}},
 		{OperationNumber: "", ProcessID: "d", Content: map[string]any{}},
 	}}
 	got := StepsOfPFD(pfd, format)
-	if len(got) != 3 || got[1].NG != "ncp" || got[2].ProcessName != "IQC PCB" || got[0].Symbol != "process" {
+	// Lompatan ikut langkahnya (D-227), jadi ikut dibekukan di snapshot CP.
+	if len(got) != 3 || got[1].NG != "ncp" || got[2].ProcessName != "IQC PCB" || got[0].Symbol != "process" || got[2].Jump != "1" || got[2].JumpLabel != "no" || got[1].Jump != "" {
 		t.Errorf("langkah: %+v", got)
 	}
 }

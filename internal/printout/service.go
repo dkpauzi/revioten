@@ -653,7 +653,7 @@ func stepsOfFlow(flow []document.FlowStep) map[string]Step {
 	out := map[string]Step{}
 	for _, f := range flow {
 		if _, ok := out[f.Operation]; !ok {
-			out[f.Operation] = Step{Symbol: f.Symbol, NG: f.NG}
+			out[f.Operation] = Step{Symbol: f.Symbol, NG: f.NG, Jump: f.Jump, JumpLabel: f.JumpLabel}
 		}
 	}
 	return out
@@ -680,16 +680,7 @@ func (s *Service) pfdSteps(ctx context.Context, d document.Document) map[string]
 		if err != nil {
 			return nil
 		}
-		symbol, ng := "", ""
-		for _, f := range format.Fields {
-			switch f.Key {
-			case "flow_symbol":
-				symbol = f.ID
-			case "ng_disposition":
-				ng = f.ID
-			}
-		}
-		return StepsOf(snap.Rows, symbol, ng)
+		return StepsOf(snap.Rows, PFDFieldsOf(format.Fields))
 	}
 	return nil
 }

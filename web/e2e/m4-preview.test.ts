@@ -133,3 +133,64 @@ test('C2: pratinjau CP per halaman, Process Flow dari PFD, dan konektor A, B di 
 	await expect(page.locator(`[data-testid="process-flow"] [data-step="12"]`)).toHaveCount(1);
 	await expect(page.locator('circle[data-connector="B"]').first()).toBeAttached();
 });
+
+// D-227: lompatan PFD. AOI (5.7.1) OK langsung ke Router (6.1), Finish 2nd
+// side (6.2) No kembali ke Loading PCB (5.1), dan satu lompatan ke langkah
+// yang tidak ada. Berjalan sesudah test C2, yang membuat customer TR.
+test('D-227: lompatan di Process Flow CP dan PFD, huruf konektor tidak ganda, peringatan', async ({ page }) => {
+	test.slow();
+	await logInAuthor(page);
+	const ids = await page.evaluate(async (flow) => {
+		const post = (path: string, body: object, headers: Record<string, string> = {}) =>
+			fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, body: JSON.stringify(body) }).then((r) => r.json());
+		const customers = await (await fetch('/api/v1/customers')).json();
+		const customer = customers.items.find((c: { code: string }) => c.code === 'TR');
+		const models = await (await fetch(`/api/v1/models?customer_id=${customer.id}`)).json();
+		const set = await post('/api/v1/document-numbers/sets', { customer_id: customer.id }, { 'Idempotency-Key': crypto.randomUUID() });
+		const docs: Record<string, { id: string; format_version_id: string }> = {};
+		for (const n of set.items as { id: string; status: string }[]) {
+			if (n.status !== 'reserved') continue;
+			const doc = await post('/api/v1/documents', { document_number_id: n.id, model_ids: [models.items[0].id] });
+			docs[doc.document_type.key] = doc;
+		}
+		const fields = (await (await fetch(`/api/v1/format-template-versions/${docs.pfd.format_version_id}`)).json()).fields as { id: string; key?: string }[];
+		const key = (k: string) => fields.find((f) => f.key === k)!.id;
+		const jumps: Record<string, [string, string]> = { '5.7.1': ['6.1', 'ok'], '6.2': ['5.1', 'no'], '9': ['99', 'ok'] };
+		await post(`/api/v1/documents/${docs.pfd.id}/rows/batch`, {
+			rows: flow.map(([op, , sym, disposition]) => {
+				const content: Record<string, string> = { [key('flow_symbol')]: op === '6.2' ? 'decision' : sym };
+				if (disposition && op !== '5.7.1') content[key('ng_disposition')] = disposition;
+				if (jumps[op]) {
+					content[key('jump_to')] = jumps[op][0];
+					content[key('jump_label')] = jumps[op][1];
+				}
+				return { operation_number: op, content };
+			})
+		});
+		await post(`/api/v1/documents/${docs.cp.id}/rows/batch`, { rows: flow.map(([op]) => ({ operation_number: op, content: {} })) });
+		return { cp: docs.cp.id, pfd: docs.pfd.id };
+	}, flow);
+
+	await page.goto(`/documents/view?id=${ids.cp}`);
+	await tool(page, en.previewOpen).click();
+	const pages = page.getByRole('group', { name: /^Page \d+ of \d+$/ });
+	await expect(pages.first()).toBeVisible();
+	const svg = page.locator('[data-testid="process-flow"]');
+	await expect(svg.locator('[data-jump-label="OK"]').first()).toBeAttached();
+	await expect(svg.locator('[data-jump-label="No"]').first()).toBeAttached();
+	await expect(svg.locator('[data-down="Yes"]').first()).toBeAttached();
+	// Setiap huruf konektor dipakai tepat untuk satu pasang.
+	const letters = await svg.locator('circle[data-connector]').evaluateAll((els) => els.map((e) => e.getAttribute('data-connector')));
+	for (const letter of new Set(letters)) {
+		expect(letters.filter((l) => l === letter)).toHaveLength(2);
+	}
+	const check = page.getByTestId('preview-flow-check');
+	await expect(check.getByText(en.flowJumpUnknown.replace('{operation}', '9').replace('{target}', '99'))).toBeVisible();
+
+	// PFD: kolom Jump to dan diagramnya.
+	await page.goto(`/documents/view?id=${ids.pfd}`);
+	await expect(page.locator('.tabulator-col-title').getByText('Jump to', { exact: true })).toBeAttached();
+	await tool(page, en.previewOpen).click();
+	await expect(pages.first()).toBeVisible();
+	await expect(page.locator('[data-testid="process-flow"] [data-jump-label="No"]').first()).toBeAttached();
+});
