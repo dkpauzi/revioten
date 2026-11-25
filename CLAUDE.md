@@ -12,7 +12,7 @@ File ini dibaca Claude Code di awal setiap sesi. Isinya aturan kerja untuk menul
 - Aplikasi berjalan di localhost sebagai demo untuk mematangkan konsep dan alur kerja (D-36). Semua kode adalah latihan, termasuk tahap 9 dan 10 (D-37).
 - Kode dibangun sejajar dengan UML yang tersisa dan dipakai untuk mengevaluasi desain (D-77). Lihat bagian 6.
 - API-first: layar web adalah klien dari API `/api/v1` yang dijelaskan kontrak OpenAPI 3.0.4 (D-61, R-API-02, D-38).
-- Pemilik ingin bisa membangun ulang sistem ini sendiri tanpa AI (D-12). Kejelasan lebih penting daripada kecepatan. Panduannya: `docs/panduan/membangun-manual.md` (alur satu fitur dari migrasi sampai layar, mekanisme inti, urutan membangun dari nol); perbarui bila alur kerjanya berubah.
+- Pemilik ingin bisa membangun ulang sistem ini sendiri tanpa AI (D-12). Kejelasan lebih penting daripada kecepatan. Panduannya: `docs/panduan/membangun-manual.md` untuk pemula (teknologi yang dipakai, konsep dasar, membangun bertahap dari server kosong dan halaman login, resep satu fitur dari migrasi sampai layar, mekanisme inti); perbarui bila alur kerja atau dependensinya berubah.
 
 ## 2. Dokumen sumber
 
