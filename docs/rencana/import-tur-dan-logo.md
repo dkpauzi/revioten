@@ -93,6 +93,7 @@ Tujuannya: pemilik bisa mulai dari database bersih, lalu mengisi data dasar seka
 
 ### I3 · Isi template PFMEA dan Control Plan (Template library → Process templates → Import content)
 
+- **Status:** dibangun 25 November 2026 dengan template import sendiri (catatan `docs/catatan/I3-import-isi-template.md`). Poin yang sudah ada dilewati; varian tidak diimpor; satu poin satu transaksi.
 - **Satu file, dua sheet:** PFMEA dan Control Plan. Judul kolomnya mengikuti label kolom format **PFMEA v1** dan **Control Plan v1** (kolom yang punya key, D-146), ditambah kolom Process, Sub-process, Point text, dan Use point for (General / Customer / Model group / Model, dengan kode customer dan nama model).
 - **Hasil:**
   - untuk setiap proses, poin masuk ke **versi draft** process template-nya (dibuat bila belum ada);
@@ -128,5 +129,5 @@ Jadi revisi memang belum diisi saat import nomor, dan baru diisi di menu migrasi
 
 1. E-143: cara password akun hasil import, opsi (a), (b), atau (c). Dijawab: (b), D-224.
 2. ~~Logo: cetakan ulang revisi lama memakai logo saat dicetak, atau logo saat rilis?~~ Dijawab: saat dicetak (D-221), lalu diganti D-223: logo dibekukan saat rilis.
-3. I3: template import sendiri saja dulu, atau juga membaca Excel bentuk Tokairika?
+3. ~~I3: template import sendiri saja dulu, atau juga membaca Excel bentuk Tokairika?~~ Dijawab 25 November 2026: template import sendiri dulu.
 4. ~~I4: nomor yang sudah dipakai berarti Released saja, atau juga Reserved?~~ Dijawab: Released atau Reserved, kosong berarti Released.

@@ -307,6 +307,49 @@ export type AccountInfo = {
     temporary_password_expires_at?: string;
 };
 
+export type ProcessContentImport = {
+    rows: Array<ProcessContentImportRow>;
+    /**
+     * The versions that receive new points, one per process.
+     */
+    versions: Array<ProcessContentImportVersion>;
+    new: number;
+    existing: number;
+    invalid: number;
+    committed: boolean;
+};
+
+export type ProcessContentImportRow = {
+    /**
+     * PFMEA or Control Plan.
+     */
+    sheet: string;
+    /**
+     * The Excel row number, from 2.
+     */
+    row: number;
+    process: string;
+    subprocess: string;
+    text: string;
+    /**
+     * general, customer, model_group, or model; empty when Use point for is wrong.
+     */
+    scope_level: string;
+    /**
+     * The customer code, or the model group or model with its customer code.
+     */
+    scope_target: string;
+    status: 'new' | 'existing' | 'invalid';
+    problems: Array<ErrorDetail>;
+};
+
+export type ProcessContentImportVersion = {
+    process: string;
+    version: number;
+    change: 'new_template' | 'new_version' | 'draft';
+    points: number;
+};
+
 export type ProcessImport = {
     rows: Array<ProcessImportRow>;
     new: number;
@@ -11615,6 +11658,76 @@ export type SetCustomerFormSetResponses = {
 };
 
 export type SetCustomerFormSetResponse = SetCustomerFormSetResponses[keyof SetCustomerFormSetResponses];
+
+export type GetProcessContentImportTemplateData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/process-template-imports/template';
+};
+
+export type GetProcessContentImportTemplateErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type GetProcessContentImportTemplateError = GetProcessContentImportTemplateErrors[keyof GetProcessContentImportTemplateErrors];
+
+export type GetProcessContentImportTemplateResponses = {
+    /**
+     * The template, with the PFMEA, Control Plan, and Help sheets. The content columns follow the forms in use.
+     */
+    200: Blob | File;
+};
+
+export type GetProcessContentImportTemplateResponse = GetProcessContentImportTemplateResponses[keyof GetProcessContentImportTemplateResponses];
+
+export type ImportProcessContentData = {
+    body: {
+        file?: Blob | File;
+    };
+    path?: never;
+    query: {
+        commit: boolean;
+    };
+    url: '/api/v1/process-template-imports';
+};
+
+export type ImportProcessContentErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ImportProcessContentError = ImportProcessContentErrors[keyof ImportProcessContentErrors];
+
+export type ImportProcessContentResponses = {
+    /**
+     * The report.
+     */
+    200: ProcessContentImport;
+};
+
+export type ImportProcessContentResponse = ImportProcessContentResponses[keyof ImportProcessContentResponses];
 
 export type ListProcessTemplatesData = {
     body?: never;

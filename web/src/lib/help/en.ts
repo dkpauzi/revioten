@@ -190,7 +190,8 @@ export const helpEn: HelpContent = {
 			tips: [
 				'The most specific text wins: model, then model group, then customer, then general.',
 				'The scope of a point cannot be changed later. If it is wrong, hide the point and add a new one.',
-				'Sub-processes and points are hidden, never deleted.'
+				'Sub-processes and points are hidden, never deleted.',
+				'For many points at once, open {navContentImport}: press {contentImportTemplate}, fill one point per row on the PFMEA and Control Plan sheets, choose the file, press {contentImportPreview}, and then {contentImportRun}. The points go to the draft version; check them here and publish the version. Points that already exist are skipped.'
 			]
 		},
 		{

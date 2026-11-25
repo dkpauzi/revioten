@@ -39,7 +39,7 @@ Preview juga melihat proses yang akan dibuat baris sebelumnya, jadi hasil Previe
 ## 4. Urutan sesudah reset database
 
 1. `create-admin`, lalu import akun (I1).
-2. Sebagai PPAP Engineer: import customer dan model (I5), import nama proses (I2), lalu import nomor lama (I4).
+2. Sebagai PPAP Engineer: import customer dan model (I5), import nama proses (I2), isi process template (I3), lalu import nomor lama (I4).
 
 ## 5. Cara mengulang dari nol
 

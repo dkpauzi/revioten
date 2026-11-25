@@ -35,10 +35,11 @@ describe('buildMenu', () => {
 		expect(hrefs(['L-1', 'L-4']).documents).toEqual(['/documents', '/changes', '/yokoten', '/signatures', '/dashboard', '/documents/released', '/periodic-reviews', '/numbers']);
 	});
 
-	it('menampilkan import proses hanya untuk pemegang E-6 (I2)', () => {
+	it('menampilkan import proses dan isi template hanya untuk pemegang E-6 (I2, I3)', () => {
 		expect(hrefs(['L-1', 'E-6']).templates).toEqual([
 			'/format-templates',
 			'/process-templates',
+			'/process-templates/import',
 			'/form-sets',
 			'/processes',
 			'/processes/import',

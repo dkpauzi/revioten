@@ -316,6 +316,7 @@
 
 <h1>{t('processTemplateTitle')}</h1>
 <p>{t('processTemplateIntro')}</p>
+{#if canEdit}<p><a href="/process-templates/import">{t('processTemplateImportLink')}</a></p>{/if}
 
 {#if loadError}
 	<p class="error" role="alert">{loadError}</p>

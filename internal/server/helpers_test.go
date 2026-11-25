@@ -556,6 +556,16 @@ func (f *fakeProcessTemplates) PublishProcessVersion(_ context.Context, _ access
 	return f.version, f.err
 }
 
+func (f *fakeProcessTemplates) ContentImportTemplate(context.Context, access.Actor) ([]byte, error) {
+	f.got = called{method: "ContentImportTemplate"}
+	return nil, f.err
+}
+
+func (f *fakeProcessTemplates) ImportContent(context.Context, access.Actor, []byte, bool) (template.ContentImportReport, error) {
+	f.got = called{method: "ImportContent"}
+	return template.ContentImportReport{}, f.err
+}
+
 func (f *fakeProcessTemplates) NewProcessVersion(_ context.Context, _ access.Actor, templateID string) (template.ProcessVersion, error) {
 	f.got = called{method: "NewProcessVersion", id: templateID}
 	return f.version, f.err

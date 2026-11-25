@@ -397,6 +397,8 @@ func TestPermissionsPerOperation(t *testing.T) {
 		{http.MethodPut, "/api/v1/processes/{processId}", `{"name":"Incoming QC","aliases":["IQC"]}`, http.StatusForbidden, http.StatusOK, http.StatusForbidden},
 		// Process template (M3.2): semua akun melihat (L-2), Pengelola template mengubah (E-6, D-64).
 		{http.MethodGet, "/api/v1/process-templates", "", http.StatusOK, http.StatusOK, http.StatusOK},
+		{http.MethodGet, "/api/v1/process-template-imports/template", "", http.StatusForbidden, http.StatusOK, http.StatusForbidden},
+		{http.MethodPost, "/api/v1/process-template-imports?commit=false", multipartBody, http.StatusForbidden, http.StatusUnprocessableEntity, http.StatusForbidden},
 		{http.MethodPost, "/api/v1/process-templates", `{"process_id":"{freeProcessId}"}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},
 		{http.MethodGet, "/api/v1/process-template-versions/{processVersionId}", "", http.StatusOK, http.StatusOK, http.StatusOK},
 		{http.MethodPost, "/api/v1/process-template-versions/{processVersionId}/subprocesses", `{"name":"IQC PCB"}`, http.StatusForbidden, http.StatusCreated, http.StatusForbidden},

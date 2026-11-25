@@ -1751,6 +1751,48 @@ func (e ProblemReportChangeStatus) Valid() bool {
 	}
 }
 
+// Defines values for ProcessContentImportRowStatus.
+const (
+	ProcessContentImportRowStatusExisting ProcessContentImportRowStatus = "existing"
+	ProcessContentImportRowStatusInvalid  ProcessContentImportRowStatus = "invalid"
+	ProcessContentImportRowStatusNew      ProcessContentImportRowStatus = "new"
+)
+
+// Valid indicates whether the value is a known member of the ProcessContentImportRowStatus enum.
+func (e ProcessContentImportRowStatus) Valid() bool {
+	switch e {
+	case ProcessContentImportRowStatusExisting:
+		return true
+	case ProcessContentImportRowStatusInvalid:
+		return true
+	case ProcessContentImportRowStatusNew:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ProcessContentImportVersionChange.
+const (
+	ProcessContentImportVersionChangeDraft       ProcessContentImportVersionChange = "draft"
+	ProcessContentImportVersionChangeNewTemplate ProcessContentImportVersionChange = "new_template"
+	ProcessContentImportVersionChangeNewVersion  ProcessContentImportVersionChange = "new_version"
+)
+
+// Valid indicates whether the value is a known member of the ProcessContentImportVersionChange enum.
+func (e ProcessContentImportVersionChange) Valid() bool {
+	switch e {
+	case ProcessContentImportVersionChangeDraft:
+		return true
+	case ProcessContentImportVersionChangeNewTemplate:
+		return true
+	case ProcessContentImportVersionChangeNewVersion:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ProcessImportRowStatus.
 const (
 	ProcessImportRowStatusExisting ProcessImportRowStatus = "existing"
@@ -5396,6 +5438,53 @@ type Process struct {
 	Name      string    `json:"name"`
 }
 
+// ProcessContentImport defines model for ProcessContentImport.
+type ProcessContentImport struct {
+	Committed bool                      `json:"committed"`
+	Existing  int                       `json:"existing"`
+	Invalid   int                       `json:"invalid"`
+	New       int                       `json:"new"`
+	Rows      []ProcessContentImportRow `json:"rows"`
+
+	// Versions The versions that receive new points, one per process.
+	Versions []ProcessContentImportVersion `json:"versions"`
+}
+
+// ProcessContentImportRow defines model for ProcessContentImportRow.
+type ProcessContentImportRow struct {
+	Problems []ErrorDetail `json:"problems"`
+	Process  string        `json:"process"`
+
+	// Row The Excel row number, from 2.
+	Row int `json:"row"`
+
+	// ScopeLevel general, customer, model_group, or model; empty when Use point for is wrong.
+	ScopeLevel string `json:"scope_level"`
+
+	// ScopeTarget The customer code, or the model group or model with its customer code.
+	ScopeTarget string `json:"scope_target"`
+
+	// Sheet PFMEA or Control Plan.
+	Sheet      string                        `json:"sheet"`
+	Status     ProcessContentImportRowStatus `json:"status"`
+	Subprocess string                        `json:"subprocess"`
+	Text       string                        `json:"text"`
+}
+
+// ProcessContentImportRowStatus defines model for ProcessContentImportRow.Status.
+type ProcessContentImportRowStatus string
+
+// ProcessContentImportVersion defines model for ProcessContentImportVersion.
+type ProcessContentImportVersion struct {
+	Change  ProcessContentImportVersionChange `json:"change"`
+	Points  int                               `json:"points"`
+	Process string                            `json:"process"`
+	Version int                               `json:"version"`
+}
+
+// ProcessContentImportVersionChange defines model for ProcessContentImportVersion.Change.
+type ProcessContentImportVersionChange string
+
 // ProcessImport defines model for ProcessImport.
 type ProcessImport struct {
 	Committed bool               `json:"committed"`
@@ -6839,6 +6928,16 @@ type ImportProcessesParams struct {
 	Commit bool `form:"commit" json:"commit"`
 }
 
+// ImportProcessContentMultipartBody defines parameters for ImportProcessContent.
+type ImportProcessContentMultipartBody struct {
+	File *openapi_types.File `json:"file,omitempty"`
+}
+
+// ImportProcessContentParams defines parameters for ImportProcessContent.
+type ImportProcessContentParams struct {
+	Commit bool `form:"commit" json:"commit"`
+}
+
 // PreviewPropagationParams defines parameters for PreviewPropagation.
 type PreviewPropagationParams struct {
 	Scope string `form:"scope" json:"scope"`
@@ -7126,6 +7225,9 @@ type ReportProblemJSONRequestBody = NewProblemReport
 
 // ImportProcessesMultipartRequestBody defines body for ImportProcesses for multipart/form-data ContentType.
 type ImportProcessesMultipartRequestBody ImportProcessesMultipartBody
+
+// ImportProcessContentMultipartRequestBody defines body for ImportProcessContent for multipart/form-data ContentType.
+type ImportProcessContentMultipartRequestBody ImportProcessContentMultipartBody
 
 // AddTemplatePointJSONRequestBody defines body for AddTemplatePoint for application/json ContentType.
 type AddTemplatePointJSONRequestBody = NewTemplatePoint
@@ -7756,6 +7858,12 @@ type ServerInterface interface {
 	// GetProcessImportTemplate The Excel template for importing processes (E-6, I2)
 	// (GET /api/v1/process-imports/template)
 	GetProcessImportTemplate(w http.ResponseWriter, r *http.Request)
+	// ImportProcessContent Import process template points from an Excel file (E-6, I3)
+	// (POST /api/v1/process-template-imports)
+	ImportProcessContent(w http.ResponseWriter, r *http.Request, params ImportProcessContentParams)
+	// GetProcessContentImportTemplate The Excel template for importing process template content (E-6, I3)
+	// (GET /api/v1/process-template-imports/template)
+	GetProcessContentImportTemplate(w http.ResponseWriter, r *http.Request)
 	// GetProcessTemplateVersion One process template version with its sub-processes and points (L-2)
 	// (GET /api/v1/process-template-versions/{processVersionId})
 	GetProcessTemplateVersion(w http.ResponseWriter, r *http.Request, processVersionId ProcessVersionId)
@@ -12684,6 +12792,53 @@ func (siw *ServerInterfaceWrapper) GetProcessImportTemplate(w http.ResponseWrite
 	handler.ServeHTTP(w, r)
 }
 
+// ImportProcessContent operation middleware
+func (siw *ServerInterfaceWrapper) ImportProcessContent(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ImportProcessContentParams
+
+	// ------------- Required query parameter "commit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "commit", r.URL.Query(), &params.Commit, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "commit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "commit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ImportProcessContent(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetProcessContentImportTemplate operation middleware
+func (siw *ServerInterfaceWrapper) GetProcessContentImportTemplate(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetProcessContentImportTemplate(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetProcessTemplateVersion operation middleware
 func (siw *ServerInterfaceWrapper) GetProcessTemplateVersion(w http.ResponseWriter, r *http.Request) {
 
@@ -14386,6 +14541,8 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/form-set-versions/{formSetVersionId}", wrapper.SetFormSetSheets)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/form-set-versions/{formSetVersionId}/publish", wrapper.PublishFormSetVersion)
 	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/api/v1/customers/{customerId}/default-form-set", wrapper.SetCustomerFormSet)
+	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/process-template-imports/template", wrapper.GetProcessContentImportTemplate)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/process-template-imports", wrapper.ImportProcessContent)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/api/v1/process-templates", wrapper.ListProcessTemplates)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/process-templates", wrapper.CreateProcessTemplate)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/api/v1/process-templates/{processTemplateId}/versions", wrapper.CreateProcessTemplateVersion)
@@ -21643,6 +21800,98 @@ func (response GetProcessImportTemplatedefaultJSONResponse) VisitGetProcessImpor
 	return err
 }
 
+type ImportProcessContentRequestObject struct {
+	Params ImportProcessContentParams
+	Body   *multipart.Reader
+}
+
+type ImportProcessContentResponseObject interface {
+	VisitImportProcessContentResponse(w http.ResponseWriter) error
+}
+
+type ImportProcessContent200JSONResponse ProcessContentImport
+
+func (response ImportProcessContent200JSONResponse) VisitImportProcessContentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ImportProcessContentdefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response ImportProcessContentdefaultJSONResponse) VisitImportProcessContentResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProcessContentImportTemplateRequestObject struct {
+}
+
+type GetProcessContentImportTemplateResponseObject interface {
+	VisitGetProcessContentImportTemplateResponse(w http.ResponseWriter) error
+}
+
+type GetProcessContentImportTemplate200ResponseHeaders struct {
+	ContentDisposition *string
+}
+
+type GetProcessContentImportTemplate200ApplicationoctetStreamResponse struct {
+	Body          io.Reader
+	Headers       GetProcessContentImportTemplate200ResponseHeaders
+	ContentLength int64
+}
+
+func (response GetProcessContentImportTemplate200ApplicationoctetStreamResponse) VisitGetProcessContentImportTemplateResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "application/octet-stream")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	if response.Headers.ContentDisposition != nil {
+		w.Header().Set("Content-Disposition", fmt.Sprint(*response.Headers.ContentDisposition))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type GetProcessContentImportTemplatedefaultJSONResponse struct {
+	Body       Error
+	StatusCode int
+}
+
+func (response GetProcessContentImportTemplatedefaultJSONResponse) VisitGetProcessContentImportTemplateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(response.StatusCode)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetProcessTemplateVersionRequestObject struct {
 	ProcessVersionId ProcessVersionId `json:"processVersionId"`
 }
@@ -24559,6 +24808,12 @@ type StrictServerInterface interface {
 	// GetProcessImportTemplate The Excel template for importing processes (E-6, I2)
 	// (GET /api/v1/process-imports/template)
 	GetProcessImportTemplate(ctx context.Context, request GetProcessImportTemplateRequestObject) (GetProcessImportTemplateResponseObject, error)
+	// ImportProcessContent Import process template points from an Excel file (E-6, I3)
+	// (POST /api/v1/process-template-imports)
+	ImportProcessContent(ctx context.Context, request ImportProcessContentRequestObject) (ImportProcessContentResponseObject, error)
+	// GetProcessContentImportTemplate The Excel template for importing process template content (E-6, I3)
+	// (GET /api/v1/process-template-imports/template)
+	GetProcessContentImportTemplate(ctx context.Context, request GetProcessContentImportTemplateRequestObject) (GetProcessContentImportTemplateResponseObject, error)
 	// GetProcessTemplateVersion One process template version with its sub-processes and points (L-2)
 	// (GET /api/v1/process-template-versions/{processVersionId})
 	GetProcessTemplateVersion(ctx context.Context, request GetProcessTemplateVersionRequestObject) (GetProcessTemplateVersionResponseObject, error)
@@ -29957,6 +30212,63 @@ func (sh *strictHandler) GetProcessImportTemplate(w http.ResponseWriter, r *http
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetProcessImportTemplateResponseObject); ok {
 		if err := validResponse.VisitGetProcessImportTemplateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ImportProcessContent operation middleware
+func (sh *strictHandler) ImportProcessContent(w http.ResponseWriter, r *http.Request, params ImportProcessContentParams) {
+	var request ImportProcessContentRequestObject
+
+	request.Params = params
+
+	if reader, err := r.MultipartReader(); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode multipart body: %w", err))
+		return
+	} else {
+		request.Body = reader
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ImportProcessContent(ctx, request.(ImportProcessContentRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ImportProcessContent")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ImportProcessContentResponseObject); ok {
+		if err := validResponse.VisitImportProcessContentResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetProcessContentImportTemplate operation middleware
+func (sh *strictHandler) GetProcessContentImportTemplate(w http.ResponseWriter, r *http.Request) {
+	var request GetProcessContentImportTemplateRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetProcessContentImportTemplate(ctx, request.(GetProcessContentImportTemplateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetProcessContentImportTemplate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetProcessContentImportTemplateResponseObject); ok {
+		if err := validResponse.VisitGetProcessContentImportTemplateResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

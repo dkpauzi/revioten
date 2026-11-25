@@ -54,6 +54,8 @@ const groups: { id: MenuGroup['id']; label: MessageKey; entries: Entry[] }[] = [
 		entries: [
 			{ href: '/format-templates', label: 'navFormatTemplates' },
 			{ href: '/process-templates', label: 'navProcessTemplates' },
+			// Import isi process template dari Excel (I3): hanya pemegang E-6.
+			{ href: '/process-templates/import', label: 'navContentImport', permission: 'E-6' },
 			// Form set (langkah D, D-133): semua akun melihat; PPAP Engineer menyusun (E-11, D-209), penyetuju form menerbitkan (V-3).
 			{ href: '/form-sets', label: 'navFormSets' },
 			{ href: '/processes', label: 'navProcesses' },

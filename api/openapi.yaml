@@ -4456,6 +4456,58 @@ paths:
           description: The choice was saved.
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/process-template-imports/template:
+    get:
+      operationId: getProcessContentImportTemplate
+      summary: The Excel template for importing process template content (E-6, I3)
+      responses:
+        '200':
+          description: The template, with the PFMEA, Control Plan, and Help sheets. The content columns follow the forms in use.
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/process-template-imports:
+    post:
+      operationId: importProcessContent
+      summary: Import process template points from an Excel file (E-6, I3)
+      description: >-
+        One point per row on the PFMEA and Control Plan sheets. With commit false nothing is stored (Preview).
+        With commit true each new point goes to the draft version of the process template of its process; a
+        template or the next version is made first when needed. Published versions never change. A point with
+        the same text, sub-process, document type, and use that already exists is skipped and not changed.
+      parameters:
+        - name: commit
+          in: query
+          required: true
+          schema:
+            type: boolean
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: The report.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessContentImport'
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/process-templates:
     get:
       operationId: listProcessTemplates
@@ -5558,6 +5610,69 @@ components:
           type: string
           format: date-time
           description: The temporary password of an imported account expires then (D-224). Absent once the password was changed or reset.
+    ProcessContentImport:
+      type: object
+      required: [rows, versions, new, existing, invalid, committed]
+      properties:
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProcessContentImportRow'
+        versions:
+          type: array
+          description: The versions that receive new points, one per process.
+          items:
+            $ref: '#/components/schemas/ProcessContentImportVersion'
+        new:
+          type: integer
+        existing:
+          type: integer
+        invalid:
+          type: integer
+        committed:
+          type: boolean
+    ProcessContentImportRow:
+      type: object
+      required: [sheet, row, process, subprocess, text, scope_level, scope_target, status, problems]
+      properties:
+        sheet:
+          type: string
+          description: PFMEA or Control Plan.
+        row:
+          type: integer
+          description: The Excel row number, from 2.
+        process:
+          type: string
+        subprocess:
+          type: string
+        text:
+          type: string
+        scope_level:
+          type: string
+          description: general, customer, model_group, or model; empty when Use point for is wrong.
+        scope_target:
+          type: string
+          description: The customer code, or the model group or model with its customer code.
+        status:
+          type: string
+          enum: [new, existing, invalid]
+        problems:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorDetail'
+    ProcessContentImportVersion:
+      type: object
+      required: [process, version, change, points]
+      properties:
+        process:
+          type: string
+        version:
+          type: integer
+        change:
+          type: string
+          enum: [new_template, new_version, draft]
+        points:
+          type: integer
     ProcessImport:
       type: object
       required: [rows, new, existing, invalid, committed]

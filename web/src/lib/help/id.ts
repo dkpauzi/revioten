@@ -190,7 +190,8 @@ export const helpId: HelpContent = {
 			tips: [
 				'Teks yang paling spesifik menang: model, lalu group model, lalu customer, lalu umum.',
 				'Cakupan poin tidak bisa diubah kemudian. Bila salah, sembunyikan poinnya dan tambahkan poin baru.',
-				'Sub-proses dan poin disembunyikan, tidak pernah dihapus.'
+				'Sub-proses dan poin disembunyikan, tidak pernah dihapus.',
+				'Untuk banyak poin sekaligus, buka {navContentImport}: tekan {contentImportTemplate}, isi satu poin per baris di sheet PFMEA dan Control Plan, pilih berkasnya, tekan {contentImportPreview}, lalu {contentImportRun}. Poin masuk ke versi draft; periksa di sini lalu terbitkan versinya. Poin yang sudah ada dilewati.'
 			]
 		},
 		{

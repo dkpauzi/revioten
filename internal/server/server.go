@@ -172,6 +172,9 @@ type ProcessTemplateService interface {
 	// Versi terbit dan versi baru (M3.4, R-TPL-05).
 	PublishProcessVersion(ctx context.Context, actor access.Actor, versionID string) (template.ProcessVersion, error)
 	NewProcessVersion(ctx context.Context, actor access.Actor, templateID string) (template.ProcessVersion, error)
+	// Import isi dari Excel (I3).
+	ContentImportTemplate(ctx context.Context, actor access.Actor) ([]byte, error)
+	ImportContent(ctx context.Context, actor access.Actor, data []byte, commit bool) (template.ContentImportReport, error)
 }
 
 // DocumentService adalah operasi dokumen yang dipakai API (M4.1).
