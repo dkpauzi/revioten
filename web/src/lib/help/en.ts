@@ -164,6 +164,9 @@ export const helpEn: HelpContent = {
 				'Press {processAdd}.',
 				'Press {processEdit} on a process to change its name or aliases.'
 			],
+			tips: [
+				'For many processes at once, for example after the database was reset, open {navProcessImport}: press {processImportTemplate}, fill one process per row with its aliases separated by semicolons, choose the file, press {processImportPreview}, and then {processImportRun}. Processes that already exist are skipped; aliases they do not have yet are only reported.'
+			],
 			image: 'processes',
 			imageAlt: 'The Processes page with the list of processes and their aliases.'
 		},

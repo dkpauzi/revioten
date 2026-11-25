@@ -203,6 +203,16 @@ func (f *fakeProcesses) Update(_ context.Context, _ access.Actor, id string, in 
 	return f.one, f.err
 }
 
+func (f *fakeProcesses) ImportTemplate(context.Context, access.Actor) ([]byte, error) {
+	f.got.method = "ImportTemplate"
+	return nil, f.err
+}
+
+func (f *fakeProcesses) Import(context.Context, access.Actor, []byte, bool) (process.ImportReport, error) {
+	f.got.method = "Import"
+	return process.ImportReport{}, f.err
+}
+
 // called adalah catatan panggilan terakhir ke service palsu: nama method, ID,
 // dan input.
 type called struct {

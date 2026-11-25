@@ -34,7 +34,7 @@ Batasnya 5 MB dan 5000 nomor sekali impor.
 
 1. `create-admin`, lalu login sebagai admin.
 2. Import akun (I1). Preview bisa kapan saja; Import butuh Migration mode.
-3. Login sebagai PPAP Engineer, lalu import customer dan model (I5).
+3. Login sebagai PPAP Engineer, lalu import customer dan model (I5), dan nama proses (I2).
 4. Import nomor lama dari Excel (I4).
 
 ## 4. Cara mengulang dari nol

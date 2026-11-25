@@ -35,6 +35,18 @@ describe('buildMenu', () => {
 		expect(hrefs(['L-1', 'L-4']).documents).toEqual(['/documents', '/changes', '/yokoten', '/signatures', '/dashboard', '/documents/released', '/periodic-reviews', '/numbers']);
 	});
 
+	it('menampilkan import proses hanya untuk pemegang E-6 (I2)', () => {
+		expect(hrefs(['L-1', 'E-6']).templates).toEqual([
+			'/format-templates',
+			'/process-templates',
+			'/form-sets',
+			'/processes',
+			'/processes/import',
+			'/referenced-documents',
+			'/print-layouts'
+		]);
+	});
+
 	it('menampilkan impor nomor lama hanya untuk document control (E-8)', () => {
 		expect(hrefs(['L-1', 'E-8']).documents).toEqual(['/dashboard', '/documents/released', '/periodic-reviews', '/numbers', '/numbers/import']);
 	});

@@ -945,6 +945,58 @@ paths:
                 $ref: '#/components/schemas/PartNumber'
         default:
           $ref: '#/components/responses/Error'
+  /api/v1/process-imports/template:
+    get:
+      operationId: getProcessImportTemplate
+      summary: The Excel template for importing processes (E-6, I2)
+      responses:
+        '200':
+          description: The template, with the Processes and Help sheets.
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+        default:
+          $ref: '#/components/responses/Error'
+  /api/v1/process-imports:
+    post:
+      operationId: importProcesses
+      summary: Import processes and their aliases from an Excel file (E-6, I2)
+      description: >-
+        One process per row: Process name and Aliases separated by semicolons. With commit false nothing is
+        stored (Preview). With commit true each new process is stored in its own transaction. A process whose
+        name already exists is skipped and not changed, and aliases it does not have yet are reported as not
+        added. A name or alias that belongs to another process is refused.
+      parameters:
+        - name: commit
+          in: query
+          required: true
+          schema:
+            type: boolean
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: The report.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessImport'
+        default:
+          $ref: '#/components/responses/Error'
   /api/v1/processes:
     get:
       operationId: listProcesses
@@ -5506,6 +5558,50 @@ components:
           type: string
           format: date-time
           description: The temporary password of an imported account expires then (D-224). Absent once the password was changed or reset.
+    ProcessImport:
+      type: object
+      required: [rows, new, existing, invalid, committed]
+      properties:
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProcessImportRow'
+        new:
+          type: integer
+        existing:
+          type: integer
+        invalid:
+          type: integer
+        committed:
+          type: boolean
+    ProcessImportRow:
+      type: object
+      required: [row, name, aliases_text, aliases, status, not_added, problems]
+      properties:
+        row:
+          type: integer
+          description: The Excel row number, from 2.
+        name:
+          type: string
+        aliases_text:
+          type: string
+          description: The Aliases cell as written.
+        aliases:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum: [new, existing, invalid]
+        not_added:
+          type: array
+          description: For an existing process, the aliases in the row that it does not have. They are not added.
+          items:
+            type: string
+        problems:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorDetail'
     MasterDataImport:
       type: object
       required: [customers, models, new, existing, invalid, committed]

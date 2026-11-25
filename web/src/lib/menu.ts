@@ -57,6 +57,8 @@ const groups: { id: MenuGroup['id']; label: MessageKey; entries: Entry[] }[] = [
 			// Form set (langkah D, D-133): semua akun melihat; PPAP Engineer menyusun (E-11, D-209), penyetuju form menerbitkan (V-3).
 			{ href: '/form-sets', label: 'navFormSets' },
 			{ href: '/processes', label: 'navProcesses' },
+			// Import proses dari Excel (I2): hanya pemegang E-6.
+			{ href: '/processes/import', label: 'navProcessImport', permission: 'E-6' },
 			{ href: '/referenced-documents', label: 'navReferencedDocuments' },
 			{ href: '/print-layouts', label: 'navPrintLayouts' }
 		]

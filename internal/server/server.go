@@ -72,6 +72,8 @@ type ProcessService interface {
 	Get(ctx context.Context, actor access.Actor, id string) (process.Process, error)
 	Create(ctx context.Context, actor access.Actor, in process.Input) (process.Process, error)
 	Update(ctx context.Context, actor access.Actor, id string, in process.Input) (process.Process, error)
+	ImportTemplate(ctx context.Context, actor access.Actor) ([]byte, error)
+	Import(ctx context.Context, actor access.Actor, data []byte, commit bool) (process.ImportReport, error)
 }
 
 // NumberingService adalah operasi nomor dokumen yang dipakai API: bagian nomor

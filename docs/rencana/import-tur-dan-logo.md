@@ -87,6 +87,7 @@ Tujuannya: pemilik bisa mulai dari database bersih, lalu mengisi data dasar seka
 
 ### I2 · Nama proses (Template library → Processes → Import processes)
 
+- **Status:** dibangun 25 November 2026 (catatan `docs/catatan/I2-import-proses.md`). Berbeda dengan butir di bawah, nama yang sama dengan nama tampilan proses yang sudah ada dilewati (bukan ditolak), supaya berkas yang sama aman diunggah lagi sesudah reset database; nama yang menjadi alias proses lain tetap ditolak.
 - **Kolom:** Process name, Aliases (dipisah titik koma).
 - Nama yang sudah ada (juga sebagai alias proses lain) ditolak per baris. Alias baru untuk proses yang sudah ada tidak ditambahkan diam-diam; barisnya dilaporkan.
 

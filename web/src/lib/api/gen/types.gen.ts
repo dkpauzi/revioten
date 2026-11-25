@@ -307,6 +307,33 @@ export type AccountInfo = {
     temporary_password_expires_at?: string;
 };
 
+export type ProcessImport = {
+    rows: Array<ProcessImportRow>;
+    new: number;
+    existing: number;
+    invalid: number;
+    committed: boolean;
+};
+
+export type ProcessImportRow = {
+    /**
+     * The Excel row number, from 2.
+     */
+    row: number;
+    name: string;
+    /**
+     * The Aliases cell as written.
+     */
+    aliases_text: string;
+    aliases: Array<string>;
+    status: 'new' | 'existing' | 'invalid';
+    /**
+     * For an existing process, the aliases in the row that it does not have. They are not added.
+     */
+    not_added: Array<string>;
+    problems: Array<ErrorDetail>;
+};
+
 export type MasterDataImport = {
     customers: Array<MasterDataImportRow>;
     models: Array<MasterDataImportRow>;
@@ -5537,6 +5564,76 @@ export type UpdatePartNumberResponses = {
 };
 
 export type UpdatePartNumberResponse = UpdatePartNumberResponses[keyof UpdatePartNumberResponses];
+
+export type GetProcessImportTemplateData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/process-imports/template';
+};
+
+export type GetProcessImportTemplateErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type GetProcessImportTemplateError = GetProcessImportTemplateErrors[keyof GetProcessImportTemplateErrors];
+
+export type GetProcessImportTemplateResponses = {
+    /**
+     * The template, with the Processes and Help sheets.
+     */
+    200: Blob | File;
+};
+
+export type GetProcessImportTemplateResponse = GetProcessImportTemplateResponses[keyof GetProcessImportTemplateResponses];
+
+export type ImportProcessesData = {
+    body: {
+        file?: Blob | File;
+    };
+    path?: never;
+    query: {
+        commit: boolean;
+    };
+    url: '/api/v1/process-imports';
+};
+
+export type ImportProcessesErrors = {
+    /**
+     * The request failed. `code` says why: `invalid_request` (400, the body
+     * cannot be read as JSON), `validation_failed` (422, see `details`),
+     * `conflict` (409, for example the code is already used), `not_found`
+     * (404), `method_not_allowed` (405), `unauthenticated` (401, no valid
+     * session), `invalid_credentials` (401, login failed),
+     * `password_change_required` (403, change the password first),
+     * `forbidden` (403, the caller lacks the right or the request came
+     * from another site), or `internal_error` (500).
+     *
+     */
+    default: Error;
+};
+
+export type ImportProcessesError = ImportProcessesErrors[keyof ImportProcessesErrors];
+
+export type ImportProcessesResponses = {
+    /**
+     * The report.
+     */
+    200: ProcessImport;
+};
+
+export type ImportProcessesResponse = ImportProcessesResponses[keyof ImportProcessesResponses];
 
 export type ListProcessesData = {
     body?: never;

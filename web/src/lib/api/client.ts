@@ -166,6 +166,7 @@ import type {
 	LinkSuggestionList,
 	Metrics,
 	MigratableNumberList,
+	ProcessImport,
 	MigratedSet,
 	MigrationOverview,
 	LegacySet,
@@ -694,6 +695,14 @@ export function importMasterData(file: File, commit: boolean, fetchFn: typeof fe
 	const form = new FormData();
 	form.append('file', file);
 	return call<MasterDataImport>(fetchFn, '/api/v1/master-data/import?commit=' + String(commit), { method: 'POST', body: form });
+}
+
+// importProcesses memanggil POST /api/v1/process-imports (E-6, I2). commit
+// false hanya memberi laporan (Preview).
+export function importProcesses(file: File, commit: boolean, fetchFn: typeof fetch = fetch): Promise<ApiResult<ProcessImport>> {
+	const form = new FormData();
+	form.append('file', file);
+	return call<ProcessImport>(fetchFn, '/api/v1/process-imports?commit=' + String(commit), { method: 'POST', body: form });
 }
 
 // importAccounts memanggil POST /api/v1/accounts/import (A-1, I1, D-224).

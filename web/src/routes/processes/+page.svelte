@@ -85,6 +85,7 @@
 
 <h1>{t('processesTitle')}</h1>
 <p>{t('processesIntro')}</p>
+{#if canEdit}<p><a href="/processes/import">{t('processesImportLink')}</a></p>{/if}
 
 {#if loadError}
 	<p class="error" role="alert">{loadError}</p>

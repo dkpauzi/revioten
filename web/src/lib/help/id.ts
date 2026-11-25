@@ -164,6 +164,9 @@ export const helpId: HelpContent = {
 				'Tekan {processAdd}.',
 				'Tekan {processEdit} pada satu proses untuk mengganti nama atau aliasnya.'
 			],
+			tips: [
+				'Untuk banyak proses sekaligus, misalnya sesudah database direset, buka {navProcessImport}: tekan {processImportTemplate}, isi satu proses per baris dengan alias dipisah titik koma, pilih berkasnya, tekan {processImportPreview}, lalu {processImportRun}. Proses yang sudah ada dilewati; alias yang belum dimilikinya hanya dilaporkan.'
+			],
 			image: 'processes',
 			imageAlt: 'Halaman Processes dengan daftar proses dan aliasnya.'
 		},
