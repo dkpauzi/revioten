@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -18,20 +19,31 @@ import (
 )
 
 func TestPaginate(t *testing.T) {
-	if got := Paginate([]float64{40, 40, 40, 40, 40}, 100, nil); !reflect.DeepEqual(got, [][]int{{0, 1}, {2, 3}, {4}}) {
-		t.Errorf("isi halaman %v", got)
+	got, kept := Paginate([]float64{40, 40, 40, 40, 40}, 100, nil, nil)
+	if !reflect.DeepEqual(got, [][]int{{0, 1}, {2, 3}, {4}}) || !reflect.DeepEqual(kept, []bool{false, false, false}) {
+		t.Errorf("isi halaman %v, %v", got, kept)
 	}
 	// Baris yang lebih tinggi dari halaman tetap mendapat halaman sendiri.
-	if got := Paginate([]float64{30, 200, 30}, 100, nil); !reflect.DeepEqual(got, [][]int{{0}, {1}, {2}}) {
+	if got, _ := Paginate([]float64{30, 200, 30}, 100, nil, nil); !reflect.DeepEqual(got, [][]int{{0}, {1}, {2}}) {
 		t.Errorf("baris tinggi %v", got)
 	}
-	if got := Paginate(nil, 100, nil); !reflect.DeepEqual(got, [][]int{{}}) {
+	if got, _ := Paginate(nil, 100, nil, nil); !reflect.DeepEqual(got, [][]int{{}}) {
 		t.Errorf("tanpa baris %v", got)
 	}
 	// Baris 1 memulai langkah: tidak boleh menjadi baris terakhir halaman, jadi
-	// pindah ke halaman berikutnya bersama baris 2.
-	if got := Paginate([]float64{40, 40, 40}, 100, []bool{true, true, false}); !reflect.DeepEqual(got, [][]int{{0}, {1, 2}}) {
-		t.Errorf("baris awal langkah %v", got)
+	// pindah ke halaman berikutnya bersama baris 2. Halaman 1 berakhir karena
+	// aturan ini (kept), jadi nanti diisi penuh (D-226).
+	got, kept = Paginate([]float64{40, 40, 40}, 100, []bool{true, true, false}, nil)
+	if !reflect.DeepEqual(got, [][]int{{0}, {1, 2}}) || !reflect.DeepEqual(kept, []bool{true, false}) {
+		t.Errorf("baris awal langkah %v, %v", got, kept)
+	}
+	// Baris di atas halaman 2 dan seterusnya mendapat tinggi paling kecil
+	// topMin (ruang konektor masuk), dan itu ikut dihitung (D-226).
+	if got, _ := Paginate([]float64{40, 40, 40, 40}, 100, nil, []float64{0, 0, 60, 0}); !reflect.DeepEqual(got, [][]int{{0, 1}, {2, 3}}) {
+		t.Errorf("topMin muat %v", got)
+	}
+	if got, _ := Paginate([]float64{40, 40, 40, 40}, 100, nil, []float64{0, 0, 70, 0}); !reflect.DeepEqual(got, [][]int{{0, 1}, {2}, {3}}) {
+		t.Errorf("topMin tidak muat %v", got)
 	}
 }
 
@@ -119,6 +131,62 @@ func TestBuildPlan(t *testing.T) {
 	more := BuildPlan(sheet(120))
 	if len(more.Pages) <= len(p.Pages) || more.Pages[len(more.Pages)-1].In == "" {
 		t.Errorf("sesudah baris bertambah: %d halaman", len(more.Pages))
+	}
+}
+
+// TestPageEdges (D-226, opsi 2): baris awal proses tidak pernah menjadi
+// baris terakhir halaman; halaman yang berakhir karena aturan itu diisi penuh
+// oleh baris terakhirnya; dan simbol di baris paling atas halaman 2 dan
+// seterusnya digeser ke bawah konektor masuk, dengan baris yang cukup tinggi.
+func TestPageEdges(t *testing.T) {
+	sh := Sheet{FlowColumn: 0, OpColumn: 1, ProcessColumn: -1, Columns: []Column{{Label: "Process Flow", Width: 1}, {Label: "No", Width: 1}, {Label: "Text", Width: 4}}}
+	sh.Layout = Layout{Paper: "A4", Orientation: "portrait", FontSize: 8, MarginsMM: Margins{Top: 10, Right: 10, Bottom: 10, Left: 10}}
+	sh.Steps = map[string]Step{}
+	for i := 0; i < 240; i++ {
+		op := fmt.Sprint(i/2 + 1) // setiap langkah dua baris
+		if i%6 == 0 {
+			sh.Steps[op] = Step{Symbol: "decision", NG: "ncp"}
+		}
+		sh.Ops = append(sh.Ops, op)
+		sh.Rows = append(sh.Rows, Row{Cells: []string{"", op, strings.Repeat("kata ", 3+i%9)}})
+	}
+	p := BuildPlan(sh)
+	starts := map[int]bool{}
+	for i := range sh.Ops {
+		starts[i] = i == 0 || sh.Ops[i] != sh.Ops[i-1]
+	}
+	filled := 0
+	for pi, page := range p.Pages {
+		used := 0.0
+		for _, r := range page.Rows {
+			used += p.RowsMM[r]
+		}
+		last := page.Rows[len(page.Rows)-1]
+		if pi < len(p.Pages)-1 && starts[last] {
+			t.Errorf("halaman %d berakhir dengan baris awal langkah %d", pi+1, last)
+		}
+		if page.Filled {
+			filled++
+			if math.Abs(used-p.AvailableMM) > 0.15 {
+				t.Errorf("halaman %d diisi %v mm, ruangnya %v", pi+1, used, p.AvailableMM)
+			}
+		}
+		for _, n := range page.Nodes {
+			_, h := flowSize(n.Symbol)
+			if n.Row == 0 && page.In != "" {
+				if top := n.TopMM - h/2; top < connEdgeMM+connRMM+1 {
+					t.Errorf("halaman %d: simbol %s mulai %v mm, menumpuk dengan konektor", pi+1, n.Op, top)
+				}
+				if bottom := n.TopMM + h/2; bottom > p.RowsMM[page.Rows[0]] {
+					t.Errorf("halaman %d: simbol %s keluar dari barisnya (%v > %v)", pi+1, n.Op, bottom, p.RowsMM[page.Rows[0]])
+				}
+			} else if n.TopMM != nodeTopMM {
+				t.Errorf("halaman %d: simbol %s di %v mm, ingin %v", pi+1, n.Op, n.TopMM, nodeTopMM)
+			}
+		}
+	}
+	if filled == 0 {
+		t.Error("contoh tidak memicu aturan baris awal langkah")
 	}
 }
 

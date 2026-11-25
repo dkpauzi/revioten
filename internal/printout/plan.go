@@ -26,6 +26,18 @@ type FlowNode struct {
 	Op     string
 	Symbol string
 	NG     string
+	// TopMM: pusat simbol dari atas barisnya. Biasanya nodeTopMM; di baris
+	// paling atas halaman yang punya konektor masuk, simbolnya digeser ke
+	// bawah konektor (D-226). 0 dianggap nodeTopMM.
+	TopMM float64
+}
+
+// centerMM memberi pusat simbol dari atas barisnya.
+func (n FlowNode) centerMM() float64 {
+	if n.TopMM == 0 {
+		return nodeTopMM
+	}
+	return n.TopMM
 }
 
 // PlanPage adalah satu halaman: indeks baris Sheet.Rows, simbol alur, dan
@@ -35,6 +47,10 @@ type PlanPage struct {
 	Nodes []FlowNode
 	In    string
 	Out   string
+	// Filled: halaman ini berakhir lebih awal karena baris awal langkah
+	// dipindah ke halaman berikutnya, jadi baris terakhirnya dipertinggi
+	// sampai halaman penuh (D-226).
+	Filled bool
 }
 
 // Plan adalah rencana halaman satu cetakan. Semua ukuran dalam milimeter.
@@ -70,6 +86,24 @@ const cellPadMM = 2.0
 // flowRowMM: tinggi paling kecil baris yang memulai satu langkah, supaya
 // simbol alur muat.
 const flowRowMM = 9.0
+
+// connGapMM: panjang panah dari konektor masuk ke simbol pertama halaman.
+const connGapMM = 1.5
+
+// shiftedTopMM memberi pusat simbol di baris paling atas halaman yang punya
+// konektor masuk: di bawah konektor, dengan panah pendek di antaranya (D-226).
+func shiftedTopMM(symbol string) float64 {
+	_, h := flowSize(symbol)
+	return connEdgeMM + connRMM + connGapMM + h/2
+}
+
+// topRowMM memberi tinggi paling kecil baris awal langkah yang menjadi baris
+// paling atas halaman 2 dan seterusnya: simbol yang digeser beserta jarak
+// bawah yang sama dengan baris biasa.
+func topRowMM(symbol string) float64 {
+	_, h := flowSize(symbol)
+	return shiftedTopMM(symbol) + h/2 + (flowRowMM - nodeTopMM - shapeHMM/2)
+}
 
 // linesOf menghitung banyak baris teks satu sel selebar widthMM, dengan
 // membungkus per kata seperti browser dan Excel: kata yang tidak muat pindah
@@ -129,9 +163,13 @@ func paperMM(l Layout) (float64, float64) {
 // keep[i] true berarti baris i tidak boleh menjadi baris terakhir halaman
 // selama masih ada baris sesudahnya: baris pertama satu langkah selalu
 // bersama baris berikutnya, supaya simbolnya tidak menumpuk dengan konektor
-// di bawah halaman.
-func Paginate(heights []float64, available float64, keep []bool) [][]int {
-	pages := [][]int{{}}
+// di bawah halaman. topMin[i] adalah tinggi paling kecil baris i bila baris
+// itu menjadi baris paling atas halaman 2 dan seterusnya (ruang untuk
+// konektor masuk, D-226); 0 berarti tidak ada. kept[p] true berarti halaman p
+// berakhir karena aturan keep: baris berikutnya sebenarnya masih muat.
+func Paginate(heights []float64, available float64, keep []bool, topMin []float64) (pages [][]int, kept []bool) {
+	pages = [][]int{{}}
+	kept = []bool{false}
 	used := 0.0
 	for i, h := range heights {
 		need := h
@@ -140,14 +178,19 @@ func Paginate(heights []float64, available float64, keep []bool) [][]int {
 		}
 		last := len(pages) - 1
 		if len(pages[last]) > 0 && used+need > available {
+			kept[last] = used+h <= available
+			if i < len(topMin) {
+				h = math.Max(h, topMin[i])
+			}
 			pages = append(pages, []int{i})
+			kept = append(kept, false)
 			used = h
 			continue
 		}
 		pages[last] = append(pages[last], i)
 		used += h
 	}
-	return pages
+	return pages, kept
 }
 
 // opGroup adalah baris berurutan dengan nomor langkah yang sama.
@@ -222,10 +265,16 @@ func flowPages(ops []string, pages [][]int, steps map[string]Step) []PlanPage {
 			if !known || step.Symbol == "" {
 				step.Symbol = "process"
 			}
-			page.Nodes = append(page.Nodes, FlowNode{Row: at, Op: g.op, Symbol: step.Symbol, NG: step.NG})
+			page.Nodes = append(page.Nodes, FlowNode{Row: at, Op: g.op, Symbol: step.Symbol, NG: step.NG, TopMM: nodeTopMM})
 		}
 		if p > 0 && crosses(p-1) {
 			page.In = out[p-1].Out
+			// Simbol di baris paling atas digeser ke bawah konektor masuk (D-226).
+			for i, n := range page.Nodes {
+				if n.Row == 0 {
+					page.Nodes[i].TopMM = shiftedTopMM(n.Symbol)
+				}
+			}
 		}
 		if p < len(pages)-1 && crosses(p) {
 			page.Out = ConnectorLetter(letters)
@@ -309,11 +358,51 @@ func BuildPlan(sh Sheet) Plan {
 		p.RowsMM = append(p.RowsMM, math.Round(height*10)/10)
 	}
 	keep := make([]bool, len(sh.Rows))
+	topMin := make([]float64, len(sh.Rows))
 	if sh.FlowColumn >= 0 {
-		for i := range keep {
-			keep[i] = starts[i]
+		first := true
+		for _, g := range opGroups(sh.Ops) {
+			if g.op == "" {
+				continue
+			}
+			keep[g.start] = true
+			// Langkah pertama tidak pernah punya konektor masuk di atasnya.
+			if !first {
+				step, known := sh.Steps[g.op]
+				if !known || step.Symbol == "" {
+					step.Symbol = "process"
+				}
+				topMin[g.start] = math.Ceil(topRowMM(step.Symbol)*10) / 10
+			}
+			first = false
 		}
 	}
-	p.Pages = flowPages(ops, Paginate(p.RowsMM, p.AvailableMM, keep), sh.Steps)
+	pages, kept := Paginate(p.RowsMM, p.AvailableMM, keep, topMin)
+	for pi, rows := range pages {
+		if len(rows) == 0 {
+			continue
+		}
+		if pi > 0 {
+			r := rows[0]
+			p.RowsMM[r] = math.Max(p.RowsMM[r], topMin[r])
+		}
+	}
+	p.Pages = flowPages(ops, pages, sh.Steps)
+	// Halaman yang berakhir karena baris awal langkah dipindah diisi penuh:
+	// baris terakhirnya dipertinggi sampai ruang halaman habis (D-226).
+	for pi, rows := range pages {
+		if !kept[pi] || len(rows) == 0 {
+			continue
+		}
+		used := 0.0
+		for _, r := range rows {
+			used += p.RowsMM[r]
+		}
+		if slack := math.Floor((p.AvailableMM-used)*10) / 10; slack > 0 {
+			last := rows[len(rows)-1]
+			p.RowsMM[last] = math.Round((p.RowsMM[last]+slack)*10) / 10
+			p.Pages[pi].Filled = true
+		}
+	}
 	return p
 }

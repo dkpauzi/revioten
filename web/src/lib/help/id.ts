@@ -363,7 +363,7 @@ export const helpId: HelpContent = {
 				'Dua kolom No di Control Plan terisi sendiri: No di depan Product Characteristics menomori baris yang karakteristik produknya diisi, dan No di depan Process Characteristics menomori baris yang karakteristik prosesnya diisi, 1, 2, 3 di setiap proses. Karakteristik yang ditulis -- tercetak --.',
 				'Part Name diambil dari part number dokumen (Master data, lalu Models). Process or Line, Core Team, Remark, Process Responsibility, dan Key Date adalah field header dokumen.',
 				'Admin mengganti nama perusahaan dan logo di {navGroupAdmin}, lalu {navSettings}: {companyTitle}. Ganti logo menanyakan {companyLogoRevise}: dengan {companyLogoReviseYes}, setiap customer mendapat perubahan logo di {navChanges}. Revisi terbit selalu dicetak dengan logo saat revisi itu dirilis.',
-				'Draft selalu dicetak dengan UNCONTROLLED COPY.', 'Baris yang berubah di revisi yang dicetak diberi segitiga dengan nomor revisi.', 'PDF butuh Chrome atau Edge di komputer server; Excel selalu bisa.'],
+				'Di Control Plan, baris pertama satu langkah tidak pernah menjadi baris terakhir halaman: baris itu pindah ke halaman berikutnya, dan baris di atasnya dipertinggi supaya halaman tetap penuh. Di atas halaman berikutnya, simbol langkah berada di bawah huruf konektor.', 'Draft selalu dicetak dengan UNCONTROLLED COPY.', 'Baris yang berubah di revisi yang dicetak diberi segitiga dengan nomor revisi.', 'PDF butuh Chrome atau Edge di komputer server; Excel selalu bisa.'],
 			image: 'printing',
 			imageAlt: 'Bagian Cetak sebuah dokumen dengan tujuan cetak dan tombol Excel dan PDF.'
 		},
@@ -424,6 +424,26 @@ export const helpId: HelpContent = {
 			tips: ['{legacyBoardTitle} menampilkan setiap dokumen lama sebagai {legacyStateEmpty}, {legacyStateToVerify}, atau {documentStatusReleasedMigrated}.', 'Orang yang memasukkan dokumen tidak bisa memverifikasinya.', 'Scan hardcopy opsional. Bila ingin menyimpannya sebagai bukti, unggah di {revisions} sebelum verifikasi.', 'Sesudah diverifikasi, baseline dan riwayatnya tidak bisa diubah; perubahan berikutnya lewat permintaan perubahan biasa.', 'Matikan mode migrasi setelah migrasi selesai.'],
 			image: 'migration',
 			imageAlt: 'Halaman Dokumen lama dengan pemeriksaan kesiapan, isian tiga nomor satu set, dan papan status.'
+		},
+		{
+			id: 'refill-after-reset',
+			title: 'Mengisi ulang data sesudah database direset',
+			who: 'Admin, lalu PPAP Engineer',
+			intro: 'Sesudah database direset, data dikembalikan dari berkas Excel dengan urutan tetap, karena setiap import membutuhkan data dari import sebelumnya. Setiap import melewati data yang sudah ada, jadi berkas boleh diunggah lagi dengan aman.',
+			steps: [
+				'Orang yang menjalankan server membuat akun admin pertama dengan perintah [[create-admin]] (lihat panduan reset docs/panduan/reset-database.md), lalu login dengannya.',
+				'Admin: nyalakan {settingsMigration} di {navGroupAdmin}, lalu {navSettings}. Lalu buka {navAccountImport}, unggah berkas akun, tekan {accountImportPreview}, lalu {accountImportRun}. Setiap akun mendapat password sementara yang wajib diganti saat login pertama.',
+				'PPAP Engineer: buka {navGroupMaster}, lalu {navMasterImport}, dan impor customer dan model.',
+				'Buka {navGroupTemplates}, lalu {navProcessImport}, dan impor nama proses beserta aliasnya.',
+				'Buka {navContentImport} dan impor poin PFMEA dan Control Plan. Lalu buka {navProcessTemplates}, periksa poin setiap proses, dan tekan {versionPublish} pada draft-nya.',
+				'Buka {navGroupDocuments}, lalu {numberImportLink}, dan impor nomor lama di bagian {numberImportFileTitle}.',
+				'Lanjutkan di {navLegacy}: {legacyReadyTitle} menunjukkan yang masih kurang, misalnya form set yang belum diterbitkan di {navFormSets}.'
+			],
+			tips: [
+				'Simpan berkas Excel yang memuat nama asli di komputer sendiri atau di folder data, jangan di repositori.',
+				'Setiap langkah punya bab sendiri di panduan ini: akun, customer, proses, process template, dan dokumen kontrol.',
+				'Sesudah semua dokumen lama masuk, admin mematikan {settingsMigration} lagi.'
+			]
 		},
 		{
 			id: 'dashboard',

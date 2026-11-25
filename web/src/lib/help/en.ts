@@ -363,7 +363,7 @@ export const helpEn: HelpContent = {
 				'The two No columns of a Control Plan count themselves: the No before Product Characteristics numbers the rows whose product characteristic is filled in, and the No before Process Characteristics the rows whose process characteristic is filled in, 1, 2, 3 within each process. A characteristic written as -- prints --.',
 				'Part Name comes from the part numbers of the document (Master data, then Models). Process or Line, Core Team, Remark, Process Responsibility, and Key Date are header fields of the document.',
 				'The admin changes the company name and the logo under {navGroupAdmin}, then {navSettings}: {companyTitle}. A logo change asks {companyLogoRevise}: with {companyLogoReviseYes}, each customer gets a logo change under {navChanges}. Released revisions always print with the logo they were released with.',
-				'Drafts always print with UNCONTROLLED COPY.', 'Rows changed in the printed revision carry a triangle with the revision number.', 'PDF needs Chrome or Edge on the server computer; Excel always works.'],
+				'In a Control Plan, the first row of a step never ends a page: it moves to the next page, and the row above it grows so the page stays full. At the top of the next page, the step symbol sits below the connector letter.', 'Drafts always print with UNCONTROLLED COPY.', 'Rows changed in the printed revision carry a triangle with the revision number.', 'PDF needs Chrome or Edge on the server computer; Excel always works.'],
 			image: 'printing',
 			imageAlt: 'The Print section of a document with the purpose and the Excel and PDF buttons.'
 		},
@@ -424,6 +424,26 @@ export const helpEn: HelpContent = {
 			tips: ['{legacyBoardTitle} shows each legacy document as {legacyStateEmpty}, {legacyStateToVerify}, or {documentStatusReleasedMigrated}.', 'The person who entered a document cannot verify it.', 'A scan of the hard copy is optional. To keep one as evidence, upload it under {revisions} before the verification.', 'After verification the baseline and its history cannot be changed; the next change goes through a normal change request.', 'Switch migration mode off when the migration is finished.'],
 			image: 'migration',
 			imageAlt: 'The Legacy documents page with the readiness checks, the set of three numbers, and the status board.'
+		},
+		{
+			id: 'refill-after-reset',
+			title: 'Filling the data again after a database reset',
+			who: 'Admin, then PPAP Engineer',
+			intro: 'After the database is reset, the data comes back from Excel files in a fixed order, because each import needs what the one before it brought in. Every import skips what already exists, so a file can be uploaded again safely.',
+			steps: [
+				'The person who runs the server makes the first admin account with the command [[create-admin]] (see the reset guide docs/panduan/reset-database.md) and logs in with it.',
+				'Admin: switch on {settingsMigration} under {navGroupAdmin}, then {navSettings}. Then open {navAccountImport}, upload the accounts file, press {accountImportPreview}, and then {accountImportRun}. Every account gets a temporary password that must be changed at the first log-in.',
+				'PPAP Engineer: open {navGroupMaster}, then {navMasterImport}, and import the customers and models.',
+				'Open {navGroupTemplates}, then {navProcessImport}, and import the process names and aliases.',
+				'Open {navContentImport} and import the PFMEA and Control Plan points. Then open {navProcessTemplates}, check the points of each process, and press {versionPublish} on its draft.',
+				'Open {navGroupDocuments}, then {numberImportLink}, and import the legacy numbers under {numberImportFileTitle}.',
+				'Continue with {navLegacy}: {legacyReadyTitle} shows what is still missing, for example a form set that is not published yet in {navFormSets}.'
+			],
+			tips: [
+				'Keep the Excel files with real names on your own computer or in the data folder, never in the repository.',
+				'Each step has its own chapter in this guide: accounts, customers, processes, process templates, and document control.',
+				'When the legacy documents are all in, the admin switches {settingsMigration} off again.'
+			]
 		},
 		{
 			id: 'dashboard',

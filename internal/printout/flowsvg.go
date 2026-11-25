@@ -138,7 +138,7 @@ func FlowSVG(page PlanPage, tops []float64, height, width float64) string {
 	b.WriteString(arrowDefs)
 	ys := make([]float64, len(page.Nodes))
 	for i, n := range page.Nodes {
-		ys[i] = tops[n.Row] + nodeTopMM
+		ys[i] = tops[n.Row] + n.centerMM()
 	}
 	connector := func(y float64, letter string) {
 		fmt.Fprintf(&b, `<circle cx="%.2f" cy="%.2f" r="%.2f" fill="#fff" stroke="#000" stroke-width="0.3" data-connector="%s"/>`, cx, y, connRMM, html.EscapeString(letter))

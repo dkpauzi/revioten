@@ -123,7 +123,7 @@ func flowShapes(f *excelize.File, name string, sh Sheet, x xlsxLayout, pg PlanPa
 	cx := mm(flowX(widthMM))
 	ys := make([]float64, len(pg.Nodes))
 	for i, n := range pg.Nodes {
-		ys[i] = tops[n.Row] + mm(nodeTopMM)
+		ys[i] = tops[n.Row] + mm(n.centerMM())
 	}
 	r := mm(connRMM)
 	prev := math.NaN()
