@@ -74,7 +74,7 @@ type ImportLine struct {
 	Derived   bool   // true bila nomor ini mengikuti nomor lain di barisnya (OneSet)
 	// Revision adalah revisi yang ikut ditulis di belakang nomor, misalnya 5
 	// untuk SC-KT-001-05 (I4, opsi b); nil bila tanpa revisi. Revisi ini
-	// disimpan sebagai revisi awal nomor (ASUMSI E-146) dan mengisi kolom
+	// disimpan sebagai revisi awal nomor (D-225) dan mengisi kolom
 	// revisi di menu Legacy documents. Text selalu nomor tanpa revisi.
 	Revision *int
 	// CustomerCode dan Status hanya diisi impor berkas Excel, yang memuat

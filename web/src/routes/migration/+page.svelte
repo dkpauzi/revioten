@@ -108,7 +108,7 @@
 
 	// fillKnownRevisions mengisi kolom revisi yang masih kosong dengan revisi
 	// nomor itu di register (I4, opsi b), juga untuk nomor yang mengikuti
-	// (satu set). ASUMSI E-146: revisi 0 tidak diisi, karena sama dengan nomor
+	// (satu set). D-225: revisi 0 tidak diisi, karena sama dengan nomor
 	// tanpa revisi.
 	// Isinya tetap bisa diubah.
 	function fillKnownRevisions() {

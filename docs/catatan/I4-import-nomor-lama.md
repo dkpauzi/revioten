@@ -57,12 +57,12 @@ Batasnya 5 MB dan 5000 nomor sekali impor.
 - **Nomor yang sudah ada tidak diubah,** termasuk revisinya, supaya impor ulang aman.
 - **Nomor yang mengikuti (satu set) tidak punya revisi.** Revisinya diisi di menu Legacy documents.
 - **Satu customer satu transaksi.** Customer yang sudah tersimpan tetap tersimpan bila customer lain gagal.
-- **E-146:** revisi 0 tidak mengisi kolom revisi di menu Legacy documents.
+- **E-146, diputuskan D-225 (opsi a, 25 November 2026):** revisi disimpan di `initial_revision`; revisi 0 tidak mengisi kolom revisi di menu Legacy documents.
 - **Model tidak ikut di berkas** (berbeda dengan usulan awal di rencana); model tetap dipilih saat dokumen dimigrasi.
 
 ## 7. Temuan desain baru
 
-- **E-146** · Revisi nomor lama disimpan sebagai revisi awal (Ambigu, tidak menghambat, Terbuka).
+- **E-146** · Revisi nomor lama disimpan sebagai revisi awal (Ambigu, tidak menghambat). Diputuskan D-225: opsi a.
 
 ## 8. Status test
 
